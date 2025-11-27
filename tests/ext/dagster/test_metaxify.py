@@ -1607,3 +1607,364 @@ class TestMetaxifyColumnSchema:
         assert "optional_value" in columns_by_name
         assert columns_by_name["optional_value"].description == "Optional integer"
         assert columns_by_name["optional_value"].type == "int | None"
+
+
+class TestMetaxifyColumnLineage:
+    """Test column lineage injection in @metaxify."""
+
+    def test_metaxify_injects_column_lineage_for_direct_passthrough(self):
+        """Test column lineage injection when columns have the same name in both features."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+
+        upstream_spec = mx.FeatureSpec(
+            key=["test", "lineage_upstream"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class UpstreamFeature(mx.BaseFeature, spec=upstream_spec):
+            id: str
+            value: int
+            name: str
+
+        downstream_spec = mx.FeatureSpec(
+            key=["test", "lineage_downstream"],
+            id_columns=["id"],
+            fields=["result"],
+            deps=[mx.FeatureDep(feature=UpstreamFeature)],
+        )
+
+        class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
+            id: str  # Same as upstream
+            value: int  # Same as upstream
+            result: float  # New column, no upstream
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/lineage_downstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY in asset_spec.metadata
+
+        column_lineage = asset_spec.metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY]
+        assert isinstance(column_lineage, dg.TableColumnLineage)
+
+        # ID column should have lineage
+        assert "id" in column_lineage.deps_by_column
+        id_deps = column_lineage.deps_by_column["id"]
+        assert len(id_deps) == 1
+        assert id_deps[0].column_name == "id"
+        assert id_deps[0].asset_key == dg.AssetKey(["test", "lineage_upstream"])
+
+        # Passthrough column should have lineage
+        assert "value" in column_lineage.deps_by_column
+        value_deps = column_lineage.deps_by_column["value"]
+        assert len(value_deps) == 1
+        assert value_deps[0].column_name == "value"
+        assert value_deps[0].asset_key == dg.AssetKey(["test", "lineage_upstream"])
+
+        # New column should not have lineage
+        assert "result" not in column_lineage.deps_by_column
+
+    def test_metaxify_column_lineage_with_rename(self):
+        """Test column lineage respects FeatureDep.rename mappings."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+
+        upstream_spec = mx.FeatureSpec(
+            key=["test", "rename_upstream"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class UpstreamFeature(mx.BaseFeature, spec=upstream_spec):
+            id: str
+            old_name: str
+            old_value: int
+
+        downstream_spec = mx.FeatureSpec(
+            key=["test", "rename_downstream"],
+            id_columns=["id"],
+            fields=["result"],
+            deps=[
+                mx.FeatureDep(
+                    feature=UpstreamFeature,
+                    rename={"old_name": "new_name", "old_value": "new_value"},
+                )
+            ],
+        )
+
+        class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
+            id: str
+            new_name: str  # Renamed from old_name
+            new_value: int  # Renamed from old_value
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/rename_downstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        column_lineage = asset_spec.metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY]
+
+        # Renamed columns should trace back to original upstream names
+        assert "new_name" in column_lineage.deps_by_column
+        new_name_deps = column_lineage.deps_by_column["new_name"]
+        assert len(new_name_deps) == 1
+        assert new_name_deps[0].column_name == "old_name"
+        assert new_name_deps[0].asset_key == dg.AssetKey(["test", "rename_upstream"])
+
+        assert "new_value" in column_lineage.deps_by_column
+        new_value_deps = column_lineage.deps_by_column["new_value"]
+        assert len(new_value_deps) == 1
+        assert new_value_deps[0].column_name == "old_value"
+
+    def test_metaxify_column_lineage_with_aggregation_relationship(self):
+        """Test column lineage respects aggregation lineage relationships."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+
+        upstream_spec = mx.FeatureSpec(
+            key=["test", "agg_upstream"],
+            id_columns=["user_id", "timestamp"],
+            fields=["value"],
+        )
+
+        class UpstreamFeature(mx.BaseFeature, spec=upstream_spec):
+            user_id: str
+            timestamp: str
+            value: int
+
+        downstream_spec = mx.FeatureSpec(
+            key=["test", "agg_downstream"],
+            id_columns=["user_id"],  # Aggregated to user level
+            fields=["total"],
+            deps=[mx.FeatureDep(feature=UpstreamFeature)],
+            lineage=mx.LineageRelationship.aggregation(on=["user_id"]),
+        )
+
+        class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
+            user_id: str
+            total: float
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/agg_downstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        column_lineage = asset_spec.metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY]
+
+        # Aggregation column should have lineage
+        assert "user_id" in column_lineage.deps_by_column
+        user_id_deps = column_lineage.deps_by_column["user_id"]
+        assert len(user_id_deps) == 1
+        assert user_id_deps[0].column_name == "user_id"
+
+        # New computed column should not have lineage
+        assert "total" not in column_lineage.deps_by_column
+
+    def test_metaxify_column_lineage_with_expansion_relationship(self):
+        """Test column lineage respects expansion lineage relationships."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+
+        upstream_spec = mx.FeatureSpec(
+            key=["test", "exp_upstream"],
+            id_columns=["doc_id"],
+            fields=["content"],
+        )
+
+        class UpstreamFeature(mx.BaseFeature, spec=upstream_spec):
+            doc_id: str
+            content: str
+
+        downstream_spec = mx.FeatureSpec(
+            key=["test", "exp_downstream"],
+            id_columns=["doc_id", "chunk_id"],  # Expanded with chunk_id
+            fields=["chunk_text"],
+            deps=[mx.FeatureDep(feature=UpstreamFeature)],
+            lineage=mx.LineageRelationship.expansion(on=["doc_id"]),
+        )
+
+        class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
+            doc_id: str
+            chunk_id: str  # New ID column from expansion
+            chunk_text: str
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/exp_downstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        column_lineage = asset_spec.metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY]
+
+        # Parent ID column should have lineage
+        assert "doc_id" in column_lineage.deps_by_column
+        doc_id_deps = column_lineage.deps_by_column["doc_id"]
+        assert len(doc_id_deps) == 1
+        assert doc_id_deps[0].column_name == "doc_id"
+
+        # New chunk_id column should not have lineage (generated)
+        assert "chunk_id" not in column_lineage.deps_by_column
+
+    def test_metaxify_column_lineage_multiple_upstreams(self):
+        """Test column lineage with multiple upstream dependencies."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+
+        upstream_a_spec = mx.FeatureSpec(
+            key=["test", "multi_upstream_a"],
+            id_columns=["id"],
+            fields=["value_a"],
+        )
+
+        class UpstreamA(mx.BaseFeature, spec=upstream_a_spec):
+            id: str
+            value_a: int
+
+        upstream_b_spec = mx.FeatureSpec(
+            key=["test", "multi_upstream_b"],
+            id_columns=["id"],
+            fields=["value_b"],
+        )
+
+        class UpstreamB(mx.BaseFeature, spec=upstream_b_spec):
+            id: str
+            value_b: int
+
+        downstream_spec = mx.FeatureSpec(
+            key=["test", "multi_downstream"],
+            id_columns=["id"],
+            fields=["combined"],
+            deps=[
+                mx.FeatureDep(feature=UpstreamA),
+                mx.FeatureDep(feature=UpstreamB),
+            ],
+        )
+
+        class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
+            id: str  # From both upstreams
+            value_a: int  # From UpstreamA
+            value_b: int  # From UpstreamB
+            combined: float
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/multi_downstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        column_lineage = asset_spec.metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY]
+
+        # ID column should have lineage from both upstreams
+        assert "id" in column_lineage.deps_by_column
+        id_deps = column_lineage.deps_by_column["id"]
+        assert len(id_deps) == 2  # From both upstreams
+        asset_keys = {dep.asset_key for dep in id_deps}
+        assert dg.AssetKey(["test", "multi_upstream_a"]) in asset_keys
+        assert dg.AssetKey(["test", "multi_upstream_b"]) in asset_keys
+
+        # value_a should only have lineage from UpstreamA
+        assert "value_a" in column_lineage.deps_by_column
+        value_a_deps = column_lineage.deps_by_column["value_a"]
+        assert len(value_a_deps) == 1
+        assert value_a_deps[0].asset_key == dg.AssetKey(["test", "multi_upstream_a"])
+
+        # value_b should only have lineage from UpstreamB
+        assert "value_b" in column_lineage.deps_by_column
+        value_b_deps = column_lineage.deps_by_column["value_b"]
+        assert len(value_b_deps) == 1
+        assert value_b_deps[0].asset_key == dg.AssetKey(["test", "multi_upstream_b"])
+
+    def test_metaxify_skips_column_lineage_when_disabled(self):
+        """Test that column lineage injection can be disabled."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+
+        upstream_spec = mx.FeatureSpec(
+            key=["test", "skip_lineage_upstream"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class UpstreamFeature(mx.BaseFeature, spec=upstream_spec):
+            id: str
+            value: int
+
+        downstream_spec = mx.FeatureSpec(
+            key=["test", "skip_lineage_downstream"],
+            id_columns=["id"],
+            fields=["result"],
+            deps=[mx.FeatureDep(feature=UpstreamFeature)],
+        )
+
+        class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
+            id: str
+            value: int
+
+        @metaxify(inject_column_lineage=False)
+        @dg.asset(metadata={"metaxy/feature": "test/skip_lineage_downstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY not in asset_spec.metadata
+
+    def test_metaxify_no_column_lineage_without_deps(self):
+        """Test that column lineage is not injected when there are no dependencies."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+
+        spec = mx.FeatureSpec(
+            key=["test", "no_deps_lineage"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class NoDepsFeature(mx.BaseFeature, spec=spec):
+            id: str
+            value: int
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/no_deps_lineage"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        # No column lineage because there are no dependencies
+        assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY not in asset_spec.metadata
+
+    def test_metaxify_asset_spec_injects_column_lineage(self):
+        """Test column lineage injection on AssetSpec."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+
+        upstream_spec = mx.FeatureSpec(
+            key=["test", "spec_lineage_upstream"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class UpstreamFeature(mx.BaseFeature, spec=upstream_spec):
+            id: str
+            value: int
+
+        downstream_spec = mx.FeatureSpec(
+            key=["test", "spec_lineage_downstream"],
+            id_columns=["id"],
+            fields=["result"],
+            deps=[mx.FeatureDep(feature=UpstreamFeature)],
+        )
+
+        class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
+            id: str
+            value: int
+
+        asset_spec = dg.AssetSpec(
+            key="my_asset",
+            metadata={"metaxy/feature": "test/spec_lineage_downstream"},
+        )
+
+        transformed_spec = metaxify()(asset_spec)
+
+        assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY in transformed_spec.metadata
+        column_lineage = transformed_spec.metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY]
+
+        assert "id" in column_lineage.deps_by_column
+        assert "value" in column_lineage.deps_by_column

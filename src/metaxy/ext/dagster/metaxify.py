@@ -6,6 +6,7 @@ from typing_extensions import Self
 
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
+    DAGSTER_COLUMN_LINEAGE_METADATA_KEY,
     DAGSTER_COLUMN_SCHEMA_METADATA_KEY,
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_KIND,
@@ -53,8 +54,19 @@ class metaxify:
     - **Column schema** from Pydantic fields is injected into the asset metadata under `dagster/column_schema`.
       Field types are converted to strings, and field descriptions are used as column descriptions.
 
-      !!! warning
-          Pydantic feature schema may not match the corresponding schema in the metadata store.
+    !!! warning
+        Pydantic feature schema may not match the corresponding table schema in the metadata store.
+
+    - **Column lineage** is injected into the asset metadata under `dagster/column_lineage`.
+      Tracks which upstream columns each downstream column depends on by analyzing:
+
+        - **Direct pass-through**: Columns with the same name in both upstream and downstream features.
+
+        - **`FeatureDep.rename`**: Renamed columns trace back to their original upstream column names.
+
+        - **`FeatureSpec.lineage`**: ID column relationships based on lineage type (identity, aggregation, expansion).
+
+      Column lineage is derived from Pydantic model fields on the feature class.
 
     Args:
         feature: The Metaxy feature to associate with the asset. If provided, this takes precedence
@@ -71,6 +83,9 @@ class metaxify:
             if the asset doesn't already have a description.
         inject_column_schema: Whether to inject Pydantic field definitions as Dagster column schema.
             Field types are converted to strings, and field descriptions are used as column descriptions.
+        inject_column_lineage: Whether to inject column-level lineage into the asset metadata under
+            `dagster/column_lineage`. Uses Pydantic model fields to track
+            column provenance via `FeatureDep.rename`, `FeatureSpec.lineage`, and direct pass-through.
 
     !!! note
         Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
@@ -135,6 +150,7 @@ class metaxify:
     inject_code_version: bool
     set_description: bool
     inject_column_schema: bool
+    inject_column_lineage: bool
 
     def __init__(
         self,
@@ -146,6 +162,7 @@ class metaxify:
         inject_code_version: bool = True,
         set_description: bool = True,
         inject_column_schema: bool = True,
+        inject_column_lineage: bool = True,
     ) -> None:
         # Actual initialization happens in __new__, but we set defaults here for type checkers
         self.feature = (
@@ -156,6 +173,7 @@ class metaxify:
         self.inject_code_version = inject_code_version
         self.set_description = set_description
         self.inject_column_schema = inject_column_schema
+        self.inject_column_lineage = inject_column_lineage
 
     @overload
     def __new__(cls, _asset: _T) -> _T: ...
@@ -171,6 +189,7 @@ class metaxify:
         inject_code_version: bool = True,
         set_description: bool = True,
         inject_column_schema: bool = True,
+        inject_column_lineage: bool = True,
     ) -> Self: ...
 
     def __new__(
@@ -183,6 +202,7 @@ class metaxify:
         inject_code_version: bool = True,
         set_description: bool = True,
         inject_column_schema: bool = True,
+        inject_column_lineage: bool = True,
     ) -> "Self | _T":
         coerced_feature = (
             mx.coerce_to_feature_key(feature) if feature is not None else None
@@ -197,6 +217,7 @@ class metaxify:
                 inject_code_version=inject_code_version,
                 set_description=set_description,
                 inject_column_schema=inject_column_schema,
+                inject_column_lineage=inject_column_lineage,
             )
 
         # Called as @metaxify() with parentheses - return instance for __call__
@@ -207,6 +228,7 @@ class metaxify:
         instance.inject_code_version = inject_code_version
         instance.set_description = set_description
         instance.inject_column_schema = inject_column_schema
+        instance.inject_column_lineage = inject_column_lineage
         return instance
 
     def __call__(self, asset: _T) -> _T:
@@ -219,6 +241,7 @@ class metaxify:
             inject_code_version=self.inject_code_version,
             set_description=self.set_description,
             inject_column_schema=self.inject_column_schema,
+            inject_column_lineage=self.inject_column_lineage,
         )
 
     @staticmethod
@@ -231,6 +254,7 @@ class metaxify:
         inject_code_version: bool,
         set_description: bool,
         inject_column_schema: bool,
+        inject_column_lineage: bool,
     ) -> _T:
         """Transform an AssetsDefinition or AssetSpec with Metaxy metadata."""
         if isinstance(asset, dg.AssetSpec):
@@ -242,6 +266,7 @@ class metaxify:
                 inject_code_version=inject_code_version,
                 set_description=set_description,
                 inject_column_schema=inject_column_schema,
+                inject_column_lineage=inject_column_lineage,
             )
 
         # Handle AssetsDefinition
@@ -265,6 +290,7 @@ class metaxify:
                 inject_code_version=inject_code_version,
                 set_description=set_description,
                 inject_column_schema=inject_column_schema,
+                inject_column_lineage=inject_column_lineage,
             )
             if new_spec.key != key:
                 keys_to_replace[key] = new_spec.key
@@ -331,6 +357,7 @@ def _metaxify_spec(
     inject_code_version: bool,
     set_description: bool,
     inject_column_schema: bool,
+    inject_column_lineage: bool,
 ) -> dg.AssetSpec:
     """Transform a single AssetSpec with Metaxy metadata.
 
@@ -434,6 +461,15 @@ def _metaxify_spec(
         if columns:
             column_schema = dg.TableSchema(columns=columns)
 
+    # Build column lineage from upstream dependencies
+    column_lineage: dg.TableColumnLineage | None = None
+    if inject_column_lineage and feature_spec.deps:
+        column_lineage = _build_column_lineage(
+            feature_cls=feature_cls,
+            feature_spec=feature_spec,
+            inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
+        )
+
     # Build the replacement attributes
     metadata_to_add: dict[str, Any] = {
         **spec.metadata,
@@ -442,6 +478,8 @@ def _metaxify_spec(
     }
     if column_schema is not None:
         metadata_to_add[DAGSTER_COLUMN_SCHEMA_METADATA_KEY] = column_schema
+    if column_lineage is not None:
+        metadata_to_add[DAGSTER_COLUMN_LINEAGE_METADATA_KEY] = column_lineage
 
     replace_attrs: dict[str, Any] = {
         "key": final_key,
@@ -459,6 +497,159 @@ def _metaxify_spec(
         replace_attrs["description"] = final_description
 
     return spec.replace_attributes(**replace_attrs)
+
+
+def _build_column_lineage(
+    feature_cls: type[mx.BaseFeature],
+    feature_spec: mx.FeatureSpec,
+    inherit_feature_key_as_asset_key: bool,
+) -> dg.TableColumnLineage | None:
+    """Build column-level lineage from feature dependencies.
+
+    Tracks column provenance by analyzing:
+    - `FeatureDep.rename` mappings: renamed columns trace back to their upstream source
+    - `FeatureSpec.lineage`: ID column relationships between features
+    - Direct pass-through: columns with same name in both upstream and downstream
+
+    Args:
+        feature_cls: The downstream feature class.
+        feature_spec: The downstream feature specification.
+        inherit_feature_key_as_asset_key: Whether to use feature keys as asset keys.
+
+    Returns:
+        TableColumnLineage mapping downstream columns to their upstream sources,
+        or None if no column lineage can be determined.
+    """
+    deps_by_column: dict[str, list[dg.TableColumnDep]] = {}
+    downstream_columns = set(feature_cls.model_fields.keys())
+
+    for dep in feature_spec.deps:
+        upstream_feature_cls = mx.get_feature_by_key(dep.feature)
+        upstream_feature_spec = upstream_feature_cls.spec()
+        upstream_asset_key = get_asset_key_for_metaxy_feature_spec(
+            upstream_feature_spec,
+            inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
+        )
+        upstream_columns = set(upstream_feature_cls.model_fields.keys())
+
+        # Build reverse rename map: downstream_name -> upstream_name
+        # FeatureDep.rename is {old_upstream_name: new_downstream_name}
+        reverse_rename: dict[str, str] = {}
+        if dep.rename:
+            reverse_rename = {v: k for k, v in dep.rename.items()}
+
+        # Track columns based on lineage relationship
+        lineage = feature_spec.lineage
+
+        # Get ID column mappings based on lineage type
+        id_column_mapping = _get_id_column_mapping(
+            downstream_id_columns=feature_spec.id_columns,
+            upstream_id_columns=upstream_feature_spec.id_columns,
+            lineage=lineage,
+            rename=reverse_rename,
+        )
+
+        # Process ID columns
+        for downstream_col, upstream_col in id_column_mapping.items():
+            if downstream_col in downstream_columns:
+                if downstream_col not in deps_by_column:
+                    deps_by_column[downstream_col] = []
+                deps_by_column[downstream_col].append(
+                    dg.TableColumnDep(
+                        asset_key=upstream_asset_key,
+                        column_name=upstream_col,
+                    )
+                )
+
+        # Process renamed columns (that aren't ID columns)
+        for downstream_col, upstream_col in reverse_rename.items():
+            if (
+                downstream_col in downstream_columns
+                and downstream_col not in id_column_mapping
+            ):
+                if upstream_col in upstream_columns:
+                    if downstream_col not in deps_by_column:
+                        deps_by_column[downstream_col] = []
+                    deps_by_column[downstream_col].append(
+                        dg.TableColumnDep(
+                            asset_key=upstream_asset_key,
+                            column_name=upstream_col,
+                        )
+                    )
+
+        # Process direct pass-through columns (same name in both, not renamed or ID)
+        handled_columns = set(id_column_mapping.keys()) | set(reverse_rename.keys())
+        for col in downstream_columns - handled_columns:
+            if col in upstream_columns:
+                if col not in deps_by_column:
+                    deps_by_column[col] = []
+                deps_by_column[col].append(
+                    dg.TableColumnDep(
+                        asset_key=upstream_asset_key,
+                        column_name=col,
+                    )
+                )
+
+    if not deps_by_column:
+        return None
+
+    return dg.TableColumnLineage(deps_by_column=deps_by_column)
+
+
+def _get_id_column_mapping(
+    downstream_id_columns: tuple[str, ...],
+    upstream_id_columns: tuple[str, ...],
+    lineage: mx.LineageRelationship,
+    rename: dict[str, str],
+) -> dict[str, str]:
+    """Get mapping of downstream ID columns to upstream ID columns.
+
+    Args:
+        downstream_id_columns: ID columns of the downstream feature.
+        upstream_id_columns: ID columns of the upstream feature.
+        lineage: The lineage relationship between features.
+        rename: Reverse rename map (downstream_name -> upstream_name).
+
+    Returns:
+        Mapping of downstream ID column names to upstream ID column names.
+    """
+    from metaxy.models.lineage import (
+        AggregationRelationship,
+        ExpansionRelationship,
+        IdentityRelationship,
+    )
+
+    mapping: dict[str, str] = {}
+    rel = lineage.relationship
+
+    if isinstance(rel, IdentityRelationship):
+        # 1:1 - downstream ID columns map to same-named upstream ID columns
+        # (accounting for any renames)
+        for downstream_col in downstream_id_columns:
+            # Check if this column was renamed from upstream
+            upstream_col = rename.get(downstream_col, downstream_col)
+            if upstream_col in upstream_id_columns:
+                mapping[downstream_col] = upstream_col
+
+    elif isinstance(rel, AggregationRelationship):
+        # N:1 - aggregation columns map to upstream
+        # Use `on` columns if specified, otherwise use all downstream ID columns
+        agg_columns = rel.on if rel.on is not None else downstream_id_columns
+        for downstream_col in agg_columns:
+            if downstream_col in downstream_id_columns:
+                upstream_col = rename.get(downstream_col, downstream_col)
+                if upstream_col in upstream_id_columns:
+                    mapping[downstream_col] = upstream_col
+
+    elif isinstance(rel, ExpansionRelationship):
+        # 1:N - `on` columns (parent ID columns) map to upstream ID columns
+        for downstream_col in rel.on:
+            if downstream_col in downstream_id_columns:
+                upstream_col = rename.get(downstream_col, downstream_col)
+                if upstream_col in upstream_id_columns:
+                    mapping[downstream_col] = upstream_col
+
+    return mapping
 
 
 def _get_type_string(annotation: Any) -> str:
