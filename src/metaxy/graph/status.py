@@ -39,6 +39,24 @@ class FullFeatureMetadataRepresentation(BaseModel):
     sample_details: list[str] | None = None
 
 
+StatusCategory = Literal["missing", "needs_update", "up_to_date", "root_feature"]
+
+# Status display configuration
+_STATUS_ICONS: dict[StatusCategory, str] = {
+    "missing": "[red]✗[/red]",
+    "root_feature": "[blue]○[/blue]",
+    "needs_update": "[yellow]⚠[/yellow]",
+    "up_to_date": "[green]✓[/green]",
+}
+
+_STATUS_TEXTS: dict[StatusCategory, str] = {
+    "missing": "missing metadata",
+    "root_feature": "root feature",
+    "needs_update": "needs update",
+    "up_to_date": "up-to-date",
+}
+
+
 class FeatureMetadataStatus(BaseModel):
     """Status information for feature metadata in a metadata store.
 
@@ -61,48 +79,32 @@ class FeatureMetadataStatus(BaseModel):
         description="Whether this is a root feature (no upstream dependencies)",
     )
 
-    def format_status_line(
-        self,
-        *,
-        status_icon: str | None = None,
-        status_text: str | None = None,
-    ) -> str:
-        """Format a status line for display.
-
-        Args:
-            status_icon: Optional custom icon (defaults to auto-detected icon)
-            status_text: Optional custom text (defaults to auto-detected text)
-
-        Returns:
-            Formatted status line string
-        """
-        # Auto-detect status if not provided
-        if status_icon is None or status_text is None:
-            if not self.metadata_exists:
-                status_icon = "[red]✗[/red]"
-                status_text = "missing metadata"
-            elif self.is_root_feature:
-                # Root features: can't determine update status without samples
-                status_icon = "[blue]○[/blue]"
-                status_text = "root feature"
-            elif self.needs_update:
-                status_icon = "[yellow]⚠[/yellow]"
-                status_text = "needs update"
-            else:
-                status_icon = "[green]✓[/green]"
-                status_text = "up-to-date"
-
-        # For root features, don't show added/changed counts (they're not meaningful)
+    @property
+    def status_category(self) -> StatusCategory:
+        """Compute the status category from current state."""
+        if not self.metadata_exists:
+            return "missing"
         if self.is_root_feature:
-            return (
-                f"{status_icon} {self.feature_key.to_string()} "
-                f"(rows: {self.row_count}) — {status_text}"
-            )
+            return "root_feature"
+        if self.needs_update:
+            return "needs_update"
+        return "up_to_date"
+
+    def format_status_line(self) -> str:
+        """Format a status line for display with Rich markup."""
+        category = self.status_category
+        icon = _STATUS_ICONS[category]
+        text = _STATUS_TEXTS[category]
+        key = self.feature_key.to_string()
+
+        # Root features: don't show added/changed counts (not meaningful)
+        if self.is_root_feature:
+            return f"{icon} {key} (rows: {self.row_count}) — {text}"
 
         return (
-            f"{status_icon} {self.feature_key.to_string()} "
+            f"{icon} {key} "
             f"(rows: {self.row_count}, added: {self.added_count}, "
-            f"changed: {self.changed_count}) — {status_text}"
+            f"changed: {self.changed_count}) — {text}"
         )
 
 
@@ -116,16 +118,10 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
     status: FeatureMetadataStatus
     lazy_increment: LazyIncrement | None
 
-    def _status_category(
-        self,
-    ) -> Literal["missing", "needs_update", "up_to_date", "root_feature"]:
-        if not self.status.metadata_exists:
-            return "missing"
-        if self.status.is_root_feature:
-            return "root_feature"
-        if self.status.needs_update:
-            return "needs_update"
-        return "up_to_date"
+    @property
+    def status_category(self) -> StatusCategory:
+        """Delegate to the status model's category."""
+        return self.status.status_category
 
     def sample_details(
         self,
@@ -169,7 +165,7 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
 
         return FullFeatureMetadataRepresentation(
             feature_key=self.status.feature_key.to_string(),
-            status=self._status_category(),
+            status=self.status_category,
             needs_update=self.status.needs_update,
             metadata_exists=self.status.metadata_exists,
             rows=self.status.row_count,
