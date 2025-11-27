@@ -32,6 +32,10 @@ Learn more about the integration and its configuration [here](../../../integrati
 
 ---
 
+::: metaxy.ext.dagster.utils.build_feature_info_metadata
+
+---
+
 # Resources
 
 ::: metaxy.ext.dagster.MetaxyIOManager
@@ -64,7 +68,7 @@ Learn more about the integration and its configuration [here](../../../integrati
 
 ::: metaxy.ext.dagster.DAGSTER_METAXY_KIND
 
-::: metaxy.ext.dagster.DAGSTER_METAXY_METADATA_METADATA_KEY
+::: metaxy.ext.dagster.DAGSTER_METAXY_INFO_METADATA_KEY
 
 ::: metaxy.ext.dagster.DAGSTER_METAXY_PARTITION_KEY
 

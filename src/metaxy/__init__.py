@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from metaxy._version import __version__
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.entrypoints import (
     load_features,
@@ -165,4 +166,5 @@ __all__ = [
     "ValidatedFieldKeyAdapter",
     "ValidatedFeatureKeySequenceAdapter",
     "ValidatedFieldKeySequenceAdapter",
+    "__version__",
 ]

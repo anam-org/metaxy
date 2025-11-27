@@ -10,8 +10,8 @@ from syrupy.assertion import SnapshotAssertion
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
+    DAGSTER_METAXY_INFO_METADATA_KEY,
     DAGSTER_METAXY_KIND,
-    DAGSTER_METAXY_METADATA_METADATA_KEY,
     DAGSTER_METAXY_PROJECT_TAG_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
@@ -167,10 +167,10 @@ class TestMetaxifyBasic:
         assert len(asset_spec.kinds) == 3
         assert DAGSTER_METAXY_KIND not in asset_spec.kinds
 
-    def test_metaxify_injects_feature_metadata(
+    def test_metaxify_injects_feature_info(
         self, upstream_feature: type[mx.BaseFeature]
     ):
-        """Test that metaxify injects feature spec metadata under DAGSTER_METAXY_METADATA_METADATA_KEY."""
+        """Test that metaxify injects feature info under DAGSTER_METAXY_INFO_METADATA_KEY."""
 
         @metaxify()
         @dg.asset(metadata={"metaxy/feature": "test/upstream"})
@@ -178,14 +178,17 @@ class TestMetaxifyBasic:
             pass
 
         asset_spec = list(my_asset.specs)[0]
-        # Feature spec metadata should be injected under the namespaced key
-        assert DAGSTER_METAXY_METADATA_METADATA_KEY in asset_spec.metadata
-        assert asset_spec.metadata[DAGSTER_METAXY_METADATA_METADATA_KEY] == {}
+        # Feature info should be injected under the namespaced key
+        assert DAGSTER_METAXY_INFO_METADATA_KEY in asset_spec.metadata
+        info = asset_spec.metadata[DAGSTER_METAXY_INFO_METADATA_KEY]
+        assert "feature" in info
+        assert "metaxy" in info
+        assert info["feature"]["spec"]["key"] == ["test", "upstream"]
 
-    def test_metaxify_injects_feature_metadata_with_content(
+    def test_metaxify_injects_feature_info_with_metadata(
         self, feature_with_group_name: type[mx.BaseFeature]
     ):
-        """Test that metaxify injects non-empty feature spec metadata."""
+        """Test that metaxify injects feature info including feature spec metadata."""
 
         @metaxify()
         @dg.asset(metadata={"metaxy/feature": "test/grouped"})
@@ -193,13 +196,13 @@ class TestMetaxifyBasic:
             pass
 
         asset_spec = list(my_asset.specs)[0]
-        # Feature spec metadata should include the dagster/attributes
-        assert DAGSTER_METAXY_METADATA_METADATA_KEY in asset_spec.metadata
-        injected_metadata = asset_spec.metadata[DAGSTER_METAXY_METADATA_METADATA_KEY]
-        assert METAXY_DAGSTER_METADATA_KEY in injected_metadata
-        assert injected_metadata[METAXY_DAGSTER_METADATA_KEY] == {
-            "group_name": "my_group"
-        }
+        # Feature info should be injected and include the spec metadata
+        assert DAGSTER_METAXY_INFO_METADATA_KEY in asset_spec.metadata
+        info = asset_spec.metadata[DAGSTER_METAXY_INFO_METADATA_KEY]
+        # Feature spec metadata should be inside the spec
+        spec_metadata = info["feature"]["spec"]["metadata"]
+        assert METAXY_DAGSTER_METADATA_KEY in spec_metadata
+        assert spec_metadata[METAXY_DAGSTER_METADATA_KEY] == {"group_name": "my_group"}
 
 
 class TestMetaxifyTags:
@@ -1411,8 +1414,8 @@ class TestMetaxifyMultiAsset:
         assert DAGSTER_METAXY_KIND in spec_b.kinds
 
         # Both should have metaxy metadata
-        assert DAGSTER_METAXY_METADATA_METADATA_KEY in spec_a.metadata
-        assert DAGSTER_METAXY_METADATA_METADATA_KEY in spec_b.metadata
+        assert DAGSTER_METAXY_INFO_METADATA_KEY in spec_a.metadata
+        assert DAGSTER_METAXY_INFO_METADATA_KEY in spec_b.metadata
 
     def test_metaxify_multi_asset_partial_metadata(
         self,
@@ -1439,11 +1442,11 @@ class TestMetaxifyMultiAsset:
 
         # Only spec_a should have metaxy enrichment
         assert DAGSTER_METAXY_KIND in spec_a.kinds
-        assert DAGSTER_METAXY_METADATA_METADATA_KEY in spec_a.metadata
+        assert DAGSTER_METAXY_INFO_METADATA_KEY in spec_a.metadata
 
         # spec_b should be unchanged
         assert DAGSTER_METAXY_KIND not in spec_b.kinds
-        assert DAGSTER_METAXY_METADATA_METADATA_KEY not in spec_b.metadata
+        assert DAGSTER_METAXY_INFO_METADATA_KEY not in spec_b.metadata
 
     def test_metaxify_allows_feature_arg_on_single_output_multi_asset(
         self,
@@ -1543,7 +1546,7 @@ class TestMetaxifyWithInputDefinitions:
         # Should not raise AttributeError: 'InputDefinition' object has no attribute 'to_definition'
         asset_spec = list(my_asset.specs)[0]
         assert DAGSTER_METAXY_KIND in asset_spec.kinds
-        assert DAGSTER_METAXY_METADATA_METADATA_KEY in asset_spec.metadata
+        assert DAGSTER_METAXY_INFO_METADATA_KEY in asset_spec.metadata
 
     def test_metaxify_with_multiple_asset_ins(
         self,
@@ -1566,7 +1569,7 @@ class TestMetaxifyWithInputDefinitions:
 
         asset_spec = list(my_asset.specs)[0]
         assert DAGSTER_METAXY_KIND in asset_spec.kinds
-        assert DAGSTER_METAXY_METADATA_METADATA_KEY in asset_spec.metadata
+        assert DAGSTER_METAXY_INFO_METADATA_KEY in asset_spec.metadata
 
     def test_metaxify_with_asset_in_and_key_replacement(
         self,

@@ -28,7 +28,7 @@ METAXY_SNAPSHOT_VERSION = f"{SYSTEM_COLUMN_PREFIX}snapshot_version"
 """Hash of the entire feature graph snapshot (recorded during deployment)."""
 
 METAXY_FEATURE_SPEC_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_spec_version"
-"""Hash of the complete feature specification (used for migration detection)."""
+"""Hash of the complete feature specification."""
 
 METAXY_FULL_DEFINITION_VERSION = f"{SYSTEM_COLUMN_PREFIX}full_definition_version"
 """Hash of the complete feature definition including Pydantic schema, feature spec, and project.

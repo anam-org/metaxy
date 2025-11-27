@@ -4,7 +4,7 @@ This module provides utilities for creating Dagster types that validate
 Metaxy feature outputs with proper metadata injection (table schema, etc.).
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any
 
 import dagster as dg
@@ -14,8 +14,10 @@ import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_COLUMN_LINEAGE_METADATA_KEY,
     DAGSTER_COLUMN_SCHEMA_METADATA_KEY,
+    DAGSTER_METAXY_INFO_METADATA_KEY,
 )
 from metaxy.ext.dagster.table_metadata import build_column_lineage, build_column_schema
+from metaxy.ext.dagster.utils import build_feature_info_metadata
 
 
 def _create_type_check_fn(
@@ -63,6 +65,7 @@ def feature_to_dagster_type(
     description: str | None = None,
     inject_column_schema: bool = True,
     inject_column_lineage: bool = True,
+    metadata: Mapping[str, Any] | None = None,
 ) -> dg.DagsterType:
     """Build a Dagster type from a Metaxy feature.
 
@@ -82,6 +85,7 @@ def feature_to_dagster_type(
             The schema is derived from Pydantic model fields.
         inject_column_lineage: Whether to inject column lineage as metadata.
             The lineage is derived from feature dependencies.
+        metadata: Optional custom metadata to inject into the DagsterType.
 
     Returns:
         A DagsterType configured for the Metaxy feature with appropriate
@@ -126,24 +130,27 @@ def feature_to_dagster_type(
         else:
             description = f"Metaxy feature '{feature_key.to_string()}'."
 
-    # Build metadata
-    metadata: dict[str, Any] = {}
+    # Build metadata - start with custom metadata if provided
+    final_metadata: dict[str, Any] = dict(metadata) if metadata else {}
+    final_metadata[DAGSTER_METAXY_INFO_METADATA_KEY] = build_feature_info_metadata(
+        feature_key
+    )
     if inject_column_schema:
         column_schema = build_column_schema(feature_cls)
         if column_schema is not None:
-            metadata[DAGSTER_COLUMN_SCHEMA_METADATA_KEY] = column_schema
+            final_metadata[DAGSTER_COLUMN_SCHEMA_METADATA_KEY] = column_schema
 
     if inject_column_lineage:
         column_lineage = build_column_lineage(feature_cls)
         if column_lineage is not None:
-            metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY] = column_lineage
+            final_metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY] = column_lineage
 
     dagster_type = dg.DagsterType(
         type_check_fn=_create_type_check_fn(feature_key),
         name=type_name,
         description=description,
         typing_type=MetaxyOutput,
-        metadata=metadata if metadata else None,
+        metadata=final_metadata,
     )
 
     return dagster_type
