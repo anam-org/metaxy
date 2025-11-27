@@ -202,6 +202,8 @@ def test_lancedb_display_masks_credentials(tmp_path, monkeypatch) -> None:
 
     # Check display before opening (when _is_open is False)
     display = store.display()
+    # Username should be preserved, password should be masked
+    assert "admin" in display
     assert "password" not in display, "Password should be masked"
     assert "admin:***@localhost" in display, (
         "Username should be preserved, password masked"

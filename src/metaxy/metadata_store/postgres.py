@@ -321,7 +321,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         # Ensure pgcrypto is ready before native provenance tracking
         self._ensure_pgcrypto_ready_for_native_provenance()
 
-        # Use parent implementation from JsonCompatStore
+        # Use parent implementation from IbisJsonCompatStore
         with super()._create_versioning_engine(plan) as engine:
             yield engine
 
@@ -498,27 +498,20 @@ class PostgresMetadataStore(IbisJsonCompatStore):
             METAXY_PROVENANCE,
         )
 
-        # Use robust table checking
+        # Use IbisJsonCompatStore to read and unpack JSON columns.
         feature_key = self._resolve_feature_key(feature)
-        table_name = feature_key.table_name
-
-        if table_name not in self._list_tables_robustly():
+        lazy_frame = super().read_metadata_in_store(
+            feature,
+            feature_version=feature_version,
+            filters=filters,
+            columns=columns,
+            **kwargs,
+        )
+        if lazy_frame is None:
             return None
 
-        table = self.conn.table(table_name)
-        lazy_frame: nw.LazyFrame[Any] = nw.from_native(table, eager_only=False)
-
-        if feature_version is not None:
-            lazy_frame = lazy_frame.filter(
-                nw.col("metaxy_feature_version") == feature_version  # ty: ignore[invalid-argument-type]
-            )
-
-        if filters is not None:
-            for filter_expr in filters:
-                lazy_frame = lazy_frame.filter(filter_expr)  # ty: ignore[invalid-argument-type]
-
-        if columns is not None:
-            lazy_frame = lazy_frame.select(columns)
+        if self._is_system_table(feature_key):
+            return lazy_frame
 
         # Ensure flattened provenance/data_version columns exist for this feature's fields
         plan = self._resolve_feature_plan(feature_key)
