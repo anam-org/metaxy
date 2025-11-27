@@ -1,8 +1,8 @@
 import narwhals as nw
-from pydantic import Field
 
 import metaxy as mx
 
+# --8<-- [start:feature-definitions]
 # Upstream feature
 upstream_spec = mx.FeatureSpec(
     key="audio/embeddings",
@@ -12,10 +12,7 @@ upstream_spec = mx.FeatureSpec(
 
 
 class AudioEmbeddings(mx.BaseFeature, spec=upstream_spec):
-    """Embeddings produced with Whisper"""
-
-    audio_id: str = Field(description="Unique identifier for the audio")
-    properties: dict[str, str] = Field(description="Properties of the embedding")
+    audio_id: str
 
 
 # Downstream feature that depends on upstream
@@ -28,11 +25,12 @@ downstream_spec = mx.FeatureSpec(
 
 
 class AudioClusters(mx.BaseFeature, spec=downstream_spec):
-    """Audio clusters calculated with UMAP"""
+    audio_id: str
+    mean: float
+    std: float
 
-    audio_id: str = Field(description="Unique identifier for the audio")
-    mean: float = Field(description="Mean embedding value")
-    num_dim: int = Field(description="Number of dimensions in the embedding")
+
+# --8<-- [end:feature-definitions]
 
 
 import dagster as dg
@@ -41,6 +39,7 @@ import polars as pl
 import metaxy.ext.dagster as mxd
 
 
+# --8<-- [start:root-asset]
 @mxd.metaxify
 @dg.asset(
     metadata={"metaxy/feature": "audio/embeddings"},
@@ -76,6 +75,10 @@ def audio_embeddings(
     return df
 
 
+# --8<-- [end:root-asset]
+
+
+# --8<-- [start:downstream-asset]
 @mxd.metaxify
 @dg.asset(
     metadata={"metaxy/feature": "audio/clusters"},
@@ -90,6 +93,10 @@ def audio_clusters(
     ...
 
 
+# --8<-- [end:downstream-asset]
+
+
+# --8<-- [start:non-metaxy-downstream]
 @dg.asset(
     ins={
         "clusters": dg.AssetIn(
@@ -104,13 +111,17 @@ def cluster_report(clusters: nw.LazyFrame):
     return {"total_clusters": df.select("cluster_id").n_unique()}
 
 
+# --8<-- [end:non-metaxy-downstream]
+
+
+# --8<-- [start:dagster-definitions]
 store = mxd.MetaxyStoreFromConfigResource(name="dev")
 metaxy_io_manager = mxd.MetaxyIOManager(store=store)
 
 
 @dg.definitions
 def definitions():
-    mx.init_metaxy()
+    mx.init_metaxy()  # (1)!
 
     return dg.Definitions(
         assets=[
@@ -123,3 +134,6 @@ def definitions():
             "metaxy_io_manager": metaxy_io_manager,
         },
     )
+
+
+# --8<-- [end:dagster-definitions]
