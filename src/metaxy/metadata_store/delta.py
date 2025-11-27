@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from functools import cached_property
@@ -186,11 +185,14 @@ class DeltaMetadataStore(MetadataStore):
         """Return the URI/path used by deltalake for this feature."""
         if self.layout == "nested":
             # Nested layout: store in directories like "part1/part2/part3"
-            table_path = "/".join(feature_key.parts)
+            # Filter out empty parts to avoid creating absolute paths that would
+            # cause os.path.join to discard the root_uri
+            table_path = "/".join(part for part in feature_key.parts if part)
         else:
-            # Flat layout (default): store in directories like "part1__part2__part3"
+            # Flat layout: store in directories like "part1__part2__part3"
+            # table_name already handles this correctly via __join
             table_path = feature_key.table_name
-        return os.path.join(self._root_uri, table_path + ".delta")
+        return f"{self._root_uri}/{table_path}.delta"
 
     def _table_exists(self, table_uri: str) -> bool:
         """Check whether the provided URI already contains a Delta table.
