@@ -46,21 +46,23 @@ This integration provides:
 
 - [`metaxify`][metaxy.ext.dagster.metaxify.metaxify] - a decorator that enriches Dagster asset definitions with Metaxy information such as upstream dependencies, description, metadata, code version, table schema, column lineage, and so on.
 
-- [`observable_metaxy_asset`][metaxy.ext.dagster.observable.observable_metaxy_asset] - a decorator that creates observable source assets for monitoring external Metaxy features.
-
-- [`generate_materialize_results`][metaxy.ext.dagster.utils.generate_materialize_results] / [`generate_observe_results`][metaxy.ext.dagster.utils.generate_observe_results] - generators for yielding `dagster.MaterializeResult` or `dagster.ObserveResult` events from Dagster assets (and multi-assets), with automatic topological ordering, partition filtering, logging row counts, and setting [Dagster data versions](https://docs.dagster.io/guides/build/assets/asset-versioning-and-caching#step-three-computing-your-own-data-versions).
-
 - [`MetaxyStoreFromConfigResource`][metaxy.ext.dagster.MetaxyStoreFromConfigResource] - a resource that provides access to [`MetadataStore`][metaxy.MetadataStore]
 
 - [`MetaxyIOManager`][metaxy.ext.dagster.io_manager.MetaxyIOManager] - an IO manager that reads and writes Dagster assets that are Metaxy features
+
+- [`generate_materialize_results`][metaxy.ext.dagster.utils.generate_materialize_results] / [`generate_observe_results`][metaxy.ext.dagster.utils.generate_observe_results] - generators for yielding `dagster.MaterializeResult` or `dagster.ObserveResult` events from Dagster assets (and multi-assets), with automatic topological ordering, partition filtering, logging row counts, and setting [Dagster data versions](https://docs.dagster.io/guides/build/assets/asset-versioning-and-caching#step-three-computing-your-own-data-versions).
+
+- [`observable_metaxy_asset`][metaxy.ext.dagster.observable.observable_metaxy_asset] - a decorator that creates observable source assets for monitoring external Metaxy features.
 
 ## Quick Start
 
 ### 1. Define Metaxy Features
 
+<!-- dprint-ignore-start -->
 ```python {title="defs.py"}
---8 < --"example-dagster/src/example_dagster/definitions.py:feature-definitions"
+--8<-- "example-dagster/src/example_dagster/definitions.py:feature-definitions"
 ```
+<!-- dprint-ignore-end -->
 
 ### 2. Define Dagster Assets
 
@@ -91,9 +93,11 @@ This integration provides:
 
 ### 3. Create Dagster Definitions
 
+<!-- dprint-ignore-start -->
 ```py {title="defs.py"}
---8 < --"example-dagster/src/example_dagster/definitions.py:dagster-definitions"
+--8<--  "example-dagster/src/example_dagster/definitions.py:dagster-definitions"
 ```
+<!-- dprint-ignore-end -->
 
 1. This loads Metaxy configuration and feature definitions
 
