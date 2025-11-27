@@ -1,7 +1,7 @@
 # Metaxy
 
 <p align="center">
-  <img src="assets/metaxy.svg" alt="Metaxy Logo" width="100"/>
+  <img src="docs/assets/metaxy.svg" alt="Metaxy Logo" width="100"/>
 </p>
 
 ---

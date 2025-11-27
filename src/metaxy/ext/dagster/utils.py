@@ -10,7 +10,8 @@ from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_PARTITION_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
-from metaxy.models.constants import METAXY_CREATED_AT
+from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
+from metaxy.models.constants import METAXY_CREATED_AT, METAXY_MATERIALIZATION_ID
 
 
 class FeatureStats(NamedTuple):
@@ -152,12 +153,12 @@ def get_asset_key_for_metaxy_feature_spec(
     return dg.AssetKey(list(feature_spec.key.parts))
 
 
-def generate_materialization_events(
+def generate_materialize_results(
     context: dg.AssetExecutionContext,
-    store: mx.MetadataStore,
+    store: mx.MetadataStore | MetaxyStoreFromConfigResource,
     specs: Sequence[dg.AssetSpec],
 ) -> Iterator[dg.MaterializeResult[None]]:
-    """Generate [dagster.MaterializeResult][] events for assets in topological order.
+    """Generate `dagster.MaterializeResult` events for assets in topological order.
 
     Yields a `MaterializeResult` for each asset spec, sorted by their associated
     Metaxy features in topological order (dependencies before dependents).
@@ -182,7 +183,7 @@ def generate_materialization_events(
         @dg.multi_asset(specs=specs)
         def my_multi_asset(context: dg.AssetExecutionContext, store: mx.MetadataStore):
             # ... compute and write data ...
-            yield from generate_materialization_events(context, store, specs)
+            yield from generate_materialize_results(context, store, specs)
         ```
     """
     # Build mapping from feature key to asset spec
@@ -202,26 +203,40 @@ def generate_materialization_events(
 
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
-        filters = get_partition_filter(context, asset_spec)
+        partition_filters = get_partition_filter(context, asset_spec)
 
         with store:
-            lazy_df = store.read_metadata(key, filters=filters)
+            # Get total stats (partition-filtered)
+            lazy_df = store.read_metadata(key, filters=partition_filters)
             stats = compute_stats_from_lazy_frame(lazy_df)
+
+            # Get materialized-in-run count if materialization_id is set
+            materialized_in_run: int | None = None
+            if store.materialization_id is not None:
+                mat_filters = partition_filters + [
+                    nw.col(METAXY_MATERIALIZATION_ID) == store.materialization_id
+                ]
+                mat_df = store.read_metadata(key, filters=mat_filters)
+                materialized_in_run = mat_df.select(nw.len()).collect().item(0, 0)
+
+        metadata: dict[str, int] = {"dagster/row_count": stats.row_count}
+        if materialized_in_run is not None:
+            metadata["metaxy/materialized_in_run"] = materialized_in_run
 
         yield dg.MaterializeResult(
             value=None,
             asset_key=asset_spec.key,
-            metadata={"dagster/row_count": stats.row_count},
+            metadata=metadata,
             data_version=stats.data_version,
         )
 
 
-def generate_observation_events(
+def generate_observe_results(
     context: dg.AssetExecutionContext,
-    store: mx.MetadataStore,
+    store: mx.MetadataStore | MetaxyStoreFromConfigResource,
     specs: Sequence[dg.AssetSpec],
 ) -> Iterator[dg.ObserveResult]:
-    """Generate [dagster.ObserveResult][] events for assets in topological order.
+    """Generate `dagster.ObserveResult` events for assets in topological order.
 
     Yields an `ObserveResult` for each asset spec, sorted by their associated
     Metaxy features in topological order.
@@ -243,9 +258,9 @@ def generate_observation_events(
         ]
 
         @metaxify
-        @dg.multi_asset(specs=specs)
+        @dg.multi_observable_source_asset(specs=specs)
         def my_observable_assets(context: dg.AssetExecutionContext, store: mx.MetadataStore):
-            yield from generate_observation_events(context, store, specs)
+            yield from generate_observe_results(context, store, specs)
         ```
     """
     # Build mapping from feature key to asset spec

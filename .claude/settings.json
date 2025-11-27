@@ -15,7 +15,7 @@
           },
           {
             "type": "prompt",
-            "prompt": "You are evaluating whether Claude should stop working. Context: $ARGUMENTS\n\nAnalyze the conversation and determine if:\n1. All user-requested tasks are complete\n2. Any errors need to be addressed\n3. Follow-up work is needed\n\nRespond with JSON: {\"decision\": \"approve\" or \"block\", \"reason\": \"your explanation\"}",
+            "prompt": "Evaluate whether Claude should stop working. If there are any linter errors left, fix them.",
             "timeout": 30
           }
         ]
