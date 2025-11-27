@@ -33,9 +33,11 @@ from metaxy.metadata_store.warnings import (
 )
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
+    METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_VERSION,
+    METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
@@ -57,6 +59,46 @@ if TYPE_CHECKING:
 
 VersioningEngineT = TypeVar("VersioningEngineT", bound=VersioningEngine)
 VersioningEngineOptions = Literal["auto", "native", "polars"]
+
+# Mapping of system columns to their expected Narwhals dtypes
+# Used to cast Null-typed columns to correct types
+# Note: Struct columns (METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD) are not cast
+_SYSTEM_COLUMN_DTYPES = {
+    METAXY_PROVENANCE: nw.String,
+    METAXY_FEATURE_VERSION: nw.String,
+    METAXY_SNAPSHOT_VERSION: nw.String,
+    METAXY_DATA_VERSION: nw.String,
+    METAXY_CREATED_AT: nw.Datetime,
+    METAXY_MATERIALIZATION_ID: nw.String,
+}
+
+
+def _cast_present_system_columns(
+    df: nw.DataFrame[Any] | nw.LazyFrame[Any],
+) -> nw.DataFrame[Any] | nw.LazyFrame[Any]:
+    """Cast system columns with Null/Unknown dtype to their correct types.
+
+    This handles edge cases where empty DataFrames or certain operations
+    result in Null-typed columns (represented as nw.Unknown in Narwhals)
+    that break downstream processing.
+
+    Args:
+        df: Narwhals DataFrame or LazyFrame
+
+    Returns:
+        DataFrame with system columns cast to correct types
+    """
+    schema = df.collect_schema()
+    columns_to_cast = []
+
+    for col_name, expected_dtype in _SYSTEM_COLUMN_DTYPES.items():
+        if col_name in schema and schema[col_name] == nw.Unknown:
+            columns_to_cast.append(nw.col(col_name).cast(expected_dtype))
+
+    if columns_to_cast:
+        df = df.with_columns(columns_to_cast)
+
+    return df
 
 
 class MetadataStore(ABC):
@@ -1183,6 +1225,11 @@ class MetadataStore(ABC):
                 struct_column=METAXY_DATA_VERSION_BY_FIELD,
                 hash_column=METAXY_DATA_VERSION,
             )
+
+        # Cast system columns with Null dtype to their correct types
+        # This handles edge cases where empty DataFrames or certain operations
+        # result in Null-typed columns that break downstream processing
+        df = _cast_present_system_columns(df)
 
         return df
 
