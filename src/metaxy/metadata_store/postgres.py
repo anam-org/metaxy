@@ -309,7 +309,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         # Ensure pgcrypto is ready before native provenance tracking
         self._ensure_pgcrypto_ready_for_native_provenance()
 
-        # Use parent implementation from JsonCompatStore
+        # Use parent implementation from IbisJsonCompatStore
         with super()._create_versioning_engine(plan) as engine:
             yield engine
 
@@ -374,6 +374,9 @@ class PostgresMetadataStore(IbisJsonCompatStore):
             return lf
 
         feature_key = self._resolve_feature_key(feature)
+        if self._is_system_table(feature_key):
+            return lf
+
         plan = self._resolve_feature_plan(feature_key)
 
         # Ensure flattened provenance/data_version columns exist for this feature's fields
