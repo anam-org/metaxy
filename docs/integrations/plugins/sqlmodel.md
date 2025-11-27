@@ -110,6 +110,10 @@ The `filter_feature_sqlmodel_metadata()` function:
 
 See the [SQLAlchemy integration guide](sqlalchemy.md#alembic-integration) for complete Alembic setup examples.
 
+!!! tip "Separate Alembic Version Tables"
+
+    When managing both system tables and feature tables with Alembic, use separate version tables to avoid conflicts. See the [Multi-Store Setup](sqlalchemy.md#multi-store-setup) section for configuration details.
+
 ## Configuration Options
 
 <!-- dprint-ignore-start -->

@@ -81,6 +81,50 @@ script_location = alembic/dev
 script_location = alembic/prod
 ```
 
+!!! tip "Separate Alembic Version Tables"
+
+    When using multiple Alembic environments (e.g., system tables vs feature tables), configure separate version tables to avoid conflicts. Set up separate script locations in `alembic.ini`:
+
+    ```ini title="alembic.ini"
+    [dev:metaxy_system]
+    script_location = alembic/dev/system
+
+    [dev:metaxy_features]
+    script_location = alembic/dev/features
+    ```
+
+    Then pass `version_table` to `context.configure()` in each env.py:
+
+    ```python title="alembic/dev/system/env.py"
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        version_table="alembic_version_metaxy_system",
+    )
+    ```
+
+    ```python title="alembic/dev/features/env.py"
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        version_table="alembic_version_metaxy_features",
+    )
+    ```
+
+    Each environment now tracks migrations independently:
+
+    - `alembic_version_metaxy_system` for system tables
+    - `alembic_version_metaxy_features` for feature tables
+
+    Create and run migrations separately:
+
+    ```bash
+    alembic -n dev:metaxy_system revision --autogenerate -m "initialize"
+    alembic -n dev:metaxy_features revision --autogenerate -m "initialize"
+    alembic -n dev:metaxy_system upgrade head
+    alembic -n dev:metaxy_features upgrade head
+    ```
+
 The two environments now can be managed independently:
 
 === "dev"
