@@ -5,3 +5,4 @@ DAGSTER_METAXY_PROJECT_TAG_KEY = "metaxy/project"
 
 METAXY_DAGSTER_METADATA_KEY = "dagster/attributes"
 DAGSTER_METAXY_METADATA_METADATA_KEY = "metaxy/metadata"
+DAGSTER_COLUMN_SCHEMA_METADATA_KEY = "dagster/column_schema"
