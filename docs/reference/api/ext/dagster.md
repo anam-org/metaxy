@@ -16,6 +16,16 @@ Learn more about the integration and its configuration [here](../../../integrati
 
 ---
 
+## Dagster Event Generators
+
+::: metaxy.ext.dagster.utils.generate_materialize_results
+
+---
+
+::: metaxy.ext.dagster.utils.generate_observe_results
+
+---
+
 ## Resources
 
 ::: metaxy.ext.dagster.MetaxyIOManager
@@ -23,6 +33,28 @@ Learn more about the integration and its configuration [here](../../../integrati
 ---
 
 ::: metaxy.ext.dagster.MetaxyStoreFromConfigResource
+
+---
+
+## Helpers
+
+::: metaxy.ext.dagster.utils.FeatureStats
+
+---
+
+::: metaxy.ext.dagster.utils.compute_feature_stats
+
+---
+
+::: metaxy.ext.dagster.utils.compute_stats_from_lazy_frame
+
+---
+
+::: metaxy.ext.dagster.utils.get_partition_filter
+
+---
+
+::: metaxy.ext.dagster.utils.build_partition_filter
 
 ---
 

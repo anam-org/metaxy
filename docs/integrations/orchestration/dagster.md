@@ -48,6 +48,8 @@ This integration provides:
 
 - [`observable_metaxy_asset`][metaxy.ext.dagster.observable.observable_metaxy_asset] - a decorator that creates observable source assets for monitoring external Metaxy features.
 
+- [`generate_materialize_results`][metaxy.ext.dagster.utils.generate_materialize_results] / [`generate_observe_results`][metaxy.ext.dagster.utils.generate_observe_results] - generators for yielding `dagster.MaterializeResult` or `dagster.ObserveResult` events from Dagster assets (and multi-assets), with automatic topological ordering, partition filtering, logging row counts, and setting [Dagster data versions](https://docs.dagster.io/guides/build/assets/asset-versioning-and-caching#step-three-computing-your-own-data-versions).
+
 - [`MetaxyStoreFromConfigResource`][metaxy.ext.dagster.MetaxyStoreFromConfigResource] - a resource that provides access to [`MetadataStore`][metaxy.MetadataStore]
 
 - [`MetaxyIOManager`][metaxy.ext.dagster.io_manager.MetaxyIOManager] - an IO manager that reads and writes Dagster assets that are Metaxy features

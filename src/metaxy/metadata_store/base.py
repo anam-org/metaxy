@@ -144,6 +144,15 @@ class MetadataStore(ABC):
     def hash_truncation_length(self) -> int:
         return MetaxyConfig.get().hash_truncation_length or 64
 
+    @property
+    def materialization_id(self) -> str | None:
+        """The external orchestration ID for this store instance.
+
+        If set, all metadata writes include this ID in the `metaxy_materialization_id` column,
+        allowing filtering of rows written during a specific materialization run.
+        """
+        return self._materialization_id
+
     @overload
     def resolve_update(
         self,

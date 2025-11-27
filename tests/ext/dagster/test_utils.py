@@ -1,4 +1,4 @@
-"""Tests for dagster utils: generate_materialization_events and generate_observation_events."""
+"""Tests for dagster utils: generate_materialize_results and generate_observe_results."""
 
 from typing import Any
 
@@ -90,7 +90,7 @@ def _write_feature_data(
 
 
 class TestGenerateMaterializationEvents:
-    """Tests for generate_materialization_events."""
+    """Tests for generate_materialize_results."""
 
     def test_yields_events_in_topological_order(
         self,
@@ -115,9 +115,7 @@ class TestGenerateMaterializationEvents:
         ]
 
         context = dg.build_asset_context()
-        events = list(
-            mxd.generate_materialization_events(context, metadata_store, specs)
-        )
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
 
         assert len(events) == 3
 
@@ -143,9 +141,7 @@ class TestGenerateMaterializationEvents:
         specs = [dg.AssetSpec("my_asset", metadata={"metaxy/feature": "test/utils/a"})]
 
         context = dg.build_asset_context()
-        events = list(
-            mxd.generate_materialization_events(context, metadata_store, specs)
-        )
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
@@ -174,9 +170,7 @@ class TestGenerateMaterializationEvents:
         ]
 
         context = dg.build_asset_context()
-        events = list(
-            mxd.generate_materialization_events(context, metadata_store, specs)
-        )
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].asset_key == dg.AssetKey(["custom", "asset", "key"])
@@ -191,11 +185,11 @@ class TestGenerateMaterializationEvents:
 
         context = dg.build_asset_context()
         with pytest.raises(ValueError, match="missing 'metaxy/feature' metadata"):
-            list(mxd.generate_materialization_events(context, metadata_store, specs))
+            list(mxd.generate_materialize_results(context, metadata_store, specs))
 
 
 class TestGenerateObservationEvents:
-    """Tests for generate_observation_events."""
+    """Tests for generate_observe_results."""
 
     def test_yields_events_in_topological_order(
         self,
@@ -220,7 +214,7 @@ class TestGenerateObservationEvents:
         ]
 
         context = dg.build_asset_context()
-        events = list(mxd.generate_observation_events(context, metadata_store, specs))
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
 
         assert len(events) == 3
 
@@ -246,7 +240,7 @@ class TestGenerateObservationEvents:
         specs = [dg.AssetSpec("my_asset", metadata={"metaxy/feature": "test/utils/a"})]
 
         context = dg.build_asset_context()
-        events = list(mxd.generate_observation_events(context, metadata_store, specs))
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
@@ -273,7 +267,7 @@ class TestGenerateObservationEvents:
         ]
 
         context = dg.build_asset_context()
-        events = list(mxd.generate_observation_events(context, metadata_store, specs))
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].asset_key == dg.AssetKey(["custom", "key"])
@@ -288,7 +282,7 @@ class TestGenerateObservationEvents:
 
         context = dg.build_asset_context()
         with pytest.raises(ValueError, match="missing 'metaxy/feature' metadata"):
-            list(mxd.generate_observation_events(context, metadata_store, specs))
+            list(mxd.generate_observe_results(context, metadata_store, specs))
 
 
 class TestPartitionedAssets:
@@ -391,9 +385,7 @@ class TestPartitionedAssets:
 
         # Test with partition "2024-01-01" (3 rows)
         context = dg.build_asset_context(partition_key="2024-01-01")
-        events = list(
-            mxd.generate_materialization_events(context, metadata_store, specs)
-        )
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
@@ -401,9 +393,7 @@ class TestPartitionedAssets:
 
         # Test with partition "2024-01-02" (2 rows)
         context = dg.build_asset_context(partition_key="2024-01-02")
-        events = list(
-            mxd.generate_materialization_events(context, metadata_store, specs)
-        )
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
@@ -448,7 +438,7 @@ class TestPartitionedAssets:
 
         # Test with partition "2024-01-01" (2 rows)
         context = dg.build_asset_context(partition_key="2024-01-01")
-        events = list(mxd.generate_observation_events(context, metadata_store, specs))
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
@@ -456,7 +446,7 @@ class TestPartitionedAssets:
 
         # Test with partition "2024-01-02" (4 rows)
         context = dg.build_asset_context(partition_key="2024-01-02")
-        events = list(mxd.generate_observation_events(context, metadata_store, specs))
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
@@ -498,11 +488,468 @@ class TestPartitionedAssets:
         ]
 
         context = dg.build_asset_context(partition_key="2024-01-01")
-        events = list(
-            mxd.generate_materialization_events(context, metadata_store, specs)
-        )
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
         # Without partition_by, should return all 5 rows
         assert events[0].metadata["dagster/row_count"] == 5
+
+
+class TestMultiAssetIntegration:
+    """Integration tests using actual @multi_asset decorator."""
+
+    def test_multi_asset_with_generate_materialize_results(
+        self,
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test generate_materialize_results within a real @multi_asset."""
+        # First write some data
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+        _write_feature_data(feature_b, ["4", "5"], resources, instance)
+
+        specs = [
+            dg.AssetSpec("multi_a", metadata={"metaxy/feature": "test/utils/a"}),
+            dg.AssetSpec("multi_b", metadata={"metaxy/feature": "test/utils/b"}),
+        ]
+
+        @dg.multi_asset(specs=specs)
+        def my_multi_asset(
+            context: dg.AssetExecutionContext,
+            store: mxd.MetaxyStoreFromConfigResource,
+        ):
+            yield from mxd.generate_materialize_results(context, store, specs)
+
+        result = dg.materialize(
+            [my_multi_asset], resources=resources, instance=instance
+        )
+        assert result.success
+
+        # Check materialization events via instance.fetch_materializations
+        mat_a = instance.fetch_materializations(dg.AssetKey("multi_a"), limit=1)
+        mat_b = instance.fetch_materializations(dg.AssetKey("multi_b"), limit=1)
+
+        assert len(mat_a.records) == 1
+        assert len(mat_b.records) == 1
+
+        # Verify row counts
+        assert (
+            mat_a.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 3
+        )
+        assert (
+            mat_b.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 2
+        )
+
+    def test_multi_asset_reports_materialized_in_run(
+        self,
+        feature_a: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that metaxy/materialized_in_run is reported when store has materialization_id."""
+        # Write data in run 1 (3 rows)
+        _write_feature_data(feature_a, ["r1", "r2", "r3"], resources, instance)
+
+        # Get run_id from the first materialization (run 1)
+        mat_run1 = instance.fetch_materializations(
+            dg.AssetKey(["test", "utils", "a"]), limit=1
+        )
+        run1_id = mat_run1.records[0].run_id
+
+        specs = [
+            dg.AssetSpec("mat_run_a", metadata={"metaxy/feature": "test/utils/a"}),
+        ]
+
+        @dg.multi_asset(specs=specs)
+        def my_multi_asset(
+            context: dg.AssetExecutionContext,
+            store: mxd.MetaxyStoreFromConfigResource,
+        ):
+            yield from mxd.generate_materialize_results(context, store, specs)
+
+        # Run 2: call generate_materialize_results (no new data written in this run)
+        result = dg.materialize(
+            [my_multi_asset], resources=resources, instance=instance
+        )
+        assert result.success
+
+        mat = instance.fetch_materializations(dg.AssetKey("mat_run_a"), limit=1)
+        assert len(mat.records) == 1
+
+        # Verify this is a different run than run 1
+        run2_id = mat.records[0].run_id
+        assert run2_id != run1_id
+
+        metadata = mat.records[0].asset_materialization.metadata  # pyright: ignore[reportOptionalMemberAccess]
+        # Total row count is 3
+        assert metadata["dagster/row_count"].value == 3
+        # metaxy/materialized_in_run should be present since the store has materialization_id
+        assert "metaxy/materialized_in_run" in metadata
+        # Data was written in run 1, so materialized_in_run should be 0 for run 2
+        assert metadata["metaxy/materialized_in_run"].value == 0
+
+
+class TestMultiObservableSourceAssetIntegration:
+    """Integration tests using actual @multi_observable_source_asset decorator."""
+
+    def test_multi_observable_source_asset_with_generate_observe_results(
+        self,
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test generate_observe_results within a real @multi_observable_source_asset."""
+        # First write some data
+        _write_feature_data(feature_a, ["1", "2", "3", "4"], resources, instance)
+        _write_feature_data(feature_b, ["5", "6"], resources, instance)
+
+        specs = [
+            dg.AssetSpec("obs_a", metadata={"metaxy/feature": "test/utils/a"}),
+            dg.AssetSpec("obs_b", metadata={"metaxy/feature": "test/utils/b"}),
+        ]
+
+        @dg.multi_observable_source_asset(specs=specs)
+        def my_observable_assets(
+            context: dg.AssetExecutionContext,
+            store: mxd.MetaxyStoreFromConfigResource,
+        ):
+            yield from mxd.generate_observe_results(context, store, specs)
+
+        # Create definitions and run observation
+        defs = dg.Definitions(
+            assets=[my_observable_assets],
+            resources=resources,
+        )
+
+        # Get the implicit job and execute it
+        job = defs.get_implicit_global_asset_job_def()
+        result = job.execute_in_process(instance=instance)
+        assert result.success
+
+        # Check observation events via instance.fetch_observations
+        obs_a = instance.fetch_observations(dg.AssetKey("obs_a"), limit=1)
+        obs_b = instance.fetch_observations(dg.AssetKey("obs_b"), limit=1)
+
+        assert len(obs_a.records) == 1
+        assert len(obs_b.records) == 1
+
+        # Verify row counts
+        assert (
+            obs_a.records[0].asset_observation.metadata["dagster/row_count"].value == 4  # pyright: ignore[reportOptionalMemberAccess]
+        )
+        assert (
+            obs_b.records[0].asset_observation.metadata["dagster/row_count"].value == 2  # pyright: ignore[reportOptionalMemberAccess]
+        )
+
+
+class TestPartitionedMultiAssetIntegration:
+    """Integration tests for partitioned multi-assets."""
+
+    @pytest.fixture
+    def partitions_def(self) -> dg.StaticPartitionsDefinition:
+        """Create a static partitions definition."""
+        return dg.StaticPartitionsDefinition(["2024-01-01", "2024-01-02"])
+
+    @pytest.fixture
+    def partitioned_feature_x(self) -> type[mx.BaseFeature]:
+        """Create partitioned feature X."""
+        spec = mx.FeatureSpec(
+            key=["test", "utils", "partitioned_x"],
+            id_columns=["id"],
+            fields=["value", "partition_date"],
+        )
+
+        class PartitionedFeatureX(mx.BaseFeature, spec=spec):
+            id: str
+
+        return PartitionedFeatureX
+
+    @pytest.fixture
+    def partitioned_feature_y(
+        self, partitioned_feature_x: type[mx.BaseFeature]
+    ) -> type[mx.BaseFeature]:
+        """Create partitioned feature Y (depends on X)."""
+        spec = mx.FeatureSpec(
+            key=["test", "utils", "partitioned_y"],
+            id_columns=["id"],
+            fields=["value", "partition_date"],
+            deps=[partitioned_feature_x],
+        )
+
+        class PartitionedFeatureY(mx.BaseFeature, spec=spec):
+            id: str
+
+        return PartitionedFeatureY
+
+    def _write_partitioned_data(
+        self,
+        feature: type[mx.BaseFeature],
+        partition_date: str,
+        rows: list[str],
+        partitions_def: dg.StaticPartitionsDefinition,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ) -> None:
+        """Helper to write data with a partition value."""
+
+        @mxd.metaxify()
+        @dg.asset(
+            metadata={
+                "metaxy/feature": feature.spec().key.to_string(),
+                "partition_by": "partition_date",
+            },
+            io_manager_key="metaxy_io_manager",
+            partitions_def=partitions_def,
+        )
+        def write_data(context: dg.AssetExecutionContext):
+            return pl.DataFrame(
+                {
+                    "id": rows,
+                    "partition_date": [context.partition_key] * len(rows),
+                    "metaxy_provenance_by_field": [
+                        {"value": f"v{i}", "partition_date": context.partition_key}
+                        for i in range(len(rows))
+                    ],
+                }
+            )
+
+        dg.materialize(
+            [write_data],
+            resources=resources,
+            instance=instance,
+            partition_key=partition_date,
+        )
+
+    def test_partitioned_multi_asset_filters_correctly(
+        self,
+        partitioned_feature_x: type[mx.BaseFeature],
+        partitioned_feature_y: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test partitioned @multi_asset with generate_materialize_results."""
+        # Write data for partition 2024-01-01: X has 3 rows, Y has 2 rows
+        self._write_partitioned_data(
+            partitioned_feature_x,
+            "2024-01-01",
+            ["x1", "x2", "x3"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature_y,
+            "2024-01-01",
+            ["y1", "y2"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        # Write data for partition 2024-01-02: X has 1 row, Y has 4 rows
+        self._write_partitioned_data(
+            partitioned_feature_x,
+            "2024-01-02",
+            ["x4"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature_y,
+            "2024-01-02",
+            ["y3", "y4", "y5", "y6"],
+            partitions_def,
+            resources,
+            instance,
+        )
+
+        specs = [
+            dg.AssetSpec(
+                "part_multi_x",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned_x",
+                    "partition_by": "partition_date",
+                },
+            ),
+            dg.AssetSpec(
+                "part_multi_y",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned_y",
+                    "partition_by": "partition_date",
+                },
+            ),
+        ]
+
+        @dg.multi_asset(specs=specs, partitions_def=partitions_def)
+        def partitioned_multi_asset(
+            context: dg.AssetExecutionContext,
+            store: mxd.MetaxyStoreFromConfigResource,
+        ):
+            yield from mxd.generate_materialize_results(context, store, specs)
+
+        # Materialize partition 2024-01-01
+        result = dg.materialize(
+            [partitioned_multi_asset],
+            resources=resources,
+            instance=instance,
+            partition_key="2024-01-01",
+        )
+        assert result.success
+
+        # Fetch materializations for partition 2024-01-01
+        mat_x = instance.fetch_materializations(dg.AssetKey("part_multi_x"), limit=1)
+        mat_y = instance.fetch_materializations(dg.AssetKey("part_multi_y"), limit=1)
+
+        assert len(mat_x.records) == 1
+        assert len(mat_y.records) == 1
+        # Partition 2024-01-01: X=3 rows, Y=2 rows
+        assert (
+            mat_x.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 3
+        )
+        assert (
+            mat_y.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 2
+        )
+
+        # Materialize partition 2024-01-02
+        result = dg.materialize(
+            [partitioned_multi_asset],
+            resources=resources,
+            instance=instance,
+            partition_key="2024-01-02",
+        )
+        assert result.success
+
+        # Fetch latest materializations for partition 2024-01-02
+        mat_x = instance.fetch_materializations(dg.AssetKey("part_multi_x"), limit=1)
+        mat_y = instance.fetch_materializations(dg.AssetKey("part_multi_y"), limit=1)
+
+        # Partition 2024-01-02: X=1 row, Y=4 rows
+        assert (
+            mat_x.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 1
+        )
+        assert (
+            mat_y.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 4
+        )
+
+    def test_partitioned_multi_observable_source_asset_filters_correctly(
+        self,
+        partitioned_feature_x: type[mx.BaseFeature],
+        partitioned_feature_y: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test partitioned @multi_observable_source_asset with generate_observe_results."""
+        # Write data for partition 2024-01-01: X has 5 rows, Y has 1 row
+        self._write_partitioned_data(
+            partitioned_feature_x,
+            "2024-01-01",
+            ["x1", "x2", "x3", "x4", "x5"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature_y,
+            "2024-01-01",
+            ["y1"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        # Write data for partition 2024-01-02: X has 2 rows, Y has 3 rows
+        self._write_partitioned_data(
+            partitioned_feature_x,
+            "2024-01-02",
+            ["x6", "x7"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature_y,
+            "2024-01-02",
+            ["y2", "y3", "y4"],
+            partitions_def,
+            resources,
+            instance,
+        )
+
+        specs = [
+            dg.AssetSpec(
+                "part_obs_x",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned_x",
+                    "partition_by": "partition_date",
+                },
+            ),
+            dg.AssetSpec(
+                "part_obs_y",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned_y",
+                    "partition_by": "partition_date",
+                },
+            ),
+        ]
+
+        @dg.multi_observable_source_asset(specs=specs, partitions_def=partitions_def)
+        def partitioned_observable_assets(
+            context: dg.AssetExecutionContext,
+            store: mxd.MetaxyStoreFromConfigResource,
+        ):
+            yield from mxd.generate_observe_results(context, store, specs)
+
+        defs = dg.Definitions(
+            assets=[partitioned_observable_assets],
+            resources=resources,
+        )
+        job = defs.get_implicit_global_asset_job_def()
+
+        # Observe partition 2024-01-01
+        result = job.execute_in_process(
+            instance=instance,
+            partition_key="2024-01-01",
+        )
+        assert result.success
+
+        obs_x = instance.fetch_observations(dg.AssetKey("part_obs_x"), limit=1)
+        obs_y = instance.fetch_observations(dg.AssetKey("part_obs_y"), limit=1)
+
+        assert len(obs_x.records) == 1
+        assert len(obs_y.records) == 1
+        # Partition 2024-01-01: X=5 rows, Y=1 row
+        assert (
+            obs_x.records[0].asset_observation.metadata["dagster/row_count"].value == 5  # pyright: ignore[reportOptionalMemberAccess]
+        )
+        assert (
+            obs_y.records[0].asset_observation.metadata["dagster/row_count"].value == 1  # pyright: ignore[reportOptionalMemberAccess]
+        )
+
+        # Observe partition 2024-01-02
+        result = job.execute_in_process(
+            instance=instance,
+            partition_key="2024-01-02",
+        )
+        assert result.success
+
+        obs_x = instance.fetch_observations(dg.AssetKey("part_obs_x"), limit=1)
+        obs_y = instance.fetch_observations(dg.AssetKey("part_obs_y"), limit=1)
+
+        # Partition 2024-01-02: X=2 rows, Y=3 rows
+        assert (
+            obs_x.records[0].asset_observation.metadata["dagster/row_count"].value == 2  # pyright: ignore[reportOptionalMemberAccess]
+        )
+        assert (
+            obs_y.records[0].asset_observation.metadata["dagster/row_count"].value == 3  # pyright: ignore[reportOptionalMemberAccess]
+        )

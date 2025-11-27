@@ -16,8 +16,8 @@ from metaxy.ext.dagster.utils import (
     build_partition_filter,
     compute_feature_stats,
     compute_stats_from_lazy_frame,
-    generate_materialization_events,
-    generate_observation_events,
+    generate_materialize_results,
+    generate_observe_results,
     get_partition_filter,
 )
 
@@ -25,8 +25,8 @@ __all__ = [
     "metaxify",
     "observable_metaxy_asset",
     "select_metaxy_assets",
-    "generate_materialization_events",
-    "generate_observation_events",
+    "generate_materialize_results",
+    "generate_observe_results",
     "compute_feature_stats",
     "compute_stats_from_lazy_frame",
     "get_partition_filter",
