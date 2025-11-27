@@ -654,6 +654,72 @@ class MetadataStore(ABC):
         self._validate_schema(df_nw)
         self.write_metadata_to_store(feature_key, df_nw)
 
+    def write_metadata_multi(
+        self,
+        metadata: Mapping[Any, IntoFrame],
+        materialization_id: str | None = None,
+    ) -> None:
+        """
+        Write metadata for multiple features in reverse topological order.
+
+        Processes features so that dependents are written before their dependencies.
+        This ordering ensures that downstream features are written first, which can
+        be useful for certain data consistency requirements or when features need
+        to be processed in a specific order.
+
+        Args:
+            metadata: Mapping from feature keys to metadata DataFrames.
+                Keys can be any type coercible to FeatureKey (string, sequence,
+                FeatureKey, or BaseFeature class). Values must be DataFrames
+                compatible with Narwhals, containing required system columns.
+            materialization_id: Optional external orchestration ID for all writes.
+                Overrides the store's default `materialization_id` if provided.
+                Applied to all feature writes in this batch.
+
+        Raises:
+            MetadataSchemaError: If any DataFrame schema is invalid
+            StoreNotOpenError: If store is not open
+            ValueError: If writing to a feature from a different project than expected
+
+        Note:
+            - Must be called within a `MetadataStore.open(mode="write")` context manager.
+            - Empty mappings are handled gracefully (no-op).
+            - Each feature's metadata is written via `write_metadata`, so all
+              validation and system column handling from that method applies.
+
+        Example:
+            ```py
+            with store.open(mode="write"):
+                store.write_metadata_multi({
+                    ChildFeature: child_df,
+                    ParentFeature: parent_df,
+                })
+            # Features are written in reverse topological order:
+            # ChildFeature first, then ParentFeature
+            ```
+        """
+        if not metadata:
+            return
+
+        # Build mapping from resolved keys to dataframes in one pass
+        resolved_metadata = {
+            self._resolve_feature_key(key): df for key, df in metadata.items()
+        }
+
+        # Get reverse topological order (dependents first)
+        graph = current_graph()
+        sorted_keys = graph.topological_sort_features(
+            list(resolved_metadata.keys()), descending=True
+        )
+
+        # Write metadata in reverse topological order
+        for feature_key in sorted_keys:
+            self.write_metadata(
+                feature_key,
+                resolved_metadata[feature_key],
+                materialization_id=materialization_id,
+            )
+
     @abstractmethod
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get the default hash algorithm for this store type.

@@ -564,8 +564,10 @@ class FeatureGraph:
     def topological_sort_features(
         self,
         feature_keys: Sequence[CoercibleToFeatureKey] | None = None,
+        *,
+        descending: bool = False,
     ) -> list[FeatureKey]:
-        """Sort feature keys in topological order (dependencies first).
+        """Sort feature keys in topological order.
 
         Uses stable alphabetical ordering when multiple nodes are at the same level.
         This ensures deterministic output for diff comparisons and migrations.
@@ -576,14 +578,18 @@ class FeatureGraph:
             feature_keys: List of feature keys to sort. Each element can be string, sequence,
                 FeatureKey, or BaseFeature class. If None, sorts all features
                 (both Feature classes and standalone specs) in the graph.
+            descending: If False (default), dependencies appear before dependents.
+                For a chain A -> B -> C, returns [A, B, C].
+                If True, dependents appear before dependencies.
+                For a chain A -> B -> C, returns [C, B, A].
 
         Returns:
-            List of feature keys sorted so dependencies appear before dependents
+            List of feature keys sorted in topological order
 
         Example:
             ```py
             graph = FeatureGraph.get_active()
-            # Sort specific features
+            # Sort specific features (dependencies first)
             sorted_keys = graph.topological_sort_features([
                 FeatureKey(["video", "raw"]),
                 FeatureKey(["video", "scene"]),
@@ -594,6 +600,9 @@ class FeatureGraph:
 
             # Sort all features in the graph (including standalone specs)
             all_sorted = graph.topological_sort_features()
+
+            # Sort with dependents first (useful for processing leaf nodes before roots)
+            reverse_sorted = graph.topological_sort_features(descending=True)
             ```
         """
         # Determine which features to sort
@@ -636,6 +645,8 @@ class FeatureGraph:
             visit(key)
 
         # Post-order DFS gives topological order (dependencies before dependents)
+        if descending:
+            return list(reversed(result))
         return result
 
     @property
