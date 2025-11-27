@@ -18,11 +18,13 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
+import narwhals as nw
 import polars.testing as pl_testing
 import pytest
 from hypothesis.errors import NonInteractiveExampleWarning
+from narwhals.typing import IntoFrame
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (
@@ -242,9 +244,7 @@ def test_resolve_update_root_feature_with_samples(
     samples_df = samples_df.select(id_columns + ["metaxy_provenance_by_field"])
 
     # Convert to Narwhals
-    import narwhals as nw
-
-    samples_nw = nw.from_native(samples_df.lazy())
+    samples_nw = cast(IntoFrame, nw.from_native(samples_df.lazy()))  # pyright: ignore[reportInvalidCast]
 
     # Call resolve_update with samples
     with store, graph.use():
