@@ -415,3 +415,50 @@ def test_store_context_manager_opens_and_closes(
 
     # Should be closed after context
     assert not empty_store._is_open
+
+
+def test_write_metadata_casts_null_typed_system_columns(
+    empty_store: InMemoryMetadataStore, UpstreamFeatureA
+) -> None:
+    """Test that system columns with Null dtype are cast to correct types."""
+    # Create a DataFrame with Null-typed system columns
+    # This can happen with empty frames or certain Polars operations
+    df = pl.DataFrame(
+        {
+            "sample_uid": pl.Series([1, 2], dtype=pl.Int64),
+            "metaxy_provenance_by_field": [
+                {"frames": "hash1", "audio": "hash1"},
+                {"frames": "hash2", "audio": "hash2"},
+            ],
+            # Explicitly create Null-typed columns for all castable system columns
+            "metaxy_provenance": pl.Series([None, None], dtype=pl.Null),
+            "metaxy_feature_version": pl.Series([None, None], dtype=pl.Null),
+            "metaxy_snapshot_version": pl.Series([None, None], dtype=pl.Null),
+            "metaxy_data_version": pl.Series([None, None], dtype=pl.Null),
+            "metaxy_created_at": pl.Series([None, None], dtype=pl.Null),
+            "metaxy_materialization_id": pl.Series([None, None], dtype=pl.Null),
+        }
+    )
+
+    # Verify columns are Null typed before write
+    assert df.schema["metaxy_provenance"] == pl.Null
+    assert df.schema["metaxy_feature_version"] == pl.Null
+    assert df.schema["metaxy_snapshot_version"] == pl.Null
+    assert df.schema["metaxy_data_version"] == pl.Null
+    assert df.schema["metaxy_created_at"] == pl.Null
+    assert df.schema["metaxy_materialization_id"] == pl.Null
+
+    with empty_store.open("write"):
+        with empty_store.allow_cross_project_writes():
+            empty_store.write_metadata(UpstreamFeatureA, df)
+
+        # Read back and verify columns are now correctly typed
+        result = collect_to_polars(empty_store.read_metadata(UpstreamFeatureA))
+
+        assert result.schema["metaxy_provenance"] == pl.String
+        assert result.schema["metaxy_feature_version"] == pl.String
+        assert result.schema["metaxy_snapshot_version"] == pl.String
+        assert result.schema["metaxy_data_version"] == pl.String
+        # Datetime is cast without timezone since nw.Datetime defaults to no tz
+        assert result.schema["metaxy_created_at"] == pl.Datetime("us")
+        assert result.schema["metaxy_materialization_id"] == pl.String
