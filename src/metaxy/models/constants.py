@@ -124,3 +124,16 @@ def is_droppable_system_column(name: str) -> bool:
         False
     """
     return name in _DROPPABLE_COLUMNS
+
+
+# System columns that have lineage from upstream features
+# These columns are computed from corresponding upstream columns (same column name)
+# With 5 parents, each of these columns will have 5 dependencies
+SYSTEM_COLUMNS_WITH_LINEAGE: frozenset[str] = frozenset(
+    {
+        METAXY_PROVENANCE_BY_FIELD,
+        METAXY_PROVENANCE,
+        METAXY_DATA_VERSION_BY_FIELD,
+        METAXY_DATA_VERSION,
+    }
+)

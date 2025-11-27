@@ -5,7 +5,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
 import pydantic
-from pydantic import model_validator
+from pydantic import AwareDatetime, Field, model_validator
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
@@ -1046,6 +1046,41 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
+
+    # System columns - automatically managed by Metaxy
+    # Most of them are optional since Metaxy injects them into dataframes at some point
+    metaxy_provenance_by_field: dict[str, str] = Field(
+        default_factory=dict,
+        description="Field-level provenance hashes (maps field names to hashes)",
+    )
+    metaxy_provenance: str | None = Field(
+        default=None,
+        description="Hash of metaxy_provenance_by_field",
+    )
+    metaxy_feature_version: str | None = Field(
+        default=None,
+        description="Hash of the feature definition (dependencies + fields + code_versions)",
+    )
+    metaxy_snapshot_version: str | None = Field(
+        default=None,
+        description="Hash of the entire feature graph snapshot",
+    )
+    metaxy_data_version_by_field: dict[str, str] | None = Field(
+        default=None,
+        description="Field-level data version hashes (maps field names to version hashes)",
+    )
+    metaxy_data_version: str | None = Field(
+        default=None,
+        description="Hash of metaxy_data_version_by_field",
+    )
+    metaxy_created_at: AwareDatetime | None = Field(
+        default=None,
+        description="Timestamp when the metadata row was created (UTC)",
+    )
+    metaxy_materialization_id: str | None = Field(
+        default=None,
+        description="External orchestration run ID (e.g., Dagster Run ID)",
+    )
 
     @model_validator(mode="after")
     def _validate_id_columns_exist(self) -> Self:
