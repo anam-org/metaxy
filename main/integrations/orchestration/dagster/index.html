@@ -3292,22 +3292,49 @@
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxify&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.metaxify.metaxify"><code>metaxify</code></a> - a decorator that enriches Dagster asset definitions with Metaxy information such as upstream dependencies, description, metadata, code version, table schema, column lineage, and so on.</p>
 </li>
 <li>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;observable_metaxy_asset&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.observable.observable_metaxy_asset"><code>observable_metaxy_asset</code></a> - a decorator that creates observable source assets for monitoring external Metaxy features.</p>
-</li>
-<li>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;generate_materialize_results&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.utils.generate_materialize_results"><code>generate_materialize_results</code></a> / <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;generate_observe_results&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.utils.generate_observe_results"><code>generate_observe_results</code></a> - generators for yielding <code>dagster.MaterializeResult</code> or <code>dagster.ObserveResult</code> events from Dagster assets (and multi-assets), with automatic topological ordering, partition filtering, logging row counts, and setting <a href="https://docs.dagster.io/guides/build/assets/asset-versioning-and-caching#step-three-computing-your-own-data-versions">Dagster data versions</a>.</p>
-</li>
-<li>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetaxyStoreFromConfigResource&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.MetaxyStoreFromConfigResource"><code>MetaxyStoreFromConfigResource</code></a> - a resource that provides access to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore"><code>MetadataStore</code></a></p>
 </li>
 <li>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetaxyIOManager&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.MetaxyIOManager"><code>MetaxyIOManager</code></a> - an IO manager that reads and writes Dagster assets that are Metaxy features</p>
 </li>
+<li>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;generate_materialize_results&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.utils.generate_materialize_results"><code>generate_materialize_results</code></a> / <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;generate_observe_results&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.utils.generate_observe_results"><code>generate_observe_results</code></a> - generators for yielding <code>dagster.MaterializeResult</code> or <code>dagster.ObserveResult</code> events from Dagster assets (and multi-assets), with automatic topological ordering, partition filtering, logging row counts, and setting <a href="https://docs.dagster.io/guides/build/assets/asset-versioning-and-caching#step-three-computing-your-own-data-versions">Dagster data versions</a>.</p>
+</li>
+<li>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;observable_metaxy_asset&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.observable.observable_metaxy_asset"><code>observable_metaxy_asset</code></a> - a decorator that creates observable source assets for monitoring external Metaxy features.</p>
+</li>
 </ul>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <h3 id="1-define-metaxy-features">1. Define Metaxy Features<a class="headerlink" href="#1-define-metaxy-features" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><span class="filename">defs.py</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">--</span><span class="mi">8</span> <span class="o">&lt;</span> <span class="o">--</span><span class="s2">&quot;example-dagster/src/example_dagster/definitions.py:feature-definitions&quot;</span>
+<!-- dprint-ignore-start -->
+<div class="language-python highlight"><span class="filename">defs.py</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Upstream feature</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">upstream_spec</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">key</span><span class="o">=</span><span class="s2">&quot;audio/embeddings&quot;</span><span class="p">,</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;audio_id&quot;</span><span class="p">],</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;embedding&quot;</span><span class="p">],</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">)</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">AudioEmbeddings</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">upstream_spec</span><span class="p">):</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">audio_id</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># Downstream feature that depends on upstream</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">downstream_spec</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">key</span><span class="o">=</span><span class="s2">&quot;audio/clusters&quot;</span><span class="p">,</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;audio_id&quot;</span><span class="p">],</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cluster_id&quot;</span><span class="p">],</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AudioEmbeddings</span><span class="p">],</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="p">)</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="k">class</span><span class="w"> </span><span class="nc">AudioClusters</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">downstream_spec</span><span class="p">):</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>    <span class="n">audio_id</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>    <span class="n">mean</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>    <span class="n">std</span><span class="p">:</span> <span class="nb">float</span>
 </span></code></pre></div>
+<!-- dprint-ignore-end -->
+
 <h3 id="2-define-dagster-assets">2. Define Dagster Assets<a class="headerlink" href="#2-define-dagster-assets" title="Permanent link">&para;</a></h3>
 <!-- dprint-ignore-start -->
 <div class="admonition example">
@@ -3389,8 +3416,29 @@
 <!-- dprint-ignore-end -->
 
 <h3 id="3-create-dagster-definitions">3. Create Dagster Definitions<a class="headerlink" href="#3-create-dagster-definitions" title="Permanent link">&para;</a></h3>
-<div class="language-py highlight"><span class="filename">defs.py</span><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="o">--</span><span class="mi">8</span> <span class="o">&lt;</span> <span class="o">--</span><span class="s2">&quot;example-dagster/src/example_dagster/definitions.py:dagster-definitions&quot;</span>
+<!-- dprint-ignore-start -->
+<div class="language-py highlight"><span class="filename">defs.py</span><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">mxd</span><span class="o">.</span><span class="n">MetaxyStoreFromConfigResource</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;dev&quot;</span><span class="p">)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">metaxy_io_manager</span> <span class="o">=</span> <span class="n">mxd</span><span class="o">.</span><span class="n">MetaxyIOManager</span><span class="p">(</span><span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">)</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nd">@dg</span><span class="o">.</span><span class="n">definitions</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">definitions</span><span class="p">():</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">mx</span><span class="o">.</span><span class="n">init_metaxy</span><span class="p">()</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="k">return</span> <span class="n">dg</span><span class="o">.</span><span class="n">Definitions</span><span class="p">(</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>        <span class="n">assets</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>            <span class="n">audio_embeddings</span><span class="p">,</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>            <span class="n">audio_clusters</span><span class="p">,</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>            <span class="n">cluster_report</span><span class="p">,</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>        <span class="p">],</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>        <span class="n">resources</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>            <span class="s2">&quot;store&quot;</span><span class="p">:</span> <span class="n">store</span><span class="p">,</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>            <span class="s2">&quot;metaxy_io_manager&quot;</span><span class="p">:</span> <span class="n">metaxy_io_manager</span><span class="p">,</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>        <span class="p">},</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="p">)</span>
 </span></code></pre></div>
+<!-- dprint-ignore-end -->
+
 <ol>
 <li>This loads Metaxy configuration and feature definitions</li>
 </ol>
