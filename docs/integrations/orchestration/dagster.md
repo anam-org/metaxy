@@ -2,7 +2,7 @@
 
 Metaxy's dependency system has been originally inspired by [Dagster](https://dagster.io/).
 
-Because of this, Metaxy's concepts naturally map into Dagster concepts, and the provided [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify] decorator makes this process effortless.
+Because of this, Metaxy code can be naturally composed with Dagster code, Metaxy concepts map directly into Dagster concepts, and the provided [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify] decorator makes this process effortless.
 
 The only step that has to be taken in order to inject Metaxy into Dagster assets is to associate the Dagster asset with the Metaxy feature.
 

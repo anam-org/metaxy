@@ -11,11 +11,27 @@ from metaxy.ext.dagster.metaxify import metaxify
 from metaxy.ext.dagster.observable import observable_metaxy_asset
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 from metaxy.ext.dagster.selection import select_metaxy_assets
+from metaxy.ext.dagster.utils import (
+    FeatureStats,
+    build_partition_filter,
+    compute_feature_stats,
+    compute_stats_from_lazy_frame,
+    generate_materialization_events,
+    generate_observation_events,
+    get_partition_filter,
+)
 
 __all__ = [
     "metaxify",
     "observable_metaxy_asset",
     "select_metaxy_assets",
+    "generate_materialization_events",
+    "generate_observation_events",
+    "compute_feature_stats",
+    "compute_stats_from_lazy_frame",
+    "get_partition_filter",
+    "build_partition_filter",
+    "FeatureStats",
     "MetaxyStoreFromConfigResource",
     "MetaxyIOManager",
     "MetaxyOutput",

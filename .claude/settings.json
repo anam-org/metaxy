@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff check --fix",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "basedpyright --level error",
+            "timeout": 30
+          },
+          {
+            "type": "prompt",
+            "prompt": "You are evaluating whether Claude should stop working. Context: $ARGUMENTS\n\nAnalyze the conversation and determine if:\n1. All user-requested tasks are complete\n2. Any errors need to be addressed\n3. Follow-up work is needed\n\nRespond with JSON: {\"decision\": \"approve\" or \"block\", \"reason\": \"your explanation\"}",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

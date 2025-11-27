@@ -1,7 +1,112 @@
+from collections.abc import Iterator, Sequence
+from typing import NamedTuple
+
 import dagster as dg
+import narwhals as nw
 
 import metaxy as mx
-from metaxy.ext.dagster.constants import METAXY_DAGSTER_METADATA_KEY
+from metaxy.ext.dagster.constants import (
+    DAGSTER_METAXY_FEATURE_METADATA_KEY,
+    DAGSTER_METAXY_PARTITION_KEY,
+    METAXY_DAGSTER_METADATA_KEY,
+)
+from metaxy.models.constants import METAXY_CREATED_AT
+
+
+class FeatureStats(NamedTuple):
+    """Statistics about a feature's metadata for Dagster events."""
+
+    row_count: int
+    data_version: dg.DataVersion
+
+
+def build_partition_filter(
+    partition_col: str | None,
+    partition_key: str | None,
+) -> list[nw.Expr]:
+    """Build partition filter expressions from column name and partition key.
+
+    Args:
+        partition_col: The column to filter by (from `partition_by` metadata).
+        partition_key: The partition key value to filter for.
+
+    Returns:
+        List with a single filter expression, or empty list if either arg is None.
+    """
+    if partition_col is None or partition_key is None:
+        return []
+    return [nw.col(partition_col) == partition_key]
+
+
+def get_partition_filter(
+    context: dg.AssetExecutionContext,
+    spec: dg.AssetSpec,
+) -> list[nw.Expr]:
+    """Get partition filter expressions for a partitioned asset.
+
+    Args:
+        context: The Dagster asset execution context.
+        spec: The AssetSpec containing `partition_by` metadata.
+
+    Returns:
+        List of filter expressions. Empty if not partitioned or no partition_by metadata.
+    """
+    if not context.has_partition_key:
+        return []
+
+    partition_col = spec.metadata.get(DAGSTER_METAXY_PARTITION_KEY)
+    if not isinstance(partition_col, str):
+        return []
+
+    return build_partition_filter(partition_col, context.partition_key)
+
+
+def compute_stats_from_lazy_frame(lazy_df: nw.LazyFrame) -> FeatureStats:  # pyright: ignore[reportMissingTypeArgument]
+    """Compute statistics from a narwhals LazyFrame.
+
+    Computes row count and data version from the frame.
+    The data version is based on mean(metaxy_created_at) to detect both
+    additions and deletions.
+
+    Args:
+        lazy_df: A narwhals LazyFrame with metaxy metadata.
+
+    Returns:
+        FeatureStats with row_count and data_version.
+    """
+    stats = lazy_df.select(
+        nw.len().alias("__count"),
+        nw.col(METAXY_CREATED_AT).mean().alias("__mean_ts"),
+    ).collect()
+
+    row_count: int = stats.item(0, "__count")
+    if row_count == 0:
+        return FeatureStats(row_count=0, data_version=dg.DataVersion("empty"))
+
+    mean_ts = stats.item(0, "__mean_ts")
+    return FeatureStats(row_count=row_count, data_version=dg.DataVersion(str(mean_ts)))
+
+
+def compute_feature_stats(
+    store: mx.MetadataStore,
+    feature: mx.CoercibleToFeatureKey,
+) -> FeatureStats:
+    """Compute statistics for a feature's metadata.
+
+    Reads the feature metadata and computes row count and data version.
+    The data version is based on mean(metaxy_created_at) to detect both
+    additions and deletions.
+
+    Args:
+        store: The Metaxy metadata store to read from.
+        feature: The feature to compute stats for.
+
+    Returns:
+        FeatureStats with row_count and data_version.
+    """
+    with store:
+        lazy_df = store.read_metadata(feature)
+        return compute_stats_from_lazy_frame(lazy_df)
 
 
 def get_asset_key_for_metaxy_feature_spec(
@@ -45,3 +150,129 @@ def get_asset_key_for_metaxy_feature_spec(
         return dagster_key
 
     return dg.AssetKey(list(feature_spec.key.parts))
+
+
+def generate_materialization_events(
+    context: dg.AssetExecutionContext,
+    store: mx.MetadataStore,
+    specs: Sequence[dg.AssetSpec],
+) -> Iterator[dg.MaterializeResult[None]]:
+    """Generate [dagster.MaterializeResult][] events for assets in topological order.
+
+    Yields a `MaterializeResult` for each asset spec, sorted by their associated
+    Metaxy features in topological order (dependencies before dependents).
+    Each result includes the row count as `"dagster/row_count"` metadata.
+
+    Args:
+        context: The Dagster asset execution context.
+        store: The Metaxy metadata store to read from.
+        specs: Sequence of asset specs with `"metaxy/feature"` metadata set.
+
+    Yields:
+        Materialization result for each asset in topological order.
+
+    Example:
+        ```python
+        specs = [
+            dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
+            dg.AssetSpec("output_b", metadata={"metaxy/feature": "my/feature/b"}),
+        ]
+
+        @metaxify
+        @dg.multi_asset(specs=specs)
+        def my_multi_asset(context: dg.AssetExecutionContext, store: mx.MetadataStore):
+            # ... compute and write data ...
+            yield from generate_materialization_events(context, store, specs)
+        ```
+    """
+    # Build mapping from feature key to asset spec
+    spec_by_feature_key: dict[mx.FeatureKey, dg.AssetSpec] = {}
+    for spec in specs:
+        feature_key_raw = spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
+        if feature_key_raw is None:
+            raise ValueError(
+                f"AssetSpec {spec.key} missing '{DAGSTER_METAXY_FEATURE_METADATA_KEY}' metadata"
+            )
+        feature_key = mx.coerce_to_feature_key(feature_key_raw)
+        spec_by_feature_key[feature_key] = spec
+
+    # Sort by topological order of feature keys
+    graph = mx.FeatureGraph.get_active()
+    sorted_keys = graph.topological_sort_features(list(spec_by_feature_key.keys()))
+
+    for key in sorted_keys:
+        asset_spec = spec_by_feature_key[key]
+        filters = get_partition_filter(context, asset_spec)
+
+        with store:
+            lazy_df = store.read_metadata(key, filters=filters)
+            stats = compute_stats_from_lazy_frame(lazy_df)
+
+        yield dg.MaterializeResult(
+            value=None,
+            asset_key=asset_spec.key,
+            metadata={"dagster/row_count": stats.row_count},
+            data_version=stats.data_version,
+        )
+
+
+def generate_observation_events(
+    context: dg.AssetExecutionContext,
+    store: mx.MetadataStore,
+    specs: Sequence[dg.AssetSpec],
+) -> Iterator[dg.ObserveResult]:
+    """Generate [dagster.ObserveResult][] events for assets in topological order.
+
+    Yields an `ObserveResult` for each asset spec, sorted by their associated
+    Metaxy features in topological order.
+    Each result includes the row count as `"dagster/row_count"` metadata.
+
+    Args:
+        context: The Dagster asset execution context.
+        store: The Metaxy metadata store to read from.
+        specs: Sequence of asset specs with `"metaxy/feature"` metadata set.
+
+    Yields:
+        Observation result for each asset in topological order.
+
+    Example:
+        ```python
+        specs = [
+            dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
+            dg.AssetSpec("output_b", metadata={"metaxy/feature": "my/feature/b"}),
+        ]
+
+        @metaxify
+        @dg.multi_asset(specs=specs)
+        def my_observable_assets(context: dg.AssetExecutionContext, store: mx.MetadataStore):
+            yield from generate_observation_events(context, store, specs)
+        ```
+    """
+    # Build mapping from feature key to asset spec
+    spec_by_feature_key: dict[mx.FeatureKey, dg.AssetSpec] = {}
+    for spec in specs:
+        feature_key_raw = spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
+        if feature_key_raw is None:
+            raise ValueError(
+                f"AssetSpec {spec.key} missing '{DAGSTER_METAXY_FEATURE_METADATA_KEY}' metadata"
+            )
+        feature_key = mx.coerce_to_feature_key(feature_key_raw)
+        spec_by_feature_key[feature_key] = spec
+
+    # Sort by topological order of feature keys
+    graph = mx.FeatureGraph.get_active()
+    sorted_keys = graph.topological_sort_features(list(spec_by_feature_key.keys()))
+
+    for key in sorted_keys:
+        asset_spec = spec_by_feature_key[key]
+        filters = get_partition_filter(context, asset_spec)
+
+        with store:
+            lazy_df = store.read_metadata(key, filters=filters)
+            stats = compute_stats_from_lazy_frame(lazy_df)
+
+        yield dg.ObserveResult(
+            asset_key=asset_spec.key,
+            metadata={"dagster/row_count": stats.row_count},
+            data_version=stats.data_version,
+        )
