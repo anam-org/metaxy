@@ -187,6 +187,7 @@ nav:
     - Metadata Stores: learn/metadata-stores.md
     - Feature Definitions: learn/feature-definitions.md
     - Versioning: learn/data-versioning.md
+    - Migration Formats: learn/migration-formats.md
     - Feature Discovery: learn/feature-discovery.md
     - Syntactic Sugar: learn/syntactic-sugar.md
     - Lineage Relationship: learn/relationship.md
@@ -237,6 +238,7 @@ nav:
         - API: integrations/plugins/sqlalchemy/api.md
   - Examples:
     - One To Many: examples/one-to-many.md
+    - Python Migrations: examples/migrations/README.md
   - CLI: reference/cli.md
   - API:
     - reference/api/index.md
