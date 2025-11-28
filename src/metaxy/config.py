@@ -216,21 +216,16 @@ class MetaxyConfig(BaseSettings):
         description="Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
     )
 
-    @field_validator("ext", mode="after")
-    @classmethod
-    def register_plugins(cls, ext: dict[str, PluginConfig]) -> dict[str, PluginConfig]:
+    def _load_plugins(self) -> None:
+        """Load enabled plugins. Must be called after config is set."""
         for name, module in BUILTIN_PLUGINS.items():
-            if (
-                name in ext and ext[name].enable
-            ):  # should only have enabled plugins by this point but whatever
+            if name in self.ext and self.ext[name].enable:
                 try:
                     __import__(module)
                 except Exception as e:
                     raise ValueError(
                         f"Failed to load Metaxy plugin '{name}' (defined in \"ext\" config field): {e}"
                     ) from e
-
-        return ext
 
     @field_validator("project")
     @classmethod
@@ -441,6 +436,9 @@ class MetaxyConfig(BaseSettings):
             config = cls()
 
         cls.set(config)
+
+        # Load plugins after config is set (plugins may access MetaxyConfig.get())
+        config._load_plugins()
 
         return config
 
