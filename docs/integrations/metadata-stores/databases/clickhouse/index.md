@@ -2,8 +2,6 @@
 
 Metaxy implements [`ClickHouseMetadataStore`][metaxy.metadata_store.clickhouse.ClickHouseMetadataStore]. It uses [ClickHouse](https://clickhouse.com/) as metadata storage and versioning engine.
 
-See [Configuration Reference](../../../reference/api/metadata-stores/ibis/clickhouse.md#configuration) for all available options.
-
 ## Installation
 
 ```shell
@@ -37,11 +35,11 @@ pip install clickhouse-connect
 
 !!! tip "Alembic Integration"
 
-    See [Alembic setup guide](../../plugins/sqlalchemy.md#alembic-integration) for additional instructions on how to use Alembic with Metaxy.
+    See [Alembic setup guide](../../../plugins/sqlalchemy/index.md#alembic-integration) for additional instructions on how to use Alembic with Metaxy.
 
-# Reference
+## Reference
 
-- [Configuration Reference](../../../reference/api/metadata-stores/ibis/clickhouse.md#configuration)
-- [API Reference][metaxy.metadata_store.clickhouse.ClickHouseMetadataStore]
+- [Configuration](configuration.md)
+- [API](api.md)
 - [Introduction to ClickHouse](https://clickhouse.com/docs/intro)
 - [ClickHouse Connect](https://clickhouse.com/docs/integrations/python)

@@ -58,6 +58,7 @@ class IbisMetadataStoreConfig(MetadataStoreConfig):
     backend: str | None = Field(
         default=None,
         description="Ibis backend name (e.g., 'clickhouse', 'postgres', 'duckdb').",
+        json_schema_extra={"mkdocs_metaxy_hide": True},
     )
 
     connection_params: dict[str, Any] | None = Field(

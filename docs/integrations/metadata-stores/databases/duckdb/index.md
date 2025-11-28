@@ -2,15 +2,13 @@
 
 Metaxy implements [`DuckDBMetadataStore`][metaxy.metadata_store.duckdb.DuckDBMetadataStore]. It uses [DuckDB](https://duckdb.org/) as metadata storage and versioning engine.
 
-See [Configuration Reference](../../../reference/api/metadata-stores/ibis/duckdb.md#configuration) for all available options.
-
 !!! warning
 
     DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider either using DuckLake with a `PostgreSQL` catalog, or refer to [DuckDB's documentation](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes) to learn about implementing application-side work-arounds.
 
 !!! tip
 
-    The [Delta Lake metadata store](../storage/delta.md) might be a better alternative for concurrent writes.
+    The [Delta Lake metadata store](../../storage/delta/index.md) might be a better alternative for concurrent writes.
 
 ## Installation
 
@@ -28,7 +26,7 @@ store = DuckDBMetadataStore("metadata.db", extensions=["hashfuncs", "spatial"])
 
 `hashfuncs` is typically used by the versioning engine.
 
-# Reference
+## Reference
 
-- [Configuration Reference](../../../reference/api/metadata-stores/ibis/duckdb.md#configuration)
-- [API Reference][metaxy.metadata_store.duckdb.DuckDBMetadataStore]
+- [Configuration](configuration.md)
+- [API](api.md)

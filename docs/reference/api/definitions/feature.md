@@ -1,9 +1,5 @@
 # Feature
 
-::: metaxy.FeatureKey
-
----
-
 `BaseFeature` is the most important class in Metaxy.
 Features are defined by extending it.
 

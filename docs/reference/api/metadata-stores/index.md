@@ -7,21 +7,21 @@ Metaxy has built-in support for the following metadata store types:
 
 ## Databases
 
-- [BigQuery](./ibis/bigquery.md)
+- [BigQuery](../../../integrations/metadata-stores/databases/bigquery/index.md)
 
-- [ClickHouse](./ibis/clickhouse.md)
+- [ClickHouse](../../../integrations/metadata-stores/databases/clickhouse/index.md)
 
-- [DuckDB](./ibis/duckdb.md)
+- [DuckDB](../../../integrations/metadata-stores/databases/duckdb/index.md)
 
-- [LanceDB](./lancedb.md)
+- [LanceDB](../../../integrations/metadata-stores/databases/lancedb/index.md)
 
-- [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] (a base class)
+- [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] (a base class) - see [Ibis integration](../../../integrations/metadata-stores/ibis/index.md)
 
 ## Storage Only
 
-- [DeltaMetadataStore](./delta.md).
+- [DeltaMetadataStore](../../../integrations/metadata-stores/storage/delta/index.md)
 
-- [InMemoryMetadataStore](./memory.md).
+- [InMemoryMetadataStore](./memory.md)
 
 ---
 

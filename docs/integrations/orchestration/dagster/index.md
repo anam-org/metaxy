@@ -136,5 +136,5 @@ The observation automatically tracks:
 
 ## Reference
 
-- Integration [API docs](../../reference/api/ext/dagster.md)
+- [API](api.md)
 - Dagster [docs](https://docs.dagster.io/)

@@ -191,6 +191,12 @@ def extract_field_info(
         else:
             required = False
 
+        # Check for mkdocs_metaxy_hide in json_schema_extra
+        json_schema_extra = field_info.json_schema_extra
+        hide_from_docs = False
+        if isinstance(json_schema_extra, dict):
+            hide_from_docs = json_schema_extra.get("mkdocs_metaxy_hide", False)
+
         field_dict = {
             "name": field_name,
             "path": current_path,
@@ -199,6 +205,7 @@ def extract_field_info(
             "description": description,
             "required": required,
             "is_nested": is_nested_model,
+            "hide_from_docs": hide_from_docs,
         }
 
         fields_info.append(field_dict)
