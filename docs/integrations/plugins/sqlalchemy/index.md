@@ -7,18 +7,7 @@ This integration is convenient for setting up [Alembic](https://alembic.sqlalche
 
 !!! tip "SQLModel Features"
 
-    Check out our [SQLModel integration](./sqlmodel.md) for metaclass features that combine Metaxy features with SQLModel ORM models. This is the recommended way to use Metaxy with SQLAlchemy.
-
-See [API reference](../../reference/api/ext/sqlalchemy.md) for the exact set of provided functions.
-
-## Configuration Options
-
-<!-- dprint-ignore-start -->
-::: metaxy-config
-    class: metaxy.ext.sqlalchemy.SQLAlchemyConfig
-    path_prefix: ext.sqlalchemy
-    header_level: 3
-<!-- dprint-ignore-end -->
+    Check out our [SQLModel integration](../sqlmodel/index.md) for metaclass features that combine Metaxy features with SQLModel ORM models. This is the recommended way to use Metaxy with SQLAlchemy.
 
 ## Alembic Integration
 
@@ -159,8 +148,9 @@ The two environments now can be managed independently:
 
 ### Alembic + SQLModel
 
-To add `SQLModel` into the mix, make sure to use the [SQLModel integration](./sqlmodel.md) and pass `sqlmodel.SQLModel.metadata` into `filter_feature_sqla_metadata`.
+To add `SQLModel` into the mix, make sure to use the [SQLModel integration](../sqlmodel/index.md) and pass `sqlmodel.SQLModel.metadata` into `filter_feature_sqla_metadata`.
 
-# Reference
+## Reference
 
-- [API docs](../../reference/api/ext/sqlalchemy.md)
+- [Configuration](configuration.md)
+- [API](api.md)

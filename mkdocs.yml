@@ -196,18 +196,45 @@ nav:
   - Integrations:
     - integrations/index.md
     - Orchestration:
-      - Dagster: integrations/orchestration/dagster.md
+      - integrations/orchestration/index.md
+      - Dagster:
+        - integrations/orchestration/dagster/index.md
+        - API: integrations/orchestration/dagster/api.md
     - Metadata Stores:
+      - Ibis:
+        - integrations/metadata-stores/ibis/index.md
+        - API: integrations/metadata-stores/ibis/api.md
       - Databases:
-        - BigQuery: integrations/metadata-stores/databases/bigquery.md
-        - ClickHouse: integrations/metadata-stores/databases/clickhouse.md
-        - DuckDB: integrations/metadata-stores/databases/duckdb.md
-        - LanceDB: integrations/metadata-stores/databases/lancedb.md
-      - Storage only:
-        - Delta Lake: integrations/metadata-stores/storage/delta.md
+        - BigQuery:
+          - integrations/metadata-stores/databases/bigquery/index.md
+          - Configuration: integrations/metadata-stores/databases/bigquery/configuration.md
+          - API: integrations/metadata-stores/databases/bigquery/api.md
+        - ClickHouse:
+          - integrations/metadata-stores/databases/clickhouse/index.md
+          - Configuration: integrations/metadata-stores/databases/clickhouse/configuration.md
+          - API: integrations/metadata-stores/databases/clickhouse/api.md
+        - DuckDB:
+          - integrations/metadata-stores/databases/duckdb/index.md
+          - Configuration: integrations/metadata-stores/databases/duckdb/configuration.md
+          - API: integrations/metadata-stores/databases/duckdb/api.md
+        - LanceDB:
+          - integrations/metadata-stores/databases/lancedb/index.md
+          - Configuration: integrations/metadata-stores/databases/lancedb/configuration.md
+          - API: integrations/metadata-stores/databases/lancedb/api.md
+      - Storage:
+        - Delta Lake:
+          - integrations/metadata-stores/storage/delta/index.md
+          - Configuration: integrations/metadata-stores/storage/delta/configuration.md
+          - API: integrations/metadata-stores/storage/delta/api.md
     - Plugins:
-      - SQLModel: integrations/plugins/sqlmodel.md
-      - SQLAlchemy: integrations/plugins/sqlalchemy.md
+      - SQLModel:
+        - integrations/plugins/sqlmodel/index.md
+        - Configuration: integrations/plugins/sqlmodel/configuration.md
+        - API: integrations/plugins/sqlmodel/api.md
+      - SQLAlchemy:
+        - integrations/plugins/sqlalchemy/index.md
+        - Configuration: integrations/plugins/sqlalchemy/configuration.md
+        - API: integrations/plugins/sqlalchemy/api.md
   - Examples:
     - One To Many: examples/one-to-many.md
   - CLI: reference/cli.md
@@ -225,25 +252,10 @@ nav:
     - Config: reference/api/config.md
     - Types: reference/api/types.md
     - Constants: reference/api/constants.md
-    - Integrations:
-      - reference/api/ext/index.md
-      - Orchestration:
-        - Dagster: reference/api/ext/dagster.md
-      - Metadata Stores:
-        - reference/api/metadata-stores/index.md
-        - Databases:
-          - reference/api/metadata-stores/ibis/index.md
-          - BigQuery: reference/api/metadata-stores/ibis/bigquery.md
-          - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
-          - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
-          - LanceDB: reference/api/metadata-stores/lancedb.md
-        - Storage only:
-          - Delta Lake: reference/api/metadata-stores/delta.md
-          - Memory: reference/api/metadata-stores/memory.md
-        - Exceptions: reference/api/metadata-stores/exceptions.md
-      - Plugins:
-        - SQLModel: reference/api/ext/sqlmodel.md
-        - SQLAlchemy: reference/api/ext/sqlalchemy.md
+    - Metadata Stores:
+      - reference/api/metadata-stores/index.md
+      - Memory: reference/api/metadata-stores/memory.md
+      - Exceptions: reference/api/metadata-stores/exceptions.md
   - Configuration: reference/configuration.md
 
 extra:

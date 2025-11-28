@@ -4,8 +4,6 @@ Metaxy implements [`DeltaMetadataStore`][metaxy.metadata_store.delta.DeltaMetada
 
 It supports the local filesystem and remote object stores.
 
-See [Configuration Reference](../../../reference/api/metadata-stores/delta.md#configuration) for all available options.
-
 ## Installation
 
 ```shell
@@ -14,7 +12,7 @@ pip install 'metaxy[delta]'
 
 ## Using Object Stores
 
-Point `root_path` at any supported URI (`s3://`, `abfss://`, `gs://`, …) and forward credentials with `storage_options`.
+Point `root_path` at any supported URI (`s3://`, `abfss://`, `gs://`, ...) and forward credentials with `storage_options`.
 The dict is passed verbatim to [`deltalake`](https://delta-io.github.io/delta-rs/integrations/object-storage/special_configuration/).
 
 Learn more in the [API docs][metaxy.metadata_store.delta.DeltaMetadataStore].
@@ -26,7 +24,7 @@ It's possible to control how feature keys map to DeltaLake table locations with 
 - `nested` (default) places every feature in its own directory: `your/feature/key.delta`
 - `flat` stores all of them in the same directory: `your__feature_key.delta`
 
-# Reference
+## Reference
 
-- [Configuration Reference](../../../reference/api/metadata-stores/delta.md#configuration)
-- [API Reference][metaxy.metadata_store.delta.DeltaMetadataStore]
+- [Configuration](configuration.md)
+- [API](api.md)

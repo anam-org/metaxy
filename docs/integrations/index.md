@@ -5,7 +5,7 @@
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
--   :custom-dagster:{ .lg .middle } [**Dagster**](orchestration/dagster.md)
+-   :custom-dagster:{ .lg .middle } [**Dagster**](orchestration/dagster/index.md)
 
     ---
 
@@ -13,9 +13,9 @@
 
     Integrate Metaxy with Dagster using ConfigurableResource to manage metadata stores in your data pipelines.
 
-    [:octicons-arrow-right-24: Integration docs](orchestration/dagster.md)
+    [:octicons-arrow-right-24: Integration docs](orchestration/dagster/index.md)
 
-    [:octicons-arrow-right-24: API docs](../reference/api/ext/dagster.md)
+    [:octicons-arrow-right-24: API docs](orchestration/dagster/api.md)
 <!-- dprint-ignore-end -->
 
 </div>
@@ -27,7 +27,7 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
--   :custom-deltalake:{ .lg .middle } [**Delta Lake**](metadata-stores/storage/delta.md)
+-   :custom-deltalake:{ .lg .middle } [**Delta Lake**](metadata-stores/storage/delta/index.md)
 
     ---
 
@@ -35,11 +35,11 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     Store metadata in Delta Lake format with support for local filesystem and remote object stores (S3, Azure, GCS).
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta/index.md)
 
-    [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/delta.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/storage/delta/api.md)
 
--   :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb.md)
+-   :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb/index.md)
 
     ---
 
@@ -47,11 +47,11 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     Columnar database optimized for vector search and multimodal data with embedded (local) and external (object store or LanceDB Cloud) deployments.
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb/index.md)
 
-    [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/lancedb.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/lancedb/api.md)
 
--   :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb.md)
+-   :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb/index.md)
 
     ---
 
@@ -59,11 +59,11 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     Store metadata in DuckDB with support for local files, in-memory databases, and MotherDuck cloud.
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb/index.md)
 
-    [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/ibis/duckdb.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/duckdb/api.md)
 
--   :custom-clickhouse:{ .lg .middle } [**ClickHouse**](metadata-stores/databases/clickhouse.md)
+-   :custom-clickhouse:{ .lg .middle } [**ClickHouse**](metadata-stores/databases/clickhouse/index.md)
 
     ---
 
@@ -71,11 +71,11 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     Leverage ClickHouse for large metadata volumes and high-throughput setups.
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/clickhouse.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/clickhouse/index.md)
 
-    [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/ibis/clickhouse.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/clickhouse/api.md)
 
--   :custom-bigquery-blue:{ .lg .middle } [**BigQuery**](metadata-stores/databases/bigquery.md)
+-   :custom-bigquery-blue:{ .lg .middle } [**BigQuery**](metadata-stores/databases/bigquery/index.md)
 
     ---
 
@@ -83,9 +83,9 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     Use Google BigQuery as a scalable serverless metadata store on GCP.
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/bigquery.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/bigquery/index.md)
 
-    [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/ibis/bigquery.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/bigquery/api.md)
 <!-- dprint-ignore-end -->
 
 </div>
@@ -95,7 +95,7 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
--   :custom-sqlalchemy:{ .lg .middle } [**SQLAlchemy**](plugins/sqlalchemy.md)
+-   :custom-sqlalchemy:{ .lg .middle } [**SQLAlchemy**](plugins/sqlalchemy/index.md)
 
     ---
 
@@ -103,11 +103,11 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     Retrieve SQLAlchemy URLs and `MetaData` for the current Metaxy project from Metaxy `MetadataStore` objects.
 
-    [:octicons-arrow-right-24: Integration docs](plugins/sqlalchemy.md)
+    [:octicons-arrow-right-24: Integration docs](plugins/sqlalchemy/index.md)
 
-    [:octicons-arrow-right-24: API docs](../reference/api/ext/sqlalchemy.md)
+    [:octicons-arrow-right-24: API docs](plugins/sqlalchemy/api.md)
 
--   :custom-sqlmodel:{ .lg .middle } [**SQLModel**](plugins/sqlmodel.md)
+-   :custom-sqlmodel:{ .lg .middle } [**SQLModel**](plugins/sqlmodel/index.md)
 
     ---
 
@@ -115,9 +115,9 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     Adds `SQLModel` capabilities to `metaxy.BaseFeature` class.
 
-    [:octicons-arrow-right-24: Integration docs](plugins/sqlmodel.md)
+    [:octicons-arrow-right-24: Integration docs](plugins/sqlmodel/index.md)
 
-    [:octicons-arrow-right-24: API docs](../reference/api/ext/sqlmodel.md)
+    [:octicons-arrow-right-24: API docs](plugins/sqlmodel/api.md)
 <!-- dprint-ignore-end -->
 
 </div>
