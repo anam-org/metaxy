@@ -245,3 +245,18 @@ class RunbookLoader:
             patches_by_scenario[scenario.name] = scenario_patches
 
         return patches_by_scenario
+
+    def get_patch_snapshots(
+        self, example_name: str
+    ) -> dict[str, tuple[str | None, str | None]]:
+        """Get patch snapshot information from the runbook's execution state.
+
+        Args:
+            example_name: Name of the example.
+
+        Returns:
+            Dictionary mapping patch paths to (before_snapshot, after_snapshot) tuples,
+            or empty dict if no execution state exists.
+        """
+        runbook = self.load_runbook(example_name)
+        return runbook.get_patch_snapshots()

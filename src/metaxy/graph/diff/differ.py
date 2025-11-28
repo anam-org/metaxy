@@ -1,7 +1,6 @@
 """Graph diffing logic and snapshot resolution."""
 
 import json
-import warnings
 from collections.abc import Mapping
 from typing import Any
 
@@ -625,6 +624,117 @@ class GraphDiffer:
 
         return downstream
 
+    def _compute_field_version_from_spec(
+        self,
+        feature_key: str,
+        field_key: str,
+        field_code_version: str,
+        field_deps: list[dict[str, Any]],
+        all_specs: dict[str, dict[str, Any]],
+        computed_versions: dict[tuple[str, str], str],
+    ) -> str:
+        """Compute field version from snapshot spec without loading Feature classes.
+
+        Args:
+            feature_key: Feature key string
+            field_key: Field key string
+            field_code_version: Code version of the field
+            field_deps: Field dependencies from spec
+            all_specs: All feature specs in the snapshot
+            computed_versions: Cache of already computed field versions
+
+        Returns:
+            Computed field version hash
+        """
+        import hashlib
+
+        # Check cache
+        cache_key = (feature_key, field_key)
+        if cache_key in computed_versions:
+            return computed_versions[cache_key]
+
+        # Create hasher
+        hasher = hashlib.sha256()
+
+        # Add fully qualified field key
+        fq_key = f"{feature_key}/{field_key}"
+        hasher.update(fq_key.encode())
+
+        # Add field's own code version
+        hasher.update(str(field_code_version).encode())
+
+        # Add dependent field versions
+        for dep in field_deps:
+            dep_feature = dep.get("feature") or dep.get("key", [])
+            if isinstance(dep_feature, list):
+                dep_feature_str = "/".join(dep_feature)
+            else:
+                dep_feature_str = dep_feature
+
+            dep_fields = dep.get("fields", [])
+            if not dep_fields:
+                # If no specific fields, depend on all fields of the upstream feature
+                if dep_feature_str in all_specs:
+                    dep_spec = all_specs[dep_feature_str]["feature_spec"]
+                    for dep_field_dict in dep_spec.get("fields", []):
+                        dep_field_key = dep_field_dict.get("key", [])
+                        if isinstance(dep_field_key, list):
+                            dep_field_str = "/".join(dep_field_key)
+                        else:
+                            dep_field_str = dep_field_key
+
+                        # Recursively compute dependent field version
+                        dep_field_version = self._compute_field_version_from_spec(
+                            dep_feature_str,
+                            dep_field_str,
+                            dep_field_dict.get("code_version", "__metaxy_initial__"),
+                            dep_field_dict.get("deps", []),
+                            all_specs,
+                            computed_versions,
+                        )
+                        hasher.update(dep_field_version.encode())
+            else:
+                # Specific field dependencies
+                for dep_field in dep_fields:
+                    if isinstance(dep_field, list):
+                        dep_field_str = "/".join(dep_field)
+                    else:
+                        dep_field_str = dep_field
+
+                    # Find the field spec in the upstream feature
+                    if dep_feature_str in all_specs:
+                        dep_spec = all_specs[dep_feature_str]["feature_spec"]
+                        for dep_field_dict in dep_spec.get("fields", []):
+                            field_key_from_spec = dep_field_dict.get("key", [])
+                            if isinstance(field_key_from_spec, list):
+                                field_str_from_spec = "/".join(field_key_from_spec)
+                            else:
+                                field_str_from_spec = field_key_from_spec
+
+                            if field_str_from_spec == dep_field_str:
+                                # Found the field, compute its version
+                                dep_field_version = (
+                                    self._compute_field_version_from_spec(
+                                        dep_feature_str,
+                                        dep_field_str,
+                                        dep_field_dict.get(
+                                            "code_version", "__metaxy_initial__"
+                                        ),
+                                        dep_field_dict.get("deps", []),
+                                        all_specs,
+                                        computed_versions,
+                                    )
+                                )
+                                hasher.update(dep_field_version.encode())
+                                break
+
+        # Compute and cache the version
+        from metaxy.utils.hashing import truncate_hash
+
+        version = truncate_hash(hasher.hexdigest())
+        computed_versions[cache_key] = version
+        return version
+
     def load_snapshot_data(
         self, store: MetadataStore, snapshot_version: str, project: str | None = None
     ) -> Mapping[str, Mapping[str, Any]]:
@@ -696,66 +806,34 @@ class GraphDiffer:
                 ),  # Fallback for backward compatibility
             }
 
-        # Try to reconstruct FeatureGraph from snapshot to compute field versions
-        # This may fail if features have been removed/moved, so we handle that gracefully
-        graph: FeatureGraph | None = None
-        try:
-            graph = FeatureGraph.from_snapshot(snapshot_dict)
-            graph_available = True
-        except ImportError:
-            # Some features can't be imported (likely removed) - proceed without graph
-            # For diff purposes, we can still show feature-level changes
-            # We'll use feature_version as a fallback for all field versions
-            graph_available = False
-            warnings.warn(
-                "Using feature_version as field_version fallback for features that cannot be imported. "
-                "This may occur when features have been removed or moved.",
-                UserWarning,
-                stacklevel=2,
-            )
-
-        # Compute field versions using the reconstructed graph (if available)
-        from metaxy.models.plan import FQFieldKey
-
+        # Compute field versions directly from snapshot specs without loading Feature classes
+        # This ensures we use the actual snapshot's field specs, not the current code
         snapshot_data = {}
+        computed_versions: dict[tuple[str, str], str] = {}
+
         for feature_key_str in snapshot_dict.keys():
             feature_version = snapshot_dict[feature_key_str]["metaxy_feature_version"]
             feature_spec = snapshot_dict[feature_key_str]["feature_spec"]
-            feature_key_obj = FeatureKey(feature_key_str.split("/"))
 
-            # Compute field versions using graph (if available)
+            # Compute field versions from the snapshot's specs
             fields_data = {}
-            if (
-                graph_available
-                and graph is not None
-                and feature_key_obj in graph.features_by_key
-            ):
-                # Feature exists in reconstructed graph - compute precise field versions
-                for field_dict in feature_spec.get("fields", []):
-                    field_key_list = field_dict.get("key")
-                    if isinstance(field_key_list, list):
-                        field_key = FieldKey(field_key_list)
-                        field_key_str_normalized = "/".join(field_key_list)
-                    else:
-                        field_key = FieldKey([field_key_list])
-                        field_key_str_normalized = field_key_list
+            for field_dict in feature_spec.get("fields", []):
+                field_key_list = field_dict.get("key")
+                if isinstance(field_key_list, list):
+                    field_key_str_normalized = "/".join(field_key_list)
+                else:
+                    field_key_str_normalized = field_key_list
 
-                    # Compute field version using the graph
-                    fq_key = FQFieldKey(feature=feature_key_obj, field=field_key)
-                    field_version = graph.get_field_version(fq_key)
-                    fields_data[field_key_str_normalized] = field_version
-            else:
-                # Feature doesn't exist in graph (removed/moved) - use feature_version as fallback
-                # All fields get the same version (the feature version)
-                for field_dict in feature_spec.get("fields", []):
-                    field_key_list = field_dict.get("key")
-                    if isinstance(field_key_list, list):
-                        field_key_str_normalized = "/".join(field_key_list)
-                    else:
-                        field_key_str_normalized = field_key_list
-
-                    # Use feature_version directly as fallback
-                    fields_data[field_key_str_normalized] = feature_version
+                # Compute field version using the snapshot's specs
+                field_version = self._compute_field_version_from_spec(
+                    feature_key_str,
+                    field_key_str_normalized,
+                    field_dict.get("code_version", "__metaxy_initial__"),
+                    field_dict.get("deps", []),
+                    snapshot_dict,
+                    computed_versions,
+                )
+                fields_data[field_key_str_normalized] = field_version
 
             snapshot_data[feature_key_str] = {
                 "metaxy_feature_version": feature_version,

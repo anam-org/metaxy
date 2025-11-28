@@ -8,6 +8,7 @@ This module provides rendering utilities for:
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 
@@ -234,3 +235,49 @@ class ExampleRenderer:
 
         md_parts.append("")
         return "\n".join(md_parts)
+
+    def render_graph_diff(
+        self, from_snapshot: str, to_snapshot: str, example_name: str, example_dir: Path
+    ) -> str | None:
+        """Render a graph diff as Mermaid diagram using the CLI.
+
+        Args:
+            from_snapshot: Before snapshot version hash.
+            to_snapshot: After snapshot version hash.
+            example_name: Name of the example for context.
+            example_dir: Path to the example directory.
+
+        Returns:
+            Mermaid diagram string or None if rendering fails.
+        """
+        import os
+        import subprocess
+        import sys
+
+        try:
+            # Run metaxy graph-diff render command from the example directory
+            metaxy_path = os.path.join(os.path.dirname(sys.executable), "metaxy")
+
+            result = subprocess.run(
+                [
+                    metaxy_path,
+                    "graph-diff",
+                    "render",
+                    "--format",
+                    "mermaid",
+                    from_snapshot,
+                    to_snapshot,
+                ],
+                capture_output=True,
+                text=True,
+                cwd=example_dir,
+            )
+
+            if result.returncode != 0:
+                return f"```\nError rendering graph diff: {result.stderr}\n```"
+
+            # Wrap the mermaid output in a code block
+            return f"```mermaid\n{result.stdout}\n```"
+
+        except Exception as e:
+            return f"```\nError rendering graph diff: {e}\n```"

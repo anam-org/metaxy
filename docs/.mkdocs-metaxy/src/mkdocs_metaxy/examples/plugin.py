@@ -56,8 +56,6 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         Returns:
             Modified configuration object.
         """
-        print("DEBUG: MetaxyExamplesPlugin.on_config() called")  # DEBUG
-
         # Resolve examples_dir relative to docs_dir
         docs_dir = Path(config["docs_dir"])
         examples_dir = docs_dir / self.config["examples_dir"]
@@ -291,13 +289,17 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         )
 
     def _render_patch(self, example_name: str, params: dict[str, Any]) -> str:
-        """Render a patch file."""
+        """Render a patch file, optionally with graph diff in tabs."""
         if self.loader is None or self.renderer is None or self.generated_dir is None:
             return ""
 
         patch_path = params.get("path")
         if not patch_path:
             return self.renderer.render_error("Missing required parameter: path")
+
+        # Load patch snapshots cache if available
+        patch_snapshots = self.loader.get_patch_snapshots(example_name)
+        snapshots = patch_snapshots.get(patch_path)
 
         content = self.loader.read_patch(example_name, patch_path)
 
@@ -307,8 +309,48 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         generated_file.write_text(content)
 
         snippets_path = f".generated/{patch_path}"
+
+        # Check if we have graph diff snapshots and they are different
+        if snapshots and snapshots[0] and snapshots[1] and snapshots[0] != snapshots[1]:
+            # Create tabbed output with patch and graph diff
+            example_dir = self.loader.get_example_dir(example_name)
+            graph_diff = self.renderer.render_graph_diff(
+                snapshots[0], snapshots[1], example_name, example_dir
+            )
+
+            if graph_diff:
+                # For tabs, render the patch without collapsible wrapper
+                patch_render = self.renderer.render_snippet(
+                    path=snippets_path,
+                    show_line_numbers=True,
+                    hl_lines=None,
+                    collapsible=False,
+                )
+                # Indent the content for proper tab rendering
+                patch_lines = patch_render.strip().split("\n")
+                patch_indented = "\n".join(
+                    f"    {line}" if line else "" for line in patch_lines
+                )
+
+                graph_lines = graph_diff.strip().split("\n")
+                graph_indented = "\n".join(
+                    f"    {line}" if line else "" for line in graph_lines
+                )
+
+                return f"""
+=== "Patch"
+
+{patch_indented}
+
+=== "Graph Diff"
+
+{graph_indented}
+"""
+
+        # No graph diff available, return the patch with collapsible wrapper
         return self.renderer.render_snippet(
             path=snippets_path,
             show_line_numbers=True,
             hl_lines=None,
+            collapsible=True,
         )
