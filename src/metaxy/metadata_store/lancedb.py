@@ -388,5 +388,4 @@ class LanceDBMetadataStore(MetadataStore):
 
     @classmethod
     def config_model(cls) -> type[LanceDBMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Return the configuration model class for LanceDBMetadataStore."""
         return LanceDBMetadataStoreConfig

@@ -7,12 +7,20 @@ Metaxy has built-in support for the following metadata store types:
 
 ## Databases
 
-- [IbisMetadataStore][metaxy.metadata_store.ibis.IbisMetadataStore].
-- [LanceDBMetadataStore](./lancedb.md).
+- [BigQuery](./ibis/bigquery.md)
+
+- [ClickHouse](./ibis/clickhouse.md)
+
+- [DuckDB](./ibis/duckdb.md)
+
+- [LanceDB](./lancedb.md)
+
+- [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] (a base class)
 
 ## Storage Only
 
 - [DeltaMetadataStore](./delta.md).
+
 - [InMemoryMetadataStore](./memory.md).
 
 ---
@@ -25,12 +33,26 @@ Metaxy has built-in support for the following metadata store types:
     options:
       show_if_no_docstring: true
 
----
-
 ::: metaxy.metadata_store.base.VersioningEngineOptions
 
+---
+
+## Base Configuration Class
+
+The following base configuration class is typically used by child metadata stores:
+
+::: metaxy.metadata_store.base.MetadataStoreConfig
 
 ---
+
+## Configuration
+
+The base [`MetadataStoreConfig`][metaxy.metadata_store.base.MetadataStoreConfig] class injects the following configuration options:
+
+::: metaxy-config
+    class: metaxy.metadata_store.base.MetadataStoreConfig
+    path_prefix: stores.dev.config
+    header_level: 3
 
 ## Project Write Validation
 

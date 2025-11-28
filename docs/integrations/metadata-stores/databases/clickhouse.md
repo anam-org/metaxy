@@ -2,6 +2,8 @@
 
 Metaxy implements [`ClickHouseMetadataStore`][metaxy.metadata_store.clickhouse.ClickHouseMetadataStore]. It uses [ClickHouse](https://clickhouse.com/) as metadata storage and versioning engine.
 
+See [Configuration Reference](../../../reference/api/metadata-stores/ibis/clickhouse.md#configuration) for all available options.
+
 ## Installation
 
 ```shell
@@ -39,8 +41,7 @@ pip install clickhouse-connect
 
 # Reference
 
-- Integration [API docs][metaxy.metadata_store.clickhouse.ClickHouseMetadataStore]
-
+- [Configuration Reference](../../../reference/api/metadata-stores/ibis/clickhouse.md#configuration)
+- [API Reference][metaxy.metadata_store.clickhouse.ClickHouseMetadataStore]
 - [Introduction to ClickHouse](https://clickhouse.com/docs/intro)
-
 - [ClickHouse Connect](https://clickhouse.com/docs/integrations/python)

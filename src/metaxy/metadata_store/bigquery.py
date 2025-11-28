@@ -351,5 +351,4 @@ class BigQueryMetadataStore(IbisMetadataStore):
 
     @classmethod
     def config_model(cls) -> type[BigQueryMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Return the configuration model class for BigQueryMetadataStore."""
         return BigQueryMetadataStoreConfig

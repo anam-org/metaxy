@@ -289,5 +289,4 @@ class InMemoryMetadataStore(MetadataStore):
 
     @classmethod
     def config_model(cls) -> type[InMemoryMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Return the configuration model class for InMemoryMetadataStore."""
         return InMemoryMetadataStoreConfig

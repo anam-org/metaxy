@@ -1,8 +1,10 @@
-# LanceDBMetadataStore
+# Metaxy + LanceDB
 
-LanceDB keeps one Lance table per feature, writes metadata in append mode, and uses the in-memory Polars versioning engine for provenance calculations. LanceDB handles schema evolution, transactions, and compaction automatically.
+Metaxy implements [`LanceDBMetadataStore`][metaxy.metadata_store.lancedb.LanceDBMetadataStore]. LanceDB keeps one Lance table per feature, writes metadata in append mode, and uses the in-memory Polars versioning engine for provenance calculations. LanceDB handles schema evolution, transactions, and compaction automatically.
 
 It runs embedded (local directory) or against external storage (object stores, HTTP endpoints, LanceDB Cloud), so you can use the same store for local development and remote compute.
+
+See [Configuration Reference](../../../reference/api/metadata-stores/lancedb.md#configuration) for all available options.
 
 ## Installation
 
@@ -16,3 +18,8 @@ Point `uri` at any supported URI (`s3://`, `gs://`, `az://`, `db://`, …) and f
 
 All tables are stored within a single LanceDB database at the configured URI location.
 Each feature gets its own Lance table.
+
+# Reference
+
+- [Configuration Reference](../../../reference/api/metadata-stores/lancedb.md#configuration)
+- [API Reference][metaxy.metadata_store.lancedb.LanceDBMetadataStore]

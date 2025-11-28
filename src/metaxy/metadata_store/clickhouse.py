@@ -181,5 +181,4 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
     @classmethod
     def config_model(cls) -> type[ClickHouseMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Return the configuration model class for ClickHouseMetadataStore."""
         return ClickHouseMetadataStoreConfig
