@@ -3726,6 +3726,10 @@
 
 <h1 id="cli-commands">CLI Commands<a class="headerlink" href="#cli-commands" title="Permanent link">&para;</a></h1>
 <p>This section provides a comprehensive reference for all Metaxy CLI commands.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Some CLI commands are experimental (read: half-baked)</p>
+</div>
 <p>Metaxy CLI.</p>
 <p>Auto-discovers configuration (<code>metaxy.toml</code> or <code>pyproject.toml</code>) in current or parent directories.
 Feature definitions are collected via <a href="https://anam-org.github.io/metaxy/main/learn/feature-discovery/">feature discovery</a>.</p>
@@ -3788,9 +3792,18 @@ Feature definitions are collected via <a href="https://anam-org.github.io/metaxy
 <p>Metadata migration commands</p>
 <h3 id="metaxy-migrations-generate">metaxy migrations generate<a class="headerlink" href="#metaxy-migrations-generate" title="Permanent link">&para;</a></h3>
 <p>Generate migration from detected feature changes.</p>
-<p>Compares the latest snapshot in the store (or specified from_snapshot)
-with the current active graph to detect changes.</p>
-<p>The migration is recorded in the system tables (not a YAML file).</p>
+<p>Two migration types are supported:</p>
+<ul>
+<li>
+<p><strong>diff</strong> : Compares the latest snapshot in the store (or specified
+  from_snapshot) with the current active graph to detect changes. Only affected
+  features are included.</p>
+</li>
+<li>
+<p><strong>full</strong>: Creates a migration that includes ALL features in the current graph.
+  Each operation will have a 'features' list with all feature keys.</p>
+</li>
+</ul>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="go">metaxy migrations generate --op LIST[STR] [OPTIONS]</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
@@ -3799,6 +3812,7 @@ with the current active graph to detect changes.</p>
 <li><code>--store</code>: Store name (defaults to default)</li>
 <li><code>--from-snapshot</code>: Compare from this historical snapshot version (defaults to latest)</li>
 <li><code>--OP</code>: Operation class path to use (can be repeated). Example: metaxy.migrations.ops.DataVersionReconciliation  <strong>[required]</strong></li>
+<li><code>--type</code>: Migration type: 'diff' (compare different graph snapshots) or 'full' (operates on a single graph snapshot)  <em>[choices: diff, full]</em>  <em>[default: diff]</em></li>
 </ul>
 <h3 id="metaxy-migrations-apply">metaxy migrations apply<a class="headerlink" href="#metaxy-migrations-apply" title="Permanent link">&para;</a></h3>
 <p>Apply migration(s) from YAML files.</p>
