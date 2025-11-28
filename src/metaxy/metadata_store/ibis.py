@@ -13,9 +13,14 @@ from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
 from narwhals.typing import Frame
+from pydantic import Field
 from typing_extensions import Self
 
-from metaxy.metadata_store.base import MetadataStore, VersioningEngineOptions
+from metaxy.metadata_store.base import (
+    MetadataStore,
+    MetadataStoreConfig,
+    VersioningEngineOptions,
+)
 from metaxy.metadata_store.exceptions import (
     HashAlgorithmNotSupportedError,
     TableNotFoundError,
@@ -29,6 +34,46 @@ from metaxy.versioning.types import HashAlgorithm
 if TYPE_CHECKING:
     import ibis
     import ibis.expr.types
+
+
+class IbisMetadataStoreConfig(MetadataStoreConfig):
+    """Configuration for IbisMetadataStore.
+
+    Example:
+        ```python
+        config = IbisMetadataStoreConfig(
+            connection_string="postgresql://user:pass@host:5432/db",
+            table_prefix="prod_",
+        )
+
+        # Note: IbisMetadataStore is abstract, use a concrete implementation
+        ```
+    """
+
+    connection_string: str | None = Field(
+        default=None,
+        description="Ibis connection string (e.g., 'clickhouse://host:9000/db').",
+    )
+
+    backend: str | None = Field(
+        default=None,
+        description="Ibis backend name (e.g., 'clickhouse', 'postgres', 'duckdb').",
+    )
+
+    connection_params: dict[str, Any] | None = Field(
+        default=None,
+        description="Backend-specific connection parameters.",
+    )
+
+    table_prefix: str | None = Field(
+        default=None,
+        description="Optional prefix for all table names.",
+    )
+
+    auto_create_tables: bool | None = Field(
+        default=None,
+        description="If True, create tables on open. For development/testing only.",
+    )
 
 
 class IbisMetadataStore(MetadataStore, ABC):
@@ -478,3 +523,8 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Sanitize connection strings that may contain credentials
         sanitized_info = sanitize_uri(backend_info)
         return f"{self.__class__.__name__}(backend={sanitized_info})"
+
+    @classmethod
+    def config_model(cls) -> type[IbisMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Return the configuration model class for IbisMetadataStore."""
+        return IbisMetadataStoreConfig

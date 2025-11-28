@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
 import narwhals as nw
 from narwhals.typing import Frame, IntoFrame
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
 from metaxy._utils import switch_implementation_to_polars
@@ -55,6 +57,47 @@ from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
 
 if TYPE_CHECKING:
     pass
+
+
+# TypeVar for config types - used for typing from_config method
+MetadataStoreConfigT = TypeVar("MetadataStoreConfigT", bound="MetadataStoreConfig")
+
+
+class MetadataStoreConfig(BaseSettings):
+    """Base configuration class for metadata stores.
+
+    This class defines common configuration fields shared by all metadata store types.
+    Store-specific config classes should inherit from this and add their own fields.
+
+    Example:
+        ```python
+        from metaxy.metadata_store.duckdb import DuckDBMetadataStoreConfig
+
+        config = DuckDBMetadataStoreConfig(
+            database="metadata.db",
+            hash_algorithm=HashAlgorithm.MD5,
+        )
+
+        store = DuckDBMetadataStore.from_config(config)
+        ```
+    """
+
+    model_config = SettingsConfigDict(frozen=True, extra="forbid")
+
+    fallback_stores: list[str] = Field(
+        default_factory=list,
+        description="List of fallback store names to search when features are not found in the current store.",
+    )
+
+    hash_algorithm: HashAlgorithm | None = Field(
+        default=None,
+        description="Hash algorithm for versioning. If None, uses store's default.",
+    )
+
+    versioning_engine: Literal["auto", "native", "polars"] = Field(
+        default="auto",
+        description="Which versioning engine to use: 'auto' (prefer native), 'native', or 'polars'.",
+    )
 
 
 VersioningEngineT = TypeVar("VersioningEngineT", bound=VersioningEngine)
@@ -181,6 +224,67 @@ class MetadataStore(ABC):
         self.hash_algorithm = hash_algorithm
 
         self.fallback_stores = fallback_stores or []
+
+    @classmethod
+    @abstractmethod
+    def config_model(cls) -> type[MetadataStoreConfig]:
+        """Return the configuration model class for this store type.
+
+        Subclasses must override this to return their specific config class.
+
+        Returns:
+            The config class type (e.g., DuckDBMetadataStoreConfig)
+
+        Note:
+            Subclasses override this with a more specific return type.
+            Type checkers may show a warning about incompatible override,
+            but this is intentional - each store returns its own config type.
+        """
+        ...
+
+    @classmethod
+    def from_config(cls, config: MetadataStoreConfig, **kwargs: Any) -> Self:
+        """Create a store instance from a configuration object.
+
+        This method creates a store by:
+        1. Converting the config to a dict
+        2. Resolving fallback store names to actual store instances
+        3. Calling the store's __init__ with the config parameters
+
+        Args:
+            config: Configuration object (should be the type returned by config_model())
+            **kwargs: Additional arguments passed directly to the store constructor
+                (e.g., materialization_id for runtime parameters not in config)
+
+        Returns:
+            A new store instance configured according to the config object
+
+        Example:
+            ```python
+            from metaxy.metadata_store.duckdb import (
+                DuckDBMetadataStore,
+                DuckDBMetadataStoreConfig,
+            )
+
+            config = DuckDBMetadataStoreConfig(
+                database="metadata.db",
+                fallback_stores=["prod"],
+            )
+
+            store = DuckDBMetadataStore.from_config(config)
+            ```
+        """
+        # Convert config to dict, excluding unset values
+        config_dict = config.model_dump(exclude_unset=True)
+
+        # Pop and resolve fallback store names to actual store instances
+        fallback_store_names = config_dict.pop("fallback_stores", [])
+        fallback_stores = [
+            MetaxyConfig.get().get_store(name) for name in fallback_store_names
+        ]
+
+        # Create store with resolved fallback stores, config, and extra kwargs
+        return cls(fallback_stores=fallback_stores, **config_dict, **kwargs)
 
     @property
     def hash_truncation_length(self) -> int:

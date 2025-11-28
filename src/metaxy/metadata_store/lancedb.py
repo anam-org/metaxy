@@ -11,10 +11,11 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 from narwhals.typing import Frame
+from pydantic import Field
 from typing_extensions import Self
 
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import is_local_path, sanitize_uri
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
@@ -22,6 +23,29 @@ from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 logger = logging.getLogger(__name__)
+
+
+class LanceDBMetadataStoreConfig(MetadataStoreConfig):
+    """Configuration for LanceDBMetadataStore.
+
+    Example:
+        ```python
+        config = LanceDBMetadataStoreConfig(
+            uri="/path/to/featuregraph",
+            connect_kwargs={"api_key": "your-api-key"},
+        )
+
+        store = LanceDBMetadataStore.from_config(config)
+        ```
+    """
+
+    uri: str | Path = Field(
+        description="Directory path or URI for LanceDB tables.",
+    )
+    connect_kwargs: dict[str, Any] | None = Field(
+        default=None,
+        description="Extra keyword arguments passed to lancedb.connect().",
+    )
 
 
 class LanceDBMetadataStore(MetadataStore):
@@ -361,3 +385,8 @@ class LanceDBMetadataStore(MetadataStore):
         """Human-readable representation with sanitized credentials."""
         path = sanitize_uri(self.uri)
         return f"LanceDBMetadataStore(path={path})"
+
+    @classmethod
+    def config_model(cls) -> type[LanceDBMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Return the configuration model class for LanceDBMetadataStore."""
+        return LanceDBMetadataStoreConfig

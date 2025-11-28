@@ -12,16 +12,49 @@ import deltalake
 import narwhals as nw
 import polars as pl
 from narwhals.typing import Frame
+from pydantic import Field
 from typing_extensions import Self
 
 from metaxy._utils import switch_implementation_to_polars
-from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import is_local_path
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
+
+
+class DeltaMetadataStoreConfig(MetadataStoreConfig):
+    """Configuration for DeltaMetadataStore.
+
+    Example:
+        ```python
+        config = DeltaMetadataStoreConfig(
+            root_path="s3://my-bucket/metaxy",
+            storage_options={"AWS_REGION": "us-west-2"},
+            layout="nested",
+        )
+
+        store = DeltaMetadataStore.from_config(config)
+        ```
+    """
+
+    root_path: str | Path = Field(
+        description="Base directory or URI where feature tables are stored.",
+    )
+    storage_options: dict[str, Any] | None = Field(
+        default=None,
+        description="Storage backend options passed to delta-rs.",
+    )
+    layout: Literal["flat", "nested"] = Field(
+        default="nested",
+        description="Directory layout for feature tables ('nested' or 'flat').",
+    )
+    delta_write_options: dict[str, Any] | None = Field(
+        default=None,
+        description="Options passed to deltalake.write_deltalake().",
+    )
 
 
 class DeltaMetadataStore(MetadataStore):
@@ -328,3 +361,8 @@ class DeltaMetadataStore(MetadataStore):
 
     def get_store_metadata(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
         return {"path": self._feature_uri(self._resolve_feature_key(feature_key))}
+
+    @classmethod
+    def config_model(cls) -> type[DeltaMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Return the configuration model class for DeltaMetadataStore."""
+        return DeltaMetadataStoreConfig
