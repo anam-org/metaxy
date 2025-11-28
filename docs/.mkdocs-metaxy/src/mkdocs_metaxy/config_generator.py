@@ -616,6 +616,7 @@ def generate_individual_field_doc(
     include_tool_prefix: bool = False,
     header_level: int = 3,
     env_var_path: list[str] | None = None,
+    header_name: str | None = None,
 ) -> str:
     """Generate documentation for an individual field with tabs and env var.
 
@@ -626,16 +627,17 @@ def generate_individual_field_doc(
         include_tool_prefix: Whether this is for pyproject.toml (needs [tool.metaxy] prefix)
         header_level: Header level (default 3 for ###)
         env_var_path: Optional path for env var generation (defaults to field["path"])
+        header_name: Optional name for the header (defaults to field name without path prefix)
 
     Returns:
         Markdown string for the field documentation
     """
     lines = []
 
-    # Field header
-    field_path = get_toml_path(field["path"])
+    # Field header - use just the field name, not the full path with prefix
+    display_name = header_name if header_name is not None else field["name"]
     header_prefix = "#" * header_level
-    lines.append(f"{header_prefix} `{field_path}`")
+    lines.append(f"{header_prefix} `{display_name}`")
     lines.append("")
 
     # Description

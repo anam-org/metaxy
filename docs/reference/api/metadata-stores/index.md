@@ -15,7 +15,7 @@ Metaxy has built-in support for the following metadata store types:
 
 - [LanceDB](../../../integrations/metadata-stores/databases/lancedb/index.md)
 
-- [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] (a base class) - see [Ibis integration](../../../integrations/metadata-stores/ibis/index.md)
+- [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] (a base class) - see [Ibis integration](../../../integrations/metadata-stores/databases/ibis/index.md)
 
 ## Storage Only
 
