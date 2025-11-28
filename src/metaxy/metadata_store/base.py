@@ -304,7 +304,7 @@ class MetadataStore(ABC):
         self,
         feature: type[BaseFeature],
         *,
-        samples: Frame | None = None,
+        samples: IntoFrame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
         global_filters: Sequence[nw.Expr] | None = None,
         lazy: Literal[False] = False,
@@ -318,7 +318,7 @@ class MetadataStore(ABC):
         self,
         feature: type[BaseFeature],
         *,
-        samples: Frame | None = None,
+        samples: IntoFrame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
         global_filters: Sequence[nw.Expr] | None = None,
         lazy: Literal[True],
@@ -331,7 +331,7 @@ class MetadataStore(ABC):
         self,
         feature: type[BaseFeature],
         *,
-        samples: Frame | None = None,
+        samples: IntoFrame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
         global_filters: Sequence[nw.Expr] | None = None,
         lazy: bool = False,
@@ -390,6 +390,14 @@ class MetadataStore(ABC):
         """
         import narwhals as nw
 
+        # Convert samples to Narwhals frame if not already
+        samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None
+        if samples is not None:
+            if isinstance(samples, (nw.DataFrame, nw.LazyFrame)):
+                samples_nw = samples
+            else:
+                samples_nw = nw.from_native(samples)
+
         # Normalize filter keys to FeatureKey
         normalized_filters: dict[FeatureKey, list[nw.Expr]] = {}
         if filters:
@@ -404,7 +412,7 @@ class MetadataStore(ABC):
         plan = graph.get_feature_plan(feature.spec().key)
 
         # Root features without samples: error (samples required)
-        if not plan.deps and samples is None:
+        if not plan.deps and samples_nw is None:
             raise ValueError(
                 f"Feature {feature.spec().key} has no upstream dependencies (root feature). "
                 f"Must provide 'samples' parameter with sample_uid and {METAXY_PROVENANCE_BY_FIELD} columns. "
@@ -430,14 +438,14 @@ class MetadataStore(ABC):
         filters_by_key: dict[FeatureKey, list[nw.Expr]] = {}
 
         # if samples are provided, use them as source of truth for upstream data
-        if samples is not None:
+        if samples_nw is not None:
             # Apply filters to samples if any
-            filtered_samples = samples
+            filtered_samples = samples_nw
             if current_feature_filters:
-                filtered_samples = samples.filter(current_feature_filters)
+                filtered_samples = samples_nw.filter(current_feature_filters)
 
             # fill in METAXY_PROVENANCE column if it's missing (e.g. for root features)
-            samples = self.hash_struct_version_column(
+            samples_nw = self.hash_struct_version_column(
                 plan,
                 df=filtered_samples,
                 struct_column=METAXY_PROVENANCE_BY_FIELD,
@@ -446,8 +454,8 @@ class MetadataStore(ABC):
 
             # For root features, add data_version columns if they don't exist
             # (root features have no computation, so data_version equals provenance)
-            if METAXY_DATA_VERSION_BY_FIELD not in samples.columns:
-                samples = samples.with_columns(
+            if METAXY_DATA_VERSION_BY_FIELD not in samples_nw.columns:
+                samples_nw = samples_nw.with_columns(
                     nw.col(METAXY_PROVENANCE_BY_FIELD).alias(
                         METAXY_DATA_VERSION_BY_FIELD
                     ),
@@ -510,22 +518,22 @@ class MetadataStore(ABC):
                     break
 
             if (
-                samples is not None
-                and samples.implementation != self.native_implementation()
+                samples_nw is not None
+                and samples_nw.implementation != self.native_implementation()
             ):
                 if not switched_to_polars:
                     if engine_mode == "native":
                         # Always raise error for samples with wrong implementation, regardless
                         # of fallback stores, because samples come from user argument, not from fallback
                         raise VersioningEngineMismatchError(
-                            f"versioning_engine='native' but provided `samples` have implementation {samples.implementation}, "
+                            f"versioning_engine='native' but provided `samples` have implementation {samples_nw.implementation}, "
                             f"expected {self.native_implementation()}"
                         )
                     elif engine_mode == "auto":
                         PolarsMaterializationWarning.warn_on_implementation_mismatch(
                             expected=self.native_implementation(),
-                            actual=samples.implementation,
-                            message=f"Provided `samples` have implementation {samples.implementation}. Using Polars for resolving the increment instead.",
+                            actual=samples_nw.implementation,
+                            message=f"Provided `samples` have implementation {samples_nw.implementation}. Using Polars for resolving the increment instead.",
                         )
                 implementation = nw.Implementation.POLARS
                 switched_to_polars = True
@@ -533,8 +541,8 @@ class MetadataStore(ABC):
         if switched_to_polars:
             if current_metadata:
                 current_metadata = switch_implementation_to_polars(current_metadata)
-            if samples:
-                samples = switch_implementation_to_polars(samples)
+            if samples_nw:
+                samples_nw = switch_implementation_to_polars(samples_nw)
             for upstream_key, df in upstream_by_key.items():
                 upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
 
@@ -543,10 +551,10 @@ class MetadataStore(ABC):
         ) as engine:
             if skip_comparison:
                 # Skip comparison: return all upstream samples as added
-                if samples is not None:
+                if samples_nw is not None:
                     # Root features or user-provided samples: use samples directly
                     # Note: samples already has metaxy_provenance computed
-                    added = samples.lazy()
+                    added = samples_nw.lazy()
                 else:
                     # Non-root features: load all upstream with provenance
                     added = engine.load_upstream_with_provenance(
@@ -562,7 +570,7 @@ class MetadataStore(ABC):
                     upstream=upstream_by_key,
                     hash_algorithm=self.hash_algorithm,
                     filters=filters_by_key,
-                    sample=samples.lazy() if samples is not None else None,
+                    sample=samples_nw.lazy() if samples_nw is not None else None,
                 )
 
         # Convert None to empty DataFrames
