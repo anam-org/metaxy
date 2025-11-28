@@ -4,6 +4,7 @@ This module provides utilities for:
 - Loading runbooks from .example.yaml files
 - Applying patches to show code evolution
 - Reading source files at different stages
+- Loading saved execution results from .example.result.json files
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from metaxy._testing import Runbook
+from metaxy._testing import Runbook, SavedRunbookResult
 
 
 class RunbookLoader:
@@ -245,3 +246,41 @@ class RunbookLoader:
             patches_by_scenario[scenario.name] = scenario_patches
 
         return patches_by_scenario
+
+    def get_patch_snapshots(
+        self, example_name: str
+    ) -> dict[str, tuple[str | None, str | None]]:
+        """Get patch snapshot information from the runbook's execution state.
+
+        Args:
+            example_name: Name of the example.
+
+        Returns:
+            Dictionary mapping patch paths to (before_snapshot, after_snapshot) tuples,
+            or empty dict if no execution state exists.
+        """
+        runbook = self.load_runbook(example_name)
+        return runbook.get_patch_snapshots()
+
+    def load_execution_result(self, example_name: str) -> SavedRunbookResult:
+        """Load saved execution result from .example.result.json file.
+
+        Args:
+            example_name: Name of the example.
+
+        Returns:
+            Parsed SavedRunbookResult instance.
+
+        Raises:
+            FileNotFoundError: If result file doesn't exist.
+        """
+        example_dir = self.get_example_dir(example_name)
+        result_path = example_dir / ".example.result.json"
+
+        if not result_path.exists():
+            raise FileNotFoundError(
+                f"Execution result not found: {result_path}. "
+                f"Run tests to generate: pytest tests/examples/test_example_snapshots.py"
+            )
+
+        return SavedRunbookResult.from_json_file(result_path)
