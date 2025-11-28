@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 import cyclopts
 
@@ -40,35 +40,52 @@ def generate(
             help="Operation class path to use (can be repeated). Example: metaxy.migrations.ops.DataVersionReconciliation"
         ),
     ],
+    type: Annotated[
+        Literal["diff", "full"],
+        cyclopts.Parameter(
+            help="Migration type: 'diff' (compare different graph snapshots) or 'full' (operates on a single graph snapshot)"
+        ),
+    ] = "diff",
 ):
     """Generate migration from detected feature changes.
 
-    Compares the latest snapshot in the store (or specified from_snapshot)
-    with the current active graph to detect changes.
+    Two migration types are supported:
 
-    The migration is recorded in the system tables (not a YAML file).
+    - **diff** : Compares the latest snapshot in the store (or specified
+      from_snapshot) with the current active graph to detect changes. Only affected
+      features are included.
+
+    - **full**: Creates a migration that includes ALL features in the current graph.
+      Each operation will have a 'features' list with all feature keys.
 
     Examples:
-        # Generate with DataVersionReconciliation operation
+        # Generate diff migration with DataVersionReconciliation operation
         $ metaxy migrations generate --op metaxy.migrations.ops.DataVersionReconciliation
+
+        # Generate full graph migration (all features)
+        $ metaxy migrations generate --migration-type full --op myproject.ops.CustomBackfill
 
         # Custom operation type
         $ metaxy migrations generate --op myproject.ops.CustomReconciliation
 
-        # Multiple operations (future use)
+        # Multiple operations
         $ metaxy migrations generate \
             --op metaxy.migrations.ops.DataVersionReconciliation \
             --op myproject.ops.CustomBackfill
     """
+    import shlex
+    import sys
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.migrations.detector import detect_diff_migration
+    from metaxy.migrations.detector import (
+        detect_diff_migration,
+        generate_full_graph_migration,
+    )
 
     context = AppContext.get()
     context.raise_command_cannot_override_project()
     config = context.config
-    project = config.project
 
     # Convert op_type list to ops format
     if len(op) == 0:
@@ -78,36 +95,63 @@ def generate(
         )
         raise SystemExit(1)
 
-    ops = [{"type": op} for op in op]
+    ops = [{"type": o} for o in op]
 
     # Get store and project from config
     metadata_store = context.get_store(store)
     migrations_dir = Path(config.migrations_dir)
     project = context.get_required_project()  # This command needs a specific project
 
+    # Reconstruct CLI command for YAML comment
+    cli_command = shlex.join(sys.argv)
+
     with metadata_store.open("write"):
-        # Detect migration and write YAML
-        migration = detect_diff_migration(
-            metadata_store,
-            project=project,
-            from_snapshot_version=from_snapshot,
-            ops=ops,
-            migrations_dir=migrations_dir,
-            name=name,
-        )
+        if type == "diff":
+            # Detect migration and write YAML
+            migration = detect_diff_migration(
+                metadata_store,
+                project=project,
+                from_snapshot_version=from_snapshot,
+                ops=ops,
+                migrations_dir=migrations_dir,
+                name=name,
+                command=cli_command,
+            )
 
-        if migration is None:
-            app.console.print("[yellow]No changes detected[/yellow]")
-            app.console.print("  Current graph matches latest snapshot")
-            return
+            if migration is None:
+                app.console.print("[yellow]No changes detected[/yellow]")
+                app.console.print("  Current graph matches latest snapshot")
+                return
 
-        # Print summary
-        yaml_path = migrations_dir / f"{migration.migration_id}.yaml"
-        app.console.print("\n[green]✓[/green] Migration generated")
-        app.console.print(f"  Migration ID: {migration.migration_id}")
-        app.console.print(f"  YAML file: {yaml_path}")
-        app.console.print(f"  From snapshot: {migration.from_snapshot_version}")
-        app.console.print(f"  To snapshot: {migration.to_snapshot_version}")
+            # Print summary for DiffMigration
+            yaml_path = migrations_dir / f"{migration.migration_id}.yaml"
+            app.console.print("\n[green]✓[/green] DiffMigration generated")
+            app.console.print(f"  Migration ID: {migration.migration_id}")
+            app.console.print(f"  YAML file: {yaml_path}")
+            app.console.print(f"  From snapshot: {migration.from_snapshot_version}")
+            app.console.print(f"  To snapshot: {migration.to_snapshot_version}")
+
+        else:  # type == "full"
+            if from_snapshot is not None:
+                app.console.print(
+                    "[yellow]Warning:[/yellow] --from-snapshot is ignored for full graph migrations"
+                )
+
+            migration = generate_full_graph_migration(
+                metadata_store,
+                project=project,
+                ops=ops,
+                migrations_dir=migrations_dir,
+                name=name,
+                command=cli_command,
+            )
+
+            # Print summary for FullGraphMigration
+            yaml_path = migrations_dir / f"{migration.migration_id}.yaml"
+            app.console.print("\n[green]✓[/green] FullGraphMigration generated")
+            app.console.print(f"  Migration ID: {migration.migration_id}")
+            app.console.print(f"  YAML file: {yaml_path}")
+            app.console.print(f"  Snapshot: {migration.snapshot_version}")
 
         # Output migration ID to stdout for scripting
         data_console.print(migration.migration_id)
