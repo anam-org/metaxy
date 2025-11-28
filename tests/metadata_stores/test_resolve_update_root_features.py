@@ -353,3 +353,41 @@ class TestResolveUpdateRootFeatures:
                 assert (
                     row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
                 )
+
+    @parametrize_with_cases("store_config", cases=BasicStoreCases)
+    def test_resolve_update_accepts_polars_frame_directly(
+        self,
+        store_config: tuple[type[MetadataStore], dict[str, Any]],
+    ):
+        """Test that resolve_update accepts a Polars DataFrame directly without nw.from_native().
+
+        The samples parameter now accepts IntoFrame, so users can pass Polars frames directly.
+        """
+        store_type, config = store_config
+        store = store_type(**config)  # type: ignore[abstract]
+
+        graph = FeatureGraph()
+        video_feature = create_video_embeddings_feature(graph)
+
+        with graph.use(), store:
+            # Pass a Polars DataFrame directly without wrapping with nw.from_native()
+            user_samples = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "metaxy_provenance_by_field": [
+                        {"embedding": "hash1"},
+                        {"embedding": "hash2"},
+                        {"embedding": "hash3"},
+                    ],
+                }
+            )
+            user_samples = add_metaxy_provenance_column(user_samples, video_feature)
+
+            # Pass Polars frame directly - should work without nw.from_native()
+            result = store.resolve_update(video_feature, samples=user_samples)
+
+            # All samples should be added
+            assert len(result.added) == 3
+            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
+            assert len(result.changed) == 0
+            assert len(result.removed) == 0
