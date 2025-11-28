@@ -183,7 +183,7 @@ class TestMetaxifyBasic:
         info = asset_spec.metadata[DAGSTER_METAXY_INFO_METADATA_KEY]
         assert "feature" in info
         assert "metaxy" in info
-        assert info["feature"]["spec"]["key"] == ["test", "upstream"]
+        assert info["feature"]["spec"]["key"] == "test/upstream"
 
     def test_metaxify_injects_feature_info_with_metadata(
         self, feature_with_group_name: type[mx.BaseFeature]
