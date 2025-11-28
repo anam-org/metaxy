@@ -201,10 +201,9 @@ nav:
         - integrations/orchestration/dagster/index.md
         - API: integrations/orchestration/dagster/api.md
     - Metadata Stores:
-      - Ibis:
-        - integrations/metadata-stores/ibis/index.md
-        - API: integrations/metadata-stores/ibis/api.md
+      - integrations/metadata-stores/index.md
       - Databases:
+        - integrations/metadata-stores/databases/index.md
         - BigQuery:
           - integrations/metadata-stores/databases/bigquery/index.md
           - Configuration: integrations/metadata-stores/databases/bigquery/configuration.md
@@ -221,7 +220,11 @@ nav:
           - integrations/metadata-stores/databases/lancedb/index.md
           - Configuration: integrations/metadata-stores/databases/lancedb/configuration.md
           - API: integrations/metadata-stores/databases/lancedb/api.md
+        - Ibis:
+          - integrations/metadata-stores/databases/ibis/index.md
+          - API: integrations/metadata-stores/databases/ibis/api.md
       - Storage:
+        - integrations/metadata-stores/storage/index.md
         - Delta Lake:
           - integrations/metadata-stores/storage/delta/index.md
           - Configuration: integrations/metadata-stores/storage/delta/configuration.md

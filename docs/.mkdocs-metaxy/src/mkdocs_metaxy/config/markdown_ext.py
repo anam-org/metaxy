@@ -23,7 +23,6 @@ from markdown.preprocessors import Preprocessor
 from mkdocs_metaxy.config_generator import (
     extract_field_info,
     generate_individual_field_doc,
-    get_toml_path,
 )
 
 # Use MkDocs logging pattern for proper integration with --strict mode
@@ -254,9 +253,9 @@ class MetaxyConfigPreprocessor(Preprocessor):
 
             # For nested models with children, just generate a header
             if field["is_nested"]:
-                field_path = get_toml_path(field["path"])
+                # Use just field name for header, not full path with prefix
                 header_prefix = "#" * field_header_level
-                field_doc = f"{header_prefix} {field_path}\n\n"
+                field_doc = f"{header_prefix} `{field['name']}`\n\n"
                 if field["description"]:
                     field_doc += f"{field['description']}\n\n"
             else:
@@ -269,6 +268,7 @@ class MetaxyConfigPreprocessor(Preprocessor):
                     include_tool_prefix=False,
                     header_level=field_header_level,
                     env_var_path=field["path"],  # Use full path with prefix
+                    header_name=field["name"],  # Use just field name for header
                 )
             field_docs.append(field_doc)
 

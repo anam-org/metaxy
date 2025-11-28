@@ -6,9 +6,9 @@ Metaxy uses [Ibis](https://ibis-project.org/) as a portable dataframe abstractio
 
 The following metadata stores are built on Ibis:
 
-- [DuckDB](../databases/duckdb/index.md)
-- [ClickHouse](../databases/clickhouse/index.md)
-- [BigQuery](../databases/bigquery/index.md)
+- [DuckDB](../duckdb/index.md)
+- [ClickHouse](../clickhouse/index.md)
+- [BigQuery](../bigquery/index.md)
 
 ## Reference
 
