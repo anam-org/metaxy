@@ -3154,6 +3154,7 @@
 <h1 id="metaxy-delta-lake">Metaxy + Delta Lake<a class="headerlink" href="#metaxy-delta-lake" title="Permanent link">&para;</a></h1>
 <p>Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DeltaMetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/delta/#metaxy.metadata_store.delta.DeltaMetadataStore"><code>DeltaMetadataStore</code></a> that stores metadata in <a href="https://delta.io/">Delta Lake</a> (also known as a LakeHouse format) and uses an in-memory Polars versioning engine.</p>
 <p>It supports the local filesystem and remote object stores.</p>
+<p>See <a href="../../../../reference/api/metadata-stores/delta/#configuration">Configuration Reference</a> for all available options.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[delta]&#39;</span>
 </span></code></pre></div>
@@ -3166,6 +3167,11 @@ The dict is passed verbatim to <a href="https://delta-io.github.io/delta-rs/inte
 <ul>
 <li><code>nested</code> (default) places every feature in its own directory: <code>your/feature/key.delta</code></li>
 <li><code>flat</code> stores all of them in the same directory: <code>your__feature_key.delta</code></li>
+</ul>
+<h1 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h1>
+<ul>
+<li><a href="../../../../reference/api/metadata-stores/delta/#configuration">Configuration Reference</a></li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DeltaMetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/delta/#metaxy.metadata_store.delta.DeltaMetadataStore">API Reference</a></li>
 </ul>
 
 

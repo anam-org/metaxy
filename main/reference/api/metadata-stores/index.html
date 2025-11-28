@@ -3242,6 +3242,78 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#base-configuration-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base Configuration Class
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metaxy.metadata_store.base.MetadataStoreConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;MetadataStoreConfig
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#storesdevconfigfallback_stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stores.dev.config.fallback_stores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storesdevconfighash_algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stores.dev.config.hash_algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storesdevconfigversioning_engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stores.dev.config.versioning_engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#project-write-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3360,13 +3432,30 @@
 Metaxy has built-in support for the following metadata store types:</p>
 <h2 id="databases">Databases<a class="headerlink" href="#databases" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;IbisMetadataStore&lt;/span&gt;" href="ibis/#metaxy.metadata_store.ibis.IbisMetadataStore">IbisMetadataStore</a>.</li>
-<li><a href="lancedb/">LanceDBMetadataStore</a>.</li>
+<li>
+<p><a href="ibis/bigquery/">BigQuery</a></p>
+</li>
+<li>
+<p><a href="ibis/clickhouse/">ClickHouse</a></p>
+</li>
+<li>
+<p><a href="ibis/duckdb/">DuckDB</a></p>
+</li>
+<li>
+<p><a href="lancedb/">LanceDB</a></p>
+</li>
+<li>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;IbisMetadataStore&lt;/span&gt;" href="ibis/#metaxy.metadata_store.ibis.IbisMetadataStore"><code>IbisMetadataStore</code></a> (a base class)</p>
+</li>
 </ul>
 <h2 id="storage-only">Storage Only<a class="headerlink" href="#storage-only" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="delta/">DeltaMetadataStore</a>.</li>
-<li><a href="memory/">InMemoryMetadataStore</a>.</li>
+<li>
+<p><a href="delta/">DeltaMetadataStore</a>.</p>
+</li>
+<li>
+<p><a href="memory/">InMemoryMetadataStore</a>.</p>
+</li>
 </ul>
 <hr />
 <h2 id="metadata-store-interface">Metadata Store Interface<a class="headerlink" href="#metadata-store-interface" title="Permanent link">&para;</a></h2>
@@ -3636,7 +3725,7 @@ allowing filtering of rows written during a specific materialization run.</p>
   </span>
 
 <a href="#metaxy.MetadataStore.config_model" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">config_model</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><span title="metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</span></span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">config_model</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3648,7 +3737,7 @@ allowing filtering of rows written during a specific materialization run.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<span title="metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</span>]</code>
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a>]</code>
           –
           <div class="doc-md-description">
             <p>The config class type (e.g., DuckDBMetadataStoreConfig)</p>
@@ -3700,7 +3789,7 @@ but this is intentional - each store returns its own config type.</p>
   </span>
 
 <a href="#metaxy.MetadataStore.from_config" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</span></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing_extensions.Self">Self</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing_extensions.Self">Self</span></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3716,7 +3805,7 @@ but this is intentional - each store returns its own config type.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>config</code></b>
-              (<code><span title="metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</span></code>)
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a></code>)
           –
           <div class="doc-md-description">
             <p>Configuration object (should be the type returned by config_model())</p>
@@ -6094,8 +6183,7 @@ configure deduplication at the storage layer.</p>
 
     </div>
 
-</div><hr />
-
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -6118,11 +6206,149 @@ configure deduplication at the storage layer.</p>
     </div>
 
 </div><hr />
+<h2 id="base-configuration-class">Base Configuration Class<a class="headerlink" href="#base-configuration-class" title="Permanent link">&para;</a></h2>
+<p>The following base configuration class is typically used by child metadata stores:</p>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="metaxy.metadata_store.base.MetadataStoreConfig" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">MetadataStoreConfig</span>
+
+
+<a href="#metaxy.metadata_store.base.MetadataStoreConfig" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;pydantic_settings.BaseSettings&lt;/code&gt;" href="https://docs.pydantic.dev/latest/api/pydantic_settings/#pydantic_settings.BaseSettings">BaseSettings</a></code></p>
+
+
+
+        <p>Base configuration class for metadata stores.</p>
+<p>This class defines common configuration fields shared by all metadata store types.
+Store-specific config classes should inherit from this and add their own fields.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.metadata_store.duckdb</span><span class="w"> </span><span class="kn">import</span> <span class="n">DuckDBMetadataStoreConfig</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">DuckDBMetadataStoreConfig</span><span class="p">(</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">database</span><span class="o">=</span><span class="s2">&quot;metadata.db&quot;</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">hash_algorithm</span><span class="o">=</span><span class="n">HashAlgorithm</span><span class="o">.</span><span class="n">MD5</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">store</span> <span class="o">=</span> <span class="n">DuckDBMetadataStore</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span></code></pre></div>
+</details>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><hr />
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p>The base <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt;" href="#metaxy.metadata_store.base.MetadataStoreConfig"><code>MetadataStoreConfig</code></a> class injects the following configuration options:</p>
+<h3 id="storesdevconfigfallback_stores"><code>stores.dev.config.fallback_stores</code><a class="headerlink" href="#storesdevconfigfallback_stores" title="Permanent link">&para;</a></h3>
+<p>List of fallback store names to search when features are not found in the current store.</p>
+<p><strong>Type:</strong> <code>list[str]</code></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="storesdevconfigfallback_stores-metaxytoml" name="__tabbed_1" type="radio" /><input id="storesdevconfigfallback_stores-pyprojecttoml" name="__tabbed_1" type="radio" /><input id="storesdevconfigfallback_stores-environment-variable" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="storesdevconfigfallback_stores-metaxytoml">metaxy.toml</label><label for="storesdevconfigfallback_stores-pyprojecttoml">pyproject.toml</label><label for="storesdevconfigfallback_stores-environment-variable">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># Optional</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># fallback_stores = []</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># Optional</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># fallback_stores = []</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_FALLBACK_STORES</span><span class="o">=</span>...
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="storesdevconfighash_algorithm"><code>stores.dev.config.hash_algorithm</code><a class="headerlink" href="#storesdevconfighash_algorithm" title="Permanent link">&para;</a></h3>
+<p>Hash algorithm for versioning. If None, uses store's default.</p>
+<p><strong>Type:</strong> <code>metaxy.versioning.types.HashAlgorithm | None</code></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="storesdevconfighash_algorithm-metaxytoml" name="__tabbed_2" type="radio" /><input id="storesdevconfighash_algorithm-pyprojecttoml" name="__tabbed_2" type="radio" /><input id="storesdevconfighash_algorithm-environment-variable" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="storesdevconfighash_algorithm-metaxytoml">metaxy.toml</label><label for="storesdevconfighash_algorithm-pyprojecttoml">pyproject.toml</label><label for="storesdevconfighash_algorithm-environment-variable">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># Optional</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># hash_algorithm = null</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># Optional</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># hash_algorithm = null</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_HASH_ALGORITHM</span><span class="o">=</span>...
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="storesdevconfigversioning_engine"><code>stores.dev.config.versioning_engine</code><a class="headerlink" href="#storesdevconfigversioning_engine" title="Permanent link">&para;</a></h3>
+<p>Which versioning engine to use: 'auto' (prefer native), 'native', or 'polars'.</p>
+<p><strong>Type:</strong> <code>Literal['auto', 'native', 'polars']</code> | <strong>Default:</strong> <code>"auto"</code></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="storesdevconfigversioning_engine-metaxytoml" name="__tabbed_3" type="radio" /><input id="storesdevconfigversioning_engine-pyprojecttoml" name="__tabbed_3" type="radio" /><input id="storesdevconfigversioning_engine-environment-variable" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="storesdevconfigversioning_engine-metaxytoml">metaxy.toml</label><label for="storesdevconfigversioning_engine-pyprojecttoml">pyproject.toml</label><label for="storesdevconfigversioning_engine-environment-variable">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">versioning_engine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;auto&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">versioning_engine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;auto&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_VERSIONING_ENGINE</span><span class="o">=</span>auto
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<hr />
 <h2 id="project-write-validation">Project Write Validation<a class="headerlink" href="#project-write-validation" title="Permanent link">&para;</a></h2>
 <p>By default, <code>MetadataStore</code> raises a <code>ValueError</code> when attempting to write to a project that doesn't match the expected project from <code>MetaxyConfig.get().project</code>.</p>
 <p>For legitimate cross-project operations (such as migrations that need to update features across multiple projects), use <code>MetadataStore.allow_cross_project_writes</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;write&quot;</span><span class="p">),</span> <span class="n">store</span><span class="o">.</span><span class="n">allow_cross_project_writes</span><span class="p">():</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write_metadata</span><span class="p">(</span><span class="n">ExternallyDefinedFeature</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;write&quot;</span><span class="p">),</span> <span class="n">store</span><span class="o">.</span><span class="n">allow_cross_project_writes</span><span class="p">():</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write_metadata</span><span class="p">(</span><span class="n">ExternallyDefinedFeature</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
 </span></code></pre></div>
 
 

@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#lancedbmetadatastore" class="md-skip">
+        <a href="#metaxy-lancedb" class="md-skip">
           Skip to content
         </a>
       
@@ -3151,9 +3151,10 @@
   
 
 
-<h1 id="lancedbmetadatastore">LanceDBMetadataStore<a class="headerlink" href="#lancedbmetadatastore" title="Permanent link">&para;</a></h1>
-<p>LanceDB keeps one Lance table per feature, writes metadata in append mode, and uses the in-memory Polars versioning engine for provenance calculations. LanceDB handles schema evolution, transactions, and compaction automatically.</p>
+<h1 id="metaxy-lancedb">Metaxy + LanceDB<a class="headerlink" href="#metaxy-lancedb" title="Permanent link">&para;</a></h1>
+<p>Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;LanceDBMetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/lancedb/#metaxy.metadata_store.lancedb.LanceDBMetadataStore"><code>LanceDBMetadataStore</code></a>. LanceDB keeps one Lance table per feature, writes metadata in append mode, and uses the in-memory Polars versioning engine for provenance calculations. LanceDB handles schema evolution, transactions, and compaction automatically.</p>
 <p>It runs embedded (local directory) or against external storage (object stores, HTTP endpoints, LanceDB Cloud), so you can use the same store for local development and remote compute.</p>
+<p>See <a href="../../../../reference/api/metadata-stores/lancedb/#configuration">Configuration Reference</a> for all available options.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>The backend relies on <a href="https://lancedb.com/"><code>lancedb</code></a>, which is shipped with Metaxy's <code>lancedb</code> extras.</p>
 <h2 id="storage-targets">Storage Targets<a class="headerlink" href="#storage-targets" title="Permanent link">&para;</a></h2>
@@ -3161,6 +3162,11 @@
 <h2 id="storage-layout">Storage Layout<a class="headerlink" href="#storage-layout" title="Permanent link">&para;</a></h2>
 <p>All tables are stored within a single LanceDB database at the configured URI location.
 Each feature gets its own Lance table.</p>
+<h1 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h1>
+<ul>
+<li><a href="../../../../reference/api/metadata-stores/lancedb/#configuration">Configuration Reference</a></li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;LanceDBMetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/lancedb/#metaxy.metadata_store.lancedb.LanceDBMetadataStore">API Reference</a></li>
+</ul>
 
 
 
