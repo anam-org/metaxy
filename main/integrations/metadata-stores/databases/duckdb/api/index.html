@@ -3388,11 +3388,11 @@
 
 
 <h2 id="metaxy.metadata_store.duckdb.DuckDBMetadataStore" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">DuckDBMetadataStore</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.metadata_store.duckdb.DuckDBMetadataStore</span>
 
 
 <a href="#metaxy.metadata_store.duckdb.DuckDBMetadataStore" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DuckDBMetadataStore</span><span class="p">(</span><span class="n">database</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">extensions</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><span title="metaxy.metadata_store.duckdb.ExtensionInput">ExtensionInput</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fallback_stores</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.MetadataStore">MetadataStore</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ducklake</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;DuckLakeConfigInput&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DuckDBMetadataStore</span><span class="p">(</span><span class="n">database</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">extensions</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><span title="metaxy.metadata_store.duckdb.ExtensionInput">ExtensionInput</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fallback_stores</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.MetadataStore">MetadataStore</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ducklake</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.duckdb.DuckLakeConfigInput&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -3402,7 +3402,7 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;IbisMetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.ibis.IbisMetadataStore&lt;/code&gt;)" href="../../../ibis/api/#metaxy.metadata_store.ibis.IbisMetadataStore">IbisMetadataStore</a></code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.ibis.IbisMetadataStore&lt;/span&gt;" href="../../../ibis/api/#metaxy.metadata_store.ibis.IbisMetadataStore">IbisMetadataStore</a></code></p>
 
 
 
@@ -3488,7 +3488,7 @@
           <div class="doc-md-description">
             <p>List of DuckDB extensions to install and load on open.
 Supports strings (community repo), mapping-like objects with
-<code>name</code>/<code>repository</code> keys, or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ExtensionSpec&lt;/span&gt;
+<code>name</code>/<code>repository</code> keys, or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.duckdb.ExtensionSpec&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -3505,7 +3505,7 @@ Supports strings (community repo), mapping-like objects with
 DuckLakeAttachmentConfig instance. When supplied, the DuckDB
 connection is configured to ATTACH the DuckLake catalog after open().
 fallback_stores: Ordered list of read-only fallback stores.</p>
-<p>**kwargs: Passed to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;IbisMetadataStore&lt;/span&gt;" href="../../../ibis/api/#metaxy.metadata_store.ibis.IbisMetadataStore">metaxy.metadata_store.ibis.IbisMetadataStore</a>`</p>
+<p>**kwargs: Passed to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.ibis.IbisMetadataStore&lt;/span&gt;" href="../../../ibis/api/#metaxy.metadata_store.ibis.IbisMetadataStore">metaxy.metadata_store.ibis.IbisMetadataStore</a>`</p>
 </details>
 
 <details class="warning" open>
@@ -3631,7 +3631,7 @@ before initializing the store.</p>
 
 
 <h4 id="metaxy.metadata_store.duckdb.DuckDBMetadataStore.sqlalchemy_url" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">sqlalchemy_url</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.metadata_store.duckdb.DuckDBMetadataStore.sqlalchemy_url</span>
 
 
   <span class="doc doc-labels">
@@ -3678,7 +3678,7 @@ before initializing the store.</p>
 
 
 <h4 id="metaxy.metadata_store.duckdb.DuckDBMetadataStore.ducklake_attachment" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">ducklake_attachment</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.metadata_store.duckdb.DuckDBMetadataStore.ducklake_attachment</span>
 
 
   <span class="doc doc-labels">
@@ -3702,7 +3702,7 @@ before initializing the store.</p>
 
 
 <h4 id="metaxy.metadata_store.duckdb.DuckDBMetadataStore.ducklake_attachment_config" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">ducklake_attachment_config</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.metadata_store.duckdb.DuckDBMetadataStore.ducklake_attachment_config</span>
 
 
   <span class="doc doc-labels">
@@ -3710,12 +3710,12 @@ before initializing the store.</p>
   </span>
 
 <a href="#metaxy.metadata_store.duckdb.DuckDBMetadataStore.ducklake_attachment_config" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ducklake_attachment_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DuckLakeAttachmentConfig&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ducklake_attachment_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig&lt;/code&gt;)" href="#metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig">DuckLakeAttachmentConfig</a></span>
+  &lt;/span&gt;" href="#metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig">DuckLakeAttachmentConfig</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3733,16 +3733,16 @@ before initializing the store.</p>
 
 
 <h4 id="metaxy.metadata_store.duckdb.DuckDBMetadataStore.open" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">open</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.duckdb.DuckDBMetadataStore.open</span>
 
 
 <a href="#metaxy.metadata_store.duckdb.DuckDBMetadataStore.open" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;AccessMode&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.types.AccessMode&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.types.AccessMode">AccessMode</a></span> <span class="o">=</span> <span class="s1">&#39;read&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="typing_extensions.Self">Self</span></span><span class="p">]</span>
+  &lt;/span&gt;" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.types.AccessMode">AccessMode</a></span> <span class="o">=</span> <span class="s1">&#39;read&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="typing_extensions.Self">Self</span></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3754,12 +3754,12 @@ before initializing the store.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>mode</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;AccessMode&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.types.AccessMode&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.types.AccessMode">AccessMode</a></code>, default:
+  &lt;/span&gt;" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.types.AccessMode">AccessMode</a></code>, default:
                   <code>&#39;read&#39;</code>
 )
           –
@@ -3825,7 +3825,7 @@ READ mode sets read_only=True for concurrent access.</p>
 
 
 <h4 id="metaxy.metadata_store.duckdb.DuckDBMetadataStore.preview_ducklake_sql" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">preview_ducklake_sql</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.duckdb.DuckDBMetadataStore.preview_ducklake_sql</span>
 
 
 <a href="#metaxy.metadata_store.duckdb.DuckDBMetadataStore.preview_ducklake_sql" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -3852,7 +3852,7 @@ READ mode sets read_only=True for concurrent access.</p>
 
 
 <h4 id="metaxy.metadata_store.duckdb.DuckDBMetadataStore.config_model" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">config_model</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.duckdb.DuckDBMetadataStore.config_model</span>
 
 
   <span class="doc doc-labels">
@@ -3872,7 +3872,7 @@ READ mode sets read_only=True for concurrent access.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a>]</code>
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/span&gt;" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a>]</code>
           –
           <div class="doc-md-description">
             <p>The config class type (e.g., DuckDBMetadataStoreConfig)</p>
@@ -3914,7 +3914,7 @@ but this is intentional - each store returns its own config type.</p>
 
 
 <h2 id="metaxy.metadata_store.duckdb.ExtensionSpec" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">ExtensionSpec</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.metadata_store.duckdb.ExtensionSpec</span>
 
 
   <span class="doc doc-labels">
@@ -4006,7 +4006,7 @@ but this is intentional - each store returns its own config type.</p>
 
 
 <h2 id="metaxy.metadata_store.duckdb.DuckLakeConfigInput" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">DuckLakeConfigInput</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.metadata_store.duckdb.DuckLakeConfigInput</span>
 
 
   <span class="doc doc-labels">
@@ -4014,12 +4014,12 @@ but this is intentional - each store returns its own config type.</p>
   </span>
 
 <a href="#metaxy.metadata_store.duckdb.DuckLakeConfigInput" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DuckLakeConfigInput</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DuckLakeAttachmentConfig&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DuckLakeConfigInput</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig&lt;/code&gt;)" href="#metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig">DuckLakeAttachmentConfig</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
+  &lt;/span&gt;" href="#metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig">DuckLakeAttachmentConfig</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -4033,7 +4033,7 @@ but this is intentional - each store returns its own config type.</p>
 
 
 <h2 id="metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">DuckLakeAttachmentConfig</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig</span>
 
 
   <span class="doc doc-labels">
@@ -4159,7 +4159,7 @@ but this is intentional - each store returns its own config type.</p>
 
 
 <h4 id="metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig.metadata_sql_parts" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metadata_sql_parts</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig.metadata_sql_parts</span>
 
 
 <a href="#metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig.metadata_sql_parts" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -4187,7 +4187,7 @@ but this is intentional - each store returns its own config type.</p>
 
 
 <h4 id="metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig.storage_sql_parts" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">storage_sql_parts</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig.storage_sql_parts</span>
 
 
 <a href="#metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig.storage_sql_parts" class="headerlink" title="Permanent link">&para;</a></h4>

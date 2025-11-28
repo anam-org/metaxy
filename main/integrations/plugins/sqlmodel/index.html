@@ -2973,7 +2973,7 @@
 </div>
 </div>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<p>The SQLModel integration provides <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;BaseSQLModelFeature&lt;/span&gt;
+<p>The SQLModel integration provides <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.sqlmodel.BaseSQLModelFeature&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -3010,7 +3010,7 @@
 <p>When <code>__tablename__</code> is not specified, it is automatically generated from the feature key. For <code>FeatureKey(["video", "processing"])</code>, it becomes <code>"video__processing"</code>. This behavior can be disabled in the plugin configuration.</p>
 </div>
 <h2 id="database-migrations">Database Migrations<a class="headerlink" href="#database-migrations" title="Permanent link">&para;</a></h2>
-<p>When using SQLModel features with Alembic or other migration tools, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;filter_feature_sqlmodel_metadata&lt;/span&gt;" href="api/#metaxy.ext.sqlmodel.filter_feature_sqlmodel_metadata"><code>filter_feature_sqlmodel_metadata()</code></a> to transform table names and filter metadata.</p>
+<p>When using SQLModel features with Alembic or other migration tools, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.ext.sqlmodel.filter_feature_sqlmodel_metadata&lt;/span&gt;" href="api/#metaxy.ext.sqlmodel.filter_feature_sqlmodel_metadata"><code>filter_feature_sqlmodel_metadata()</code></a> to transform table names and filter metadata.</p>
 <div class="admonition info">
 <p class="admonition-title">Table Name Transformation</p>
 <p>Pass <code>SQLModel.metadata</code> to <code>filter_feature_sqlmodel_metadata()</code> and it will transform table names by adding the store's <code>table_prefix</code>. The returned metadata will have prefixed table names that match the actual database tables.</p>

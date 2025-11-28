@@ -3351,7 +3351,7 @@
 
 
 <h2 id="metaxy.InMemoryMetadataStore" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">InMemoryMetadataStore</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.InMemoryMetadataStore</span>
 
 
 <a href="#metaxy.InMemoryMetadataStore" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -3360,7 +3360,7 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="../#metaxy.MetadataStore">MetadataStore</a></code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="../#metaxy.MetadataStore">MetadataStore</a></code></p>
 
 
 
@@ -3444,11 +3444,11 @@ Only supports Polars components (no native backend).</p>
 
 
 <h4 id="metaxy.InMemoryMetadataStore.write_metadata_to_store" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">write_metadata_to_store</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.InMemoryMetadataStore.write_metadata_to_store</span>
 
 
 <a href="#metaxy.InMemoryMetadataStore.write_metadata_to_store" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../types/#metaxy.FeatureKey">FeatureKey</a></span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../types/#metaxy.FeatureKey">FeatureKey</a></span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3460,7 +3460,7 @@ Only supports Polars components (no native backend).</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature_key</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../types/#metaxy.FeatureKey">FeatureKey</a></code>)
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../types/#metaxy.FeatureKey">FeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature key to write to</p>
@@ -3555,11 +3555,11 @@ Only supports Polars components (no native backend).</p>
 
 
 <h4 id="metaxy.InMemoryMetadataStore.read_metadata_in_store" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">read_metadata_in_store</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.InMemoryMetadataStore.read_metadata_in_store</span>
 
 
 <a href="#metaxy.InMemoryMetadataStore.read_metadata_in_store" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_metadata_in_store</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_metadata_in_store</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -3576,7 +3576,7 @@ Only supports Polars components (no native backend).</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -3645,7 +3645,7 @@ Only supports Polars components (no native backend).</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;StoreNotOpenError&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/code&gt;)" href="../exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
             –
           <div class="doc-md-description">
             <p>If store is not open</p>
@@ -3721,7 +3721,7 @@ Only supports Polars components (no native backend).</p>
 
 
 <h4 id="metaxy.InMemoryMetadataStore.clear" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">clear</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.InMemoryMetadataStore.clear</span>
 
 
 <a href="#metaxy.InMemoryMetadataStore.clear" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -3753,16 +3753,16 @@ Only supports Polars components (no native backend).</p>
 
 
 <h4 id="metaxy.InMemoryMetadataStore.open" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">open</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.InMemoryMetadataStore.open</span>
 
 
 <a href="#metaxy.InMemoryMetadataStore.open" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;AccessMode&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.types.AccessMode&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="../#metaxy.metadata_store.types.AccessMode">AccessMode</a></span> <span class="o">=</span> <span class="s1">&#39;read&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="typing_extensions.Self">Self</span></span><span class="p">]</span>
+  &lt;/span&gt;" href="../#metaxy.metadata_store.types.AccessMode">AccessMode</a></span> <span class="o">=</span> <span class="s1">&#39;read&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="typing_extensions.Self">Self</span></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3774,12 +3774,12 @@ Only supports Polars components (no native backend).</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>mode</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;AccessMode&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.types.AccessMode&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="../#metaxy.metadata_store.types.AccessMode">AccessMode</a></code>, default:
+  &lt;/span&gt;" href="../#metaxy.metadata_store.types.AccessMode">AccessMode</a></code>, default:
                   <code>&#39;read&#39;</code>
 )
           –
@@ -3844,7 +3844,7 @@ Only supports Polars components (no native backend).</p>
 
 
 <h4 id="metaxy.InMemoryMetadataStore.__repr__" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__repr__</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.InMemoryMetadataStore.__repr__</span>
 
 
 <a href="#metaxy.InMemoryMetadataStore.__repr__" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -3875,7 +3875,7 @@ Only supports Polars components (no native backend).</p>
 
 
 <h4 id="metaxy.InMemoryMetadataStore.display" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">display</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.InMemoryMetadataStore.display</span>
 
 
 <a href="#metaxy.InMemoryMetadataStore.display" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -3903,7 +3903,7 @@ Only supports Polars components (no native backend).</p>
 
 
 <h4 id="metaxy.InMemoryMetadataStore.config_model" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">config_model</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.InMemoryMetadataStore.config_model</span>
 
 
   <span class="doc doc-labels">
@@ -3923,7 +3923,7 @@ Only supports Polars components (no native backend).</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="../#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a>]</code>
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/span&gt;" href="../#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a>]</code>
           –
           <div class="doc-md-description">
             <p>The config class type (e.g., DuckDBMetadataStoreConfig)</p>

@@ -3271,7 +3271,7 @@
 
 
 <h1 id="metadata-stores">Metadata Stores<a class="headerlink" href="#metadata-stores" title="Permanent link">&para;</a></h1>
-<p>Metaxy abstracts interactions with metadata behind an interface called <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt;" href="#metaxy.MetadataStore">MetadaStore</a>.</p>
+<p>Metaxy abstracts interactions with metadata behind an interface called <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="#metaxy.MetadataStore">MetadaStore</a>.</p>
 <p>Users can extend this class to implement support for arbitrary metadata storage such as databases, lakehouse formats, or really any kind of external system.
 Metaxy has built-in support for the following metadata store types:</p>
 <h2 id="databases">Databases<a class="headerlink" href="#databases" title="Permanent link">&para;</a></h2>
@@ -3289,7 +3289,7 @@ Metaxy has built-in support for the following metadata store types:</p>
 <p><a href="../../../integrations/metadata-stores/databases/lancedb/">LanceDB</a></p>
 </li>
 <li>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;IbisMetadataStore&lt;/span&gt;" href="../../../integrations/metadata-stores/ibis/api/#metaxy.metadata_store.ibis.IbisMetadataStore"><code>IbisMetadataStore</code></a> (a base class) - see <a href="../../../integrations/metadata-stores/ibis/">Ibis integration</a></p>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.ibis.IbisMetadataStore&lt;/span&gt;" href="../../../integrations/metadata-stores/ibis/api/#metaxy.metadata_store.ibis.IbisMetadataStore"><code>IbisMetadataStore</code></a> (a base class) - see <a href="../../../integrations/metadata-stores/ibis/">Ibis integration</a></p>
 </li>
 </ul>
 <h2 id="storage-only">Storage Only<a class="headerlink" href="#storage-only" title="Permanent link">&para;</a></h2>
@@ -3310,16 +3310,16 @@ Metaxy has built-in support for the following metadata store types:</p>
 
 
 <h2 id="metaxy.MetadataStore" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">MetadataStore</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.MetadataStore</span>
 
 
 <a href="#metaxy.MetadataStore" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MetadataStore</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">versioning_engine_cls</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><span title="metaxy.metadata_store.base.VersioningEngineT">VersioningEngineT</span></span><span class="p">],</span> <span class="n">hash_algorithm</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;HashAlgorithm&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.HashAlgorithm&lt;/code&gt;)" href="../types/#metaxy.HashAlgorithm">HashAlgorithm</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">versioning_engine</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;VersioningEngineOptions&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MetadataStore</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">versioning_engine_cls</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><span title="metaxy.metadata_store.base.VersioningEngineT">VersioningEngineT</span></span><span class="p">],</span> <span class="n">hash_algorithm</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.HashAlgorithm&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.HashAlgorithm&lt;/code&gt;)" href="../types/#metaxy.HashAlgorithm">HashAlgorithm</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">versioning_engine</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.base.VersioningEngineOptions&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.VersioningEngineOptions&lt;/code&gt;)" href="#metaxy.metadata_store.base.VersioningEngineOptions">VersioningEngineOptions</a></span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">fallback_stores</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="#metaxy.MetadataStore">MetadataStore</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">auto_create_tables</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">materialization_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+  &lt;/span&gt;" href="#metaxy.metadata_store.base.VersioningEngineOptions">VersioningEngineOptions</a></span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">fallback_stores</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="#metaxy.MetadataStore">MetadataStore</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">auto_create_tables</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">materialization_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -3336,7 +3336,7 @@ Metaxy has built-in support for the following metadata store types:</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>hash_algorithm</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;HashAlgorithm&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.HashAlgorithm&lt;/code&gt;)" href="../types/#metaxy.HashAlgorithm">HashAlgorithm</a> | None</code>, default:
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.HashAlgorithm&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.HashAlgorithm&lt;/code&gt;)" href="../types/#metaxy.HashAlgorithm">HashAlgorithm</a> | None</code>, default:
                   <code>None</code>
 )
           –
@@ -3346,12 +3346,12 @@ Metaxy has built-in support for the following metadata store types:</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>versioning_engine</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;VersioningEngineOptions&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.base.VersioningEngineOptions&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.VersioningEngineOptions&lt;/code&gt;)" href="#metaxy.metadata_store.base.VersioningEngineOptions">VersioningEngineOptions</a></code>, default:
+  &lt;/span&gt;" href="#metaxy.metadata_store.base.VersioningEngineOptions">VersioningEngineOptions</a></code>, default:
                   <code>&#39;auto&#39;</code>
 )
           –
@@ -3373,7 +3373,7 @@ Metaxy has built-in support for the following metadata store types:</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>fallback_stores</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="#metaxy.MetadataStore">MetadataStore</a>] | None</code>, default:
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="#metaxy.MetadataStore">MetadataStore</a>] | None</code>, default:
                   <code>None</code>
 )
           –
@@ -3409,7 +3409,7 @@ Use proper database migration tools like Alembic for production deployments.</p>
           <div class="doc-md-description">
             <p>Optional external orchestration ID.
 If provided, all metadata writes will include this ID in the <code>metaxy_materialization_id</code> column.
-Can be overridden per <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;write_metadata&lt;/span&gt;" href="#metaxy.MetadataStore.write_metadata"><code>MetadataStore.write_metadata</code></a> call.</p>
+Can be overridden per <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.write_metadata&lt;/span&gt;" href="#metaxy.MetadataStore.write_metadata"><code>MetadataStore.write_metadata</code></a> call.</p>
           </div>
         </li>
     </ul>
@@ -3425,7 +3425,7 @@ Can be overridden per <a class="autorefs autorefs-internal" title="&lt;code clas
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VersioningEngineMismatchError&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.exceptions.VersioningEngineMismatchError&lt;/code&gt;)" href="exceptions/#metaxy.metadata_store.exceptions.VersioningEngineMismatchError">VersioningEngineMismatchError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.VersioningEngineMismatchError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.VersioningEngineMismatchError">VersioningEngineMismatchError</a></code>
             –
           <div class="doc-md-description">
             <p>If a user-provided dataframe has a wrong implementation
@@ -3532,7 +3532,7 @@ and versioning_engine is set to <code>native</code></p>
 
 
 <h4 id="metaxy.MetadataStore.materialization_id" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">materialization_id</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.MetadataStore.materialization_id</span>
 
 
   <span class="doc doc-labels">
@@ -3560,7 +3560,7 @@ allowing filtering of rows written during a specific materialization run.</p>
 
 
 <h4 id="metaxy.MetadataStore.config_model" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">config_model</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.config_model</span>
 
 
   <span class="doc doc-labels">
@@ -3569,7 +3569,7 @@ allowing filtering of rows written during a specific materialization run.</p>
   </span>
 
 <a href="#metaxy.MetadataStore.config_model" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">config_model</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a></span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">config_model</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/span&gt;" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3581,7 +3581,7 @@ allowing filtering of rows written during a specific materialization run.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a>]</code>
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/span&gt;" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a>]</code>
           –
           <div class="doc-md-description">
             <p>The config class type (e.g., DuckDBMetadataStoreConfig)</p>
@@ -3625,7 +3625,7 @@ but this is intentional - each store returns its own config type.</p>
 
 
 <h4 id="metaxy.MetadataStore.from_config" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">from_config</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.from_config</span>
 
 
   <span class="doc doc-labels">
@@ -3633,7 +3633,7 @@ but this is intentional - each store returns its own config type.</p>
   </span>
 
 <a href="#metaxy.MetadataStore.from_config" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing_extensions.Self">Self</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/span&gt;" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing_extensions.Self">Self</span></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3649,7 +3649,7 @@ but this is intentional - each store returns its own config type.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>config</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a></code>)
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/span&gt;" href="#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a></code>)
           –
           <div class="doc-md-description">
             <p>Configuration object (should be the type returned by config_model())</p>
@@ -3752,45 +3752,45 @@ but this is intentional - each store returns its own config type.</p>
 
 
 <h4 id="metaxy.MetadataStore.resolve_update" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">resolve_update</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.resolve_update</span>
 
 
 <a href="#metaxy.MetadataStore.resolve_update" class="headerlink" title="Permanent link">&para;</a></h4>
           <div class="doc-overloads">
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_update</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;BaseFeature&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_update</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.feature.BaseFeature&lt;/code&gt;)" href="../definitions/feature/#metaxy.BaseFeature">BaseFeature</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.feature.BaseFeature&lt;/code&gt;)" href="../definitions/feature/#metaxy.BaseFeature">BaseFeature</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">global_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">lazy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">versioning_engine</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;native&#39;</span><span class="p">,</span> <span class="s1">&#39;polars&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">skip_comparison</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Increment&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.Increment&lt;/code&gt;)" href="../types/#metaxy.versioning.types.Increment">Increment</a></span>
-</span></code></pre></div><div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_update</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;BaseFeature&lt;/span&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">global_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">lazy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">versioning_engine</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;native&#39;</span><span class="p">,</span> <span class="s1">&#39;polars&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">skip_comparison</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.Increment&lt;/span&gt;" href="../types/#metaxy.versioning.types.Increment">Increment</a></span>
+</span></code></pre></div><div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_update</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.feature.BaseFeature&lt;/code&gt;)" href="../definitions/feature/#metaxy.BaseFeature">BaseFeature</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.feature.BaseFeature&lt;/code&gt;)" href="../definitions/feature/#metaxy.BaseFeature">BaseFeature</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">global_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">lazy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="kc">True</span><span class="p">],</span> <span class="n">versioning_engine</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;native&#39;</span><span class="p">,</span> <span class="s1">&#39;polars&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">skip_comparison</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;LazyIncrement&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.LazyIncrement&lt;/code&gt;)" href="../types/#metaxy.versioning.types.LazyIncrement">LazyIncrement</a></span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">global_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">lazy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="kc">True</span><span class="p">],</span> <span class="n">versioning_engine</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;native&#39;</span><span class="p">,</span> <span class="s1">&#39;polars&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">skip_comparison</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.LazyIncrement&lt;/span&gt;" href="../types/#metaxy.versioning.types.LazyIncrement">LazyIncrement</a></span>
 </span></code></pre></div>          </div>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_update</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;BaseFeature&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_update</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.feature.BaseFeature&lt;/code&gt;)" href="../definitions/feature/#metaxy.BaseFeature">BaseFeature</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.feature.BaseFeature&lt;/code&gt;)" href="../definitions/feature/#metaxy.BaseFeature">BaseFeature</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">global_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">lazy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">versioning_engine</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;native&#39;</span><span class="p">,</span> <span class="s1">&#39;polars&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">skip_comparison</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Increment&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.Increment&lt;/code&gt;)" href="../types/#metaxy.versioning.types.Increment">Increment</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;LazyIncrement&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.LazyIncrement&lt;/code&gt;)" href="../types/#metaxy.versioning.types.LazyIncrement">LazyIncrement</a></span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">global_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">lazy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">versioning_engine</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;native&#39;</span><span class="p">,</span> <span class="s1">&#39;polars&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">skip_comparison</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.Increment&lt;/span&gt;" href="../types/#metaxy.versioning.types.Increment">Increment</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.LazyIncrement&lt;/span&gt;" href="../types/#metaxy.versioning.types.LazyIncrement">LazyIncrement</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3803,7 +3803,7 @@ but this is intentional - each store returns its own config type.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;BaseFeature&lt;/span&gt;
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -3838,7 +3838,7 @@ For example, it can be used to requires processing for specific sample IDs.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>filters</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -3875,7 +3875,7 @@ Example: <code>[nw.col("sample_uid").is_in(["s1", "s2"])]</code></p>
 )
           –
           <div class="doc-md-description">
-            <p>Whether to return a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;LazyIncrement&lt;/span&gt;" href="../types/#metaxy.versioning.types.LazyIncrement">metaxy.versioning.types.LazyIncrement</a> or a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Increment&lt;/span&gt;" href="../types/#metaxy.versioning.types.Increment">metaxy.versioning.types.Increment</a>.</p>
+            <p>Whether to return a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.LazyIncrement&lt;/span&gt;" href="../types/#metaxy.versioning.types.LazyIncrement">metaxy.versioning.types.LazyIncrement</a> or a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.Increment&lt;/span&gt;" href="../types/#metaxy.versioning.types.Increment">metaxy.versioning.types.Increment</a>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -3913,7 +3913,7 @@ be empty.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VersioningEngineMismatchError&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.exceptions.VersioningEngineMismatchError&lt;/code&gt;)" href="exceptions/#metaxy.metadata_store.exceptions.VersioningEngineMismatchError">VersioningEngineMismatchError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.VersioningEngineMismatchError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.VersioningEngineMismatchError">VersioningEngineMismatchError</a></code>
             –
           <div class="doc-md-description">
             <p>If <code>versioning_engine</code> has been set to <code>"native"</code>
@@ -4210,11 +4210,11 @@ and a dataframe of a different implementation has been encountered during <code>
 
 
 <h4 id="metaxy.MetadataStore.read_metadata" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">read_metadata</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.read_metadata</span>
 
 
 <a href="#metaxy.MetadataStore.read_metadata" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_metadata</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_metadata</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -4231,7 +4231,7 @@ and a dataframe of a different implementation has been encountered during <code>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -4321,14 +4321,14 @@ Example: <code>[nw.col("x") &gt; 10, nw.col("y") &lt; 5]</code></p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureNotFoundError&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.exceptions.FeatureNotFoundError&lt;/code&gt;)" href="exceptions/#metaxy.metadata_store.exceptions.FeatureNotFoundError">FeatureNotFoundError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.FeatureNotFoundError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.FeatureNotFoundError">FeatureNotFoundError</a></code>
             –
           <div class="doc-md-description">
             <p>If feature not found in any store</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SystemDataNotFoundError&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.exceptions.SystemDataNotFoundError&lt;/code&gt;)" href="exceptions/#metaxy.metadata_store.exceptions.SystemDataNotFoundError">SystemDataNotFoundError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.SystemDataNotFoundError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.SystemDataNotFoundError">SystemDataNotFoundError</a></code>
             –
           <div class="doc-md-description">
             <p>When attempting to read non-existent Metaxy system data</p>
@@ -4496,11 +4496,11 @@ metadata for the current feature version. Therefore, it's perfectly suitable for
 
 
 <h4 id="metaxy.MetadataStore.write_metadata" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">write_metadata</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.write_metadata</span>
 
 
 <a href="#metaxy.MetadataStore.write_metadata" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_metadata</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_metadata</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -4518,7 +4518,7 @@ metadata for the current feature version. Therefore, it's perfectly suitable for
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -4557,14 +4557,14 @@ Useful for tracking which orchestration run produced this metadata.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataSchemaError&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.exceptions.MetadataSchemaError&lt;/code&gt;)" href="exceptions/#metaxy.metadata_store.exceptions.MetadataSchemaError">MetadataSchemaError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.MetadataSchemaError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.MetadataSchemaError">MetadataSchemaError</a></code>
             –
           <div class="doc-md-description">
             <p>If DataFrame schema is invalid</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;StoreNotOpenError&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/code&gt;)" href="exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
             –
           <div class="doc-md-description">
             <p>If store is not open</p>
@@ -4593,7 +4593,7 @@ Useful for tracking which orchestration run produced this metadata.</p>
 <p>Fallback stores are never used for writes.</p>
 </li>
 <li>
-<p>Features from other Metaxy projects cannot be written to, unless project validation has been disabled with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;allow_cross_project_writes&lt;/span&gt;" href="#metaxy.MetadataStore.allow_cross_project_writes">MetadataStore.allow_cross_project_writes</a>.</p>
+<p>Features from other Metaxy projects cannot be written to, unless project validation has been disabled with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.allow_cross_project_writes&lt;/span&gt;" href="#metaxy.MetadataStore.allow_cross_project_writes">MetadataStore.allow_cross_project_writes</a>.</p>
 </li>
 </ul>
 </details>
@@ -4683,7 +4683,7 @@ Useful for tracking which orchestration run produced this metadata.</p>
 
 
 <h4 id="metaxy.MetadataStore.write_metadata_multi" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">write_metadata_multi</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.write_metadata_multi</span>
 
 
 <a href="#metaxy.MetadataStore.write_metadata_multi" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -4730,14 +4730,14 @@ Applied to all feature writes in this batch.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataSchemaError&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.exceptions.MetadataSchemaError&lt;/code&gt;)" href="exceptions/#metaxy.metadata_store.exceptions.MetadataSchemaError">MetadataSchemaError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.MetadataSchemaError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.MetadataSchemaError">MetadataSchemaError</a></code>
             –
           <div class="doc-md-description">
             <p>If any DataFrame schema is invalid</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;StoreNotOpenError&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/code&gt;)" href="exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
             –
           <div class="doc-md-description">
             <p>If store is not open</p>
@@ -4852,7 +4852,7 @@ Applied to all feature writes in this batch.</p>
 
 
 <h4 id="metaxy.MetadataStore.native_implementation" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">native_implementation</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.native_implementation</span>
 
 
 <a href="#metaxy.MetadataStore.native_implementation" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -4879,7 +4879,7 @@ Applied to all feature writes in this batch.</p>
 
 
 <h4 id="metaxy.MetadataStore.create_versioning_engine" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">create_versioning_engine</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.create_versioning_engine</span>
 
 
 <a href="#metaxy.MetadataStore.create_versioning_engine" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -4963,7 +4963,7 @@ Applied to all feature writes in this batch.</p>
 
 
 <h4 id="metaxy.MetadataStore.open" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">open</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.open</span>
 
 
   <span class="doc doc-labels">
@@ -4971,12 +4971,12 @@ Applied to all feature writes in this batch.</p>
   </span>
 
 <a href="#metaxy.MetadataStore.open" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;AccessMode&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.types.AccessMode&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="#metaxy.metadata_store.types.AccessMode">AccessMode</a></span> <span class="o">=</span> <span class="s1">&#39;read&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="typing_extensions.Self">Self</span></span><span class="p">]</span>
+  &lt;/span&gt;" href="#metaxy.metadata_store.types.AccessMode">AccessMode</a></span> <span class="o">=</span> <span class="s1">&#39;read&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="typing_extensions.Self">Self</span></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -4991,12 +4991,12 @@ Child classes should implement backend-specific connection setup/teardown here.<
     <ul>
         <li class="doc-section-item field-body">
             <b><code>mode</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;AccessMode&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.types.AccessMode&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="#metaxy.metadata_store.types.AccessMode">AccessMode</a></code>, default:
+  &lt;/span&gt;" href="#metaxy.metadata_store.types.AccessMode">AccessMode</a></code>, default:
                   <code>&#39;read&#39;</code>
 )
           –
@@ -5055,7 +5055,7 @@ Child classes should implement backend-specific connection setup/teardown here.<
 
 
 <h4 id="metaxy.MetadataStore.__enter__" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__enter__</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.__enter__</span>
 
 
 <a href="#metaxy.MetadataStore.__enter__" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -5065,7 +5065,7 @@ Child classes should implement backend-specific connection setup/teardown here.<
     <div class="doc doc-contents ">
 
         <p>Enter context manager - opens store in READ mode by default.</p>
-<p>Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;open&lt;/span&gt;
+<p>Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.open&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5113,7 +5113,7 @@ Child classes should implement backend-specific connection setup/teardown here.<
 
 
 <h4 id="metaxy.MetadataStore.validate_hash_algorithm" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">validate_hash_algorithm</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.validate_hash_algorithm</span>
 
 
 <a href="#metaxy.MetadataStore.validate_hash_algorithm" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -5189,7 +5189,7 @@ fallback stores (ensures compatibility for future cross-store operations)</p>
 
 
 <h4 id="metaxy.MetadataStore.allow_cross_project_writes" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">allow_cross_project_writes</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.allow_cross_project_writes</span>
 
 
 <a href="#metaxy.MetadataStore.allow_cross_project_writes" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -5260,7 +5260,7 @@ where metadata needs to be written to features from different projects.</p>
 
 
 <h4 id="metaxy.MetadataStore.write_metadata_to_store" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">write_metadata_to_store</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.write_metadata_to_store</span>
 
 
   <span class="doc doc-labels">
@@ -5268,7 +5268,7 @@ where metadata needs to be written to features from different projects.</p>
   </span>
 
 <a href="#metaxy.MetadataStore.write_metadata_to_store" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../types/#metaxy.FeatureKey">FeatureKey</a></span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../types/#metaxy.FeatureKey">FeatureKey</a></span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5281,7 +5281,7 @@ where metadata needs to be written to features from different projects.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature_key</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../types/#metaxy.FeatureKey">FeatureKey</a></code>)
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../types/#metaxy.FeatureKey">FeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature key to write to</p>
@@ -5341,11 +5341,11 @@ where metadata needs to be written to features from different projects.</p>
 
 
 <h4 id="metaxy.MetadataStore.drop_feature_metadata" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">drop_feature_metadata</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.drop_feature_metadata</span>
 
 
 <a href="#metaxy.MetadataStore.drop_feature_metadata" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">drop_feature_metadata</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">drop_feature_metadata</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5369,7 +5369,7 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5423,7 +5423,7 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
 
 
 <h4 id="metaxy.MetadataStore.read_metadata_in_store" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">read_metadata_in_store</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.read_metadata_in_store</span>
 
 
   <span class="doc doc-labels">
@@ -5431,7 +5431,7 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
   </span>
 
 <a href="#metaxy.MetadataStore.read_metadata_in_store" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_metadata_in_store</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_metadata_in_store</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5448,7 +5448,7 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5538,11 +5538,11 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
 
 
 <h4 id="metaxy.MetadataStore.has_feature" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">has_feature</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.has_feature</span>
 
 
 <a href="#metaxy.MetadataStore.has_feature" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">has_feature</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">has_feature</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5559,7 +5559,7 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5637,7 +5637,7 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
 
 
 <h4 id="metaxy.MetadataStore.display" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">display</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.display</span>
 
 
   <span class="doc doc-labels">
@@ -5688,11 +5688,11 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
 
 
 <h4 id="metaxy.MetadataStore.get_store_metadata" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_store_metadata</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.get_store_metadata</span>
 
 
 <a href="#metaxy.MetadataStore.get_store_metadata" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_store_metadata</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_store_metadata</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5724,11 +5724,11 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
 
 
 <h4 id="metaxy.MetadataStore.copy_metadata" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">copy_metadata</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.MetadataStore.copy_metadata</span>
 
 
 <a href="#metaxy.MetadataStore.copy_metadata" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">copy_metadata</span><span class="p">(</span><span class="n">from_store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="#metaxy.MetadataStore">MetadataStore</a></span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">copy_metadata</span><span class="p">(</span><span class="n">from_store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="#metaxy.MetadataStore">MetadataStore</a></span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5747,7 +5747,7 @@ Copies metadata for specified features, preserving the original snapshot_version
     <ul>
         <li class="doc-section-item field-body">
             <b><code>from_store</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="#metaxy.MetadataStore">MetadataStore</a></code>)
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="#metaxy.MetadataStore">MetadataStore</a></code>)
           –
           <div class="doc-md-description">
             <p>Source metadata store to copy from (must be opened)</p>
@@ -5755,7 +5755,7 @@ Copies metadata for specified features, preserving the original snapshot_version
         </li>
         <li class="doc-section-item field-body">
             <b><code>features</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5837,7 +5837,7 @@ configure deduplication at the storage layer.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureNotFoundError&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.exceptions.FeatureNotFoundError&lt;/code&gt;)" href="exceptions/#metaxy.metadata_store.exceptions.FeatureNotFoundError">FeatureNotFoundError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.FeatureNotFoundError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.FeatureNotFoundError">FeatureNotFoundError</a></code>
             –
           <div class="doc-md-description">
             <p>If a specified feature doesn't exist in source store</p>
@@ -6012,7 +6012,7 @@ configure deduplication at the storage layer.</p>
 
 
 <h2 id="metaxy.metadata_store.types.AccessMode" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">AccessMode</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.metadata_store.types.AccessMode</span>
 
 
   <span class="doc doc-labels">
@@ -6034,7 +6034,7 @@ configure deduplication at the storage layer.</p>
 
 
 <h2 id="metaxy.metadata_store.base.VersioningEngineOptions" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">VersioningEngineOptions</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.metadata_store.base.VersioningEngineOptions</span>
 
 
   <span class="doc doc-labels">
@@ -6059,7 +6059,7 @@ configure deduplication at the storage layer.</p>
 
 
 <h2 id="metaxy.metadata_store.base.MetadataStoreConfig" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">MetadataStoreConfig</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.metadata_store.base.MetadataStoreConfig</span>
 
 
 <a href="#metaxy.metadata_store.base.MetadataStoreConfig" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -6117,7 +6117,7 @@ Store-specific config classes should inherit from this and add their own fields.
 
 </div><hr />
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>The base <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt;" href="#metaxy.metadata_store.base.MetadataStoreConfig"><code>MetadataStoreConfig</code></a> class injects the following configuration options:</p>
+<p>The base <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/span&gt;" href="#metaxy.metadata_store.base.MetadataStoreConfig"><code>MetadataStoreConfig</code></a> class injects the following configuration options:</p>
 <h3 id="storesdevconfigfallback_stores"><code>stores.dev.config.fallback_stores</code><a class="headerlink" href="#storesdevconfigfallback_stores" title="Permanent link">&para;</a></h3>
 <p>List of fallback store names to search when features are not found in the current store.</p>
 <p><strong>Type:</strong> <code>list[str]</code></p>

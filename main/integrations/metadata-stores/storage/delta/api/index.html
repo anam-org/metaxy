@@ -3079,16 +3079,16 @@
 
 
 <h2 id="metaxy.metadata_store.delta.DeltaMetadataStore" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">DeltaMetadataStore</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.metadata_store.delta.DeltaMetadataStore</span>
 
 
 <a href="#metaxy.metadata_store.delta.DeltaMetadataStore" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DeltaMetadataStore</span><span class="p">(</span><span class="n">root_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">storage_options</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fallback_stores</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.MetadataStore">MetadataStore</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">layout</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="s1">&#39;flat&#39;</span><span class="p">,</span> <span class="s1">&#39;nested&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;nested&#39;</span><span class="p">,</span> <span class="n">delta_write_options</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DeltaMetadataStore</span><span class="p">(</span><span class="n">root_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">storage_options</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fallback_stores</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.MetadataStore">MetadataStore</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">layout</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="s1">&#39;flat&#39;</span><span class="p">,</span> <span class="s1">&#39;nested&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;nested&#39;</span><span class="p">,</span> <span class="n">delta_write_options</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.MetadataStore">MetadataStore</a></code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.MetadataStore">MetadataStore</a></code></p>
 
 
 
@@ -3133,7 +3133,7 @@ See <a href="https://delta-io.github.io/delta-rs/">https://delta-io.github.io/de
         </li>
         <li class="doc-section-item field-body">
             <b><code>fallback_stores</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.MetadataStore">MetadataStore</a>] | None</code>, default:
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.MetadataStore">MetadataStore</a>] | None</code>, default:
                   <code>None</code>
 )
           –
@@ -3177,7 +3177,7 @@ Overrides default {"schema_mode": "merge"}. Example: {"max_workers": 4}</p>
 )
           –
           <div class="doc-md-description">
-            <p>Forwarded to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt;" href="../../../../../reference/api/metadata-stores/#metaxy.MetadataStore">metaxy.metadata_store.base.MetadataStore</a>.</p>
+            <p>Forwarded to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../../reference/api/metadata-stores/#metaxy.MetadataStore">metaxy.metadata_store.base.MetadataStore</a>.</p>
           </div>
         </li>
     </ul>
@@ -3268,7 +3268,7 @@ Overrides default {"schema_mode": "merge"}. Example: {"max_workers": 4}</p>
 
 
 <h4 id="metaxy.metadata_store.delta.DeltaMetadataStore.default_delta_write_options" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">default_delta_write_options</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.metadata_store.delta.DeltaMetadataStore.default_delta_write_options</span>
 
 
   <span class="doc doc-labels">
@@ -3297,16 +3297,16 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
 
 
 <h4 id="metaxy.metadata_store.delta.DeltaMetadataStore.open" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">open</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.delta.DeltaMetadataStore.open</span>
 
 
 <a href="#metaxy.metadata_store.delta.DeltaMetadataStore.open" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;AccessMode&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.types.AccessMode&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.types.AccessMode">AccessMode</a></span> <span class="o">=</span> <span class="s1">&#39;read&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="typing_extensions.Self">Self</span></span><span class="p">]</span>
+  &lt;/span&gt;" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.types.AccessMode">AccessMode</a></span> <span class="o">=</span> <span class="s1">&#39;read&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="typing_extensions.Self">Self</span></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3319,12 +3319,12 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>mode</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;AccessMode&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.types.AccessMode&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.types.AccessMode">AccessMode</a></code>, default:
+  &lt;/span&gt;" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.types.AccessMode">AccessMode</a></code>, default:
                   <code>&#39;read&#39;</code>
 )
           –
@@ -3390,11 +3390,11 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
 
 
 <h4 id="metaxy.metadata_store.delta.DeltaMetadataStore.write_metadata_to_store" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">write_metadata_to_store</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.delta.DeltaMetadataStore.write_metadata_to_store</span>
 
 
 <a href="#metaxy.metadata_store.delta.DeltaMetadataStore.write_metadata_to_store" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../../../../reference/api/types/#metaxy.FeatureKey">FeatureKey</a></span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../../../../reference/api/types/#metaxy.FeatureKey">FeatureKey</a></span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3406,7 +3406,7 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature_key</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../../../../reference/api/types/#metaxy.FeatureKey">FeatureKey</a></code>)
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../../../../reference/api/types/#metaxy.FeatureKey">FeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature key to write to</p>
@@ -3485,11 +3485,11 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
 
 
 <h4 id="metaxy.metadata_store.delta.DeltaMetadataStore.read_metadata_in_store" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">read_metadata_in_store</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.delta.DeltaMetadataStore.read_metadata_in_store</span>
 
 
 <a href="#metaxy.metadata_store.delta.DeltaMetadataStore.read_metadata_in_store" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_metadata_in_store</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_metadata_in_store</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -3506,7 +3506,7 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>feature</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -3603,7 +3603,7 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
 
 
 <h4 id="metaxy.metadata_store.delta.DeltaMetadataStore.display" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">display</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.delta.DeltaMetadataStore.display</span>
 
 
 <a href="#metaxy.metadata_store.delta.DeltaMetadataStore.display" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -3632,11 +3632,11 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
 
 
 <h4 id="metaxy.metadata_store.delta.DeltaMetadataStore.get_store_metadata" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_store_metadata</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.delta.DeltaMetadataStore.get_store_metadata</span>
 
 
 <a href="#metaxy.metadata_store.delta.DeltaMetadataStore.get_store_metadata" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_store_metadata</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_store_metadata</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -3664,7 +3664,7 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
 
 
 <h4 id="metaxy.metadata_store.delta.DeltaMetadataStore.config_model" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">config_model</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.delta.DeltaMetadataStore.config_model</span>
 
 
   <span class="doc doc-labels">
@@ -3684,7 +3684,7 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStoreConfig&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/code&gt;)" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a>]</code>
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.base.MetadataStoreConfig&lt;/span&gt;" href="../../../../../reference/api/metadata-stores/#metaxy.metadata_store.base.MetadataStoreConfig">MetadataStoreConfig</a>]</code>
           –
           <div class="doc-md-description">
             <p>The config class type (e.g., DuckDBMetadataStoreConfig)</p>

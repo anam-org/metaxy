@@ -2958,7 +2958,7 @@
 
 
 <h1 id="metaxy-duckdb">Metaxy + DuckDB<a class="headerlink" href="#metaxy-duckdb" title="Permanent link">&para;</a></h1>
-<p>Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DuckDBMetadataStore&lt;/span&gt;" href="api/#metaxy.metadata_store.duckdb.DuckDBMetadataStore"><code>DuckDBMetadataStore</code></a>. It uses <a href="https://duckdb.org/">DuckDB</a> as metadata storage and versioning engine.</p>
+<p>Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.duckdb.DuckDBMetadataStore&lt;/span&gt;" href="api/#metaxy.metadata_store.duckdb.DuckDBMetadataStore"><code>DuckDBMetadataStore</code></a>. It uses <a href="https://duckdb.org/">DuckDB</a> as metadata storage and versioning engine.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider either using DuckLake with a <code>PostgreSQL</code> catalog, or refer to <a href="https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes">DuckDB's documentation</a> to learn about implementing application-side work-arounds.</p>

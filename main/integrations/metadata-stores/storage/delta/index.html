@@ -2969,7 +2969,7 @@
 
 
 <h1 id="metaxy-delta-lake">Metaxy + Delta Lake<a class="headerlink" href="#metaxy-delta-lake" title="Permanent link">&para;</a></h1>
-<p>Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DeltaMetadataStore&lt;/span&gt;" href="api/#metaxy.metadata_store.delta.DeltaMetadataStore"><code>DeltaMetadataStore</code></a> that stores metadata in <a href="https://delta.io/">Delta Lake</a> (also known as a LakeHouse format) and uses an in-memory Polars versioning engine.</p>
+<p>Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.delta.DeltaMetadataStore&lt;/span&gt;" href="api/#metaxy.metadata_store.delta.DeltaMetadataStore"><code>DeltaMetadataStore</code></a> that stores metadata in <a href="https://delta.io/">Delta Lake</a> (also known as a LakeHouse format) and uses an in-memory Polars versioning engine.</p>
 <p>It supports the local filesystem and remote object stores.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[delta]&#39;</span>
@@ -2977,7 +2977,7 @@
 <h2 id="using-object-stores">Using Object Stores<a class="headerlink" href="#using-object-stores" title="Permanent link">&para;</a></h2>
 <p>Point <code>root_path</code> at any supported URI (<code>s3://</code>, <code>abfss://</code>, <code>gs://</code>, ...) and forward credentials with <code>storage_options</code>.
 The dict is passed verbatim to <a href="https://delta-io.github.io/delta-rs/integrations/object-storage/special_configuration/"><code>deltalake</code></a>.</p>
-<p>Learn more in the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DeltaMetadataStore&lt;/span&gt;" href="api/#metaxy.metadata_store.delta.DeltaMetadataStore">API docs</a>.</p>
+<p>Learn more in the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.delta.DeltaMetadataStore&lt;/span&gt;" href="api/#metaxy.metadata_store.delta.DeltaMetadataStore">API docs</a>.</p>
 <h2 id="storage-layout">Storage Layout<a class="headerlink" href="#storage-layout" title="Permanent link">&para;</a></h2>
 <p>It's possible to control how feature keys map to DeltaLake table locations with the <code>layout</code> parameter:</p>
 <ul>
