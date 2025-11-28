@@ -159,6 +159,7 @@ jobs:
           github-token: ${{ github.token }}
           junitxml-path: ./junit.xml
           xml-skip-covered: true
+          report-only-changed-files: true
           unique-id-for-comment: ${{ matrix.python-version }}
 
   docs:
