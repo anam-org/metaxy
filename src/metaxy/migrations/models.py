@@ -10,8 +10,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import pydantic
+from pydantic import AliasChoices, TypeAdapter
 from pydantic import Field as PydanticField
-from pydantic import TypeAdapter
 from pydantic.types import AwareDatetime, ImportString
 
 if TYPE_CHECKING:
@@ -68,7 +68,10 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
     - parent: ID of parent migration ("initial" for first migration)
     """
 
-    migration_id: str
+    # Use AliasChoices to accept both "id" (from generated YAML) and "migration_id" (from tests/manual YAML)
+    migration_id: str = PydanticField(
+        validation_alias=AliasChoices("id", "migration_id"), serialization_alias="id"
+    )
     parent: str  # Parent migration ID or "initial"
     created_at: AwareDatetime
 
