@@ -133,18 +133,13 @@
           'code_version': '1',
           'deps': list([
           ]),
-          'key': list([
-            'data',
-          ]),
+          'key': 'data',
         }),
       ]),
       'id_columns': list([
         'sample_uid',
       ]),
-      'key': list([
-        'snapshot',
-        'test',
-      ]),
+      'key': 'snapshot/test',
       'lineage': dict({
         'relationship': dict({
           'type': '1:1',
@@ -153,9 +148,9 @@
       'metadata': dict({
       }),
     }),
-    'metaxy_feature_spec_version': 'cc4b71667ebc22d4c7c90991c87fc89547645468b911e85a0f818d634b5c5303',
+    'metaxy_feature_spec_version': 'dbcea9d90a69bf9a2802bdc04ee2c57da828f735a0fd51cb86bcb50db9107995',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
-    'metaxy_full_definition_version': '315eea6d509dedf5e3ebceff6c9733c9361efc9ce101bba4602b3ae0ce08efa6',
+    'metaxy_full_definition_version': 'b40641ad4eec4649078694c70ad4abd44dc4bc599919d52bffc5f849cab86838',
     'project': 'test',
   })
 # ---

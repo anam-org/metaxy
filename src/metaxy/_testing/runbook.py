@@ -8,7 +8,6 @@ This module provides:
 
 from __future__ import annotations
 
-import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
@@ -370,38 +369,18 @@ class RunbookRunner:
         Returns:
             CommandResult with returncode and output.
         """
-        import sys
-
         env = self.get_base_env()
 
         # Apply step-specific environment variables
         if step.env:
             env.update(step.env)
 
-        # Get full environment including current env
-        full_env = os.environ.copy()
-        full_env.update(env)
-
-        # Ensure project directory is in PYTHONPATH
-        pythonpath = str(self.example_dir)
-        if "PYTHONPATH" in full_env:
-            pythonpath = f"{pythonpath}{os.pathsep}{full_env['PYTHONPATH']}"
-        full_env["PYTHONPATH"] = pythonpath
-
-        # Replace "python" with full path to Python executable
-        command = step.command
-        if command.startswith("python "):
-            command = f"{sys.executable} {command[7:]}"
-
-        # Execute the command
-        result = subprocess.run(
-            command,
-            shell=True,
+        # Delegate to project's run_command (handles PYTHONPATH, python executable)
+        result = self.project.run_command(
+            step.command,
+            env=env,
             capture_output=step.capture_output,
-            text=True,
             timeout=step.timeout,
-            env=full_env,
-            cwd=self.example_dir,
         )
 
         # Store for assertions

@@ -809,7 +809,7 @@ class TestColumnSelection:
         # Serialize to dict - custom serializer always uses "filters" key
         # Test serialization with by_alias=True to use serialization_alias
         dep_dict = dep.model_dump(by_alias=True)
-        assert dep_dict["feature"] == ["test", "upstream"]
+        assert dep_dict["feature"] == "test/upstream"
         assert dep_dict["columns"] == ("col1", "col2")
         assert dep_dict["rename"] == {"col1": "new_col1"}
         assert dep_dict["filters"] == ("col1 = 'x'",)
@@ -1123,7 +1123,7 @@ class TestColumnSelection:
 
             # Verify columns and rename are serialized
             dep = feature_spec_dict["deps"][0]
-            assert dep["feature"] == ["test", "upstream"]
+            assert dep["feature"] == "test/upstream"
             assert dep["columns"] == [
                 "col1",
                 "col2",
@@ -1138,7 +1138,7 @@ class TestColumnSelection:
             downstream_spec_dict = downstream_snapshot["feature_spec"]
             assert "deps" in downstream_spec_dict
             dep_dict = downstream_spec_dict["deps"][0]
-            assert dep_dict["feature"] == ["test", "upstream"]
+            assert dep_dict["feature"] == "test/upstream"
             assert dep_dict["columns"] == ["col1", "col2"]
             assert dep_dict["rename"] == {"col1": "renamed_col1"}
 
