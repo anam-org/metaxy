@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Any, Literal
+import json
+from typing import TYPE_CHECKING, Annotated, Any
 
 import cyclopts
 from pydantic import TypeAdapter
 
 from metaxy.cli.console import console, data_console, error_console
+from metaxy.cli.utils import (
+    CLIError,
+    FeatureSelector,
+    OutputFormat,
+    exit_with_error,
+    load_graph_for_command,
+)
 from metaxy.graph.status import FullFeatureMetadataRepresentation
-from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
     pass
@@ -25,20 +32,8 @@ app = cyclopts.App(
 
 @app.command()
 def status(
-    features: Annotated[
-        list[str] | None,
-        cyclopts.Parameter(
-            name=["--feature"],
-            help="Feature key to check (e.g., 'my_feature' or 'namespace/feature'). Can be repeated multiple times.",
-        ),
-    ] = None,
-    all_features: Annotated[
-        bool,
-        cyclopts.Parameter(
-            name=["--all-features"],
-            help="Check metadata status for all features defined in the current project's feature graph.",
-        ),
-    ] = False,
+    *,
+    selector: FeatureSelector = FeatureSelector(),
     store: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -68,216 +63,80 @@ def status(
         ),
     ] = False,
     format: Annotated[
-        Literal["plain", "json"],
+        OutputFormat,
         cyclopts.Parameter(
             name=["--format"],
-            help="Output format: 'plain' (default, human-readable) or 'json' (machine-parseable).",
         ),
     ] = "plain",
 ) -> None:
     """Check metadata completeness and freshness for specified features.
 
     Examples:
-        # Check specific feature
         $ metaxy metadata status --feature user_features
-
-        # Check multiple features
-        $ metaxy metadata status --feature user_features --feature customer_features
-
-        # Check all features in the project
+        $ metaxy metadata status --feature feat1 --feature feat2
         $ metaxy metadata status --all-features
-
-        # Check with specific store
         $ metaxy metadata status --store dev --all-features
     """
-    import json
-
     from metaxy.cli.context import AppContext
     from metaxy.graph.status import get_feature_metadata_status
 
-    # Write human-readable output to stdout so tests can capture it
-    text_console = data_console
-    as_json = format == "json"
-
-    # Validate arguments
-    if not all_features and not features:
-        if as_json:
-            print(
-                json.dumps(
-                    {
-                        "error": "MISSING_REQUIRED_FLAG",
-                        "message": "Must specify either --all-features or --feature",
-                        "required_flags": ["--all-features", "--feature"],
-                    }
-                )
-            )
-        else:
-            text_console.print(
-                "[red]Error:[/red] Must specify either --all-features or --feature"
-            )
-        raise SystemExit(1)
-
-    if all_features and features:
-        if as_json:
-            print(
-                json.dumps(
-                    {
-                        "error": "CONFLICTING_FLAGS",
-                        "message": "Cannot specify both --all-features and --feature",
-                        "conflicting_flags": ["--all-features", "--feature"],
-                    }
-                )
-            )
-        else:
-            text_console.print(
-                "[red]Error:[/red] Cannot specify both --all-features and --feature"
-            )
-        raise SystemExit(1)
+    # Validate feature selection
+    selector.validate(format)
 
     context = AppContext.get()
     metadata_store = context.get_store(store)
 
-    # Parse feature keys from --feature arguments
-    parsed_keys: list[FeatureKey] = []
-    if features:
-        for raw_key in features:
-            try:
-                parsed_keys.append(FeatureKey(raw_key))
-            except ValueError as exc:
-                if as_json:
-                    error_data = {
-                        "error": "Invalid feature key",
-                        "key": raw_key,
-                        "message": str(exc),
-                    }
-                    print(json.dumps(error_data))
-                else:
-                    text_console.print(
-                        f"[red]✗[/red] Invalid feature key '{raw_key}': {exc}"
-                    )
-                raise SystemExit(1)
-
     with metadata_store:
-        # If snapshot_version provided, reconstruct graph from storage
-        if snapshot_version:
-            from metaxy.metadata_store.system.storage import SystemTableStorage
+        # Load graph (from snapshot or current)
+        graph = load_graph_for_command(
+            context, snapshot_version, metadata_store, format
+        )
 
-            storage = SystemTableStorage(metadata_store)
-            try:
-                graph = storage.load_graph_from_snapshot(
-                    snapshot_version=snapshot_version,
-                    project=context.project,
-                )
-            except ValueError as e:
-                if as_json:
-                    error_data = {"error": "Snapshot error", "message": str(e)}
-                    print(json.dumps(error_data))
-                else:
-                    text_console.print(f"[red]✗[/red] {e}")
-                raise SystemExit(1)
-            except ImportError as e:
-                if as_json:
-                    error_data = {"error": "Failed to load snapshot", "message": str(e)}
-                    print(json.dumps(error_data))
-                else:
-                    text_console.print(f"[red]✗[/red] Failed to load snapshot: {e}")
-                    text_console.print(
-                        "[yellow]Hint:[/yellow] Feature classes may have been moved or deleted."
-                    )
-                raise SystemExit(1)
-        else:
-            # Use current graph from context
-            graph = context.graph
+        # Resolve feature keys
+        valid_keys, missing_keys = selector.resolve_keys(graph, format)
 
-        # If --all-features, get all feature keys from the graph
-        if all_features:
-            parsed_keys = graph.list_features(only_current_project=True)
-            if not parsed_keys:
-                if as_json:
-                    print(
-                        json.dumps(
-                            {
-                                "warning": "NO_FEATURES_FOUND",
-                                "message": "No features found in active graph. Make sure your features are imported.",
-                                "features": {},
-                                "snapshot_version": snapshot_version,
-                                "needs_update": False,
-                            },
-                            indent=2,
-                        )
-                    )
-                else:
-                    text_console.print(
-                        "[yellow]Warning:[/yellow] No features found in active graph. "
-                        "Make sure your features are imported."
-                    )
-                return
+        # Handle empty result for --all-features
+        if selector.all_features and not valid_keys:
+            _output_no_features_warning(format, snapshot_version)
+            return
 
-        # Verify all requested features exist in the graph
-        missing_in_graph = [
-            key for key in parsed_keys if key not in graph.features_by_key
-        ]
-        if missing_in_graph:
-            formatted = ", ".join(key.to_string() for key in missing_in_graph)
+        # Handle missing features
+        if missing_keys:
             if assert_in_sync:
-                # Only exit if assert_in_sync is enabled
-                if as_json:
-                    error_data = {
-                        "error": "Features not found in graph",
-                        "features": [k.to_string() for k in missing_in_graph],
-                    }
-                    print(json.dumps(error_data))
-                else:
-                    text_console.print(
-                        f"[red]✗[/red] Feature(s) not found in graph: {formatted}"
-                    )
-                raise SystemExit(1)
-            else:
-                # Otherwise, warn and continue with what we have
-                if not as_json:
-                    text_console.print(
-                        f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}"
-                    )
-                # Filter to only existing features
-                parsed_keys = [
-                    key for key in parsed_keys if key in graph.features_by_key
-                ]
-                if not parsed_keys:
-                    if as_json:
-                        print(
-                            json.dumps(
-                                {
-                                    "features": {},
-                                    "warning": "No valid features to check",
-                                    "snapshot_version": snapshot_version,
-                                    "needs_update": False,
-                                },
-                                indent=2,
-                            )
-                        )
-                    else:
-                        text_console.print(
-                            "[yellow]Warning:[/yellow] No valid features to check."
-                        )
-                    return
+                exit_with_error(
+                    CLIError(
+                        code="FEATURES_NOT_FOUND",
+                        message="Feature(s) not found in graph",
+                        details={"features": [k.to_string() for k in missing_keys]},
+                    ),
+                    format,
+                )
+            elif format == "plain":
+                formatted = ", ".join(k.to_string() for k in missing_keys)
+                data_console.print(
+                    f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}"
+                )
 
-        needs_update = False
+        # If no valid features remain
+        if not valid_keys:
+            _output_no_features_warning(format, snapshot_version)
+            return
 
-        # Print header for text format
-        if not as_json:
+        # Print header for plain format
+        if format == "plain":
             header = (
                 f"Metadata status (snapshot {snapshot_version})"
                 if snapshot_version
                 else "Metadata status"
             )
-            text_console.print(f"\n[bold]{header}[/bold]")
+            data_console.print(f"\n[bold]{header}[/bold]")
 
-        feature_representations: dict[str, FullFeatureMetadataRepresentation] = {}
+        # Collect status for all features
+        needs_update = False
+        feature_reps: dict[str, FullFeatureMetadataRepresentation] = {}
 
-        for feature_key in parsed_keys:
+        for feature_key in valid_keys:
             feature_cls = graph.features_by_key[feature_key]
-
-            # Use SDK function to get status (returns NamedTuple with status + lazy_increment)
             status_with_increment = get_feature_metadata_status(
                 feature_cls, metadata_store
             )
@@ -285,242 +144,170 @@ def status(
             if status_with_increment.status.needs_update:
                 needs_update = True
 
-            if as_json:
-                feature_representations[feature_key.to_string()] = (
+            if format == "json":
+                feature_reps[feature_key.to_string()] = (
                     status_with_increment.to_representation(
                         feature_cls=feature_cls, verbose=verbose
                     )
                 )
             else:
-                # Plain text output
-                text_console.print(status_with_increment.status.format_status_line())
-
-                # Verbose output with sample previews
+                data_console.print(status_with_increment.status.format_status_line())
                 if verbose:
                     for line in status_with_increment.sample_details(feature_cls):
-                        text_console.print(line)
+                        data_console.print(line)
 
-        if as_json:
+        # Output JSON result
+        if format == "json":
             adapter = TypeAdapter(dict[str, FullFeatureMetadataRepresentation])
-            output = {
+            output: dict[str, Any] = {
                 "snapshot_version": snapshot_version,
                 "features": json.loads(
-                    adapter.dump_json(feature_representations, exclude_none=True)
+                    adapter.dump_json(feature_reps, exclude_none=True)
                 ),
                 "needs_update": needs_update,
             }
-            if missing_in_graph:
+            if missing_keys:
                 output["warnings"] = {
-                    "missing_in_graph": [k.to_string() for k in missing_in_graph]
+                    "missing_in_graph": [k.to_string() for k in missing_keys]
                 }
             print(json.dumps(output, indent=2))
 
-        # Only fail if updates needed AND --assert-in-sync flag is set
+        # Exit with error if assert_in_sync and updates needed
         if assert_in_sync and needs_update:
             raise SystemExit(1)
 
 
+def _output_no_features_warning(
+    format: OutputFormat, snapshot_version: str | None
+) -> None:
+    """Output warning when no features are found to check."""
+    if format == "json":
+        print(
+            json.dumps(
+                {
+                    "warning": "No valid features to check",
+                    "features": {},
+                    "snapshot_version": snapshot_version,
+                    "needs_update": False,
+                },
+                indent=2,
+            )
+        )
+    else:
+        data_console.print("[yellow]Warning:[/yellow] No valid features to check.")
+
+
 @app.command()
 def drop(
+    *,
+    selector: FeatureSelector = FeatureSelector(),
     store: Annotated[
         str | None,
         cyclopts.Parameter(
             name=["--store"],
-            help="Store name to drop metadata from (defaults to configured default store)",
+            help="Store name to drop metadata from (defaults to configured default store).",
         ),
     ] = None,
-    features: Annotated[
-        list[str] | None,
-        cyclopts.Parameter(
-            name=["--feature"],
-            help="Feature key to drop (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses --all-features.",
-        ),
-    ] = None,
-    all_features: Annotated[
-        bool,
-        cyclopts.Parameter(
-            name=["--all-features"],
-            help="Drop metadata for all features defined in the current project's feature graph",
-        ),
-    ] = False,
     confirm: Annotated[
         bool,
         cyclopts.Parameter(
             name=["--confirm"],
-            help="Confirm the drop operation (required to prevent accidental deletion)",
+            help="Confirm the drop operation (required to prevent accidental deletion).",
         ),
     ] = False,
     format: Annotated[
-        str,
+        OutputFormat,
         cyclopts.Parameter(
             name=["--format"],
-            help="Output format: 'text' (default, human-readable) or 'json' (machine-parseable).",
+            help="Output format: 'plain' (default) or 'json'.",
         ),
-    ] = "text",
-):
+    ] = "plain",
+) -> None:
     """Drop metadata from a store.
 
-    Removes metadata for specified features from the store.
-    This is a destructive operation and requires --confirm flag.
-
-    When using --all-features, drops metadata for all features defined in the
-    current project's feature graph.
-
-    Useful for:
-    - Cleaning up test data
-    - Re-computing feature metadata from scratch
-    - Removing obsolete features
+    Removes metadata for specified features. This is destructive and requires --confirm.
 
     Examples:
-        # Drop specific feature (requires confirmation)
         $ metaxy metadata drop --feature user_features --confirm
-
-        # Drop multiple features
-        $ metaxy metadata drop --feature user_features --feature customer_features --confirm
-
-        # Drop all features defined in current project
+        $ metaxy metadata drop --feature feat1 --feature feat2 --confirm
         $ metaxy metadata drop --store dev --all-features --confirm
     """
-    import json
-
     from metaxy.cli.context import AppContext
 
-    # Validate format
-    if format not in ("text", "json"):
-        error_msg = f"Invalid format '{format}'. Must be 'text' or 'json'."
-        if format == "json":
-            print(json.dumps({"error": "INVALID_FORMAT", "message": error_msg}))
-        else:
-            console.print(f"[red]✗[/red] {error_msg}")
-        raise SystemExit(1)
+    # Validate feature selection
+    selector.validate(format)
+
+    # Require confirmation
+    if not confirm:
+        exit_with_error(
+            CLIError(
+                code="MISSING_CONFIRMATION",
+                message="This is a destructive operation. Must specify --confirm flag.",
+                details={"required_flag": "--confirm"},
+            ),
+            format,
+        )
 
     context = AppContext.get()
     context.raise_command_cannot_override_project()
-
-    # Validate arguments
-    if not all_features and not features:
-        if format == "json":
-            print(
-                json.dumps(
-                    {
-                        "error": "MISSING_REQUIRED_FLAG",
-                        "message": "Must specify either --all-features or --feature",
-                        "required_flags": ["--all-features", "--feature"],
-                    }
-                )
-            )
-        else:
-            console.print(
-                "[red]Error:[/red] Must specify either --all-features or --feature"
-            )
-        raise SystemExit(1)
-
-    if all_features and features:
-        if format == "json":
-            print(
-                json.dumps(
-                    {
-                        "error": "CONFLICTING_FLAGS",
-                        "message": "Cannot specify both --all-features and --feature",
-                        "conflicting_flags": ["--all-features", "--feature"],
-                    }
-                )
-            )
-        else:
-            console.print(
-                "[red]Error:[/red] Cannot specify both --all-features and --feature"
-            )
-        raise SystemExit(1)
-
-    if not confirm:
-        if format == "json":
-            print(
-                json.dumps(
-                    {
-                        "error": "MISSING_CONFIRMATION",
-                        "message": "This is a destructive operation. Must specify --confirm flag.",
-                        "required_flag": "--confirm",
-                    }
-                )
-            )
-        else:
-            console.print(
-                "[red]Error:[/red] This is a destructive operation. Must specify --confirm flag."
-            )
-        raise SystemExit(1)
-
-    # Parse feature keys
-    feature_keys: list[FeatureKey] = []
-    if features:
-        for feature_str in features:
-            # Parse feature key (supports both "feature" and "part1/part2/..." formats)
-            if "/" in feature_str:
-                parts = feature_str.split("/")
-                feature_keys.append(FeatureKey(parts))
-            else:
-                # Single-part key
-                feature_keys.append(FeatureKey([feature_str]))
-
-    # Get store
     metadata_store = context.get_store(store)
 
     with metadata_store.open("write"):
-        # If all_features, get all feature keys from the active feature graph
-        if all_features:
-            from metaxy.models.feature import FeatureGraph
+        graph = context.graph
 
-            graph = FeatureGraph.get_active()
-            # Get all feature keys from the graph (features defined in code for current project)
-            feature_keys = graph.list_features(only_current_project=True)
+        # Resolve feature keys
+        valid_keys, _ = selector.resolve_keys(graph, format)
 
-            if not feature_keys:
-                if format == "json":
-                    print(
-                        json.dumps(
-                            {
-                                "warning": "NO_FEATURES_FOUND",
-                                "message": "No features found in active graph. Make sure your features are imported.",
-                                "features_dropped": 0,
-                            }
-                        )
+        # Handle no features
+        if not valid_keys:
+            if format == "json":
+                print(
+                    json.dumps(
+                        {
+                            "warning": "NO_FEATURES_FOUND",
+                            "message": "No features found in active graph.",
+                            "features_dropped": 0,
+                        }
                     )
-                else:
-                    console.print(
-                        "[yellow]Warning:[/yellow] No features found in active graph. "
-                        "Make sure your features are imported."
-                    )
-                return
+                )
+            else:
+                console.print(
+                    "[yellow]Warning:[/yellow] No features found in active graph."
+                )
+            return
 
-        if format == "text":
+        if format == "plain":
             console.print(
-                f"\n[bold]Dropping metadata for {len(feature_keys)} feature(s)...[/bold]\n"
+                f"\n[bold]Dropping metadata for {len(valid_keys)} feature(s)...[/bold]\n"
             )
 
-        dropped_features: list[str] = []
-        failed_features: list[dict[str, str]] = []
+        # Drop each feature
+        dropped: list[str] = []
+        failed: list[dict[str, str]] = []
 
-        for feature_key in feature_keys:
-            feature_key_str = feature_key.to_string()
+        for feature_key in valid_keys:
+            key_str = feature_key.to_string()
             try:
                 metadata_store.drop_feature_metadata(feature_key)
-                dropped_features.append(feature_key_str)
-                if format == "text":
-                    console.print(f"[green]✓[/green] Dropped: {feature_key_str}")
+                dropped.append(key_str)
+                if format == "plain":
+                    console.print(f"[green]✓[/green] Dropped: {key_str}")
             except Exception as e:
-                failed_features.append({"feature": feature_key_str, "error": str(e)})
-                if format == "text":
-                    console.print(f"[red]✗[/red] Failed to drop {feature_key_str}: {e}")
+                failed.append({"feature": key_str, "error": str(e)})
+                if format == "plain":
+                    console.print(f"[red]✗[/red] Failed to drop {key_str}: {e}")
 
+        # Output result
         if format == "json":
             result: dict[str, Any] = {
                 "success": True,
-                "features_dropped": len(dropped_features),
-                "dropped": dropped_features,
+                "features_dropped": len(dropped),
+                "dropped": dropped,
             }
-            if failed_features:
-                result["failed"] = failed_features
+            if failed:
+                result["failed"] = failed
             print(json.dumps(result, indent=2))
         else:
             console.print(
-                f"\n[green]✓[/green] Drop complete: {len(dropped_features)} feature(s) dropped"
+                f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped"
             )
