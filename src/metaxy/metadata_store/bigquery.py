@@ -5,8 +5,43 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
-from metaxy.metadata_store.ibis import IbisMetadataStore
+from pydantic import Field
+
+from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
 from metaxy.versioning.types import HashAlgorithm
+
+
+class BigQueryMetadataStoreConfig(IbisMetadataStoreConfig):
+    """Configuration for BigQueryMetadataStore.
+
+    Example:
+        ```python
+        config = BigQueryMetadataStoreConfig(
+            project_id="my-project",
+            dataset_id="my_dataset",
+            credentials_path="/path/to/service-account.json",
+        )
+
+        store = BigQueryMetadataStore.from_config(config)
+        ```
+    """
+
+    project_id: str | None = Field(
+        default=None, description="Google Cloud project ID containing the dataset."
+    )
+    dataset_id: str | None = Field(
+        default=None, description="BigQuery dataset name for storing metadata tables."
+    )
+    credentials_path: str | None = Field(
+        default=None, description="Path to service account JSON file."
+    )
+    credentials: Any | None = Field(
+        default=None, description="Google Cloud credentials object."
+    )
+    location: str | None = Field(
+        default=None,
+        description="Default location for BigQuery resources (e.g., 'US', 'EU').",
+    )
 
 
 class BigQueryMetadataStore(IbisMetadataStore):
@@ -313,3 +348,8 @@ class BigQueryMetadataStore(IbisMetadataStore):
         """Display string for this store."""
         dataset_info = f"/{self.dataset_id}" if self.dataset_id else ""
         return f"BigQueryMetadataStore(project={self.project_id}{dataset_info})"
+
+    @classmethod
+    def config_model(cls) -> type[BigQueryMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Return the configuration model class for BigQueryMetadataStore."""
+        return BigQueryMetadataStoreConfig
