@@ -3746,37 +3746,30 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <p>Manage Metaxy metadata</p>
 <h3 id="metaxy-metadata-status">metaxy metadata status<a class="headerlink" href="#metaxy-metadata-status" title="Permanent link">&para;</a></h3>
 <p>Check metadata completeness and freshness for specified features.</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy metadata status [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy metadata status [OPTIONS]</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>FEATURE, --feature, --empty-feature</code>: Feature key to check (e.g., 'my_feature' or 'namespace/feature'). Can be repeated multiple times.</li>
-<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Check metadata status for all features defined in the current project's feature graph.  <em>[default: --no-all-features]</em></li>
-<li><code>STORE, --store</code>: Metadata store name (defaults to configured default store).</li>
-<li><code>SNAPSHOT-ID, --snapshot-id</code>: Check metadata against a specific snapshot version.</li>
-<li><code>ASSERT-IN-SYNC, --assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: --no-assert-in-sync]</em></li>
-<li><code>VERBOSE, --verbose, --no-verbose</code>: Show additional details about samples needing updates.  <em>[default: --no-verbose]</em></li>
-<li><code>FORMAT, --format</code>: Output format: 'plain' (default, human-readable) or 'json' (machine-parseable).  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
+<li><code>--feature, --empty-feature</code>: Feature key (e.g., 'my_feature' or 'namespace/feature'). Can be repeated.</li>
+<li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: --no-all-features]</em></li>
+<li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
+<li><code>--snapshot-id</code>: Check metadata against a specific snapshot version.</li>
+<li><code>--assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: --no-assert-in-sync]</em></li>
+<li><code>--verbose, --no-verbose</code>: Show additional details about samples needing updates.  <em>[default: --no-verbose]</em></li>
+<li><code>--format</code>:   <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h3 id="metaxy-metadata-drop">metaxy metadata drop<a class="headerlink" href="#metaxy-metadata-drop" title="Permanent link">&para;</a></h3>
 <p>Drop metadata from a store.</p>
-<p>Removes metadata for specified features from the store.
-This is a destructive operation and requires --confirm flag.</p>
-<p>When using --all-features, drops metadata for all features defined in the
-current project's feature graph.</p>
-<p>Useful for:
-- Cleaning up test data
-- Re-computing feature metadata from scratch
-- Removing obsolete features</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="go">metaxy metadata drop [ARGS]</span>
+<p>Removes metadata for specified features. This is destructive and requires --confirm.</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="go">metaxy metadata drop [OPTIONS]</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>STORE, --store</code>: Store name to drop metadata from (defaults to configured default store)</li>
-<li><code>FEATURE, --feature, --empty-feature</code>: Feature key to drop (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses --all-features.</li>
-<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Drop metadata for all features defined in the current project's feature graph  <em>[default: --no-all-features]</em></li>
-<li><code>CONFIRM, --confirm, --no-confirm</code>: Confirm the drop operation (required to prevent accidental deletion)  <em>[default: --no-confirm]</em></li>
-<li><code>FORMAT, --format</code>: Output format: 'text' (default, human-readable) or 'json' (machine-parseable).  <em>[default: text]</em></li>
+<li><code>--feature, --empty-feature</code>: Feature key (e.g., 'my_feature' or 'namespace/feature'). Can be repeated.</li>
+<li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: --no-all-features]</em></li>
+<li><code>--store</code>: Store name to drop metadata from (defaults to configured default store).</li>
+<li><code>--confirm, --no-confirm</code>: Confirm the drop operation (required to prevent accidental deletion).  <em>[default: --no-confirm]</em></li>
+<li><code>--format</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 
 
