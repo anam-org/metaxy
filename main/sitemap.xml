@@ -17,7 +17,23 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/bigquery/api/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/bigquery/configuration/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/clickhouse/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/clickhouse/api/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/clickhouse/configuration/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -25,7 +41,31 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/duckdb/api/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/duckdb/configuration/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/lancedb/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/lancedb/api/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/lancedb/configuration/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/ibis/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/ibis/api/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -33,7 +73,23 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/storage/delta/api/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/storage/delta/configuration/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/orchestration/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://anam-org.github.io/metaxy/main/integrations/orchestration/dagster/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/orchestration/dagster/api/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -41,7 +97,23 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/plugins/sqlalchemy/api/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/plugins/sqlalchemy/configuration/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://anam-org.github.io/metaxy/main/integrations/plugins/sqlmodel/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/plugins/sqlmodel/api/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/plugins/sqlmodel/configuration/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -145,27 +217,7 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/ext/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/ext/dagster/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/ext/sqlalchemy/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/ext/sqlmodel/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/delta/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -173,27 +225,7 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/lancedb/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/memory/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/ibis/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/ibis/bigquery/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/ibis/clickhouse/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/ibis/duckdb/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
 </urlset>
