@@ -328,3 +328,40 @@ def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
         assert "snapshot" in output.lower() and "cannot load" in output.lower()
         # Should show file paths and line numbers from traceback
         assert ".py" in output and "line " in output
+
+
+def test_generated_migration_is_valid(metaxy_project: TempMetaxyProject):
+    """Test that generated migrations can be loaded and used with status command.
+
+    Regression test for bug where generated YAML used 'id' but model expected 'migration_id'.
+    """
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Generate a full migration
+        result = metaxy_project.run_cli(
+            "migrations",
+            "generate",
+            "--op",
+            "metaxy.migrations.ops.DataVersionReconciliation",
+            "--type",
+            "full",
+        )
+        assert result.returncode == 0
+
+        # Status command should work without validation errors
+        result = metaxy_project.run_cli("migrations", "status")
+        assert result.returncode == 0
+        assert "validation error" not in result.stderr.lower()
