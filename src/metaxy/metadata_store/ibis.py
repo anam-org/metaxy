@@ -526,5 +526,4 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     @classmethod
     def config_model(cls) -> type[IbisMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Return the configuration model class for IbisMetadataStore."""
         return IbisMetadataStoreConfig

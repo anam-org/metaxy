@@ -443,5 +443,4 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
     @classmethod
     def config_model(cls) -> type[DuckDBMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Return the configuration model class for DuckDBMetadataStore."""
         return DuckDBMetadataStoreConfig

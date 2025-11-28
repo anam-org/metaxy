@@ -364,5 +364,4 @@ class DeltaMetadataStore(MetadataStore):
 
     @classmethod
     def config_model(cls) -> type[DeltaMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Return the configuration model class for DeltaMetadataStore."""
         return DeltaMetadataStoreConfig

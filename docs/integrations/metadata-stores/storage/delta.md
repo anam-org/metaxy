@@ -4,6 +4,8 @@ Metaxy implements [`DeltaMetadataStore`][metaxy.metadata_store.delta.DeltaMetada
 
 It supports the local filesystem and remote object stores.
 
+See [Configuration Reference](../../../reference/api/metadata-stores/delta.md#configuration) for all available options.
+
 ## Installation
 
 ```shell
@@ -23,3 +25,8 @@ It's possible to control how feature keys map to DeltaLake table locations with 
 
 - `nested` (default) places every feature in its own directory: `your/feature/key.delta`
 - `flat` stores all of them in the same directory: `your__feature_key.delta`
+
+# Reference
+
+- [Configuration Reference](../../../reference/api/metadata-stores/delta.md#configuration)
+- [API Reference][metaxy.metadata_store.delta.DeltaMetadataStore]

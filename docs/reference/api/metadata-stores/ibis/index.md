@@ -9,3 +9,5 @@ Users can extend [IbisMetadataStore][metaxy.metadata_store.ibis.IbisMetadataStor
 ## Ibis Metadata Store
 
 ::: metaxy.metadata_store.ibis.IbisMetadataStore
+    options:
+      inherited_members: false
