@@ -141,12 +141,17 @@
         'sample_uid',
       ]),
       'key': 'snapshot/test',
+      'lineage': dict({
+        'relationship': dict({
+          'type': '1:1',
+        }),
+      }),
       'metadata': dict({
       }),
     }),
-    'metaxy_feature_spec_version': '26736b45eeb37186ef6678426b85f3265cdba9eb5b782a8f41496123d5649cd4',
+    'metaxy_feature_spec_version': 'dbcea9d90a69bf9a2802bdc04ee2c57da828f735a0fd51cb86bcb50db9107995',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
-    'metaxy_full_definition_version': '9a61cb119a3953cfc47a366ea0abc789635c20f89ff5a866437186085d5cd665',
+    'metaxy_full_definition_version': 'b40641ad4eec4649078694c70ad4abd44dc4bc599919d52bffc5f849cab86838',
     'project': 'test',
   })
 # ---
