@@ -10,7 +10,7 @@
     'feature_key': 'recorded/feature',
     'metaxy_feature_spec_version': '72471e8bfba84439e4814b65bee1589a56f702592f4068ef30c61167bb6781aa',
     'metaxy_feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
-    'metaxy_snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
+    'metaxy_snapshot_version': '995cbae420a6674b5325efac29c6a6d8a2195823cd81fcf94c3a63718946b4d8',
   })
 # ---
 # name: test_feature_spec_version_stored_in_snapshot

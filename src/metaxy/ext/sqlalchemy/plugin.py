@@ -6,20 +6,28 @@ and user-defined feature tables. These can be used with migration tools like Ale
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Column, DateTime, Index, MetaData, String, Table
+from sqlalchemy.types import JSON
 
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlalchemy.config import SQLAlchemyConfig
 from metaxy.metadata_store.system import EVENTS_KEY, FEATURE_VERSIONS_KEY
 from metaxy.models.constants import (
+    METAXY_CREATED_AT,
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_FULL_DEFINITION_VERSION,
+    METAXY_MATERIALIZATION_ID,
+    METAXY_PROVENANCE,
+    METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.models.feature_spec import FeatureSpec
+from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.ibis import IbisMetadataStore
@@ -164,6 +172,123 @@ def get_system_slqa_metadata(
     return url, metadata
 
 
+def _inject_constraints(
+    table: Table,
+    spec: FeatureSpec,
+    inject_primary_key: bool,
+    inject_index: bool,
+) -> None:
+    """Inject primary key and/or index constraints on a table.
+
+    Args:
+        table: SQLAlchemy Table to modify
+        spec: Feature specification with id_columns
+        inject_primary_key: If True, inject composite primary key
+        inject_index: If True, inject composite index
+    """
+    from sqlalchemy import PrimaryKeyConstraint
+
+    # Composite key/index columns: id_columns + metaxy_created_at + metaxy_data_version
+    key_columns = list(spec.id_columns) + [METAXY_CREATED_AT, METAXY_DATA_VERSION]
+
+    if inject_primary_key:
+        # Add primary key constraint
+        pk_constraint = PrimaryKeyConstraint(*key_columns, name="metaxy_pk")
+        table.append_constraint(pk_constraint)
+
+    if inject_index:
+        # Add composite index
+        idx = Index(
+            "metaxy_idx",
+            *key_columns,
+        )
+        table.append_constraint(idx)
+
+
+def _create_error_table_columns(
+    parent_table: Table,
+    error_spec: FeatureSpec,
+) -> list[Column[Any]]:
+    """Create columns for an error table based on parent feature's table.
+
+    Error tables capture computation errors for a feature. They share the same
+    id_columns as the parent feature but have a single 'default' field for error data.
+
+    Args:
+        parent_table: The parent feature's SQLAlchemy Table
+        error_spec: The error table's FeatureSpec
+
+    Returns:
+        List of SQLAlchemy Column objects for the error table
+    """
+    # Use Any since Column is invariant in its type parameter
+    columns: list[Column[Any]] = []
+
+    # Copy id_columns from parent (preserves types)
+    for col_name in error_spec.id_columns:
+        parent_col = parent_table.c.get(col_name)
+        if parent_col is not None:
+            columns.append(Column(col_name, parent_col.type))
+        else:
+            # Fallback to String if parent column not found
+            columns.append(Column(col_name, String))
+
+    # Add default field for error data (JSON)
+    columns.append(Column("default", JSON))
+
+    # Add metaxy system columns
+    columns.extend(
+        [
+            Column(METAXY_PROVENANCE, String),
+            Column(METAXY_PROVENANCE_BY_FIELD, JSON),
+            Column(METAXY_FEATURE_VERSION, String),
+            Column(METAXY_FEATURE_SPEC_VERSION, String),
+            Column(METAXY_SNAPSHOT_VERSION, String),
+            Column(METAXY_DATA_VERSION, String),
+            Column(METAXY_DATA_VERSION_BY_FIELD, JSON),
+            Column(METAXY_CREATED_AT, DateTime(timezone=True)),
+            Column(METAXY_MATERIALIZATION_ID, String),
+        ]
+    )
+
+    return columns
+
+
+def _create_error_table(
+    parent_table: Table,
+    error_spec: FeatureSpec,
+    table_name: str,
+    metadata: MetaData,
+    inject_primary_key: bool,
+    inject_index: bool,
+) -> Table:
+    """Create an error table for a feature.
+
+    Args:
+        parent_table: The parent feature's SQLAlchemy Table
+        error_spec: The error table's FeatureSpec
+        table_name: The prefixed table name for the error table
+        metadata: The MetaData object to add the table to
+        inject_primary_key: Whether to inject a composite primary key
+        inject_index: Whether to inject a composite index
+
+    Returns:
+        The newly created SQLAlchemy Table
+    """
+    columns = _create_error_table_columns(parent_table, error_spec)
+    error_table = Table(table_name, metadata, *columns)
+
+    # Inject constraints if requested
+    _inject_constraints(
+        table=error_table,
+        spec=error_spec,
+        inject_primary_key=inject_primary_key,
+        inject_index=inject_index,
+    )
+
+    return error_table
+
+
 def _get_features_metadata(
     source_metadata: MetaData,
     store: IbisMetadataStore,
@@ -208,7 +333,7 @@ def _get_features_metadata(
 
     # Compute expected table names for features in the project
     expected_table_names = set()
-    feature_specs_by_table_name = {}
+    feature_specs_by_table_name: dict[str, FeatureSpec] = {}
 
     for feature_key, feature_cls in graph.features_by_key.items():
         # Filter by project if requested
@@ -225,6 +350,9 @@ def _get_features_metadata(
     # Filter source metadata to only include expected tables
     filtered_metadata = MetaData()
 
+    # Track parent tables by their unprefixed table names for error table generation
+    parent_tables_by_key: dict[FeatureKey, Table] = {}
+
     for table_name, table in source_metadata.tables.items():
         if table_name in expected_table_names:
             # Copy table to filtered metadata
@@ -239,42 +367,51 @@ def _get_features_metadata(
                 inject_index=inject_index,
             )
 
-    return filtered_metadata
+            # Track the table for error table generation
+            # We need to find the feature key for this table
+            for feature_key, feature_cls in graph.features_by_key.items():
+                if store.get_table_name(feature_key) == table_name:
+                    parent_tables_by_key[feature_key] = new_table
+                    break
 
+    # Now process error tables
+    # Error tables are system features with key ending in ("errors",)
+    for error_key, error_spec in graph.feature_specs_by_key.items():
+        # Check if this is an error table
+        if not (error_spec.is_system and error_key.parts[-1] == "errors"):
+            continue
 
-def _inject_constraints(
-    table: Table,
-    spec: FeatureSpec,
-    inject_primary_key: bool,
-    inject_index: bool,
-) -> None:
-    """Inject primary key and/or index constraints on a table.
+        # Derive parent feature key
+        parent_key = FeatureKey(error_key.parts[:-1])
 
-    Args:
-        table: SQLAlchemy Table to modify
-        spec: Feature specification with id_columns
-        inject_primary_key: If True, inject composite primary key
-        inject_index: If True, inject composite index
-    """
-    from sqlalchemy import PrimaryKeyConstraint
+        # Check if parent exists in features_by_key
+        parent_cls = graph.features_by_key.get(parent_key)
+        if parent_cls is None:
+            continue
 
-    from metaxy.models.constants import METAXY_CREATED_AT, METAXY_DATA_VERSION
+        # Filter by project if requested
+        if filter_by_project:
+            feature_project = getattr(parent_cls, "project", None)
+            if feature_project != project:
+                continue
 
-    # Composite key/index columns: id_columns + metaxy_created_at + metaxy_data_version
-    key_columns = list(spec.id_columns) + [METAXY_CREATED_AT, METAXY_DATA_VERSION]
+        # Find parent's table in our tracked tables
+        parent_table = parent_tables_by_key.get(parent_key)
+        if parent_table is None:
+            continue
 
-    if inject_primary_key:
-        # Add primary key constraint
-        pk_constraint = PrimaryKeyConstraint(*key_columns, name="metaxy_pk")
-        table.append_constraint(pk_constraint)
-
-    if inject_index:
-        # Add composite index
-        idx = Index(
-            "metaxy_idx",
-            *key_columns,
+        # Create error table
+        error_table_name = store.get_table_name(error_key)
+        _create_error_table(
+            parent_table=parent_table,
+            error_spec=error_spec,
+            table_name=error_table_name,
+            metadata=filtered_metadata,
+            inject_primary_key=inject_primary_key,
+            inject_index=inject_index,
         )
-        table.append_constraint(idx)
+
+    return filtered_metadata
 
 
 def filter_feature_sqla_metadata(

@@ -1,7 +1,7 @@
 # serializer version: 1
 # name: test_pipeline
   dict({
-    'from_snapshot_version': 'd49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82',
+    'from_snapshot_version': '03c8e48a4ab9a3b70d09c68a20e5ed0ba0ff6a2e2780b2f1e30fcaafacbf35a5',
     'migration_id': '20250101_000000_example_migration',
     'migration_type': 'metaxy.migrations.models.DiffMigration',
     'ops': list([
@@ -13,6 +13,6 @@
       }),
     ]),
     'parent': 'initial',
-    'to_snapshot_version': '155f26076028a45ebcf937aad81704f62c8d84efd204965ce5aa8d46ba8eec9e',
+    'to_snapshot_version': 'ae1f6caf6e512953aee6e75abf2a513e9dc4a5ede15b5e7f51b00fd63fe90125',
   })
 # ---

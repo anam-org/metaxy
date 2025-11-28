@@ -437,7 +437,7 @@ class TestMetadataStoreTruncation:
 class TestMigrationCompatibility:
     """Test migration detection with hash truncation."""
 
-    def test_migration_with_truncation(self, graph):
+    def test_migration_with_truncation(self, graph, tmp_path):
         """Test that migration detection works with truncated hashes."""
         from metaxy.migrations.detector import detect_diff_migration
 
@@ -477,10 +477,14 @@ class TestMigrationCompatibility:
                     pass
 
                 # Detect migration - should work with truncated versions
+                # Use tmp_path to avoid polluting the real migrations directory
+                migrations_dir = tmp_path / "migrations"
+                migrations_dir.mkdir()
                 migration = detect_diff_migration(
                     store,
                     project="test",  # Use the same project as in config
                     ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
+                    migrations_dir=migrations_dir,
                 )
                 assert migration is not None
                 assert len(migration.from_snapshot_version) == 12

@@ -432,7 +432,11 @@ def filter_feature_sqlmodel_metadata(
         ```
     """
 
-    from sqlalchemy import MetaData
+    from sqlalchemy import MetaData, Table
+
+    from metaxy.ext.sqlalchemy.plugin import _create_error_table, _inject_constraints
+    from metaxy.models.feature import FeatureGraph
+    from metaxy.models.types import FeatureKey
 
     config = MetaxyConfig.get()
 
@@ -455,9 +459,10 @@ def filter_feature_sqlmodel_metadata(
     filtered_metadata = MetaData()
 
     # Get the FeatureGraph to look up feature classes by key
-    from metaxy.models.feature import FeatureGraph
-
     feature_graph = FeatureGraph.get_active()
+
+    # Track parent tables by their feature key for error table generation
+    parent_tables_by_key: dict[FeatureKey, Table] = {}
 
     # Iterate over tables in source metadata
     for table_name, original_table in source_metadata.tables.items():
@@ -487,8 +492,6 @@ def filter_feature_sqlmodel_metadata(
 
         # Inject constraints if requested
         if inject_primary_key or inject_index:
-            from metaxy.ext.sqlalchemy.plugin import _inject_constraints
-
             spec = feature_cls.spec()
             _inject_constraints(
                 table=new_table,
@@ -496,5 +499,45 @@ def filter_feature_sqlmodel_metadata(
                 inject_primary_key=inject_primary_key,
                 inject_index=inject_index,
             )
+
+        # Track the table for error table generation
+        parent_tables_by_key[feature_key] = new_table
+
+    # Now process error tables
+    # Error tables are system features with key ending in ("errors",)
+    for error_key, error_spec in feature_graph.feature_specs_by_key.items():
+        # Check if this is an error table
+        if not (error_spec.is_system and error_key.parts[-1] == "errors"):
+            continue
+
+        # Derive parent feature key
+        parent_key = FeatureKey(error_key.parts[:-1])
+
+        # Check if parent exists in features_by_key
+        parent_cls = feature_graph.features_by_key.get(parent_key)
+        if parent_cls is None:
+            continue
+
+        # Filter by project if requested
+        if filter_by_project:
+            feature_project = getattr(parent_cls, "project", None)
+            if feature_project != project:
+                continue
+
+        # Find parent's table in our tracked tables
+        parent_table = parent_tables_by_key.get(parent_key)
+        if parent_table is None:
+            continue
+
+        # Create error table
+        error_table_name = store.get_table_name(error_key)
+        _create_error_table(
+            parent_table=parent_table,
+            error_spec=error_spec,
+            table_name=error_table_name,
+            metadata=filtered_metadata,
+            inject_primary_key=inject_primary_key,
+            inject_index=inject_index,
+        )
 
     return url, filtered_metadata

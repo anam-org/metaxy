@@ -172,6 +172,8 @@ class BaseRenderer:
         if graph_data is None and graph is None:
             raise ValueError("Either graph or graph_data must be provided")
 
+        self.config = config or RenderConfig()
+
         # Prefer graph_data if provided, otherwise convert from graph
         if graph_data is not None:
             self.graph_data: GraphData = graph_data
@@ -180,7 +182,6 @@ class BaseRenderer:
             assert graph is not None
             self.graph_data = GraphData.from_feature_graph(graph)
 
-        self.config = config or RenderConfig()
         self.theme = theme or Theme.default()
         self.walker = GraphWalker(self.graph_data)
 
