@@ -227,7 +227,9 @@ def apply(
         try:
             chain = build_migration_chain(migrations_dir)
         except ValueError as e:
-            app.console.print(f"[red]✗[/red] Invalid migration chain: {e}")
+            from metaxy.cli.utils import print_error
+
+            print_error(app.console, "Invalid migration chain", e)
             raise SystemExit(1)
 
         if not chain:
@@ -307,9 +309,13 @@ def apply(
             app.console.print(f"  Duration: {result.duration_seconds:.2f}s")
 
             if result.errors:
-                app.console.print("\n[red]Errors:[/red]")
-                for feature_key, error in result.errors.items():
-                    app.console.print(f"  ✗ {feature_key}: {error}")
+                from metaxy.cli.utils import print_error_list
+
+                print_error_list(
+                    app.console,
+                    result.errors,
+                    header="\n[red]Errors:[/red]",
+                )
 
             if result.status == "failed":
                 app.console.print(
@@ -364,7 +370,9 @@ def status():
         try:
             chain = build_migration_chain(migrations_dir)
         except ValueError as e:
-            app.console.print(f"[red]✗[/red] Invalid migratios: {e}")
+            from metaxy.cli.utils import print_error
+
+            print_error(app.console, "Invalid migrations", e)
             return
 
         if not chain:
@@ -432,11 +440,15 @@ def status():
             )
 
             if failed_features:
-                app.console.print(
-                    f"  [red]Failed features ({len(failed_features)}):[/red]"
+                from metaxy.cli.utils import print_error_list
+
+                print_error_list(
+                    app.console,
+                    failed_features,
+                    header=f"  [red]Failed features ({len(failed_features)}):[/red]",
+                    indent="  ",
+                    max_items=3,
                 )
-                for feature_key, error in list(failed_features.items())[:3]:
-                    app.console.print(f"    ✗ {feature_key}: {error}")
 
             app.console.print()
 
@@ -467,7 +479,9 @@ def list_migrations():
     try:
         chain = build_migration_chain(migrations_dir)
     except ValueError as e:
-        app.console.print(f"[red]✗[/red] Invalid migration: {e}")
+        from metaxy.cli.utils import print_error
+
+        print_error(app.console, "Invalid migration", e)
         return
 
     if not chain:
@@ -592,7 +606,9 @@ def explain(
         try:
             graph_diff = migration.compute_graph_diff(metadata_store, project)
         except Exception as e:
-            app.console.print(f"[red]✗[/red] Failed to compute diff: {e}")
+            from metaxy.cli.utils import print_error
+
+            print_error(app.console, "Failed to compute diff", e)
             raise SystemExit(1)
 
         # Display detailed diff
@@ -768,7 +784,9 @@ def describe(
             try:
                 chain = build_migration_chain(migrations_dir)
             except ValueError as e:
-                app.console.print(f"[red]✗[/red] Invalid migration chain: {e}")
+                from metaxy.cli.utils import print_error
+
+                print_error(app.console, "Invalid migration chain", e)
                 raise SystemExit(1)
 
             if not chain:
@@ -924,9 +942,16 @@ def describe(
                 )
                 app.console.print(f"    Features failed: {len(failed_features)}")
                 if failed_features:
-                    app.console.print("    Failed features:")
-                    for feature_key, error in list(failed_features.items())[:5]:
-                        app.console.print(f"      • {feature_key}: {error}")
+                    from metaxy.cli.utils import print_error_list
+
+                    print_error_list(
+                        app.console,
+                        failed_features,
+                        header="    Failed features:",
+                        prefix="    •",
+                        indent="  ",
+                        max_items=5,
+                    )
             elif migration_status == MigrationStatus.IN_PROGRESS:
                 app.console.print("  [yellow]⚠ IN PROGRESS[/yellow]")
                 app.console.print(
