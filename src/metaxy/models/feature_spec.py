@@ -26,6 +26,10 @@ from metaxy.models.types import (
 )
 from metaxy.utils.hashing import truncate_hash
 
+# Constants for system feature metadata
+ERROR_TABLE_METADATA_KEY = "metaxy/error_table"
+SYSTEM_METADATA_KEY = "metaxy/system"
+
 if TYPE_CHECKING:
     # yes, these are circular imports, the TYPE_CHECKING block hides them at runtime.
     # neither pyright not basedpyright allow ignoring `reportImportCycles` because they think it's a bad practice
@@ -292,6 +296,11 @@ class FeatureSpec(FrozenBaseModel):
                 "id_columns must be non-empty if specified. Use None for default."
             )
         return self
+
+    @property
+    def is_system(self) -> bool:
+        """Return True if this is a system feature (hidden from normal graph rendering)."""
+        return self.metadata.get(SYSTEM_METADATA_KEY, False) is True
 
     @property
     def feature_spec_version(self) -> str:

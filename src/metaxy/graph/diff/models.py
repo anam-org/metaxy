@@ -262,11 +262,15 @@ class GraphData(FrozenBaseModel):
         )
 
     @classmethod
-    def from_feature_graph(cls, graph: "FeatureGraph") -> "GraphData":
+    def from_feature_graph(
+        cls, graph: "FeatureGraph", *, include_system: bool = False
+    ) -> "GraphData":
         """Convert a FeatureGraph to GraphData.
 
         Args:
             graph: FeatureGraph instance
+            include_system: If True, include system features (like error tables).
+                Defaults to False.
 
         Returns:
             GraphData with all nodes and edges
@@ -278,8 +282,13 @@ class GraphData(FrozenBaseModel):
 
         # Convert each feature to a GraphNode
         for feature_key, feature_cls in graph.features_by_key.items():
-            feature_key_str = feature_key.to_string()
             spec = feature_cls.spec()
+
+            # Skip system features unless explicitly included
+            if spec.is_system and not include_system:
+                continue
+
+            feature_key_str = feature_key.to_string()
 
             # Get feature version
             feature_version = graph.get_feature_version(feature_key)
@@ -322,6 +331,60 @@ class GraphData(FrozenBaseModel):
             # Create edges
             for dep_key in dependencies:
                 edges.append(EdgeData(from_key=dep_key, to_key=feature_key))
+
+        # Include system features from feature_specs_by_key (like error tables)
+        # These don't have Feature classes, only specs
+        if include_system:
+            for feature_key, spec in graph.feature_specs_by_key.items():
+                # Skip non-system features (already handled above)
+                if not spec.is_system:
+                    continue
+
+                # Skip if already processed (shouldn't happen, but be safe)
+                feature_key_str = feature_key.to_string()
+                if feature_key_str in nodes:
+                    continue
+
+                # Get feature version
+                feature_version = graph.get_feature_version(feature_key)
+
+                # Convert fields
+                field_nodes = []
+                if spec.fields:
+                    for field_spec in spec.fields:
+                        fq_field_key = FQFieldKey(
+                            feature=feature_key, field=field_spec.key
+                        )
+                        field_version = graph.get_field_version(fq_field_key)
+
+                        field_node = FieldNode(
+                            key=field_spec.key,
+                            version=field_version,
+                            code_version=field_spec.code_version,
+                            status=NodeStatus.NORMAL,
+                        )
+                        field_nodes.append(field_node)
+
+                # Extract dependencies (system features typically have none)
+                dependencies = []
+                if spec.deps:
+                    dependencies = [dep.feature for dep in spec.deps]
+
+                # System features don't have a project (None)
+                node = GraphNode(
+                    key=feature_key,
+                    version=feature_version,
+                    fields=field_nodes,
+                    dependencies=dependencies,
+                    status=NodeStatus.NORMAL,
+                    project=None,
+                    metadata=dict(spec.metadata),
+                )
+                nodes[feature_key_str] = node
+
+                # Create edges
+                for dep_key in dependencies:
+                    edges.append(EdgeData(from_key=dep_key, to_key=feature_key))
 
         return cls(
             nodes=nodes,

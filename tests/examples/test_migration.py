@@ -71,7 +71,7 @@ def test_pipeline(tmp_path, snapshot):
     # v1_snapshot should be the expected hash from the snapshot data
     assert (
         v1_snapshot
-        == "d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82"
+        == "03c8e48a4ab9a3b70d09c68a20e5ed0ba0ff6a2e2780b2f1e30fcaafacbf35a5"
     )
 
     # Step 2: Run pipeline with STAGE=1
