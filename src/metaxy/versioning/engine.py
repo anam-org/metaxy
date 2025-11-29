@@ -221,9 +221,9 @@ class VersioningEngine(ABC):
         """
         raise NotImplementedError()
 
-    @staticmethod
     @abstractmethod
     def record_field_versions(
+        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
@@ -254,7 +254,7 @@ class VersioningEngine(ABC):
         Returns:
             Narwhals expression to access the field value
         """
-        return self._field_accessor.field_expr(struct_column, field_name)
+        return nw.col(struct_column).struct.field(field_name)
 
     @abstractmethod
     def concat_strings_over_groups(
@@ -658,6 +658,7 @@ class VersioningEngine(ABC):
         sample_components = []
         for field_name in sorted(field_names):
             expr = self.access_provenance_field(struct_column, field_name)
+            # Use empty string for nulls so concatenation is stable and hashable.
             sample_components.append(expr.fill_null(""))
         sample_concat = nw.concat_str(sample_components, separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]

@@ -27,7 +27,7 @@ from narwhals.typing import FrameT
 
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.engine import VersioningEngine
-from metaxy.versioning.ibis import IbisHashFn, IbisVersioningEngine
+from metaxy.versioning.ibis import BaseIbisVersioningEngine, IbisHashFn
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -38,8 +38,8 @@ class FlatVersioningMixin:
     def _get_flattened_column_name(struct_name: str, field_name: str) -> str:
         return f"{struct_name}__{field_name}"
 
-    @staticmethod
     def record_field_versions(
+        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
@@ -69,7 +69,7 @@ class FlatVersioningEngine(FlatVersioningMixin, VersioningEngine, ABC):
         VersioningEngine.__init__(self, plan)
 
 
-class IbisFlatVersioningEngine(FlatVersioningMixin, IbisVersioningEngine):
+class IbisFlatVersioningEngine(FlatVersioningMixin, BaseIbisVersioningEngine):
     """Versioning engine for Ibis backends without struct support using flattened columns."""
 
     def __init__(
@@ -77,4 +77,4 @@ class IbisFlatVersioningEngine(FlatVersioningMixin, IbisVersioningEngine):
         plan: FeaturePlan,
         hash_functions: dict[HashAlgorithm, IbisHashFn],
     ) -> None:
-        IbisVersioningEngine.__init__(self, plan, hash_functions)
+        BaseIbisVersioningEngine.__init__(self, plan, hash_functions)

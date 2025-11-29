@@ -81,8 +81,8 @@ class PolarsVersioningEngine(VersioningEngine):
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(df_pl))
 
-    @staticmethod
     def record_field_versions(
+        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],

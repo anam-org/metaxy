@@ -1,5 +1,7 @@
 """Feasibility tests for the flat versioning engine."""
 
+from typing import Any
+
 import narwhals as nw
 import polars as pl
 import pytest
@@ -20,8 +22,13 @@ class MockFlatEngine(FlatVersioningEngine):
         return nw.Implementation.POLARS
 
     def hash_string_column(
-        self, df, source_column, target_column, hash_algo, truncate_length=None
-    ):
+        self,
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any],
+        source_column: str,
+        target_column: str,
+        hash_algo: HashAlgorithm,
+        truncate_length: int | None = None,
+    ) -> nw.DataFrame[Any] | nw.LazyFrame[Any]:
         """Simple mock hashing using native Polars."""
         import polars as pl
 
@@ -38,13 +45,13 @@ class MockFlatEngine(FlatVersioningEngine):
 
     def concat_strings_over_groups(
         self,
-        df,
-        source_column,
-        target_column,
-        group_by_columns,
-        order_by_columns,
-        separator="|",
-    ):
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any],
+        source_column: str,
+        target_column: str,
+        group_by_columns: list[str],
+        order_by_columns: list[str],
+        separator: str = "|",
+    ) -> nw.DataFrame[Any] | nw.LazyFrame[Any]:
         """Simple mock aggregation using native Polars window functions."""
         import polars as pl
 
@@ -63,8 +70,12 @@ class MockFlatEngine(FlatVersioningEngine):
         result = native_df.with_columns(concat_expr.alias(target_column))
         return nw.from_native(result, eager_only=True)
 
-    @staticmethod
-    def keep_latest_by_group(df, group_columns, timestamp_column):
+    def keep_latest_by_group(
+        self,
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any],
+        group_columns: list[str],
+        timestamp_column: str,
+    ) -> nw.DataFrame[Any] | nw.LazyFrame[Any]:
         """Simple mock keep_latest using native Polars."""
         import polars as pl
 
