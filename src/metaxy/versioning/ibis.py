@@ -7,6 +7,8 @@ All operations stay in the lazy Ibis world for SQL execution.
 from abc import ABC
 from typing import Protocol, cast
 
+import ibis
+import ibis.expr.types as ibis_types
 import narwhals as nw
 from ibis import Expr as IbisExpr
 from narwhals.typing import FrameT
@@ -54,13 +56,10 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
                 f"Supported: {list(self.hash_functions.keys())}"
             )
 
-        import ibis
-        import ibis.expr.types
-
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis_types.Table = cast(ibis_types.Table, df.to_native())
 
         hash_fn = self.hash_functions[hash_algo]
         hashed = hash_fn(ibis_table[source_column])
@@ -77,13 +76,10 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
         exclude_columns: list[str],
     ) -> FrameT:
         """Aggregate DataFrame by grouping and concatenating strings."""
-        import ibis
-        import ibis.expr.types
-
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis_types.Table = cast(ibis_types.Table, df.to_native())
 
         agg_exprs = {}
         agg_exprs[concat_column] = ibis_table[concat_column].group_concat(
@@ -108,8 +104,6 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
         timestamp_column: str,
     ) -> FrameT:
         """Keep only the latest row per group based on a timestamp column."""
-        import ibis.expr.types
-
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
@@ -120,7 +114,7 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
                 f"Available columns: {df.columns}"
             )
 
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis_types.Table = cast(ibis_types.Table, df.to_native())
 
         all_columns = set(ibis_table.columns)
         non_group_columns = all_columns - set(group_columns)
@@ -144,13 +138,10 @@ class IbisVersioningEngine(BaseIbisVersioningEngine):
         field_columns: dict[str, str],
     ) -> FrameT:
         """Persist field-level versions using a struct column."""
-        import ibis
-        import ibis.expr.types
-
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis_types.Table = cast(ibis_types.Table, df.to_native())
 
         struct_expr = ibis.struct(
             {
