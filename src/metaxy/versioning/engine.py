@@ -12,6 +12,7 @@ from narwhals.typing import FrameT
 
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
@@ -540,7 +541,7 @@ class VersioningEngine(ABC):
             ).with_columns(nw.col(hash_col_name).str.slice(0, hash_length))
 
         # Build provenance_by_field struct
-        df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)
+        df = self.record_field_versions(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)
 
         # Compute sample-level provenance hash
         df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)

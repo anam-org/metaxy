@@ -1,9 +1,6 @@
-"""Ibis implementation of VersioningEngine.
+"""Ibis implementation of VersioningEngine."""
 
-CRITICAL: This implementation NEVER materializes lazy expressions.
-All operations stay in the lazy Ibis world for SQL execution.
-"""
-
+from abc import ABC
 from typing import Protocol, cast
 
 import narwhals as nw
@@ -19,14 +16,11 @@ class IbisHashFn(Protocol):
     def __call__(self, expr: IbisExpr) -> IbisExpr: ...
 
 
-class IbisVersioningEngine(VersioningEngine):
-    """Provenance engine using Ibis for SQL databases.
+class BaseIbisVersioningEngine(VersioningEngine, ABC):
+    """Shared Ibis-specific plumbing for provenance engines.
 
-    Only implements hash_string_column and record_field_versions.
-    All logic lives in the base class.
-
-    CRITICAL: This implementation NEVER leaves the lazy world.
-    All operations stay as Ibis expressions that compile to SQL.
+    Handles hashing, grouping helpers, and keeps all operations lazy in Ibis.
+    Concrete subclasses decide how to represent field-level structs (true structs vs. flattened columns).
     """
 
     def __init__(
@@ -92,45 +86,6 @@ class IbisVersioningEngine(VersioningEngine):
 
         # Add new column with the hash
         result_table = ibis_table.mutate(**{target_column: hashed})  # pyright: ignore[reportArgumentType]
-
-        # Convert back to Narwhals
-        return cast(FrameT, nw.from_native(result_table))
-
-    @staticmethod
-    def record_field_versions(
-        df: FrameT,
-        struct_name: str,
-        field_columns: dict[str, str],
-    ) -> FrameT:
-        """Persist field-level versions using a struct column.
-
-        Args:
-            df: Narwhals DataFrame backed by Ibis
-            struct_name: Name for the new struct column
-            field_columns: Mapping from struct field names to column names
-
-        Returns:
-            Narwhals DataFrame with the struct column added.
-        """
-        # Import ibis lazily
-        import ibis.expr.types
-
-        # Convert to Ibis table
-        assert df.implementation == nw.Implementation.IBIS, (
-            "Only Ibis DataFrames are accepted"
-        )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
-
-        # Build struct expression - reference columns by name
-        struct_expr = ibis.struct(
-            {
-                field_name: ibis_table[col_name]
-                for field_name, col_name in field_columns.items()
-            }
-        )
-
-        # Add struct column
-        result_table = ibis_table.mutate(**{struct_name: struct_expr})
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))
@@ -243,6 +198,44 @@ class IbisVersioningEngine(VersioningEngine):
 
         # Perform groupby and aggregate
         result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)
+
+        # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(result_table))
+
+
+class IbisVersioningEngine(BaseIbisVersioningEngine):
+    """Provenance engine using Ibis for SQL databases with native struct support.
+
+    CRITICAL: This implementation NEVER leaves the lazy world.
+    All operations stay as Ibis expressions that compile to SQL.
+    """
+
+    @staticmethod
+    def record_field_versions(
+        df: FrameT,
+        struct_name: str,
+        field_columns: dict[str, str],
+    ) -> FrameT:
+        """Persist field-level versions using a struct column."""
+        # Import ibis lazily
+        import ibis.expr.types
+
+        # Convert to Ibis table
+        assert df.implementation == nw.Implementation.IBIS, (
+            "Only Ibis DataFrames are accepted"
+        )
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+
+        # Build struct expression - reference columns by name
+        struct_expr = ibis.struct(
+            {
+                field_name: ibis_table[col_name]
+                for field_name, col_name in field_columns.items()
+            }
+        )
+
+        # Add struct column
+        result_table = ibis_table.mutate(**{struct_name: struct_expr})
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))

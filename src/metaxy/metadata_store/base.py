@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
 import narwhals as nw
-from narwhals.typing import Frame, FrameT, IntoFrame
+from narwhals.typing import DataFrameT, Frame, FrameT, IntoFrame, LazyFrameT
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
@@ -57,7 +57,7 @@ from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
 
 if TYPE_CHECKING:
-    pass
+    from metaxy.models.feature import BaseFeature
 
 
 # TypeVar for config types - used for typing from_config method
@@ -319,7 +319,7 @@ class MetadataStore(ABC):
         import narwhals as nw
 
         # Convert samples to Narwhals frame if not already
-        samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None
+        samples_nw: Frame | None = None
         if samples is not None:
             if isinstance(samples, (nw.DataFrame, nw.LazyFrame)):
                 samples_nw = samples
@@ -338,7 +338,15 @@ class MetadataStore(ABC):
 
         feature_key = self._resolve_feature_key(feature)
         graph = current_graph()
+        feature_cls = graph.get_feature_by_key(feature_key)
         plan = graph.get_feature_plan(feature_key)
+
+        samples_nw = self._preprocess_samples_for_resolve_update(
+            feature=feature_cls,
+            df=samples_nw,
+            filters=normalized_filters,
+            lazy=lazy,
+        )
 
         # Root features without samples: error (samples required)
         if not plan.deps and samples_nw is None:
@@ -473,7 +481,9 @@ class MetadataStore(ABC):
             if samples_nw:
                 samples_nw = switch_implementation_to_polars(samples_nw)
             for upstream_key, df in upstream_by_key.items():
-                upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
+                upstream_by_key[upstream_key] = self._post_process_polars_frame(
+                    switch_implementation_to_polars(df)
+                )
 
         with self.create_versioning_engine(
             plan=plan, implementation=implementation
@@ -509,7 +519,7 @@ class MetadataStore(ABC):
             removed = empty_frame_like(added)
 
         if lazy:
-            return LazyIncrement(
+            result = LazyIncrement(
                 added=added
                 if isinstance(added, nw.LazyFrame)
                 else nw.from_native(added),
@@ -520,16 +530,102 @@ class MetadataStore(ABC):
                 if isinstance(removed, nw.LazyFrame)
                 else nw.from_native(removed),
             )
-        else:
-            return Increment(
-                added=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                changed=changed.collect()
-                if isinstance(changed, nw.LazyFrame)
-                else changed,
-                removed=removed.collect()
-                if isinstance(removed, nw.LazyFrame)
-                else removed,
-            )
+            return self._post_process_resolve_update_result(result, lazy=True)
+
+        result = Increment(
+            added=added.collect() if isinstance(added, nw.LazyFrame) else added,
+            changed=changed.collect() if isinstance(changed, nw.LazyFrame) else changed,
+            removed=removed.collect() if isinstance(removed, nw.LazyFrame) else removed,
+        )
+        return self._post_process_resolve_update_result(result, lazy=False)
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: DataFrameT,
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> DataFrameT: ...
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: LazyFrameT,
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> LazyFrameT: ...
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: None,
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> None: ...
+
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: FrameT | None,
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> FrameT | None:
+        """Hook for stores to adjust user-provided samples before resolve_update.
+
+        Default implementation returns samples unchanged.
+        """
+        return df
+
+    @overload
+    def _post_process_resolve_update_result(
+        self, result: Increment, *, lazy: Literal[False]
+    ) -> Increment: ...
+
+    @overload
+    def _post_process_resolve_update_result(
+        self, result: LazyIncrement, *, lazy: Literal[True]
+    ) -> LazyIncrement: ...
+
+    def _post_process_resolve_update_result(
+        self, result: Increment | LazyIncrement, *, lazy: bool
+    ) -> Increment | LazyIncrement:
+        """Post-process resolve_update result before returning to caller.
+
+        This hook allows stores to perform type conversions or other transformations
+        on the result. The default implementation returns the result unchanged.
+
+        Args:
+            result: The Increment or LazyIncrement to post-process
+            lazy: Whether result is a LazyIncrement (True) or Increment (False)
+
+        Returns:
+            The post-processed result (same type as input)
+        """
+        return result
+
+    def _post_process_polars_frame(self, frame: FrameT) -> FrameT:
+        """Post-process frame after switching to Polars implementation.
+
+        This hook allows stores to perform type conversions when data is materialized
+        from the native backend to Polars. For example, deserializing JSON columns
+        to structs for stores without native struct support.
+
+        The default implementation returns the frame unchanged.
+
+        Args:
+            frame: The Narwhals DataFrame or LazyFrame (Polars implementation)
+
+        Returns:
+            The post-processed frame (same type as input)
+        """
+        return frame
 
     def compute_provenance(
         self,
@@ -1398,12 +1494,30 @@ class MetadataStore(ABC):
             METAXY_CREATED_AT,
             METAXY_DATA_VERSION,
             METAXY_DATA_VERSION_BY_FIELD,
+            METAXY_PROVENANCE,
         )
 
         if METAXY_PROVENANCE_BY_FIELD not in df.columns:
-            raise ValueError(
-                f"Metadata is missing a required column `{METAXY_PROVENANCE_BY_FIELD}`. It should have been created by a prior `MetadataStore.resolve_update` call. Did you drop it on the way?"
-            )
+            # Build struct from flattened provenance columns if available (dict-based stores)
+            prov_flat = [
+                c for c in df.columns if c.startswith(f"{METAXY_PROVENANCE_BY_FIELD}__")
+            ]
+            if prov_flat:
+                struct_expr = cast(
+                    Callable[..., Any],
+                    nw.struct,  # pyright: ignore[reportAttributeAccessIssue]
+                )(
+                    [
+                        nw.col(col).alias(col.split("__", 1)[1])
+                        for col in prov_flat
+                        if "__" in col
+                    ]
+                )
+                df = df.with_columns(struct_expr.alias(METAXY_PROVENANCE_BY_FIELD))
+            else:
+                raise ValueError(
+                    f"Metadata is missing a required column `{METAXY_PROVENANCE_BY_FIELD}`. It should have been created by a prior `MetadataStore.resolve_update` call. Did you drop it on the way?"
+                )
 
         if METAXY_PROVENANCE not in df.columns:
             plan = self._resolve_feature_plan(feature_key)
@@ -1443,18 +1557,34 @@ class MetadataStore(ABC):
 
         # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)
 
+        # Derive data_version from data_version_by_field (or provenance_by_field fallback)
         if METAXY_DATA_VERSION_BY_FIELD not in df.columns:
-            df = df.with_columns(
-                nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD)
+            has_flattened = any(
+                col.startswith(f"{METAXY_DATA_VERSION_BY_FIELD}__")
+                or col.startswith(f"{METAXY_PROVENANCE_BY_FIELD}__")
+                for col in df.columns
             )
-            df = df.with_columns(nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION))
-        elif METAXY_DATA_VERSION not in df.columns:
+            if not has_flattened and METAXY_PROVENANCE_BY_FIELD in df.columns:
+                df = df.with_columns(
+                    nw.col(METAXY_PROVENANCE_BY_FIELD).alias(
+                        METAXY_DATA_VERSION_BY_FIELD
+                    )
+                )
+
+        if METAXY_DATA_VERSION not in df.columns:
             df = self.hash_struct_version_column(
                 plan=self._resolve_feature_plan(feature_key),
                 df=df,
                 struct_column=METAXY_DATA_VERSION_BY_FIELD,
                 hash_column=METAXY_DATA_VERSION,
             )
+        from metaxy.models.constants import METAXY_PROVENANCE
+
+        df = df.with_columns(
+            nw.coalesce([nw.col(METAXY_DATA_VERSION), nw.col(METAXY_PROVENANCE)])
+            .cast(nw.String)
+            .alias(METAXY_DATA_VERSION)
+        )
 
         # Cast system columns with Null dtype to their correct types
         # This handles edge cases where empty DataFrames or certain operations
