@@ -27,10 +27,10 @@ class DuckDBJsonCompatStore(IbisJsonCompatStore):
         import ibis
 
         @ibis.udf.scalar.builtin
-        def MD5(x: str) -> str: ...
+        def MD5(x: str) -> str: ...  # ty: ignore[invalid-return-type]
 
         @ibis.udf.scalar.builtin
-        def LOWER(x: str) -> str: ...
+        def LOWER(x: str) -> str: ...  # ty: ignore[invalid-return-type]
 
         def md5_hash(col_expr):
             # DuckDB's MD5 returns a hex string; normalize to lowercase for consistency.
@@ -42,7 +42,7 @@ class DuckDBJsonCompatStore(IbisJsonCompatStore):
         self, json_column: str, field_names: list[str]
     ) -> dict[str, Any]:
         @ibis.udf.scalar.builtin
-        def json_extract_string(_json: str, _path: str) -> str: ...
+        def json_extract_string(_json: str, _path: str) -> str: ...  # ty: ignore[invalid-return-type]
 
         table = ibis._
         return {
@@ -61,7 +61,7 @@ class DuckDBJsonCompatStore(IbisJsonCompatStore):
         table = ibis._
 
         @ibis.udf.scalar.builtin(output_type=dt.string)
-        def to_json(_input) -> str: ...
+        def to_json(_input) -> str: ...  # ty: ignore[invalid-return-type]
 
         keys_expr = ibis.array(
             [ibis.literal(name).cast("string") for name in sorted(field_columns)]
