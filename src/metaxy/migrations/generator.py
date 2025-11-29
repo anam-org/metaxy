@@ -1,7 +1,7 @@
 """Migration generation."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING
 
 import narwhals as nw
 
@@ -178,7 +178,7 @@ def generate_migration(
         return None
 
     # Build snapshot data for to_snapshot
-    to_snapshot_data = cast(dict[str, dict[str, Any]], to_graph.to_snapshot())
+    to_snapshot_data = to_graph.to_snapshot()
 
     # Compute GraphDiff using GraphDiffer
     graph_diff = differ.diff(

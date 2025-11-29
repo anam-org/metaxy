@@ -22,9 +22,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast, overload
 
 import narwhals as nw
+from narwhals.typing import DataFrameT, Frame, FrameT, LazyFrameT
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import VersioningEngineOptions
@@ -128,6 +129,16 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         finally:
             pass
 
+    @overload
+    def _post_process_resolve_update_result(
+        self, result: Increment, *, lazy: Literal[False]
+    ) -> Increment: ...
+
+    @overload
+    def _post_process_resolve_update_result(
+        self, result: LazyIncrement, *, lazy: Literal[True]
+    ) -> LazyIncrement: ...
+
     def _post_process_resolve_update_result(
         self, result: Increment | LazyIncrement, *, lazy: bool
     ) -> Increment | LazyIncrement:
@@ -149,11 +160,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
                 )
                 return lf
 
-            return LazyIncrement(
+            lazy_result = LazyIncrement(
                 added=ensure(result.added),
                 changed=ensure(result.changed),
                 removed=ensure(result.removed),
             )
+            return lazy_result
 
         frames = {}
         for name in ["added", "changed", "removed"]:
@@ -164,13 +176,14 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             frame = self._post_process_polars_frame(frame)
             frames[name] = frame
 
-        return Increment(
+        eager_result = Increment(
             added=frames["added"],
             changed=frames["changed"],
             removed=frames["removed"],
         )
+        return eager_result
 
-    def _post_process_polars_frame(self, frame: Frame) -> Frame:
+    def _post_process_polars_frame(self, frame: FrameT) -> FrameT:
         """Rebuild struct columns from flattened provenance fields in Polars."""
         if frame.implementation != nw.Implementation.POLARS:
             return frame
@@ -219,34 +232,65 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
                 ]
             )
 
-        return nw.from_native(native.lazy() if is_lazy else native)
+        return cast(FrameT, nw.from_native(native.lazy() if is_lazy else native))
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: DataFrameT,
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> DataFrameT: ...
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: LazyFrameT,
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> LazyFrameT: ...
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: None,
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> None: ...
 
     def _preprocess_samples_for_resolve_update(
         self,
         *,
         feature: type[BaseFeature],
-        plan: FeaturePlan,
-        samples: Frame | None,
+        df: FrameT | None,
         filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
         lazy: bool,
-    ) -> Frame | None:
+    ) -> FrameT | None:
         """Flatten provenance structs in user-provided samples before resolving."""
-        if samples is None:
+        if df is None:
             return None
         _ = (feature, filters, lazy)
 
         import polars as pl
 
-        if samples.implementation == nw.Implementation.POLARS:
-            samples_native = samples.to_native()
-        else:
-            samples_native = collect_to_polars(samples)
+        is_lazy_input = isinstance(df, nw.LazyFrame)
 
-        polars_df: pl.DataFrame | pl.LazyFrame
+        if df.implementation == nw.Implementation.POLARS:
+            samples_native = df.to_native()
+        else:
+            samples_native = collect_to_polars(df)
+
+        plan = self._resolve_feature_plan(feature)
         if isinstance(samples_native, (pl.DataFrame, pl.LazyFrame)):
             polars_df = samples_native
         else:
-            return samples
+            return df
 
         field_names = self._get_field_names(plan, include_dependencies=False)
         exprs = []
@@ -266,11 +310,20 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         if exprs:
             polars_df = polars_df.with_columns(exprs)
 
-        polars_frame = (
-            polars_df if isinstance(polars_df, pl.LazyFrame) else polars_df.lazy()
-        )
-        polars_frame = nw.from_native(polars_frame, eager_only=False)
-        return self._ensure_ibis_lazy_frame(polars_frame)
+        if isinstance(polars_df, pl.LazyFrame):
+            polars_frame = polars_df
+        elif is_lazy_input:
+            polars_frame = polars_df.lazy()
+        else:
+            polars_frame = polars_df
+
+        narwhals_frame = nw.from_native(polars_frame, eager_only=False)
+        if is_lazy_input:
+            return cast(
+                FrameT,
+                self._ensure_ibis_lazy_frame(cast(nw.LazyFrame[Any], narwhals_frame)),
+            )
+        return cast(FrameT, narwhals_frame)
 
     @abstractmethod
     def _get_json_unpack_exprs(
