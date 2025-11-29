@@ -23,9 +23,6 @@ from metaxy.models.constants import (
 from metaxy.models.types import CoercibleToFeatureKey
 from metaxy.versioning.types import HashAlgorithm
 
-# Alias for backwards compatibility
-PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
-
 if TYPE_CHECKING:
     from narwhals.typing import Frame
 
@@ -81,37 +78,20 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         enable_pgcrypto: bool = False,
         **kwargs: Any,
     ):
-        """
-        Initialize [PostgreSQL](https://www.postgresql.org/) metadata store.
+        """Initialize PostgreSQL metadata store with JSONB storage.
 
         Args:
-            connection_string: PostgreSQL connection string.
-                Format: `postgresql://user:pass@host:port/database`.
-                Supports additional parameters: `?options=-c%20statement_timeout=30s`.
-            host: Server host (used when connection_string not provided).
-            port: Server port (defaults to 5432 when omitted).
-            user: Database user.
-            password: Database password.
-            database: Database name.
-            schema: Target schema for table isolation (defaults to search_path when omitted).
-                Recommended for production deployments.
-            connection_params: Additional Ibis PostgreSQL connection parameters
-                (e.g., `{"sslmode": "require", "connect_timeout": 10}`).
-            fallback_stores: Ordered list of read-only fallback stores for branch deployments.
-            enable_pgcrypto: Whether to auto-enable pgcrypto extension before native SHA256 hashing runs (default: False).
-                Set to True if you want Metaxy to manage pgcrypto automatically; leave False if pgcrypto is already enabled
-                or your database user lacks CREATE EXTENSION privileges.
-            **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]
-                (e.g., `hash_algorithm`, `auto_create_tables`).
-
-        Raises:
-            ValueError: If neither connection_string nor connection parameters provided.
-
-        Note:
-            When using SHA256 hash algorithm, pgcrypto extension is required.
-            The store attempts to enable it automatically the first time
-            SHA256 hashing runs inside `resolve_update()` unless
-            `enable_pgcrypto=False`.
+            connection_string: Connection string (postgresql://user:pass@host:port/database)
+            host: Server host
+            port: Server port (default: 5432)
+            user: Database user
+            password: Database password
+            database: Database name
+            schema: Target schema (default: search_path)
+            connection_params: Additional Ibis connection parameters
+            fallback_stores: Read-only fallback stores for branch deployments
+            enable_pgcrypto: Auto-enable pgcrypto for SHA256 (default: False)
+            **kwargs: Passed to IbisMetadataStore (hash_algorithm, auto_create_tables, etc.)
         """
         kwargs.setdefault("versioning_engine", "polars")
         params: dict[str, Any] = dict(connection_params or {})
@@ -162,17 +142,11 @@ class PostgresMetadataStore(IbisJsonCompatStore):
             )
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
-        """Get default hash algorithm for PostgreSQL stores.
-
-        Uses MD5 as it's built-in and requires no extensions.
-        For SHA256 support, explicitly set hash_algorithm=HashAlgorithm.SHA256
-        and ensure pgcrypto extension is enabled.
-        For production you must self-install the necessary posgres extensions.
-        """
+        """Default to MD5 (built-in, no extensions needed)."""
         return HashAlgorithm.MD5
 
     def _create_hash_functions(self):
-        """Create PostgreSQL-specific hash functions for Ibis expressions."""
+        """Create hash functions (MD5 built-in, SHA256 via pgcrypto)."""
         import ibis
 
         hash_functions = {}
@@ -213,35 +187,13 @@ class PostgresMetadataStore(IbisJsonCompatStore):
 
     @contextmanager
     def open(self, mode: AccessMode = "read") -> Iterator[Self]:
-        """Open connection to PostgreSQL and perform capability checks.
-
-        Args:
-            mode: Access mode (READ or WRITE). Defaults to READ.
-
-        Yields:
-            Self: The store instance with connection open
-
-        Raises:
-            ImportError: If psycopg driver not installed.
-            Various database errors: If connection fails.
-        """
-        # Call parent context manager to establish connection
+        """Open connection and reset pgcrypto extension check."""
         with super().open(mode):
-            try:
-                # Reset pgcrypto check for the new connection
-                self._pgcrypto_extension_checked = False
-
-                yield self
-            finally:
-                # Cleanup is handled by parent's finally block
-                pass
+            self._pgcrypto_extension_checked = False
+            yield self
 
     def _ensure_pgcrypto_ready_for_native_provenance(self) -> None:
-        """Enable pgcrypto before running native SHA256 provenance tracking.
-
-        Note: pgcrypto is needed because we still use native SHA256 hashing
-        via SQL DIGEST() function.
-        """
+        """Enable pgcrypto for SHA256 hashing if needed."""
         if self._pgcrypto_extension_checked:
             return
 
@@ -257,12 +209,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
             self._pgcrypto_extension_checked = True
 
     def _ensure_pgcrypto_extension(self) -> None:
-        """Ensure pgcrypto extension is enabled for SHA256 support.
-
-        Attempts to create the extension if it doesn't exist. Logs a warning
-        if the user lacks privileges rather than failing, as the extension
-        might already be enabled.
-        """
+        """Enable pgcrypto extension. Logs warning if insufficient privileges."""
         try:
             # Use underlying connection to execute DDL (Ibis doesn't expose CREATE EXTENSION)
             raw_conn = cast(Any, self.conn).con
@@ -313,11 +260,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
 
     @contextmanager
     def _create_versioning_engine(self, plan):
-        """Create provenance engine for PostgreSQL.
-
-        Ensures pgcrypto extension is ready before creating tracker for SHA256 hashing.
-        Delegates to IbisJsonCompatStore for JSON packing/unpacking.
-        """
+        """Ensure pgcrypto ready, then create versioning engine."""
         # Ensure pgcrypto is ready before native provenance tracking
         self._ensure_pgcrypto_ready_for_native_provenance()
 
@@ -328,7 +271,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
     def _get_json_unpack_exprs(
         self, json_column: str, field_names: list[str]
     ) -> dict[str, Any]:
-        """Extract flattened columns from a JSONB column using PostgreSQL functions."""
+        """Unpack JSONB column to flattened columns via jsonb_extract_path_text."""
         import ibis
 
         @ibis.udf.scalar.builtin
@@ -347,7 +290,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
     def _get_json_pack_expr(
         self, struct_name: str, field_columns: Mapping[str, str]
     ) -> Any:
-        """Pack flattened provenance columns into a JSONB object."""
+        """Pack flattened columns to JSONB via jsonb_object."""
         import ibis
         import ibis.expr.datatypes as dt
 
@@ -474,11 +417,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         super().write_metadata_to_store(feature_key, df, **kwargs)
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
-        """Drop the table for a feature.
-
-        Args:
-            feature_key: Feature key to drop metadata for
-        """
+        """Drop metadata table for feature."""
         table_name = self.get_table_name(feature_key)
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
@@ -542,74 +481,17 @@ class PostgresMetadataStore(IbisJsonCompatStore):
 
         return lazy_frame
 
-    def write_metadata_to_store(self, feature_key: FeatureKey, df, **kwargs):
-        """Ensure string-typed materialization_id before delegating write."""
-        import polars as pl
-
-        from metaxy.models.constants import METAXY_MATERIALIZATION_ID
-
-        if METAXY_MATERIALIZATION_ID in df.columns:
-            df = df.with_columns(nw.col(METAXY_MATERIALIZATION_ID).cast(nw.String))
-
-        # Postgres rejects NULL-typed columns; cast Null columns to string for Polars inputs
-        if df.implementation == nw.Implementation.POLARS:
-            null_cols = [
-                col
-                for col, dtype in df.schema.items()
-                if dtype == pl.Null  # type: ignore[attr-defined]
-            ]
-            if null_cols:
-                df = df.with_columns(
-                    [nw.col(col).cast(nw.String).alias(col) for col in null_cols]
-                )
-
-        super().write_metadata_to_store(feature_key, df, **kwargs)
-
-    def write_metadata_to_store(self, feature_key: FeatureKey, df, **kwargs):
-        """Ensure string-typed materialization_id before delegating write."""
-
-        import polars as pl
-
-        from metaxy.models.constants import METAXY_MATERIALIZATION_ID
-
-        if METAXY_MATERIALIZATION_ID in df.columns:
-            df = df.with_columns(nw.col(METAXY_MATERIALIZATION_ID).cast(nw.String))
-
-        # Postgres rejects NULL-typed columns; cast Null columns to string for Polars inputs
-        if df.implementation == nw.Implementation.POLARS:
-            null_cols = [
-                col
-                for col, dtype in df.schema.items()
-                if dtype == pl.Null  # type: ignore[attr-defined]
-            ]
-            if null_cols:
-                df = df.with_columns(
-                    [nw.col(col).cast(nw.String).alias(col) for col in null_cols]
-                )
-
-        super().write_metadata_to_store(feature_key, df, **kwargs)
-
-    def read_metadata(
-        self,
-        feature: CoercibleToFeatureKey,
-        *,
-        feature_version=None,
-        filters=None,
-        columns=None,
-        allow_fallback=True,
-        current_only=True,
-        latest_only=True,
-    ):
-        """Read metadata using the flattened JSON-compatible layout."""
-        return super().read_metadata(
-            feature,
-            feature_version=feature_version,
-            filters=filters,
-            columns=columns,
-            allow_fallback=allow_fallback,
-            current_only=current_only,
-            latest_only=latest_only,
-        )
+    def _list_features_local(self) -> list[FeatureKey]:
+        """List non-system feature tables for display and diagnostics."""
+        table_names = self.conn.list_tables()
+        features: list[FeatureKey] = []
+        for table_name in table_names:
+            if table_name.startswith("ibis_"):
+                continue
+            feature_key = self._table_name_to_feature_key(table_name)  # ty: ignore[unresolved-attribute]
+            if not self._is_system_table(feature_key):
+                features.append(feature_key)
+        return features
 
     def display(self) -> str:
         """Display string for this store."""
