@@ -96,7 +96,11 @@ class JsonStructSerializerMixin:
                 ].cast("string")
             if null_casts:
                 mem = mem.mutate(**null_casts)
-            return nw.from_native(mem, eager_only=False)
+            frame_nw = nw.from_native(mem, eager_only=False)
+            # Ensure we return a LazyFrame
+            if isinstance(frame_nw, nw.DataFrame):
+                return frame_nw.lazy()
+            return frame_nw
 
         # If it's already a Narwhals LazyFrame (but not Ibis), return as-is to avoid surprises
         if isinstance(frame, nw.LazyFrame):
