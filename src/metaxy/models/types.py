@@ -145,9 +145,9 @@ class _Key(RootModel[tuple[str, ...]]):
         return value
 
     @model_serializer
-    def _serialize_model(self) -> list[str]:
-        """Serialize to list format for backward compatibility."""
-        return list(self.parts)
+    def _serialize_model(self) -> str:
+        """Serialize to string format (e.g., 'a/b/c')."""
+        return self.to_string()
 
     @property
     def parts(self) -> tuple[str, ...]:
