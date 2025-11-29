@@ -295,7 +295,11 @@ def drop(
             except Exception as e:
                 failed.append({"feature": key_str, "error": str(e)})
                 if format == "plain":
-                    console.print(f"[red]✗[/red] Failed to drop {key_str}: {e}")
+                    from metaxy.cli.utils import print_error_item
+
+                    print_error_item(
+                        console, key_str, e, prefix="[red]✗[/red] Failed to drop"
+                    )
 
         # Output result
         if format == "json":

@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Annotated, Any, Literal, NoReturn
 
 import cyclopts
+from rich.console import Console
+from rich.markup import escape as escape_markup
 
 from metaxy.cli.console import data_console
 from metaxy.models.types import FeatureKey
@@ -18,6 +21,84 @@ if TYPE_CHECKING:
 
 # Standard output format type used across CLI commands
 OutputFormat = Literal["plain", "json"]
+
+
+def print_error(
+    console: Console,
+    message: str,
+    error: str | Exception | None = None,
+    *,
+    prefix: str = "[red]✗[/red]",
+) -> None:
+    """Print an error message, safely escaping dynamic content.
+
+    Args:
+        console: Rich console to print to
+        message: Static message (Rich markup allowed)
+        error: Optional exception/error to append (will be escaped)
+        prefix: Symbol/text prefix (default: red ✗)
+    """
+    if error is not None:
+        safe_error = escape_markup(str(error))
+        console.print(f"{prefix} {message}: {safe_error}")
+    else:
+        console.print(f"{prefix} {message}")
+
+
+def print_error_item(
+    console: Console,
+    key: str,
+    error: str | Exception,
+    *,
+    prefix: str = "  ✗",
+    indent: str = "",
+) -> None:
+    """Print a single error item with key and error message, safely escaping markup.
+
+    Args:
+        console: Rich console to print to
+        key: The identifier (e.g., feature key) - will be escaped
+        error: The error message or exception - will be escaped
+        prefix: Symbol/text before the key (default: "  ✗")
+        indent: Additional indentation
+    """
+    safe_key = escape_markup(str(key))
+    safe_error = escape_markup(str(error))
+    console.print(f"{indent}{prefix} {safe_key}: {safe_error}")
+
+
+def print_error_list(
+    console: Console,
+    errors: Mapping[str, str | Exception],
+    *,
+    header: str | None = None,
+    prefix: str = "  ✗",
+    indent: str = "",
+    max_items: int | None = None,
+) -> None:
+    """Print a list of errors with optional header, safely escaping all content.
+
+    Args:
+        console: Rich console to print to
+        errors: Mapping of keys to error messages (dict[str, str] or dict[str, Exception])
+        header: Optional header line with Rich markup (not escaped)
+        prefix: Symbol/text before each key (default: "  ✗")
+        indent: Additional indentation for each error line
+        max_items: Maximum number of items to display (None = all)
+    """
+    if header:
+        console.print(header)
+
+    items = list(errors.items())
+    if max_items is not None:
+        items = items[:max_items]
+
+    for key, error in items:
+        print_error_item(console, key, error, prefix=prefix, indent=indent)
+
+    if max_items is not None and len(errors) > max_items:
+        remaining = len(errors) - max_items
+        console.print(f"{indent}  ... and {remaining} more")
 
 
 @dataclass
@@ -36,10 +117,16 @@ class CLIError:
         return result
 
     def to_plain(self) -> str:
-        """Convert to plain text with Rich markup."""
-        lines = [f"[red]Error:[/red] {self.message}"]
+        """Convert to plain text with Rich markup.
+
+        The message and hint are escaped to prevent Rich markup injection
+        from error messages containing brackets (e.g., file paths like [/tmp/...]).
+        """
+        safe_message = escape_markup(self.message)
+        lines = [f"[red]Error:[/red] {safe_message}"]
         if self.hint:
-            lines.append(f"[yellow]Hint:[/yellow] {self.hint}")
+            safe_hint = escape_markup(self.hint)
+            lines.append(f"[yellow]Hint:[/yellow] {safe_hint}")
         return "\n".join(lines)
 
 
