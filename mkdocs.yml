@@ -222,6 +222,7 @@ nav:
           - integrations/metadata-stores/databases/lancedb/index.md
           - Configuration: integrations/metadata-stores/databases/lancedb/configuration.md
           - API: integrations/metadata-stores/databases/lancedb/api.md
+        - Postgres: integrations/metadata-stores/databases/postgres.md
         - Ibis:
           - integrations/metadata-stores/databases/ibis/index.md
           - API: integrations/metadata-stores/databases/ibis/api.md
@@ -261,6 +262,9 @@ nav:
       - reference/api/metadata-stores/index.md
       - Memory: reference/api/metadata-stores/memory.md
       - Exceptions: reference/api/metadata-stores/exceptions.md
+      - Ibis:
+        - reference/api/metadata-stores/ibis/index.md
+        - Postgres: reference/api/metadata-stores/ibis/postgres.md
   - Configuration: reference/configuration.md
 
 extra:
