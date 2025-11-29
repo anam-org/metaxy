@@ -33,6 +33,7 @@ FEATURE_TRACKING_VERSION_COL = METAXY_FULL_DEFINITION_VERSION
 if TYPE_CHECKING:
     import narwhals as nw
 
+    from metaxy.models.feature_definition import FeatureDefinition
     from metaxy.versioning.types import Increment, LazyIncrement
 
     # TODO: These are no longer used - remove after refactoring
@@ -1230,6 +1231,32 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
             Dictionary mapping field keys to their provenance hashes.
         """
         return cls.graph.get_feature_version_by_field(cls.spec().key)
+
+    @classmethod
+    def to_definition(cls) -> "FeatureDefinition":
+        """Convert this Feature class to a FeatureDefinition.
+
+        Creates a FeatureDefinition containing all metadata needed to work
+        with this feature without requiring the Feature class. This is the
+        bridge between Feature classes and the internal representation used
+        by Metaxy machinery.
+
+        Returns:
+            FeatureDefinition containing complete feature metadata.
+
+        Example:
+            ```python
+            class MyFeature(Feature, spec=FeatureSpec(...)):
+                value: str
+
+            definition = MyFeature.to_definition()
+            print(definition.key)  # Same as MyFeature.spec().key
+            print(definition.project_name)  # From MetaxyConfig
+            ```
+        """
+        from metaxy.models.feature_definition import FeatureDefinition
+
+        return FeatureDefinition.from_feature_class(cls)
 
     @classmethod
     def load_input(
