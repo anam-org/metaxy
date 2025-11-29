@@ -7,7 +7,7 @@ Supports any SQL database that Ibis supports:
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, cast
 
@@ -37,6 +37,9 @@ if TYPE_CHECKING:
     import ibis
     import ibis.expr.types
     from ibis.backends.sql import SQLBackend
+
+# Type alias for SQL hash generator functions
+HashSQLGenerator = Callable[[Any, dict[str, str]], str]
 
 
 class IbisMetadataStoreConfig(MetadataStoreConfig):

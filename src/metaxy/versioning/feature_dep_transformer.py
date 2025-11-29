@@ -6,7 +6,6 @@ import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.constants import (
-    _COLUMNS_TO_DROP_BEFORE_JOIN,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE,
@@ -103,6 +102,51 @@ class FeatureDepTransformer:
         """Whether this dependency uses left join (optional) or inner join (required)."""
         return self.dep.optional
 
+    def _get_flattened_column_rename(
+        self,
+        col: str,
+        base_name: str,
+        target_struct: str,
+    ) -> str | None:
+        """Return renamed column if col is a flattened struct column, else None.
+
+        Flattened columns follow the pattern `{base_name}__{field}`. This method
+        renames them to `{target_struct}__{field}` to avoid collisions when joining
+        multiple upstream features.
+
+        Args:
+            col: Column name to check.
+            base_name: The base struct name prefix (e.g., metaxy_provenance_by_field).
+            target_struct: The target struct name including the upstream feature suffix.
+
+        Returns:
+            Renamed column string if col matches the pattern, otherwise None.
+        """
+        prefix = f"{base_name}__"
+        if col.startswith(prefix):
+            field_suffix = col[len(prefix) :]
+            return f"{target_struct}__{field_suffix}"
+        return None
+
+    def _build_flattened_column_renames(self, columns: Sequence[str]) -> dict[str, str]:
+        """Build rename mapping for flattened provenance/data_version columns.
+
+        Renames columns like `metaxy_provenance_by_field__field1` to include the
+        upstream feature key, avoiding collisions when joining multiple upstream features.
+        """
+        suffix = self.upstream_feature_key.to_column_suffix()
+        prov_target = f"{METAXY_PROVENANCE_BY_FIELD}{suffix}"
+        data_target = f"{METAXY_DATA_VERSION_BY_FIELD}{suffix}"
+
+        renames: dict[str, str] = {}
+        for col in columns:
+            renamed = self._get_flattened_column_rename(col, METAXY_PROVENANCE_BY_FIELD, prov_target)
+            if renamed is None:
+                renamed = self._get_flattened_column_rename(col, METAXY_DATA_VERSION_BY_FIELD, data_target)
+            if renamed is not None:
+                renames[col] = renamed
+        return renames
+
     def transform(self, df: FrameT, filters: Sequence[nw.Expr] | None = None) -> RenamedDataFrame[FrameT]:
         """Apply FeatureDep transformations to an upstream DataFrame.
 
@@ -125,30 +169,30 @@ class FeatureDepTransformer:
         if filters:
             combined_filters.extend(filters)
 
-        # Drop columns that should not be carried through joins
-        # (e.g., metaxy_created_at, metaxy_materialization_id, metaxy_feature_version)
-        # These are recalculated for the downstream feature and would cause column name
-        # conflicts when joining 3+ upstream features
-        existing_columns = set(df.collect_schema().names())  # ty: ignore[invalid-argument-type]
-        columns_to_drop = [col for col in _COLUMNS_TO_DROP_BEFORE_JOIN if col in existing_columns]
-        if columns_to_drop:
-            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
+        # Build rename mapping including flattened column renames
+        columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        flattened_renames = self._build_flattened_column_renames(columns)
+        renames = {**self.renames, **flattened_renames}
 
-        # Apply rename
-        renamed_df = df.rename(self.renames) if self.renames else df  # ty: ignore[invalid-argument-type]
+        # Apply renames
+        renamed_df = df.rename(renames) if renames else df  # ty: ignore[invalid-argument-type]
 
-        # Apply filter
-        if combined_filters:
-            renamed_df = renamed_df.filter(*combined_filters)  # ty: ignore[invalid-argument-type]
+        # Determine columns to select (include flattened columns if selecting)
+        select_cols = [*self.renamed_columns, *flattened_renames.values()] if self.renamed_columns is not None else None
 
-        # Apply select
-        if self.renamed_columns:
-            renamed_df = renamed_df.select(*self.renamed_columns)  # ty: ignore[invalid-argument-type]
+        id_tracker = IdColumnTracker.from_upstream_spec(
+            upstream_id_columns=self.upstream_feature_spec.id_columns,
+            renames=renames,
+            selected_columns=self.renamed_columns,
+        )
 
-        # Create RenamedDataFrame with the complete ID column tracker
-        return RenamedDataFrame(
-            df=renamed_df,  # ty: ignore[invalid-argument-type]
-            id_column_tracker=self.id_column_tracker,
+        return (
+            RenamedDataFrame(
+                df=renamed_df,  # ty: ignore[invalid-argument-type]
+                id_column_tracker=id_tracker,
+            )
+            .filter(combined_filters if combined_filters else None)
+            .select(select_cols)
         )
 
     def rename_upstream_metaxy_column(self, column_name: str) -> str:

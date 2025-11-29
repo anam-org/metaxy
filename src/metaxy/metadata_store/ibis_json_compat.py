@@ -22,7 +22,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast, overload
 
 import narwhals as nw
 
@@ -73,15 +73,9 @@ class _PostProcessingLazyIncrement(LazyIncrement):
 
         # Apply post-processing to rebuild struct columns from flattened columns
         return Increment(
-            added=self._post_process_fn(
-                nw.from_native(collect_to_polars(base_result.added))
-            ),
-            changed=self._post_process_fn(
-                nw.from_native(collect_to_polars(base_result.changed))
-            ),
-            removed=self._post_process_fn(
-                nw.from_native(collect_to_polars(base_result.removed))
-            ),
+            added=self._post_process_fn(nw.from_native(collect_to_polars(base_result.added))),
+            changed=self._post_process_fn(nw.from_native(collect_to_polars(base_result.changed))),
+            removed=self._post_process_fn(nw.from_native(collect_to_polars(base_result.removed))),
         )
 
 
@@ -144,14 +138,11 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         self.versioning_engine_cls = IbisFlatVersioningEngine
 
     @contextmanager
-    def _create_versioning_engine(
-        self, plan: FeaturePlan
-    ) -> Iterator[IbisVersioningEngine]:
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[IbisVersioningEngine]:
         """Create dict-based versioning engine for Ibis backends."""
         if self._conn is None:
             raise RuntimeError(
-                "Cannot create provenance engine: store is not open. "
-                "Ensure store is used as context manager."
+                "Cannot create provenance engine: store is not open. Ensure store is used as context manager."
             )
 
         hash_functions = self._create_hash_functions()
@@ -163,6 +154,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             yield cast("IbisVersioningEngine", engine)
         finally:
             pass
+
+    @overload
+    def _post_process_resolve_update_result(self, result: Increment, *, lazy: Literal[False]) -> Increment: ...
+
+    @overload
+    def _post_process_resolve_update_result(self, result: LazyIncrement, *, lazy: Literal[True]) -> LazyIncrement: ...
 
     def _post_process_resolve_update_result(
         self, result: Increment | LazyIncrement, *, lazy: bool
@@ -176,15 +173,9 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         This method expects `_current_feature_plan` to be set by `resolve_update`.
         """
         plan = getattr(self, "_current_feature_plan", None)
-        field_names = (
-            self._get_field_names(plan, include_dependencies=False)
-            if plan is not None
-            else None
-        )
+        field_names = self._get_field_names(plan, include_dependencies=False) if plan is not None else None
         if field_names is None:
-            raise RuntimeError(
-                "Missing feature plan for struct reconstruction in Polars post-processing."
-            )
+            raise RuntimeError("Missing feature plan for struct reconstruction in Polars post-processing.")
         if lazy:
             # For lazy results, return a custom LazyIncrement that will
             # call _post_process_polars_frame when collected.
@@ -195,13 +186,11 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             ) -> nw.LazyFrame[Any]:
                 return self._ensure_ibis_lazy_frame(frame)
 
-            return LazyIncrement(
+            return _PostProcessingLazyIncrement(
                 added=ensure(result.added),
                 changed=ensure(result.changed),
                 removed=ensure(result.removed),
-                post_process_fn=lambda df: self._post_process_polars_frame(
-                    df, field_names=field_names
-                ),
+                post_process_fn=lambda df: self._post_process_polars_frame(df, field_names=field_names),
             )
 
         frames = {}
@@ -215,36 +204,33 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             frame = self._post_process_polars_frame(frame, field_names=field_names)
             frames[name] = frame
 
-        return Increment(
+        eager_result = Increment(
             added=frames["added"],
             changed=frames["changed"],
             removed=frames["removed"],
         )
+        return eager_result
 
-    def _post_process_polars_frame(self, frame: Frame) -> Frame:
-        """Rebuild struct columns from flattened provenance fields in Polars."""
+    def _post_process_polars_frame(
+        self,
+        frame: nw.DataFrame[Any],
+        *,
+        field_names: list[str] | None = None,
+    ) -> nw.DataFrame[Any]:
+        """Rebuild struct columns from flattened provenance fields in Polars.
+
+        Expects a Polars-backed DataFrame and returns an eager result.
+        Internal-only: call via `_normalize_engine_inputs` so `_current_feature_plan`
+        is set.
+        """
         import polars as pl
 
-        native = frame.to_native()
-        if not isinstance(native, (pl.DataFrame, pl.LazyFrame)):
-            return frame
-
-        is_lazy = isinstance(native, pl.LazyFrame)
-
-        def add_struct_column(
-            df: pl.DataFrame | pl.LazyFrame, prefix: str
-        ) -> pl.DataFrame | pl.LazyFrame:
-            cols = [c for c in df.columns if c.startswith(f"{prefix}__")]
-            if not cols:
-                return df
-
-            struct_fields = [
-                pl.col(col).alias(col.split("__", 1)[1]) for col in sorted(cols)
-            ]
-            if not struct_fields:
-                return df
-            struct_expr = pl.struct(struct_fields).alias(prefix)
-            return df.with_columns(struct_expr)
+        if frame.implementation != nw.Implementation.POLARS:
+            raise RuntimeError(
+                "_post_process_polars_frame expects a Polars-backed DataFrame; "
+                "callers should use Polars fallback or collect via "
+                "_PostProcessingLazyIncrement."
+            )
 
         native = frame.to_native()
         if not isinstance(native, (pl.DataFrame, pl.LazyFrame)):
@@ -255,15 +241,9 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
 
         if field_names is None:
             plan = getattr(self, "_current_feature_plan", None)
-            field_names = (
-                self._get_field_names(plan, include_dependencies=False)
-                if plan is not None
-                else None
-            )
+            field_names = self._get_field_names(plan, include_dependencies=False) if plan is not None else None
         if field_names is None:
-            raise RuntimeError(
-                "Missing feature plan for struct reconstruction in Polars post-processing."
-            )
+            raise RuntimeError("Missing feature plan for struct reconstruction in Polars post-processing.")
         native = self._restore_struct_polars(
             native,
             METAXY_PROVENANCE_BY_FIELD,
@@ -276,88 +256,103 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         )
 
         schema = native.schema
-        datetime_cols = [
-            col for col, dtype in schema.items() if isinstance(dtype, pl.Datetime)
-        ]
+        datetime_cols = [col for col, dtype in schema.items() if isinstance(dtype, pl.Datetime)]
         if datetime_cols:
             native = native.with_columns(
-                [
-                    pl.col(col)
-                    .dt.replace_time_zone("UTC")
-                    .dt.cast_time_unit("us")
-                    .alias(col)
-                    for col in datetime_cols
-                ]
+                [pl.col(col).dt.replace_time_zone("UTC").dt.cast_time_unit("us").alias(col) for col in datetime_cols]
             )
 
-        return nw.from_native(native.lazy() if is_lazy else native)
+        return cast("nw.DataFrame[Any]", nw.from_native(native))
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: nw.DataFrame[Any],
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> nw.DataFrame[Any]: ...
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: nw.LazyFrame[Any],
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> nw.LazyFrame[Any]: ...
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: None,
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> None: ...
 
     def _preprocess_samples_for_resolve_update(
         self,
         *,
         feature: type[BaseFeature],
-        plan: FeaturePlan,
-        samples: Frame | None,
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
         filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
         lazy: bool,
-    ) -> Frame | None:
+    ) -> nw.DataFrame[Any] | nw.LazyFrame[Any] | None:
         """Flatten provenance structs in user-provided samples before resolving."""
-        if samples is None:
+        if df is None:
             return None
-        _ = (feature, filters, lazy)
+        _ = (filters, lazy)
 
         import polars as pl
 
-        if samples.implementation == nw.Implementation.POLARS:
-            samples_native = samples.to_native()
-        else:
-            samples_native = collect_to_polars(samples)
-
-        polars_df: pl.DataFrame | pl.LazyFrame
+        plan = self._resolve_feature_plan(feature)
         field_names = self._get_field_names(plan, include_dependencies=False)
-        flattened_columns = self._get_flattened_field_columns(
-            METAXY_PROVENANCE_BY_FIELD, field_names
-        )
+        flattened_columns = self._get_flattened_field_columns(METAXY_PROVENANCE_BY_FIELD, field_names)
         # Resolving schema can be non-trivial for some backends; keep this as a fast
         # pre-check to avoid unnecessary Polars materialization.
         if df.implementation == nw.Implementation.POLARS:
             native = df.to_native()
             columns = (
-                native.collect_schema().names()
-                if isinstance(native, pl.LazyFrame)
-                else list(native.schema.keys())
+                native.collect_schema().names() if isinstance(native, pl.LazyFrame) else list(native.schema.keys())
             )
         else:
             columns = df.collect_schema().names()
-        has_flattened = any(
-            flattened in columns for flattened in flattened_columns.values()
-        )
+        has_flattened = any(flattened in columns for flattened in flattened_columns.values())
         if METAXY_PROVENANCE_BY_FIELD not in columns and not has_flattened:
-            return samples
+            return df
 
-        field_names = self._get_field_names(plan, include_dependencies=False)
-        exprs = []
-        for field_name in field_names:
-            flattened = FlatVersioningMixin._get_flattened_column_name(
-                METAXY_PROVENANCE_BY_FIELD, field_name
+        samples_native = df.to_native() if df.implementation == nw.Implementation.POLARS else collect_to_polars(df)
+        if not isinstance(samples_native, (pl.DataFrame, pl.LazyFrame)):
+            return df
+        if has_flattened:
+            # Ensure struct exists so downstream hashing/aliasing can target it.
+            samples_native = self._restore_struct_polars(
+                samples_native,
+                METAXY_PROVENANCE_BY_FIELD,
+                field_names=field_names,
             )
-            if (
-                flattened not in polars_df.columns
-                and METAXY_PROVENANCE_BY_FIELD in polars_df.columns
-            ):
-                exprs.append(
-                    pl.col(METAXY_PROVENANCE_BY_FIELD)
-                    .struct.field(field_name)
-                    .alias(flattened)
-                )
-        if exprs:
-            polars_df = polars_df.with_columns(exprs)
+            polars_frame = samples_native if isinstance(samples_native, pl.LazyFrame) else samples_native.lazy()
+            polars_frame = nw.from_native(polars_frame, eager_only=False)
+            return self._ensure_ibis_lazy_frame(polars_frame)
+        if METAXY_PROVENANCE_BY_FIELD in columns:
+            samples_native = self._restore_struct_polars(
+                samples_native,
+                METAXY_PROVENANCE_BY_FIELD,
+                field_names=field_names,
+            )
+            exprs = [
+                pl.col(METAXY_PROVENANCE_BY_FIELD).struct.field(field_name).alias(flattened)
+                for field_name, flattened in flattened_columns.items()
+                if flattened not in columns
+            ]
+            if exprs:
+                samples_native = samples_native.with_columns(exprs)
 
-        polars_frame = (
-            samples_native
-            if isinstance(samples_native, pl.LazyFrame)
-            else samples_native.lazy()
-        )
+        polars_frame = samples_native if isinstance(samples_native, pl.LazyFrame) else samples_native.lazy()
         polars_frame = nw.from_native(polars_frame, eager_only=False)
         return self._ensure_ibis_lazy_frame(polars_frame)
 
@@ -398,9 +393,7 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             This method is called during read operations and must return Ibis expressions
             (not execute them). The expressions will be added to an Ibis table mutation.
         """
-        raise NotImplementedError(
-            f"{self.__class__.__name__} must implement _get_json_unpack_exprs()"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} must implement _get_json_unpack_exprs()")
 
     @abstractmethod
     def _get_json_pack_expr(
@@ -433,18 +426,14 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             This method is called during write operations and must return an Ibis expression
             (not execute it). The expression will be used in an Ibis table mutation.
         """
-        raise NotImplementedError(
-            f"{self.__class__.__name__} must implement _get_json_pack_expr()"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} must implement _get_json_pack_expr()")
 
     def _unpack_json_columns(
         self,
         lazy_frame: nw.LazyFrame[Any],
         feature_plan: FeaturePlan,
     ) -> nw.LazyFrame[Any]:
-        return JsonStructSerializerMixin._unpack_json_columns(
-            self, lazy_frame, feature_plan
-        )
+        return JsonStructSerializerMixin._unpack_json_columns(self, lazy_frame, feature_plan)
 
     def _pack_json_columns(
         self,
@@ -481,9 +470,7 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             This stays in Ibis lazy world - no collection/materialization!
         """
         # Read from parent (returns Ibis LazyFrame with JSON columns)
-        lazy_frame = super().read_metadata_in_store(
-            feature, filters=filters, columns=columns, **kwargs
-        )
+        lazy_frame = super().read_metadata_in_store(feature, filters=filters, columns=columns, **kwargs)
 
         if lazy_frame is None:
             return None
@@ -523,9 +510,7 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         """
         resolved_key = self._resolve_feature_key(feature_key)
         if self._is_system_table(resolved_key):
-            return IbisMetadataStore.write_metadata_to_store(
-                self, resolved_key, df, **kwargs
-            )
+            return IbisMetadataStore.write_metadata_to_store(self, resolved_key, df, **kwargs)
 
         # Get feature plan to determine field names
         feature_plan = self._resolve_feature_plan(resolved_key)

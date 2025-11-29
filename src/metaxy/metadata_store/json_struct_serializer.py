@@ -51,31 +51,16 @@ class JsonStructSerializerMixin(ABC):
         names = [f.key.to_struct_key() for f in feature_plan.feature.fields]
         if include_dependencies:
             if feature_plan.feature_deps:
-                names += [
-                    dep.feature.to_struct_key() for dep in feature_plan.feature_deps
-                ]
+                names += [dep.feature.to_struct_key() for dep in feature_plan.feature_deps]
             if feature_plan.feature.deps:
-                names += [
-                    dep.feature.to_struct_key() for dep in feature_plan.feature.deps
-                ]
+                names += [dep.feature.to_struct_key() for dep in feature_plan.feature.deps]
         return names
 
-    def _get_flattened_field_columns(
-        self, struct_name: str, field_names: list[str]
-    ) -> dict[str, str]:
-        return {
-            name: FlatVersioningMixin._get_flattened_column_name(struct_name, name)
-            for name in field_names
-        }
+    def _get_flattened_field_columns(self, struct_name: str, field_names: list[str]) -> dict[str, str]:
+        return {name: FlatVersioningMixin._get_flattened_column_name(struct_name, name) for name in field_names}
 
-    def _select_flattened_feature_columns(
-        self, columns: list[str], prefix: str
-    ) -> list[str]:
-        return [
-            col
-            for col in columns
-            if col.startswith(f"{prefix}__") and "__" not in col.split("__", 1)[1]
-        ]
+    def _select_flattened_feature_columns(self, columns: list[str], prefix: str) -> list[str]:
+        return [col for col in columns if col.startswith(f"{prefix}__") and "__" not in col.split("__", 1)[1]]
 
     def _unpack_json_column(
         self,
@@ -98,11 +83,7 @@ class JsonStructSerializerMixin(ABC):
         if not any(col in ibis_table.columns for col in field_columns.values()):
             return ibis_table
         pack_expr = self._get_json_pack_expr(struct_name, field_columns)
-        base_cols = [
-            col
-            for col in ibis_table.columns
-            if col not in field_columns.values() and col != struct_name
-        ]
+        base_cols = [col for col in ibis_table.columns if col not in field_columns.values() and col != struct_name]
         return ibis_table.select(
             *[ibis_table[col] for col in base_cols],
             pack_expr.name(struct_name),
@@ -119,12 +100,9 @@ class JsonStructSerializerMixin(ABC):
         if struct_name in ibis_table.columns:
             return ibis_table
         struct_fields = {
-            name: ibis_table[
-                FlatVersioningMixin._get_flattened_column_name(struct_name, name)
-            ]
+            name: ibis_table[FlatVersioningMixin._get_flattened_column_name(struct_name, name)]
             for name in field_names
-            if FlatVersioningMixin._get_flattened_column_name(struct_name, name)
-            in ibis_table.columns
+            if FlatVersioningMixin._get_flattened_column_name(struct_name, name) in ibis_table.columns
         }
         if not struct_fields:
             return ibis_table
@@ -144,17 +122,12 @@ class JsonStructSerializerMixin(ABC):
             return df
 
         if field_names is not None:
-            allowed = {
-                FlatVersioningMixin._get_flattened_column_name(struct_name, name)
-                for name in field_names
-            }
+            allowed = {FlatVersioningMixin._get_flattened_column_name(struct_name, name) for name in field_names}
             flat_cols = [col for col in flat_cols if col in allowed]
             if not flat_cols:
                 return df
 
-        struct_fields = [
-            pl.col(col).alias(col.split("__", 1)[1]) for col in sorted(flat_cols)
-        ]
+        struct_fields = [pl.col(col).alias(col.split("__", 1)[1]) for col in sorted(flat_cols)]
         return df.with_columns(pl.struct(struct_fields).alias(struct_name))
 
     def _restore_struct_polars(
@@ -177,9 +150,7 @@ class JsonStructSerializerMixin(ABC):
                 return df
             if dtype in (pl.String, pl.Utf8):
                 if flat_cols:
-                    return self._add_struct_from_flattened_polars(
-                        df, struct_name, field_names=field_names
-                    )
+                    return self._add_struct_from_flattened_polars(df, struct_name, field_names=field_names)
                 return self._decode_json_struct_polars(
                     df,
                     struct_name,
@@ -189,9 +160,7 @@ class JsonStructSerializerMixin(ABC):
 
         if not flat_cols:
             return df
-        return self._add_struct_from_flattened_polars(
-            df, struct_name, field_names=field_names
-        )
+        return self._add_struct_from_flattened_polars(df, struct_name, field_names=field_names)
 
     def _expand_struct_to_flattened_polars(
         self,
@@ -201,14 +170,10 @@ class JsonStructSerializerMixin(ABC):
     ) -> pl.DataFrame | pl.LazyFrame:
         if struct_name not in df.columns:
             return df
-        columns = set(
-            df.collect_schema().names() if isinstance(df, pl.LazyFrame) else df.columns
-        )
+        columns = set(df.collect_schema().names() if isinstance(df, pl.LazyFrame) else df.columns)
         exprs = []
         for name in field_names:
-            flattened = FlatVersioningMixin._get_flattened_column_name(
-                struct_name, name
-            )
+            flattened = FlatVersioningMixin._get_flattened_column_name(struct_name, name)
             if flattened in columns:
                 continue
             exprs.append(pl.col(struct_name).struct.field(name).alias(flattened))
@@ -237,15 +202,12 @@ class JsonStructSerializerMixin(ABC):
         )
 
         if METAXY_MATERIALIZATION_ID in result.columns:
-            result = result.with_columns(
-                pl.col(METAXY_MATERIALIZATION_ID).cast(pl.String)
-            )
+            result = result.with_columns(pl.col(METAXY_MATERIALIZATION_ID).cast(pl.String))
 
         drop_cols = [
             col
             for col in result.columns
-            if col.startswith(f"{METAXY_PROVENANCE_BY_FIELD}__")
-            or col.startswith(f"{METAXY_DATA_VERSION_BY_FIELD}__")
+            if col.startswith(f"{METAXY_PROVENANCE_BY_FIELD}__") or col.startswith(f"{METAXY_DATA_VERSION_BY_FIELD}__")
         ]
         if drop_cols:
             result = result.drop(drop_cols)
@@ -266,66 +228,31 @@ class JsonStructSerializerMixin(ABC):
             return df
         struct_fields_dict = {name: pl.String for name in field_names}
         struct_dtype = pl.Struct(struct_fields_dict)
-        return df.with_columns(
-            pl.col(struct_name).str.json_decode(struct_dtype).alias(struct_name)
-        )
+        return df.with_columns(pl.col(struct_name).str.json_decode(struct_dtype).alias(struct_name))
 
-    def _ensure_ibis_lazy_frame(
-        self, frame: nw.LazyFrame[Any] | nw.DataFrame[Any]
-    ) -> nw.LazyFrame[Any]:
+    def _ensure_ibis_lazy_frame(self, frame: nw.LazyFrame[Any] | nw.DataFrame[Any]) -> nw.LazyFrame[Any]:
         """Convert non-Ibis frames to Ibis LazyFrames (used to keep operations lazy)."""
-        if (
-            isinstance(frame, nw.LazyFrame)
-            and frame.implementation == nw.Implementation.IBIS
-        ):
+        if isinstance(frame, nw.LazyFrame) and frame.implementation == nw.Implementation.IBIS:
             return frame
 
         import polars as pl
 
-        native = (
-            frame.to_native()
-            if isinstance(frame, (nw.DataFrame, nw.LazyFrame))
-            else frame
-        )
+        native = frame.to_native() if isinstance(frame, (nw.DataFrame, nw.LazyFrame)) else frame
         if isinstance(native, pl.LazyFrame):
             native = native.collect()
         if isinstance(native, pl.DataFrame):
             mem = _prepare_ibis_memtable_from_polars(native)
-            return nw.from_native(mem, eager_only=False)
+            frame_nw = nw.from_native(mem, eager_only=False)
+            # Ensure we return a LazyFrame
+            if isinstance(frame_nw, nw.DataFrame):
+                return frame_nw.lazy()
+            return frame_nw
 
         if isinstance(frame, nw.LazyFrame):
             return frame
-
-        return frame.lazy()  # type: ignore[attr-defined]
-
-    def _ensure_struct_from_flattened(
-        self, lazy_frame: nw.LazyFrame[Any], struct_name: str
-    ) -> nw.LazyFrame[Any]:
-        """Add a struct column from flattened columns if missing."""
-        import ibis
-
-        ibis_table: ibis.expr.types.Table = lazy_frame.to_native()  # type: ignore[assignment]
-        if struct_name in ibis_table.columns:
-            return lazy_frame
-
-        prefix = f"{struct_name}__"
-        columns = set(ibis_table.columns)
-        struct_fields = {
-            col.split("__", 1)[1]: ibis_table[col]
-            for col in ibis_table.columns
-            if col.startswith(prefix)
-            and "__" in col
-            and col.split("__", 1)[1] in columns
-        }
-        if not struct_fields:
-            struct_fields = {
-                col.split("__", 1)[1]: ibis_table[col]
-                for col in ibis_table.columns
-                if col.startswith(prefix) and "__" in col
-            }
-        if struct_fields:
-            ibis_table = ibis_table.mutate(**{struct_name: ibis.struct(struct_fields)})
-        return nw.from_native(ibis_table, eager_only=False)
+        if isinstance(frame, nw.DataFrame):
+            return frame.lazy()
+        return nw.from_native(frame).lazy()
 
     def _unpack_json_columns(
         self,
@@ -352,48 +279,28 @@ class JsonStructSerializerMixin(ABC):
         )
 
         # Ensure all expected flattened data_version fields exist even if JSON column missing
-        data_version_field_columns = self._get_flattened_field_columns(
-            METAXY_DATA_VERSION_BY_FIELD, field_names
-        )
+        data_version_field_columns = self._get_flattened_field_columns(METAXY_DATA_VERSION_BY_FIELD, field_names)
         for flattened_name in data_version_field_columns.values():
             if flattened_name in ibis_table.columns:
                 continue
-            provenance_flat = flattened_name.replace(
-                METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD, 1
-            )
+            provenance_flat = flattened_name.replace(METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD, 1)
             if provenance_flat in ibis_table.columns:
-                ibis_table = ibis_table.mutate(
-                    **{flattened_name: ibis_table[provenance_flat]}
-                )
+                ibis_table = ibis_table.mutate(**{flattened_name: ibis_table[provenance_flat]})
             elif METAXY_DATA_VERSION in ibis_table.columns:
-                ibis_table = ibis_table.mutate(
-                    **{flattened_name: ibis_table[METAXY_DATA_VERSION]}
-                )
+                ibis_table = ibis_table.mutate(**{flattened_name: ibis_table[METAXY_DATA_VERSION]})
         for parent_spec in feature_plan.deps or []:
             parent_name = parent_spec.key.to_struct_key()
-            flattened_name = FlatVersioningMixin._get_flattened_column_name(
-                METAXY_DATA_VERSION_BY_FIELD, parent_name
-            )
+            flattened_name = FlatVersioningMixin._get_flattened_column_name(METAXY_DATA_VERSION_BY_FIELD, parent_name)
             if flattened_name in ibis_table.columns:
                 continue
-            provenance_flat = flattened_name.replace(
-                METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD, 1
-            )
+            provenance_flat = flattened_name.replace(METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD, 1)
             if provenance_flat in ibis_table.columns:
-                ibis_table = ibis_table.mutate(
-                    **{flattened_name: ibis_table[provenance_flat]}
-                )
+                ibis_table = ibis_table.mutate(**{flattened_name: ibis_table[provenance_flat]})
             elif METAXY_DATA_VERSION in ibis_table.columns:
-                ibis_table = ibis_table.mutate(
-                    **{flattened_name: ibis_table[METAXY_DATA_VERSION]}
-                )
+                ibis_table = ibis_table.mutate(**{flattened_name: ibis_table[METAXY_DATA_VERSION]})
 
-        ibis_table = self._add_struct_from_flattened(
-            ibis_table, METAXY_PROVENANCE_BY_FIELD, field_names
-        )
-        ibis_table = self._add_struct_from_flattened(
-            ibis_table, METAXY_DATA_VERSION_BY_FIELD, field_names
-        )
+        ibis_table = self._add_struct_from_flattened(ibis_table, METAXY_PROVENANCE_BY_FIELD, field_names)
+        ibis_table = self._add_struct_from_flattened(ibis_table, METAXY_DATA_VERSION_BY_FIELD, field_names)
 
         # Convert back to Narwhals (stays lazy)
         return nw.from_native(ibis_table, eager_only=False)
@@ -417,9 +324,7 @@ class JsonStructSerializerMixin(ABC):
         # If only struct columns are present, expand them to flattened columns first (Polars path)
         if df.implementation == nw.Implementation.POLARS:
             if METAXY_PROVENANCE_BY_FIELD in native_df.columns:
-                native_df = self._expand_struct_to_flattened_polars(
-                    native_df, METAXY_PROVENANCE_BY_FIELD, field_names
-                )
+                native_df = self._expand_struct_to_flattened_polars(native_df, METAXY_PROVENANCE_BY_FIELD, field_names)
             if METAXY_DATA_VERSION_BY_FIELD in native_df.columns:
                 native_df = self._expand_struct_to_flattened_polars(
                     native_df, METAXY_DATA_VERSION_BY_FIELD, field_names
@@ -437,16 +342,12 @@ class JsonStructSerializerMixin(ABC):
             )
         else:
             # Handle Ibis tables
-            ibis_table = native_df  # type: ignore[assignment]
+            ibis_table = native_df
 
         # Ensure materialization_id has a concrete string type (postgres dislikes NULL-typed columns)
         if METAXY_MATERIALIZATION_ID in ibis_table.columns:
             ibis_table = ibis_table.mutate(
-                **{
-                    METAXY_MATERIALIZATION_ID: ibis_table[
-                        METAXY_MATERIALIZATION_ID
-                    ].cast("string")
-                }
+                **{METAXY_MATERIALIZATION_ID: ibis_table[METAXY_MATERIALIZATION_ID].cast("string")}
             )
 
         # Cast any NULL-typed flattened provenance/data_version columns to string for Postgres
@@ -455,8 +356,7 @@ class JsonStructSerializerMixin(ABC):
             for col, dtype in ibis_table.schema().items()
             if dtype.is_null()
             and (
-                col.startswith(f"{METAXY_PROVENANCE_BY_FIELD}__")
-                or col.startswith(f"{METAXY_DATA_VERSION_BY_FIELD}__")
+                col.startswith(f"{METAXY_PROVENANCE_BY_FIELD}__") or col.startswith(f"{METAXY_DATA_VERSION_BY_FIELD}__")
             )
         }
         if null_casts_specific:
@@ -464,66 +364,20 @@ class JsonStructSerializerMixin(ABC):
 
         # Catch-all for any remaining null-typed columns (e.g., auto-generated right-hand columns)
         null_casts_any = {
-            col: ibis_table[col].cast("string")
-            for col, dtype in ibis_table.schema().items()
-            if dtype.is_null()
+            col: ibis_table[col].cast("string") for col, dtype in ibis_table.schema().items() if dtype.is_null()
         }
         if null_casts_any:
             ibis_table = ibis_table.mutate(**null_casts_any)
 
-        # Pack metaxy_provenance_by_field if flattened columns exist
-        prov_field_columns = self._get_flattened_field_columns(prov_const, field_names)
-
-        has_prov_fields = any(
-            col in ibis_table.columns for col in prov_field_columns.values()
-        )
-
-        if has_prov_fields:
-            pack_expr = self._get_json_pack_expr(
-                prov_const,
-                prov_field_columns,
-            )
-            base_cols = [
-                col
-                for col in ibis_table.columns
-                if col not in prov_field_columns.values()
-            ]
-            ibis_table = ibis_table.select(
-                *[ibis_table[col] for col in base_cols],
-                pack_expr.name(prov_const),
-            )
-
-        # Also pack metaxy_data_version_by_field if flattened columns exist
-        data_version_field_columns = self._get_flattened_field_columns(
-            data_ver_const, field_names
-        )
-
-        has_data_version_fields = any(
-            col in ibis_table.columns for col in data_version_field_columns.values()
-        )
-
-        if has_data_version_fields:
-            data_version_pack_expr = self._get_json_pack_expr(
-                data_ver_const,
-                data_version_field_columns,
-            )
-            base_cols = [
-                col
-                for col in ibis_table.columns
-                if col not in data_version_field_columns.values()
-            ]
-            ibis_table = ibis_table.select(
-                *[ibis_table[col] for col in base_cols],
-                data_version_pack_expr.name(data_ver_const),
-            )
+        ibis_table = self._pack_json_column(ibis_table, prov_const, field_names)
+        ibis_table = self._pack_json_column(ibis_table, data_ver_const, field_names)
 
         # Ensure no flattened columns leak into the final insert (DuckDB insert fails
         # with a column/value mismatch if both JSON + flattened columns are present).
         pruned_columns = [
             col
             for col in ibis_table.columns
-            if not col.startswith(f"{prov_const}__")
-            and not col.startswith(f"{data_ver_const}__")
+            if not col.startswith(f"{prov_const}__") and not col.startswith(f"{data_ver_const}__")
         ]
         ibis_table = ibis_table.select(*[ibis_table[col] for col in pruned_columns])
 
@@ -553,11 +407,7 @@ def _prepare_polars_for_ibis(df: pl.DataFrame) -> pl.DataFrame:
             conversions.append(pl.col(name).cast(pl.String).alias(name))
 
     if METAXY_MATERIALIZATION_ID in df.columns:
-        conversions.append(
-            pl.col(METAXY_MATERIALIZATION_ID)
-            .cast(pl.String)
-            .alias(METAXY_MATERIALIZATION_ID)
-        )
+        conversions.append(pl.col(METAXY_MATERIALIZATION_ID).cast(pl.String).alias(METAXY_MATERIALIZATION_ID))
 
     return df.with_columns(conversions) if conversions else df
 
