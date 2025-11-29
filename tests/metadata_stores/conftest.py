@@ -54,14 +54,6 @@ _PG_SOCKET_DIR.mkdir(parents=True, exist_ok=True)
 postgresql_proc = factories.postgresql_proc(unixsocketdir=str(_PG_SOCKET_DIR))
 
 
-def _find_free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("127.0.0.1", 0))
-        s.listen(1)
-        port = s.getsockname()[1]
-    return port
-
-
 @pytest.fixture(scope="session")
 def clickhouse_server(tmp_path_factory):
     """Start a ClickHouse server for testing (session-scoped).
