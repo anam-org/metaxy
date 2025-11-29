@@ -22,7 +22,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast, overload
 
 import narwhals as nw
 
@@ -164,6 +164,16 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         finally:
             pass
 
+    @overload
+    def _post_process_resolve_update_result(
+        self, result: Increment, *, lazy: Literal[False]
+    ) -> Increment: ...
+
+    @overload
+    def _post_process_resolve_update_result(
+        self, result: LazyIncrement, *, lazy: Literal[True]
+    ) -> LazyIncrement: ...
+
     def _post_process_resolve_update_result(
         self, result: Increment | LazyIncrement, *, lazy: bool
     ) -> Increment | LazyIncrement:
@@ -195,7 +205,7 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             ) -> nw.LazyFrame[Any]:
                 return self._ensure_ibis_lazy_frame(frame)
 
-            return LazyIncrement(
+            return _PostProcessingLazyIncrement(
                 added=ensure(result.added),
                 changed=ensure(result.changed),
                 removed=ensure(result.removed),
@@ -215,36 +225,33 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             frame = self._post_process_polars_frame(frame, field_names=field_names)
             frames[name] = frame
 
-        return Increment(
+        eager_result = Increment(
             added=frames["added"],
             changed=frames["changed"],
             removed=frames["removed"],
         )
+        return eager_result
 
-    def _post_process_polars_frame(self, frame: Frame) -> Frame:
-        """Rebuild struct columns from flattened provenance fields in Polars."""
+    def _post_process_polars_frame(
+        self,
+        frame: nw.DataFrame[Any],
+        *,
+        field_names: list[str] | None = None,
+    ) -> nw.DataFrame[Any]:
+        """Rebuild struct columns from flattened provenance fields in Polars.
+
+        Expects a Polars-backed DataFrame and returns an eager result.
+        Internal-only: call via `_normalize_engine_inputs` so `_current_feature_plan`
+        is set.
+        """
         import polars as pl
 
-        native = frame.to_native()
-        if not isinstance(native, (pl.DataFrame, pl.LazyFrame)):
-            return frame
-
-        is_lazy = isinstance(native, pl.LazyFrame)
-
-        def add_struct_column(
-            df: pl.DataFrame | pl.LazyFrame, prefix: str
-        ) -> pl.DataFrame | pl.LazyFrame:
-            cols = [c for c in df.columns if c.startswith(f"{prefix}__")]
-            if not cols:
-                return df
-
-            struct_fields = [
-                pl.col(col).alias(col.split("__", 1)[1]) for col in sorted(cols)
-            ]
-            if not struct_fields:
-                return df
-            struct_expr = pl.struct(struct_fields).alias(prefix)
-            return df.with_columns(struct_expr)
+        if frame.implementation != nw.Implementation.POLARS:
+            raise RuntimeError(
+                "_post_process_polars_frame expects a Polars-backed DataFrame; "
+                "callers should use Polars fallback or collect via "
+                "_PostProcessingLazyIncrement."
+            )
 
         native = frame.to_native()
         if not isinstance(native, (pl.DataFrame, pl.LazyFrame)):
@@ -290,30 +297,54 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
                 ]
             )
 
-        return nw.from_native(native.lazy() if is_lazy else native)
+        return cast("nw.DataFrame[Any]", nw.from_native(native))
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: nw.DataFrame[Any],
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> nw.DataFrame[Any]: ...
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: nw.LazyFrame[Any],
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> nw.LazyFrame[Any]: ...
+
+    @overload
+    def _preprocess_samples_for_resolve_update(
+        self,
+        *,
+        feature: type[BaseFeature],
+        df: None,
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        lazy: bool,
+    ) -> None: ...
 
     def _preprocess_samples_for_resolve_update(
         self,
         *,
         feature: type[BaseFeature],
-        plan: FeaturePlan,
-        samples: Frame | None,
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
         filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
         lazy: bool,
-    ) -> Frame | None:
+    ) -> nw.DataFrame[Any] | nw.LazyFrame[Any] | None:
         """Flatten provenance structs in user-provided samples before resolving."""
-        if samples is None:
+        if df is None:
             return None
-        _ = (feature, filters, lazy)
+        _ = (filters, lazy)
 
         import polars as pl
 
-        if samples.implementation == nw.Implementation.POLARS:
-            samples_native = samples.to_native()
-        else:
-            samples_native = collect_to_polars(samples)
-
-        polars_df: pl.DataFrame | pl.LazyFrame
+        plan = self._resolve_feature_plan(feature)
         field_names = self._get_field_names(plan, include_dependencies=False)
         flattened_columns = self._get_flattened_field_columns(
             METAXY_PROVENANCE_BY_FIELD, field_names
@@ -333,25 +364,44 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             flattened in columns for flattened in flattened_columns.values()
         )
         if METAXY_PROVENANCE_BY_FIELD not in columns and not has_flattened:
-            return samples
+            return df
 
-        field_names = self._get_field_names(plan, include_dependencies=False)
-        exprs = []
-        for field_name in field_names:
-            flattened = FlatVersioningMixin._get_flattened_column_name(
-                METAXY_PROVENANCE_BY_FIELD, field_name
+        samples_native = (
+            df.to_native()
+            if df.implementation == nw.Implementation.POLARS
+            else collect_to_polars(df)
+        )
+        if not isinstance(samples_native, (pl.DataFrame, pl.LazyFrame)):
+            return df
+        if has_flattened:
+            # Ensure struct exists so downstream hashing/aliasing can target it.
+            samples_native = self._restore_struct_polars(
+                samples_native,
+                METAXY_PROVENANCE_BY_FIELD,
+                field_names=field_names,
             )
-            if (
-                flattened not in polars_df.columns
-                and METAXY_PROVENANCE_BY_FIELD in polars_df.columns
-            ):
-                exprs.append(
-                    pl.col(METAXY_PROVENANCE_BY_FIELD)
-                    .struct.field(field_name)
-                    .alias(flattened)
-                )
-        if exprs:
-            polars_df = polars_df.with_columns(exprs)
+            polars_frame = (
+                samples_native
+                if isinstance(samples_native, pl.LazyFrame)
+                else samples_native.lazy()
+            )
+            polars_frame = nw.from_native(polars_frame, eager_only=False)
+            return self._ensure_ibis_lazy_frame(polars_frame)
+        if METAXY_PROVENANCE_BY_FIELD in columns:
+            samples_native = self._restore_struct_polars(
+                samples_native,
+                METAXY_PROVENANCE_BY_FIELD,
+                field_names=field_names,
+            )
+            exprs = [
+                pl.col(METAXY_PROVENANCE_BY_FIELD)
+                .struct.field(field_name)
+                .alias(flattened)
+                for field_name, flattened in flattened_columns.items()
+                if flattened not in columns
+            ]
+            if exprs:
+                samples_native = samples_native.with_columns(exprs)
 
         polars_frame = (
             samples_native

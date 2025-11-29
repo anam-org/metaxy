@@ -13,6 +13,7 @@ from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import HashAlgorithm
 from metaxy._testing import HashAlgorithmCases
+from metaxy._testing.duckdb_json_compat_store import DuckDBJsonCompatStore
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -200,6 +201,13 @@ class AllStoresCases:
             uri=lancedb_path,
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
+
+    @pytest.mark.ibis
+    @pytest.mark.native
+    @pytest.mark.duckdb
+    def case_duckdb_json_compat(self, tmp_path: Path) -> MetadataStore:
+        db_path = tmp_path / "test_json_compat.duckdb"
+        return DuckDBJsonCompatStore(database=str(db_path))
 
 
 @fixture

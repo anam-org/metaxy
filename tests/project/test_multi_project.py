@@ -114,7 +114,7 @@ class TestProjectDetection:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Setup venv and install project
-            project.setup_venv(Path(tmpdir) / "venv", extras=["duckdb"])
+            project.setup_venv(Path(tmpdir) / "venv")
 
             # Run the test script in the venv
             test_script = test_project_path / "entrypoints_group_discovery.py"

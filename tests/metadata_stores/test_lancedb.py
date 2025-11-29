@@ -176,16 +176,16 @@ def test_lancedb_sanitize_path() -> None:
     assert sanitize_uri("./local/path") == "./local/path"
     assert sanitize_uri("/absolute/path") == "/absolute/path"
 
-    # URIs with credentials should mask them
-    assert sanitize_uri("db://user:pass@host/db") == "db://***:***@host/db"
+    # URIs with credentials should mask passwords but preserve usernames
+    assert sanitize_uri("db://user:pass@host/db") == "db://user:***@host/db"
     assert (
         sanitize_uri("https://admin:secret@host:8000/api")
-        == "https://***:***@host:8000/api"
+        == "https://admin:***@host:8000/api"
     )
-    assert sanitize_uri("s3://key:secret@bucket/path") == "s3://***:***@bucket/path"
+    assert sanitize_uri("s3://key:secret@bucket/path") == "s3://key:***@bucket/path"
 
-    # Username only (no password)
-    assert sanitize_uri("db://user@host/db") == "db://***:@host/db"
+    # Username only (no password) - unchanged
+    assert sanitize_uri("db://user@host/db") == "db://user@host/db"
 
 
 def test_lancedb_display_masks_credentials(tmp_path, monkeypatch) -> None:
@@ -202,9 +202,10 @@ def test_lancedb_display_masks_credentials(tmp_path, monkeypatch) -> None:
 
     # Check display before opening (when _is_open is False)
     display = store.display()
-    assert "admin" not in display
-    assert "password" not in display
-    assert "***:***@localhost" in display
+    assert "password" not in display, "Password should be masked"
+    assert "admin:***@localhost" in display, (
+        "Username should be preserved, password masked"
+    )
 
 
 def test_lancedb_has_feature_without_listing_tables(tmp_path, test_features) -> None:

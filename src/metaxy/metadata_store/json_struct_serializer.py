@@ -251,41 +251,17 @@ class JsonStructSerializerMixin(ABC):
             native = native.collect()
         if isinstance(native, pl.DataFrame):
             mem = _prepare_ibis_memtable_from_polars(native)
-            return nw.from_native(mem, eager_only=False)
+            frame_nw = nw.from_native(mem, eager_only=False)
+            # Ensure we return a LazyFrame
+            if isinstance(frame_nw, nw.DataFrame):
+                return frame_nw.lazy()
+            return frame_nw
 
         if isinstance(frame, nw.LazyFrame):
             return frame
-
-        return frame.lazy()  # type: ignore[attr-defined]
-
-    def _ensure_struct_from_flattened(
-        self, lazy_frame: nw.LazyFrame[Any], struct_name: str
-    ) -> nw.LazyFrame[Any]:
-        """Add a struct column from flattened columns if missing."""
-        import ibis
-
-        ibis_table: ibis.expr.types.Table = lazy_frame.to_native()  # type: ignore[assignment]
-        if struct_name in ibis_table.columns:
-            return lazy_frame
-
-        prefix = f"{struct_name}__"
-        columns = set(ibis_table.columns)
-        struct_fields = {
-            col.split("__", 1)[1]: ibis_table[col]
-            for col in ibis_table.columns
-            if col.startswith(prefix)
-            and "__" in col
-            and col.split("__", 1)[1] in columns
-        }
-        if not struct_fields:
-            struct_fields = {
-                col.split("__", 1)[1]: ibis_table[col]
-                for col in ibis_table.columns
-                if col.startswith(prefix) and "__" in col
-            }
-        if struct_fields:
-            ibis_table = ibis_table.mutate(**{struct_name: ibis.struct(struct_fields)})
-        return nw.from_native(ibis_table, eager_only=False)
+        if isinstance(frame, nw.DataFrame):
+            return frame.lazy()
+        return nw.from_native(frame).lazy()
 
     def _unpack_json_columns(
         self,
@@ -397,7 +373,7 @@ class JsonStructSerializerMixin(ABC):
             )
         else:
             # Handle Ibis tables
-            ibis_table = native_df  # type: ignore[assignment]
+            ibis_table = native_df
 
         # Ensure materialization_id has a concrete string type (postgres dislikes NULL-typed columns)
         if METAXY_MATERIALIZATION_ID in ibis_table.columns:
@@ -431,51 +407,8 @@ class JsonStructSerializerMixin(ABC):
         if null_casts_any:
             ibis_table = ibis_table.mutate(**null_casts_any)
 
-        # Pack metaxy_provenance_by_field if flattened columns exist
-        prov_field_columns = self._get_flattened_field_columns(prov_const, field_names)
-
-        has_prov_fields = any(
-            col in ibis_table.columns for col in prov_field_columns.values()
-        )
-
-        if has_prov_fields:
-            pack_expr = self._get_json_pack_expr(
-                prov_const,
-                prov_field_columns,
-            )
-            base_cols = [
-                col
-                for col in ibis_table.columns
-                if col not in prov_field_columns.values()
-            ]
-            ibis_table = ibis_table.select(
-                *[ibis_table[col] for col in base_cols],
-                pack_expr.name(prov_const),
-            )
-
-        # Also pack metaxy_data_version_by_field if flattened columns exist
-        data_version_field_columns = self._get_flattened_field_columns(
-            data_ver_const, field_names
-        )
-
-        has_data_version_fields = any(
-            col in ibis_table.columns for col in data_version_field_columns.values()
-        )
-
-        if has_data_version_fields:
-            data_version_pack_expr = self._get_json_pack_expr(
-                data_ver_const,
-                data_version_field_columns,
-            )
-            base_cols = [
-                col
-                for col in ibis_table.columns
-                if col not in data_version_field_columns.values()
-            ]
-            ibis_table = ibis_table.select(
-                *[ibis_table[col] for col in base_cols],
-                data_version_pack_expr.name(data_ver_const),
-            )
+        ibis_table = self._pack_json_column(ibis_table, prov_const, field_names)
+        ibis_table = self._pack_json_column(ibis_table, data_ver_const, field_names)
 
         # Ensure no flattened columns leak into the final insert (DuckDB insert fails
         # with a column/value mismatch if both JSON + flattened columns are present).
