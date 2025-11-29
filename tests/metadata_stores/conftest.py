@@ -8,8 +8,10 @@ from pathlib import Path
 from typing import Any
 
 import boto3
+import psycopg
 import pytest
 from moto.server import ThreadedMotoServer
+from psycopg import conninfo as psycopg_conninfo
 from pytest_cases import fixture, parametrize_with_cases
 from pytest_postgresql import factories
 
@@ -50,6 +52,79 @@ _PG_SOCKET_DIR = Path("/tmp/metaxy-pg")
 _PG_SOCKET_DIR.mkdir(parents=True, exist_ok=True)
 
 postgresql_proc = factories.postgresql_proc(unixsocketdir=str(_PG_SOCKET_DIR))
+
+
+@pytest.fixture(scope="session")
+def postgres_server(postgresql_proc: Any):
+    """Expose connection details from pytest-postgresql's server.
+
+    Connects to the 'postgres' database (which always exists) to provide
+    an admin connection for creating test databases.
+    """
+    host = postgresql_proc.host
+    port = postgresql_proc.port
+    user = postgresql_proc.user
+    password = postgresql_proc.password
+    options = postgresql_proc.options
+
+    admin_dbname = "postgres"
+
+    admin_dsn = psycopg_conninfo.make_conninfo(
+        host=host,
+        port=str(port),
+        user=user,
+        password=password or None,
+        dbname=admin_dbname,
+        options=options or None,
+    )
+
+    return {
+        "host": host,
+        "port": port,
+        "user": user,
+        "dbname": admin_dbname,
+        "password": password,
+        "options": options,
+        "dsn": admin_dsn,
+        "psycopg": psycopg,
+    }
+
+
+@pytest.fixture
+def postgres_db(postgres_server):
+    """Create a clean PostgreSQL database for each test (function-scoped).
+
+    Returns a PostgreSQL URI connection string suitable for PostgresMetadataStore.
+    """
+    psycopg_mod = postgres_server["psycopg"]
+    admin_dsn = postgres_server["dsn"]
+    host = postgres_server["host"]
+    port = postgres_server["port"]
+    user = postgres_server["user"]
+    password = postgres_server["password"]
+
+    db_name = f"test_{uuid.uuid4().hex}"
+
+    with psycopg_mod.connect(admin_dsn, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'CREATE DATABASE "{db_name}"')
+
+    # Build PostgreSQL URI connection string (not libpq format)
+    # Format: postgresql://[user[:password]@][host][:port][/dbname]
+    if password:
+        auth = f"{user}:{password}"
+    else:
+        auth = user
+    test_conn_string = f"postgresql://{auth}@{host}:{port}/{db_name}"
+
+    yield test_conn_string
+
+    try:
+        with psycopg_mod.connect(admin_dsn, autocommit=True) as conn:
+            with conn.cursor() as cur:
+                cur.execute(f'DROP DATABASE IF EXISTS "{db_name}" WITH (FORCE)')
+    except psycopg.Error as exc:
+        logger.warning("Failed to drop test database %s: %s", db_name, exc)
 
 
 @pytest.fixture

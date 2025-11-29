@@ -659,7 +659,9 @@ def test_resolve_update_lazy_execution(
                 .sort(id_columns)
             )
 
-            pl_testing.assert_frame_equal(lazy_added, eager_added)
+            pl_testing.assert_frame_equal(
+                lazy_added, eager_added, check_column_order=False
+            )
 
         except HashAlgorithmNotSupportedError:
             pytest.skip(

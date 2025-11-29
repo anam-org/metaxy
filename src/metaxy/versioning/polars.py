@@ -8,6 +8,7 @@ import polars as pl
 import polars_hash  # noqa: F401  # Registers .nchash and .chash namespaces
 from narwhals.typing import FrameT
 
+from metaxy.models.constants import METAXY_MATERIALIZATION_ID
 from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -139,6 +140,18 @@ class PolarsVersioningEngine(VersioningEngine):
         # then join all values with the separator
         # Fall back to group_by columns for ordering if no explicit order_by columns
         effective_order_by = order_by_columns if order_by_columns else group_by_columns
+        if source_column not in effective_order_by:
+            effective_order_by = [*effective_order_by, source_column]
+        columns = (
+            df_pl.collect_schema().names()
+            if isinstance(df_pl, pl.LazyFrame)
+            else df_pl.columns
+        )
+        if (
+            METAXY_MATERIALIZATION_ID in columns
+            and METAXY_MATERIALIZATION_ID not in effective_order_by
+        ):
+            effective_order_by = [*effective_order_by, METAXY_MATERIALIZATION_ID]
         concat_expr = (
             pl.col(source_column)
             .sort_by(*effective_order_by)

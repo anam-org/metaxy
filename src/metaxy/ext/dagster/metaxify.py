@@ -387,14 +387,15 @@ def _metaxify_spec(
             final_key = resolved_key
 
     # Build deps from feature dependencies
-    deps_to_add: set[dg.AssetDep] = set()
+    # Use dict to deduplicate by AssetKey (AssetDep is not hashable, but AssetKey is)
+    deps_to_add_dict: dict[dg.AssetKey, dg.AssetDep] = {}
     for dep in feature_spec.deps:
         upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
         upstream_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
         # Apply key_prefix to upstream deps as well
         if key_prefix is not None:
             upstream_key = dg.AssetKey([*key_prefix.path, *upstream_key.path])
-        deps_to_add.add(dg.AssetDep(asset=upstream_key))
+        deps_to_add_dict[upstream_key] = dg.AssetDep(asset=upstream_key)
 
     # Build kinds
     kinds_to_add: set[str] = set()
@@ -516,9 +517,17 @@ def _metaxify_spec(
     if column_lineage is not None:
         metadata_to_add[DAGSTER_COLUMN_LINEAGE_METADATA_KEY] = column_lineage
 
+    # Merge deps with deduplication: start with existing deps, then add new ones
+    # Dict ensures deduplication by AssetKey (since AssetDep is not hashable)
+    all_deps_dict: dict[dg.AssetKey, dg.AssetDep] = {}
+    for existing_dep in spec.deps:
+        all_deps_dict[existing_dep.asset_key] = existing_dep
+    # Update with new deps (overwrites if same key)
+    all_deps_dict.update(deps_to_add_dict)
+
     replace_attrs: dict[str, Any] = {
         "key": final_key,
-        "deps": {*spec.deps, *deps_to_add},
+        "deps": list(all_deps_dict.values()),
         "metadata": metadata_to_add,
         "kinds": {*spec.kinds, *kinds_to_add},
         "tags": {**spec.tags, **tags_to_add},
