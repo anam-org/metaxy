@@ -1,9 +1,11 @@
 """Graph diffing logic and snapshot resolution."""
 
+from __future__ import annotations
+
 import json
 import warnings
 from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from metaxy.graph.diff.diff_models import (
     AddedNode,
@@ -16,6 +18,43 @@ from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey, FieldKey
+
+if TYPE_CHECKING:
+    from metaxy.models.feature_definition import FeatureDefinition
+
+
+def _normalize_snapshot_data(
+    snapshot_data: Mapping[str, FeatureDefinition | Mapping[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Convert snapshot data to normalized dict format for diffing.
+
+    Accepts both FeatureDefinition objects (from to_snapshot()) and
+    raw dicts (from load_snapshot_data()).
+
+    Args:
+        snapshot_data: Mapping of feature_key -> FeatureDefinition or dict
+
+    Returns:
+        Normalized dict mapping feature_key -> dict with standard keys
+    """
+    from metaxy.models.feature_definition import FeatureDefinition
+
+    result: dict[str, dict[str, Any]] = {}
+    for key_str, feature_data in snapshot_data.items():
+        if isinstance(feature_data, FeatureDefinition):
+            # Convert FeatureDefinition to dict format expected by differ
+            result[key_str] = {
+                "metaxy_feature_version": feature_data.feature_version,
+                "metaxy_full_definition_version": feature_data.feature_definition_version,
+                "feature_spec": feature_data.spec.model_dump(mode="json"),
+                "feature_schema": feature_data.feature_schema,
+                "feature_class_path": feature_data.feature_class_path,
+                "project": feature_data.project_name,
+            }
+        else:
+            # Already a dict, use as-is
+            result[key_str] = dict(feature_data)
+    return result
 
 
 class SnapshotResolver:
@@ -90,25 +129,31 @@ class GraphDiffer:
 
     def diff(
         self,
-        snapshot1_data: Mapping[str, Mapping[str, Any]],
-        snapshot2_data: Mapping[str, Mapping[str, Any]],
+        snapshot1_data: Mapping[str, FeatureDefinition | Mapping[str, Any]],
+        snapshot2_data: Mapping[str, FeatureDefinition | Mapping[str, Any]],
         from_snapshot_version: str = "unknown",
         to_snapshot_version: str = "unknown",
     ) -> GraphDiff:
         """Compute diff between two snapshots.
 
         Args:
-            snapshot1_data: First snapshot (feature_key -> {feature_version, feature_spec, fields})
-            snapshot2_data: Second snapshot (feature_key -> {feature_version, feature_spec, fields})
+            snapshot1_data: First snapshot (feature_key -> FeatureDefinition or dict with
+                feature_version, feature_spec, fields)
+            snapshot2_data: Second snapshot (feature_key -> FeatureDefinition or dict with
+                feature_version, feature_spec, fields)
             from_snapshot_version: Source snapshot version
             to_snapshot_version: Target snapshot version
 
         Returns:
             GraphDiff with added, removed, and changed features
         """
+        # Normalize both snapshots to dict format for consistent processing
+        normalized_snapshot1 = _normalize_snapshot_data(snapshot1_data)
+        normalized_snapshot2 = _normalize_snapshot_data(snapshot2_data)
+
         # Extract feature keys
-        keys1 = set(snapshot1_data.keys())
-        keys2 = set(snapshot2_data.keys())
+        keys1 = set(normalized_snapshot1.keys())
+        keys2 = set(normalized_snapshot2.keys())
 
         # Identify added and removed features
         added_keys = keys2 - keys1
@@ -118,7 +163,7 @@ class GraphDiffer:
         # Build added nodes
         added_nodes = []
         for key_str in sorted(added_keys):
-            feature_data = snapshot2_data[key_str]
+            feature_data = normalized_snapshot2[key_str]
             feature_spec = feature_data.get("feature_spec", {})
 
             # Extract fields
@@ -164,7 +209,7 @@ class GraphDiffer:
         # Build removed nodes
         removed_nodes = []
         for key_str in sorted(removed_keys):
-            feature_data = snapshot1_data[key_str]
+            feature_data = normalized_snapshot1[key_str]
             feature_spec = feature_data.get("feature_spec", {})
 
             # Extract fields
@@ -210,8 +255,8 @@ class GraphDiffer:
         # Identify changed features
         changed_nodes = []
         for key_str in sorted(common_keys):
-            feature1 = snapshot1_data[key_str]
-            feature2 = snapshot2_data[key_str]
+            feature1 = normalized_snapshot1[key_str]
+            feature2 = normalized_snapshot2[key_str]
 
             version1 = feature1["metaxy_feature_version"]
             version2 = feature2["metaxy_feature_version"]
@@ -318,8 +363,8 @@ class GraphDiffer:
 
     def create_merged_graph_data(
         self,
-        snapshot1_data: Mapping[str, Mapping[str, Any]],
-        snapshot2_data: Mapping[str, Mapping[str, Any]],
+        snapshot1_data: Mapping[str, FeatureDefinition | Mapping[str, Any]],
+        snapshot2_data: Mapping[str, FeatureDefinition | Mapping[str, Any]],
         diff: GraphDiff,
     ) -> dict[str, Any]:
         """Create merged graph data structure with status annotations.
@@ -328,8 +373,8 @@ class GraphDiffer:
         annotating each feature with its status (added/removed/changed/unchanged).
 
         Args:
-            snapshot1_data: First snapshot data (feature_key -> {feature_version, fields})
-            snapshot2_data: Second snapshot data (feature_key -> {feature_version, fields})
+            snapshot1_data: First snapshot data (feature_key -> FeatureDefinition or dict)
+            snapshot2_data: Second snapshot data (feature_key -> FeatureDefinition or dict)
             diff: Computed diff between snapshots
 
         Returns:
@@ -350,6 +395,10 @@ class GraphDiffer:
                 ]
             }
         """
+        # Normalize both snapshots to dict format for consistent processing
+        normalized_snapshot1 = _normalize_snapshot_data(snapshot1_data)
+        normalized_snapshot2 = _normalize_snapshot_data(snapshot2_data)
+
         # Create status mapping for efficient lookup
         added_keys = {node.feature_key.to_string() for node in diff.added_nodes}
         removed_keys = {node.feature_key.to_string() for node in diff.removed_nodes}
@@ -358,7 +407,7 @@ class GraphDiffer:
         }
 
         # Get all feature keys from both snapshots
-        all_keys = set(snapshot1_data.keys()) | set(snapshot2_data.keys())
+        all_keys = set(normalized_snapshot1.keys()) | set(normalized_snapshot2.keys())
 
         nodes = {}
         edges = []
@@ -368,29 +417,33 @@ class GraphDiffer:
             if feature_key_str in added_keys:
                 status = "added"
                 old_version = None
-                new_version = snapshot2_data[feature_key_str]["metaxy_feature_version"]
-                fields = snapshot2_data[feature_key_str].get("fields", {})
+                new_version = normalized_snapshot2[feature_key_str][
+                    "metaxy_feature_version"
+                ]
+                fields = normalized_snapshot2[feature_key_str].get("fields", {})
                 field_changes = []
                 # Dependencies from snapshot2
                 deps = self._extract_dependencies(
-                    snapshot2_data[feature_key_str].get("feature_spec", {})
+                    normalized_snapshot2[feature_key_str].get("feature_spec", {})
                 )
             elif feature_key_str in removed_keys:
                 status = "removed"
-                old_version = snapshot1_data[feature_key_str]["metaxy_feature_version"]
+                old_version = normalized_snapshot1[feature_key_str][
+                    "metaxy_feature_version"
+                ]
                 new_version = None
-                fields = snapshot1_data[feature_key_str].get("fields", {})
+                fields = normalized_snapshot1[feature_key_str].get("fields", {})
                 field_changes = []
                 # Dependencies from snapshot1
                 deps = self._extract_dependencies(
-                    snapshot1_data[feature_key_str].get("feature_spec", {})
+                    normalized_snapshot1[feature_key_str].get("feature_spec", {})
                 )
             elif feature_key_str in changed_keys:
                 status = "changed"
                 node_change = changed_keys[feature_key_str]
                 old_version = node_change.old_version
                 new_version = node_change.new_version
-                fields = snapshot2_data[feature_key_str].get("fields", {})
+                fields = normalized_snapshot2[feature_key_str].get("fields", {})
                 # Combine all field changes from the NodeChange
                 field_changes = (
                     node_change.added_fields
@@ -399,18 +452,22 @@ class GraphDiffer:
                 )
                 # Dependencies from snapshot2 (current version)
                 deps = self._extract_dependencies(
-                    snapshot2_data[feature_key_str].get("feature_spec", {})
+                    normalized_snapshot2[feature_key_str].get("feature_spec", {})
                 )
             else:
                 # Unchanged
                 status = "unchanged"
-                old_version = snapshot1_data[feature_key_str]["metaxy_feature_version"]
-                new_version = snapshot2_data[feature_key_str]["metaxy_feature_version"]
-                fields = snapshot2_data[feature_key_str].get("fields", {})
+                old_version = normalized_snapshot1[feature_key_str][
+                    "metaxy_feature_version"
+                ]
+                new_version = normalized_snapshot2[feature_key_str][
+                    "metaxy_feature_version"
+                ]
+                fields = normalized_snapshot2[feature_key_str].get("fields", {})
                 field_changes = []
                 # Dependencies from snapshot2
                 deps = self._extract_dependencies(
-                    snapshot2_data[feature_key_str].get("feature_spec", {})
+                    normalized_snapshot2[feature_key_str].get("feature_spec", {})
                 )
 
             nodes[feature_key_str] = {
@@ -684,13 +741,20 @@ class GraphDiffer:
             feature_version = row["metaxy_feature_version"]
             feature_spec_json = row["feature_spec"]
             feature_class_path = row.get("feature_class_path", "")
+            feature_schema_json = row.get("feature_schema", "{}")
+            project = row.get("project", "")
 
             feature_spec_dict = json.loads(feature_spec_json)
+            feature_schema_dict = (
+                json.loads(feature_schema_json) if feature_schema_json else {}
+            )
 
             snapshot_dict[feature_key_str] = {
                 "metaxy_feature_version": feature_version,
                 "feature_spec": feature_spec_dict,
+                "feature_schema": feature_schema_dict,
                 "feature_class_path": feature_class_path,
+                "project": project,
                 "metaxy_full_definition_version": row.get(
                     "metaxy_full_definition_version", feature_version
                 ),  # Fallback for backward compatibility

@@ -1132,22 +1132,15 @@ class TestColumnSelection:
 
             # Verify round-trip through to_snapshot/from Pydantic
             snapshot_dict = graph.to_snapshot()
-            downstream_snapshot = snapshot_dict["test/downstream"]
+            downstream_definition = snapshot_dict["test/downstream"]
 
-            # Verify feature_spec dict has the fields
-            downstream_spec_dict = downstream_snapshot["feature_spec"]
-            assert "deps" in downstream_spec_dict
-            dep_dict = downstream_spec_dict["deps"][0]
-            assert dep_dict["feature"] == ["test", "upstream"]
-            assert dep_dict["columns"] == ["col1", "col2"]
-            assert dep_dict["rename"] == {"col1": "renamed_col1"}
-
-            # Verify Pydantic can deserialize it back
-            reconstructed_spec = SampleFeatureSpec.model_validate(downstream_spec_dict)
-            assert reconstructed_spec.deps and len(reconstructed_spec.deps) == 1
-            reconstructed_dep = reconstructed_spec.deps[0]
-            assert reconstructed_dep.columns == ("col1", "col2")
-            assert reconstructed_dep.rename == {"col1": "renamed_col1"}
+            # downstream_definition is a FeatureDefinition, access spec directly
+            downstream_spec = downstream_definition.spec
+            assert downstream_spec.deps and len(downstream_spec.deps) == 1
+            dep = downstream_spec.deps[0]
+            assert dep.feature == FeatureKey(["test", "upstream"])
+            assert dep.columns == ("col1", "col2")
+            assert dep.rename == {"col1": "renamed_col1"}
 
     def test_duplicate_renamed_columns_within_single_dependency(self):
         """Test that renaming multiple columns to the same name within a dependency is rejected."""

@@ -564,13 +564,14 @@ class SystemTableStorage:
                 FeatureVersionsModel.model_validate(
                     {
                         "feature_key": k,
+                        # Use to_storage_dict() to get the serializable dict format
                         **{
                             field: (
                                 json.dumps(val)
                                 if field in ("feature_spec", "feature_schema")
                                 else val
                             )
-                            for field, val in v.items()
+                            for field, val in v.to_storage_dict().items()
                         },
                         METAXY_SNAPSHOT_VERSION: graph.snapshot_version,
                         "recorded_at": datetime.now(timezone.utc),

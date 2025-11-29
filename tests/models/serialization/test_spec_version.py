@@ -293,24 +293,20 @@ def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) ->
         feature_key_str = "snapshot/test"
         assert feature_key_str in snapshot_dict
 
-        # Should contain feature_spec_version
+        # feature_data is now a FeatureDefinition
         feature_data = snapshot_dict[feature_key_str]
-        assert "metaxy_feature_spec_version" in feature_data
 
-        # feature_spec_version should match the Feature's feature_spec_version
+        # spec.feature_spec_version should match the Feature's feature_spec_version
         assert (
-            feature_data["metaxy_feature_spec_version"]
+            feature_data.spec.feature_spec_version
             == SnapshotFeature.spec().feature_spec_version
         )
 
-        # feature_spec_version should be different from feature_version
-        assert (
-            feature_data["metaxy_feature_spec_version"]
-            != feature_data["metaxy_feature_version"]
-        )
+        # spec.feature_spec_version should be different from feature_version
+        assert feature_data.spec.feature_spec_version != feature_data.feature_version
 
-        # Snapshot the entire feature data for stability
-        assert feature_data == snapshot
+        # Snapshot the entire feature data for stability (using pydantic serialization)
+        assert feature_data.model_dump() == snapshot
 
 
 def test_feature_spec_version_recorded_in_metadata_store(

@@ -469,8 +469,8 @@ def test_load_features_uses_active_graph():
 # ========== Integration Tests ==========
 
 
-def test_duplicate_feature_key_raises_error(graph: FeatureGraph, tmp_path: Path):
-    """Test that duplicate feature keys raise EntrypointLoadError."""
+def test_duplicate_feature_key_warns(graph: FeatureGraph, tmp_path: Path):
+    """Test that duplicate feature keys emit a warning."""
     # Create two modules with the same feature key
     module_dir = tmp_path / "duplicate_test"
     module_dir.mkdir()
@@ -505,13 +505,18 @@ class Feature2(BaseFeature, spec=SampleFeatureSpec(
     sys.path.insert(0, str(tmp_path))
 
     try:
+        import warnings
+
         # Load first module - should succeed
         load_module_entrypoint("duplicate_test.module1", graph=graph)
 
-        # Load second module with duplicate key - should raise EntrypointLoadError
-        # wrapping the underlying ValueError
-        with pytest.raises(EntrypointLoadError, match="already registered"):
+        # Load second module with duplicate key - should emit warning
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
             load_module_entrypoint("duplicate_test.module2", graph=graph)
+            # Check warning was emitted
+            assert len(w) >= 1
+            assert any("already registered" in str(warning.message) for warning in w)
     finally:
         sys.path.remove(str(tmp_path))
 

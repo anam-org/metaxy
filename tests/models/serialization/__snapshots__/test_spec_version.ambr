@@ -16,6 +16,8 @@
 # name: test_feature_spec_version_stored_in_snapshot
   dict({
     'feature_class_path': 'test_spec_version.SnapshotFeature',
+    'feature_code_version': '5b41362bc82b7f3d56edc5a306db22105707d01ff4819e26faef9724a2d406c9',
+    'feature_definition_version': '315eea6d509dedf5e3ebceff6c9733c9361efc9ce101bba4602b3ae0ce08efa6',
     'feature_schema': dict({
       'properties': dict({
         'metaxy_created_at': dict({
@@ -125,7 +127,9 @@
       'title': 'SnapshotFeature',
       'type': 'object',
     }),
-    'feature_spec': dict({
+    'feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
+    'project_name': 'test',
+    'spec': dict({
       'deps': list([
       ]),
       'fields': list([
@@ -147,16 +151,12 @@
       ]),
       'lineage': dict({
         'relationship': dict({
-          'type': '1:1',
+          'type': <LineageRelationshipType.IDENTITY: '1:1'>,
         }),
       }),
       'metadata': dict({
       }),
     }),
-    'metaxy_feature_spec_version': 'cc4b71667ebc22d4c7c90991c87fc89547645468b911e85a0f818d634b5c5303',
-    'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
-    'metaxy_full_definition_version': '315eea6d509dedf5e3ebceff6c9733c9361efc9ce101bba4602b3ae0ce08efa6',
-    'project': 'test',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename

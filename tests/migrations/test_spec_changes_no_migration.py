@@ -108,14 +108,14 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     # Verify snapshot captures both versions (initialize to satisfy type checker)
     snapshot_data = graph_v1.to_snapshot()
     assert "test/simple" in snapshot_data
-    assert "metaxy_feature_version" in snapshot_data["test/simple"]
-    assert "metaxy_feature_spec_version" in snapshot_data["test/simple"]
+    feature_def = snapshot_data["test/simple"]
+    assert hasattr(feature_def, "feature_version")
+    assert hasattr(feature_def, "spec")
+    assert hasattr(feature_def.spec, "feature_spec_version")
 
     # Store the versions for comparison
-    v1_feature_version: str = snapshot_data["test/simple"]["metaxy_feature_version"]
-    v1_feature_spec_version: str = snapshot_data["test/simple"][
-        "metaxy_feature_spec_version"
-    ]
+    v1_feature_version: str = feature_def.feature_version
+    v1_feature_spec_version: str = feature_def.spec.feature_spec_version
 
     # Create v2: Change code_version (affects feature_version)
     temp_v2 = TempFeatureModule("test_migration_detector_v2")
@@ -396,22 +396,22 @@ def test_snapshot_stores_both_versions(tmp_path):
 
         # Check snapshot data structure
         snapshot_data = graph.to_snapshot()
-        feature_data = snapshot_data["test/feature"]
+        feature_definition = snapshot_data["test/feature"]
 
         # Both versions should be present
-        assert "metaxy_feature_version" in feature_data
-        assert "metaxy_feature_spec_version" in feature_data
-        assert "feature_spec" in feature_data
-        assert "feature_class_path" in feature_data
+        assert hasattr(feature_definition, "feature_version")
+        assert hasattr(feature_definition, "spec")
+        assert hasattr(feature_definition.spec, "feature_spec_version")
+        assert hasattr(feature_definition, "feature_class_path")
 
         # Verify they're valid hashes
-        assert len(feature_data["metaxy_feature_version"]) == 64
-        assert len(feature_data["metaxy_feature_spec_version"]) == 64
+        assert len(feature_definition.feature_version) == 64
+        assert len(feature_definition.spec.feature_spec_version) == 64
 
         # Check that they match the class methods
-        assert feature_data["metaxy_feature_version"] == TestFeature.feature_version()
+        assert feature_definition.feature_version == TestFeature.feature_version()
         assert (
-            feature_data["metaxy_feature_spec_version"]
+            feature_definition.spec.feature_spec_version
             == TestFeature.feature_spec_version()
         )
 
