@@ -10,13 +10,14 @@ from narwhals.typing import FrameT
 
 from metaxy.utils.constants import TEMP_TABLE_NAME
 from metaxy.versioning.engine import VersioningEngine
+from metaxy.versioning.struct_adapter import StructFieldAccessor
 from metaxy.versioning.types import HashAlgorithm
 
 # narwhals DataFrame backed by either a lazy or an eager frame
 # PolarsFrame = TypeVar("PolarsFrame", pl.DataFrame, pl.LazyFrame)
 
 
-class PolarsVersioningEngine(VersioningEngine):
+class PolarsVersioningEngine(StructFieldAccessor, VersioningEngine):
     """Provenance engine using Polars and polars_hash plugin.
 
     !!! info
@@ -79,8 +80,8 @@ class PolarsVersioningEngine(VersioningEngine):
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(df_pl))
 
-    @staticmethod
     def record_field_versions(
+        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],

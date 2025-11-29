@@ -1,5 +1,7 @@
 """Feasibility tests for the flat versioning engine."""
 
+from typing import Any
+
 import narwhals as nw
 import polars as pl
 import pytest
@@ -20,8 +22,13 @@ class MockFlatEngine(FlatVersioningEngine):
         return nw.Implementation.POLARS
 
     def hash_string_column(
-        self, df, source_column, target_column, hash_algo, truncate_length=None
-    ):
+        self,
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any],
+        source_column: str,
+        target_column: str,
+        hash_algo: HashAlgorithm,
+        truncate_length: int | None = None,
+    ) -> nw.DataFrame[Any] | nw.LazyFrame[Any]:
         """Simple mock hashing using native Polars."""
         import polars as pl
 
@@ -38,13 +45,13 @@ class MockFlatEngine(FlatVersioningEngine):
 
     def concat_strings_over_groups(
         self,
-        df,
-        source_column,
-        target_column,
-        group_by_columns,
-        order_by_columns,
-        separator="|",
-    ):
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any],
+        source_column: str,
+        target_column: str,
+        group_by_columns: list[str],
+        order_by_columns: list[str],
+        separator: str = "|",
+    ) -> nw.DataFrame[Any] | nw.LazyFrame[Any]:
         """Simple mock aggregation using native Polars window functions."""
         import polars as pl
 
@@ -54,17 +61,16 @@ class MockFlatEngine(FlatVersioningEngine):
 
         # Use sort_by within the window to ensure deterministic ordering
         effective_order_by = order_by_columns if order_by_columns else group_by_columns
-        concat_expr = (
-            pl.col(source_column)
-            .sort_by(*effective_order_by)
-            .str.join(separator)
-            .over(group_by_columns)
-        )
+        concat_expr = pl.col(source_column).sort_by(*effective_order_by).str.join(separator).over(group_by_columns)
         result = native_df.with_columns(concat_expr.alias(target_column))
         return nw.from_native(result, eager_only=True)
 
     @staticmethod
-    def keep_latest_by_group(df, group_columns, timestamp_column):
+    def keep_latest_by_group(
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any],
+        group_columns: list[str],
+        timestamp_columns: list[str],
+    ) -> nw.DataFrame[Any] | nw.LazyFrame[Any]:
         """Simple mock keep_latest using native Polars."""
         import polars as pl
 
@@ -72,6 +78,8 @@ class MockFlatEngine(FlatVersioningEngine):
         if isinstance(native_df, pl.LazyFrame):
             native_df = native_df.collect()
 
+        # Use first non-null timestamp column (coalesce behavior)
+        timestamp_column = timestamp_columns[0]
         result = native_df.sort(timestamp_column).group_by(group_columns).last()
         return nw.from_native(result, eager_only=True)
 
@@ -206,9 +214,7 @@ def test_flattened_naming_convention():
     engine = MockFlatEngine(plan)
 
     # Test the naming convention
-    flattened_name = engine._get_flattened_column_name(
-        "metaxy_provenance_by_field", "my_field"
-    )
+    flattened_name = engine._get_flattened_column_name("metaxy_provenance_by_field", "my_field")
     assert flattened_name == "metaxy_provenance_by_field__my_field"
 
     # Test with different struct names
@@ -246,9 +252,7 @@ def test_flat_engine_compatible_with_base_engine_interface():
     # Test record_field_versions
     df2 = pl.DataFrame({"hash1": ["a", "b"], "hash2": ["c", "d"]})
     df2_nw = nw.from_native(df2, eager_only=True)
-    result = engine.record_field_versions(
-        df2_nw, "prov", {"f1": "hash1", "f2": "hash2"}
-    )
+    result = engine.record_field_versions(df2_nw, "prov", {"f1": "hash1", "f2": "hash2"})
     assert "prov__f1" in result.columns
     assert "prov__f2" in result.columns
 

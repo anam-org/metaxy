@@ -29,7 +29,51 @@ if TYPE_CHECKING:
     from metaxy.versioning.upstream_preparer import UpstreamPreparer
 
 
-class VersioningEngine(ABC):
+class FieldAccessor(ABC):
+    """Abstract base class for field access patterns.
+
+    Subclasses implement how to persist and access field-level versions,
+    either using native struct columns or flattened column naming conventions.
+    """
+
+    @abstractmethod
+    def record_field_versions(
+        self,
+        df: FrameT,
+        struct_name: str,
+        field_columns: dict[str, str],
+    ) -> FrameT:
+        """Persist field-level versions using the backend's representation.
+
+        Args:
+            df: Input DataFrame.
+            struct_name: Name for the struct/collection of fields.
+            field_columns: Mapping of field names to source column names.
+
+        Returns:
+            DataFrame with field versions persisted.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def access_provenance_field(
+        self,
+        struct_column: str,
+        field_name: str,
+    ) -> nw.Expr:
+        """Access a field from a provenance struct/collection.
+
+        Args:
+            struct_column: Name of the struct/collection column.
+            field_name: Name of the field to access.
+
+        Returns:
+            Narwhals expression to access the field value.
+        """
+        raise NotImplementedError()
+
+
+class VersioningEngine(FieldAccessor):
     """Engine for computing and tracking sample and field level provenance.
 
     This is the core abstraction for versioning operations.
@@ -43,6 +87,9 @@ class VersioningEngine(ABC):
     - Computing provenance hashes from upstream data versions
 
     - Resolving incremental changes (added, changed, removed samples)
+
+    Note: Extends FieldAccessor to require field access method implementations
+    (record_field_versions, access_provenance_field).
     """
 
     def __init__(self, plan: FeaturePlan):
@@ -216,40 +263,7 @@ class VersioningEngine(ABC):
         """
         raise NotImplementedError()
 
-    @staticmethod
-    @abstractmethod
-    def record_field_versions(
-        df: FrameT,
-        struct_name: str,
-        field_columns: dict[str, str],
-    ) -> FrameT:
-        """Persist field-level versions using the backend's struct representation.
-
-        Args:
-            df: Input DataFrame.
-            struct_name: Name for the new struct column.
-            field_columns: Mapping of struct field names to source column names.
-
-        Returns:
-            DataFrame with the new struct column added.
-        """
-        raise NotImplementedError()
-
-    def access_provenance_field(
-        self,
-        struct_column: str,
-        field_name: str,
-    ) -> nw.Expr:
-        """Access a field from a provenance struct column.
-
-        Args:
-            struct_column: Name of the struct column (e.g., "metaxy_provenance_by_field")
-            field_name: Name of the field to access (e.g., "field1")
-
-        Returns:
-            Narwhals expression to access the field value
-        """
-        return self._field_accessor.field_expr(struct_column, field_name)
+    # Note: record_field_versions and access_provenance_field are inherited from FieldAccessor
 
     @abstractmethod
     def concat_strings_over_groups(
@@ -639,6 +653,7 @@ class VersioningEngine(ABC):
         sample_components = []
         for field_name in sorted(field_names):
             expr = self.access_provenance_field(struct_column, field_name)
+            # Use empty string for nulls so concatenation is stable and hashable.
             sample_components.append(expr.fill_null(""))
         sample_concat = nw.concat_str(sample_components, separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]

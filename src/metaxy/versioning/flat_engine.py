@@ -26,29 +26,35 @@ import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.plan import FeaturePlan
-from metaxy.versioning.engine import VersioningEngine
-from metaxy.versioning.ibis import IbisHashFn, IbisVersioningEngine
+from metaxy.versioning.engine import FieldAccessor, VersioningEngine
+from metaxy.versioning.ibis import BaseIbisVersioningEngine, IbisHashFn
 from metaxy.versioning.types import HashAlgorithm
 
 
-class FlatVersioningMixin:
-    """Helpers for representing struct-like data as flattened columns."""
+class FlatFieldAccessor(FieldAccessor):
+    """Field accessor for representing struct-like data as flattened columns.
+
+    Uses the `{struct_name}__{field_name}` naming convention instead of building
+    actual struct columns.
+    """
+
+    @classmethod
+    def uses_flattened_struct_columns(cls) -> bool:
+        return True
 
     @staticmethod
     def _get_flattened_column_name(struct_name: str, field_name: str) -> str:
         return f"{struct_name}__{field_name}"
 
-    @staticmethod
     def record_field_versions(
+        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
         """Represent field versions as flattened columns following our naming convention."""
         rename_map = {
-            source_col: FlatVersioningMixin._get_flattened_column_name(
-                struct_name, field_name
-            )
+            source_col: FlatFieldAccessor._get_flattened_column_name(struct_name, field_name)
             for field_name, source_col in field_columns.items()
         }
         return df.rename(rename_map)  # ty: ignore[invalid-argument-type]
@@ -58,18 +64,16 @@ class FlatVersioningMixin:
         struct_column: str,
         field_name: str,
     ) -> nw.Expr:
-        flattened_name = FlatVersioningMixin._get_flattened_column_name(
-            struct_column, field_name
-        )
+        flattened_name = FlatFieldAccessor._get_flattened_column_name(struct_column, field_name)
         return nw.col(flattened_name)
 
 
-class FlatVersioningEngine(FlatVersioningMixin, VersioningEngine, ABC):
+class FlatVersioningEngine(FlatFieldAccessor, VersioningEngine, ABC):
     def __init__(self, plan: FeaturePlan):
         VersioningEngine.__init__(self, plan)
 
 
-class IbisFlatVersioningEngine(FlatVersioningMixin, IbisVersioningEngine):
+class IbisFlatVersioningEngine(FlatFieldAccessor, BaseIbisVersioningEngine):
     """Versioning engine for Ibis backends without struct support using flattened columns."""
 
     def __init__(
@@ -77,4 +81,4 @@ class IbisFlatVersioningEngine(FlatVersioningMixin, IbisVersioningEngine):
         plan: FeaturePlan,
         hash_functions: dict[HashAlgorithm, IbisHashFn],
     ) -> None:
-        IbisVersioningEngine.__init__(self, plan, hash_functions)
+        BaseIbisVersioningEngine.__init__(self, plan, hash_functions)

@@ -1,10 +1,7 @@
-"""Ibis implementation of VersioningEngine.
+"""Ibis implementation of VersioningEngine."""
 
-CRITICAL: This implementation NEVER materializes lazy expressions.
-All operations stay in the lazy Ibis world for SQL execution.
-"""
-
-from typing import Protocol, cast
+from abc import ABC
+from typing import TYPE_CHECKING, Protocol, cast
 
 import narwhals as nw
 from ibis import Expr as IbisExpr
@@ -13,19 +10,26 @@ from narwhals.typing import FrameT
 from metaxy.models.plan import FeaturePlan
 from metaxy.utils.constants import TEMP_TABLE_NAME
 from metaxy.versioning.engine import VersioningEngine
+from metaxy.versioning.struct_adapter import StructFieldAccessor
 from metaxy.versioning.types import HashAlgorithm
+
+if TYPE_CHECKING:
+    import ibis.expr.types
 
 
 class IbisHashFn(Protocol):
     def __call__(self, expr: IbisExpr) -> IbisExpr: ...
 
 
-class IbisVersioningEngine(VersioningEngine):
-    """Provenance engine using Ibis for SQL databases.
+class BaseIbisVersioningEngine(VersioningEngine, ABC):
+    """Shared Ibis-specific plumbing for provenance engines.
 
     !!! info
         This implementation never leaves the lazy world.
         All operations stay as Ibis expressions and eventually get compiled to SQL.
+
+    Handles hashing, grouping helpers, and keeps all operations lazy in Ibis.
+    Concrete subclasses decide how to represent field-level structs (true structs vs. flattened columns).
     """
 
     def __init__(
@@ -37,7 +41,6 @@ class IbisVersioningEngine(VersioningEngine):
 
         Args:
             plan: Feature plan to track provenance for
-            backend: Ibis backend instance (e.g., ibis.duckdb.connect())
             hash_functions: Mapping from HashAlgorithm to Ibis hash functions.
                 Each function takes an Ibis expression and returns an Ibis expression.
         """
@@ -56,19 +59,7 @@ class IbisVersioningEngine(VersioningEngine):
         hash_algo: HashAlgorithm,
         truncate_length: int | None = None,
     ) -> FrameT:
-        """Hash a string column using Ibis hash functions.
-
-        Args:
-            df: Narwhals DataFrame backed by Ibis
-            source_column: Name of string column to hash
-            target_column: Name for the new column containing the hash
-            hash_algo: Hash algorithm to use
-            truncate_length: Optional length to truncate hash to. If None, no truncation.
-
-        Returns:
-            Narwhals DataFrame with new hashed column added, backed by Ibis.
-            The source column remains unchanged.
-        """
+        """Hash a string column using Ibis hash functions."""
         if hash_algo not in self.hash_functions:
             raise ValueError(
                 f"Hash algorithm {hash_algo} not supported by this Ibis backend. "
@@ -82,51 +73,15 @@ class IbisVersioningEngine(VersioningEngine):
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
-        # Get hash function
+        # Apply hash function to source column
         hash_fn = self.hash_functions[hash_algo]
-
-        # Apply hash to source column
-        # Hash functions are responsible for returning strings
         hashed = hash_fn(ibis_table[source_column])
 
         # Apply truncation if specified
         if truncate_length is not None:
             hashed = hashed[0:truncate_length]
 
-        # Add new column with the hash
         result_table = ibis_table.mutate(**{target_column: hashed})
-
-        # Convert back to Narwhals
-        return cast(FrameT, nw.from_native(result_table))
-
-    @staticmethod
-    def record_field_versions(
-        df: FrameT,
-        struct_name: str,
-        field_columns: dict[str, str],
-    ) -> FrameT:
-        """Persist field-level versions using a struct column.
-
-        Args:
-            df: Narwhals DataFrame backed by Ibis
-            struct_name: Name for the new struct column
-            field_columns: Mapping from struct field names to column names
-
-        Returns:
-            Narwhals DataFrame with the struct column added.
-        """
-        # Import ibis lazily
-        import ibis.expr.types
-
-        # Convert to Ibis table
-        assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
-
-        # Build struct expression - reference columns by name
-        struct_expr = ibis.struct({field_name: ibis_table[col_name] for field_name, col_name in field_columns.items()})
-
-        # Add struct column
-        result_table = ibis_table.mutate(**{struct_name: struct_expr})
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))
@@ -140,11 +95,7 @@ class IbisVersioningEngine(VersioningEngine):
         order_by_columns: list[str],
         separator: str = "|",
     ) -> FrameT:
-        """Concatenate string values within groups using Ibis window functions.
-
-        Uses group_concat with ordering to concatenate values in deterministic order.
-        All rows in the same group receive identical concatenated values.
-        """
+        """Concatenate string values within groups using Ibis window functions."""
         import ibis
         import ibis.expr.types
 
@@ -152,7 +103,6 @@ class IbisVersioningEngine(VersioningEngine):
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
         # Create window spec with ordering for deterministic results
-        # Fall back to group_by columns for ordering if no explicit order_by columns
         effective_order_by = order_by_columns if order_by_columns else group_by_columns
         window = ibis.window(
             group_by=group_by_columns,
@@ -161,9 +111,8 @@ class IbisVersioningEngine(VersioningEngine):
 
         # Use group_concat over window to concatenate values
         concat_expr = ibis_table[source_column].cast("string").group_concat(sep=separator).over(window)
-        ibis_table = ibis_table.mutate(**{target_column: concat_expr})
-
-        return cast(FrameT, nw.from_native(ibis_table))
+        result_table = ibis_table.mutate(**{target_column: concat_expr})
+        return cast(FrameT, nw.from_native(result_table))
 
     @staticmethod
     def keep_latest_by_group(
@@ -199,16 +148,41 @@ class IbisVersioningEngine(VersioningEngine):
         ibis_table = ibis_table.mutate(**{TEMP_TABLE_NAME: ordering_expr})
 
         # Use argmax aggregation: for each column, get the value where timestamp is maximum
-        # This directly expresses "get the row with the latest timestamp per group"
         all_columns = set(ibis_table.columns)
         non_group_columns = all_columns - set(group_columns) - {TEMP_TABLE_NAME}
 
         # Build aggregation dict: for each non-group column, use argmax(timestamp)
         agg_exprs = {col: ibis_table[col].argmax(ibis_table[TEMP_TABLE_NAME]) for col in non_group_columns}
 
-        # Perform groupby and aggregate
         result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)
         # Note: TEMP_TABLE_NAME is not in result_table because we excluded it from aggregation
 
         # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(result_table))
+
+
+class IbisVersioningEngine(StructFieldAccessor, BaseIbisVersioningEngine):
+    """Provenance engine using Ibis for SQL databases with native struct support.
+
+    CRITICAL: This implementation NEVER leaves the lazy world.
+    All operations stay as Ibis expressions that compile to SQL.
+    """
+
+    def record_field_versions(
+        self,
+        df: FrameT,
+        struct_name: str,
+        field_columns: dict[str, str],
+    ) -> FrameT:
+        """Persist field-level versions using a struct column."""
+        import ibis
+        import ibis.expr.types
+
+        assert df.implementation == nw.Implementation.IBIS
+        ibis_table: ibis.expr.types.Table = cast("ibis.expr.types.Table", df.to_native())
+
+        # Build struct expression - reference columns by name
+        struct_expr = ibis.struct({field_name: ibis_table[col_name] for field_name, col_name in field_columns.items()})
+
+        result_table = ibis_table.mutate(**{struct_name: struct_expr})
         return cast(FrameT, nw.from_native(result_table))
