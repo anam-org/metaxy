@@ -1,4 +1,4 @@
-# PostgreSQL Metadata Store
+# PostgreSQL API Reference
 
 <!-- dprint-ignore-start -->
 ::: metaxy.metadata_store.postgres.PostgresMetadataStore
