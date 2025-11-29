@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import parse_qsl, quote, urlparse, urlunparse
 
 from narwhals.typing import FrameT
 
@@ -49,16 +49,21 @@ def empty_frame_like(ref_frame: FrameT) -> FrameT:
 def sanitize_uri(uri: str) -> str:
     """Sanitize URI to mask credentials.
 
-    Replaces username and password in URIs with `***` to prevent credential exposure
-    in logs, display strings, and error messages.
+    Replaces passwords in URIs (both in netloc and query parameters) with `***`
+    to prevent credential exposure in logs, display strings, and error messages.
+    Usernames are preserved for debugging purposes.
 
     Examples:
         >>> sanitize_uri("s3://bucket/path")
         's3://bucket/path'
         >>> sanitize_uri("db://user:pass@host/db")
-        'db://***:***@host/db'
+        'db://user:***@host/db'
         >>> sanitize_uri("postgresql://admin:secret@host:5432/db")
-        'postgresql://***:***@host:5432/db'
+        'postgresql://admin:***@host:5432/db'
+        >>> sanitize_uri("postgresql://host/db?password=secret")
+        'postgresql://host/db?password=***'
+        >>> sanitize_uri("db://host?user=admin&pwd=secret")
+        'db://host?user=admin&pwd=***'
         >>> sanitize_uri("./local/path")
         './local/path'
 
@@ -66,7 +71,7 @@ def sanitize_uri(uri: str) -> str:
         uri: URI or path string that may contain credentials
 
     Returns:
-        Sanitized URI with credentials masked as ***
+        Sanitized URI with passwords masked as ***
     """
     # Try to parse as URI
     try:
@@ -76,24 +81,42 @@ def sanitize_uri(uri: str) -> str:
         if not parsed.scheme or parsed.scheme in ("file", "local"):
             return uri
 
-        # Check if URI contains credentials (username or password)
-        if parsed.username or parsed.password:
-            # Replace credentials with ***
-            username = "***" if parsed.username else ""
-            password = "***" if parsed.password else ""
-            credentials = f"{username}:{password}@" if username or password else ""
-            # Reconstruct netloc without credentials
-            host_port = parsed.netloc.split("@")[-1]
-            masked_netloc = f"{credentials}{host_port}"
+        # Sanitize netloc (username:password@host:port)
+        sanitized_netloc = parsed.netloc
+        if parsed.password:
+            # Keep username visible, only mask password
+            if "@" in sanitized_netloc:
+                userinfo, hostinfo = sanitized_netloc.rsplit("@", 1)
+                if ":" in userinfo:
+                    username, _, _ = userinfo.partition(":")
+                    userinfo = f"{username}:***"
+                sanitized_netloc = f"{userinfo}@{hostinfo}"
 
-            # Reconstruct URI with masked credentials
+        # Sanitize query parameters
+        sanitized_query = parsed.query
+        if parsed.query:
+            query_params = parse_qsl(parsed.query, keep_blank_values=True)
+            masked_parts = []
+            changed = False
+            for key, val in query_params:
+                if key.lower() in {"password", "pwd", "pass"}:
+                    # Use *** without URL encoding for readability
+                    masked_parts.append(f"{quote(key, safe='')}=***")
+                    changed = True
+                else:
+                    masked_parts.append(f"{quote(key, safe='')}={quote(val, safe='')}")
+            if changed:
+                sanitized_query = "&".join(masked_parts)
+
+        # Only reconstruct if something changed
+        if sanitized_netloc != parsed.netloc or sanitized_query != parsed.query:
             return urlunparse(
                 (
                     parsed.scheme,
-                    masked_netloc,
+                    sanitized_netloc,
                     parsed.path,
                     parsed.params,
-                    parsed.query,
+                    sanitized_query,
                     parsed.fragment,
                 )
             )
