@@ -488,8 +488,11 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         if lazy_frame is None:
             return None
 
-        # Get feature plan to determine field names
         feature_key = self._resolve_feature_key(feature)
+        if self._is_system_table(feature_key):
+            return lazy_frame
+
+        # Get feature plan to determine field names
         feature_plan = self._resolve_feature_plan(feature_key)
 
         # Unpack JSON columns to flattened columns (stays lazy!)
@@ -518,11 +521,17 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             If df is Ibis-backed, this stays lazy until the actual insert.
             If df is Polars-backed, parent will handle collection.
         """
+        resolved_key = self._resolve_feature_key(feature_key)
+        if self._is_system_table(resolved_key):
+            return IbisMetadataStore.write_metadata_to_store(
+                self, resolved_key, df, **kwargs
+            )
+
         # Get feature plan to determine field names
-        feature_plan = self._resolve_feature_plan(feature_key)
+        feature_plan = self._resolve_feature_plan(resolved_key)
 
         # Pack flattened columns into JSON columns (stays lazy if Ibis)
         df = self._pack_json_columns(df, feature_plan)
 
         # Write via parent (Ibis insert)
-        super().write_metadata_to_store(feature_key, df, **kwargs)
+        super().write_metadata_to_store(resolved_key, df, **kwargs)
