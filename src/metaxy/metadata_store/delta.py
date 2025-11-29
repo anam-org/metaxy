@@ -274,6 +274,10 @@ class DeltaMetadataStore(MetadataStore):
 
         assert isinstance(df_native, pl.DataFrame)
 
+        # Cast Enum columns to String to avoid delta-rs Utf8View incompatibility
+        # (delta-rs parquet writer cannot handle Utf8View dictionary values)
+        df_native = df_native.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
+
         # Prepare write parameters for Polars write_delta
         # Extract mode and storage_options as top-level parameters
         write_opts = self.default_delta_write_options.copy()
@@ -343,9 +347,9 @@ class DeltaMetadataStore(MetadataStore):
         # Convert to Narwhals
         nw_lazy = nw.from_native(lf)
 
-        # Apply filters
-        if filters is not None:
-            nw_lazy = nw_lazy.filter(filters)
+        # Apply filters (unpack list, skip if empty)
+        if filters:
+            nw_lazy = nw_lazy.filter(*filters)
 
         # Apply column selection
         if columns is not None:
