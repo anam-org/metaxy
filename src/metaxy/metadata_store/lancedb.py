@@ -364,8 +364,8 @@ class LanceDBMetadataStore(MetadataStore):
         pl_lazy = pl.DataFrame(arrow_table).lazy()
         nw_lazy = nw.from_native(pl_lazy)
 
-        if filters is not None:
-            nw_lazy = nw_lazy.filter(filters)
+        if filters:
+            nw_lazy = nw_lazy.filter(*filters)
 
         if columns is not None:
             nw_lazy = nw_lazy.select(columns)
