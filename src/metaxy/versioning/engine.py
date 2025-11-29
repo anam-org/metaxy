@@ -420,7 +420,9 @@ class VersioningEngine(ABC):
         )
 
         # Drop temp columns
-        df = df.drop("__sample_concat", *hashed_field_cols.values())  # ty: ignore[invalid-argument-type]
+        df = df.drop(  # ty: ignore[invalid-argument-type]
+            "__sample_concat", *hashed_field_cols.values(), strict=False
+        )
 
         return df  # ty: ignore[invalid-return-type]
 
@@ -578,7 +580,7 @@ class VersioningEngine(ABC):
                 if target_col not in current_columns:
                     df = df.with_columns(nw.col(col).alias(target_col))
 
-        if METAXY_PROVENANCE_BY_FIELD not in df.columns:
+        if METAXY_PROVENANCE_BY_FIELD not in current_columns:
             df = df.with_columns(
                 nw.lit(None, dtype=nw.String).alias(METAXY_PROVENANCE_BY_FIELD)
             )
@@ -696,7 +698,7 @@ class VersioningEngine(ABC):
             hash_column,
             hash_algorithm,
             truncate_length=get_hash_truncation_length(),
-        ).drop("__sample_concat")
+        ).drop("__sample_concat", strict=False)
 
     def resolve_increment_with_provenance(
         self,

@@ -189,7 +189,7 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             ) -> nw.LazyFrame[Any]:
                 return self._ensure_ibis_lazy_frame(frame)
 
-            return LazyIncrement(
+            return _PostProcessingLazyIncrement(
                 added=ensure(result.added),
                 changed=ensure(result.changed),
                 removed=ensure(result.removed),
@@ -205,11 +205,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             frame = self._post_process_polars_frame(frame)
             frames[name] = frame
 
-        return Increment(
+        eager_result = Increment(
             added=frames["added"],
             changed=frames["changed"],
             removed=frames["removed"],
         )
+        return eager_result
 
     def _post_process_polars_frame(self, frame: FrameT) -> FrameT:
         """Rebuild struct columns from flattened provenance fields in Polars."""
@@ -230,7 +231,72 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         def add_struct_column(
             df: pl.DataFrame | pl.LazyFrame, prefix: str
         ) -> pl.DataFrame | pl.LazyFrame:
-            cols = [c for c in df.columns if c.startswith(f"{prefix}__")]
+            schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema
+            columns = list(schema.names())
+
+            def get_feature_field_cols(cols: list[str]) -> list[str]:
+                """Filter to only include feature's own fields, not dependency fields.
+
+                Feature field columns: `prefix__field_name` (simple field name)
+                Dependency columns: `prefix__dep_name__field_name` (nested name with __)
+
+                We only want feature fields for the struct, so filter out columns
+                where the field name part contains `__`.
+                """
+                result = []
+                for col in cols:
+                    if col.startswith(f"{prefix}__"):
+                        field_name = col.split("__", 1)[1]
+                        # Only include if field_name doesn't contain __ (not a dependency)
+                        if "__" not in field_name:
+                            result.append(col)
+                return result
+
+            # If column exists, check if it's already a struct or needs parsing
+            if prefix in columns:
+                dtype = schema[prefix]
+                # If it's already a struct, nothing to do
+                if isinstance(dtype, pl.Struct):
+                    return df
+                # If it's a string (JSON from Ibis), rebuild struct from flattened columns
+                if dtype == pl.String or dtype == pl.Utf8:
+                    # Find flattened columns for feature's own fields only
+                    flat_cols = get_feature_field_cols(columns)
+                    if flat_cols:
+                        # Build struct from flattened columns
+                        struct_fields = [
+                            pl.col(col).alias(col.split("__", 1)[1])
+                            for col in sorted(flat_cols)
+                        ]
+                        struct_expr = pl.struct(struct_fields).alias(prefix)
+                        return df.with_columns(struct_expr)
+                    else:
+                        # No flattened columns for feature fields - parse JSON directly
+                        # Infer schema from JSON using a small sample
+                        if isinstance(df, pl.LazyFrame):
+                            sample_df = df.head(10).collect()
+                        else:
+                            sample_df = df.head(10)
+                        sample_col: pl.Series = sample_df[prefix]
+                        # Get first non-null value to infer schema
+                        non_null = sample_col.drop_nulls()
+                        if non_null.len() > 0:
+                            import json
+
+                            first_json = non_null[0]
+                            parsed = json.loads(first_json)
+                            if isinstance(parsed, dict):
+                                # Build struct type from parsed JSON
+                                struct_fields_dict = {k: pl.String for k in parsed}
+                                struct_dtype = pl.Struct(struct_fields_dict)
+                                return df.with_columns(
+                                    pl.col(prefix)
+                                    .str.json_decode(struct_dtype)
+                                    .alias(prefix)
+                                )
+                return df
+
+            cols = get_feature_field_cols(columns)
             if not cols:
                 return df
 
@@ -312,7 +378,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         else:
             samples_native = collect_to_polars(df)
 
-        polars_df: pl.DataFrame | pl.LazyFrame
+        if df.implementation == nw.Implementation.POLARS:
+            samples_native = df.to_native()  # ty: ignore[invalid-argument-type]
+        else:
+            samples_native = collect_to_polars(df)
+
+        plan = self._resolve_feature_plan(feature)
         if isinstance(samples_native, (pl.DataFrame, pl.LazyFrame)):
             polars_df = samples_native
         else:
@@ -321,14 +392,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         plan = self._resolve_feature_plan(feature.spec().key)
         field_names = self._get_field_names(plan, include_dependencies=False)
         exprs = []
+        columns = polars_df.collect_schema().names()
         for field_name in field_names:
             flattened = FlatVersioningMixin._get_flattened_column_name(
                 METAXY_PROVENANCE_BY_FIELD, field_name
             )
-            if (
-                flattened not in polars_df.columns
-                and METAXY_PROVENANCE_BY_FIELD in polars_df.columns
-            ):
+            if flattened not in columns and METAXY_PROVENANCE_BY_FIELD in columns:
                 exprs.append(
                     pl.col(METAXY_PROVENANCE_BY_FIELD)
                     .struct.field(field_name)

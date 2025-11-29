@@ -5,6 +5,8 @@ from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, cast
 
+import ibis
+import ibis.expr.types as ibis_types
 import narwhals as nw
 import polars as pl
 from narwhals.typing import FrameT
@@ -37,6 +39,87 @@ _PGCRYPTO_ERROR_TYPES: tuple[type[Exception], ...] = (_PsycopgError,)
 logger = logging.getLogger(__name__)
 SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
 SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
+
+
+class PostgresVersioningEngine(IbisFlatVersioningEngine):
+    """PostgreSQL-specific versioning engine that uses any_value() instead of arbitrary().
+
+    PostgreSQL 16+ ships any_value() but not first(), while Ibis implements
+    arbitrary() using first(). We override aggregation helpers to call the
+    native any_value() aggregate directly and rely on a compatibility first()
+    aggregate installed by the store for other Ibis operations that still
+    emit FIRST().
+    """
+
+    @staticmethod
+    def aggregate_with_string_concat(
+        df: FrameT,
+        group_by_columns: list[str],
+        concat_column: str,
+        concat_separator: str,
+        exclude_columns: list[str],
+    ) -> FrameT:
+        """Aggregate DataFrame using any_value() instead of arbitrary()."""
+        assert df.implementation == nw.Implementation.IBIS, (
+            "Only Ibis DataFrames are accepted"
+        )
+        ibis_table: ibis_types.Table = cast(ibis_types.Table, df.to_native())
+
+        agg_exprs = {}
+        agg_exprs[concat_column] = ibis_table[concat_column].group_concat(
+            concat_separator
+        )
+
+        all_columns = set(ibis_table.columns)
+        columns_to_aggregate = (
+            all_columns - set(group_by_columns) - {concat_column} - set(exclude_columns)
+        )
+
+        def make_any_value(expr: ibis.Expr):
+            dtype = expr.type()
+
+            @ibis.udf.agg.builtin(signature=((dtype,), dtype))
+            def any_value(x): ...  # noqa: ARG001
+
+            return any_value(expr)
+
+        # Use any_value() for all other columns
+        for col in columns_to_aggregate:
+            agg_exprs[col] = make_any_value(ibis_table[col])
+
+        result_table = ibis_table.group_by(group_by_columns).aggregate(**agg_exprs)
+        return cast(FrameT, nw.from_native(result_table))
+
+    @staticmethod
+    def keep_latest_by_group(
+        df: FrameT,
+        group_columns: list[str],
+        timestamp_column: str,
+    ) -> FrameT:
+        """Keep only the latest row per group using argmax to stay row-aligned."""
+        assert df.implementation == nw.Implementation.IBIS, (
+            "Only Ibis DataFrames are accepted"
+        )
+
+        columns = df.collect_schema().names()
+        if timestamp_column not in columns:
+            raise ValueError(
+                f"Timestamp column '{timestamp_column}' not found in DataFrame. "
+                f"Available columns: {columns}"
+            )
+
+        ibis_table: ibis_types.Table = cast(ibis_types.Table, df.to_native())
+
+        all_columns = set(ibis_table.columns)
+        non_group_columns = all_columns - set(group_columns)
+
+        agg_exprs = {
+            col: ibis_table[col].argmax(ibis_table[timestamp_column])
+            for col in non_group_columns
+        }
+
+        result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)
+        return cast(FrameT, nw.from_native(result_table))
 
 
 def _decode_pg_text(value: Any) -> str:
@@ -135,6 +218,8 @@ class PostgresMetadataStore(IbisJsonCompatStore):
             fallback_stores=fallback_stores,
             **kwargs,
         )
+        # Use PostgreSQL-specific versioning engine that prefers any_value()
+        self.versioning_engine_cls = PostgresVersioningEngine
 
         supported_algorithms = {HashAlgorithm.MD5, HashAlgorithm.SHA256}
         if self.hash_algorithm not in supported_algorithms:
@@ -149,12 +234,11 @@ class PostgresMetadataStore(IbisJsonCompatStore):
 
     def _create_hash_functions(self):
         """Create hash functions (MD5 built-in, SHA256 via pgcrypto)."""
-        import ibis
 
         hash_functions = {}
 
         @ibis.udf.scalar.builtin
-        def MD5(_x: str) -> str:  # noqa: N802
+        def MD5(_x: str) -> str:  # noqa: N802  # ty: ignore[invalid-return-type]
             """PostgreSQL MD5() function."""
             ...
 
@@ -164,17 +248,17 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         hash_functions[HashAlgorithm.MD5] = md5_hash
 
         @ibis.udf.scalar.builtin
-        def digest(_value: str, _algorithm: str) -> bytes:
+        def digest(_value: str, _algorithm: str) -> bytes:  # ty: ignore[invalid-return-type]
             """pgcrypto digest() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def encode(_value: bytes, _fmt: str) -> str:
+        def encode(_value: bytes, _fmt: str) -> str:  # ty: ignore[invalid-return-type]
             """PostgreSQL encode() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def lower(_value: str) -> str:
+        def lower(_value: str) -> str:  # ty: ignore[invalid-return-type]
             """PostgreSQL lower() function."""
             ...
 
@@ -192,7 +276,44 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         """Open connection and reset pgcrypto extension check."""
         with super().open(mode):
             self._pgcrypto_extension_checked = False
+            self._ensure_first_aggregate()
             yield self
+
+    def _ensure_first_aggregate(self) -> None:
+        """Create lightweight first() aggregate for Ibis compatibility.
+
+        Some Ibis operations still compile to FIRST(), which PostgreSQL lacks.
+        We create a simple compatibility aggregate that mirrors any_value()
+        semantics (returns the first non-null value).
+        """
+        try:
+            raw_conn = cast(Any, self.conn).con
+            with raw_conn.cursor() as cursor:
+                cursor.execute("""
+                    CREATE OR REPLACE FUNCTION _first_sfunc(anyelement, anyelement)
+                    RETURNS anyelement
+                    LANGUAGE SQL IMMUTABLE STRICT AS $$SELECT $1$$;
+                """)
+                cursor.execute("""
+                    CREATE OR REPLACE AGGREGATE first(anyelement) (
+                        SFUNC = _first_sfunc,
+                        STYPE = anyelement
+                    );
+                """)
+            raw_conn.commit()
+            logger.debug("first() aggregate function created successfully")
+        except _PGCRYPTO_ERROR_TYPES as err:
+            logger.warning(
+                "Could not create first() aggregate function: %s. "
+                "This is needed for provenance tracking with aggregation/expansion lineage.",
+                err,
+            )
+        except AttributeError as err:
+            logger.warning(
+                "Could not create first() aggregate function: %s. "
+                "This is needed for provenance tracking with aggregation/expansion lineage.",
+                err,
+            )
 
     def _ensure_pgcrypto_ready_for_native_provenance(self) -> None:
         """Enable pgcrypto for SHA256 hashing if needed."""
@@ -274,10 +395,9 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         self, json_column: str, field_names: list[str]
     ) -> dict[str, Any]:
         """Unpack JSONB column to flattened columns via jsonb_extract_path_text."""
-        import ibis
 
         @ibis.udf.scalar.builtin
-        def jsonb_extract_path_text(_data, *paths) -> str: ...
+        def jsonb_extract_path_text(_data, *paths) -> str: ...  # ty: ignore[invalid-return-type]
 
         exprs: dict[str, Any] = {}
         table = ibis._  # placeholder for the current table context
@@ -293,11 +413,10 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         self, struct_name: str, field_columns: Mapping[str, str]
     ) -> Any:
         """Pack flattened columns to JSONB via jsonb_object."""
-        import ibis
         import ibis.expr.datatypes as dt
 
         @ibis.udf.scalar.builtin(output_type=dt.jsonb)
-        def jsonb_object(_keys: list[str], _values: list[str]) -> str: ...
+        def jsonb_object(_keys: list[str], _values: list[str]) -> str: ...  # ty: ignore[invalid-return-type]
 
         keys: list[Any] = []
         values: list[Any] = []

@@ -7,10 +7,13 @@ All operations stay in the lazy Ibis world for SQL execution.
 from abc import ABC
 from typing import Protocol, cast
 
+import ibis
+import ibis.expr.types as ibis_types
 import narwhals as nw
 from ibis import Expr as IbisExpr
 from narwhals.typing import FrameT
 
+from metaxy.models.constants import METAXY_MATERIALIZATION_ID
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm
@@ -71,13 +74,10 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
                 f"Supported: {list(self.hash_functions.keys())}"
             )
 
-        import ibis
-        import ibis.expr.types
-
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis_types.Table = cast(ibis_types.Table, df.to_native())
 
         hash_fn = self.hash_functions[hash_algo]
         hashed = hash_fn(ibis_table[source_column])
@@ -106,17 +106,21 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
         Uses group_concat with ordering to concatenate values in deterministic order.
         All rows in the same group receive identical concatenated values.
         """
-        import ibis
-        import ibis.expr.types
-
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis_types.Table = cast(ibis_types.Table, df.to_native())
 
         # Create window spec with ordering for deterministic results
         # Fall back to group_by columns for ordering if no explicit order_by columns
         effective_order_by = order_by_columns if order_by_columns else group_by_columns
+        if source_column not in effective_order_by:
+            effective_order_by = [*effective_order_by, source_column]
+        if (
+            METAXY_MATERIALIZATION_ID in ibis_table.columns
+            and METAXY_MATERIALIZATION_ID not in effective_order_by
+        ):
+            effective_order_by = [*effective_order_by, METAXY_MATERIALIZATION_ID]
         window = ibis.window(
             group_by=group_by_columns,
             order_by=[ibis_table[col] for col in effective_order_by],
@@ -140,8 +144,6 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
         timestamp_column: str,
     ) -> FrameT:
         """Keep only the latest row per group based on a timestamp column."""
-        import ibis.expr.types
-
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
@@ -155,7 +157,7 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
                 f"Available columns: {columns}"
             )
 
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis_types.Table = cast(ibis_types.Table, df.to_native())
 
         all_columns = set(ibis_table.columns)
         non_group_columns = all_columns - set(group_columns)
@@ -179,13 +181,10 @@ class IbisVersioningEngine(BaseIbisVersioningEngine):
         field_columns: dict[str, str],
     ) -> FrameT:
         """Persist field-level versions using a struct column."""
-        import ibis
-        import ibis.expr.types
-
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis_types.Table = cast(ibis_types.Table, df.to_native())
 
         struct_expr = ibis.struct(
             {

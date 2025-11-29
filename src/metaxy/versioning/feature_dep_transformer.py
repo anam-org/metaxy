@@ -6,7 +6,6 @@ import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.constants import (
-    _COLUMNS_TO_DROP_BEFORE_JOIN,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE,
@@ -138,7 +137,7 @@ class FeatureDepTransformer:
         prov_struct = f"{METAXY_PROVENANCE_BY_FIELD}{suffix}"
         data_struct = f"{METAXY_DATA_VERSION_BY_FIELD}{suffix}"
         dynamic_renames: dict[str, str] = {}
-        for col in df.columns:
+        for col in df.collect_schema().names():  # ty: ignore[invalid-argument-type]
             # Already suffixed columns can stay as-is
             if col == prov_struct or col == data_struct:
                 continue
