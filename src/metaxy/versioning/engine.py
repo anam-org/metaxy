@@ -188,7 +188,7 @@ class VersioningEngine(ABC):
 
             if colliding_columns:
                 raise ValueError(
-                    f"Found additional shared columns across upstream features: {colliding_columns}. "
+                    f"Found additional shared columns across upstream features for feature {self.plan.feature}: {colliding_columns}. "
                     f"Only ID columns {list(id_cols)} and required system columns {list(allowed_system_columns)} should be shared. "
                     f"Please add explicit renames in your FeatureDep to avoid column collisions."
                 )
