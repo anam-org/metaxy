@@ -10,7 +10,13 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import TYPE_CHECKING, Literal
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    TypeAdapter,
+    field_serializer,
+    field_validator,
+)
 from pydantic import Field as PydanticField
 from typing_extensions import Self
 
@@ -92,6 +98,35 @@ class SpecificFieldsMapping(BaseFieldsMapping):
 
     type: Literal[FieldsMappingType.SPECIFIC] = FieldsMappingType.SPECIFIC
     mapping: dict[FieldKey, set[FieldKey]]
+
+    @field_serializer("mapping", mode="plain")
+    @classmethod
+    def _serialize_mapping(
+        cls, mapping: dict[FieldKey, set[FieldKey]]
+    ) -> dict[str, list[str]]:
+        """Serialize mapping with string keys for JSON compatibility."""
+        return {
+            key.to_string(): [v.to_string() for v in values]
+            for key, values in mapping.items()
+        }
+
+    @field_validator("mapping", mode="before")
+    @classmethod
+    def _validate_mapping(cls, value: object) -> dict[FieldKey, set[FieldKey]]:
+        """Validate and convert mapping from JSON format."""
+        if isinstance(value, dict):
+            result: dict[FieldKey, set[FieldKey]] = {}
+            for key, values in value.items():
+                field_key = FieldKey(key) if isinstance(key, str) else key
+                if isinstance(values, set):
+                    result[field_key] = values
+                else:
+                    # Convert from list of strings
+                    result[field_key] = {
+                        FieldKey(v) if isinstance(v, str) else v for v in values
+                    }
+            return result
+        return value  # type: ignore[return-value]
 
     def resolve_field_deps(
         self,

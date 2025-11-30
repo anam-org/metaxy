@@ -203,38 +203,44 @@ class TestFeatureTrackingVersion:
 
     def test_tracking_version_in_snapshot(self):
         """Test that tracking version is included in graph snapshot."""
-        test_graph = FeatureGraph()
+        from metaxy.config import MetaxyConfig
 
-        with test_graph.use():
+        # Set project before creating feature
+        config = MetaxyConfig(project="test_project")
+        MetaxyConfig.set(config)
 
-            class TestFeature(
-                SampleFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
-                    # Root feature
-                ),
-            ):
-                pass
+        try:
+            test_graph = FeatureGraph()
 
-            # Override project
-            TestFeature.project = "test_project"  # type: ignore[attr-defined]
+            with test_graph.use():
 
-            # Get snapshot
-            snapshot = test_graph.to_snapshot()
+                class TestFeature(
+                    SampleFeature,
+                    spec=SampleFeatureSpec(
+                        key=FeatureKey(["test", "feature"]),
+                        fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                        # Root feature
+                    ),
+                ):
+                    pass
 
-            # Verify tracking version is included
-            feature_data = snapshot["test/feature"]
-            assert "metaxy_full_definition_version" in feature_data
-            assert "project" in feature_data
-            assert feature_data["project"] == "test_project"
+                # Get snapshot
+                snapshot = test_graph.to_snapshot()
 
-            # Verify tracking version is computed correctly
-            expected_tracking_version = TestFeature.full_definition_version()
-            assert (
-                feature_data["metaxy_full_definition_version"]
-                == expected_tracking_version
-            )
+                # Verify tracking version is included
+                feature_definition = snapshot["test/feature"]
+                assert hasattr(feature_definition, "feature_definition_version")
+                assert hasattr(feature_definition, "project_name")
+                assert feature_definition.project_name == "test_project"
+
+                # Verify tracking version is computed correctly
+                expected_tracking_version = TestFeature.full_definition_version()
+                assert (
+                    feature_definition.feature_definition_version
+                    == expected_tracking_version
+                )
+        finally:
+            MetaxyConfig.reset()
 
 
 class TestMultiProjectIsolation:
@@ -242,10 +248,15 @@ class TestMultiProjectIsolation:
 
     def test_features_with_different_projects(self):
         """Test that features can have different projects in the same graph."""
+        from metaxy.config import MetaxyConfig
+
         test_graph = FeatureGraph()
 
         with test_graph.use():
-            # Create first feature
+            # Create first feature with project_a
+            config_a = MetaxyConfig(project="project_a")
+            MetaxyConfig.set(config_a)
+
             class FeatureA(
                 SampleFeature,
                 spec=SampleFeatureSpec(
@@ -255,10 +266,10 @@ class TestMultiProjectIsolation:
             ):
                 pass
 
-            # Override project for FeatureA
-            FeatureA.project = "project_a"  # type: ignore[attr-defined]
+            # Create second feature with project_b
+            config_b = MetaxyConfig(project="project_b")
+            MetaxyConfig.set(config_b)
 
-            # Create second feature
             class FeatureB(
                 SampleFeature,
                 spec=SampleFeatureSpec(
@@ -267,9 +278,6 @@ class TestMultiProjectIsolation:
                 ),
             ):
                 pass
-
-            # Override project for FeatureB
-            FeatureB.project = "project_b"  # type: ignore[attr-defined]
 
             # Verify they have different projects
             assert FeatureA.project != FeatureB.project  # type: ignore[attr-defined]
@@ -281,12 +289,19 @@ class TestMultiProjectIsolation:
 
             # Verify snapshot includes both with correct projects
             snapshot = test_graph.to_snapshot()
-            assert snapshot["feature/a"]["project"] == "project_a"
-            assert snapshot["feature/b"]["project"] == "project_b"
+            assert snapshot["feature/a"].project_name == "project_a"
+            assert snapshot["feature/b"].project_name == "project_b"
+
+        MetaxyConfig.reset()
 
     def test_migration_detection_across_projects(self):
         """Test that migrations are triggered when features move between projects."""
+        from metaxy.config import MetaxyConfig
+
         # Create first graph with feature in project_a
+        config_a = MetaxyConfig(project="project_a")
+        MetaxyConfig.set(config_a)
+
         graph1 = FeatureGraph()
 
         with graph1.use():
@@ -300,12 +315,13 @@ class TestMultiProjectIsolation:
             ):
                 pass
 
-            FeatureV1.project = "project_a"  # type: ignore[attr-defined]
-
         snapshot1 = graph1.to_snapshot()
-        tracking_v1 = snapshot1["test/feature"]["metaxy_full_definition_version"]
+        tracking_v1 = snapshot1["test/feature"].feature_definition_version
 
         # Create second graph with same feature in project_b
+        config_b = MetaxyConfig(project="project_b")
+        MetaxyConfig.set(config_b)
+
         graph2 = FeatureGraph()
 
         with graph2.use():
@@ -321,19 +337,19 @@ class TestMultiProjectIsolation:
             ):
                 pass
 
-            FeatureV2.project = "project_b"  # type: ignore[attr-defined]  # Different project
-
         snapshot2 = graph2.to_snapshot()
-        tracking_v2 = snapshot2["test/feature"]["metaxy_full_definition_version"]
+        tracking_v2 = snapshot2["test/feature"].feature_definition_version
 
         # Verify tracking versions are different (would trigger migration)
         assert tracking_v1 != tracking_v2
 
         # Verify feature versions are the same (no computational change)
         assert (
-            snapshot1["test/feature"]["metaxy_feature_version"]
-            == snapshot2["test/feature"]["metaxy_feature_version"]
+            snapshot1["test/feature"].feature_version
+            == snapshot2["test/feature"].feature_version
         )
+
+        MetaxyConfig.reset()
 
 
 class TestSystemTableRecording:
@@ -341,49 +357,56 @@ class TestSystemTableRecording:
 
     def test_record_snapshot_with_tracking_version(self):
         """Test that push_graph_snapshot includes tracking version."""
-        test_graph = FeatureGraph()
+        from metaxy.config import MetaxyConfig
 
-        with test_graph.use():
+        # Set project before creating feature
+        config = MetaxyConfig(project="test_project")
+        MetaxyConfig.set(config)
 
-            class TestFeature(
-                SampleFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
-                    # Root feature
-                ),
-            ):
-                pass
+        try:
+            test_graph = FeatureGraph()
 
-            TestFeature.project = "test_project"  # type: ignore[attr-defined]
+            with test_graph.use():
 
-            # Create a store and record snapshot (while the test graph is still active)
-            with InMemoryMetadataStore() as store:
-                storage = SystemTableStorage(store)
-                result = storage.push_graph_snapshot()
+                class TestFeature(
+                    SampleFeature,
+                    spec=SampleFeatureSpec(
+                        key=FeatureKey(["test", "feature"]),
+                        fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                        # Root feature
+                    ),
+                ):
+                    pass
 
-                assert not result.already_pushed  # First time recording
-                snapshot_version = result.snapshot_version
+                # Create a store and record snapshot (while the test graph is still active)
+                with InMemoryMetadataStore() as store:
+                    storage = SystemTableStorage(store)
+                    result = storage.push_graph_snapshot()
 
-                # Read the recorded features
-                features_df = storage.read_features(
-                    current=False, snapshot_version=snapshot_version
-                )
+                    assert not result.already_pushed  # First time recording
+                    snapshot_version = result.snapshot_version
 
-                # Verify tracking version is recorded
-                assert "metaxy_full_definition_version" in features_df.columns
+                    # Read the recorded features
+                    features_df = storage.read_features(
+                        current=False, snapshot_version=snapshot_version
+                    )
 
-                # Verify the recorded tracking version matches the computed one
-                rows = features_df.filter(
-                    features_df["feature_key"] == "test/feature"
-                ).to_dicts()
-                assert len(rows) == 1, f"Expected 1 row, got {len(rows)}: {rows}"
-                row = rows[0]
-                assert (
-                    row["metaxy_full_definition_version"]
-                    == TestFeature.full_definition_version()
-                )
-                assert row["project"] == "test_project"
+                    # Verify tracking version is recorded
+                    assert "metaxy_full_definition_version" in features_df.columns
+
+                    # Verify the recorded tracking version matches the computed one
+                    rows = features_df.filter(
+                        features_df["feature_key"] == "test/feature"
+                    ).to_dicts()
+                    assert len(rows) == 1, f"Expected 1 row, got {len(rows)}: {rows}"
+                    row = rows[0]
+                    assert (
+                        row["metaxy_full_definition_version"]
+                        == TestFeature.full_definition_version()
+                    )
+                    assert row["project"] == "test_project"
+        finally:
+            MetaxyConfig.reset()
 
 
 class TestBackwardCompatibility:

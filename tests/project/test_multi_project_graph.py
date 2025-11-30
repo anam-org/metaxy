@@ -227,17 +227,19 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
     snapshot_data = original_graph.to_snapshot()
 
     # Verify that snapshot contains project information for all features
-    for feature_key_str, feature_data in snapshot_data.items():
-        assert "project" in feature_data
-        assert "metaxy_full_definition_version" in feature_data
+    for feature_key_str, feature_definition in snapshot_data.items():
+        assert hasattr(feature_definition, "project_name")
+        assert hasattr(feature_definition, "feature_definition_version")
         # Project should match what we expect
         if "feature_a" in feature_key_str:
-            assert feature_data["project"] == "restore_a"
+            assert feature_definition.project_name == "restore_a"
         elif "feature_b" in feature_key_str:
-            assert feature_data["project"] == "restore_b"
+            assert feature_definition.project_name == "restore_b"
 
     # Extract projects from snapshot
-    snapshot_projects = {key: data["project"] for key, data in snapshot_data.items()}
+    snapshot_projects = {
+        key: definition.project_name for key, definition in snapshot_data.items()
+    }
 
     # Projects should be preserved in snapshot
     assert original_projects == snapshot_projects

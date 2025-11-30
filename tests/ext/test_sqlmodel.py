@@ -538,17 +538,17 @@ def test_graph_snapshot_inclusion(snapshot: SnapshotAssertion) -> None:
     feature_key_str = "snapshot/test"
     assert feature_key_str in snapshot_data
 
-    # Check snapshot structure
-    feature_snapshot = snapshot_data[feature_key_str]
-    assert "feature_spec" in feature_snapshot
-    assert "metaxy_feature_version" in feature_snapshot
-    assert "feature_class_path" in feature_snapshot
+    # Check snapshot structure - feature_snapshot is now a FeatureDefinition
+    feature_definition = snapshot_data[feature_key_str]
+    assert hasattr(feature_definition, "spec")
+    assert hasattr(feature_definition, "feature_version")
+    assert hasattr(feature_definition, "feature_class_path")
 
     # Check class path
-    assert "SnapshotFeature" in feature_snapshot["feature_class_path"]
+    assert "SnapshotFeature" in feature_definition.feature_class_path
 
     # Snapshot version
-    assert feature_snapshot["metaxy_feature_version"] == snapshot
+    assert feature_definition.feature_version == snapshot
 
 
 def test_downstream_dependency_tracking() -> None:
@@ -614,38 +614,42 @@ def test_downstream_dependency_tracking() -> None:
 # Error Handling Tests
 
 
-def test_duplicate_key_raises() -> None:
-    """Test that registering features with duplicate keys raises an error.
+def test_duplicate_key_warns() -> None:
+    """Test that registering features with duplicate keys emits a warning.
 
-    Verifies that FeatureGraph prevents duplicate key registration.
+    Verifies that FeatureGraph warns about duplicate key registration.
     """
+    import warnings
 
     class Feature1(
         SQLModelFeature,
-        table=True,
+        table=False,  # Don't create table to avoid SQLAlchemy duplicate table error
         inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
-            key=FeatureKey(["duplicate"]),
+            key=FeatureKey(["duplicate_warn"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         uid: str = Field(primary_key=True)
 
-    # Try to create another with same key
-    with pytest.raises(
-        ValueError, match="Feature with key duplicate already registered"
-    ):
+    # Try to create another with same key - should warn
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
 
         class Feature2(
             SQLModelFeature,
-            table=True,
+            table=False,  # Don't create table
             inject_primary_key=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
-                key=FeatureKey(["duplicate"]),  # Same key!
+                key=FeatureKey(["duplicate_warn"]),  # Same key!
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             uid: str = Field(primary_key=True)
+
+        # Check warning was emitted
+        assert len(w) >= 1
+        assert any("already registered" in str(warning.message) for warning in w)
 
 
 def test_inheritance_chain() -> None:
@@ -1274,18 +1278,17 @@ def test_sqlmodel_id_columns_in_snapshot(snapshot: SnapshotAssertion) -> None:
     feature_key_str = "snapshot/ids"
     assert feature_key_str in snapshot_data
 
-    feature_snapshot = snapshot_data[feature_key_str]
+    feature_definition = snapshot_data[feature_key_str]
 
     # Check that id_columns are included in the spec
-    assert "feature_spec" in feature_snapshot
-    spec_data = feature_snapshot["feature_spec"]
-    assert "id_columns" in spec_data
-    assert spec_data["id_columns"] == ["customer_id", "order_id"]
+    assert "customer_id" in feature_definition.spec.id_columns
+    assert "order_id" in feature_definition.spec.id_columns
+    assert list(feature_definition.spec.id_columns) == ["customer_id", "order_id"]
 
     # Snapshot the relevant parts
     assert {
-        "id_columns": spec_data["id_columns"],
-        "metaxy_feature_version": feature_snapshot["metaxy_feature_version"],
+        "id_columns": list(feature_definition.spec.id_columns),
+        "metaxy_feature_version": feature_definition.feature_version,
     } == snapshot
 
 

@@ -88,14 +88,10 @@ class FeatureDefinition(FrozenBaseModel):
             print(definition.key)  # FeatureKey(['my', 'feature'])
             ```
         """
-        from metaxy.config import MetaxyConfig
-
-        config = MetaxyConfig.get()
-
         return cls(
             spec=feature_cls.spec(),
             feature_schema=feature_cls.model_json_schema(),
-            project_name=config.project,
+            project_name=feature_cls.project,
             feature_version=feature_cls.feature_version(),
             feature_code_version=feature_cls.spec().code_version,
             feature_definition_version=feature_cls.full_definition_version(),
@@ -178,3 +174,42 @@ class FeatureDefinition(FrozenBaseModel):
             Tuple of column names that uniquely identify a sample.
         """
         return self.spec.id_columns
+
+    @property
+    def columns(self) -> list[str]:
+        """Get the list of column names from the Pydantic schema.
+
+        Returns all field names defined on the feature, including both
+        user-defined fields and metaxy metadata fields.
+
+        Returns:
+            List of column/field names.
+
+        Example:
+            ```python
+            definition.columns
+            # ['sample_id', 'value', 'metaxy_provenance', 'metaxy_feature_version', ...]
+            ```
+        """
+        properties = self.feature_schema.get("properties", {})
+        return list(properties.keys())
+
+    def to_storage_dict(self) -> dict[str, Any]:
+        """Serialize to a dictionary format for storage in MetadataStore.
+
+        This format is used for storing feature definitions in the database
+        and can be reconstructed via `from_stored_metadata()`. The keys match
+        the column names used in the feature_versions system table.
+
+        Returns:
+            Dictionary containing all feature metadata in storage format.
+        """
+        return {
+            "feature_spec": self.spec.model_dump(mode="json"),
+            "feature_schema": self.feature_schema,
+            "metaxy_feature_version": self.feature_version,
+            "metaxy_feature_spec_version": self.spec.feature_spec_version,
+            "metaxy_full_definition_version": self.feature_definition_version,
+            "feature_class_path": self.feature_class_path,
+            "project": self.project_name,
+        }

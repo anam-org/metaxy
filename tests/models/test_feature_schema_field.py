@@ -165,16 +165,17 @@ def test_feature_schema_included_in_snapshot():
 
         # Verify snapshot structure (using correct key format with slashes)
         assert "test/feature" in snapshot
-        feature_data = snapshot["test/feature"]
+        feature_definition = snapshot["test/feature"]
 
+        # feature_definition is now a FeatureDefinition object
         # Check that feature_schema is included
-        assert "feature_schema" in feature_data
+        assert hasattr(feature_definition, "feature_schema")
 
-        # Verify it's a dict (not a string yet)
-        assert isinstance(feature_data["feature_schema"], dict)
+        # Verify it's a dict
+        assert isinstance(feature_definition.feature_schema, dict)
 
         # Check schema content
-        schema = feature_data["feature_schema"]
+        schema = feature_definition.feature_schema
         assert "properties" in schema
         assert "test_field" in schema["properties"]
         assert schema["properties"]["test_field"]["description"] == "Test field"

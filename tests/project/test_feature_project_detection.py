@@ -292,16 +292,14 @@ def test_feature_project_persists_across_graph_operations(
         # Verify snapshot contains project info
         feature_key_str = "snapshot/test/feature"
         assert feature_key_str in snapshot_data
-        assert snapshot_data[feature_key_str]["project"] == "persist_project"
+        assert snapshot_data[feature_key_str].project_name == "persist_project"
 
         # Verify that full_definition_version is in snapshot
-        assert "metaxy_full_definition_version" in snapshot_data[feature_key_str]
+        assert hasattr(snapshot_data[feature_key_str], "feature_definition_version")
 
         # Store snapshot data for verification
-        snapshot_project = snapshot_data[feature_key_str]["project"]
-        snapshot_tracking = snapshot_data[feature_key_str][
-            "metaxy_full_definition_version"
-        ]
+        snapshot_project = snapshot_data[feature_key_str].project_name
+        snapshot_tracking = snapshot_data[feature_key_str].feature_definition_version
 
         # For a proper test, we would need the feature to be importable,
         # but we can at least verify the snapshot data is correct
