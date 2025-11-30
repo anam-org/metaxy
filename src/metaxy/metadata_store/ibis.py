@@ -6,16 +6,24 @@ Supports any SQL database that Ibis supports:
 - And 20+ other backends
 """
 
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
+import ibis
+import ibis.common.exceptions as ibis_exceptions
 import narwhals as nw
-from narwhals.typing import Frame
+from narwhals.typing import Frame, IntoFrame
 from pydantic import Field
 from typing_extensions import Self
 
+from metaxy._utils import collect_to_polars
+from metaxy.metadata_store._sql_utils import (
+    predicate_from_select_sql,
+    validate_identifier,
+)
 from metaxy.metadata_store.base import (
     MetadataStore,
     MetadataStoreConfig,
@@ -23,17 +31,15 @@ from metaxy.metadata_store.base import (
 )
 from metaxy.metadata_store.exceptions import (
     HashAlgorithmNotSupportedError,
+    StoreNotOpenError,
     TableNotFoundError,
 )
 from metaxy.metadata_store.types import AccessMode
+from metaxy.metadata_store.utils import sanitize_uri
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.ibis import IbisVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
-
-if TYPE_CHECKING:
-    import ibis
-    import ibis.expr.types
 
 
 class IbisMetadataStoreConfig(MetadataStoreConfig):
@@ -159,8 +165,6 @@ class IbisMetadataStore(MetadataStore, ABC):
                 )
             ```
         """
-        import ibis
-
         self.connection_string = connection_string
         self.backend = backend
         self.connection_params = connection_params or {}
@@ -279,8 +283,6 @@ class IbisMetadataStore(MetadataStore, ABC):
         Raises:
             StoreNotOpenError: If store is not open
         """
-        from metaxy.metadata_store.exceptions import StoreNotOpenError
-
         if self._conn is None:
             raise StoreNotOpenError(
                 "Ibis connection is not open. Store must be used as a context manager."
@@ -299,6 +301,92 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         return self.ibis_conn
 
+    def _execute_raw_sql(self, sql: str) -> Any:
+        """Run raw SQL on the underlying backend."""
+        backend = self.conn
+        return cast(Any, backend).raw_sql(sql)
+
+    @staticmethod
+    def _rowcount_or_default(result: Any, default: int) -> int:
+        try:
+            rowcount = int(result.rowcount)
+            return rowcount if rowcount >= 0 else default
+        except Exception:
+            return default
+
+    def _execute_count_sql(self, sql: str) -> int:
+        """Execute a COUNT(*) query and return the scalar result."""
+        result = self._execute_raw_sql(sql)
+
+        # DB-API cursor style
+        try:
+            row = result.fetchone()
+            if row is None:
+                return 0
+            if isinstance(row, (list, tuple)):
+                return int(row[0])
+            return int(row)
+        except Exception:
+            pass
+
+        # Pandas DataFrame result (common ibis default)
+        try:
+            import pandas as pd
+
+            if isinstance(result, pd.DataFrame):
+                return int(result.iloc[0, 0])
+        except Exception:
+            pass
+
+        # PyArrow Table result
+        try:
+            import pyarrow as pa
+
+            if isinstance(result, pa.Table):
+                return int(result.column(0)[0].as_py())
+        except Exception:
+            pass
+
+        return 0
+
+    def _supports_returning(self) -> bool:
+        """Check whether backend likely supports SQL RETURNING for DML."""
+        try:
+            backend_name = self.conn.name
+        except Exception:
+            backend_name = ""
+        return (backend_name or "").lower() in {"duckdb", "postgres", "postgresql"}
+
+    def _needs_precount_delete(self) -> bool:
+        """Backends that don't reliably report rowcount for DELETE."""
+        try:
+            backend_name = self.conn.name
+        except Exception:
+            backend_name = ""
+        return (backend_name or "").lower() in {"duckdb", "clickhouse"}
+
+    def _get_sql_dialect(self, backend_name: str) -> str:
+        """Map Ibis backend name to SQL dialect string for value formatting.
+
+        Args:
+            backend_name: Ibis backend name (e.g., 'duckdb', 'postgres', 'clickhouse')
+
+        Returns:
+            SQL dialect string ('standard', 'clickhouse', 'delta', 'lancedb')
+        """
+        backend_lower = (backend_name or "").lower()
+        if "clickhouse" in backend_lower:
+            return "clickhouse"
+        # Most SQL databases use standard SQL literals
+        return "standard"
+
+    def _build_in_predicate(self, columns: list[str], subquery_sql: str) -> str:
+        """Build tuple/subquery IN predicate without touching aliases."""
+        if len(columns) == 1:
+            return f"{columns[0]} IN ({subquery_sql})"
+        joined = ", ".join(columns)
+        return f"({joined}) IN ({subquery_sql})"
+
     @contextmanager
     def open(self, mode: AccessMode = "read") -> Iterator[Self]:
         """Open connection to database via Ibis.
@@ -313,26 +401,27 @@ class IbisMetadataStore(MetadataStore, ABC):
         Yields:
             Self: The store instance with connection open
         """
-        import ibis
-
         # Increment context depth to support nested contexts
         self._context_depth += 1
 
         try:
             # Only perform actual open on first entry
             if self._context_depth == 1:
+                self._access_mode = mode
                 # Setup: Connect to database
                 if self.connection_string:
                     # Use connection string
                     self._conn = ibis.connect(self.connection_string)
                 else:
-                    # Use backend + params
-                    # Get backend-specific connect function
+                    # Use backend + params via ibis.connect with URL scheme
                     assert self.backend is not None, (
                         "backend must be set if connection_string is None"
                     )
-                    backend_module = getattr(ibis, self.backend)
-                    self._conn = backend_module.connect(**self.connection_params)
+                    resource = f"{self.backend}://"
+                    params = dict(self.connection_params)
+                    if "database" in params:
+                        resource = f"{resource}{params.pop('database')}"
+                    self._conn = ibis.connect(resource, **params)
 
                 # Mark store as open and validate
                 self._is_open = True
@@ -351,6 +440,7 @@ class IbisMetadataStore(MetadataStore, ABC):
                     # but setting to None releases resources
                     self._conn = None
                 self._is_open = False
+                self._access_mode = None
 
     @property
     def sqlalchemy_url(self) -> str:
@@ -407,22 +497,16 @@ class IbisMetadataStore(MetadataStore, ABC):
         if df.implementation == nw.Implementation.IBIS:
             df_to_insert = df.to_native()  # Ibis expression
         else:
-            from metaxy._utils import collect_to_polars
-
             df_to_insert = collect_to_polars(df)  # Polars DataFrame
 
         try:
             self.conn.insert(table_name, obj=df_to_insert)  # ty: ignore[unresolved-attribute]
         except Exception as e:
-            import ibis.common.exceptions
-
-            if not isinstance(e, ibis.common.exceptions.TableNotFound):
+            if not isinstance(e, ibis_exceptions.TableNotFound):
                 raise
             if self.auto_create_tables:
                 # Warn about auto-create (first time only)
                 if self._should_warn_auto_create_tables:
-                    import warnings
-
                     warnings.warn(
                         f"AUTO_CREATE_TABLES is enabled - automatically creating table '{table_name}'. "
                         "Do not use in production! "
@@ -452,6 +536,162 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Check if table exists
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
+
+    # Temp table infrastructure for semi-join optimization
+
+    def _supports_temp_tables(self) -> bool:
+        """Ibis SQL backends support temporary tables."""
+        return True
+
+    def _create_temp_table(
+        self,
+        temp_table_name: str,
+        frame: IntoFrame,
+        columns: list[str],
+    ) -> None:
+        """Create a temporary table with filter data for semi-join.
+
+        Args:
+            temp_table_name: Name for the temporary table
+            frame: Frame containing filter data
+            columns: Columns to include in temp table
+        """
+        # Convert to native format for Ibis
+        frame_nw = nw.from_native(frame)
+        if not isinstance(frame_nw, (nw.DataFrame, nw.LazyFrame)):
+            raise TypeError("Frame must be a DataFrame or LazyFrame, not a Series")
+
+        # Collect schema to avoid LazyFrame column access warnings
+        _ = frame_nw.collect_schema()
+        selected = frame_nw.select(columns).unique()
+
+        if selected.implementation == nw.Implementation.IBIS:
+            df_to_insert = selected.to_native()
+        else:
+            df_to_insert = collect_to_polars(selected)
+
+        # Create temp table with the filtered columns
+        # Note: Ibis create_table with temp=True creates session-scoped temp tables
+        self.conn.create_table(temp_table_name, obj=df_to_insert, temp=True)
+
+    def _drop_temp_table(self, temp_table_name: str) -> None:
+        """Drop a temporary table created by _create_temp_table.
+
+        Args:
+            temp_table_name: Name of temp table to drop
+        """
+        try:
+            if temp_table_name in self.conn.list_tables():
+                self.conn.drop_table(temp_table_name)
+        except Exception:
+            # Temp tables are often automatically cleaned up on session end
+            # Don't fail if drop fails
+            pass
+
+    def _delete_metadata_with_temp_table(
+        self,
+        feature_key: FeatureKey,
+        temp_table_name: str,
+        join_columns: list[str],
+    ) -> int:
+        """Backend-specific hard delete using temp table semi-join.
+
+        Uses SQL IN subquery for efficient deletion without client-side materialization.
+
+        Args:
+            feature_key: Feature to delete from
+            temp_table_name: Name of temporary table containing filter values
+            join_columns: Columns to use for semi-join
+
+        Returns:
+            Number of rows deleted
+        """
+        table_name = self.get_table_name(feature_key)
+        validate_identifier(table_name, context="table name")
+
+        for column in join_columns:
+            validate_identifier(column, context="column name")
+
+        if table_name not in self.conn.list_tables():
+            return 0
+
+        temp_select = self.conn.table(temp_table_name).select(join_columns)
+        predicate = self._build_in_predicate(join_columns, ibis.to_sql(temp_select))
+
+        rows_before = None
+        if self._needs_precount_delete():
+            count_sql = f"SELECT COUNT(*) FROM {table_name} WHERE {predicate}"
+            rows_before = self._execute_count_sql(count_sql)
+            if rows_before == 0:
+                return 0
+
+        delete_sql = f"DELETE FROM {table_name} WHERE {predicate}"
+        result = self._execute_raw_sql(delete_sql)
+        rows_deleted = self._rowcount_or_default(result, default=-1)
+
+        if rows_deleted >= 0:
+            return int(rows_deleted)
+
+        return int(rows_before or 0)
+
+        return int(rows_deleted)
+
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+    ) -> int:
+        """Backend-specific hard delete implementation for Ibis/SQL stores.
+
+        Uses SQL DELETE to physically remove records matching the filter.
+
+        Args:
+            feature_key: Feature to delete from
+            filter_expr: Narwhals expression to filter records
+
+        Returns:
+            Number of rows deleted
+        """
+        table_name = self.get_table_name(feature_key)
+        validate_identifier(table_name, context="table name")
+
+        # Check if table exists
+        if table_name not in self.conn.list_tables():
+            return 0
+
+        table = self.conn.table(table_name)
+        nw_table = nw.from_native(table, eager_only=False)
+
+        # Build predicate SQL directly from the filter expression without materializing rows
+        filtered_native = nw_table.filter(filter_expr).to_native()  # type: ignore[arg-type]
+        predicate = predicate_from_select_sql(ibis.to_sql(filtered_native))
+
+        rows_before = None
+        if self._needs_precount_delete():
+            count_sql = f"SELECT COUNT(*) FROM {table_name} WHERE {predicate}"
+            rows_before = self._execute_count_sql(count_sql)
+            if rows_before == 0:
+                return 0
+
+        delete_sql = f"DELETE FROM {table_name} WHERE {predicate}"
+        result = self._execute_raw_sql(delete_sql)
+        rows_deleted = self._rowcount_or_default(result, default=-1)
+
+        if rows_deleted >= 0:
+            return int(rows_deleted)
+
+        return int(rows_before or 0)
+
+    def _mutate_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+        updates: dict[str, Any],
+    ) -> int:
+        """Disable in-place UPDATE for SQL backends; use append-only fallback."""
+        raise NotImplementedError(
+            "Mutations are append-only for ibis SQL backends; in-place UPDATE disabled."
+        )
 
     def read_metadata_in_store(
         self,
@@ -490,8 +730,9 @@ class IbisMetadataStore(MetadataStore, ABC):
         table = self.transform_after_read(table, feature_key)
 
         # Wrap Ibis table with Narwhals (stays lazy in SQL)
-        native_frame = nw.from_native(table, eager_only=False)
-        nw_lazy: nw.LazyFrame[Any] = cast(nw.LazyFrame[Any], cast(object, native_frame))
+        nw_lazy = cast(
+            nw.LazyFrame[Any], cast(object, nw.from_native(table, eager_only=False))
+        )
 
         # Apply feature_version filter (stays in SQL via Narwhals)
         if feature_version is not None:
@@ -567,8 +808,6 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def display(self) -> str:
         """Display string for this store."""
-        from metaxy.metadata_store.utils import sanitize_uri
-
         backend_info = self.connection_string or f"{self.backend}"
         # Sanitize connection strings that may contain credentials
         sanitized_info = sanitize_uri(backend_info)

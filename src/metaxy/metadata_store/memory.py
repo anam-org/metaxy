@@ -178,6 +178,56 @@ class InMemoryMetadataStore(MetadataStore):
         if storage_key in self._storage:
             del self._storage[storage_key]
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+    ) -> int:
+        """Backend-specific hard delete implementation for in-memory store.
+
+        Uses Polars filtering to physically remove rows matching the filter.
+
+        Args:
+            feature_key: Feature to delete from
+            filter_expr: Narwhals expression to filter records
+        Returns:
+            Number of rows deleted
+        """
+        # Check if feature exists
+        storage_key = self._get_storage_key(feature_key)
+        if storage_key not in self._storage:
+            return 0
+
+        df = self._storage[storage_key]
+
+        # Convert Narwhals expression to Polars by wrapping df
+        nw_df = nw.from_native(df, eager_only=True)
+        filtered_nw = nw_df.filter(filter_expr)
+
+        # Count rows to delete
+        rows_to_delete = len(filtered_nw)
+
+        if rows_to_delete > 0:
+            # Keep rows that don't match the filter (negate the filter)
+            # Use Narwhals to apply negated filter
+            kept_rows = nw_df.filter(~filter_expr)
+            # Convert back to Polars and store
+            self._storage[storage_key] = kept_rows.to_native()
+
+        return rows_to_delete
+
+    def _mutate_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+        updates: dict[str, Any],
+    ) -> int:
+        """Defer to append-only fallback for mutation semantics."""
+
+        raise NotImplementedError(
+            "In-memory mutations use append-only fallback semantics (soft-delete + append)."
+        )
+
     def read_metadata_in_store(
         self,
         feature: CoercibleToFeatureKey,
@@ -260,6 +310,7 @@ class InMemoryMetadataStore(MetadataStore):
         try:
             # Only perform actual open on first entry
             if self._context_depth == 1:
+                self._access_mode = mode
                 # No actual connection needed for in-memory
                 # Mark store as open and validate
                 self._is_open = True
@@ -274,6 +325,7 @@ class InMemoryMetadataStore(MetadataStore):
             if self._context_depth == 0:
                 # Nothing to clean up
                 self._is_open = False
+                self._access_mode = None
 
     def __repr__(self) -> str:
         """String representation."""

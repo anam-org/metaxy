@@ -45,7 +45,7 @@ class ClickHouseVersioningEngine(IbisVersioningEngine):
 
         # Define ClickHouse arrayStringConcat function
         @ibis.udf.scalar.builtin
-        def arrayStringConcat(arr: dt.Array[dt.String], sep: str) -> str:  # ty: ignore[invalid-return-type]
+        def arrayStringConcat(arr: dt.Array[dt.String], sep: str) -> str:
             """ClickHouse arrayStringConcat() function."""
             ...
 

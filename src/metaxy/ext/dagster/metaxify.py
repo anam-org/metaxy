@@ -387,14 +387,15 @@ def _metaxify_spec(
             final_key = resolved_key
 
     # Build deps from feature dependencies
-    deps_to_add: set[dg.AssetDep] = set()
+    # Use dict mapping AssetKey to AssetDep (matching AssetSpec.deps type)
+    deps_to_add: dict[dg.AssetKey, dg.AssetDep] = {}
     for dep in feature_spec.deps:
         upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
         upstream_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
         # Apply key_prefix to upstream deps as well
         if key_prefix is not None:
             upstream_key = dg.AssetKey([*key_prefix.path, *upstream_key.path])
-        deps_to_add.add(dg.AssetDep(asset=upstream_key))
+        deps_to_add[upstream_key] = dg.AssetDep(asset=upstream_key)
 
     # Build kinds
     kinds_to_add: set[str] = set()
@@ -516,9 +517,20 @@ def _metaxify_spec(
     if column_lineage is not None:
         metadata_to_add[DAGSTER_COLUMN_LINEAGE_METADATA_KEY] = column_lineage
 
+    # Convert spec.deps to dict if it's a sequence/set (for backward compatibility)
+    # Dagster's AssetSpec.deps can be either Iterable[AssetDep] or Mapping[AssetKey, AssetDep]
+    from typing import cast as typing_cast
+
+    existing_deps: dict[dg.AssetKey, dg.AssetDep]
+    if isinstance(spec.deps, dict):
+        existing_deps = typing_cast(dict[dg.AssetKey, dg.AssetDep], spec.deps)
+    else:
+        # Convert iterable of AssetDep to dict mapping AssetKey -> AssetDep
+        existing_deps = {dep.asset_key: dep for dep in spec.deps}
+
     replace_attrs: dict[str, Any] = {
         "key": final_key,
-        "deps": {*spec.deps, *deps_to_add},
+        "deps": {**existing_deps, **deps_to_add},
         "metadata": metadata_to_add,
         "kinds": {*spec.kinds, *kinds_to_add},
         "tags": {**spec.tags, **tags_to_add},

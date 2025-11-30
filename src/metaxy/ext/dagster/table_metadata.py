@@ -87,7 +87,10 @@ def _get_type_string(annotation: Any) -> str:
                 return " | ".join(clean_args)
             # Handle other generic types
             clean_args = [_get_type_string(arg) for arg in args]
-            origin_name = getattr(origin, "__name__", str(origin))
+            try:
+                origin_name = origin.__name__
+            except AttributeError:
+                origin_name = str(origin)
             return f"{origin_name}[{', '.join(clean_args)}]"
         return str(annotation)
 
@@ -96,11 +99,10 @@ def _get_type_string(annotation: Any) -> str:
         return pydantic_type_names[annotation]
 
     # For simple types, use __name__ if available
-    if hasattr(annotation, "__name__"):
+    try:
         return annotation.__name__
-
-    # Fallback to str()
-    return str(annotation)
+    except AttributeError:
+        return str(annotation)
 
 
 def build_column_lineage(

@@ -186,7 +186,10 @@ def _validate_deps(value: Any) -> list[FeatureDep]:
     from metaxy.models.feature import BaseFeature
 
     if not isinstance(value, list):
-        value = list(value) if hasattr(value, "__iter__") else [value]
+        try:
+            value = list(value)
+        except TypeError:
+            value = [value]
 
     result = []
     for item in value:

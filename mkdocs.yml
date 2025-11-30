@@ -192,6 +192,7 @@ nav:
       - Feature Definitions: guide/learn/feature-definitions.md
       - Versioning: guide/learn/data-versioning.md
       - Feature Discovery: guide/learn/feature-discovery.md
+      - Data Cleanup: guide/learn/cleanup.md
       - Syntactic Sugar: guide/learn/syntactic-sugar.md
       - Lineage Relationship: guide/learn/relationship.md
       - Optional Dependencies: guide/learn/optional-dependencies.md

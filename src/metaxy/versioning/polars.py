@@ -1,7 +1,7 @@
 """Polars implementation of VersioningEngine."""
 
 from collections.abc import Callable
-from typing import cast
+from typing import Any, cast
 
 import narwhals as nw
 import polars as pl
@@ -154,38 +154,49 @@ class PolarsVersioningEngine(VersioningEngine):
     def keep_latest_by_group(
         df: FrameT,
         group_columns: list[str],
-        timestamp_column: str,
+        order_by_columns: list[str],
     ) -> FrameT:
-        """Keep only the latest row per group based on a timestamp column.
+        """Keep only the latest row per group based on ordered columns.
 
         Args:
             df: Narwhals DataFrame/LazyFrame backed by Polars
             group_columns: Columns to group by (typically ID columns)
-            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+            order_by_columns: Columns to order by (highest value wins)
 
         Returns:
             Narwhals DataFrame/LazyFrame with only the latest row per group
 
         Raises:
-            ValueError: If timestamp_column doesn't exist in df
+            ValueError: If order_by_columns is empty or none exist in df
         """
         assert df.implementation == nw.Implementation.POLARS, (
             "Only Polars DataFrames are accepted"
         )
 
-        # Check if timestamp_column exists
-        # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
-        columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
-        if timestamp_column not in columns:
+        if not order_by_columns:
+            raise ValueError("order_by_columns must contain at least one column")
+
+        # Get column names without triggering LazyFrame performance warning
+        # Use cast to satisfy type checker - collect_schema exists on both DataFrame and LazyFrame
+        from typing import cast as typing_cast
+
+        df_any: Any = df
+        df_columns = typing_cast(Any, df_any).collect_schema().names()
+
+        # Keep only columns that exist to avoid runtime errors
+        present_order_cols = [col for col in order_by_columns if col in df_columns]
+        if not present_order_cols:
             raise ValueError(
-                f"Timestamp column '{timestamp_column}' not found in DataFrame. "
-                f"Available columns: {columns}"
+                f"None of the order_by_columns {order_by_columns} found in DataFrame. "
+                f"Available columns: {df_columns}"
             )
 
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
+        descending = [True] * len(present_order_cols)
+
         result = df_pl.group_by(group_columns).agg(
-            pl.col("*").sort_by(timestamp_column).last()
+            pl.col("*").sort_by(present_order_cols, descending=descending).first()
         )
 
         # Convert back to Narwhals

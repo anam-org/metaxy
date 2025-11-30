@@ -27,6 +27,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
+    METAXY_UPDATED_AT,
 )
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.types import HashAlgorithm
@@ -341,8 +342,10 @@ def feature_metadata_strategy(
     # Add created_at timestamp column
     from datetime import datetime, timezone
 
+    now_ts = datetime.now(timezone.utc)
     df = df.with_columns(
-        pl.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+        pl.lit(now_ts).alias(METAXY_CREATED_AT),
+        pl.lit(now_ts).alias(METAXY_UPDATED_AT),
     )
 
     # If id_columns_df was provided, replace the generated ID columns with provided ones

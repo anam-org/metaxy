@@ -249,9 +249,12 @@ def _get_features_metadata(
 
     for feature_key, feature_cls in graph.features_by_key.items():
         # Filter by project if requested
-        if filter_by_project and hasattr(feature_cls, "project"):
-            feature_project = getattr(feature_cls, "project")
-            if feature_project != project:
+        if filter_by_project:
+            try:
+                feature_project = feature_cls.project
+            except AttributeError:
+                feature_project = None
+            if feature_project is not None and feature_project != project:
                 continue
 
         table_name = store.get_table_name(feature_key)

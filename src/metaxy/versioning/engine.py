@@ -271,17 +271,22 @@ class VersioningEngine(ABC):
     def keep_latest_by_group(
         df: FrameT,
         group_columns: list[str],
-        timestamp_column: str,
+        order_by_columns: list[str],
     ) -> FrameT:
-        """Keep only the latest row per group based on a timestamp column.
+        """Keep only the latest row per group based on ordered columns.
 
         Args:
-            df: Input DataFrame.
-            group_columns: Columns defining the groups.
-            timestamp_column: Column containing timestamps for ordering.
+            df: Narwhals DataFrame/LazyFrame
+            group_columns: Columns to group by (typically ID columns)
+            order_by_columns: Columns to order by (highest value wins). The first column
+                is typically the primary timestamp; remaining columns are used as
+                deterministic tie-breakers.
 
         Returns:
-            DataFrame with only the latest row per group.
+            Narwhals DataFrame/LazyFrame with only the latest row per group
+
+        Raises:
+            ValueError: If no order_by_columns exist in df
         """
         raise NotImplementedError()
 
@@ -376,7 +381,7 @@ class VersioningEngine(ABC):
         df = self.build_struct_column(  # ty: ignore[invalid-assignment]
             df, renamed_data_version_by_field_col, hashed_field_cols
         )
-        df = self.build_struct_column(  # ty: ignore[invalid-assignment]
+        df = self.build_struct_column(
             df,  # ty: ignore[invalid-argument-type]
             renamed_prov_by_field_col,
             hashed_field_cols,
@@ -389,13 +394,13 @@ class VersioningEngine(ABC):
             for field_name in sorted(upstream_field_names)
         ]
         sample_concat = nw.concat_str(field_exprs, separator="|")
-        df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
+        df = df.with_columns(sample_concat.alias("__sample_concat"))
 
         df = self.hash_string_column(  # ty: ignore[invalid-assignment]
             df,
             "__sample_concat",
             renamed_data_version_col,
-            hash_algorithm,  # ty: ignore[invalid-argument-type]
+            hash_algorithm,
             truncate_length=hash_length,
         )
         df = df.with_columns(  # ty: ignore[invalid-argument-type]
@@ -403,9 +408,9 @@ class VersioningEngine(ABC):
         )
 
         # Drop temp columns
-        df = df.drop("__sample_concat", *hashed_field_cols.values())  # ty: ignore[invalid-argument-type]
+        df = df.drop("__sample_concat", *hashed_field_cols.values())
 
-        return df  # ty: ignore[invalid-return-type]
+        return df
 
     def get_renamed_data_version_by_field_col(self, feature_key: FeatureKey) -> str:
         """Get the renamed data_version_by_field column name for an upstream feature."""
@@ -498,7 +503,7 @@ class VersioningEngine(ABC):
                 concat_col,
                 hash_col_name,
                 hash_algo,
-                truncate_length=hash_length,  # ty: ignore[invalid-argument-type]
+                truncate_length=hash_length,
             )
 
         # Build provenance_by_field struct
@@ -534,7 +539,7 @@ class VersioningEngine(ABC):
                     columns_to_drop.append(renamed_data_version_col)
 
         if columns_to_drop:
-            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
+            df = df.drop(*columns_to_drop)
 
         # Add data_version columns (default to provenance values)
         from metaxy.models.constants import (
@@ -542,7 +547,7 @@ class VersioningEngine(ABC):
             METAXY_DATA_VERSION_BY_FIELD,
         )
 
-        df = df.with_columns(  # ty: ignore[invalid-argument-type]
+        df = df.with_columns(
             nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
             nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         )
@@ -573,7 +578,7 @@ class VersioningEngine(ABC):
 
         # Compute provenance columns (shared logic)
         df = self._compute_provenance_internal(
-            df,  # ty: ignore[invalid-argument-type]
+            df,
             hash_algo,
             drop_renamed_data_version_col=True,
         )
@@ -584,7 +589,7 @@ class VersioningEngine(ABC):
         columns_to_drop = [col for col in version_columns if col in current_columns]
 
         if columns_to_drop:
-            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
+            df = df.drop(*columns_to_drop)
 
         return df  # ty: ignore[invalid-return-type]
 

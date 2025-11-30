@@ -560,7 +560,7 @@ def list_migrations():
         # Use .ops (raw dicts) instead of .operations (instantiated) to avoid
         # importing operation classes that might not exist
         op_names = []
-        ops = getattr(migration, "ops", [])
+        ops = migration.ops or []
         for op_dict in ops:
             op_type = op_dict.get("type", "unknown")
             # Extract just the class name (last part after final dot)

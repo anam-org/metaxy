@@ -110,7 +110,10 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
 
             # Also guard against explicit sa_column_kwargs targeting system columns
             for attr_name, attr_value in namespace.items():
-                sa_column_kwargs = getattr(attr_value, "sa_column_kwargs", None)
+                try:
+                    sa_column_kwargs = attr_value.sa_column_kwargs
+                except AttributeError:
+                    sa_column_kwargs = None
                 if isinstance(sa_column_kwargs, dict):
                     column_name = sa_column_kwargs.get("name")
                     if column_name in ALL_SYSTEM_COLUMNS:
@@ -362,7 +365,7 @@ class BaseSQLModelFeature(
     metaxy_created_at: AwareDatetime | None = Field(
         default=None,
         description="Timestamp when the metadata row was created (UTC)",
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
         sa_column_kwargs={
             "name": METAXY_CREATED_AT,
         },
@@ -507,8 +510,11 @@ def filter_feature_sqlmodel_metadata(
 
         # Filter by project if requested
         if filter_by_project:
-            feature_project = getattr(feature_cls, "project", None)
-            if feature_project != project:
+            try:
+                feature_project = feature_cls.project
+            except AttributeError:
+                feature_project = None
+            if feature_project is not None and feature_project != project:
                 continue
 
         # Compute prefixed name using store's table_prefix

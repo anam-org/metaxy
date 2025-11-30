@@ -11,6 +11,7 @@ from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_PARTITION_METADATA_KEY,
 )
 from metaxy.ext.dagster.metaxify import metaxify
+from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 from metaxy.ext.dagster.utils import (
     build_feature_event_tags,
     build_metaxy_partition_filter,
@@ -90,8 +91,25 @@ def observable_metaxy_asset(
             set_description=set_description,
         )(spec)
 
-        def _observe(context: dg.AssetExecutionContext) -> dg.ObserveResult:
-            store: mx.MetadataStore = getattr(context.resources, store_resource_key)
+        def _observe(
+            context: dg.AssetExecutionContext,
+            store: mx.MetadataStore | MetaxyStoreFromConfigResource | None = None,
+        ) -> dg.ObserveResult:
+            target_store = store
+            if target_store is None:
+                try:
+                    target_store = getattr(context.resources, store_resource_key)
+                except AttributeError as exc:  # pragma: no cover - defensive
+                    raise AttributeError(
+                        f"Resource '{store_resource_key}' is not available on context.resources"
+                    ) from exc
+
+            if not isinstance(target_store, mx.MetadataStore):
+                raise TypeError(
+                    f"Resource '{store_resource_key}' is not a MetadataStore instance "
+                    f"(got {type(target_store).__name__})"
+                )
+            store = target_store
 
             # Check for metaxy/partition metadata to apply filtering
             metaxy_partition = enriched.metadata.get(

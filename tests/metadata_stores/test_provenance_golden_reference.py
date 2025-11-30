@@ -17,9 +17,10 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, TypeAlias
 
+import narwhals as nw
 import polars as pl
 import polars.testing as pl_testing
 import pytest
@@ -47,6 +48,7 @@ from metaxy.models.field import SpecialFieldDep
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FieldKey
 from metaxy.versioning.types import HashAlgorithm, Increment
+from tests.metadata_stores.conftest import AllStoresCases
 
 if TYPE_CHECKING:
     pass
@@ -1055,18 +1057,19 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
 
     try:
         with empty_store:
-            from datetime import datetime
+            from datetime import datetime, timezone
 
             import polars as pl
 
             from metaxy.models.constants import METAXY_CREATED_AT
 
             # Create duplicates with SAME timestamp for ALL samples
-            same_timestamp = datetime.now()
+            same_timestamp = datetime.now(timezone.utc)
 
             # Write first version
             version1 = parent_df.with_columns(
-                pl.lit(same_timestamp).alias(METAXY_CREATED_AT)
+                pl.lit(same_timestamp).alias(METAXY_CREATED_AT),
+                pl.lit(same_timestamp).alias("metaxy_updated_at"),
             )
             empty_store.write_metadata(ParentFeature, version1)
 
@@ -1074,6 +1077,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
             # We modify the provenance columns to simulate different data
             version2 = parent_df.with_columns(
                 pl.lit(same_timestamp).alias(METAXY_CREATED_AT),
+                pl.lit(same_timestamp).alias("metaxy_updated_at"),
                 # Modify provenance to make it different (simulate different underlying data)
                 (pl.col("metaxy_provenance").cast(pl.Utf8) + "_DUP").alias(
                     "metaxy_provenance"
@@ -1283,7 +1287,7 @@ def test_keep_latest_by_group(keep_latest_test_data):
     result_nw = engine_class.keep_latest_by_group(
         nw_df,
         group_columns=["sample_uid"],
-        timestamp_column="timestamp",
+        order_by_columns=["timestamp"],
     )
 
     # Convert result to Polars for assertion
@@ -1354,7 +1358,7 @@ def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
     result_nw = engine_class.keep_latest_by_group(
         nw_df,
         group_columns=["sensor_id", "hour", "reading_id"],
-        timestamp_column="timestamp",
+        order_by_columns=["timestamp"],
     )
 
     # Convert result to Polars for assertion
@@ -1401,7 +1405,7 @@ def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
     result_nw = engine_class.keep_latest_by_group(
         nw_df,
         group_columns=["video_id"],
-        timestamp_column="timestamp",
+        order_by_columns=["timestamp"],
     )
 
     # Convert result to Polars for assertion
@@ -1421,7 +1425,7 @@ def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
     assert result_sorted["fps"].to_list() == [60, 60], "Expected latest fps values"
 
 
-# ============= REGRESSION TESTS =============
+# ============= REGRESSION TESTS ======
 
 
 def test_expansion_changed_rows_not_duplicated(
@@ -1846,3 +1850,333 @@ def test_provenance_snapshot(
 
         # Assert against snapshot
         assert snapshot_data == snapshot
+
+
+class TestSoftDeleteFiltering:
+    """Smoke coverage to ensure soft-deletes are honored across stores."""
+
+    @parametrize_with_cases("store", cases=AllStoresCases)
+    def test_soft_deleted_rows_filtered_and_included_on_request(
+        self,
+        store: MetadataStore,
+        feature_classes: dict[str, type[BaseFeature]],
+    ) -> None:
+        Root = feature_classes["Root"]
+
+        active = pl.DataFrame(
+            {
+                "sample_uid": ["active"],
+                "value": [1],
+                "metaxy_provenance_by_field": [{"value": "v"}],
+            }
+        )
+        deleted = pl.DataFrame(
+            {
+                "sample_uid": ["deleted"],
+                "value": [2],
+                "metaxy_provenance_by_field": [{"value": "v2"}],
+            }
+        )
+
+        with store.open("write"):
+            store.write_metadata(Root, nw.from_native(active))
+            deleted_df = store._add_system_columns(nw.from_native(deleted), Root)
+            deleted_df = deleted_df.with_columns(
+                nw.lit(datetime.now(timezone.utc)).alias("metaxy_deleted_at")
+            )
+            store.write_metadata_to_store(Root.spec().key, deleted_df)
+
+        with store:
+            active_only = store.read_metadata(Root).collect()
+            assert active_only["sample_uid"].to_list() == ["active"]
+
+            with_deleted = store.read_metadata(Root, include_deleted=True).collect()
+            assert set(with_deleted["sample_uid"].to_list()) == {"active", "deleted"}
+
+
+def populate_store_with_test_data(
+    store: MetadataStore,
+    feature_classes: dict[str, type[BaseFeature]],
+) -> None:
+    """Populate store with test data for deletion scenarios."""
+
+    Root = feature_classes["Root"]
+    Child = feature_classes["Child"]
+
+    now = datetime.now(timezone.utc)
+
+    root_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2", "s3", "s4", "s5"],
+                "value": [10, 20, 30, 40, 50],
+                "status": ["active", "archived", "active", "archived", "active"],
+                "metaxy_provenance_by_field": [
+                    {"value": "v1"},
+                    {"value": "v2"},
+                    {"value": "v3"},
+                    {"value": "v4"},
+                    {"value": "v5"},
+                ],
+                "metaxy_created_at": [
+                    now - timedelta(days=100),
+                    now - timedelta(days=95),
+                    now - timedelta(days=50),
+                    now - timedelta(days=20),
+                    now - timedelta(days=5),
+                ],
+            }
+        )
+    )
+
+    child_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2", "s3", "s4", "s5"],
+                "derived": [100, 200, 300, 400, 500],
+                "metaxy_provenance_by_field": [
+                    {"derived": "d1"},
+                    {"derived": "d2"},
+                    {"derived": "d3"},
+                    {"derived": "d4"},
+                    {"derived": "d5"},
+                ],
+                "metaxy_created_at": [
+                    now - timedelta(days=100),
+                    now - timedelta(days=95),
+                    now - timedelta(days=50),
+                    now - timedelta(days=20),
+                    now - timedelta(days=5),
+                ],
+            }
+        )
+    )
+
+    with store.open("write"):
+        store.write_metadata(Root, root_data)
+        store.write_metadata(Child, child_data)
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_delete_by_ids(
+    store: MetadataStore,
+    feature_classes: dict[str, type[BaseFeature]],
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test deletion by ID list produces consistent results across backends."""
+    Root = feature_classes["Root"]
+
+    populate_store_with_test_data(store, feature_classes)
+
+    ids_to_delete = nw.from_native(pl.DataFrame({"sample_uid": ["s1", "s3", "s5"]}))
+
+    with store.open("write"):
+        result = store.soft_delete_metadata(
+            Root,
+            filter=ids_to_delete,
+            match_on="id_columns",
+        )
+
+    assert result.rows_affected == 3
+
+    with store:
+        remaining_data = store.read_metadata(Root).collect().to_polars()
+
+    remaining_data = remaining_data.sort("sample_uid")
+
+    snapshot_data = {
+        "remaining_ids": remaining_data["sample_uid"].to_list(),
+        "remaining_values": remaining_data["value"].to_list(),
+        "total_deleted": result.rows_affected,
+    }
+
+    assert snapshot_data == snapshot
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_delete_by_retention(
+    store: MetadataStore,
+    feature_classes: dict[str, type[BaseFeature]],
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test retention-based deletion produces consistent results across backends."""
+    Root = feature_classes["Root"]
+
+    populate_store_with_test_data(store, feature_classes)
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=60)
+
+    with store.open("write"):
+        result = store.soft_delete_metadata(
+            Root,
+            filter=nw.col("metaxy_created_at") < cutoff,
+        )
+
+    assert result.rows_affected == 2
+
+    with store:
+        remaining_data = store.read_metadata(Root).collect().to_polars()
+
+    remaining_data = remaining_data.sort("sample_uid")
+
+    snapshot_data = {
+        "remaining_ids": remaining_data["sample_uid"].to_list(),
+        "remaining_values": remaining_data["value"].to_list(),
+        "total_deleted": result.rows_affected,
+    }
+
+    assert snapshot_data == snapshot
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_delete_by_column_filters(
+    store: MetadataStore,
+    feature_classes: dict[str, type[BaseFeature]],
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test column filter-based deletion produces consistent results."""
+    Root = feature_classes["Root"]
+
+    populate_store_with_test_data(store, feature_classes)
+
+    with store.open("write"):
+        result = store.soft_delete_metadata(
+            Root,
+            filter=nw.col("status") == "archived",
+        )
+
+    assert result.rows_affected == 2
+
+    with store:
+        remaining_data = store.read_metadata(Root).collect().to_polars()
+
+    remaining_data = remaining_data.sort("sample_uid")
+
+    snapshot_data = {
+        "remaining_ids": remaining_data["sample_uid"].to_list(),
+        "remaining_statuses": remaining_data["status"].to_list(),
+        "total_deleted": result.rows_affected,
+    }
+
+    assert snapshot_data == snapshot
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_soft_vs_hard_delete(
+    store: MetadataStore,
+    feature_classes: dict[str, type[BaseFeature]],
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test soft delete vs hard delete behavior across backends."""
+    Root = feature_classes["Root"]
+
+    populate_store_with_test_data(store, feature_classes)
+
+    with store.open("write"):
+        soft_result = store.soft_delete_metadata(
+            Root,
+            filter=nw.col("sample_uid") == "s1",
+        )
+
+    with store:
+        soft_remaining = store.read_metadata(Root).collect().to_polars()
+
+    with store.open("write"):
+        store.drop_feature_metadata(Root)
+        store.drop_feature_metadata(feature_classes["Child"])
+        populate_store_with_test_data(store, feature_classes)
+
+        hard_result = store.delete_metadata(
+            Root,
+            filter=nw.col("sample_uid") == "s1",
+        )
+
+    with store:
+        hard_remaining = store.read_metadata(Root).collect().to_polars()
+
+    snapshot_data = {
+        "soft_delete": {
+            "rows_deleted": soft_result.rows_affected,
+            "remaining_count": len(soft_remaining),
+            "remaining_ids": sorted(soft_remaining["sample_uid"].to_list()),
+        },
+        "hard_delete": {
+            "rows_deleted": hard_result.rows_affected,
+            "remaining_count": len(hard_remaining),
+            "remaining_ids": sorted(hard_remaining["sample_uid"].to_list()),
+        },
+    }
+
+    assert snapshot_data == snapshot
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_delete_combined_criteria(
+    store: MetadataStore,
+    feature_classes: dict[str, type[BaseFeature]],
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test deletion with multiple criteria combined (retention + column filters)."""
+    Root = feature_classes["Root"]
+
+    populate_store_with_test_data(store, feature_classes)
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+
+    with store.open("write"):
+        result = store.soft_delete_metadata(
+            Root,
+            filter=(nw.col("metaxy_created_at") < cutoff)
+            & (nw.col("status") == "archived"),
+        )
+
+    assert result.rows_affected == 1
+
+    with store:
+        remaining_data = store.read_metadata(Root).collect().to_polars()
+
+    remaining_data = remaining_data.sort("sample_uid")
+
+    snapshot_data = {
+        "remaining_ids": remaining_data["sample_uid"].to_list(),
+        "remaining_statuses": remaining_data["status"].to_list(),
+        "total_deleted": result.rows_affected,
+    }
+
+    assert snapshot_data == snapshot
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_delete_empty_result(
+    store: MetadataStore,
+    feature_classes: dict[str, type[BaseFeature]],
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test deletion that matches no records."""
+    Root = feature_classes["Root"]
+
+    populate_store_with_test_data(store, feature_classes)
+
+    nonexistent_ids = nw.from_native(
+        pl.DataFrame({"sample_uid": ["nonexistent1", "nonexistent2"]})
+    )
+
+    with store.open("write"):
+        result = store.soft_delete_metadata(
+            Root,
+            filter=nonexistent_ids,
+            match_on="id_columns",
+        )
+
+    assert result.rows_affected == 0
+
+    with store:
+        remaining_data = store.read_metadata(Root).collect().to_polars()
+
+    snapshot_data = {
+        "total_deleted": result.rows_affected,
+        "remaining_count": len(remaining_data),
+        "all_ids_present": sorted(remaining_data["sample_uid"].to_list()),
+    }
+
+    assert snapshot_data == snapshot

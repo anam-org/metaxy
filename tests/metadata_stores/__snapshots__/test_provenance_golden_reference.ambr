@@ -1,4 +1,369 @@
 # serializer version: 1
+# name: test_delete_by_column_filters[clickhouse]
+  dict({
+    'remaining_ids': list([
+      's1',
+      's3',
+      's5',
+    ]),
+    'remaining_statuses': list([
+      'active',
+      'active',
+      'active',
+    ]),
+    'total_deleted': 2,
+  })
+# ---
+# name: test_delete_by_column_filters[delta]
+  dict({
+    'remaining_ids': list([
+      's1',
+      's3',
+      's5',
+    ]),
+    'remaining_statuses': list([
+      'active',
+      'active',
+      'active',
+    ]),
+    'total_deleted': 2,
+  })
+# ---
+# name: test_delete_by_column_filters[duckdb]
+  dict({
+    'remaining_ids': list([
+      's1',
+      's3',
+      's5',
+    ]),
+    'remaining_statuses': list([
+      'active',
+      'active',
+      'active',
+    ]),
+    'total_deleted': 2,
+  })
+# ---
+# name: test_delete_by_column_filters[inmemory]
+  dict({
+    'remaining_ids': list([
+      's1',
+      's3',
+      's5',
+    ]),
+    'remaining_statuses': list([
+      'active',
+      'active',
+      'active',
+    ]),
+    'total_deleted': 2,
+  })
+# ---
+# name: test_delete_by_column_filters[lancedb]
+  dict({
+    'remaining_ids': list([
+      's1',
+      's3',
+      's5',
+    ]),
+    'remaining_statuses': list([
+      'active',
+      'active',
+      'active',
+    ]),
+    'total_deleted': 2,
+  })
+# ---
+# name: test_delete_by_ids[clickhouse]
+  dict({
+    'remaining_ids': list([
+      's2',
+      's4',
+    ]),
+    'remaining_values': list([
+      20,
+      40,
+    ]),
+    'total_deleted': 3,
+  })
+# ---
+# name: test_delete_by_ids[delta]
+  dict({
+    'remaining_ids': list([
+      's2',
+      's4',
+    ]),
+    'remaining_values': list([
+      20,
+      40,
+    ]),
+    'total_deleted': 3,
+  })
+# ---
+# name: test_delete_by_ids[duckdb]
+  dict({
+    'remaining_ids': list([
+      's2',
+      's4',
+    ]),
+    'remaining_values': list([
+      20,
+      40,
+    ]),
+    'total_deleted': 3,
+  })
+# ---
+# name: test_delete_by_ids[inmemory]
+  dict({
+    'remaining_ids': list([
+      's2',
+      's4',
+    ]),
+    'remaining_values': list([
+      20,
+      40,
+    ]),
+    'total_deleted': 3,
+  })
+# ---
+# name: test_delete_by_ids[lancedb]
+  dict({
+    'remaining_ids': list([
+      's2',
+      's4',
+    ]),
+    'remaining_values': list([
+      20,
+      40,
+    ]),
+    'total_deleted': 3,
+  })
+# ---
+# name: test_delete_by_retention[clickhouse]
+  dict({
+    'remaining_ids': list([
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_values': list([
+      30,
+      40,
+      50,
+    ]),
+    'total_deleted': 2,
+  })
+# ---
+# name: test_delete_by_retention[delta]
+  dict({
+    'remaining_ids': list([
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_values': list([
+      30,
+      40,
+      50,
+    ]),
+    'total_deleted': 2,
+  })
+# ---
+# name: test_delete_by_retention[duckdb]
+  dict({
+    'remaining_ids': list([
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_values': list([
+      30,
+      40,
+      50,
+    ]),
+    'total_deleted': 2,
+  })
+# ---
+# name: test_delete_by_retention[inmemory]
+  dict({
+    'remaining_ids': list([
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_values': list([
+      30,
+      40,
+      50,
+    ]),
+    'total_deleted': 2,
+  })
+# ---
+# name: test_delete_by_retention[lancedb]
+  dict({
+    'remaining_ids': list([
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_values': list([
+      30,
+      40,
+      50,
+    ]),
+    'total_deleted': 2,
+  })
+# ---
+# name: test_delete_combined_criteria[clickhouse]
+  dict({
+    'remaining_ids': list([
+      's1',
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_statuses': list([
+      'active',
+      'active',
+      'archived',
+      'active',
+    ]),
+    'total_deleted': 1,
+  })
+# ---
+# name: test_delete_combined_criteria[delta]
+  dict({
+    'remaining_ids': list([
+      's1',
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_statuses': list([
+      'active',
+      'active',
+      'archived',
+      'active',
+    ]),
+    'total_deleted': 1,
+  })
+# ---
+# name: test_delete_combined_criteria[duckdb]
+  dict({
+    'remaining_ids': list([
+      's1',
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_statuses': list([
+      'active',
+      'active',
+      'archived',
+      'active',
+    ]),
+    'total_deleted': 1,
+  })
+# ---
+# name: test_delete_combined_criteria[inmemory]
+  dict({
+    'remaining_ids': list([
+      's1',
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_statuses': list([
+      'active',
+      'active',
+      'archived',
+      'active',
+    ]),
+    'total_deleted': 1,
+  })
+# ---
+# name: test_delete_combined_criteria[lancedb]
+  dict({
+    'remaining_ids': list([
+      's1',
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_statuses': list([
+      'active',
+      'active',
+      'archived',
+      'active',
+    ]),
+    'total_deleted': 1,
+  })
+# ---
+# name: test_delete_empty_result[clickhouse]
+  dict({
+    'all_ids_present': list([
+      's1',
+      's2',
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_count': 5,
+    'total_deleted': 0,
+  })
+# ---
+# name: test_delete_empty_result[delta]
+  dict({
+    'all_ids_present': list([
+      's1',
+      's2',
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_count': 5,
+    'total_deleted': 0,
+  })
+# ---
+# name: test_delete_empty_result[duckdb]
+  dict({
+    'all_ids_present': list([
+      's1',
+      's2',
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_count': 5,
+    'total_deleted': 0,
+  })
+# ---
+# name: test_delete_empty_result[inmemory]
+  dict({
+    'all_ids_present': list([
+      's1',
+      's2',
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_count': 5,
+    'total_deleted': 0,
+  })
+# ---
+# name: test_delete_empty_result[lancedb]
+  dict({
+    'all_ids_present': list([
+      's1',
+      's2',
+      's3',
+      's4',
+      's5',
+    ]),
+    'remaining_count': 5,
+    'total_deleted': 0,
+  })
+# ---
 # name: test_provenance_snapshot[aggregation]
   list([
     dict({
@@ -120,4 +485,126 @@
       }),
     }),
   ])
+# ---
+# name: test_soft_vs_hard_delete[clickhouse]
+  dict({
+    'hard_delete': dict({
+      'remaining_count': 5,
+      'remaining_ids': list([
+        's1',
+        's2',
+        's3',
+        's4',
+        's5',
+      ]),
+      'rows_deleted': 0,
+    }),
+    'soft_delete': dict({
+      'remaining_count': 4,
+      'remaining_ids': list([
+        's2',
+        's3',
+        's4',
+        's5',
+      ]),
+      'rows_deleted': 1,
+    }),
+  })
+# ---
+# name: test_soft_vs_hard_delete[delta]
+  dict({
+    'hard_delete': dict({
+      'remaining_count': 5,
+      'remaining_ids': list([
+        's1',
+        's2',
+        's3',
+        's4',
+        's5',
+      ]),
+      'rows_deleted': 0,
+    }),
+    'soft_delete': dict({
+      'remaining_count': 4,
+      'remaining_ids': list([
+        's2',
+        's3',
+        's4',
+        's5',
+      ]),
+      'rows_deleted': 1,
+    }),
+  })
+# ---
+# name: test_soft_vs_hard_delete[duckdb]
+  dict({
+    'hard_delete': dict({
+      'remaining_count': 4,
+      'remaining_ids': list([
+        's2',
+        's3',
+        's4',
+        's5',
+      ]),
+      'rows_deleted': 1,
+    }),
+    'soft_delete': dict({
+      'remaining_count': 4,
+      'remaining_ids': list([
+        's2',
+        's3',
+        's4',
+        's5',
+      ]),
+      'rows_deleted': 1,
+    }),
+  })
+# ---
+# name: test_soft_vs_hard_delete[inmemory]
+  dict({
+    'hard_delete': dict({
+      'remaining_count': 4,
+      'remaining_ids': list([
+        's2',
+        's3',
+        's4',
+        's5',
+      ]),
+      'rows_deleted': 1,
+    }),
+    'soft_delete': dict({
+      'remaining_count': 4,
+      'remaining_ids': list([
+        's2',
+        's3',
+        's4',
+        's5',
+      ]),
+      'rows_deleted': 1,
+    }),
+  })
+# ---
+# name: test_soft_vs_hard_delete[lancedb]
+  dict({
+    'hard_delete': dict({
+      'remaining_count': 4,
+      'remaining_ids': list([
+        's2',
+        's3',
+        's4',
+        's5',
+      ]),
+      'rows_deleted': 1,
+    }),
+    'soft_delete': dict({
+      'remaining_count': 4,
+      'remaining_ids': list([
+        's2',
+        's3',
+        's4',
+        's5',
+      ]),
+      'rows_deleted': 1,
+    }),
+  })
 # ---

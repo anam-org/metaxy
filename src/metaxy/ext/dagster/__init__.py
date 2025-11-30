@@ -1,3 +1,9 @@
+from metaxy.ext.dagster.cleanup import (
+    DeleteMetadataConfig,
+    MutateMetadataConfig,
+    delete_metadata,
+    mutate_metadata,
+)
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_INFO_METADATA_KEY,
@@ -57,4 +63,9 @@ __all__ = [
     "DAGSTER_METAXY_KIND",
     "DAGSTER_METAXY_PARTITION_KEY",
     "DAGSTER_METAXY_PROJECT_TAG_KEY",
+    # Deletion and mutation
+    "DeleteMetadataConfig",
+    "MutateMetadataConfig",
+    "delete_metadata",
+    "mutate_metadata",
 ]

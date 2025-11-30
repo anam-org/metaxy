@@ -15,10 +15,17 @@ from narwhals.typing import Frame
 from pydantic import Field
 from typing_extensions import Self
 
-from metaxy._utils import switch_implementation_to_polars
+from metaxy._utils import collect_to_polars, switch_implementation_to_polars
+from metaxy.metadata_store._sql_utils import (
+    SQLValueFormatter,
+    build_in_predicate_from_rows,
+)
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import is_local_path
+from metaxy.models.constants import (
+    METAXY_DELETED_AT,
+)
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
@@ -182,6 +189,7 @@ class DeltaMetadataStore(MetadataStore):
         try:
             # Only perform actual open on first entry
             if self._context_depth == 1:
+                self._access_mode = mode
                 # Mark store as open and validate
                 # Note: Delta auto-creates tables on first write, no need to pre-create them
                 self._is_open = True
@@ -195,6 +203,7 @@ class DeltaMetadataStore(MetadataStore):
             # Only perform actual close on last exit
             if self._context_depth == 0:
                 self._is_open = False
+                self._access_mode = None
 
     @cached_property
     def default_delta_write_options(self) -> dict[str, Any]:
@@ -295,8 +304,9 @@ class DeltaMetadataStore(MetadataStore):
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop Delta table for the specified feature using soft delete.
 
-        Uses Delta's delete operation which marks rows as deleted in the transaction log
-        rather than physically removing files.
+        Uses Delta's delete operation which marks rows as deleted in the transaction log rather than physically removing files.
+        Full physical removal requires expiring and deleting old delta history.
+        This has to happen in a separate process.
         """
         table_uri = self._feature_uri(feature_key)
 
@@ -314,6 +324,165 @@ class DeltaMetadataStore(MetadataStore):
         # Use Delta's delete operation - soft delete all rows
         # This marks rows as deleted in transaction log without physically removing files
         delta_table.delete()
+
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+    ) -> int:
+        """Backend-specific hard delete implementation for Delta Lake store.
+
+        Uses Delta Lake's DELETE operation with SQL predicates.
+
+        Args:
+            feature_key: Feature to delete from
+            filter_expr: Narwhals expression to filter records
+
+        Returns:
+            Number of rows deleted
+        """
+        table_uri = self._feature_uri(feature_key)
+
+        # Check if table exists
+        if not self._table_exists(table_uri):
+            return 0
+
+        # Load the Delta table
+        delta_table = deltalake.DeltaTable(
+            table_uri,
+            storage_options=self.storage_options or None,
+            without_files=True,
+        )
+
+        # Convert Narwhals expression to SQL predicate
+        # Returns None if no rows match the filter
+        predicate, match_count = self._convert_narwhals_expr_to_sql(
+            filter_expr, table_uri, feature_key
+        )
+
+        # Early return if no rows match
+        if predicate is None:
+            return 0
+
+        # Execute DELETE with predicate
+        metrics = delta_table.delete(predicate=predicate)
+        deleted = metrics.get("num_deleted_rows", 0)
+
+        return int(deleted or match_count)
+
+    def _mutate_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+        updates: dict[str, Any],
+    ) -> int:
+        """Backend-specific mutation implementation for Delta Lake store.
+
+        Uses Delta Lake's UPDATE operation with SQL predicates.
+
+        Args:
+            feature_key: Feature to mutate
+            filter_expr: Narwhals expression to filter records
+            updates: Dictionary mapping column names to new values
+
+        Returns:
+            Number of rows updated
+        """
+        table_uri = self._feature_uri(feature_key)
+
+        # Check if table exists
+        if not self._table_exists(table_uri):
+            return 0
+
+        # For soft deletes, also filter out already-deleted records
+        if METAXY_DELETED_AT in updates and updates[METAXY_DELETED_AT] is not None:
+            # Soft delete: only update records that aren't already soft-deleted
+            combined_filter = filter_expr & nw.col(METAXY_DELETED_AT).is_null()
+        else:
+            combined_filter = filter_expr
+
+        # Load the Delta table
+        delta_table = deltalake.DeltaTable(
+            table_uri,
+            storage_options=self.storage_options or None,
+            without_files=True,
+        )
+
+        # Convert Narwhals expression to SQL predicate
+        predicate, match_count = self._convert_narwhals_expr_to_sql(
+            combined_filter, table_uri, feature_key
+        )
+
+        # Early return if no rows match
+        if predicate is None:
+            return 0
+
+        # Build updates dict with SQL expressions using centralized formatter
+        update_dict = {}
+        for col, val in updates.items():
+            update_dict[col] = SQLValueFormatter.format_value(val, dialect="delta")
+
+        # Execute UPDATE with predicate
+        metrics = delta_table.update(
+            updates=update_dict,
+            predicate=predicate,
+        )
+
+        updated = metrics.get("num_updated_rows", 0)
+
+        return int(updated or match_count)
+
+    def _convert_narwhals_expr_to_sql(
+        self,
+        filter_expr: nw.Expr,
+        table_uri: str,
+        feature_key: FeatureKey,
+    ) -> tuple[str | None, int]:
+        """Convert Narwhals expression to SQL predicate string and row count.
+
+        Returns:
+            (SQL predicate string compatible with Delta Lake or None if no rows match,
+             matched row count)
+        """
+        plan = self._resolve_feature_plan(feature_key)
+
+        # Load table lazily for evaluation (column-pruned after filtering)
+        lf = pl.scan_delta(
+            table_uri,
+            storage_options=self.storage_options or None,
+        )
+
+        nw_lf = nw.from_native(lf)
+        filtered = nw_lf.filter(filter_expr)
+
+        # For SQL predicate: use ID columns if available (more efficient)
+        candidate_cols = [
+            col for col in filtered.columns if col in plan.feature.id_columns
+        ]
+        predicate_cols = candidate_cols or list(filtered.columns)
+
+        # Collect predicate columns only to minimize client materialization
+        predicate_df = collect_to_polars(filtered.select(predicate_cols).unique())
+
+        if len(predicate_df) == 0:
+            return None, 0
+
+        rows = predicate_df.to_dicts()
+
+        # Use centralized SQL formatting with bounds checking
+        try:
+            predicate = build_in_predicate_from_rows(
+                rows=rows,
+                columns=predicate_cols,
+                dialect="delta",
+            )
+        except ValueError as e:
+            # Re-raise with context about which feature is affected
+            raise ValueError(
+                f"Failed to create SQL predicate for feature {feature_key.to_string()}: {e}"
+            ) from e
+
+        return predicate, len(predicate_df)
 
     def read_metadata_in_store(
         self,

@@ -530,7 +530,8 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec().key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    store = ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False)
+    with store.open(mode="write"):
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -550,6 +551,8 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -627,7 +630,8 @@ def test_clickhouse_map_column_write_from_ibis_struct(
     feature_key = feature_cls.spec().key
     plan = test_graph.get_feature_plan(feature_key)
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    store = ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False)
+    with store.open(mode="write"):
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -647,6 +651,8 @@ def test_clickhouse_map_column_write_from_ibis_struct(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -828,7 +834,8 @@ def test_clickhouse_auto_cast_struct_for_map_true(
     feature_key = feature_cls.spec().key
 
     # auto_cast_struct_for_map=True is the default
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    store = ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False)
+    with store.open(mode="write"):
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -849,6 +856,8 @@ def test_clickhouse_auto_cast_struct_for_map_true(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -971,7 +980,8 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec().key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    store = ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False)
+    with store.open(mode="write"):
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -992,6 +1002,8 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -1072,7 +1084,8 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec().key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    store = ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False)
+    with store.open(mode="write"):
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1093,6 +1106,8 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -1116,7 +1131,8 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
         )
 
         # Write should succeed - Struct int values are cast to Int64 for Map(String, Int64)
-        store.write_metadata(feature_cls, samples)
+        with store.open(mode="write"):
+            store.write_metadata(feature_cls, samples)
 
         # Read back and verify
         read_result = store.read_metadata_in_store(feature_cls)
@@ -1149,7 +1165,8 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec().key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    store = ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False)
+    with store.open(mode="write"):
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1170,6 +1187,8 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -1196,7 +1215,8 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
         assert len(samples.schema["empty_metadata"].fields) == 0
 
         # Write should succeed - empty struct is skipped, other structs converted
-        store.write_metadata(feature_cls, samples)
+        with store.open(mode="write"):
+            store.write_metadata(feature_cls, samples)
 
         # Read back and verify data was written
         read_result = store.read_metadata_in_store(feature_cls)
@@ -1227,9 +1247,10 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec().key
 
-    with ClickHouseMetadataStore(
+    store = ClickHouseMetadataStore(
         clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=True
-    ) as store:
+    )
+    with store.open(mode="write"):
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1250,6 +1271,8 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -1286,7 +1309,8 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
         assert isinstance(struct_type, pl.Struct)
 
         # Write should succeed - NULL values are filtered out
-        store.write_metadata(feature_cls, samples)
+        with store.open(mode="write"):
+            store.write_metadata(feature_cls, samples)
 
         # Read back and verify data was written
         read_result = store.read_metadata_in_store(feature_cls)

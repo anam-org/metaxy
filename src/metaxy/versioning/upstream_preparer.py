@@ -12,12 +12,14 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_DELETED_AT,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
+    METAXY_UPDATED_AT,
 )
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.renamed_df import RenamedDataFrame
@@ -39,7 +41,7 @@ class UpstreamPreparer(Generic[FrameT]):
     5. Join all dependencies into a single DataFrame
     """
 
-    def __init__(self, plan: FeaturePlan, engine: VersioningEngine[FrameT]):
+    def __init__(self, plan: FeaturePlan, engine: VersioningEngine):
         self.plan = plan
         self.engine = engine
 
@@ -118,7 +120,7 @@ class UpstreamPreparer(Generic[FrameT]):
                     renamed_df.df,  # ty: ignore[invalid-argument-type]
                     hash_algorithm,
                 )
-                result[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
+                result[feature_key] = RenamedDataFrame(
                     df=transformed_df,
                     id_column_tracker=renamed_df.id_column_tracker,
                 )
@@ -142,7 +144,7 @@ class UpstreamPreparer(Generic[FrameT]):
             cols = renamed_df.df.collect_schema().names()  # ty: ignore[invalid-argument-type]
             cols_to_drop = [col for col in columns_to_drop if col in cols]
             if cols_to_drop:
-                result[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
+                result[feature_key] = RenamedDataFrame(
                     df=renamed_df.df.drop(*cols_to_drop),  # ty: ignore[invalid-argument-type]
                     id_column_tracker=renamed_df.id_column_tracker,
                 )
@@ -169,6 +171,8 @@ class UpstreamPreparer(Generic[FrameT]):
             METAXY_DATA_VERSION,
             METAXY_DATA_VERSION_BY_FIELD,
             METAXY_CREATED_AT,
+            METAXY_UPDATED_AT,
+            METAXY_DELETED_AT,
             METAXY_MATERIALIZATION_ID,
         }
         id_cols = set(self.engine.shared_id_columns)

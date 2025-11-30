@@ -718,7 +718,9 @@ class FeatureGraph:
                     else:
                         module = __import__(module_path, fromlist=[class_name])
 
-                    feature_cls = getattr(module, class_name)
+                    feature_cls = module.__dict__.get(class_name)
+                    if feature_cls is None:
+                        raise AttributeError(f"{class_name} not found")
                 except (ImportError, AttributeError):
                     # Feature class not importable - add as standalone spec instead
                     # This allows migrations to work even when old Feature classes are deleted/moved
@@ -736,11 +738,13 @@ class FeatureGraph:
                     continue
 
                 # Validate the imported class matches the stored spec
-                if not hasattr(feature_cls, "spec"):
+                try:
+                    feature_cls.spec
+                except AttributeError:
                     raise TypeError(
                         f"Imported class '{class_path}' is not a valid Feature class "
                         f"(missing 'spec' attribute)"
-                    )
+                    ) from None
 
                 # Register the imported feature to this graph if not already present
                 # If the module was imported for the first time, the metaclass already registered it

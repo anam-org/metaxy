@@ -144,16 +144,9 @@ def load_package_entrypoints(
     target_graph = graph or FeatureGraph.get_active()
 
     # Discover entry points
-    # Note: Python 3.10+ returns SelectableGroups, 3.9 returns dict
     discovered = entry_points()
-
-    # Handle different return types across Python versions
-    if hasattr(discovered, "select"):
-        # Python 3.10+: SelectableGroups with select() method
-        eps = discovered.select(group=group)
-    else:
-        # Python 3.9: dict-like interface
-        eps = discovered.get(group, [])
+    # Python 3.10+: SelectableGroups with select() method
+    eps = discovered.select(group=group)
 
     eps_list = list(eps)
 

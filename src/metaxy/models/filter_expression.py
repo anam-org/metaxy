@@ -155,12 +155,13 @@ def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
 
     # Comparison operators - direct mapping to Narwhals operations
     if isinstance(node, (exp.EQ, exp.NEQ, exp.GT, exp.LT, exp.GTE, exp.LTE)):
-        left = node.this
-        right = node.expression
-        if left is None or right is None:
+        try:
+            left = node.this
+            right = node.expression
+        except AttributeError:
             raise FilterParseError(
                 f"Comparison operator {type(node).__name__} requires two operands."
-            )
+            ) from None
         left_operand = _operand_info(left)
         right_operand = _operand_info(right)
 

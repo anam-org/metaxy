@@ -9,14 +9,25 @@ from pathlib import Path
 from typing import Any
 
 import narwhals as nw
+import polars as pl
 from narwhals.typing import Frame
 from pydantic import Field
 from typing_extensions import Self
 
 from metaxy._utils import collect_to_polars
+from metaxy.metadata_store._sql_utils import (
+    SQLValueFormatter,
+    build_in_predicate_from_rows,
+)
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
+from metaxy.metadata_store.exceptions import TableNotFoundError
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import is_local_path, sanitize_uri
+from metaxy.models.constants import (
+    METAXY_CREATED_AT,
+    METAXY_DELETED_AT,
+    METAXY_UPDATED_AT,
+)
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
@@ -186,6 +197,7 @@ class LanceDBMetadataStore(MetadataStore):
         try:
             # Only perform actual open on first entry
             if self._context_depth == 1:
+                self._access_mode = mode
                 import lancedb
 
                 if is_local_path(self.uri):
@@ -204,6 +216,7 @@ class LanceDBMetadataStore(MetadataStore):
             if self._context_depth == 0:
                 self._conn = None
                 self._is_open = False
+                self._access_mode = None
 
     @property
     def conn(self) -> Any:
@@ -249,6 +262,17 @@ class LanceDBMetadataStore(MetadataStore):
 
     def _get_table(self, table_name: str):
         return self.conn.open_table(table_name)
+
+    def _table_to_polars(self, table):
+        """Return a Polars DataFrame from a LanceDB table."""
+        try:
+            df_or_lf = table.to_polars()
+            # Ensure we return an eager DataFrame, not a LazyFrame
+            if isinstance(df_or_lf, pl.LazyFrame):
+                return df_or_lf.collect()
+            return df_or_lf
+        except Exception:
+            return pl.DataFrame(table.to_arrow())
 
     # ===== MetadataStore abstract methods =====
 
@@ -309,6 +333,177 @@ class LanceDBMetadataStore(MetadataStore):
         table_name = self._table_name(feature_key)
         if self._table_exists(table_name):
             self.conn.drop_table(table_name)
+
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+    ) -> int:
+        """Backend-specific hard delete implementation for LanceDB store.
+
+        Uses LanceDB's DELETE operation with SQL predicates.
+
+        Args:
+            feature_key: Feature to delete from
+            filter_expr: Narwhals expression to filter records
+
+        Returns:
+            Number of rows deleted
+        """
+        table_name = self._table_name(feature_key)
+
+        # Check if table exists
+        if not self._table_exists(table_name):
+            raise TableNotFoundError(
+                f"Table '{table_name}' does not exist for feature {feature_key.to_string()}."
+            )
+
+        table = self._get_table(table_name)
+
+        # Load once to derive predicate and match count (prefer Polars if available)
+        df = self._table_to_polars(table)
+        nw_df = nw.from_native(df)
+        filtered = nw_df.filter(filter_expr)
+        use_cols = self._predicate_columns(feature_key, filtered.columns)
+        filtered_df = filtered.select(use_cols).to_native()
+        rows_to_delete = len(filtered_df)
+
+        if rows_to_delete == 0:
+            return rows_to_delete
+
+        # Convert Narwhals expression to SQL predicate for LanceDB
+        predicate = self._convert_narwhals_expr_to_sql(filtered_df, feature_key)
+
+        # Execute DELETE
+        try:
+            table.delete(where=predicate)
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to delete rows from LanceDB table {table_name}: {e}"
+            ) from e
+
+        return rows_to_delete
+
+    def _mutate_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+        updates: dict[str, Any],
+    ) -> int:
+        """Backend-specific mutation implementation for LanceDB store.
+
+        Uses LanceDB's UPDATE operation with SQL predicates.
+
+        Args:
+            feature_key: Feature to mutate
+            filter_expr: Narwhals expression to filter records
+            updates: Dictionary mapping column names to new values
+
+        Returns:
+            Number of rows updated
+        """
+
+        table_name = self._table_name(feature_key)
+
+        # Check if table exists
+        if not self._table_exists(table_name):
+            raise TableNotFoundError(
+                f"Table '{table_name}' does not exist for feature {feature_key.to_string()}."
+            )
+
+        table = self._get_table(table_name)
+
+        # For soft deletes, also filter out already-deleted records
+        if METAXY_DELETED_AT in updates and updates[METAXY_DELETED_AT] is not None:
+            # Soft delete: only update records that aren't already soft-deleted
+            combined_filter = filter_expr & nw.col(METAXY_DELETED_AT).is_null()
+        else:
+            combined_filter = filter_expr
+
+        # Load once to derive predicate and match count (prefer Polars if available)
+        df = self._table_to_polars(table)
+        nw_df = nw.from_native(df)
+        filtered = nw_df.filter(combined_filter)
+        use_cols = self._predicate_columns(feature_key, filtered.columns)
+        filtered_df = filtered.select(use_cols).to_native()
+        rows_to_update = len(filtered_df)
+
+        if rows_to_update == 0:
+            return rows_to_update
+
+        # Convert Narwhals expression to SQL predicate
+        predicate = self._convert_narwhals_expr_to_sql(filtered_df, feature_key)
+
+        # Build updates dict
+        update_values = {}
+        for col, val in updates.items():
+            # LanceDB update expects Python values (not SQL strings)
+            update_values[col] = val
+
+        # Execute UPDATE
+        try:
+            table.update(
+                where=predicate,
+                values=update_values,
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to update rows in LanceDB table {table_name}: {e}"
+            ) from e
+
+        return rows_to_update
+
+    def _convert_narwhals_expr_to_sql(
+        self, filtered_df: pl.DataFrame, feature_key: FeatureKey
+    ) -> str:
+        """Convert filtered Polars DataFrame to SQL predicate string for LanceDB."""
+        plan = self._resolve_feature_plan(feature_key)
+        candidate_cols = [
+            col
+            for col in filtered_df.columns
+            if col
+            in {
+                *plan.feature.id_columns,
+                METAXY_CREATED_AT,
+                METAXY_UPDATED_AT,
+                METAXY_DELETED_AT,
+            }
+        ]
+        use_cols = candidate_cols or filtered_df.columns
+
+        rows = filtered_df.to_dicts()
+
+        # Use centralized SQL formatting with bounds checking
+        try:
+            return build_in_predicate_from_rows(
+                rows=rows,
+                columns=list(use_cols),
+                dialect="lancedb",
+                max_rows=SQLValueFormatter.MAX_PREDICATE_ROWS,
+            )
+        except ValueError as e:
+            # Re-raise with context about which feature is affected
+            raise ValueError(
+                f"Failed to create SQL predicate for feature {feature_key.to_string()}: {e}"
+            ) from e
+
+    def _predicate_columns(
+        self, feature_key: FeatureKey, available_cols: Sequence[str]
+    ) -> list[str]:
+        """Columns to keep when building SQL predicates.
+
+        Prefers ID/system columns to avoid retaining unnecessary payload columns
+        while still allowing predicate construction.
+        """
+        plan = self._resolve_feature_plan(feature_key)
+        preferred = {
+            *plan.feature.id_columns,
+            METAXY_CREATED_AT,
+            METAXY_UPDATED_AT,
+            METAXY_DELETED_AT,
+        }
+        cols = [col for col in available_cols if col in preferred]
+        return cols or list(available_cols)
 
     def read_metadata_in_store(
         self,

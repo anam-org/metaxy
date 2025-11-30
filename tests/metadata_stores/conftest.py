@@ -11,8 +11,16 @@ import pytest
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
 
-from metaxy import HashAlgorithm
+from metaxy import (
+    BaseFeature,
+    FeatureDep,
+    FeatureKey,
+    FieldKey,
+    FieldSpec,
+    HashAlgorithm,
+)
 from metaxy._testing import HashAlgorithmCases
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -247,6 +255,32 @@ def store_with_hash_algo_native(
             f"Hash algorithm {hash_algorithm} not supported by store {any_store.display()}"
         )
     return any_store
+
+
+@pytest.fixture
+def feature_classes() -> dict[str, type[BaseFeature]]:
+    """Feature graph used across cleanup/provenance tests."""
+
+    class Root(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["root"]),
+            fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    class Child(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["child"]),
+            deps=[FeatureDep(feature=Root)],
+            fields=[FieldSpec(key=FieldKey(["derived"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    return {"Root": Root, "Child": Child}
 
 
 @pytest.fixture

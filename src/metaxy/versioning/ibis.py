@@ -4,8 +4,10 @@ CRITICAL: This implementation NEVER materializes lazy expressions.
 All operations stay in the lazy Ibis world for SQL execution.
 """
 
-from typing import Protocol, cast
+from typing import Any, Protocol, cast
 
+import ibis
+import ibis.expr.types as ibis_types
 import narwhals as nw
 from ibis import Expr as IbisExpr
 from narwhals.typing import FrameT
@@ -74,14 +76,11 @@ class IbisVersioningEngine(VersioningEngine):
                 f"Supported: {list(self.hash_functions.keys())}"
             )
 
-        # Import ibis lazily (module-level import restriction)
-        import ibis.expr.types
-
         # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis_types.Table = df.to_native()
 
         # Get hash function
         hash_fn = self.hash_functions[hash_algo]
@@ -117,14 +116,11 @@ class IbisVersioningEngine(VersioningEngine):
             Narwhals DataFrame with new struct column added, backed by Ibis.
             The source columns remain unchanged.
         """
-        # Import ibis lazily
-        import ibis.expr.types
-
         # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis_types.Table = df.to_native()
 
         # Build struct expression - reference columns by name
         struct_expr = ibis.struct(
@@ -154,13 +150,11 @@ class IbisVersioningEngine(VersioningEngine):
         Uses group_concat with ordering to concatenate values in deterministic order.
         All rows in the same group receive identical concatenated values.
         """
-        import ibis
-        import ibis.expr.types
-
+        # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis.expr.types.Table = df.to_native()
 
         # Create window spec with ordering for deterministic results
         # Fall back to group_by columns for ordering if no explicit order_by columns
@@ -185,57 +179,52 @@ class IbisVersioningEngine(VersioningEngine):
     def keep_latest_by_group(
         df: FrameT,
         group_columns: list[str],
-        timestamp_column: str,
+        order_by_columns: list[str],
     ) -> FrameT:
-        """Keep only the latest row per group based on a timestamp column.
-
-        Uses argmax aggregation to get the value from each column where the
-        timestamp is maximum. This is simpler and more semantically clear than
-        window functions.
+        """Keep only the latest row per group based on ordered columns.
 
         Args:
             df: Narwhals DataFrame/LazyFrame backed by Ibis
             group_columns: Columns to group by (typically ID columns)
-            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+            order_by_columns: Columns to order by (highest value wins)
 
         Returns:
             Narwhals DataFrame/LazyFrame with only the latest row per group
 
         Raises:
-            ValueError: If timestamp_column doesn't exist in df
+            ValueError: If no order_by_columns exist in df
         """
-        # Import ibis lazily
-        import ibis.expr.types
-
         # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
 
-        # Check if timestamp_column exists
-        # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
-        columns = df.collect_schema().names()
-        if timestamp_column not in columns:
+        if not order_by_columns:
+            raise ValueError("order_by_columns must contain at least one column")
+
+        ibis_table: ibis.expr.types.Table = df.to_native()
+
+        # Get column names without triggering LazyFrame performance warning
+        # Use cast to satisfy type checker - collect_schema exists on both DataFrame and LazyFrame
+        from typing import cast as typing_cast
+
+        df_any: Any = df
+        df_columns = typing_cast(Any, df_any).collect_schema().names()
+
+        present_order_cols = [col for col in order_by_columns if col in df_columns]
+        if not present_order_cols:
             raise ValueError(
-                f"Timestamp column '{timestamp_column}' not found in DataFrame. "
-                f"Available columns: {columns}"
+                f"None of the order_by_columns {order_by_columns} found in DataFrame. "
+                f"Available columns: {df_columns}"
             )
 
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        order_exprs = [ibis_table[col].desc() for col in present_order_cols]
+        window = ibis.window(group_by=group_columns, order_by=order_exprs)
 
-        # Use argmax aggregation: for each column, get the value where timestamp is maximum
-        # This directly expresses "get the row with the latest timestamp per group"
-        all_columns = set(ibis_table.columns)
-        non_group_columns = all_columns - set(group_columns)
-
-        # Build aggregation dict: for each non-group column, use argmax(timestamp)
-        agg_exprs = {
-            col: ibis_table[col].argmax(ibis_table[timestamp_column])
-            for col in non_group_columns
-        }
-
-        # Perform groupby and aggregate
-        result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)
+        ranked = ibis_table.mutate(_metaxy_row_num=ibis.row_number().over(window))
+        filter_expr: ibis.Expr = ranked["_metaxy_row_num"] == ibis.literal(0)
+        latest = ranked.filter(filter_expr)
+        result_table = latest.drop("_metaxy_row_num")
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))
