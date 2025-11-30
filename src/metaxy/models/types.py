@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Annotated, Any, NamedTuple, TypeAlias, overload
+from typing import TYPE_CHECKING, Annotated, Any, NamedTuple, TypeAlias, Union, overload
 
 from pydantic import (
     BeforeValidator,
@@ -366,6 +366,8 @@ def _coerce_to_feature_key(value: Any) -> FeatureKey:
 
     - `type[BaseFeature]`: extracts .spec().key
 
+    - `FeatureSpec`: extracts .key
+
     Args:
         value: Value to coerce to `FeatureKey`
 
@@ -377,6 +379,12 @@ def _coerce_to_feature_key(value: Any) -> FeatureKey:
     """
     if isinstance(value, FeatureKey):
         return value
+
+    # Check if it's a FeatureSpec
+    from metaxy.models.feature_spec import FeatureSpec
+
+    if isinstance(value, FeatureSpec):
+        return value.key
 
     # Check if it's a BaseFeature class
     # Import here to avoid circular dependency at module level
@@ -418,11 +426,14 @@ def _coerce_to_field_key(value: Any) -> FieldKey:
 
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
+    from metaxy.models.feature_spec import FeatureSpec
 
 # Type unions - what inputs are accepted
-CoercibleToFeatureKey: TypeAlias = (
-    str | Sequence[str] | FeatureKey | type["BaseFeature"]
-)
+# Note: FeatureSpec is also accepted but handled at runtime in _coerce_to_feature_key
+# We use Union for compatibility with Python 3.10 runtime (can't use | with forward refs)
+CoercibleToFeatureKey: TypeAlias = Union[
+    str, Sequence[str], FeatureKey, type["BaseFeature"], "FeatureSpec"
+]
 CoercibleToFieldKey: TypeAlias = str | Sequence[str] | FieldKey
 
 # Annotated types for Pydantic field annotations - automatically validate
