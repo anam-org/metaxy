@@ -241,16 +241,11 @@ def test_resolve_update_root_feature_with_samples(
     id_columns = list(feature_spec.id_columns)
     samples_df = samples_df.select(id_columns + ["metaxy_provenance_by_field"])
 
-    # Convert to Narwhals
-    import narwhals as nw
-
-    samples_nw = nw.from_native(samples_df.lazy())
-
-    # Call resolve_update with samples
+    # Call resolve_update with samples - pass native Polars LazyFrame, not Narwhals-wrapped
     with store, graph.use():
         try:
             increment = store.resolve_update(
-                root_feature, samples=samples_nw, lazy=True
+                root_feature, samples=samples_df.lazy(), lazy=True
             ).collect()
         except HashAlgorithmNotSupportedError:
             pytest.skip(
