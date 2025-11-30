@@ -44,7 +44,8 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
-from metaxy.models.feature import BaseFeature, FeatureGraph, current_graph
+from metaxy.models.feature import BaseFeature, FeatureGraph
+from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import (
     CoercibleToFeatureKey,
@@ -209,6 +210,12 @@ class MetadataStore(ABC):
         )
         self.versioning_engine_cls = versioning_engine_cls
 
+        # Hydrated graph: the active graph enriched with FeatureDefinitions from this store
+        self._hydrated_graph: FeatureGraph | None = None
+        self._hydrated_graph_source_uid: str | None = (
+            None  # Track which graph instance was hydrated
+        )
+
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
             from metaxy.config import MetaxyConfig
@@ -224,6 +231,73 @@ class MetadataStore(ABC):
         self.hash_algorithm = hash_algorithm
 
         self.fallback_stores = fallback_stores or []
+
+    @property
+    def graph(self) -> FeatureGraph:
+        """Get the hydrated graph for this store.
+
+        Returns a FeatureGraph that has been enriched with FeatureDefinitions
+        from this store's system storage. The hydration happens lazily on first access
+        and is cached until the active graph changes.
+
+        This graph should be used for all operations instead of FeatureGraph.get_active()
+        to ensure external feature definitions are available.
+
+        Raises:
+            StoreNotOpenError: If the store is not open. Hydration requires
+                reading from the system storage.
+        """
+        self._check_open()
+
+        active_graph = FeatureGraph.get_active()
+
+        # Check if we need to hydrate (new graph instance or not hydrated yet)
+        if (
+            self._hydrated_graph is None
+            or self._hydrated_graph_source_uid != active_graph.instance_uid
+        ):
+            self._hydrate_graph(active_graph)
+
+        assert self._hydrated_graph is not None
+        return self._hydrated_graph
+
+    def _hydrate_graph(self, source_graph: FeatureGraph) -> None:
+        """Hydrate a copy of the source graph with FeatureDefinitions from this store.
+
+        Loads all feature definitions from this store's system storage (not fallback stores)
+        and adds them to a copy of the source graph.
+
+        Args:
+            source_graph: The active FeatureGraph to use as a base
+        """
+        # Create a new graph and populate it using add_feature()
+        hydrated = FeatureGraph()
+        hydrated.instance_uid = source_graph.instance_uid  # Preserve the source UID
+
+        # Add all features from source graph
+        # Use Feature classes where available (they create proper definitions)
+        # Otherwise use the definitions directly
+        for key, definition in source_graph.definitions_by_key.items():
+            if key in source_graph._feature_classes:
+                hydrated.add_feature(source_graph._feature_classes[key])
+            else:
+                hydrated.add_feature(definition)
+
+        # Load feature definitions from this store's system storage
+        # Only if the store is open and has the system table
+        assert self._is_open, "_hydrate_graph must be called within an open store"
+        from metaxy.metadata_store.system.storage import SystemTableStorage
+
+        system_storage = SystemTableStorage(self)
+        # Load all definitions without filters - hydrate from THIS store only
+        stored_definitions = system_storage.load_external_feature_definitions()
+
+        for definition in stored_definitions:
+            # add_feature handles duplicates gracefully (warns and skips)
+            hydrated.add_feature(definition)
+
+        self._hydrated_graph = hydrated
+        self._hydrated_graph_source_uid = source_graph.instance_uid
 
     @classmethod
     @abstractmethod
@@ -408,28 +482,29 @@ class MetadataStore(ABC):
         # Convert global_filters to a list for easy concatenation
         global_filter_list = list(global_filters) if global_filters else []
 
-        graph = current_graph()
-        plan = graph.get_feature_plan(feature.spec().key)
+        # Resolve feature key once and use throughout
+        feature_key = self._resolve_feature_key(feature)
+        plan = self.graph.get_feature_plan(feature_key)
 
         # Root features without samples: error (samples required)
         if not plan.deps and samples_nw is None:
             raise ValueError(
-                f"Feature {feature.spec().key} has no upstream dependencies (root feature). "
+                f"Feature {feature_key.to_string()} has no upstream dependencies (root feature). "
                 f"Must provide 'samples' parameter with sample_uid and {METAXY_PROVENANCE_BY_FIELD} columns. "
                 f"Root features require manual {METAXY_PROVENANCE_BY_FIELD} computation."
             )
 
         # Combine feature-specific filters with global filters
         current_feature_filters = [
-            *normalized_filters.get(feature.spec().key, []),
+            *normalized_filters.get(feature_key, []),
             *global_filter_list,
         ]
 
         current_metadata = self.read_metadata_in_store(
-            feature,
+            feature_key,
             filters=[
                 nw.col(METAXY_FEATURE_VERSION)
-                == graph.get_feature_version(feature.spec().key),
+                == self.graph.get_feature_version(feature_key),
                 *current_feature_filters,
             ],
         )
@@ -617,13 +692,17 @@ class MetadataStore(ABC):
         Read metadata with optional fallback to upstream stores.
 
         Args:
-            feature: Feature to read metadata for
+            feature: Feature to read metadata for. Can be:
+                - A feature key (string, tuple, FeatureKey)
+                - A Feature class
+                - A FeatureSpec (for direct spec access - no graph lookup needed if spec has no deps)
             feature_version: Explicit feature_version to filter by (mutually exclusive with current_only=True)
             filters: Sequence of Narwhals filter expressions to apply to this feature.
                 Example: `[nw.col("x") > 10, nw.col("y") < 5]`
             columns: Subset of columns to include. Metaxy's system columns are always included.
             allow_fallback: If `True`, check fallback stores on local miss
-            current_only: If `True`, only return rows with current feature_version
+            current_only: If `True`, only return rows with current feature_version.
+                For FeatureSpec with no deps, this should be False (no graph to look up version).
             latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
 
         Returns:
@@ -657,7 +736,7 @@ class MetadataStore(ABC):
         # Add feature_version filter only when needed
         if current_only or feature_version is not None and not is_system_table:
             version_filter = nw.col(METAXY_FEATURE_VERSION) == (
-                current_graph().get_feature_version(feature_key)
+                self.graph.get_feature_version(feature_key)
                 if current_only
                 else feature_version
             )
@@ -676,7 +755,7 @@ class MetadataStore(ABC):
         lazy_frame = None
         try:
             lazy_frame = self.read_metadata_in_store(
-                feature, filters=filters, columns=read_columns
+                feature_key, filters=filters, columns=read_columns
             )
         except FeatureNotFoundError as e:
             # do not read system features from fallback stores
@@ -694,12 +773,14 @@ class MetadataStore(ABC):
         if lazy_frame is not None and not is_system_table and latest_only:
             from metaxy.models.constants import METAXY_CREATED_AT
 
+            # Get id_columns from plan - _resolve_feature_plan handles FeatureSpec with no deps directly
+            plan = self._resolve_feature_plan(feature)
+            id_columns = list(plan.feature.id_columns)
+
             # Apply deduplication
             lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
                 df=lazy_frame,
-                group_columns=list(
-                    self._resolve_feature_plan(feature_key).feature.id_columns
-                ),
+                group_columns=id_columns,
                 timestamp_column=METAXY_CREATED_AT,
             )
 
@@ -861,8 +942,7 @@ class MetadataStore(ABC):
         }
 
         # Get reverse topological order (dependents first)
-        graph = current_graph()
-        sorted_keys = graph.topological_sort_features(
+        sorted_keys = self.graph.topological_sort_features(
             list(resolved_metadata.keys()), descending=True
         )
 
@@ -1111,12 +1191,19 @@ class MetadataStore(ABC):
         return ValidatedFeatureKeyAdapter.validate_python(feature)
 
     def _resolve_feature_plan(self, feature: CoercibleToFeatureKey) -> FeaturePlan:
-        """Resolve to FeaturePlan for dependency resolution."""
+        """Resolve to FeaturePlan for dependency resolution.
+
+        If a FeatureSpec with no dependencies is passed directly, creates
+        a plan without graph lookup. Otherwise looks up in the graph.
+        """
+        # If it's a FeatureSpec with no deps, create plan directly (no graph lookup)
+        if isinstance(feature, FeatureSpec) and not feature.deps:
+            return FeaturePlan(feature=feature, deps=None)
+
         # First resolve to FeatureKey
         feature_key = self._resolve_feature_key(feature)
-        # Then get the plan
-        graph = current_graph()
-        return graph.get_feature_plan(feature_key)
+        # Then get the plan from the graph
+        return self.graph.get_feature_plan(feature_key)
 
     # ========== Core CRUD Operations ==========
 
@@ -1248,25 +1335,11 @@ class MetadataStore(ABC):
             if columns_to_drop:
                 df = df.drop(*columns_to_drop)
 
-            # Get current feature version and snapshot_version from code and add them
-            # Use duck typing to avoid Ray serialization issues with issubclass
-            if (
-                isinstance(feature, type)
-                and hasattr(feature, "feature_version")
-                and callable(feature.feature_version)
-            ):
-                current_feature_version = feature.feature_version()
-            else:
-                from metaxy import get_feature_by_key
-
-                feature_cls = get_feature_by_key(feature_key)
-                current_feature_version = feature_cls.feature_version()
-
-            # Get snapshot_version from active graph
-            from metaxy.models.feature import FeatureGraph
-
-            graph = FeatureGraph.get_active()
-            current_snapshot_version = graph.snapshot_version
+            # Get current feature version and snapshot_version from the graph
+            # Use FeatureDefinition from the graph - this works for both local and external features
+            # Get feature_version from the definition in the graph
+            current_feature_version = self.graph.get_feature_version(feature_key)
+            current_snapshot_version = self.graph.snapshot_version
 
             df = df.with_columns(
                 [

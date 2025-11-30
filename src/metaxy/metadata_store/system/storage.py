@@ -36,6 +36,7 @@ from metaxy.models.types import FeatureKey, SnapshotPushResult
 
 if TYPE_CHECKING:
     from metaxy.metadata_store import MetadataStore
+    from metaxy.models.feature_definition import FeatureDefinition
 
 
 class SystemTableStorage:
@@ -919,3 +920,112 @@ class SystemTableStorage:
             class_path_overrides=class_path_overrides,
             force_reload=force_reload,
         )
+
+    def load_external_feature_definitions(
+        self,
+        feature_keys: set[FeatureKey] | None = None,
+        projects: set[str] | None = None,
+    ) -> list[FeatureDefinition]:
+        """Load feature definitions from the metadata store for external features.
+
+        This method loads FeatureDefinition objects for external features that
+        are not available as Python classes in the current environment. It queries
+        the feature_versions system table and reconstructs definitions from stored
+        metadata.
+
+        **Important**: Always filters out the current project - external features
+        should not include features from the current project.
+
+        This is used to load external dependencies when:
+        - A feature in the current project depends on features from other projects
+        - The external feature's Python class is not importable
+        - Only the stored metadata is available
+
+        Args:
+            feature_keys: Optional set of specific feature keys to load.
+                If provided, only loads definitions for these features.
+            projects: Optional set of project names to filter by.
+                If provided, only loads definitions from these projects.
+                The current project is always excluded regardless of this filter.
+
+        Returns:
+            List of FeatureDefinition objects loaded from storage.
+            Returns empty list if no matching definitions are found.
+
+        Note:
+            The store must already be open when calling this method.
+        """
+        from metaxy.config import MetaxyConfig
+        from metaxy.models.feature_definition import FeatureDefinition
+        from metaxy.models.feature_spec import FeatureSpec
+
+        # Get current project to exclude it
+        current_project = MetaxyConfig.get().project
+
+        # Read system metadata
+        sys_meta = self._read_system_metadata(FEATURE_VERSIONS_KEY)
+
+        # Always filter out the current project - we only want external features
+        sys_meta = sys_meta.filter(nw.col("project") != current_project)
+
+        # Apply additional project filter if specified
+        if projects is not None and len(projects) > 0:
+            sys_meta = sys_meta.filter(nw.col("project").is_in(list(projects)))
+
+        # Apply feature key filter if specified
+        if feature_keys is not None and len(feature_keys) > 0:
+            feature_key_strings = [k.to_string() for k in feature_keys]
+            sys_meta = sys_meta.filter(nw.col("feature_key").is_in(feature_key_strings))
+
+        # Deduplicate - keep latest recorded_at per feature_key using versioning engine
+        from metaxy.metadata_store.system.keys import FEATURE_VERSIONS_PLAN
+
+        with self.store.create_versioning_engine(
+            plan=FEATURE_VERSIONS_PLAN, implementation=sys_meta.implementation
+        ) as engine:
+            sys_meta = engine.keep_latest_by_group(
+                df=sys_meta,
+                group_columns=["feature_key"],
+                timestamp_column="recorded_at",
+            )
+
+        # Collect at the very end
+        features_df = sys_meta.collect().to_polars()
+
+        if features_df.height == 0:
+            return []
+
+        # Convert to FeatureDefinition objects
+        definitions: list[FeatureDefinition] = []
+        for row in features_df.iter_rows(named=True):
+            # Parse the stored data using pydantic for feature_spec
+            feature_spec_json = row["feature_spec"]
+            spec = (
+                FeatureSpec.model_validate_json(feature_spec_json)
+                if isinstance(feature_spec_json, str)
+                else FeatureSpec.model_validate(feature_spec_json)
+            )
+
+            feature_schema_json = row["feature_schema"]
+            if feature_schema_json is None:
+                feature_schema: dict[str, Any] = {}
+            elif isinstance(feature_schema_json, str):
+                import json
+
+                feature_schema = json.loads(feature_schema_json)
+            else:
+                feature_schema = feature_schema_json
+
+            # Build FeatureDefinition directly - fail fast on missing fields
+            definition = FeatureDefinition(
+                spec=spec,
+                feature_schema=feature_schema,
+                project_name=row["project"],
+                feature_version=row["metaxy_feature_version"],
+                feature_code_version=spec.code_version,
+                feature_definition_version=row["metaxy_full_definition_version"],
+                feature_class_path=row["feature_class_path"],
+            )
+            definitions.append(definition)
+
+        return definitions

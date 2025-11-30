@@ -76,126 +76,150 @@ def get_feature_by_key(key: CoercibleToFeatureKey) -> type["BaseFeature"]:
 
 class FeatureGraph:
     def __init__(self):
-        # Feature class storage (when Python class is available)
-        self.features_by_key: dict[FeatureKey, type[BaseFeature]] = {}
-        # Feature definition storage (central data structure for all features)
+        import uuid
+
+        # Unique identifier for this graph instance
+        self.instance_uid: str = str(uuid.uuid4())
+        # Primary storage: FeatureDefinition objects for ALL features
         self.definitions_by_key: dict[FeatureKey, FeatureDefinition] = {}
-        # Feature specs (derived from definitions for convenience)
-        self.feature_specs_by_key: dict[FeatureKey, FeatureSpec] = {}
-        # Standalone specs registered without Feature classes (for migrations)
-        # Note: This is being phased out in favor of definitions_by_key
-        self.standalone_specs_by_key: dict[FeatureKey, FeatureSpec] = {}
+        # Feature class references (for get_feature_by_key) - will be removed later
+        self._feature_classes: dict[FeatureKey, type[BaseFeature]] = {}
+        # Pending specs: temporarily stores specs during add_feature before definition is created
+        # This is needed because version computation requires the spec to be accessible
+        self._pending_specs: dict[FeatureKey, FeatureSpec] = {}
+
+    @property
+    def features_by_key(self) -> dict[FeatureKey, type["BaseFeature"]]:
+        """Access to feature classes (for backward compatibility).
+
+        Deprecated: Use get_feature_by_key() instead. Will be removed later.
+        """
+        return self._feature_classes
+
+    @property
+    def feature_specs_by_key(self) -> dict[FeatureKey, FeatureSpec]:
+        """Get specs derived from definitions (for backward compatibility).
+
+        Also includes pending specs that are being processed during add_feature.
+        """
+        result = {key: defn.spec for key, defn in self.definitions_by_key.items()}
+        # Include pending specs (during add_feature before definition is created)
+        result.update(self._pending_specs)
+        return result
 
     @property
     def all_specs_by_key(self) -> dict[FeatureKey, FeatureSpec]:
-        return {**self.feature_specs_by_key, **self.standalone_specs_by_key}
+        """Alias for feature_specs_by_key (backward compatibility)."""
+        return self.feature_specs_by_key
 
-    def add_feature(self, feature: type["BaseFeature"]) -> None:
+    @property
+    def standalone_specs_by_key(self) -> dict[FeatureKey, FeatureSpec]:
+        """Specs without Feature classes (backward compatibility).
+
+        Returns specs for definitions that don't have a Feature class.
+        """
+        return {
+            key: defn.spec
+            for key, defn in self.definitions_by_key.items()
+            if key not in self._feature_classes
+        }
+
+    def add_feature(
+        self,
+        feature: "type[BaseFeature] | FeatureDefinition | FeatureSpec",
+    ) -> None:
         """Add a feature to the graph.
 
-        Creates and stores a FeatureDefinition internally, along with the
-        Feature class reference.
+        Unified method that accepts:
+        - Feature class (type[BaseFeature]) - creates FeatureDefinition and stores both
+        - FeatureDefinition - stores directly (for external features)
+        - FeatureSpec - creates minimal FeatureDefinition (for migrations)
+
+        Local features (Feature classes) always take precedence over external definitions.
 
         Args:
-            feature: Feature class to register
+            feature: Feature class, FeatureDefinition, or FeatureSpec to register
         """
         import warnings
 
-        key = feature.spec().key
-        if key in self.features_by_key:
-            existing = self.features_by_key[key]
-            warnings.warn(
-                f"Feature with key {key.to_string()} already registered. "
-                f"Existing: {existing.__name__}, New: {feature.__name__}. "
-                f"Ignoring duplicate registration.",
-                stacklevel=2,
+        from metaxy.models.feature_definition import FeatureDefinition
+
+        # Determine the key and what we're adding
+        if isinstance(feature, FeatureDefinition):
+            key = feature.key
+            definition = feature
+            feature_class = None
+        elif isinstance(feature, FeatureSpec):
+            key = feature.key
+            # Create minimal FeatureDefinition from spec
+            definition = FeatureDefinition(
+                spec=feature,
+                feature_schema={},  # No schema for standalone specs
+                project_name="",  # Unknown project
+                feature_version=feature.feature_spec_version,  # Use spec version
+                feature_code_version=feature.code_version,
+                feature_definition_version=feature.feature_spec_version,
+                feature_class_path="",  # No class path
             )
-            return
+            feature_class = None
+        else:
+            # It's a Feature class - need to temporarily add spec for version computation
+            key = feature.spec().key
+            spec = feature.spec()
 
-        # Validate that there are no duplicate column names across dependencies after renaming
-        if feature.spec().deps:
-            self._validate_no_duplicate_columns(feature.spec())
+            # Add spec to pending before creating definition (needed for version computation)
+            self._pending_specs[key] = spec
+            try:
+                definition = feature.to_definition()
+            finally:
+                # Remove from pending after definition is created
+                self._pending_specs.pop(key, None)
 
-        # Store Feature class first
-        self.features_by_key[key] = feature
-        # Store spec before creating definition (needed for version computation)
-        self.feature_specs_by_key[key] = feature.spec()
-        # Create and store FeatureDefinition (requires spec to be in graph for version computation)
-        self.definitions_by_key[key] = feature.to_definition()
+            feature_class = feature
 
-    def add_feature_spec(self, spec: FeatureSpec) -> None:
-        import warnings
-
-        # Check if a Feature class already exists for this key
-        if spec.key in self.features_by_key:
-            warnings.warn(
-                f"Feature class already exists for key {spec.key.to_string()}. "
-                f"Standalone spec will be ignored - Feature class takes precedence.",
-                stacklevel=2,
-            )
-            return
-
-        # Check if a standalone spec already exists
-        if spec.key in self.standalone_specs_by_key:
-            existing = self.standalone_specs_by_key[spec.key]
-            # Only warn if it's a different spec (by comparing feature_spec_version)
-            if existing.feature_spec_version != spec.feature_spec_version:
-                raise ValueError(
-                    f"Standalone spec for key {spec.key.to_string()} already exists "
-                    f"with a different version."
-                )
-
-        # Validate that there are no duplicate columns across dependencies after renaming
-        if spec.deps:
-            self._validate_no_duplicate_columns(spec)
-
-        # Store standalone spec
-        self.standalone_specs_by_key[spec.key] = spec
-        # Also add to feature_specs_by_key for methods that only need the spec
-        self.feature_specs_by_key[spec.key] = spec
-
-    def add_definition(self, definition: "FeatureDefinition") -> None:
-        """Add an external feature definition (no Feature class available).
-
-        This is used for loading feature definitions from external projects
-        or from stored metadata when the Feature class is not importable.
-
-        Local features (those with Feature classes) always take precedence.
-
-        Args:
-            definition: FeatureDefinition to add to the graph
-        """
-        import warnings
-
-        key = definition.key
-
-        # Local features always take precedence
-        if key in self.features_by_key:
-            warnings.warn(
-                f"Feature class already exists for key {key.to_string()}. "
-                f"External definition will be ignored - local features take precedence.",
-                stacklevel=2,
-            )
-            return
-
-        # Check if a definition already exists
+        # Check for duplicates
         if key in self.definitions_by_key:
-            warnings.warn(
-                f"Definition for key {key.to_string()} already exists. "
-                f"Ignoring duplicate definition.",
-                stacklevel=2,
-            )
-            return
+            # If we're adding a Feature class and one already exists
+            if feature_class is not None and key in self._feature_classes:
+                existing = self._feature_classes[key]
+                warnings.warn(
+                    f"Feature with key {key.to_string()} already registered. "
+                    f"Existing: {existing.__name__}, New: {feature_class.__name__}. "
+                    f"Ignoring duplicate registration.",
+                    stacklevel=2,
+                )
+                return
+            # If we're adding a Feature class and only definition exists, class takes precedence
+            elif feature_class is not None:
+                # Update definition and add class
+                pass  # Continue to store
+            # If we're adding a definition/spec and class already exists, class takes precedence
+            elif key in self._feature_classes:
+                warnings.warn(
+                    f"Feature class already exists for key {key.to_string()}. "
+                    f"External definition will be ignored - local features take precedence.",
+                    stacklevel=2,
+                )
+                return
+            # If we're adding a definition/spec and one already exists
+            else:
+                warnings.warn(
+                    f"Definition for key {key.to_string()} already exists. "
+                    f"Ignoring duplicate definition.",
+                    stacklevel=2,
+                )
+                return
 
-        # Validate that there are no duplicate columns across dependencies after renaming
+        # Validate that there are no duplicate column names across dependencies
         if definition.spec.deps:
             self._validate_no_duplicate_columns(definition.spec)
 
-        # Store the definition
+        # Store the definition (primary storage)
         self.definitions_by_key[key] = definition
-        # Also add spec for convenience
-        self.feature_specs_by_key[key] = definition.spec
-        # Note: features_by_key is NOT populated for external definitions
+
+        # Store the Feature class reference if available (secondary storage)
+        if feature_class is not None:
+            self._feature_classes[key] = feature_class
 
     def get_definition(self, key: CoercibleToFeatureKey) -> "FeatureDefinition":
         """Get FeatureDefinition for a feature key.
@@ -208,13 +232,17 @@ class FeatureGraph:
             FeatureDefinition for the requested feature
 
         Raises:
-            KeyError: If no feature definition exists for the given key
+            KeyError: If no feature definition exists for the given key.
+                This can happen when the feature is from an external project
+                and hasn't been loaded. Use a MetadataStore to access external
+                feature definitions.
         """
         validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
         if validated_key not in self.definitions_by_key:
             raise KeyError(
-                f"No feature definition for {validated_key.to_string()}. "
-                f"Available keys: {[k.to_string() for k in self.definitions_by_key.keys()]}"
+                f"No feature definition for '{validated_key.to_string()}' in this graph. "
+                f"If this is an external feature, use MetadataStore.graph to access "
+                f"feature definitions that include external dependencies loaded from storage."
             )
         return self.definitions_by_key[validated_key]
 
@@ -234,7 +262,76 @@ class FeatureGraph:
             FeatureDefinition is available.
         """
         validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
-        return validated_key in self.features_by_key
+        return validated_key in self._feature_classes
+
+    def get_external_dependency_projects(self, current_project: str) -> set[str]:
+        """Get the set of external project names that features in this graph depend on.
+
+        This identifies which external projects need to have their feature definitions
+        loaded from the metadata store before version computation can proceed.
+
+        Args:
+            current_project: The current project name (features from this project are not external)
+
+        Returns:
+            Set of project names for external dependencies
+        """
+        from metaxy.models.feature_spec import FeatureDep
+
+        external_projects: set[str] = set()
+
+        for key, spec in self.feature_specs_by_key.items():
+            if not spec.deps:
+                continue
+
+            for dep in spec.deps:
+                if not isinstance(dep, FeatureDep):
+                    continue
+
+                dep_key = dep.feature
+
+                # Check if the dependency is in the graph
+                if dep_key in self.definitions_by_key:
+                    # Get the project from the definition
+                    dep_definition = self.definitions_by_key[dep_key]
+                    if dep_definition.project_name != current_project:
+                        external_projects.add(dep_definition.project_name)
+                elif dep_key not in self.feature_specs_by_key:
+                    # Dependency not in graph at all - this is an unresolved external dependency
+                    # We don't know the project yet, but we'll need to load it
+                    # For now, mark it as needing external resolution
+                    # The project will be determined when we query the system table
+                    pass
+
+        return external_projects
+
+    def get_unresolved_dependencies(self) -> set[FeatureKey]:
+        """Get feature keys for dependencies that are not in the graph.
+
+        These are dependencies that need to be loaded from external sources.
+
+        Returns:
+            Set of FeatureKey objects for unresolved dependencies
+        """
+        from metaxy.models.feature_spec import FeatureDep
+
+        unresolved: set[FeatureKey] = set()
+
+        for key, spec in self.feature_specs_by_key.items():
+            if not spec.deps:
+                continue
+
+            for dep in spec.deps:
+                if not isinstance(dep, FeatureDep):
+                    continue
+
+                dep_key = dep.feature
+
+                # Check if the dependency is in the graph
+                if dep_key not in self.definitions_by_key:
+                    unresolved.add(dep_key)
+
+        return unresolved
 
     def _validate_no_duplicate_columns(self, spec: "FeatureSpec") -> None:
         """Validate that there are no duplicate column names across dependencies after renaming.
@@ -377,10 +474,10 @@ class FeatureGraph:
     def remove_feature(self, key: CoercibleToFeatureKey) -> None:
         """Remove a feature from the graph.
 
-        Removes Feature class, FeatureDefinition, or standalone spec (whichever exists).
+        Removes the FeatureDefinition and Feature class reference (if any).
 
         Args:
-            key: Feature key to remove. Accepts types that can be converted into a feature key..
+            key: Feature key to remove. Accepts types that can be converted into a feature key.
 
         Raises:
             KeyError: If no feature with the given key is registered
@@ -388,40 +485,31 @@ class FeatureGraph:
         # Validate and coerce the key
         validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
 
-        # Check all possible storage locations
-        combined = {
-            **self.feature_specs_by_key,
-            **self.standalone_specs_by_key,
-            **{k: v for k, v in self.definitions_by_key.items()},
-        }
-
-        if validated_key not in combined:
+        if validated_key not in self.definitions_by_key:
             raise KeyError(
                 f"No feature with key {validated_key.to_string()} found in graph. "
-                f"Available keys: {[k.to_string() for k in combined]}"
+                f"Available keys: {[k.to_string() for k in self.definitions_by_key]}"
             )
 
-        # Remove from all relevant dicts
-        if validated_key in self.features_by_key:
-            del self.features_by_key[validated_key]
-        if validated_key in self.definitions_by_key:
-            del self.definitions_by_key[validated_key]
-        if validated_key in self.standalone_specs_by_key:
-            del self.standalone_specs_by_key[validated_key]
-        if validated_key in self.feature_specs_by_key:
-            del self.feature_specs_by_key[validated_key]
+        # Remove from primary storage
+        del self.definitions_by_key[validated_key]
+
+        # Remove from secondary storage (Feature class reference) if exists
+        if validated_key in self._feature_classes:
+            del self._feature_classes[validated_key]
 
     def get_feature_by_key(self, key: CoercibleToFeatureKey) -> type["BaseFeature"]:
         """Get a feature class by its key.
 
         Args:
-            key: Feature key to look up. Accepts types that can be converted into a feature key..
+            key: Feature key to look up. Accepts types that can be converted into a feature key.
 
         Returns:
             Feature class
 
         Raises:
-            KeyError: If no feature with the given key is registered
+            KeyError: If no feature class with the given key is registered
+                (note: this only returns Feature classes, not external definitions)
 
         Example:
             ```py
@@ -436,12 +524,12 @@ class FeatureGraph:
         # Validate and coerce the key
         validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
 
-        if validated_key not in self.features_by_key:
+        if validated_key not in self._feature_classes:
             raise KeyError(
-                f"No feature with key {validated_key.to_string()} found in graph. "
-                f"Available keys: {[k.to_string() for k in self.features_by_key.keys()]}"
+                f"No feature class with key {validated_key.to_string()} found in graph. "
+                f"Available feature classes: {[k.to_string() for k in self._feature_classes.keys()]}"
             )
-        return self.features_by_key[validated_key]
+        return self._feature_classes[validated_key]
 
     def list_features(
         self,
@@ -482,8 +570,8 @@ class FeatureGraph:
             ```
         """
         if not only_current_project:
-            # Return all features
-            return list(self.features_by_key.keys())
+            # Return all features (including external definitions)
+            return list(self.definitions_by_key.keys())
 
         # Normalize projects to list
         project_list: list[str]
@@ -497,17 +585,17 @@ class FeatureGraph:
             except RuntimeError:
                 # Config not initialized - in tests or non-CLI usage
                 # Return all features (can't determine project)
-                return list(self.features_by_key.keys())
+                return list(self.definitions_by_key.keys())
         elif isinstance(projects, str):
             project_list = [projects]
         else:
             project_list = projects
 
-        # Filter by project(s) using Feature.project attribute
+        # Filter by project(s) using FeatureDefinition.project_name
         return [
             key
-            for key in self.features_by_key.keys()
-            if self.features_by_key[key].project in project_list
+            for key, defn in self.definitions_by_key.items()
+            if defn.project_name in project_list
         ]
 
     def get_feature_plan(self, key: CoercibleToFeatureKey) -> FeaturePlan:
@@ -970,7 +1058,7 @@ class FeatureGraph:
                 # Add the FeatureDefinition (either no class path or import failed)
                 # Skip if already added by metaclass during import
                 if definition.key not in graph.definitions_by_key:
-                    graph.add_definition(definition)
+                    graph.add_feature(definition)
 
         return graph
 
