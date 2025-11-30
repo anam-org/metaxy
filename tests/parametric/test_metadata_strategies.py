@@ -13,6 +13,7 @@ from metaxy._testing.parametric import (
 )
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
+    METAXY_DELETED_AT,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE_BY_FIELD,
@@ -20,9 +21,13 @@ from metaxy.models.constants import (
 )
 from metaxy.versioning.types import HashAlgorithm
 
-# System columns expected in test-generated metadata (excludes metaxy_materialization_id
-# which is only added when an external materialization ID is provided)
-EXPECTED_SYSTEM_COLUMNS = ALL_SYSTEM_COLUMNS - {METAXY_MATERIALIZATION_ID}
+# System columns expected in test-generated metadata (excludes columns that are
+# only added in specific contexts: metaxy_materialization_id when an external
+# materialization ID is provided, and metaxy_deleted_at which is only set during cleanup)
+EXPECTED_SYSTEM_COLUMNS = ALL_SYSTEM_COLUMNS - {
+    METAXY_MATERIALIZATION_ID,
+    METAXY_DELETED_AT,
+}
 
 
 def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:

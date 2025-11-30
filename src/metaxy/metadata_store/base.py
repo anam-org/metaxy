@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
+from datetime import datetime, timezone
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
+from zoneinfo import ZoneInfo
 
 import narwhals as nw
 from narwhals.typing import Frame, IntoFrame
@@ -14,10 +17,15 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
-from metaxy._utils import switch_implementation_to_polars
+from metaxy._utils import collect_to_polars, switch_implementation_to_polars
 from metaxy.config import MetaxyConfig
+from metaxy.metadata_store.cleanup import (
+    DeletionResult,
+    MutationResult,
+)
 from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
+    MetadataSchemaError,
     StoreNotOpenError,
     SystemDataNotFoundError,
     VersioningEngineMismatchError,
@@ -38,13 +46,20 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_DELETED_AT,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
+    METAXY_UPDATED_AT,
 )
-from metaxy.models.feature import BaseFeature, FeatureGraph, current_graph
+from metaxy.models.feature import (
+    BaseFeature,
+    FeatureGraph,
+    current_graph,
+    get_feature_by_key,
+)
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import (
     CoercibleToFeatureKey,
@@ -58,6 +73,7 @@ from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
 if TYPE_CHECKING:
     pass
 
+logger = logging.getLogger(__name__)
 
 # TypeVar for config types - used for typing from_config method
 MetadataStoreConfigT = TypeVar("MetadataStoreConfigT", bound="MetadataStoreConfig")
@@ -113,6 +129,7 @@ _SYSTEM_COLUMN_DTYPES = {
     METAXY_DATA_VERSION: nw.String,
     METAXY_CREATED_AT: nw.Datetime,
     METAXY_MATERIALIZATION_ID: nw.String,
+    METAXY_DELETED_AT: nw.Datetime,
 }
 
 
@@ -201,6 +218,7 @@ class MetadataStore(ABC):
         # Initialize state early so properties can check it
         self._is_open = False
         self._context_depth = 0
+        self._access_mode: AccessMode | None = None
         self._versioning_engine = versioning_engine
         self._allow_cross_project_writes = False
         self._materialization_id = materialization_id
@@ -211,8 +229,6 @@ class MetadataStore(ABC):
 
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
-            from metaxy.config import MetaxyConfig
-
             self.auto_create_tables = MetaxyConfig.get().auto_create_tables
         else:
             self.auto_create_tables = auto_create_tables
@@ -538,9 +554,13 @@ class MetadataStore(ABC):
         allow_fallback: bool = True,
         current_only: bool = True,
         latest_only: bool = True,
+        include_deleted: bool = False,
+        with_soft_deleted: bool = False,
     ) -> nw.LazyFrame[Any]:
         """
         Read metadata with optional fallback to upstream stores.
+
+        By default, filters out soft-deleted records (where metaxy_deleted_at IS NULL).
 
         Args:
             feature: Feature to read metadata for
@@ -551,6 +571,9 @@ class MetadataStore(ABC):
             allow_fallback: If `True`, check fallback stores on local miss
             current_only: If `True`, only return rows with current feature_version
             latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
+            include_deleted: If `True`, include soft-deleted records (metaxy_deleted_at IS NOT NULL).
+            with_soft_deleted: If `True`, return only soft-deleted records. Mutually exclusive with include_deleted.
+                By default (False), only active records are returned.
 
         Returns:
             Narwhals LazyFrame with metadata
@@ -559,10 +582,12 @@ class MetadataStore(ABC):
             FeatureNotFoundError: If feature not found in any store
             SystemDataNotFoundError: When attempting to read non-existent Metaxy system data
             ValueError: If both feature_version and current_only=True are provided
+            ValueError: If include_deleted and with_soft_deleted are both True
 
         !!! info
             When this method is called with default arguments, it will return the latest (by `metaxy_created_at`)
-            metadata for the current feature version. Therefore, it's perfectly suitable for most use cases.
+            metadata for the current feature version, excluding soft-deleted records.
+            Therefore, it's perfectly suitable for most use cases.
 
         !!! warning
             The order of rows is not guaranteed.
@@ -579,6 +604,21 @@ class MetadataStore(ABC):
                 "Cannot specify both feature_version and current_only=True. "
                 "Use current_only=False with feature_version parameter."
             )
+        if include_deleted and with_soft_deleted:
+            raise ValueError(
+                "include_deleted=True returns active and soft-deleted records; "
+                "with_soft_deleted=True returns only soft-deleted records. "
+                "Choose one."
+            )
+
+        # Soft-delete filtering: when latest_only, defer filtering until after dedup so
+        # we consider tombstoned rows when picking the latest version.
+        apply_soft_delete_pre = not latest_only and not is_system_table
+        if apply_soft_delete_pre:
+            if with_soft_deleted:
+                filters = [~nw.col(METAXY_DELETED_AT).is_null(), *filters]
+            elif not include_deleted:
+                filters = [nw.col(METAXY_DELETED_AT).is_null(), *filters]
 
         # Add feature_version filter only when needed
         if current_only or feature_version is not None and not is_system_table:
@@ -618,16 +658,42 @@ class MetadataStore(ABC):
             )
 
         if lazy_frame is not None and not is_system_table and latest_only:
-            from metaxy.models.constants import METAXY_CREATED_AT
-
             # Apply deduplication
+            dedup_col = METAXY_CREATED_AT
+            dedup_helper = "__metaxy_dedup_ts"
+            columns_list = list(lazy_frame.columns)
+
+            has_updated = METAXY_UPDATED_AT in columns_list
+
+            if has_updated:
+                dedup_expr = nw.coalesce(
+                    [nw.col(METAXY_UPDATED_AT), nw.col(METAXY_CREATED_AT)]
+                )
+                lazy_frame = lazy_frame.with_columns(dedup_expr.alias(dedup_helper))
+                dedup_col = dedup_helper
+
+            order_by_columns = [dedup_col]
+            for col in (METAXY_UPDATED_AT, METAXY_CREATED_AT):
+                if col in columns_list and col not in order_by_columns:
+                    order_by_columns.append(col)
+
             lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
                 df=lazy_frame,
                 group_columns=list(
                     self._resolve_feature_plan(feature_key).feature.id_columns
                 ),
-                timestamp_column=METAXY_CREATED_AT,
+                order_by_columns=order_by_columns,
             )
+
+            if has_updated:
+                remaining_cols = [c for c in lazy_frame.columns if c != dedup_helper]
+                lazy_frame = lazy_frame.select(remaining_cols)
+
+            # Apply soft-delete filtering after dedup so tombstones suppress rows
+            if with_soft_deleted:
+                lazy_frame = lazy_frame.filter(~nw.col(METAXY_DELETED_AT).is_null())
+            elif not include_deleted:
+                lazy_frame = lazy_frame.filter(nw.col(METAXY_DELETED_AT).is_null())
 
         if lazy_frame is not None:
             # After dedup, filter to requested columns if specified
@@ -649,6 +715,7 @@ class MetadataStore(ABC):
                         allow_fallback=True,
                         current_only=current_only,
                         latest_only=latest_only,
+                        include_deleted=include_deleted,
                     )
                 except FeatureNotFoundError:
                     # Try next fallback store
@@ -695,7 +762,7 @@ class MetadataStore(ABC):
             - Features from other Metaxy projects cannot be written to, unless project validation has been disabled with [MetadataStore.allow_cross_project_writes][].
 
         """
-        self._check_open()
+        self._check_write_access()
 
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
@@ -717,8 +784,6 @@ class MetadataStore(ABC):
             return
 
         if METAXY_PROVENANCE_BY_FIELD not in df_nw.columns:
-            from metaxy.metadata_store.exceptions import MetadataSchemaError
-
             raise MetadataSchemaError(
                 f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column"
             )
@@ -1053,6 +1118,15 @@ class MetadataStore(ABC):
                 'Use it as a context manager: `with store: ...` or `with store.open(mode="write"): ...`'
             )
 
+    def _check_write_access(self) -> None:
+        """Ensure the store is open in write mode before performing mutations."""
+        self._check_open()
+        if self._access_mode != "write":
+            raise StoreNotOpenError(
+                f'{self.__class__.__name__} must be opened with mode="write" for this operation. '
+                'Use `with store.open("write"):` when deleting, mutating, or soft-deleting metadata.'
+            )
+
     # ========== Hash Algorithm Validation ==========
 
     def validate_hash_algorithm(
@@ -1159,8 +1233,6 @@ class MetadataStore(ABC):
             return
 
         # Get the expected project from global config
-        from metaxy.config import MetaxyConfig
-
         config = MetaxyConfig.get()
         expected_project = config.project
 
@@ -1250,21 +1322,20 @@ class MetadataStore(ABC):
 
             # Get current feature version and snapshot_version from code and add them
             # Use duck typing to avoid Ray serialization issues with issubclass
-            if (
-                isinstance(feature, type)
-                and hasattr(feature, "feature_version")
-                and callable(feature.feature_version)
-            ):
-                current_feature_version = feature.feature_version()
-            else:
-                from metaxy import get_feature_by_key
+            feature_version_fn = None
+            if isinstance(feature, type):
+                try:
+                    feature_version_fn = feature.feature_version  # type: ignore[attr-defined]
+                except AttributeError:
+                    feature_version_fn = None
 
+            if callable(feature_version_fn):
+                current_feature_version = feature_version_fn()
+            else:
                 feature_cls = get_feature_by_key(feature_key)
                 current_feature_version = feature_cls.feature_version()
 
             # Get snapshot_version from active graph
-            from metaxy.models.feature import FeatureGraph
-
             graph = FeatureGraph.get_active()
             current_snapshot_version = graph.snapshot_version
 
@@ -1276,12 +1347,6 @@ class MetadataStore(ABC):
             )
 
         # These should normally be added by the provenance engine during resolve_update
-        from metaxy.models.constants import (
-            METAXY_CREATED_AT,
-            METAXY_DATA_VERSION,
-            METAXY_DATA_VERSION_BY_FIELD,
-        )
-
         if METAXY_PROVENANCE_BY_FIELD not in df.columns:
             raise ValueError(
                 f"Metadata is missing a required column `{METAXY_PROVENANCE_BY_FIELD}`. It should have been created by a prior `MetadataStore.resolve_update` call. Did you drop it on the way?"
@@ -1308,20 +1373,28 @@ class MetadataStore(ABC):
             )
 
         if METAXY_CREATED_AT not in df.columns:
-            from datetime import datetime, timezone
-
             df = df.with_columns(
                 nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT)
             )
+        if METAXY_UPDATED_AT not in df.columns:
+            # For new rows, updated_at defaults to created_at
+            df = df.with_columns(nw.col(METAXY_CREATED_AT).alias(METAXY_UPDATED_AT))
 
         # Add materialization_id if not already present
-        from metaxy.models.constants import METAXY_MATERIALIZATION_ID
-
         df = df.with_columns(
             nw.lit(
                 materialization_id or self._materialization_id, dtype=nw.String
             ).alias(METAXY_MATERIALIZATION_ID)
         )
+
+        # Add metaxy_deleted_at if not already present (NULL by default for new records)
+        # Use timezone-aware datetime to match metaxy_created_at
+        if METAXY_DELETED_AT not in df.columns:
+            df = df.with_columns(
+                nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(
+                    METAXY_DELETED_AT
+                )
+            )
 
         # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)
 
@@ -1355,8 +1428,6 @@ class MetadataStore(ABC):
         Raises:
             MetadataSchemaError: If schema is invalid
         """
-        from metaxy.metadata_store.exceptions import MetadataSchemaError
-
         schema = df.collect_schema()
 
         # Check for metaxy_provenance_by_field column
@@ -1427,6 +1498,667 @@ class MetadataStore(ABC):
         self._check_open()
         feature_key = self._resolve_feature_key(feature)
         self._drop_feature_metadata_impl(feature_key)
+
+    def _convert_frame_filter_to_expr(
+        self,
+        feature_key: FeatureKey,
+        frame: IntoFrame,
+        match_on: Literal["id_columns", "all_columns"] | list[str],
+    ) -> nw.Expr:
+        """Convert a frame filter to a Narwhals expression using semi-join approach.
+
+        Uses efficient `is_in()` for single-column filters to avoid client-side
+        collection and OR-chain explosion. For multi-column filters, falls back
+        to OR chains with higher limits.
+
+        Args:
+            feature_key: Feature being filtered
+            frame: Frame with values to match
+            match_on: Which columns to use for matching
+
+        Returns:
+            Narwhals expression that matches the frame values
+
+        Raises:
+            ValueError: If match_on columns not found in frame
+        """
+        frame_nw = nw.from_native(frame)
+
+        # Determine which columns to match on
+        if match_on == "id_columns":
+            plan = self._resolve_feature_plan(feature_key)
+            columns = plan.feature.id_columns
+        elif match_on == "all_columns":
+            columns = list(frame_nw.columns)
+        else:
+            # List of specific column names
+            columns = match_on
+
+        # Validate columns exist in frame
+        for col in columns:
+            if col not in frame_nw.columns:
+                raise ValueError(
+                    f"Column '{col}' not found in filter frame. "
+                    f"Available columns: {frame_nw.columns}"
+                )
+
+        # Optimize for single-column filters using is_in() - most common case
+        if len(columns) == 1:
+            col = columns[0]
+            # Get unique values for the single column
+            selected = frame_nw.select(col).unique()
+
+            # Collect only the single column (minimal overhead)
+            selected_df = collect_to_polars(selected)
+
+            # Use is_in() for efficient semi-join (pushes predicate to backend)
+            values = selected_df[col].to_list()
+
+            if not values:
+                raise ValueError("No values found in filter frame")
+
+            return nw.col(col).is_in(values)
+
+        # Multi-column filters: fall back to OR chains
+        # Note: This could be optimized with struct comparisons if backends support it
+        selected = frame_nw.select(columns).unique()
+        selected_df = collect_to_polars(selected)
+        rows = selected_df.to_dicts()
+
+        if not rows:
+            raise ValueError("No rows found in filter frame")
+
+        # Higher limit for multi-column filters since single-column case is optimized
+        MAX_FILTER_ROWS = 50000
+        if len(rows) > MAX_FILTER_ROWS:
+            raise ValueError(
+                f"Filter frame contains {len(rows)} unique rows, which exceeds "
+                f"the maximum allowed ({MAX_FILTER_ROWS}). For multi-column filters, "
+                f"this would create an excessively large OR predicate. Consider:\n"
+                f"  1. Using a single-column filter (automatically optimized)\n"
+                f"  2. Using a more selective filter expression\n"
+                f"  3. Processing data in smaller batches"
+            )
+
+        row_exprs = []
+        for row in rows:
+            # Match all requested columns for this row
+            per_row_conditions = [
+                nw.col(col) == row[col]
+                for col in columns  # type: ignore[index]
+            ]
+            if len(per_row_conditions) == 1:
+                row_exprs.append(per_row_conditions[0])
+            else:
+                expr = per_row_conditions[0]
+                for cond in per_row_conditions[1:]:
+                    expr = expr & cond
+                row_exprs.append(expr)
+
+        # Combine rows with OR
+        result = row_exprs[0]
+        for expr in row_exprs[1:]:
+            result = result | expr
+        return result
+
+    def delete_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        filter: nw.Expr | IntoFrame,
+        *,
+        match_on: Literal["id_columns", "all_columns"] | list[str] = "id_columns",
+    ) -> DeletionResult:
+        """Hard delete: physically remove records matching filter.
+
+        Args:
+            feature: Feature to delete from
+            filter: Either:
+                - Narwhals expression (e.g., nw.col("timestamp") < cutoff)
+                - Frame containing values to match against (see match_on)
+            match_on: Only used when filter is a frame. Options:
+                - "id_columns": Match on feature's id_columns (default)
+                - "all_columns": Match on all columns present in frame
+                - ["col1", "col2"]: Match on specific columns
+        Returns:
+            DeletionResult
+
+        Raises:
+            StoreNotOpenError: If store is not open in write mode
+            ValueError: If filter frame has invalid columns
+
+        Example:
+            ```python
+            # Delete by expression
+            store.delete_metadata(
+                UserEvents,
+                filter=nw.col("timestamp") < cutoff_date
+            )
+
+            # Delete by ID frame (matches on id_columns)
+            ids_to_delete = nw.from_dict({"user_id": ["user_1", "user_2"]})
+            store.delete_metadata(UserProfile, filter=ids_to_delete)
+
+            # Delete with propagation (GDPR)
+            store.delete_metadata(
+                UserProfile,
+                filter=nw.col("user_id") == "user_123",
+            )
+            ```
+        """
+        self._check_write_access()
+
+        feature_key = self._resolve_feature_key(feature)
+
+        # Temp table optimization: use semi-join for frame filters
+        if not isinstance(filter, nw.Expr) and self._supports_temp_tables():
+            # Frame filter + backend supports temp tables = use semi-join
+            frame_nw = nw.from_native(filter)
+
+            # Determine join columns
+            if match_on == "id_columns":
+                plan = self._resolve_feature_plan(feature_key)
+                join_columns = list(plan.feature.id_columns)
+            elif match_on == "all_columns":
+                join_columns = list(frame_nw.columns)
+            else:
+                join_columns = (
+                    list(match_on) if isinstance(match_on, tuple) else match_on
+                )
+
+            # Validate columns exist
+            for col in join_columns:
+                if col not in frame_nw.columns:
+                    raise ValueError(
+                        f"Column '{col}' not found in filter frame. "
+                        f"Available columns: {frame_nw.columns}"
+                    )
+
+            # Use temp table approach (no client-side materialization)
+            temp_table_name = self._generate_temp_table_name()
+            try:
+                self._create_temp_table(temp_table_name, filter, join_columns)
+                rows_deleted = self._delete_metadata_with_temp_table(
+                    feature_key, temp_table_name, join_columns
+                )
+                return DeletionResult(
+                    feature_key=feature_key,
+                    rows_affected=rows_deleted,
+                    timestamp=datetime.now(timezone.utc),
+                    error=None,
+                )
+            finally:
+                try:
+                    self._drop_temp_table(temp_table_name)
+                except Exception:
+                    # Best effort cleanup - don't fail the operation if cleanup fails
+                    pass
+        else:
+            # Expression filter or no temp table support: use current approach
+            if not isinstance(filter, nw.Expr):
+                filter_expr = self._convert_frame_filter_to_expr(
+                    feature_key, filter, match_on
+                )
+            else:
+                filter_expr = filter
+
+            # Execute deletion for the specified feature
+            total_rows = 0
+            errors = []
+            try:
+                rows = self._delete_metadata_impl(feature_key, filter_expr)
+                total_rows += rows
+            except Exception as e:
+                errors.append(f"{feature_key.to_string()}: {str(e)}")
+
+            return DeletionResult(
+                feature_key=feature_key,
+                rows_affected=total_rows,
+                timestamp=datetime.now(timezone.utc),
+                error="; ".join(errors) if errors else None,
+            )
+
+    def soft_delete_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        filter: nw.Expr | IntoFrame,
+        *,
+        match_on: Literal["id_columns", "all_columns"] | list[str] = "id_columns",
+    ) -> DeletionResult:
+        """Soft delete by appending tombstone records (no in-place UPDATE).
+
+        We read the target rows (latest-only), keep only active ones, and append
+        new rows with `metaxy_deleted_at`/`metaxy_updated_at` set to now. The
+        original rows remain untouched (append-only semantics), and dedup logic
+        surfaces the tombstone as the latest version for that key.
+        """
+        self._check_open()
+        feature_key = self._resolve_feature_key(feature)
+
+        if not isinstance(filter, nw.Expr):
+            filter_expr = self._convert_frame_filter_to_expr(
+                feature_key, filter, match_on
+            )
+        else:
+            filter_expr = filter
+
+        now = datetime.now(timezone.utc)
+
+        active_lazy = self.read_metadata(
+            feature_key,
+            filters=[filter_expr],
+            include_deleted=False,
+            latest_only=True,
+            allow_fallback=False,
+        )
+
+        if active_lazy is None:
+            return DeletionResult(
+                feature_key=feature_key,
+                rows_affected=0,
+                timestamp=now,
+                error=None,
+            )
+
+        # Collect once to avoid backend-specific broadcasting quirks
+        active_df = active_lazy.collect()
+        rows_active = len(active_df)
+        if rows_active == 0:
+            return DeletionResult(
+                feature_key=feature_key,
+                rows_affected=0,
+                timestamp=now,
+                error=None,
+            )
+
+        active_df_nw = nw.from_native(active_df, eager_only=True)
+        tombstones = active_df_nw.with_columns(
+            nw.lit(
+                now, dtype=active_df_nw.schema.get(METAXY_DELETED_AT) or nw.Datetime
+            ).alias(METAXY_DELETED_AT),
+            nw.lit(
+                now, dtype=active_df_nw.schema.get(METAXY_UPDATED_AT) or nw.Datetime
+            ).alias(METAXY_UPDATED_AT),
+            nw.lit(
+                now, dtype=active_df_nw.schema.get(METAXY_CREATED_AT) or nw.Datetime
+            ).alias(METAXY_CREATED_AT),
+        )
+
+        self.write_metadata(feature_key, tombstones)
+
+        return DeletionResult(
+            feature_key=feature_key,
+            rows_affected=rows_active,
+            timestamp=now,
+            error=None,
+        )
+
+    def mutate_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        filter: nw.Expr | IntoFrame,
+        updates: dict[str, Any],
+        *,
+        match_on: Literal["id_columns", "all_columns"] | list[str] = "id_columns",
+        filter_active_only: bool = False,
+    ) -> MutationResult:
+        """Generic mutation: update columns for anonymization, flags, etc.
+
+        Args:
+            feature: Feature to mutate
+            filter: Expression or frame (see delete_metadata for details)
+            updates: Dictionary mapping column names to new values
+            match_on: Column matching mode when filter is a frame
+
+        Returns:
+            MutationResult
+
+        Example:
+            ```python
+            # Anonymize user data (GDPR)
+            store.mutate_metadata(
+                UserProfile,
+                filter=nw.col("user_id") == "user_123",
+                updates={
+                    "email": "[REDACTED]",
+                    "phone": None,
+                    "anonymized_at": datetime.now(timezone.utc)
+                }
+            )
+
+            # Add custom deletion flag
+            store.mutate_metadata(
+                UserEvents,
+                filter=nw.col("timestamp") < cutoff,
+                updates={"archived": True}
+            )
+        ```
+        """
+        self._check_write_access()
+
+        feature_key = self._resolve_feature_key(feature)
+
+        # Convert frame to expression if needed
+        if not isinstance(filter, nw.Expr):
+            filter_expr = self._convert_frame_filter_to_expr(
+                feature_key, filter, match_on
+            )
+        else:
+            filter_expr = filter
+
+        now = datetime.now(timezone.utc)
+        updated_at_value: datetime = now
+        deleted_at_dtype = None
+        created_at_dtype = None
+        updated_at_dtype = None
+        errors = []
+        rows_mutated = 0
+
+        try:
+            # Prefer backend-native mutation when available
+            rows_mutated = self._mutate_metadata_impl(
+                feature_key,
+                filter_expr,
+                {**updates, METAXY_UPDATED_AT: updated_at_value},
+            )
+            return MutationResult(
+                feature_key=feature_key,
+                rows_affected=rows_mutated,
+                updates=updates,
+                timestamp=now,
+                error=None,
+            )
+        except NotImplementedError:
+            # Fallback: append-only mutation for backends without native UPDATE support
+            # This implements proper mutation semantics by:
+            # 1. Soft-deleting old versions (preserves history)
+            # 2. Writing new versions with updates (append-only)
+            try:
+                current_lazy = self.read_metadata(
+                    feature_key,
+                    filters=[filter_expr],
+                    include_deleted=True,
+                    latest_only=True,
+                    allow_fallback=False,
+                )
+
+                current_df = (
+                    current_lazy.collect() if current_lazy is not None else None
+                )
+
+                if current_df is None or len(current_df) == 0:
+                    return MutationResult(
+                        feature_key=feature_key,
+                        rows_affected=0,
+                        updates=updates,
+                        timestamp=now,
+                        error=None,
+                    )
+
+                if filter_active_only:
+                    current_df = current_df.filter(nw.col(METAXY_DELETED_AT).is_null())
+
+                    if len(current_df) == 0:
+                        return MutationResult(
+                            feature_key=feature_key,
+                            rows_affected=0,
+                            updates=updates,
+                            timestamp=now,
+                            error=None,
+                        )
+
+                try:
+                    created_at_dtype = current_df.schema.get(METAXY_CREATED_AT)
+                    deleted_at_dtype = current_df.schema.get(METAXY_DELETED_AT)
+                    updated_at_dtype = current_df.schema.get(METAXY_UPDATED_AT)
+                    if isinstance(created_at_dtype, nw.Datetime):
+                        tz = created_at_dtype.time_zone
+                        try:
+                            if tz:
+                                updated_at_value = now.astimezone(ZoneInfo(tz))
+                            else:
+                                updated_at_value = datetime.now()
+                        except Exception:
+                            updated_at_value = now
+                except Exception:
+                    updated_at_value = now
+
+                # Step 1: Soft-delete the old versions to preserve history
+                # Mark old rows as deleted (append-only, keeps old versions)
+                soft_deleted_df = current_df.with_columns(
+                    nw.lit(now, dtype=deleted_at_dtype or nw.Datetime).alias(
+                        METAXY_DELETED_AT
+                    ),
+                    nw.lit(
+                        updated_at_value, dtype=updated_at_dtype or nw.Datetime
+                    ).alias(METAXY_UPDATED_AT),
+                )
+                self.write_metadata(feature_key, soft_deleted_df)
+
+                # Step 2: Write new versions with updates
+                update_exprs = []
+                system_update_columns = {
+                    METAXY_DELETED_AT,
+                    METAXY_CREATED_AT,
+                    METAXY_UPDATED_AT,
+                }
+                for col, val in updates.items():
+                    if col in system_update_columns:
+                        continue
+                    dtype = None
+                    try:
+                        dtype = current_df.schema.get(col)
+                    except Exception:
+                        dtype = None
+
+                    if dtype is not None:
+                        update_exprs.append(nw.lit(val, dtype=dtype).alias(col))
+                    else:
+                        update_exprs.append(nw.lit(val).alias(col))
+
+                # Create new version: clear deleted_at and apply updates
+                updated_df = current_df.with_columns(
+                    nw.lit(None, dtype=deleted_at_dtype or nw.Datetime).alias(
+                        METAXY_DELETED_AT
+                    ),
+                    nw.lit(now, dtype=created_at_dtype or nw.Datetime).alias(
+                        METAXY_CREATED_AT
+                    ),
+                    nw.lit(
+                        updated_at_value, dtype=updated_at_dtype or nw.Datetime
+                    ).alias(METAXY_UPDATED_AT),
+                    *update_exprs,
+                )
+
+                rows_mutated = len(updated_df)
+
+                self.write_metadata(feature_key, updated_df)
+
+            except Exception as e:  # pragma: no cover - defensive fallback
+                errors.append(f"{feature_key.to_string()}: {str(e)}")
+
+        except Exception as e:  # pragma: no cover - defensive fallback
+            errors.append(f"{feature_key.to_string()}: {str(e)}")
+
+        return MutationResult(
+            feature_key=feature_key,
+            rows_affected=rows_mutated,
+            updates=updates,
+            timestamp=now,
+            error="; ".join(errors) if errors else None,
+        )
+
+    # Temp table infrastructure for semi-join approach
+
+    def _supports_temp_tables(self) -> bool:
+        """Check if backend supports temporary tables for semi-join optimization.
+
+        Returns:
+            True if backend can create/use temp tables, False otherwise
+
+        Note:
+            Backends that support temp tables should override this to return True.
+            This enables efficient semi-join filtering without client-side materialization.
+        """
+        return False
+
+    def _generate_temp_table_name(self) -> str:
+        """Generate a unique temporary table name.
+
+        Returns:
+            Unique table name for temporary use
+
+        Note:
+            Uses UUID to ensure uniqueness across concurrent operations.
+        """
+        import uuid
+
+        return f"_metaxy_filter_{uuid.uuid4().hex[:16]}"
+
+    def _create_temp_table(
+        self,
+        temp_table_name: str,
+        frame: IntoFrame,
+        columns: list[str],
+    ) -> None:
+        """Create a temporary table with filter data for semi-join.
+
+        Args:
+            temp_table_name: Name for the temporary table
+            frame: Frame containing filter data
+            columns: Columns to include in temp table
+
+        Raises:
+            NotImplementedError: If backend doesn't support temp tables
+
+        Note:
+            Backends that support temp tables must override this method.
+            The temp table is used for efficient semi-join filtering.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support temporary tables"
+        )
+
+    def _drop_temp_table(self, temp_table_name: str) -> None:
+        """Drop a temporary table created by _create_temp_table.
+
+        Args:
+            temp_table_name: Name of temp table to drop
+
+        Raises:
+            NotImplementedError: If backend doesn't support temp tables
+
+        Note:
+            Should be called in finally block to ensure cleanup even on errors.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support temporary tables"
+        )
+
+    def _delete_metadata_with_temp_table(
+        self,
+        feature_key: FeatureKey,
+        temp_table_name: str,
+        join_columns: list[str],
+    ) -> int:
+        """Backend-specific hard delete using temp table semi-join.
+
+        Args:
+            feature_key: Feature to delete from
+            temp_table_name: Name of temporary table containing filter values
+            join_columns: Columns to use for semi-join
+
+        Returns:
+            Number of rows deleted
+
+        Raises:
+            NotImplementedError: If backend doesn't support temp table deletions
+
+        Note:
+            More efficient than expression-based deletion for large filter sets.
+            Backends should use SQL like:
+            DELETE FROM feature WHERE (col1, col2) IN (SELECT col1, col2 FROM temp_table)
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support temp table deletions"
+        )
+
+    @abstractmethod
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+    ) -> int:
+        """Backend-specific hard delete implementation.
+
+        Args:
+            feature_key: Feature to delete from
+            filter_expr: Narwhals expression to filter records
+
+        Returns:
+            Number of rows deleted
+
+        Raises:
+            NotImplementedError: If the backend hasn't implemented deletion yet
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not yet support delete_metadata. "
+            f"Implementation will be added in a future release."
+        )
+
+    def _mutate_metadata_with_temp_table(
+        self,
+        feature_key: FeatureKey,
+        temp_table_name: str,
+        join_columns: list[str],
+        updates: dict[str, Any],
+    ) -> int:
+        """Backend-specific mutation using temp table semi-join.
+
+        Args:
+            feature_key: Feature to mutate
+            temp_table_name: Name of temporary table containing filter values
+            join_columns: Columns to use for semi-join
+            updates: Dictionary mapping column names to new values
+
+        Returns:
+            Number of rows updated
+
+        Raises:
+            NotImplementedError: If backend doesn't support temp table mutations
+
+        Note:
+            More efficient than expression-based mutation for large filter sets.
+            Backends should use SQL like:
+            UPDATE feature SET col=val WHERE (id) IN (SELECT id FROM temp_table)
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support temp table mutations"
+        )
+
+    @abstractmethod
+    def _mutate_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+        updates: dict[str, Any],
+    ) -> int:
+        """Backend-specific mutation implementation.
+
+        Args:
+            feature_key: Feature to mutate
+            filter_expr: Narwhals expression to filter records
+            updates: Dictionary mapping column names to new values
+
+        Returns:
+            Number of rows updated
+
+        Raises:
+            NotImplementedError: If the backend hasn't implemented mutation yet
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not yet support mutate_metadata. "
+            f"Implementation will be added in a future release."
+        )
 
     @abstractmethod
     def read_metadata_in_store(
@@ -1597,10 +2329,6 @@ class MetadataStore(ABC):
             )
             ```
         """
-        import logging
-
-        logger = logging.getLogger(__name__)
-
         # Validate destination store is open
         if not self._is_open:
             raise ValueError(
@@ -1616,7 +2344,6 @@ class MetadataStore(ABC):
                     from_snapshot=from_snapshot,
                     filters=filters,
                     incremental=incremental,
-                    logger=logger,
                 )
         else:
             return self._copy_metadata_impl(
@@ -1625,7 +2352,6 @@ class MetadataStore(ABC):
                 from_snapshot=from_snapshot,
                 filters=filters,
                 incremental=incremental,
-                logger=logger,
             )
 
     def _copy_metadata_impl(
@@ -1635,15 +2361,12 @@ class MetadataStore(ABC):
         from_snapshot: str | None,
         filters: Mapping[str, Sequence[nw.Expr]] | None,
         incremental: bool,
-        logger,
     ) -> dict[str, int]:
         """Internal implementation of copy_metadata."""
         # Determine which features to copy
         features_to_copy: list[FeatureKey]
         if features is None:
             # Copy all features from active graph (features defined in current project)
-            from metaxy.models.feature import FeatureGraph
-
             graph = FeatureGraph.get_active()
             features_to_copy = graph.list_features(only_current_project=True)
             logger.info(
@@ -1676,8 +2399,6 @@ class MetadataStore(ABC):
                     )
 
                     # Filter by from_snapshot if specified
-                    import narwhals as nw
-
                     if from_snapshot is not None:
                         source_filtered = source_lazy.filter(
                             nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot

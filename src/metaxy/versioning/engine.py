@@ -166,7 +166,9 @@ class VersioningEngine(ABC):
                 METAXY_CREATED_AT,
                 METAXY_DATA_VERSION,
                 METAXY_DATA_VERSION_BY_FIELD,
+                METAXY_DELETED_AT,
                 METAXY_MATERIALIZATION_ID,
+                METAXY_UPDATED_AT,
             )
 
             allowed_system_columns = {
@@ -175,7 +177,9 @@ class VersioningEngine(ABC):
                 METAXY_DATA_VERSION,
                 METAXY_DATA_VERSION_BY_FIELD,
                 METAXY_CREATED_AT,
+                METAXY_UPDATED_AT,
                 METAXY_MATERIALIZATION_ID,
+                METAXY_DELETED_AT,
             }
             id_cols = set(self.shared_id_columns)
             colliding_columns = [
@@ -273,20 +277,22 @@ class VersioningEngine(ABC):
     def keep_latest_by_group(
         df: FrameT,
         group_columns: list[str],
-        timestamp_column: str,
+        order_by_columns: list[str],
     ) -> FrameT:
-        """Keep only the latest row per group based on a timestamp column.
+        """Keep only the latest row per group based on ordered columns.
 
         Args:
             df: Narwhals DataFrame/LazyFrame
             group_columns: Columns to group by (typically ID columns)
-            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+            order_by_columns: Columns to order by (highest value wins). The first column
+                is typically the primary timestamp; remaining columns are used as
+                deterministic tie-breakers.
 
         Returns:
             Narwhals DataFrame/LazyFrame with only the latest row per group
 
         Raises:
-            ValueError: If timestamp_column doesn't exist in df
+            ValueError: If no order_by_columns exist in df
         """
         raise NotImplementedError()
 

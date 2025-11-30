@@ -80,6 +80,7 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
     )
     parent: str  # Parent migration ID or "initial"
     created_at: AwareDatetime
+    ops: list[dict[str, Any]] = PydanticField(default_factory=list)
 
     @abstractmethod
     def execute(
@@ -180,8 +181,10 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
         """
         import importlib
 
-        # Check if this migration has an ops field (using getattr to avoid type errors)
-        ops = getattr(self, "ops", None)
+        try:
+            ops = self.ops  # type: ignore[attr-defined]
+        except AttributeError:
+            ops = None
         if ops is None:
             return []
 
@@ -196,7 +199,9 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
 
             try:
                 module = importlib.import_module(module_path)
-                op_cls = getattr(module, class_name)
+                op_cls = module.__dict__.get(class_name)
+                if op_cls is None:
+                    raise AttributeError(f"{class_name} not found in {module_path}")
             except (ImportError, AttributeError) as e:
                 raise ValueError(
                     f"Failed to import operation class '{op_config.type}': {e}"
@@ -258,7 +263,7 @@ class DiffMigration(Migration):
     # Stored fields - persisted to YAML in git
     from_snapshot_version: str
     to_snapshot_version: str
-    ops: list[dict[str, Any]]  # Required - must explicitly specify operations
+    ops: list[dict[str, Any]] = PydanticField(default_factory=list)
 
     # Private attribute for caching computed graph diff
     _graph_diff_cache: "GraphDiff | None" = pydantic.PrivateAttr(default=None)
@@ -408,7 +413,7 @@ class FullGraphMigration(Migration):
 
     snapshot_version: str
     from_snapshot_version: str | None = None  # Optional for cross-snapshot operations
-    ops: list[dict[str, Any]]  # List of OperationConfig dicts
+    ops: list[dict[str, Any]] = PydanticField(default_factory=list)
 
     def get_affected_features(
         self, store: "MetadataStore", project: str | None
