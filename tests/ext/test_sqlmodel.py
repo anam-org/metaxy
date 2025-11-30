@@ -754,7 +754,11 @@ def test_sqlmodel_feature_with_duckdb_store(
         )
 
         # Snapshot result (exclude timestamp which varies between runs)
-        result_for_snapshot = result_df.drop("metaxy_created_at").to_dicts()
+        result_for_snapshot = (
+            result_df.sort("sample_uid")
+            .drop(["metaxy_created_at", "metaxy_updated_at"])
+            .to_dicts()
+        )
         assert result_for_snapshot == snapshot
 
 
@@ -948,10 +952,10 @@ def test_sqlmodel_duckdb_custom_id_columns(
 
         # Snapshot results (exclude timestamp which varies between runs)
         assert {
-            "parent": parent_result_df.drop("metaxy_created_at")
+            "parent": parent_result_df.drop(["metaxy_created_at", "metaxy_updated_at"])
             .sort(["user_id", "session_id"])
             .to_dicts(),
-            "child": child_result_df.drop("metaxy_created_at")
+            "child": child_result_df.drop(["metaxy_created_at", "metaxy_updated_at"])
             .sort(["user_id", "session_id"])
             .to_dicts(),
         } == snapshot
