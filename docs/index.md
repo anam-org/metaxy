@@ -31,7 +31,7 @@ Typically, a **feature** has to be re-computed in one of the following scenarios
 
 - bug fixes or algorithmic changes
 
-But correctly distinguishing these scenarios from cases where the feature **should not** be re-computed is a surprisingly challenging. Here are some of the cases where it would be undesirable:
+But correctly distinguishing these scenarios from cases where the feature **should not** be re-computed is surprisingly challenging. Here are some of the cases where it would be undesirable:
 
 - merging two consecutive steps into one (refactoring the graph topology)
 
@@ -50,7 +50,7 @@ Metaxy builds a *versioned graphs* from feature definitions and tracks version c
 
 ## Quickstart
 
-Head to [./overview/quickstart.md]!
+Head to [Quickstart](./overview/quickstart.md) (WIP)!
 
 ## About Metaxy
 
