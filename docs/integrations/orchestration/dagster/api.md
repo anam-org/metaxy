@@ -1,4 +1,12 @@
-# Dagster API Reference
+# Dagster Integration API
+
+[Integration docs](index.md)
+
+---
+
+::: metaxy.ext.dagster
+    options:
+      members: false
 
 ## Decorators
 
@@ -8,6 +16,14 @@
       heading_level: 3
 
 ::: metaxy.ext.dagster.observable.observable_metaxy_asset
+    options:
+      heading_level: 3
+<!-- dprint-ignore-end -->
+
+## IO Manager
+
+<!-- dprint-ignore-start -->
+::: metaxy.ext.dagster.MetaxyIOManager
     options:
       heading_level: 3
 <!-- dprint-ignore-end -->
@@ -39,10 +55,6 @@
 ## Resources
 
 <!-- dprint-ignore-start -->
-::: metaxy.ext.dagster.MetaxyIOManager
-    options:
-      heading_level: 3
-
 ::: metaxy.ext.dagster.MetaxyStoreFromConfigResource
     options:
       heading_level: 3
