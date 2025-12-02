@@ -53,7 +53,7 @@ class metaxify:
 
     - **Code version** from the feature spec is appended to the asset's code version in the format `metaxy:<version>`.
 
-    - **Metadata** from the feature spec is injected into the Dagster asset metadata.
+    - **Metadata** from the feature spec is injected into the Dagster asset metadata. All [standard metadata](https://docs.dagster.io/guides/build/assets/metadata-and-tags#standard-metadata-types) types are supported.
 
     - **Description** from the feature class docstring is used if the asset spec doesn't have a description set.
 

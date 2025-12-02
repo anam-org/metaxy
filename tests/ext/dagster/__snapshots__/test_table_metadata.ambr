@@ -1,0 +1,196 @@
+# serializer version: 1
+# name: test_build_table_preview_array_columns
+  list([
+    dict({
+      'id': 1,
+      'scores': '[1.0,..,3.0]',
+    }),
+    dict({
+      'id': 2,
+      'scores': '[4.0,..,6.0]',
+    }),
+    dict({
+      'id': 3,
+      'scores': '[7.0,..,9.0]',
+    }),
+  ])
+# ---
+# name: test_build_table_preview_basic_types
+  list([
+    dict({
+      'active': True,
+      'id': 1,
+      'name': 'Alice',
+      'value': 1.5,
+    }),
+    dict({
+      'active': False,
+      'id': 2,
+      'name': 'Bob',
+      'value': 2.7,
+    }),
+    dict({
+      'active': True,
+      'id': 3,
+      'name': 'Charlie',
+      'value': 3.9,
+    }),
+  ])
+# ---
+# name: test_build_table_preview_custom_n_rows
+  list([
+    dict({
+      'active': True,
+      'id': 8,
+      'name': 'Person8',
+      'value': 8.8,
+    }),
+    dict({
+      'active': False,
+      'id': 9,
+      'name': 'Person9',
+      'value': 9.9,
+    }),
+    dict({
+      'active': True,
+      'id': 10,
+      'name': 'Person10',
+      'value': 11.0,
+    }),
+  ])
+# ---
+# name: test_build_table_preview_fewer_rows_than_n_rows
+  list([
+    dict({
+      'active': True,
+      'id': 1,
+      'name': 'Alice',
+      'value': 1.5,
+    }),
+    dict({
+      'active': False,
+      'id': 2,
+      'name': 'Bob',
+      'value': 2.7,
+    }),
+    dict({
+      'active': True,
+      'id': 3,
+      'name': 'Charlie',
+      'value': 3.9,
+    }),
+  ])
+# ---
+# name: test_build_table_preview_list_columns
+  list([
+    dict({
+      'id': 1,
+      'tags': '["python","data"]',
+    }),
+    dict({
+      'id': 2,
+      'tags': '["ml","ai"]',
+    }),
+    dict({
+      'id': 3,
+      'tags': '["testing"]',
+    }),
+  ])
+# ---
+# name: test_build_table_preview_mixed_complex_and_primitive
+  list([
+    dict({
+      'id': 1,
+      'metadata': '{"key":"value1"}',
+      'name': 'Alice',
+      'score': 1.5,
+      'tags': '["a","b"]',
+    }),
+    dict({
+      'id': 2,
+      'metadata': '{"key":"value2"}',
+      'name': 'Bob',
+      'score': 2.7,
+      'tags': '["c"]',
+    }),
+    dict({
+      'id': 3,
+      'metadata': '{"key":"value3"}',
+      'name': 'Charlie',
+      'score': 3.9,
+      'tags': '["d",..,"f"]',
+    }),
+  ])
+# ---
+# name: test_build_table_preview_more_rows_than_n_rows
+  list([
+    dict({
+      'active': True,
+      'id': 6,
+      'name': 'Person6',
+      'value': 6.6000000000000005,
+    }),
+    dict({
+      'active': False,
+      'id': 7,
+      'name': 'Person7',
+      'value': 7.700000000000001,
+    }),
+    dict({
+      'active': True,
+      'id': 8,
+      'name': 'Person8',
+      'value': 8.8,
+    }),
+    dict({
+      'active': False,
+      'id': 9,
+      'name': 'Person9',
+      'value': 9.9,
+    }),
+    dict({
+      'active': True,
+      'id': 10,
+      'name': 'Person10',
+      'value': 11.0,
+    }),
+  ])
+# ---
+# name: test_build_table_preview_null_values
+  list([
+    dict({
+      'active': True,
+      'id': 1,
+      'name': 'Alice',
+      'value': 1.5,
+    }),
+    dict({
+      'active': None,
+      'id': 2,
+      'name': None,
+      'value': None,
+    }),
+    dict({
+      'active': False,
+      'id': 3,
+      'name': 'Charlie',
+      'value': 3.9,
+    }),
+  ])
+# ---
+# name: test_build_table_preview_struct_columns
+  list([
+    dict({
+      'id': 1,
+      'user': '{"name":"Alice","age":30}',
+    }),
+    dict({
+      'id': 2,
+      'user': '{"name":"Bob","age":25}',
+    }),
+    dict({
+      'id': 3,
+      'user': '{"name":"Charlie","age":35}',
+    }),
+  ])
+# ---

@@ -1,20 +1,22 @@
 """Table metadata utilities for Dagster integration.
 
 This module provides utilities for building Dagster table metadata
-(column schema, column lineage, etc.) from Metaxy feature definitions.
+(column schema, column lineage, table previews, etc.) from Metaxy feature definitions.
 """
 
 import types
 from typing import Any, Union, get_args, get_origin
 
 import dagster as dg
+import narwhals as nw
+import polars as pl
 
 import metaxy as mx
 from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
 from metaxy.models.constants import ALL_SYSTEM_COLUMNS, SYSTEM_COLUMNS_WITH_LINEAGE
 
 
-def build_column_schema(feature_cls: type[mx.BaseFeature]) -> dg.TableSchema | None:
+def build_column_schema(feature_cls: type[mx.BaseFeature]) -> dg.TableSchema:
     """Build a Dagster TableSchema from a Metaxy feature class.
 
     Creates column definitions from Pydantic model fields, including inherited
@@ -26,7 +28,7 @@ def build_column_schema(feature_cls: type[mx.BaseFeature]) -> dg.TableSchema | N
 
     Returns:
         A TableSchema with columns derived from Pydantic model fields,
-        sorted alphabetically by name, or None if the feature has no fields.
+        sorted alphabetically by name.
 
     !!! tip
         This is automatically injected by [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify]
@@ -40,9 +42,6 @@ def build_column_schema(feature_cls: type[mx.BaseFeature]) -> dg.TableSchema | N
                 description=field_info.description,
             )
         )
-
-    if not columns:
-        return None
 
     # Sort columns alphabetically by name
     columns.sort(key=lambda col: col.name)
@@ -282,3 +281,140 @@ def _get_id_column_mapping(
                     mapping[downstream_col] = upstream_col
 
     return mapping
+
+
+def build_table_preview_metadata(
+    lazy_df: nw.LazyFrame[Any],
+    schema: dg.TableSchema,
+    *,
+    n_rows: int = 5,
+) -> dg.TableMetadataValue:
+    """Build a Dagster table preview from the last N rows of a LazyFrame.
+
+    Collects the last `n_rows` from the LazyFrame and converts them to
+    Dagster TableRecord objects suitable for display in the Dagster UI.
+    Complex types (Struct, List, Array) are converted to JSON strings;
+    primitive types (str, int, float, bool, None) are kept as-is.
+
+    Args:
+        lazy_df: A narwhals LazyFrame to preview.
+        schema: The TableSchema for the table. Use `build_column_schema()` to
+            create this from a Metaxy feature class.
+        n_rows: Number of rows to include in the preview (from the end). Defaults to 5.
+
+    Returns:
+        A TableMetadataValue containing the preview rows as TableRecord objects.
+        Returns an empty table if the DataFrame is empty.
+
+    !!! tip
+
+        This is automatically injected by [`MetaxyIOManager`][metaxy.ext.dagster.io_manager.MetaxyIOManager]
+    """
+    # Collect the last n_rows from the LazyFrame
+    collected_df = lazy_df.tail(n_rows).collect()
+    df_polars: pl.DataFrame = collected_df.to_native()  # pyright: ignore[reportAssignmentType]
+
+    # Handle empty DataFrames
+    if df_polars.is_empty():
+        return dg.MetadataValue.table(records=[], schema=schema)
+
+    # Convert complex types to strings, keep primitives as-is
+    df_processed = _prepare_dataframe_for_table_record(df_polars)
+
+    # Convert to TableRecord objects
+    records = [dg.TableRecord(data=row) for row in df_processed.to_dicts()]
+
+    return dg.MetadataValue.table(records=records, schema=schema)
+
+
+def _prepare_dataframe_for_table_record(df: pl.DataFrame) -> pl.DataFrame:
+    """Prepare a Polars DataFrame for conversion to Dagster TableRecord objects.
+
+    Complex types (Struct, List, Array) and temporal types are converted to strings.
+    Lists/Arrays with more than 4 items are truncated to show first 2 and last 2
+    with "..." in between.
+    Primitive types (str, int, float, bool, None) are kept as-is since
+    Dagster's TableRecord accepts them directly.
+
+    Args:
+        df: The Polars DataFrame to prepare.
+
+    Returns:
+        A DataFrame with complex/temporal types converted to strings.
+    """
+    exprs: list[pl.Expr] = []
+
+    for col_name in df.columns:
+        dtype = df[col_name].dtype
+        if isinstance(dtype, pl.Struct):
+            # Struct types: use json_encode for a clean JSON representation
+            exprs.append(pl.col(col_name).struct.json_encode())
+        elif isinstance(dtype, pl.List):
+            # List types: truncate and convert to string
+            exprs.append(_truncate_list_expr(pl.col(col_name), alias=col_name))
+        elif isinstance(dtype, pl.Array):
+            # Array types: convert to list first, then truncate
+            exprs.append(
+                _truncate_list_expr(pl.col(col_name).arr.to_list(), alias=col_name)
+            )
+        elif dtype in (pl.Datetime, pl.Date, pl.Time, pl.Duration) or isinstance(
+            dtype, (pl.Datetime, pl.Date, pl.Time, pl.Duration)
+        ):
+            # Temporal types: cast to string (ISO format)
+            exprs.append(pl.col(col_name).cast(pl.String))
+        else:
+            # Primitive types: keep as-is
+            exprs.append(pl.col(col_name))
+
+    return df.select(exprs)
+
+
+def _truncate_list_expr(list_expr: pl.Expr, alias: str, max_items: int = 2) -> pl.Expr:
+    """Truncate a list expression and convert to string.
+
+    Lists with more than max_items show first 1 and last 1 items with "..." between.
+
+    Args:
+        list_expr: A Polars expression that evaluates to a List type.
+        alias: The output column name.
+        max_items: Maximum items to show without truncation. Default 4.
+
+    Returns:
+        A Polars expression that truncates and converts the list to string.
+    """
+    list_len = list_expr.list.len()
+    half = max_items // 2
+
+    # For short lists: just json_encode the whole thing
+    # For long lists: concat first 2 + last 2 and json_encode, then insert "..."
+    truncated = pl.concat_list(
+        list_expr.list.head(half),
+        list_expr.list.tail(half),
+    )
+
+    # Convert to JSON string via struct wrapper
+    def to_json(expr: pl.Expr) -> pl.Expr:
+        return (
+            pl.struct(expr.alias("_"))
+            .struct.json_encode()
+            .str.extract(r'\{"_":(.*)\}', 1)
+        )
+
+    short_result = to_json(list_expr)
+    # For truncated: insert ".." after the first half elements
+    # e.g., [1,10] -> [1,..,10]
+    # Match: opening bracket, then `half` comma-separated values
+    # The pattern matches values that may contain nested brackets
+    value_pattern = r"[^\[\],]+(?:\[[^\]]*\])?"  # matches value or value[...]
+    first_n_values = ",".join([value_pattern] * half)
+    long_result = to_json(truncated).str.replace(
+        r"^(\[" + first_n_values + r"),",
+        "$1,..,",
+    )
+
+    return (
+        pl.when(list_len <= max_items)
+        .then(short_result)
+        .otherwise(long_result)
+        .alias(alias)
+    )
