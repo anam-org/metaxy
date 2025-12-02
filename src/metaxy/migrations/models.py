@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal
 import pydantic
 from pydantic import AliasChoices, TypeAdapter
 from pydantic import Field as PydanticField
-from pydantic.types import AwareDatetime, ImportString
+from pydantic.types import AwareDatetime
 
 if TYPE_CHECKING:
     from metaxy.graph.diff.diff_models import GraphDiff
@@ -46,11 +46,17 @@ class OperationConfig(pydantic.BaseModel):
         {
             "type": "metaxy.migrations.ops.DataVersionReconciliation",
         }
+
+    Note:
+        The 'type' field is stored as a string and only imported when the operation
+        needs to be instantiated via the Migration.operations property. This allows
+        reading migration configurations even if the operation classes have been
+        renamed or don't exist yet.
     """
 
     model_config = pydantic.ConfigDict(extra="allow")
 
-    type: ImportString[Any]
+    type: str  # Python class path as string - imported lazily when needed
     features: list[str] = pydantic.Field(default_factory=list)
 
 
@@ -113,6 +119,52 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
         """
         pass
 
+    def get_status_info(
+        self, store: "MetadataStore", project: str | None
+    ) -> "MigrationStatusInfo":
+        """Get comprehensive status information for this migration.
+
+        This is a convenience method that combines information from:
+        - The migration YAML (expected features)
+        - The database events (completed/failed features)
+
+        Args:
+            store: Metadata store for querying events
+            project: Project name for filtering events
+
+        Returns:
+            MigrationStatusInfo with all status details
+        """
+        from metaxy.metadata_store.system import SystemTableStorage
+
+        storage = SystemTableStorage(store)
+
+        # Get expected features from YAML
+        expected_features = self.get_affected_features(store, project)
+
+        # Get actual status from database
+        summary = storage.get_migration_summary(
+            self.migration_id, project, expected_features
+        )
+
+        # Compute pending features
+        completed_set = set(summary["completed_features"])
+        failed_set = set(summary["failed_features"].keys())
+        pending_features = [
+            fk
+            for fk in expected_features
+            if fk not in completed_set and fk not in failed_set
+        ]
+
+        return MigrationStatusInfo(
+            migration_id=self.migration_id,
+            status=summary["status"],
+            expected_features=expected_features,
+            completed_features=summary["completed_features"],
+            failed_features=summary["failed_features"],
+            pending_features=pending_features,
+        )
+
     @property
     def operations(self) -> list[Any]:
         """Get operations for this migration.
@@ -126,6 +178,8 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
         Raises:
             ValueError: If operation dict is missing "type" field or class cannot be loaded
         """
+        import importlib
+
         # Check if this migration has an ops field (using getattr to avoid type errors)
         ops = getattr(self, "ops", None)
         if ops is None:
@@ -136,9 +190,17 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
             # Validate structure has required fields
             op_config = OperationConfig.model_validate(op_dict)
 
-            # Use Pydantic's ImportString to automatically import the operation class
-            # ImportString validates and imports the class from the string path
-            op_cls: type = TypeAdapter(ImportString).validate_python(op_config.type)
+            # Import the operation class from the string path
+            # op_config.type is now a str (e.g., "anam_data_utils.migrations.postgresql_to_metaxy.RootFeatureBackfill")
+            module_path, class_name = op_config.type.rsplit(".", 1)
+
+            try:
+                module = importlib.import_module(module_path)
+                op_cls = getattr(module, class_name)
+            except (ImportError, AttributeError) as e:
+                raise ValueError(
+                    f"Failed to import operation class '{op_config.type}': {e}"
+                ) from e
 
             # Pass the entire dict to the operation class (which inherits from BaseSettings)
             # BaseSettings will extract the fields it needs and read from env vars
@@ -391,6 +453,27 @@ class FullGraphMigration(Migration):
         storage = SystemTableStorage(store)
         executor = MigrationExecutor(storage)
         return executor._execute_full_graph_migration(self, store, project, dry_run)
+
+
+class MigrationStatusInfo(pydantic.BaseModel):
+    """Status information for a migration computed from events and YAML definition."""
+
+    migration_id: str
+    status: Any  # MigrationStatus enum
+    expected_features: list[str]  # All features from YAML
+    completed_features: list[str]  # Features completed successfully
+    failed_features: dict[str, str]  # feature_key -> error_message
+    pending_features: list[str]  # Features not yet started
+
+    @property
+    def features_remaining(self) -> int:
+        """Number of features still needing processing (pending + failed)."""
+        return len(self.pending_features) + len(self.failed_features)
+
+    @property
+    def features_total(self) -> int:
+        """Total number of features in migration."""
+        return len(self.expected_features)
 
 
 class MigrationResult(pydantic.BaseModel):
