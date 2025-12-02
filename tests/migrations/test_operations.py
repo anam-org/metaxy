@@ -429,8 +429,6 @@ def test_full_graph_migration_operation_fails():
 
 
 def test_full_graph_migration_invalid_operation_class():
-    from pydantic_core import ValidationError
-
     temp_module = TempFeatureModule("test_invalid_op")
 
     feature_spec = SampleFeatureSpec(
@@ -459,9 +457,13 @@ def test_full_graph_migration_invalid_operation_class():
             ],
         )
 
-        # ImportString validation fails when get_affected_features tries to validate the operation
-        with pytest.raises(ValidationError, match="Invalid python path"):
-            migration.get_affected_features(store, "default")
+        # With lazy loading, get_affected_features works fine (just reads feature list from config)
+        features = migration.get_affected_features(store, "default")
+        assert features == ["test/feature"]
+
+        # But accessing migration.operations fails since it tries to import the class
+        with pytest.raises(ValueError, match="Failed to import operation class"):
+            _ = migration.operations
 
     temp_module.cleanup()
 

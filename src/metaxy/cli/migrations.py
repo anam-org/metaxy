@@ -241,9 +241,16 @@ def apply(
         from metaxy.metadata_store.system import MigrationStatus
 
         completed_ids = set()
-        for mid in [m.migration_id for m in chain]:
-            if storage.get_migration_status(mid, project) == MigrationStatus.COMPLETED:
-                completed_ids.add(mid)
+        for m in chain:
+            # Get expected features from migration to verify all operations completed
+            expected_features = m.get_affected_features(metadata_store, project)
+            if (
+                storage.get_migration_status(
+                    m.migration_id, project, expected_features=expected_features
+                )
+                == MigrationStatus.COMPLETED
+            ):
+                completed_ids.add(m.migration_id)
 
         # Filter to unapplied migrations
         if migration_id is None:
@@ -286,10 +293,19 @@ def apply(
         executor = MigrationExecutor(storage)
 
         for migration in to_apply:
+            # Get status info to show accurate progress
+            status_info = migration.get_status_info(metadata_store, project)
+
             app.console.print(f"[bold]Applying: {migration.migration_id}[/bold]")
-            app.console.print(
-                f"  Affecting {len(migration.get_affected_features(metadata_store, project))} feature(s)"
-            )
+            if status_info.features_remaining > 0:
+                app.console.print(
+                    f"  Processing {status_info.features_remaining} feature(s) "
+                    f"({len(status_info.completed_features)} already completed)"
+                )
+            else:
+                app.console.print(
+                    f"  All {status_info.features_total} feature(s) already completed"
+                )
 
             result = executor.execute(
                 migration, metadata_store, project, dry_run=dry_run
@@ -353,7 +369,6 @@ def status():
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.loader import build_migration_chain
 
     context = AppContext.get()
@@ -364,8 +379,6 @@ def status():
     migrations_dir = Path(".metaxy/migrations")
 
     with metadata_store:
-        storage = SystemTableStorage(metadata_store)
-
         # Try to build migration chain
         try:
             chain = build_migration_chain(migrations_dir)
@@ -386,25 +399,14 @@ def status():
         for migration in chain:
             migration_id = migration.migration_id
 
-            # Get migration summary
+            # Get comprehensive status info from migration
             from metaxy.metadata_store.system import MigrationStatus
 
-            summary = storage.get_migration_summary(migration_id, project=project)
-            migration_status = summary["status"]
-            completed_features = summary["completed_features"]
-            failed_features = summary["failed_features"]
-            total_processed = summary["total_features_processed"]
-
-            # Compute total affected
-            if migration_status == MigrationStatus.NOT_STARTED:
-                try:
-                    total_affected = len(
-                        migration.get_affected_features(metadata_store, project)
-                    )
-                except Exception:
-                    total_affected = "?"
-            else:
-                total_affected = total_processed
+            status_info = migration.get_status_info(metadata_store, project)
+            migration_status = status_info.status
+            completed_features = status_info.completed_features
+            failed_features = status_info.failed_features
+            total_affected = status_info.features_total
 
             # Print status icon
             if migration_status == MigrationStatus.COMPLETED:
@@ -435,6 +437,33 @@ def status():
                 app.console.print("  Snapshots:")
                 app.console.print(f"    From: {migration.from_snapshot_version}")
                 app.console.print(f"    To:   {migration.to_snapshot_version}")
+
+            # Show operation-level progress for FullGraphMigration
+            from metaxy.migrations.models import FullGraphMigration, OperationConfig
+
+            if isinstance(migration, FullGraphMigration) and migration.ops:
+                app.console.print("  Operations:")
+                completed_set = set(status_info.completed_features)
+
+                for i, op_dict in enumerate(migration.ops, 1):
+                    op_config = OperationConfig.model_validate(op_dict)
+                    op_type_short = op_config.type.split(".")[-1]  # Extract class name
+                    op_features = set(op_config.features)
+                    op_completed = op_features & completed_set
+
+                    # Determine status icon
+                    if len(op_completed) == 0:
+                        icon = "[blue]○[/blue]"  # Not started
+                    elif len(op_completed) == len(op_features):
+                        icon = "[green]✓[/green]"  # Completed
+                    else:
+                        icon = "[yellow]⚠[/yellow]"  # In progress
+
+                    app.console.print(
+                        f"    {icon} {i}. {op_type_short} "
+                        f"({len(op_completed)}/{len(op_features)} features)"
+                    )
+
             app.console.print(
                 f"  Features: {len(completed_features)}/{total_affected} completed"
             )
@@ -924,7 +953,11 @@ def describe(
             # Execution status
             from metaxy.metadata_store.system import MigrationStatus
 
-            summary = storage.get_migration_summary(migration_obj.migration_id, project)
+            summary = storage.get_migration_summary(
+                migration_obj.migration_id,
+                project,
+                expected_features=affected_features,
+            )
             migration_status = summary["status"]
             completed_features = summary["completed_features"]
             failed_features = summary["failed_features"]

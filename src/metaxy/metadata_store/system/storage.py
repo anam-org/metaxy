@@ -153,13 +153,20 @@ class SystemTableStorage:
         )
 
     def get_migration_status(
-        self, migration_id: str, project: str | None = None
+        self,
+        migration_id: str,
+        project: str | None = None,
+        expected_features: list[str] | None = None,
     ) -> MigrationStatus:
         """Compute migration status from events at query-time.
 
         Args:
             migration_id: Migration ID
             project: Optional project name to filter by. If None, returns status across all projects.
+            expected_features: Optional list of feature keys that should be completed.
+                If provided, will check that ALL expected features have completed successfully
+                before returning COMPLETED status, even if migration_completed event exists.
+                This allows detecting when a migration YAML has been modified after completion.
 
         Returns:
             MigrationStatus enum value
@@ -173,6 +180,31 @@ class SystemTableStorage:
         # Get latest event
         latest_event = events_df.sort(COL_TIMESTAMP, descending=True).head(1)
         latest_event_type = latest_event[COL_EVENT_TYPE][0]
+
+        # If expected_features is provided, verify ALL features have completed
+        # This ensures we detect when operations are added to an already-completed migration
+        if expected_features is not None and len(expected_features) > 0:
+            completed_features = set(self.get_completed_features(migration_id, project))
+            expected_features_set = set(expected_features)
+
+            # Check if all expected features have been completed
+            all_features_completed = expected_features_set.issubset(completed_features)
+
+            if not all_features_completed:
+                # Some features are missing - migration is not complete
+                if latest_event_type in (
+                    EventType.MIGRATION_STARTED.value,
+                    EventType.FEATURE_MIGRATION_STARTED.value,
+                    EventType.FEATURE_MIGRATION_COMPLETED.value,
+                    EventType.FEATURE_MIGRATION_FAILED.value,
+                ):
+                    return MigrationStatus.IN_PROGRESS
+                elif latest_event_type == EventType.MIGRATION_FAILED.value:
+                    return MigrationStatus.FAILED
+                else:
+                    # Migration was marked complete but features are missing (YAML was modified)
+                    return MigrationStatus.IN_PROGRESS
+            # If all features completed, continue with normal status logic below
 
         if latest_event_type == EventType.MIGRATION_COMPLETED.value:
             return MigrationStatus.COMPLETED
@@ -305,7 +337,10 @@ class SystemTableStorage:
         )
 
     def get_migration_summary(
-        self, migration_id: str, project: str | None = None
+        self,
+        migration_id: str,
+        project: str | None = None,
+        expected_features: list[str] | None = None,
     ) -> dict[str, Any]:
         """Get a comprehensive summary of migration execution status.
 
@@ -315,6 +350,8 @@ class SystemTableStorage:
         Args:
             migration_id: Migration ID
             project: Optional project name to filter by. If None, returns summary across all projects.
+            expected_features: Optional list of feature keys that should be completed.
+                If provided, will be used to determine if migration is truly complete.
 
         Returns:
             Dict containing:
@@ -323,7 +360,7 @@ class SystemTableStorage:
             - failed_features: Dict mapping failed feature keys to error messages
             - total_features_processed: Count of completed + failed features
         """
-        status = self.get_migration_status(migration_id, project)
+        status = self.get_migration_status(migration_id, project, expected_features)
         completed = self.get_completed_features(migration_id, project)
         failed = self.get_failed_features(migration_id, project)
 
