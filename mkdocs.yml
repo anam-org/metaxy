@@ -1,5 +1,5 @@
 site_name: Metaxy
-site_description: Metadata layer for multi-modal ML pipelines
+site_description: Pluggable metadata layer for multi-modal ML pipelines
 site_url: https://anam-org.github.io/metaxy
 repo_url: https://github.com/anam-org/metaxy
 repo_name: anam-org/metaxy
