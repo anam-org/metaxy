@@ -6,6 +6,8 @@ dist/
 wheels/
 *.egg-info
 
+plans/**.md
+
 # Patch artifacts
 *.orig
 *.rej
