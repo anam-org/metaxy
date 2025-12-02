@@ -1,4 +1,8 @@
-# DuckDB API Reference
+# DuckDB Metadata Store API
+
+::: metaxy.metadata_store.duckdb
+    options:
+      members: false
 
 <!-- dprint-ignore-start -->
 ::: metaxy.metadata_store.duckdb.DuckDBMetadataStore
