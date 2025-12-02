@@ -50,7 +50,7 @@ Metaxy builds a *versioned graphs* from feature definitions and tracks version c
 
 ## Quickstart
 
-Head to [Quickstart](./overview/quickstart.md) (WIP)!
+Head to [Quickstart](./overview/quickstart.md) (WIP!).
 
 ## About Metaxy
 
@@ -92,7 +92,7 @@ Metaxy is:
 
 ## What's Next?
 
-- Itching to write some Metaxy code? Continue to [./overview/quickstart.md].
+- Itching to write some Metaxy code? Continue to [Quickstart](./overview/quickstart.md) (WIP!).
 
 - Learn more about [feature definitions](./learn/feature-definitions.md) or [versioning](./learn/data-versioning.md)
 
