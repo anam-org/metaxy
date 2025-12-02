@@ -310,7 +310,8 @@ class MetaxyConfig(BaseSettings):
             warnings.warn(
                 UserWarning(
                     "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project='default')."
-                )
+                ),
+                stacklevel=2,
             )
             return cls(project="default")
         else:

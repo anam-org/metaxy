@@ -2346,3 +2346,342 @@ class TestMetaxifySystemColumns:
         asset_spec = list(my_asset.specs)[0]
         # No column lineage at all when there are no dependencies
         assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY not in asset_spec.metadata
+
+
+class TestMetaxifyCheckSpecs:
+    """Test that @metaxify properly transforms asset check specs when asset keys change."""
+
+    def test_metaxify_updates_check_spec_with_feature_key(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that check specs are updated when asset key changes to feature key."""
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            check_specs=[dg.AssetCheckSpec(name="not_null", asset="my_asset")],
+        )
+        def my_asset():
+            pass
+
+        # Asset key should be the feature key
+        assert dg.AssetKey(["test", "upstream"]) in my_asset.keys
+
+        # Check spec should also reference the new feature key
+        check_specs = list(my_asset.check_specs)
+        assert len(check_specs) == 1
+        assert check_specs[0].asset_key == dg.AssetKey(["test", "upstream"])
+        assert check_specs[0].name == "not_null"
+
+    def test_metaxify_updates_check_spec_with_key_prefix(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that check specs are updated when key_prefix is applied."""
+
+        @metaxify(key_prefix=["prefix", "namespace"])
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            check_specs=[dg.AssetCheckSpec(name="valid_range", asset="my_asset")],
+        )
+        def my_asset():
+            pass
+
+        # Asset key should be prefix + feature key
+        expected_key = dg.AssetKey(["prefix", "namespace", "test", "upstream"])
+        assert expected_key in my_asset.keys
+
+        # Check spec should also reference the prefixed feature key
+        check_specs = list(my_asset.check_specs)
+        assert len(check_specs) == 1
+        assert check_specs[0].asset_key == expected_key
+        assert check_specs[0].name == "valid_range"
+
+    def test_metaxify_updates_check_spec_with_explicit_key(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that check specs are updated when explicit key argument is used."""
+
+        @metaxify(key=["custom", "explicit", "key"])
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            check_specs=[dg.AssetCheckSpec(name="consistency_check", asset="my_asset")],
+        )
+        def my_asset():
+            pass
+
+        # Asset key should be the explicit key
+        expected_key = dg.AssetKey(["custom", "explicit", "key"])
+        assert expected_key in my_asset.keys
+
+        # Check spec should also reference the explicit key
+        check_specs = list(my_asset.check_specs)
+        assert len(check_specs) == 1
+        assert check_specs[0].asset_key == expected_key
+        assert check_specs[0].name == "consistency_check"
+
+    def test_metaxify_updates_multiple_check_specs(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that all check specs are updated when asset key changes."""
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            check_specs=[
+                dg.AssetCheckSpec(name="check_one", asset="my_asset"),
+                dg.AssetCheckSpec(name="check_two", asset="my_asset"),
+                dg.AssetCheckSpec(name="check_three", asset="my_asset"),
+            ],
+        )
+        def my_asset():
+            pass
+
+        expected_key = dg.AssetKey(["test", "upstream"])
+
+        # All check specs should reference the new feature key
+        check_specs = list(my_asset.check_specs)
+        assert len(check_specs) == 3
+
+        for check_spec in check_specs:
+            assert check_spec.asset_key == expected_key
+
+        check_names = {spec.name for spec in check_specs}
+        assert check_names == {"check_one", "check_two", "check_three"}
+
+    def test_metaxify_preserves_check_spec_properties(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that other check spec properties are preserved when updating asset key."""
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            check_specs=[
+                dg.AssetCheckSpec(
+                    name="detailed_check",
+                    asset="my_asset",
+                    description="This is a detailed description",
+                    blocking=True,
+                    metadata={"custom_key": "custom_value"},
+                )
+            ],
+        )
+        def my_asset():
+            pass
+
+        check_specs = list(my_asset.check_specs)
+        assert len(check_specs) == 1
+
+        check_spec = check_specs[0]
+        # Asset key should be updated
+        assert check_spec.asset_key == dg.AssetKey(["test", "upstream"])
+        # Other properties should be preserved
+        assert check_spec.name == "detailed_check"
+        assert check_spec.description == "This is a detailed description"
+        assert check_spec.blocking is True
+        assert check_spec.metadata == {"custom_key": "custom_value"}
+
+    def test_metaxify_updates_check_keys(self, upstream_feature: type[mx.BaseFeature]):
+        """Test that check_keys attribute is properly updated with new asset key."""
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            check_specs=[dg.AssetCheckSpec(name="my_check", asset="my_asset")],
+        )
+        def my_asset():
+            pass
+
+        expected_asset_key = dg.AssetKey(["test", "upstream"])
+        expected_check_key = dg.AssetCheckKey(
+            asset_key=expected_asset_key,
+            name="my_check",
+        )
+
+        assert expected_check_key in my_asset.check_keys
+
+    def test_metaxify_no_check_spec_update_when_key_unchanged(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that check specs are unchanged when asset key doesn't change."""
+
+        @metaxify(inherit_feature_key_as_asset_key=False)
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            check_specs=[dg.AssetCheckSpec(name="my_check", asset="my_asset")],
+        )
+        def my_asset():
+            pass
+
+        # Asset key should remain unchanged
+        assert dg.AssetKey(["my_asset"]) in my_asset.keys
+
+        # Check spec should still reference the original key
+        check_specs = list(my_asset.check_specs)
+        assert len(check_specs) == 1
+        assert check_specs[0].asset_key == dg.AssetKey(["my_asset"])
+
+    def test_metaxify_multi_asset_updates_check_specs_per_output(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+    ):
+        """Test that check specs in multi-asset are updated per output."""
+        # Create another feature for multi-asset
+        spec_b = mx.FeatureSpec(
+            key=["test", "multi_check_b"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class FeatureB(mx.BaseFeature, spec=spec_b):
+            id: str
+
+        @metaxify()
+        @dg.multi_asset(
+            specs=[
+                dg.AssetSpec("output_a", metadata={"metaxy/feature": "test/upstream"}),
+                dg.AssetSpec(
+                    "output_b", metadata={"metaxy/feature": "test/multi_check_b"}
+                ),
+            ],
+            check_specs=[
+                dg.AssetCheckSpec(name="check_a", asset="output_a"),
+                dg.AssetCheckSpec(name="check_b", asset="output_b"),
+            ],
+        )
+        def my_multi_asset():
+            pass
+
+        # Both asset keys should be feature keys
+        assert dg.AssetKey(["test", "upstream"]) in my_multi_asset.keys
+        assert dg.AssetKey(["test", "multi_check_b"]) in my_multi_asset.keys
+
+        # Check specs should reference the new feature keys
+        check_specs = list(my_multi_asset.check_specs)
+        assert len(check_specs) == 2
+
+        check_specs_by_name = {spec.name: spec for spec in check_specs}
+        assert check_specs_by_name["check_a"].asset_key == dg.AssetKey(
+            ["test", "upstream"]
+        )
+        assert check_specs_by_name["check_b"].asset_key == dg.AssetKey(
+            ["test", "multi_check_b"]
+        )
+
+    def test_metaxify_check_spec_with_custom_asset_key_from_feature_spec(
+        self, feature_with_dagster_metadata: type[mx.BaseFeature]
+    ):
+        """Test that check specs are updated when feature spec has custom asset_key."""
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/custom_key"},
+            check_specs=[dg.AssetCheckSpec(name="custom_check", asset="my_asset")],
+        )
+        def my_asset():
+            pass
+
+        # Asset key should be the custom key from feature spec
+        expected_key = dg.AssetKey(["custom", "asset", "key"])
+        assert expected_key in my_asset.keys
+
+        # Check spec should also reference the custom key
+        check_specs = list(my_asset.check_specs)
+        assert len(check_specs) == 1
+        assert check_specs[0].asset_key == expected_key
+
+    def test_metaxify_multi_asset_mixed_metaxy_and_regular_check_specs(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+    ):
+        """Test multi-asset where only some outputs are metaxy features.
+
+        Check specs for metaxy outputs should be updated, while check specs
+        for regular (non-metaxy) outputs should remain unchanged.
+        """
+
+        @metaxify()
+        @dg.multi_asset(
+            specs=[
+                # This output is a metaxy feature - key will change
+                dg.AssetSpec(
+                    "metaxy_output", metadata={"metaxy/feature": "test/upstream"}
+                ),
+                # This output is NOT a metaxy feature - key stays the same
+                dg.AssetSpec("regular_output"),
+            ],
+            check_specs=[
+                dg.AssetCheckSpec(name="check_metaxy", asset="metaxy_output"),
+                dg.AssetCheckSpec(name="check_regular", asset="regular_output"),
+            ],
+        )
+        def my_multi_asset():
+            pass
+
+        # Metaxy output should have feature key, regular output keeps original key
+        assert dg.AssetKey(["test", "upstream"]) in my_multi_asset.keys
+        assert dg.AssetKey(["regular_output"]) in my_multi_asset.keys
+
+        # Check specs should be updated accordingly
+        check_specs = list(my_multi_asset.check_specs)
+        assert len(check_specs) == 2
+
+        check_specs_by_name = {spec.name: spec for spec in check_specs}
+
+        # Check for metaxy output should reference the new feature key
+        assert check_specs_by_name["check_metaxy"].asset_key == dg.AssetKey(
+            ["test", "upstream"]
+        )
+
+        # Check for regular output should keep the original key
+        assert check_specs_by_name["check_regular"].asset_key == dg.AssetKey(
+            ["regular_output"]
+        )
+
+    def test_metaxify_multi_asset_key_prefix_mixed_outputs(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+    ):
+        """Test key_prefix with multi-asset where only some outputs are metaxy features.
+
+        key_prefix should be applied to ALL outputs, both metaxy and regular.
+        """
+
+        @metaxify(key_prefix=["my_prefix"])
+        @dg.multi_asset(
+            specs=[
+                # This output is a metaxy feature - gets prefix + feature key
+                dg.AssetSpec(
+                    "metaxy_output", metadata={"metaxy/feature": "test/upstream"}
+                ),
+                # This output is NOT a metaxy feature - still gets prefix
+                dg.AssetSpec("regular_output"),
+            ],
+            check_specs=[
+                dg.AssetCheckSpec(name="check_metaxy", asset="metaxy_output"),
+                dg.AssetCheckSpec(name="check_regular", asset="regular_output"),
+            ],
+        )
+        def my_multi_asset():
+            pass
+
+        # Metaxy output should have prefix + feature key
+        assert dg.AssetKey(["my_prefix", "test", "upstream"]) in my_multi_asset.keys
+        # Regular output should also have prefix applied
+        assert dg.AssetKey(["my_prefix", "regular_output"]) in my_multi_asset.keys
+
+        # Check specs should match their respective asset keys
+        check_specs = list(my_multi_asset.check_specs)
+        assert len(check_specs) == 2
+
+        check_specs_by_name = {spec.name: spec for spec in check_specs}
+
+        # Check for metaxy output should have prefix + feature key
+        assert check_specs_by_name["check_metaxy"].asset_key == dg.AssetKey(
+            ["my_prefix", "test", "upstream"]
+        )
+
+        # Check for regular output should also have the prefix
+        assert check_specs_by_name["check_regular"].asset_key == dg.AssetKey(
+            ["my_prefix", "regular_output"]
+        )

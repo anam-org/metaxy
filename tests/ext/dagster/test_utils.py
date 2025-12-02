@@ -175,17 +175,28 @@ class TestGenerateMaterializationEvents:
         assert len(events) == 1
         assert events[0].asset_key == dg.AssetKey(["custom", "asset", "key"])
 
-    def test_raises_on_missing_metadata(
+    def test_skips_specs_without_metaxy_feature_metadata(
         self,
         feature_a: type[mx.BaseFeature],
         metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
     ):
-        """Test that ValueError is raised when metaxy/feature metadata is missing."""
-        specs = [dg.AssetSpec("my_asset")]  # No metaxy/feature metadata
+        """Test that specs without metaxy/feature metadata are skipped."""
+        _write_feature_data(feature_a, ["1", "2"], resources, instance)
+
+        # Mix of specs with and without metaxy/feature metadata
+        specs = [
+            dg.AssetSpec("my_asset"),  # No metaxy/feature metadata - should be skipped
+            dg.AssetSpec("asset_a", metadata={"metaxy/feature": "test/utils/a"}),
+        ]
 
         context = dg.build_asset_context()
-        with pytest.raises(ValueError, match="missing 'metaxy/feature' metadata"):
-            list(mxd.generate_materialize_results(context, metadata_store, specs))
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        # Only the spec with metaxy/feature metadata should produce an event
+        assert len(events) == 1
+        assert events[0].asset_key == dg.AssetKey("asset_a")
 
 
 class TestGenerateObservationEvents:
@@ -272,17 +283,28 @@ class TestGenerateObservationEvents:
         assert len(events) == 1
         assert events[0].asset_key == dg.AssetKey(["custom", "key"])
 
-    def test_raises_on_missing_metadata(
+    def test_skips_specs_without_metaxy_feature_metadata(
         self,
         feature_a: type[mx.BaseFeature],
         metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
     ):
-        """Test that ValueError is raised when metaxy/feature metadata is missing."""
-        specs = [dg.AssetSpec("my_asset")]
+        """Test that specs without metaxy/feature metadata are skipped."""
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+
+        # Mix of specs with and without metaxy/feature metadata
+        specs = [
+            dg.AssetSpec("my_asset"),  # No metaxy/feature metadata - should be skipped
+            dg.AssetSpec("asset_a", metadata={"metaxy/feature": "test/utils/a"}),
+        ]
 
         context = dg.build_asset_context()
-        with pytest.raises(ValueError, match="missing 'metaxy/feature' metadata"):
-            list(mxd.generate_observe_results(context, metadata_store, specs))
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
+
+        # Only the spec with metaxy/feature metadata should produce an event
+        assert len(events) == 1
+        assert events[0].asset_key == dg.AssetKey("asset_a")
 
 
 class TestPartitionedAssets:

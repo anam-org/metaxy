@@ -1,4 +1,4 @@
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator
 from typing import Any, NamedTuple
 
 import dagster as dg
@@ -156,7 +156,7 @@ def get_asset_key_for_metaxy_feature_spec(
 def generate_materialize_results(
     context: dg.AssetExecutionContext,
     store: mx.MetadataStore | MetaxyStoreFromConfigResource,
-    specs: Sequence[dg.AssetSpec],
+    specs: Iterable[dg.AssetSpec] | None = None,
 ) -> Iterator[dg.MaterializeResult[None]]:
     """Generate `dagster.MaterializeResult` events for assets in topological order.
 
@@ -167,7 +167,8 @@ def generate_materialize_results(
     Args:
         context: The Dagster asset execution context.
         store: The Metaxy metadata store to read from.
-        specs: Sequence of asset specs with `"metaxy/feature"` metadata set.
+        specs: Optional, concrete Dagster asset specs.
+            If missing, specs will be taken from the context.
 
     Yields:
         Materialization result for each asset in topological order.
@@ -183,19 +184,16 @@ def generate_materialize_results(
         @dg.multi_asset(specs=specs)
         def my_multi_asset(context: dg.AssetExecutionContext, store: mx.MetadataStore):
             # ... compute and write data ...
-            yield from generate_materialize_results(context, store, context.asset_defs.specs)
+            yield from generate_materialize_results(context, store)
         ```
     """
     # Build mapping from feature key to asset spec
     spec_by_feature_key: dict[mx.FeatureKey, dg.AssetSpec] = {}
+    specs = specs or context.assets_def.specs
     for spec in specs:
-        feature_key_raw = spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
-        if feature_key_raw is None:
-            raise ValueError(
-                f"AssetSpec {spec.key} missing '{DAGSTER_METAXY_FEATURE_METADATA_KEY}' metadata"
-            )
-        feature_key = mx.coerce_to_feature_key(feature_key_raw)
-        spec_by_feature_key[feature_key] = spec
+        if feature_key_raw := spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY):
+            feature_key = mx.coerce_to_feature_key(feature_key_raw)
+            spec_by_feature_key[feature_key] = spec
 
     # Sort by topological order of feature keys
     graph = mx.FeatureGraph.get_active()
@@ -294,18 +292,19 @@ def build_feature_info_metadata(
 def generate_observe_results(
     context: dg.AssetExecutionContext,
     store: mx.MetadataStore | MetaxyStoreFromConfigResource,
-    specs: Sequence[dg.AssetSpec],
+    specs: Iterable[dg.AssetSpec] | None = None,
 ) -> Iterator[dg.ObserveResult]:
     """Generate `dagster.ObserveResult` events for assets in topological order.
 
-    Yields an `ObserveResult` for each asset spec, sorted by their associated
+    Yields an `ObserveResult` for each asset spec that has `"metaxy/feature"` metadata key set, sorted by their associated
     Metaxy features in topological order.
     Each result includes the row count as `"dagster/row_count"` metadata.
 
     Args:
         context: The Dagster asset execution context.
         store: The Metaxy metadata store to read from.
-        specs: Sequence of asset specs with `"metaxy/feature"` metadata set.
+        specs: Optional, concrete Dagster asset specs.
+            If missing, this function will take the current specs from the context.
 
     Yields:
         Observation result for each asset in topological order.
@@ -320,19 +319,17 @@ def generate_observe_results(
         @metaxify
         @dg.multi_observable_source_asset(specs=specs)
         def my_observable_assets(context: dg.AssetExecutionContext, store: mx.MetadataStore):
-            yield from generate_observe_results(context, store, context.asset_defs.specs)
+            yield from generate_observe_results(context, store)
         ```
     """
     # Build mapping from feature key to asset spec
     spec_by_feature_key: dict[mx.FeatureKey, dg.AssetSpec] = {}
+    specs = specs or context.assets_def.specs
+
     for spec in specs:
-        feature_key_raw = spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
-        if feature_key_raw is None:
-            raise ValueError(
-                f"AssetSpec {spec.key} missing '{DAGSTER_METAXY_FEATURE_METADATA_KEY}' metadata"
-            )
-        feature_key = mx.coerce_to_feature_key(feature_key_raw)
-        spec_by_feature_key[feature_key] = spec
+        if feature_key_raw := spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY):
+            feature_key = mx.coerce_to_feature_key(feature_key_raw)
+            spec_by_feature_key[feature_key] = spec
 
     # Sort by topological order of feature keys
     graph = mx.FeatureGraph.get_active()

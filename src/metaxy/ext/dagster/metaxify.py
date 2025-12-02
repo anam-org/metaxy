@@ -405,7 +405,14 @@ def _replace_specs_on_assets_definition(
 
     # Create a new AssetsDefinition with the updated attributes
     # This bypasses the buggy code path in Dagster's replace_specs_on_asset
-    return asset.__class__.dagster_internal_init(**attrs)
+    result = asset.__class__.dagster_internal_init(**attrs)
+
+    # Use with_attributes to update check specs - Dagster handles this automatically
+    # when asset_key_replacements is provided
+    if keys_to_replace:
+        result = result.with_attributes(asset_key_replacements=keys_to_replace)
+
+    return result
 
 
 def _metaxify_spec(
@@ -423,7 +430,8 @@ def _metaxify_spec(
 ) -> dg.AssetSpec:
     """Transform a single AssetSpec with Metaxy metadata.
 
-    Returns the spec unchanged if neither `feature` argument nor `metaxy/feature` metadata is set.
+    Returns the spec unchanged if neither `feature` argument nor `metaxy/feature` metadata is set,
+    unless `key_prefix` is provided (which applies to all specs).
     """
     metadata_feature_key = spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
 
@@ -442,7 +450,10 @@ def _metaxify_spec(
     elif metadata_feature_key is not None:
         feature_key = mx.coerce_to_feature_key(metadata_feature_key)
     else:
-        # Neither is set - return spec unchanged
+        # Neither is set - but still apply key_prefix if provided
+        if key_prefix is not None:
+            new_key = dg.AssetKey([*key_prefix.path, *spec.key.path])
+            return spec.replace_attributes(key=new_key)
         return spec
 
     feature_cls = mx.get_feature_by_key(feature_key)
