@@ -28,7 +28,7 @@ METAXY_SNAPSHOT_VERSION = f"{SYSTEM_COLUMN_PREFIX}snapshot_version"
 """Hash of the entire feature graph snapshot (recorded during deployment)."""
 
 METAXY_FEATURE_SPEC_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_spec_version"
-"""Hash of the complete feature specification (used for migration detection)."""
+"""Hash of the complete feature specification."""
 
 METAXY_FULL_DEFINITION_VERSION = f"{SYSTEM_COLUMN_PREFIX}full_definition_version"
 """Hash of the complete feature definition including Pydantic schema, feature spec, and project.
@@ -124,3 +124,16 @@ def is_droppable_system_column(name: str) -> bool:
         False
     """
     return name in _DROPPABLE_COLUMNS
+
+
+# System columns that have lineage from upstream features
+# These columns are computed from corresponding upstream columns (same column name)
+# With 5 parents, each of these columns will have 5 dependencies
+SYSTEM_COLUMNS_WITH_LINEAGE: frozenset[str] = frozenset(
+    {
+        METAXY_PROVENANCE_BY_FIELD,
+        METAXY_PROVENANCE,
+        METAXY_DATA_VERSION_BY_FIELD,
+        METAXY_DATA_VERSION,
+    }
+)

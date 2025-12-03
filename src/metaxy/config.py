@@ -87,7 +87,7 @@ class StoreConfig(BaseSettings):
         config = StoreConfig(
             type="metaxy_delta.DeltaMetadataStore",
             config={
-                "table_uri": "s3://bucket/metadata",
+                "root_path": "s3://bucket/metadata",
                 "region": "us-west-2",
                 "fallback_stores": ["prod"],
             }
@@ -216,21 +216,16 @@ class MetaxyConfig(BaseSettings):
         description="Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
     )
 
-    @field_validator("ext", mode="after")
-    @classmethod
-    def register_plugins(cls, ext: dict[str, PluginConfig]) -> dict[str, PluginConfig]:
+    def _load_plugins(self) -> None:
+        """Load enabled plugins. Must be called after config is set."""
         for name, module in BUILTIN_PLUGINS.items():
-            if (
-                name in ext and ext[name].enable
-            ):  # should only have enabled plugins by this point but whatever
+            if name in self.ext and self.ext[name].enable:
                 try:
                     __import__(module)
                 except Exception as e:
                     raise ValueError(
                         f"Failed to load Metaxy plugin '{name}' (defined in \"ext\" config field): {e}"
                     ) from e
-
-        return ext
 
     @field_validator("project")
     @classmethod
@@ -315,7 +310,8 @@ class MetaxyConfig(BaseSettings):
             warnings.warn(
                 UserWarning(
                     "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project='default')."
-                )
+                ),
+                stacklevel=2,
             )
             return cls(project="default")
         else:
@@ -442,6 +438,9 @@ class MetaxyConfig(BaseSettings):
 
         cls.set(config)
 
+        # Load plugins after config is set (plugins may access MetaxyConfig.get())
+        config._load_plugins()
+
         return config
 
     @staticmethod
@@ -553,9 +552,8 @@ class MetaxyConfig(BaseSettings):
         if expected_type is not None and not issubclass(store_class, expected_type):
             raise TypeError(f"Store '{name}' is not of type '{expected_type.__name__}'")
 
-        # Extract configuration
+        # Extract configuration and prepare for typed config model
         config_copy = store_config.config.copy()
-        fallback_store_names = config_copy.pop("fallback_stores", [])
 
         # Get hash_algorithm from config (if specified) and convert to enum
         configured_hash_algorithm = config_copy.get("hash_algorithm")
@@ -568,24 +566,33 @@ class MetaxyConfig(BaseSettings):
             # Don't set a default here - let the store choose its own default
             configured_hash_algorithm = None
 
-        # Get auto_create_tables from global config (unless overridden in store config)
+        # Get the store's config model class and create typed config
+        config_model_cls = store_class.config_model()
+
+        # Get auto_create_tables from global config only if the config model supports it
         if (
             "auto_create_tables" not in config_copy
             and self.auto_create_tables is not None
+            and "auto_create_tables" in config_model_cls.model_fields
         ):
             # Use global setting from MetaxyConfig if not specified per-store
             config_copy["auto_create_tables"] = self.auto_create_tables
 
-        # Build fallback stores recursively
-        fallback_stores = []
-        for fallback_name in fallback_store_names:
-            fallback_store = self.get_store(fallback_name)
-            fallback_stores.append(fallback_store)
+        # Separate kwargs into config fields and extra constructor args
+        config_fields = set(config_model_cls.model_fields.keys())
+        extra_kwargs = {}
+        for key, value in kwargs.items():
+            if key in config_fields:
+                config_copy[key] = value
+            else:
+                extra_kwargs[key] = value
 
-        # Instantiate store with config + fallback_stores
-        store = store_class(
-            fallback_stores=fallback_stores, **{**config_copy, **kwargs}
-        )
+        typed_config = config_model_cls.model_validate(config_copy)
+
+        # Instantiate using from_config() - fallback stores are resolved via MetaxyConfig.get()
+        # Use self.use() to ensure this config is available for fallback resolution
+        with self.use():
+            store = store_class.from_config(typed_config, **extra_kwargs)
 
         # Verify the store actually uses the hash algorithm we configured
         # (in case a store subclass overrides the default or ignores the parameter)

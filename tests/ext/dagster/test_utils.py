@@ -1,165 +1,977 @@
-"""Tests for dagster utils."""
+"""Tests for dagster utils: generate_materialize_results and generate_observe_results."""
+
+from typing import Any
 
 import dagster as dg
+import polars as pl
 import pytest
 
 import metaxy as mx
-from metaxy.ext.dagster.constants import (
-    DAGSTER_METAXY_FEATURE_METADATA_KEY,
-    DAGSTER_METAXY_KIND,
-    DAGSTER_METAXY_METADATA_METADATA_KEY,
-)
-from metaxy.ext.dagster.utils import build_asset_spec
+import metaxy.ext.dagster as mxd
 
 
 @pytest.fixture
-def upstream_feature() -> type[mx.BaseFeature]:
-    """Create an upstream feature."""
+def metadata_store() -> mx.MetadataStore:
+    """Get the MetadataStore from the current config."""
+    return mx.MetaxyConfig.get().get_store("dev")
+
+
+@pytest.fixture
+def feature_a() -> type[mx.BaseFeature]:
+    """Create feature A (no dependencies)."""
     spec = mx.FeatureSpec(
-        key=["test", "upstream"],
+        key=["test", "utils", "a"],
         id_columns=["id"],
         fields=["value"],
     )
 
-    class UpstreamFeature(mx.BaseFeature, spec=spec):
+    class FeatureA(mx.BaseFeature, spec=spec):
         id: str
 
-    return UpstreamFeature
+    return FeatureA
 
 
 @pytest.fixture
-def downstream_feature(
-    upstream_feature: type[mx.BaseFeature],
-) -> type[mx.BaseFeature]:
-    """Create a downstream feature with dependency."""
+def feature_b(feature_a: type[mx.BaseFeature]) -> type[mx.BaseFeature]:
+    """Create feature B (depends on A)."""
     spec = mx.FeatureSpec(
-        key=["test", "downstream"],
+        key=["test", "utils", "b"],
         id_columns=["id"],
-        fields=["result"],
-        deps=[mx.FeatureDep(feature=upstream_feature)],
+        fields=["value"],
+        deps=[feature_a],
     )
 
-    class DownstreamFeature(mx.BaseFeature, spec=spec):
+    class FeatureB(mx.BaseFeature, spec=spec):
         id: str
 
-    return DownstreamFeature
+    return FeatureB
 
 
 @pytest.fixture
-def feature_with_custom_key() -> type[mx.BaseFeature]:
-    """Create a feature with custom dagster asset key."""
+def feature_c(feature_b: type[mx.BaseFeature]) -> type[mx.BaseFeature]:
+    """Create feature C (depends on B, so transitively on A)."""
     spec = mx.FeatureSpec(
-        key=["test", "custom"],
+        key=["test", "utils", "c"],
         id_columns=["id"],
-        fields=["data"],
-        metadata={
-            DAGSTER_METAXY_METADATA_METADATA_KEY: ["custom", "dagster", "key"],
-        },
+        fields=["value"],
+        deps=[feature_b],
     )
 
-    class CustomKeyFeature(mx.BaseFeature, spec=spec):
+    class FeatureC(mx.BaseFeature, spec=spec):
         id: str
 
-    return CustomKeyFeature
+    return FeatureC
 
 
-class TestBuildAssetSpec:
-    """Tests for build_asset_spec function."""
+def _write_feature_data(
+    feature: type[mx.BaseFeature],
+    rows: list[str],
+    resources: dict[str, Any],
+    instance: dg.DagsterInstance,
+) -> None:
+    """Helper to write data to a feature."""
 
-    def test_build_asset_spec_from_string_key(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
-        """Test building asset spec from string feature key."""
-        spec = build_asset_spec("test/upstream")
+    @mxd.metaxify()
+    @dg.asset(
+        metadata={"metaxy/feature": feature.spec().key.to_string()},
+        io_manager_key="metaxy_io_manager",
+    )
+    def write_data():
+        return pl.DataFrame(
+            {
+                "id": rows,
+                "metaxy_provenance_by_field": [
+                    {"value": f"v{i}"} for i in range(len(rows))
+                ],
+            }
+        )
 
-        assert spec.key == dg.AssetKey(["test", "upstream"])
-        assert spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY] == "test/upstream"
-        assert DAGSTER_METAXY_KIND in spec.kinds
+    dg.materialize([write_data], resources=resources, instance=instance)
 
-    def test_build_asset_spec_from_list_key(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
-        """Test building asset spec from list feature key."""
-        spec = build_asset_spec(["test", "upstream"])
 
-        assert spec.key == dg.AssetKey(["test", "upstream"])
-        assert spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY] == "test/upstream"
+class TestGenerateMaterializationEvents:
+    """Tests for generate_materialize_results."""
 
-    def test_build_asset_spec_from_feature_class(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
-        """Test building asset spec from feature class."""
-        spec = build_asset_spec(upstream_feature)
-
-        assert spec.key == dg.AssetKey(["test", "upstream"])
-        assert spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY] == "test/upstream"
-
-    def test_build_asset_spec_with_key_prefix(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
-        """Test that key_prefix is prepended to asset key."""
-        spec = build_asset_spec("test/upstream", key_prefix=["prefix", "path"])
-
-        assert spec.key == dg.AssetKey(["prefix", "path", "test", "upstream"])
-
-    def test_build_asset_spec_includes_deps(
+    def test_yields_events_in_topological_order(
         self,
-        upstream_feature: type[mx.BaseFeature],
-        downstream_feature: type[mx.BaseFeature],
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+        feature_c: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
     ):
-        """Test that upstream dependencies are included."""
-        spec = build_asset_spec("test/downstream")
+        """Test that events are yielded in topological order (dependencies first)."""
+        # Write data for all features
+        _write_feature_data(feature_a, ["a1", "a2"], resources, instance)
+        _write_feature_data(feature_b, ["b1", "b2"], resources, instance)
+        _write_feature_data(feature_c, ["c1", "c2"], resources, instance)
 
-        dep_keys = {dep.asset_key for dep in spec.deps}
-        assert dg.AssetKey(["test", "upstream"]) in dep_keys
-
-    def test_build_asset_spec_deps_use_key_prefix(
-        self,
-        upstream_feature: type[mx.BaseFeature],
-        downstream_feature: type[mx.BaseFeature],
-    ):
-        """Test that deps also use key_prefix."""
-        spec = build_asset_spec("test/downstream", key_prefix=["prefix"])
-
-        dep_keys = {dep.asset_key for dep in spec.deps}
-        assert dg.AssetKey(["prefix", "test", "upstream"]) in dep_keys
-
-    def test_build_asset_spec_exclude_kind(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
-        """Test that metaxy kind can be excluded."""
-        spec = build_asset_spec("test/upstream", include_kind=False)
-
-        assert DAGSTER_METAXY_KIND not in spec.kinds
-
-    def test_build_asset_spec_uses_custom_dagster_key(
-        self, feature_with_custom_key: type[mx.BaseFeature]
-    ):
-        """Test that custom dagster key from metadata is used."""
-        spec = build_asset_spec("test/custom")
-
-        assert spec.key == dg.AssetKey(["custom", "dagster", "key"])
-        # But metaxy/feature metadata still uses original key
-        assert spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY] == "test/custom"
-
-    def test_build_asset_spec_no_deps_for_root_feature(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
-        """Test that root feature has no deps."""
-        spec = build_asset_spec("test/upstream")
-
-        assert len(spec.deps) == 0  # pyright: ignore
-
-    def test_build_asset_spec_includes_feature_metadata(
-        self, feature_with_custom_key: type[mx.BaseFeature]
-    ):
-        """Test that feature spec metadata is included in asset spec."""
-        spec = build_asset_spec("test/custom")
-
-        # Should include the custom dagster key metadata from feature spec
-        assert DAGSTER_METAXY_METADATA_METADATA_KEY in spec.metadata
-        assert spec.metadata[DAGSTER_METAXY_METADATA_METADATA_KEY] == [
-            "custom",
-            "dagster",
-            "key",
+        # Create AssetSpecs in reverse order (C, B, A)
+        specs = [
+            dg.AssetSpec("asset_c", metadata={"metaxy/feature": "test/utils/c"}),
+            dg.AssetSpec("asset_b", metadata={"metaxy/feature": "test/utils/b"}),
+            dg.AssetSpec("asset_a", metadata={"metaxy/feature": "test/utils/a"}),
         ]
+
+        context = dg.build_asset_context()
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        assert len(events) == 3
+
+        # Check order: A before B before C (topological order)
+        asset_keys = [e.asset_key for e in events]
+        assert asset_keys == [
+            dg.AssetKey("asset_a"),
+            dg.AssetKey("asset_b"),
+            dg.AssetKey("asset_c"),
+        ]
+
+    def test_includes_row_count_and_data_version(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that each event includes dagster/row_count metadata and data_version."""
+        # Write 3 rows
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+
+        specs = [dg.AssetSpec("my_asset", metadata={"metaxy/feature": "test/utils/a"})]
+
+        context = dg.build_asset_context()
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 3
+        assert events[0].asset_key == dg.AssetKey("my_asset")
+        # data_version should be set (based on mean of metaxy_created_at)
+        assert events[0].data_version is not None
+        assert events[0].data_version.value != "empty"
+
+    def test_uses_asset_spec_key(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that the asset key from the spec is used, not the feature key."""
+        _write_feature_data(feature_a, ["1"], resources, instance)
+
+        # Use a custom asset key different from feature key
+        specs = [
+            dg.AssetSpec(
+                ["custom", "asset", "key"],
+                metadata={"metaxy/feature": "test/utils/a"},
+            )
+        ]
+
+        context = dg.build_asset_context()
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].asset_key == dg.AssetKey(["custom", "asset", "key"])
+
+    def test_skips_specs_without_metaxy_feature_metadata(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that specs without metaxy/feature metadata are skipped."""
+        _write_feature_data(feature_a, ["1", "2"], resources, instance)
+
+        # Mix of specs with and without metaxy/feature metadata
+        specs = [
+            dg.AssetSpec("my_asset"),  # No metaxy/feature metadata - should be skipped
+            dg.AssetSpec("asset_a", metadata={"metaxy/feature": "test/utils/a"}),
+        ]
+
+        context = dg.build_asset_context()
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        # Only the spec with metaxy/feature metadata should produce an event
+        assert len(events) == 1
+        assert events[0].asset_key == dg.AssetKey("asset_a")
+
+
+class TestGenerateObservationEvents:
+    """Tests for generate_observe_results."""
+
+    def test_yields_events_in_topological_order(
+        self,
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+        feature_c: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that events are yielded in topological order (dependencies first)."""
+        # Write data for all features
+        _write_feature_data(feature_a, ["a1", "a2"], resources, instance)
+        _write_feature_data(feature_b, ["b1", "b2"], resources, instance)
+        _write_feature_data(feature_c, ["c1", "c2"], resources, instance)
+
+        # Create AssetSpecs in reverse order
+        specs = [
+            dg.AssetSpec("asset_c", metadata={"metaxy/feature": "test/utils/c"}),
+            dg.AssetSpec("asset_b", metadata={"metaxy/feature": "test/utils/b"}),
+            dg.AssetSpec("asset_a", metadata={"metaxy/feature": "test/utils/a"}),
+        ]
+
+        context = dg.build_asset_context()
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
+
+        assert len(events) == 3
+
+        # Check order: A before B before C
+        asset_keys = [e.asset_key for e in events]
+        assert asset_keys == [
+            dg.AssetKey("asset_a"),
+            dg.AssetKey("asset_b"),
+            dg.AssetKey("asset_c"),
+        ]
+
+    def test_includes_row_count_and_data_version(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that each event includes dagster/row_count metadata and data_version."""
+        # Write 5 rows
+        _write_feature_data(feature_a, ["1", "2", "3", "4", "5"], resources, instance)
+
+        specs = [dg.AssetSpec("my_asset", metadata={"metaxy/feature": "test/utils/a"})]
+
+        context = dg.build_asset_context()
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 5
+        # data_version should be set (based on mean of metaxy_created_at)
+        assert events[0].data_version is not None
+        assert events[0].data_version.value != "empty"
+
+    def test_uses_asset_spec_key(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that the asset key from the spec is used."""
+        _write_feature_data(feature_a, ["1"], resources, instance)
+
+        specs = [
+            dg.AssetSpec(
+                ["custom", "key"],
+                metadata={"metaxy/feature": "test/utils/a"},
+            )
+        ]
+
+        context = dg.build_asset_context()
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].asset_key == dg.AssetKey(["custom", "key"])
+
+    def test_skips_specs_without_metaxy_feature_metadata(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that specs without metaxy/feature metadata are skipped."""
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+
+        # Mix of specs with and without metaxy/feature metadata
+        specs = [
+            dg.AssetSpec("my_asset"),  # No metaxy/feature metadata - should be skipped
+            dg.AssetSpec("asset_a", metadata={"metaxy/feature": "test/utils/a"}),
+        ]
+
+        context = dg.build_asset_context()
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
+
+        # Only the spec with metaxy/feature metadata should produce an event
+        assert len(events) == 1
+        assert events[0].asset_key == dg.AssetKey("asset_a")
+
+
+class TestPartitionedAssets:
+    """Tests for partitioned assets."""
+
+    @pytest.fixture
+    def partitions_def(self) -> dg.StaticPartitionsDefinition:
+        """Create a static partitions definition."""
+        return dg.StaticPartitionsDefinition(["2024-01-01", "2024-01-02"])
+
+    @pytest.fixture
+    def partitioned_feature(self) -> type[mx.BaseFeature]:
+        """Create a feature with a partition column."""
+        spec = mx.FeatureSpec(
+            key=["test", "utils", "partitioned"],
+            id_columns=["id"],
+            fields=["value", "partition_date"],
+        )
+
+        class PartitionedFeature(mx.BaseFeature, spec=spec):
+            id: str
+
+        return PartitionedFeature
+
+    def _write_partitioned_data(
+        self,
+        feature: type[mx.BaseFeature],
+        partition_date: str,
+        rows: list[str],
+        partitions_def: dg.StaticPartitionsDefinition,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ) -> None:
+        """Helper to write data with a partition value."""
+
+        @mxd.metaxify()
+        @dg.asset(
+            metadata={
+                "metaxy/feature": feature.spec().key.to_string(),
+                "partition_by": "partition_date",
+            },
+            io_manager_key="metaxy_io_manager",
+            partitions_def=partitions_def,
+        )
+        def write_data(context: dg.AssetExecutionContext):
+            return pl.DataFrame(
+                {
+                    "id": rows,
+                    "partition_date": [context.partition_key] * len(rows),
+                    "metaxy_provenance_by_field": [
+                        {"value": f"v{i}", "partition_date": context.partition_key}
+                        for i in range(len(rows))
+                    ],
+                }
+            )
+
+        dg.materialize(
+            [write_data],
+            resources=resources,
+            instance=instance,
+            partition_key=partition_date,
+        )
+
+    def test_materialization_filters_by_partition(
+        self,
+        partitioned_feature: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that materialization events filter by partition key."""
+        # Write data for two partitions
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-01",
+            ["a", "b", "c"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-02",
+            ["d", "e"],
+            partitions_def,
+            resources,
+            instance,
+        )
+
+        specs = [
+            dg.AssetSpec(
+                "partitioned_asset",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned",
+                    "partition_by": "partition_date",
+                },
+            )
+        ]
+
+        # Test with partition "2024-01-01" (3 rows)
+        context = dg.build_asset_context(partition_key="2024-01-01")
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 3
+
+        # Test with partition "2024-01-02" (2 rows)
+        context = dg.build_asset_context(partition_key="2024-01-02")
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 2
+
+    def test_observation_filters_by_partition(
+        self,
+        partitioned_feature: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that observation events filter by partition key."""
+        # Write data for two partitions
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-01",
+            ["a", "b"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-02",
+            ["c", "d", "e", "f"],
+            partitions_def,
+            resources,
+            instance,
+        )
+
+        specs = [
+            dg.AssetSpec(
+                "partitioned_asset",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned",
+                    "partition_by": "partition_date",
+                },
+            )
+        ]
+
+        # Test with partition "2024-01-01" (2 rows)
+        context = dg.build_asset_context(partition_key="2024-01-01")
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 2
+
+        # Test with partition "2024-01-02" (4 rows)
+        context = dg.build_asset_context(partition_key="2024-01-02")
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 4
+
+    def test_no_partition_by_metadata_returns_all_rows(
+        self,
+        partitioned_feature: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that without partition_by metadata, all rows are counted."""
+        # Write data for two partitions (total 5 rows)
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-01",
+            ["a", "b", "c"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-02",
+            ["d", "e"],
+            partitions_def,
+            resources,
+            instance,
+        )
+
+        # No partition_by metadata - should return all rows
+        specs = [
+            dg.AssetSpec(
+                "partitioned_asset",
+                metadata={"metaxy/feature": "test/utils/partitioned"},
+            )
+        ]
+
+        context = dg.build_asset_context(partition_key="2024-01-01")
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        # Without partition_by, should return all 5 rows
+        assert events[0].metadata["dagster/row_count"] == 5
+
+
+class TestMultiAssetIntegration:
+    """Integration tests using actual @multi_asset decorator."""
+
+    def test_multi_asset_with_generate_materialize_results(
+        self,
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test generate_materialize_results within a real @multi_asset."""
+        # First write some data
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+        _write_feature_data(feature_b, ["4", "5"], resources, instance)
+
+        specs = [
+            dg.AssetSpec("multi_a", metadata={"metaxy/feature": "test/utils/a"}),
+            dg.AssetSpec("multi_b", metadata={"metaxy/feature": "test/utils/b"}),
+        ]
+
+        @dg.multi_asset(specs=specs)
+        def my_multi_asset(
+            context: dg.AssetExecutionContext,
+            store: mxd.MetaxyStoreFromConfigResource,
+        ):
+            yield from mxd.generate_materialize_results(context, store, specs)
+
+        result = dg.materialize(
+            [my_multi_asset], resources=resources, instance=instance
+        )
+        assert result.success
+
+        # Check materialization events via instance.fetch_materializations
+        mat_a = instance.fetch_materializations(dg.AssetKey("multi_a"), limit=1)
+        mat_b = instance.fetch_materializations(dg.AssetKey("multi_b"), limit=1)
+
+        assert len(mat_a.records) == 1
+        assert len(mat_b.records) == 1
+
+        # Verify row counts
+        assert (
+            mat_a.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 3
+        )
+        assert (
+            mat_b.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 2
+        )
+
+    def test_multi_asset_reports_materialized_in_run(
+        self,
+        feature_a: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that metaxy/materialized_in_run is reported when store has materialization_id."""
+        # Write data in run 1 (3 rows)
+        _write_feature_data(feature_a, ["r1", "r2", "r3"], resources, instance)
+
+        # Get run_id from the first materialization (run 1)
+        mat_run1 = instance.fetch_materializations(
+            dg.AssetKey(["test", "utils", "a"]), limit=1
+        )
+        run1_id = mat_run1.records[0].run_id
+
+        specs = [
+            dg.AssetSpec("mat_run_a", metadata={"metaxy/feature": "test/utils/a"}),
+        ]
+
+        @dg.multi_asset(specs=specs)
+        def my_multi_asset(
+            context: dg.AssetExecutionContext,
+            store: mxd.MetaxyStoreFromConfigResource,
+        ):
+            yield from mxd.generate_materialize_results(context, store, specs)
+
+        # Run 2: call generate_materialize_results (no new data written in this run)
+        result = dg.materialize(
+            [my_multi_asset], resources=resources, instance=instance
+        )
+        assert result.success
+
+        mat = instance.fetch_materializations(dg.AssetKey("mat_run_a"), limit=1)
+        assert len(mat.records) == 1
+
+        # Verify this is a different run than run 1
+        run2_id = mat.records[0].run_id
+        assert run2_id != run1_id
+
+        metadata = mat.records[0].asset_materialization.metadata  # pyright: ignore[reportOptionalMemberAccess]
+        # Total row count is 3
+        assert metadata["dagster/row_count"].value == 3
+        # metaxy/materialized_in_run should be present since the store has materialization_id
+        assert "metaxy/materialized_in_run" in metadata
+        # Data was written in run 1, so materialized_in_run should be 0 for run 2
+        assert metadata["metaxy/materialized_in_run"].value == 0
+
+
+class TestMultiObservableSourceAssetIntegration:
+    """Integration tests using actual @multi_observable_source_asset decorator."""
+
+    def test_multi_observable_source_asset_with_generate_observe_results(
+        self,
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test generate_observe_results within a real @multi_observable_source_asset."""
+        # First write some data
+        _write_feature_data(feature_a, ["1", "2", "3", "4"], resources, instance)
+        _write_feature_data(feature_b, ["5", "6"], resources, instance)
+
+        specs = [
+            dg.AssetSpec("obs_a", metadata={"metaxy/feature": "test/utils/a"}),
+            dg.AssetSpec("obs_b", metadata={"metaxy/feature": "test/utils/b"}),
+        ]
+
+        @dg.multi_observable_source_asset(specs=specs)
+        def my_observable_assets(
+            context: dg.AssetExecutionContext,
+            store: mxd.MetaxyStoreFromConfigResource,
+        ):
+            yield from mxd.generate_observe_results(context, store, specs)
+
+        # Create definitions and run observation
+        defs = dg.Definitions(
+            assets=[my_observable_assets],
+            resources=resources,
+        )
+
+        # Get the implicit job and execute it
+        job = defs.get_implicit_global_asset_job_def()
+        result = job.execute_in_process(instance=instance)
+        assert result.success
+
+        # Check observation events via instance.fetch_observations
+        obs_a = instance.fetch_observations(dg.AssetKey("obs_a"), limit=1)
+        obs_b = instance.fetch_observations(dg.AssetKey("obs_b"), limit=1)
+
+        assert len(obs_a.records) == 1
+        assert len(obs_b.records) == 1
+
+        # Verify row counts
+        assert (
+            obs_a.records[0].asset_observation.metadata["dagster/row_count"].value == 4  # pyright: ignore[reportOptionalMemberAccess]
+        )
+        assert (
+            obs_b.records[0].asset_observation.metadata["dagster/row_count"].value == 2  # pyright: ignore[reportOptionalMemberAccess]
+        )
+
+
+class TestPartitionedMultiAssetIntegration:
+    """Integration tests for partitioned multi-assets."""
+
+    @pytest.fixture
+    def partitions_def(self) -> dg.StaticPartitionsDefinition:
+        """Create a static partitions definition."""
+        return dg.StaticPartitionsDefinition(["2024-01-01", "2024-01-02"])
+
+    @pytest.fixture
+    def partitioned_feature_x(self) -> type[mx.BaseFeature]:
+        """Create partitioned feature X."""
+        spec = mx.FeatureSpec(
+            key=["test", "utils", "partitioned_x"],
+            id_columns=["id"],
+            fields=["value", "partition_date"],
+        )
+
+        class PartitionedFeatureX(mx.BaseFeature, spec=spec):
+            id: str
+
+        return PartitionedFeatureX
+
+    @pytest.fixture
+    def partitioned_feature_y(
+        self, partitioned_feature_x: type[mx.BaseFeature]
+    ) -> type[mx.BaseFeature]:
+        """Create partitioned feature Y (depends on X)."""
+        spec = mx.FeatureSpec(
+            key=["test", "utils", "partitioned_y"],
+            id_columns=["id"],
+            fields=["value", "partition_date"],
+            deps=[partitioned_feature_x],
+        )
+
+        class PartitionedFeatureY(mx.BaseFeature, spec=spec):
+            id: str
+
+        return PartitionedFeatureY
+
+    def _write_partitioned_data(
+        self,
+        feature: type[mx.BaseFeature],
+        partition_date: str,
+        rows: list[str],
+        partitions_def: dg.StaticPartitionsDefinition,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ) -> None:
+        """Helper to write data with a partition value."""
+
+        @mxd.metaxify()
+        @dg.asset(
+            metadata={
+                "metaxy/feature": feature.spec().key.to_string(),
+                "partition_by": "partition_date",
+            },
+            io_manager_key="metaxy_io_manager",
+            partitions_def=partitions_def,
+        )
+        def write_data(context: dg.AssetExecutionContext):
+            return pl.DataFrame(
+                {
+                    "id": rows,
+                    "partition_date": [context.partition_key] * len(rows),
+                    "metaxy_provenance_by_field": [
+                        {"value": f"v{i}", "partition_date": context.partition_key}
+                        for i in range(len(rows))
+                    ],
+                }
+            )
+
+        dg.materialize(
+            [write_data],
+            resources=resources,
+            instance=instance,
+            partition_key=partition_date,
+        )
+
+    def test_partitioned_multi_asset_filters_correctly(
+        self,
+        partitioned_feature_x: type[mx.BaseFeature],
+        partitioned_feature_y: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test partitioned @multi_asset with generate_materialize_results."""
+        # Write data for partition 2024-01-01: X has 3 rows, Y has 2 rows
+        self._write_partitioned_data(
+            partitioned_feature_x,
+            "2024-01-01",
+            ["x1", "x2", "x3"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature_y,
+            "2024-01-01",
+            ["y1", "y2"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        # Write data for partition 2024-01-02: X has 1 row, Y has 4 rows
+        self._write_partitioned_data(
+            partitioned_feature_x,
+            "2024-01-02",
+            ["x4"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature_y,
+            "2024-01-02",
+            ["y3", "y4", "y5", "y6"],
+            partitions_def,
+            resources,
+            instance,
+        )
+
+        specs = [
+            dg.AssetSpec(
+                "part_multi_x",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned_x",
+                    "partition_by": "partition_date",
+                },
+            ),
+            dg.AssetSpec(
+                "part_multi_y",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned_y",
+                    "partition_by": "partition_date",
+                },
+            ),
+        ]
+
+        @dg.multi_asset(specs=specs, partitions_def=partitions_def)
+        def partitioned_multi_asset(
+            context: dg.AssetExecutionContext,
+            store: mxd.MetaxyStoreFromConfigResource,
+        ):
+            yield from mxd.generate_materialize_results(context, store, specs)
+
+        # Materialize partition 2024-01-01
+        result = dg.materialize(
+            [partitioned_multi_asset],
+            resources=resources,
+            instance=instance,
+            partition_key="2024-01-01",
+        )
+        assert result.success
+
+        # Fetch materializations for partition 2024-01-01
+        mat_x = instance.fetch_materializations(dg.AssetKey("part_multi_x"), limit=1)
+        mat_y = instance.fetch_materializations(dg.AssetKey("part_multi_y"), limit=1)
+
+        assert len(mat_x.records) == 1
+        assert len(mat_y.records) == 1
+        # Partition 2024-01-01: X=3 rows, Y=2 rows
+        assert (
+            mat_x.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 3
+        )
+        assert (
+            mat_y.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 2
+        )
+
+        # Materialize partition 2024-01-02
+        result = dg.materialize(
+            [partitioned_multi_asset],
+            resources=resources,
+            instance=instance,
+            partition_key="2024-01-02",
+        )
+        assert result.success
+
+        # Fetch latest materializations for partition 2024-01-02
+        mat_x = instance.fetch_materializations(dg.AssetKey("part_multi_x"), limit=1)
+        mat_y = instance.fetch_materializations(dg.AssetKey("part_multi_y"), limit=1)
+
+        # Partition 2024-01-02: X=1 row, Y=4 rows
+        assert (
+            mat_x.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 1
+        )
+        assert (
+            mat_y.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            == 4
+        )
+
+    def test_partitioned_multi_observable_source_asset_filters_correctly(
+        self,
+        partitioned_feature_x: type[mx.BaseFeature],
+        partitioned_feature_y: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test partitioned @multi_observable_source_asset with generate_observe_results."""
+        # Write data for partition 2024-01-01: X has 5 rows, Y has 1 row
+        self._write_partitioned_data(
+            partitioned_feature_x,
+            "2024-01-01",
+            ["x1", "x2", "x3", "x4", "x5"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature_y,
+            "2024-01-01",
+            ["y1"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        # Write data for partition 2024-01-02: X has 2 rows, Y has 3 rows
+        self._write_partitioned_data(
+            partitioned_feature_x,
+            "2024-01-02",
+            ["x6", "x7"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature_y,
+            "2024-01-02",
+            ["y2", "y3", "y4"],
+            partitions_def,
+            resources,
+            instance,
+        )
+
+        specs = [
+            dg.AssetSpec(
+                "part_obs_x",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned_x",
+                    "partition_by": "partition_date",
+                },
+            ),
+            dg.AssetSpec(
+                "part_obs_y",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned_y",
+                    "partition_by": "partition_date",
+                },
+            ),
+        ]
+
+        @dg.multi_observable_source_asset(specs=specs, partitions_def=partitions_def)
+        def partitioned_observable_assets(
+            context: dg.AssetExecutionContext,
+            store: mxd.MetaxyStoreFromConfigResource,
+        ):
+            yield from mxd.generate_observe_results(context, store, specs)
+
+        defs = dg.Definitions(
+            assets=[partitioned_observable_assets],
+            resources=resources,
+        )
+        job = defs.get_implicit_global_asset_job_def()
+
+        # Observe partition 2024-01-01
+        result = job.execute_in_process(
+            instance=instance,
+            partition_key="2024-01-01",
+        )
+        assert result.success
+
+        obs_x = instance.fetch_observations(dg.AssetKey("part_obs_x"), limit=1)
+        obs_y = instance.fetch_observations(dg.AssetKey("part_obs_y"), limit=1)
+
+        assert len(obs_x.records) == 1
+        assert len(obs_y.records) == 1
+        # Partition 2024-01-01: X=5 rows, Y=1 row
+        assert (
+            obs_x.records[0].asset_observation.metadata["dagster/row_count"].value == 5  # pyright: ignore[reportOptionalMemberAccess]
+        )
+        assert (
+            obs_y.records[0].asset_observation.metadata["dagster/row_count"].value == 1  # pyright: ignore[reportOptionalMemberAccess]
+        )
+
+        # Observe partition 2024-01-02
+        result = job.execute_in_process(
+            instance=instance,
+            partition_key="2024-01-02",
+        )
+        assert result.success
+
+        obs_x = instance.fetch_observations(dg.AssetKey("part_obs_x"), limit=1)
+        obs_y = instance.fetch_observations(dg.AssetKey("part_obs_y"), limit=1)
+
+        # Partition 2024-01-02: X=2 rows, Y=3 rows
+        assert (
+            obs_x.records[0].asset_observation.metadata["dagster/row_count"].value == 2  # pyright: ignore[reportOptionalMemberAccess]
+        )
+        assert (
+            obs_y.records[0].asset_observation.metadata["dagster/row_count"].value == 3  # pyright: ignore[reportOptionalMemberAccess]
+        )

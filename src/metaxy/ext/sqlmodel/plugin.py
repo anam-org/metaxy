@@ -4,10 +4,10 @@ This module provides a combined metaclass that allows Metaxy Feature classes
 to also be SQLModel table classes, enabling seamless integration with SQLAlchemy/SQLModel ORMs.
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
-from pydantic import BaseModel
-from sqlalchemy.types import JSON
+from pydantic import AwareDatetime, BaseModel
+from sqlalchemy.types import JSON, DateTime
 from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
@@ -27,7 +27,7 @@ from metaxy.models.constants import (
     METAXY_SNAPSHOT_VERSION,
     SYSTEM_COLUMN_PREFIX,
 )
-from metaxy.models.feature import BaseFeature, MetaxyMeta
+from metaxy.models.feature import BaseFeature, FeatureGraph, MetaxyMeta
 from metaxy.models.feature_spec import FeatureSpecWithIDColumns
 from metaxy.models.types import ValidatedFeatureKey
 
@@ -283,9 +283,18 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
     # SQLModel instances need to be mutable for ORM operations
     model_config = {"frozen": False}  # pyright: ignore[reportAssignmentType]
 
+    # Re-declare ClassVar attributes from BaseFeature for type checker visibility.
+    # These are set by MetaxyMeta at class creation time but type checkers can't see them
+    # through the complex metaclass inheritance chain.
+    _spec: ClassVar[FeatureSpec]
+    graph: ClassVar[FeatureGraph]
+    project: ClassVar[str]
+
     # Using sa_column_kwargs to map to the actual column names used by Metaxy
+    # Descriptions match those in BaseFeature for consistency in Dagster UI
     metaxy_provenance: str | None = Field(
         default=None,
+        description="Hash of metaxy_provenance_by_field",
         sa_column_kwargs={
             "name": METAXY_PROVENANCE,
         },
@@ -293,6 +302,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
 
     metaxy_provenance_by_field: dict[str, str] = Field(
         default=None,
+        description="Field-level provenance hashes (maps field names to hashes)",
         sa_type=JSON,
         sa_column_kwargs={
             "name": METAXY_PROVENANCE_BY_FIELD,
@@ -301,6 +311,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
 
     metaxy_feature_version: str | None = Field(
         default=None,
+        description="Hash of the feature definition (dependencies + fields + code_versions)",
         sa_column_kwargs={
             "name": METAXY_FEATURE_VERSION,
         },
@@ -308,6 +319,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
 
     metaxy_feature_spec_version: str | None = Field(
         default=None,
+        description="Hash of the complete feature specification.",
         sa_column_kwargs={
             "name": METAXY_FEATURE_SPEC_VERSION,
         },
@@ -315,6 +327,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
 
     metaxy_snapshot_version: str | None = Field(
         default=None,
+        description="Hash of the entire feature graph snapshot",
         sa_column_kwargs={
             "name": METAXY_SNAPSHOT_VERSION,
         },
@@ -322,6 +335,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
 
     metaxy_data_version: str | None = Field(
         default=None,
+        description="Hash of metaxy_data_version_by_field",
         sa_column_kwargs={
             "name": METAXY_DATA_VERSION,
         },
@@ -329,14 +343,17 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
 
     metaxy_data_version_by_field: dict[str, str] | None = Field(
         default=None,
+        description="Field-level data version hashes (maps field names to version hashes)",
         sa_type=JSON,
         sa_column_kwargs={
             "name": METAXY_DATA_VERSION_BY_FIELD,
         },
     )
 
-    metaxy_created_at: str | None = Field(
+    metaxy_created_at: AwareDatetime | None = Field(
         default=None,
+        description="Timestamp when the metadata row was created (UTC)",
+        sa_type=DateTime(timezone=True),
         sa_column_kwargs={
             "name": METAXY_CREATED_AT,
         },
@@ -344,6 +361,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
 
     metaxy_materialization_id: str | None = Field(
         default=None,
+        description="External orchestration run ID (e.g., Dagster Run ID)",
         sa_column_kwargs={
             "name": METAXY_MATERIALIZATION_ID,
         },

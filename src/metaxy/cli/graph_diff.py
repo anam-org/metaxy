@@ -234,7 +234,9 @@ def render(
                     show_all_fields=show_all_fields,
                 )
             except Exception as e:
-                console.print(f"[red]Error:[/red] Rendering failed: {e}")
+                from metaxy.cli.utils import print_error
+
+                print_error(console, "Rendering failed", e, prefix="[red]Error:[/red]")
                 import traceback
 
                 traceback.print_exc()
@@ -261,7 +263,9 @@ def render(
             try:
                 rendered = renderer.render()
             except Exception as e:
-                console.print(f"[red]Error:[/red] Rendering failed: {e}")
+                from metaxy.cli.utils import print_error
+
+                print_error(console, "Rendering failed", e, prefix="[red]Error:[/red]")
                 import traceback
 
                 traceback.print_exc()
@@ -274,7 +278,11 @@ def render(
                     f.write(rendered)
                 console.print(f"[green]Success:[/green] Diff rendered to: {output}")
             except Exception as e:
-                console.print(f"[red]Error:[/red] Failed to write to file: {e}")
+                from metaxy.cli.utils import print_error
+
+                print_error(
+                    console, "Failed to write to file", e, prefix="[red]Error:[/red]"
+                )
                 raise SystemExit(1)
         else:
             # Print to stdout using data_console

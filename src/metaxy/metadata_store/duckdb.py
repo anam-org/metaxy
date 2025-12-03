@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from typing_extensions import Self
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ from metaxy.metadata_store._ducklake_support import (
     build_ducklake_attachment,
     ensure_extensions_with_plugins,
 )
-from metaxy.metadata_store.ibis import IbisMetadataStore
+from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.versioning.types import HashAlgorithm
 
@@ -39,6 +39,38 @@ class ExtensionSpec(BaseModel):
 
 ExtensionInput = str | ExtensionSpec | Mapping[str, Any]
 NormalisedExtension = str | ExtensionSpec
+
+
+class DuckDBMetadataStoreConfig(IbisMetadataStoreConfig):
+    """Configuration for DuckDBMetadataStore.
+
+    Example:
+        ```python
+        config = DuckDBMetadataStoreConfig(
+            database="metadata.db",
+            extensions=["hashfuncs"],
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+        store = DuckDBMetadataStore.from_config(config)
+        ```
+    """
+
+    database: str | Path = Field(
+        description="Database path (:memory:, file path, or md:database).",
+    )
+    config: dict[str, str] | None = Field(
+        default=None,
+        description="DuckDB configuration settings (e.g., {'threads': '4'}).",
+    )
+    extensions: Sequence[ExtensionInput] | None = Field(
+        default=None,
+        description="DuckDB extensions to install and load on open.",
+    )
+    ducklake: DuckLakeConfigInput | None = Field(
+        default=None,
+        description="DuckLake attachment configuration.",
+    )
 
 
 def _normalise_extensions(
@@ -408,3 +440,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
             )
 
         return candidate
+
+    @classmethod
+    def config_model(cls) -> type[DuckDBMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        return DuckDBMetadataStoreConfig

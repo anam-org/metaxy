@@ -23,7 +23,6 @@ from markdown.preprocessors import Preprocessor
 from mkdocs_metaxy.config_generator import (
     extract_field_info,
     generate_individual_field_doc,
-    get_toml_path,
 )
 
 # Use MkDocs logging pattern for proper integration with --strict mode
@@ -151,6 +150,11 @@ class MetaxyConfigPreprocessor(Preprocessor):
         # Optional header level (default 3 = h3)
         header_level = params.get("header_level", 3)
 
+        # Optional list of field names to exclude from documentation
+        exclude_fields = params.get("exclude_fields", [])
+        if isinstance(exclude_fields, str):
+            exclude_fields = [f.strip() for f in exclude_fields.split(",")]
+
         # Import the class dynamically
         try:
             module_path, class_name = class_path.rsplit(".", 1)
@@ -204,6 +208,14 @@ class MetaxyConfigPreprocessor(Preprocessor):
             if field["name"] == "ext":
                 continue
 
+            # Skip explicitly excluded fields (from directive or field metadata)
+            if field["name"] in exclude_fields:
+                continue
+
+            # Skip fields marked with mkdocs_metaxy_hide
+            if field.get("hide_from_docs", False):
+                continue
+
             if field["is_nested"]:
                 # Only include nested models that have children
                 if has_children(field, fields):
@@ -222,7 +234,7 @@ class MetaxyConfigPreprocessor(Preprocessor):
         # Generate documentation for each field
         field_docs = []
         for field in filtered_fields:
-            # Store original path for env var generation
+            # Store original path for depth calculation
             original_path = field["path"].copy()
 
             # Calculate depth: how many nested models are parents of this field
@@ -241,20 +253,22 @@ class MetaxyConfigPreprocessor(Preprocessor):
 
             # For nested models with children, just generate a header
             if field["is_nested"]:
-                field_path = get_toml_path(field["path"])
+                # Use just field name for header, not full path with prefix
                 header_prefix = "#" * field_header_level
-                field_doc = f"{header_prefix} {field_path}\n\n"
+                field_doc = f"{header_prefix} `{field['name']}`\n\n"
                 if field["description"]:
                     field_doc += f"{field['description']}\n\n"
             else:
                 # Generate full doc with examples for leaf fields
+                # Use full path (with prefix) for env var generation
                 field_doc = generate_individual_field_doc(
                     field,
                     env_prefix=env_prefix,
                     env_nested_delimiter=env_nested_delimiter,
                     include_tool_prefix=False,
                     header_level=field_header_level,
-                    env_var_path=original_path,
+                    env_var_path=field["path"],  # Use full path with prefix
+                    header_name=field["name"],  # Use just field name for header
                 )
             field_docs.append(field_doc)
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from functools import cached_property
@@ -13,15 +12,49 @@ import deltalake
 import narwhals as nw
 import polars as pl
 from narwhals.typing import Frame
+from pydantic import Field
 from typing_extensions import Self
 
 from metaxy._utils import switch_implementation_to_polars
-from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
+from metaxy.metadata_store.utils import is_local_path
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
+
+
+class DeltaMetadataStoreConfig(MetadataStoreConfig):
+    """Configuration for DeltaMetadataStore.
+
+    Example:
+        ```python
+        config = DeltaMetadataStoreConfig(
+            root_path="s3://my-bucket/metaxy",
+            storage_options={"AWS_REGION": "us-west-2"},
+            layout="nested",
+        )
+
+        store = DeltaMetadataStore.from_config(config)
+        ```
+    """
+
+    root_path: str | Path = Field(
+        description="Base directory or URI where feature tables are stored.",
+    )
+    storage_options: dict[str, Any] | None = Field(
+        default=None,
+        description="Storage backend options passed to delta-rs.",
+    )
+    layout: Literal["flat", "nested"] = Field(
+        default="nested",
+        description="Directory layout for feature tables ('nested' or 'flat').",
+    )
+    delta_write_options: dict[str, Any] | None = Field(
+        default=None,
+        description="Options passed to deltalake.write_deltalake().",
+    )
 
 
 class DeltaMetadataStore(MetadataStore):
@@ -82,9 +115,7 @@ class DeltaMetadataStore(MetadataStore):
         self.delta_write_options = delta_write_options or {}
 
         root_str = str(root_path)
-        self._is_remote = "://" in root_str and not root_str.startswith(
-            ("file://", "local://")
-        )
+        self._is_remote = not is_local_path(root_str)
 
         if self._is_remote:
             # Remote path (S3, Azure, GCS, etc.)
@@ -187,11 +218,14 @@ class DeltaMetadataStore(MetadataStore):
         """Return the URI/path used by deltalake for this feature."""
         if self.layout == "nested":
             # Nested layout: store in directories like "part1/part2/part3"
-            table_path = "/".join(feature_key.parts)
+            # Filter out empty parts to avoid creating absolute paths that would
+            # cause os.path.join to discard the root_uri
+            table_path = "/".join(part for part in feature_key.parts if part)
         else:
-            # Flat layout (default): store in directories like "part1__part2__part3"
+            # Flat layout: store in directories like "part1__part2__part3"
+            # table_name already handles this correctly via __join
             table_path = feature_key.table_name
-        return os.path.join(self._root_uri, table_path + ".delta")
+        return f"{self._root_uri}/{table_path}.delta"
 
     def _table_exists(self, table_uri: str) -> bool:
         """Check whether the provided URI already contains a Delta table.
@@ -239,6 +273,10 @@ class DeltaMetadataStore(MetadataStore):
             df_native = df_polars.to_native()
 
         assert isinstance(df_native, pl.DataFrame)
+
+        # Cast Enum columns to String to avoid delta-rs Utf8View incompatibility
+        # (delta-rs parquet writer cannot handle Utf8View dictionary values)
+        df_native = df_native.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
 
         # Prepare write parameters for Polars write_delta
         # Extract mode and storage_options as top-level parameters
@@ -309,9 +347,9 @@ class DeltaMetadataStore(MetadataStore):
         # Convert to Narwhals
         nw_lazy = nw.from_native(lf)
 
-        # Apply filters
-        if filters is not None:
-            nw_lazy = nw_lazy.filter(filters)
+        # Apply filters (unpack list, skip if empty)
+        if filters:
+            nw_lazy = nw_lazy.filter(*filters)
 
         # Apply column selection
         if columns is not None:
@@ -327,3 +365,7 @@ class DeltaMetadataStore(MetadataStore):
 
     def get_store_metadata(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
         return {"path": self._feature_uri(self._resolve_feature_key(feature_key))}
+
+    @classmethod
+    def config_model(cls) -> type[DeltaMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        return DeltaMetadataStoreConfig

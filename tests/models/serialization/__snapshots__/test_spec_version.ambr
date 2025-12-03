@@ -18,6 +18,109 @@
     'feature_class_path': 'test_spec_version.SnapshotFeature',
     'feature_schema': dict({
       'properties': dict({
+        'metaxy_created_at': dict({
+          'anyOf': list([
+            dict({
+              'format': 'date-time',
+              'type': 'string',
+            }),
+            dict({
+              'type': 'null',
+            }),
+          ]),
+          'default': None,
+          'description': 'Timestamp when the metadata row was created (UTC)',
+          'title': 'Metaxy Created At',
+        }),
+        'metaxy_data_version': dict({
+          'anyOf': list([
+            dict({
+              'type': 'string',
+            }),
+            dict({
+              'type': 'null',
+            }),
+          ]),
+          'default': None,
+          'description': 'Hash of metaxy_data_version_by_field',
+          'title': 'Metaxy Data Version',
+        }),
+        'metaxy_data_version_by_field': dict({
+          'anyOf': list([
+            dict({
+              'additionalProperties': dict({
+                'type': 'string',
+              }),
+              'type': 'object',
+            }),
+            dict({
+              'type': 'null',
+            }),
+          ]),
+          'default': None,
+          'description': 'Field-level data version hashes (maps field names to version hashes)',
+          'title': 'Metaxy Data Version By Field',
+        }),
+        'metaxy_feature_version': dict({
+          'anyOf': list([
+            dict({
+              'type': 'string',
+            }),
+            dict({
+              'type': 'null',
+            }),
+          ]),
+          'default': None,
+          'description': 'Hash of the feature definition (dependencies + fields + code_versions)',
+          'title': 'Metaxy Feature Version',
+        }),
+        'metaxy_materialization_id': dict({
+          'anyOf': list([
+            dict({
+              'type': 'string',
+            }),
+            dict({
+              'type': 'null',
+            }),
+          ]),
+          'default': None,
+          'description': 'External orchestration run ID (e.g., Dagster Run ID)',
+          'title': 'Metaxy Materialization Id',
+        }),
+        'metaxy_provenance': dict({
+          'anyOf': list([
+            dict({
+              'type': 'string',
+            }),
+            dict({
+              'type': 'null',
+            }),
+          ]),
+          'default': None,
+          'description': 'Hash of metaxy_provenance_by_field',
+          'title': 'Metaxy Provenance',
+        }),
+        'metaxy_provenance_by_field': dict({
+          'additionalProperties': dict({
+            'type': 'string',
+          }),
+          'description': 'Field-level provenance hashes (maps field names to hashes)',
+          'title': 'Metaxy Provenance By Field',
+          'type': 'object',
+        }),
+        'metaxy_snapshot_version': dict({
+          'anyOf': list([
+            dict({
+              'type': 'string',
+            }),
+            dict({
+              'type': 'null',
+            }),
+          ]),
+          'default': None,
+          'description': 'Hash of the entire feature graph snapshot',
+          'title': 'Metaxy Snapshot Version',
+        }),
       }),
       'title': 'SnapshotFeature',
       'type': 'object',
@@ -52,7 +155,7 @@
     }),
     'metaxy_feature_spec_version': 'cc4b71667ebc22d4c7c90991c87fc89547645468b911e85a0f818d634b5c5303',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
-    'metaxy_full_definition_version': '8700f186256ee7981173b22c778e858487d775509b8cad74bb038e2fea858cfa',
+    'metaxy_full_definition_version': '315eea6d509dedf5e3ebceff6c9733c9361efc9ce101bba4602b3ae0ce08efa6',
     'project': 'test',
   })
 # ---

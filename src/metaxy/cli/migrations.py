@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 import cyclopts
 
@@ -40,35 +40,52 @@ def generate(
             help="Operation class path to use (can be repeated). Example: metaxy.migrations.ops.DataVersionReconciliation"
         ),
     ],
+    type: Annotated[
+        Literal["diff", "full"],
+        cyclopts.Parameter(
+            help="Migration type: 'diff' (compare different graph snapshots) or 'full' (operates on a single graph snapshot)"
+        ),
+    ] = "diff",
 ):
     """Generate migration from detected feature changes.
 
-    Compares the latest snapshot in the store (or specified from_snapshot)
-    with the current active graph to detect changes.
+    Two migration types are supported:
 
-    The migration is recorded in the system tables (not a YAML file).
+    - **diff** : Compares the latest snapshot in the store (or specified
+      from_snapshot) with the current active graph to detect changes. Only affected
+      features are included.
+
+    - **full**: Creates a migration that includes ALL features in the current graph.
+      Each operation will have a 'features' list with all feature keys.
 
     Examples:
-        # Generate with DataVersionReconciliation operation
+        # Generate diff migration with DataVersionReconciliation operation
         $ metaxy migrations generate --op metaxy.migrations.ops.DataVersionReconciliation
+
+        # Generate full graph migration (all features)
+        $ metaxy migrations generate --migration-type full --op myproject.ops.CustomBackfill
 
         # Custom operation type
         $ metaxy migrations generate --op myproject.ops.CustomReconciliation
 
-        # Multiple operations (future use)
+        # Multiple operations
         $ metaxy migrations generate \
             --op metaxy.migrations.ops.DataVersionReconciliation \
             --op myproject.ops.CustomBackfill
     """
+    import shlex
+    import sys
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.migrations.detector import detect_diff_migration
+    from metaxy.migrations.detector import (
+        detect_diff_migration,
+        generate_full_graph_migration,
+    )
 
     context = AppContext.get()
     context.raise_command_cannot_override_project()
     config = context.config
-    project = config.project
 
     # Convert op_type list to ops format
     if len(op) == 0:
@@ -78,36 +95,63 @@ def generate(
         )
         raise SystemExit(1)
 
-    ops = [{"type": op} for op in op]
+    ops = [{"type": o} for o in op]
 
     # Get store and project from config
     metadata_store = context.get_store(store)
     migrations_dir = Path(config.migrations_dir)
     project = context.get_required_project()  # This command needs a specific project
 
+    # Reconstruct CLI command for YAML comment
+    cli_command = shlex.join(sys.argv)
+
     with metadata_store.open("write"):
-        # Detect migration and write YAML
-        migration = detect_diff_migration(
-            metadata_store,
-            project=project,
-            from_snapshot_version=from_snapshot,
-            ops=ops,
-            migrations_dir=migrations_dir,
-            name=name,
-        )
+        if type == "diff":
+            # Detect migration and write YAML
+            migration = detect_diff_migration(
+                metadata_store,
+                project=project,
+                from_snapshot_version=from_snapshot,
+                ops=ops,
+                migrations_dir=migrations_dir,
+                name=name,
+                command=cli_command,
+            )
 
-        if migration is None:
-            app.console.print("[yellow]No changes detected[/yellow]")
-            app.console.print("  Current graph matches latest snapshot")
-            return
+            if migration is None:
+                app.console.print("[yellow]No changes detected[/yellow]")
+                app.console.print("  Current graph matches latest snapshot")
+                return
 
-        # Print summary
-        yaml_path = migrations_dir / f"{migration.migration_id}.yaml"
-        app.console.print("\n[green]✓[/green] Migration generated")
-        app.console.print(f"  Migration ID: {migration.migration_id}")
-        app.console.print(f"  YAML file: {yaml_path}")
-        app.console.print(f"  From snapshot: {migration.from_snapshot_version}")
-        app.console.print(f"  To snapshot: {migration.to_snapshot_version}")
+            # Print summary for DiffMigration
+            yaml_path = migrations_dir / f"{migration.migration_id}.yaml"
+            app.console.print("\n[green]✓[/green] DiffMigration generated")
+            app.console.print(f"  Migration ID: {migration.migration_id}")
+            app.console.print(f"  YAML file: {yaml_path}")
+            app.console.print(f"  From snapshot: {migration.from_snapshot_version}")
+            app.console.print(f"  To snapshot: {migration.to_snapshot_version}")
+
+        else:  # type == "full"
+            if from_snapshot is not None:
+                app.console.print(
+                    "[yellow]Warning:[/yellow] --from-snapshot is ignored for full graph migrations"
+                )
+
+            migration = generate_full_graph_migration(
+                metadata_store,
+                project=project,
+                ops=ops,
+                migrations_dir=migrations_dir,
+                name=name,
+                command=cli_command,
+            )
+
+            # Print summary for FullGraphMigration
+            yaml_path = migrations_dir / f"{migration.migration_id}.yaml"
+            app.console.print("\n[green]✓[/green] FullGraphMigration generated")
+            app.console.print(f"  Migration ID: {migration.migration_id}")
+            app.console.print(f"  YAML file: {yaml_path}")
+            app.console.print(f"  Snapshot: {migration.snapshot_version}")
 
         # Output migration ID to stdout for scripting
         data_console.print(migration.migration_id)
@@ -183,7 +227,9 @@ def apply(
         try:
             chain = build_migration_chain(migrations_dir)
         except ValueError as e:
-            app.console.print(f"[red]✗[/red] Invalid migration chain: {e}")
+            from metaxy.cli.utils import print_error
+
+            print_error(app.console, "Invalid migration chain", e)
             raise SystemExit(1)
 
         if not chain:
@@ -195,9 +241,16 @@ def apply(
         from metaxy.metadata_store.system import MigrationStatus
 
         completed_ids = set()
-        for mid in [m.migration_id for m in chain]:
-            if storage.get_migration_status(mid, project) == MigrationStatus.COMPLETED:
-                completed_ids.add(mid)
+        for m in chain:
+            # Get expected features from migration to verify all operations completed
+            expected_features = m.get_affected_features(metadata_store, project)
+            if (
+                storage.get_migration_status(
+                    m.migration_id, project, expected_features=expected_features
+                )
+                == MigrationStatus.COMPLETED
+            ):
+                completed_ids.add(m.migration_id)
 
         # Filter to unapplied migrations
         if migration_id is None:
@@ -240,10 +293,19 @@ def apply(
         executor = MigrationExecutor(storage)
 
         for migration in to_apply:
+            # Get status info to show accurate progress
+            status_info = migration.get_status_info(metadata_store, project)
+
             app.console.print(f"[bold]Applying: {migration.migration_id}[/bold]")
-            app.console.print(
-                f"  Affecting {len(migration.get_affected_features(metadata_store, project))} feature(s)"
-            )
+            if status_info.features_remaining > 0:
+                app.console.print(
+                    f"  Processing {status_info.features_remaining} feature(s) "
+                    f"({len(status_info.completed_features)} already completed)"
+                )
+            else:
+                app.console.print(
+                    f"  All {status_info.features_total} feature(s) already completed"
+                )
 
             result = executor.execute(
                 migration, metadata_store, project, dry_run=dry_run
@@ -263,9 +325,13 @@ def apply(
             app.console.print(f"  Duration: {result.duration_seconds:.2f}s")
 
             if result.errors:
-                app.console.print("\n[red]Errors:[/red]")
-                for feature_key, error in result.errors.items():
-                    app.console.print(f"  ✗ {feature_key}: {error}")
+                from metaxy.cli.utils import print_error_list
+
+                print_error_list(
+                    app.console,
+                    result.errors,
+                    header="\n[red]Errors:[/red]",
+                )
 
             if result.status == "failed":
                 app.console.print(
@@ -303,7 +369,6 @@ def status():
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.loader import build_migration_chain
 
     context = AppContext.get()
@@ -314,13 +379,13 @@ def status():
     migrations_dir = Path(".metaxy/migrations")
 
     with metadata_store:
-        storage = SystemTableStorage(metadata_store)
-
         # Try to build migration chain
         try:
             chain = build_migration_chain(migrations_dir)
         except ValueError as e:
-            app.console.print(f"[red]✗[/red] Invalid migratios: {e}")
+            from metaxy.cli.utils import print_error
+
+            print_error(app.console, "Invalid migrations", e)
             return
 
         if not chain:
@@ -334,25 +399,14 @@ def status():
         for migration in chain:
             migration_id = migration.migration_id
 
-            # Get migration summary
+            # Get comprehensive status info from migration
             from metaxy.metadata_store.system import MigrationStatus
 
-            summary = storage.get_migration_summary(migration_id, project=project)
-            migration_status = summary["status"]
-            completed_features = summary["completed_features"]
-            failed_features = summary["failed_features"]
-            total_processed = summary["total_features_processed"]
-
-            # Compute total affected
-            if migration_status == MigrationStatus.NOT_STARTED:
-                try:
-                    total_affected = len(
-                        migration.get_affected_features(metadata_store, project)
-                    )
-                except Exception:
-                    total_affected = "?"
-            else:
-                total_affected = total_processed
+            status_info = migration.get_status_info(metadata_store, project)
+            migration_status = status_info.status
+            completed_features = status_info.completed_features
+            failed_features = status_info.failed_features
+            total_affected = status_info.features_total
 
             # Print status icon
             if migration_status == MigrationStatus.COMPLETED:
@@ -383,16 +437,47 @@ def status():
                 app.console.print("  Snapshots:")
                 app.console.print(f"    From: {migration.from_snapshot_version}")
                 app.console.print(f"    To:   {migration.to_snapshot_version}")
+
+            # Show operation-level progress for FullGraphMigration
+            from metaxy.migrations.models import FullGraphMigration, OperationConfig
+
+            if isinstance(migration, FullGraphMigration) and migration.ops:
+                app.console.print("  Operations:")
+                completed_set = set(status_info.completed_features)
+
+                for i, op_dict in enumerate(migration.ops, 1):
+                    op_config = OperationConfig.model_validate(op_dict)
+                    op_type_short = op_config.type.split(".")[-1]  # Extract class name
+                    op_features = set(op_config.features)
+                    op_completed = op_features & completed_set
+
+                    # Determine status icon
+                    if len(op_completed) == 0:
+                        icon = "[blue]○[/blue]"  # Not started
+                    elif len(op_completed) == len(op_features):
+                        icon = "[green]✓[/green]"  # Completed
+                    else:
+                        icon = "[yellow]⚠[/yellow]"  # In progress
+
+                    app.console.print(
+                        f"    {icon} {i}. {op_type_short} "
+                        f"({len(op_completed)}/{len(op_features)} features)"
+                    )
+
             app.console.print(
                 f"  Features: {len(completed_features)}/{total_affected} completed"
             )
 
             if failed_features:
-                app.console.print(
-                    f"  [red]Failed features ({len(failed_features)}):[/red]"
+                from metaxy.cli.utils import print_error_list
+
+                print_error_list(
+                    app.console,
+                    failed_features,
+                    header=f"  [red]Failed features ({len(failed_features)}):[/red]",
+                    indent="  ",
+                    max_items=3,
                 )
-                for feature_key, error in list(failed_features.items())[:3]:
-                    app.console.print(f"    ✗ {feature_key}: {error}")
 
             app.console.print()
 
@@ -423,7 +508,9 @@ def list_migrations():
     try:
         chain = build_migration_chain(migrations_dir)
     except ValueError as e:
-        app.console.print(f"[red]✗[/red] Invalid migration: {e}")
+        from metaxy.cli.utils import print_error
+
+        print_error(app.console, "Invalid migration", e)
         return
 
     if not chain:
@@ -548,7 +635,9 @@ def explain(
         try:
             graph_diff = migration.compute_graph_diff(metadata_store, project)
         except Exception as e:
-            app.console.print(f"[red]✗[/red] Failed to compute diff: {e}")
+            from metaxy.cli.utils import print_error
+
+            print_error(app.console, "Failed to compute diff", e)
             raise SystemExit(1)
 
         # Display detailed diff
@@ -724,7 +813,9 @@ def describe(
             try:
                 chain = build_migration_chain(migrations_dir)
             except ValueError as e:
-                app.console.print(f"[red]✗[/red] Invalid migration chain: {e}")
+                from metaxy.cli.utils import print_error
+
+                print_error(app.console, "Invalid migration chain", e)
                 raise SystemExit(1)
 
             if not chain:
@@ -862,7 +953,11 @@ def describe(
             # Execution status
             from metaxy.metadata_store.system import MigrationStatus
 
-            summary = storage.get_migration_summary(migration_obj.migration_id, project)
+            summary = storage.get_migration_summary(
+                migration_obj.migration_id,
+                project,
+                expected_features=affected_features,
+            )
             migration_status = summary["status"]
             completed_features = summary["completed_features"]
             failed_features = summary["failed_features"]
@@ -880,9 +975,16 @@ def describe(
                 )
                 app.console.print(f"    Features failed: {len(failed_features)}")
                 if failed_features:
-                    app.console.print("    Failed features:")
-                    for feature_key, error in list(failed_features.items())[:5]:
-                        app.console.print(f"      • {feature_key}: {error}")
+                    from metaxy.cli.utils import print_error_list
+
+                    print_error_list(
+                        app.console,
+                        failed_features,
+                        header="    Failed features:",
+                        prefix="    •",
+                        indent="  ",
+                        max_items=5,
+                    )
             elif migration_status == MigrationStatus.IN_PROGRESS:
                 app.console.print("  [yellow]⚠ IN PROGRESS[/yellow]")
                 app.console.print(

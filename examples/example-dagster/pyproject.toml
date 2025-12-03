@@ -1,0 +1,30 @@
+[project]
+name = "example-dagster"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+  { name = "danielgafni", email = "danielgafni16@gmail.com" },
+]
+requires-python = ">=3.10"
+dependencies = [
+  "metaxy[duckdb]",
+  "dagster>=1.12.3",
+  "dagster-dg-cli>=1.12.3",
+  "dagster-webserver",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.19,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.dg]
+directory_type = "project"
+
+[tool.dg.project]
+root_module = "example_dagster"
+
+[tool.dg.cli]
+suppress_warnings = [
+  "project_and_activated_venv_mismatch",
+]

@@ -153,13 +153,20 @@ class SystemTableStorage:
         )
 
     def get_migration_status(
-        self, migration_id: str, project: str | None = None
+        self,
+        migration_id: str,
+        project: str | None = None,
+        expected_features: list[str] | None = None,
     ) -> MigrationStatus:
         """Compute migration status from events at query-time.
 
         Args:
             migration_id: Migration ID
             project: Optional project name to filter by. If None, returns status across all projects.
+            expected_features: Optional list of feature keys that should be completed.
+                If provided, will check that ALL expected features have completed successfully
+                before returning COMPLETED status, even if migration_completed event exists.
+                This allows detecting when a migration YAML has been modified after completion.
 
         Returns:
             MigrationStatus enum value
@@ -173,6 +180,31 @@ class SystemTableStorage:
         # Get latest event
         latest_event = events_df.sort(COL_TIMESTAMP, descending=True).head(1)
         latest_event_type = latest_event[COL_EVENT_TYPE][0]
+
+        # If expected_features is provided, verify ALL features have completed
+        # This ensures we detect when operations are added to an already-completed migration
+        if expected_features is not None and len(expected_features) > 0:
+            completed_features = set(self.get_completed_features(migration_id, project))
+            expected_features_set = set(expected_features)
+
+            # Check if all expected features have been completed
+            all_features_completed = expected_features_set.issubset(completed_features)
+
+            if not all_features_completed:
+                # Some features are missing - migration is not complete
+                if latest_event_type in (
+                    EventType.MIGRATION_STARTED.value,
+                    EventType.FEATURE_MIGRATION_STARTED.value,
+                    EventType.FEATURE_MIGRATION_COMPLETED.value,
+                    EventType.FEATURE_MIGRATION_FAILED.value,
+                ):
+                    return MigrationStatus.IN_PROGRESS
+                elif latest_event_type == EventType.MIGRATION_FAILED.value:
+                    return MigrationStatus.FAILED
+                else:
+                    # Migration was marked complete but features are missing (YAML was modified)
+                    return MigrationStatus.IN_PROGRESS
+            # If all features completed, continue with normal status logic below
 
         if latest_event_type == EventType.MIGRATION_COMPLETED.value:
             return MigrationStatus.COMPLETED
@@ -305,7 +337,10 @@ class SystemTableStorage:
         )
 
     def get_migration_summary(
-        self, migration_id: str, project: str | None = None
+        self,
+        migration_id: str,
+        project: str | None = None,
+        expected_features: list[str] | None = None,
     ) -> dict[str, Any]:
         """Get a comprehensive summary of migration execution status.
 
@@ -315,6 +350,8 @@ class SystemTableStorage:
         Args:
             migration_id: Migration ID
             project: Optional project name to filter by. If None, returns summary across all projects.
+            expected_features: Optional list of feature keys that should be completed.
+                If provided, will be used to determine if migration is truly complete.
 
         Returns:
             Dict containing:
@@ -323,7 +360,7 @@ class SystemTableStorage:
             - failed_features: Dict mapping failed feature keys to error messages
             - total_features_processed: Count of completed + failed features
         """
-        status = self.get_migration_status(migration_id, project)
+        status = self.get_migration_status(migration_id, project, expected_features)
         completed = self.get_completed_features(migration_id, project)
         failed = self.get_failed_features(migration_id, project)
 
@@ -838,3 +875,83 @@ class SystemTableStorage:
         versions_df = versions_lazy.collect().to_polars()
 
         return versions_df
+
+    def load_graph_from_snapshot(
+        self,
+        snapshot_version: str,
+        project: str | None = None,
+        *,
+        class_path_overrides: dict[str, str] | None = None,
+        force_reload: bool = False,
+    ) -> FeatureGraph:
+        """Load and reconstruct a FeatureGraph from a stored snapshot.
+
+        This is a convenience method that encapsulates the pattern of:
+
+        1. Reading feature metadata for a snapshot
+
+        2. Building the snapshot data dictionary
+
+        3. Reconstructing the FeatureGraph from snapshot data
+
+        Args:
+            snapshot_version: The snapshot version to load
+            project: Optional project name to filter by
+            class_path_overrides: Optional dict mapping feature_key to new class path
+                                  for features that have been moved/renamed
+            force_reload: If True, force reimport of feature classes even if cached
+
+        Returns:
+            Reconstructed FeatureGraph
+
+        Raises:
+            ValueError: If no features found for the snapshot version
+            ImportError: If feature classes cannot be imported at their recorded paths
+
+        Note:
+            The store must already be open when calling this method.
+
+        Example:
+            ```python
+            with store:
+                storage = SystemTableStorage(store)
+                graph = storage.load_graph_from_snapshot(
+                    snapshot_version="abc123",
+                    project="my_project"
+                )
+                print(f"Loaded {len(graph.features_by_key)} features")
+            ```
+        """
+        import json
+
+        # Read features for this snapshot
+        features_df = self.read_features(
+            current=False,
+            snapshot_version=snapshot_version,
+            project=project,
+        )
+
+        if features_df.height == 0:
+            raise ValueError(
+                f"No features recorded for snapshot {snapshot_version}"
+                + (f" in project {project}" if project else "")
+            )
+
+        # Build snapshot data dict for FeatureGraph.from_snapshot()
+        snapshot_data = {
+            row["feature_key"]: {
+                "feature_spec": json.loads(row["feature_spec"])
+                if isinstance(row["feature_spec"], str)
+                else row["feature_spec"],
+                "feature_class_path": row["feature_class_path"],
+                "metaxy_feature_version": row["feature_version"],
+            }
+            for row in features_df.iter_rows(named=True)
+        }
+
+        # Reconstruct graph from snapshot
+        return FeatureGraph.from_snapshot(
+            snapshot_data,
+            class_path_overrides=class_path_overrides,
+            force_reload=force_reload,
+        )

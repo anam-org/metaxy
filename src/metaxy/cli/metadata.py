@@ -1,11 +1,22 @@
 """Metadata management commands for Metaxy CLI."""
 
-from typing import TYPE_CHECKING, Annotated
+from __future__ import annotations
+
+import json
+from typing import TYPE_CHECKING, Annotated, Any
 
 import cyclopts
+from pydantic import TypeAdapter
 
-from metaxy.cli.console import console, error_console
-from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
+from metaxy.cli.console import console, data_console, error_console
+from metaxy.cli.utils import (
+    CLIError,
+    FeatureSelector,
+    OutputFormat,
+    exit_with_error,
+    load_graph_for_command,
+)
+from metaxy.graph.status import FullFeatureMetadataRepresentation
 
 if TYPE_CHECKING:
     pass
@@ -20,263 +31,287 @@ app = cyclopts.App(
 
 
 @app.command()
-def copy(
-    from_store: Annotated[
-        str,
-        cyclopts.Parameter(
-            name=["--from", "FROM"],
-            help="Source store name (must be configured in metaxy.toml)",
-        ),
-    ],
-    to_store: Annotated[
-        str,
-        cyclopts.Parameter(
-            name=["--to", "TO"],
-            help="Destination store name (must be configured in metaxy.toml)",
-        ),
-    ],
-    features: Annotated[
-        list[str] | None,
-        cyclopts.Parameter(
-            name=["--feature"],
-            help="Feature key to copy (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses --all-features.",
-        ),
-    ] = None,
-    all_features: Annotated[
-        bool,
-        cyclopts.Parameter(
-            name=["--all-features"],
-            help="Copy all features from source store",
-        ),
-    ] = False,
-    from_snapshot: Annotated[
-        str | None,
-        cyclopts.Parameter(
-            name=["--snapshot"],
-            help="Snapshot version to copy (defaults to latest in source store). The snapshot_version is preserved in the destination.",
-        ),
-    ] = None,
-    incremental: Annotated[
-        bool,
-        cyclopts.Parameter(
-            name=["--incremental"],
-            help="Use incremental copy (compare provenance_by_field to skip existing rows). Disable for better performance if destination is empty or uses deduplication.",
-        ),
-    ] = True,
-):
-    """Copy metadata between stores.
-
-    Copies metadata for specified features from one store to another,
-    optionally using a historical version. Useful for:
-    - Migrating data between environments
-    - Backfilling metadata
-    - Copying specific feature versions
-
-    Incremental Mode (default):
-        By default, performs an anti-join on sample_uid to skip rows that already exist
-        in the destination for the same snapshot_version. This prevents duplicate writes.
-
-        Disabling incremental (--no-incremental) may improve performance when:
-        - The destination store is empty or has no overlap with source
-        - The destination store has eventual deduplication
-
-    Examples:
-        # Copy all features from latest snapshot in dev to staging
-        $ metaxy metadata copy --from dev --to staging --all-features
-
-        # Copy specific features (repeatable flag)
-        $ metaxy metadata copy --from dev --to staging --feature user_features --feature customer_features
-
-        # Copy specific snapshot
-        $ metaxy metadata copy --from prod --to staging --all-features --snapshot abc123
-
-        # Non-incremental copy (faster, but may create duplicates)
-        $ metaxy metadata copy --from dev --to staging --all-features --no-incremental
-    """
-
-    from metaxy.cli.context import AppContext
-
-    context = AppContext.get()
-    config = context.config
-
-    # Validate arguments
-    if not all_features and not features:
-        console.print(
-            "[red]Error:[/red] Must specify either --all-features or --feature"
-        )
-        raise SystemExit(1)
-
-    if all_features and features:
-        console.print(
-            "[red]Error:[/red] Cannot specify both --all-features and --feature"
-        )
-        raise SystemExit(1)
-
-    # Parse feature keys
-    feature_keys: list[CoercibleToFeatureKey] | None = None
-    if features:
-        feature_keys = []
-        for feature_str in features:
-            # Parse feature key (supports both "feature" and "part1/part2/..." formats)
-            if "/" in feature_str:
-                parts = feature_str.split("/")
-                feature_keys.append(FeatureKey(parts))
-            else:
-                # Single-part key
-                feature_keys.append(FeatureKey([feature_str]))
-
-    # Get stores
-    console.print(f"[cyan]Source store:[/cyan] {from_store}")
-    console.print(f"[cyan]Destination store:[/cyan] {to_store}")
-
-    source_store = config.get_store(from_store)
-    dest_store = config.get_store(to_store)
-
-    # Open both stores and copy
-    with source_store.open(), dest_store.open("write"):
-        console.print("\n[bold]Starting copy operation...[/bold]\n")
-
-        try:
-            stats = dest_store.copy_metadata(
-                from_store=source_store,
-                features=feature_keys,
-                from_snapshot=from_snapshot,
-                incremental=incremental,
-            )
-
-            console.print(
-                f"\n[green]✓[/green] Copy complete: {stats['features_copied']} features, {stats['rows_copied']} rows"
-            )
-
-        except Exception as e:
-            console.print(f"\n[red]✗[/red] Copy failed:\n{e}")
-            raise SystemExit(1)
-
-
-@app.command()
-def drop(
+def status(
+    *,
+    selector: FeatureSelector = FeatureSelector(),
     store: Annotated[
         str | None,
         cyclopts.Parameter(
             name=["--store"],
-            help="Store name to drop metadata from (defaults to configured default store)",
+            help="Metadata store name (defaults to configured default store).",
         ),
     ] = None,
-    features: Annotated[
-        list[str] | None,
+    snapshot_version: Annotated[
+        str | None,
         cyclopts.Parameter(
-            name=["--feature"],
-            help="Feature key to drop (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses --all-features.",
+            name=["--snapshot-id"],
+            help="Check metadata against a specific snapshot version.",
         ),
     ] = None,
-    all_features: Annotated[
+    assert_in_sync: Annotated[
         bool,
         cyclopts.Parameter(
-            name=["--all-features"],
-            help="Drop metadata for all features defined in the current project's feature graph",
+            name=["--assert-in-sync"],
+            help="Exit with error if any feature needs updates or metadata is missing.",
         ),
     ] = False,
+    verbose: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--verbose"],
+            help="Show additional details about samples needing updates.",
+        ),
+    ] = False,
+    format: Annotated[
+        OutputFormat,
+        cyclopts.Parameter(
+            name=["--format"],
+        ),
+    ] = "plain",
+) -> None:
+    """Check metadata completeness and freshness for specified features.
+
+    Examples:
+        $ metaxy metadata status --feature user_features
+        $ metaxy metadata status --feature feat1 --feature feat2
+        $ metaxy metadata status --all-features
+        $ metaxy metadata status --store dev --all-features
+    """
+    from metaxy.cli.context import AppContext
+    from metaxy.graph.status import get_feature_metadata_status
+
+    # Validate feature selection
+    selector.validate(format)
+
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+
+    with metadata_store:
+        # Load graph (from snapshot or current)
+        graph = load_graph_for_command(
+            context, snapshot_version, metadata_store, format
+        )
+
+        # Resolve feature keys
+        valid_keys, missing_keys = selector.resolve_keys(graph, format)
+
+        # Handle empty result for --all-features
+        if selector.all_features and not valid_keys:
+            _output_no_features_warning(format, snapshot_version)
+            return
+
+        # Handle missing features
+        if missing_keys:
+            if assert_in_sync:
+                exit_with_error(
+                    CLIError(
+                        code="FEATURES_NOT_FOUND",
+                        message="Feature(s) not found in graph",
+                        details={"features": [k.to_string() for k in missing_keys]},
+                    ),
+                    format,
+                )
+            elif format == "plain":
+                formatted = ", ".join(k.to_string() for k in missing_keys)
+                data_console.print(
+                    f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}"
+                )
+
+        # If no valid features remain
+        if not valid_keys:
+            _output_no_features_warning(format, snapshot_version)
+            return
+
+        # Print header for plain format
+        if format == "plain":
+            header = (
+                f"Metadata status (snapshot {snapshot_version})"
+                if snapshot_version
+                else "Metadata status"
+            )
+            data_console.print(f"\n[bold]{header}[/bold]")
+
+        # Collect status for all features
+        needs_update = False
+        feature_reps: dict[str, FullFeatureMetadataRepresentation] = {}
+
+        for feature_key in valid_keys:
+            feature_cls = graph.features_by_key[feature_key]
+            status_with_increment = get_feature_metadata_status(
+                feature_cls, metadata_store
+            )
+
+            if status_with_increment.status.needs_update:
+                needs_update = True
+
+            if format == "json":
+                feature_reps[feature_key.to_string()] = (
+                    status_with_increment.to_representation(
+                        feature_cls=feature_cls, verbose=verbose
+                    )
+                )
+            else:
+                data_console.print(status_with_increment.status.format_status_line())
+                if verbose:
+                    for line in status_with_increment.sample_details(feature_cls):
+                        data_console.print(line)
+
+        # Output JSON result
+        if format == "json":
+            adapter = TypeAdapter(dict[str, FullFeatureMetadataRepresentation])
+            output: dict[str, Any] = {
+                "snapshot_version": snapshot_version,
+                "features": json.loads(
+                    adapter.dump_json(feature_reps, exclude_none=True)
+                ),
+                "needs_update": needs_update,
+            }
+            if missing_keys:
+                output["warnings"] = {
+                    "missing_in_graph": [k.to_string() for k in missing_keys]
+                }
+            print(json.dumps(output, indent=2))
+
+        # Exit with error if assert_in_sync and updates needed
+        if assert_in_sync and needs_update:
+            raise SystemExit(1)
+
+
+def _output_no_features_warning(
+    format: OutputFormat, snapshot_version: str | None
+) -> None:
+    """Output warning when no features are found to check."""
+    if format == "json":
+        print(
+            json.dumps(
+                {
+                    "warning": "No valid features to check",
+                    "features": {},
+                    "snapshot_version": snapshot_version,
+                    "needs_update": False,
+                },
+                indent=2,
+            )
+        )
+    else:
+        data_console.print("[yellow]Warning:[/yellow] No valid features to check.")
+
+
+@app.command()
+def drop(
+    *,
+    selector: FeatureSelector = FeatureSelector(),
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--store"],
+            help="Store name to drop metadata from (defaults to configured default store).",
+        ),
+    ] = None,
     confirm: Annotated[
         bool,
         cyclopts.Parameter(
             name=["--confirm"],
-            help="Confirm the drop operation (required to prevent accidental deletion)",
+            help="Confirm the drop operation (required to prevent accidental deletion).",
         ),
     ] = False,
-):
+    format: Annotated[
+        OutputFormat,
+        cyclopts.Parameter(
+            name=["--format"],
+            help="Output format: 'plain' (default) or 'json'.",
+        ),
+    ] = "plain",
+) -> None:
     """Drop metadata from a store.
 
-    Removes metadata for specified features from the store.
-    This is a destructive operation and requires --confirm flag.
-
-    When using --all-features, drops metadata for all features defined in the
-    current project's feature graph.
-
-    Useful for:
-    - Cleaning up test data
-    - Re-computing feature metadata from scratch
-    - Removing obsolete features
+    Removes metadata for specified features. This is destructive and requires --confirm.
 
     Examples:
-        # Drop specific feature (requires confirmation)
         $ metaxy metadata drop --feature user_features --confirm
-
-        # Drop multiple features
-        $ metaxy metadata drop --feature user_features --feature customer_features --confirm
-
-        # Drop all features defined in current project
+        $ metaxy metadata drop --feature feat1 --feature feat2 --confirm
         $ metaxy metadata drop --store dev --all-features --confirm
     """
     from metaxy.cli.context import AppContext
 
+    # Validate feature selection
+    selector.validate(format)
+
+    # Require confirmation
+    if not confirm:
+        exit_with_error(
+            CLIError(
+                code="MISSING_CONFIRMATION",
+                message="This is a destructive operation. Must specify --confirm flag.",
+                details={"required_flag": "--confirm"},
+            ),
+            format,
+        )
+
     context = AppContext.get()
     context.raise_command_cannot_override_project()
-
-    # Validate arguments
-    if not all_features and not features:
-        console.print(
-            "[red]Error:[/red] Must specify either --all-features or --feature"
-        )
-        raise SystemExit(1)
-
-    if all_features and features:
-        console.print(
-            "[red]Error:[/red] Cannot specify both --all-features and --feature"
-        )
-        raise SystemExit(1)
-
-    if not confirm:
-        console.print(
-            "[red]Error:[/red] This is a destructive operation. Must specify --confirm flag."
-        )
-        raise SystemExit(1)
-
-    # Parse feature keys
-    feature_keys: list[FeatureKey] = []
-    if features:
-        for feature_str in features:
-            # Parse feature key (supports both "feature" and "part1/part2/..." formats)
-            if "/" in feature_str:
-                parts = feature_str.split("/")
-                feature_keys.append(FeatureKey(parts))
-            else:
-                # Single-part key
-                feature_keys.append(FeatureKey([feature_str]))
-
-    # Get store
     metadata_store = context.get_store(store)
 
     with metadata_store.open("write"):
-        # If all_features, get all feature keys from the active feature graph
-        if all_features:
-            from metaxy.models.feature import FeatureGraph
+        graph = context.graph
 
-            graph = FeatureGraph.get_active()
-            # Get all feature keys from the graph (features defined in code for current project)
-            feature_keys = graph.list_features(only_current_project=True)
+        # Resolve feature keys
+        valid_keys, _ = selector.resolve_keys(graph, format)
 
-            if not feature_keys:
-                console.print(
-                    "[yellow]Warning:[/yellow] No features found in active graph. "
-                    "Make sure your features are imported."
+        # Handle no features
+        if not valid_keys:
+            if format == "json":
+                print(
+                    json.dumps(
+                        {
+                            "warning": "NO_FEATURES_FOUND",
+                            "message": "No features found in active graph.",
+                            "features_dropped": 0,
+                        }
+                    )
                 )
-                return
+            else:
+                console.print(
+                    "[yellow]Warning:[/yellow] No features found in active graph."
+                )
+            return
 
-        console.print(
-            f"\n[bold]Dropping metadata for {len(feature_keys)} feature(s)...[/bold]\n"
-        )
+        if format == "plain":
+            console.print(
+                f"\n[bold]Dropping metadata for {len(valid_keys)} feature(s)...[/bold]\n"
+            )
 
-        dropped_count = 0
-        for feature_key in feature_keys:
+        # Drop each feature
+        dropped: list[str] = []
+        failed: list[dict[str, str]] = []
+
+        for feature_key in valid_keys:
+            key_str = feature_key.to_string()
             try:
                 metadata_store.drop_feature_metadata(feature_key)
-                console.print(f"[green]✓[/green] Dropped: {feature_key.to_string()}")
-                dropped_count += 1
+                dropped.append(key_str)
+                if format == "plain":
+                    console.print(f"[green]✓[/green] Dropped: {key_str}")
             except Exception as e:
-                console.print(
-                    f"[red]✗[/red] Failed to drop {feature_key.to_string()}: {e}"
-                )
+                failed.append({"feature": key_str, "error": str(e)})
+                if format == "plain":
+                    from metaxy.cli.utils import print_error_item
 
-        console.print(
-            f"\n[green]✓[/green] Drop complete: {dropped_count} feature(s) dropped"
-        )
+                    print_error_item(
+                        console, key_str, e, prefix="[red]✗[/red] Failed to drop"
+                    )
+
+        # Output result
+        if format == "json":
+            result: dict[str, Any] = {
+                "success": True,
+                "features_dropped": len(dropped),
+                "dropped": dropped,
+            }
+            if failed:
+                result["failed"] = failed
+            print(json.dumps(result, indent=2))
+        else:
+            console.print(
+                f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped"
+            )
