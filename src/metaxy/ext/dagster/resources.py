@@ -4,9 +4,13 @@ import metaxy as mx
 
 
 class MetaxyStoreFromConfigResource(dg.ConfigurableResource[mx.MetadataStore]):
-    """This resource creates a [`metaxy.MetadataStore`][metaxy.MetadataStore] based on the current Metaxy configuration (`metaxy.toml`)."""
+    """This resource creates a [`metaxy.MetadataStore`][metaxy.MetadataStore] based on the current Metaxy configuration (`metaxy.toml`).
 
-    name: str
+    If `name` is not provided, the default store will be used.
+    It can be set with `store = "my_name"` in `metaxy.toml` or with` $METAXY_STORE` environment variable.
+    """
+
+    name: str | None = None
 
     def create_resource(self, context: dg.InitResourceContext) -> mx.MetadataStore:
         """Create a MetadataStore from the Metaxy configuration.
