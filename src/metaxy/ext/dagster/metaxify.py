@@ -36,54 +36,7 @@ class metaxify:
     Modifies assets that have `metaxy/feature` metadata set or when `feature` argument is provided.
     Can be used with or without parentheses.
 
-    The decorated asset or spec is enriched with Metaxy:
-
-    - **Asset key** is determined as follows:
-
-        1. If `key` argument is provided, it overrides everything.
-
-        2. Otherwise, the key is resolved using existing logic:
-            - If `"dagster/attributes": {"asset_key": ...}` is set on the feature spec, that's used.
-            - Else if `inherit_feature_key_as_asset_key` is True, the Metaxy feature key is used.
-            - Else the original Dagster asset key is kept.
-
-        3. If `key_prefix` is provided, it's prepended to the resolved key.
-
-    - **Dependencies** for upstream Metaxy features are injected into `deps`. The dep keys follow the same logic.
-
-    - **Code version** from the feature spec is appended to the asset's code version in the format `metaxy:<version>`.
-
-    - **Metadata** from the feature spec is injected into the Dagster asset metadata. All [standard metadata](https://docs.dagster.io/guides/build/assets/metadata-and-tags#standard-metadata-types) types are supported.
-
-    - **Description** from the feature class docstring is used if the asset spec doesn't have a description set.
-
-    - **Kind** `"metaxy"` is injected into asset kinds if `inject_metaxy_kind` is `True` and there are less than 3 kinds currently.
-
-    - **Tags** `metaxy/feature` and `metaxy/project` are injected into the asset tags.
-
-    - **Arbitrary asset attributes** from `"dagster/attributes"` in the feature spec metadata
-      (such as `group_name`, `owners`, `tags`) are applied to the asset spec (with replacement).
-
-    - **Column schema** from Pydantic fields is injected into the asset metadata under `dagster/column_schema`.
-      Field types are converted to strings, and field descriptions are used as column descriptions.
-      If the asset already has a column schema defined, Metaxy columns are appended (user-defined
-      columns take precedence for columns with the same name).
-
-    !!! warning
-        Pydantic feature schema may not match the corresponding table schema in the metadata store.
-
-    - **Column lineage** is injected into the asset metadata under `dagster/column_lineage`.
-      Tracks which upstream columns each downstream column depends on by analyzing:
-
-        - **Direct pass-through**: Columns with the same name in both upstream and downstream features.
-
-        - **`FeatureDep.rename`**: Renamed columns trace back to their original upstream column names.
-
-        - **`FeatureSpec.lineage`**: ID column relationships based on lineage type (identity, aggregation, expansion).
-
-        Column lineage is derived from Pydantic model fields on the feature class.
-        If the asset already has column lineage defined, Metaxy lineage is merged with user-defined
-        lineage (user-defined dependencies are appended to Metaxy-detected dependencies for each column).
+    Learn more about `@metaxify` and see example screenshots [here](metaxify.md).
 
     Args:
         feature: The Metaxy feature to associate with the asset. If both `feature`
@@ -112,9 +65,29 @@ class metaxify:
         Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
         `"metaxy/feature"` metadata. This is a perfectly valid setup since Metaxy writes are append-only.
 
-    !!! warning "Using `@metaxify` with multi assets"
-        The `feature` argument cannot be used with `@dg.multi_asset` that produces multiple outputs.
-        Instead, set `"metaxy/feature"` metadata on the right output's `AssetSpec`:
+    !!! example
+        ```py  {hl_lines="8"}
+        import dagster as dg
+        import metaxy as mx
+        import metaxy.ext.dagster as mxd
+
+        @mxd.metaxify()
+        @dg.asset(
+            metadata={
+                "metaxy/feature": "my/feature/key"
+            },
+        )
+        def my_asset(store: mx.MetadataStore):
+            with store:
+                increment = store.resolve_update("my/feature/key")
+            ...
+        ```
+
+    ??? example "With `@multi_asset`"
+        Multiple Metaxy features can be produced by the same `@multi_asset`. (1)
+        { .annotate }
+
+        1. Typically, they are produced independently of each other
 
         ```python
         @mxd.metaxify()
@@ -128,40 +101,10 @@ class metaxify:
             ...
         ```
 
-    !!! example "Apply to `dagster.AssetDefinition`"
+    ??? example "With `dagster.AssetSpec`"
         ```py
-        import dagster as dg
-        import metaxy.ext.dagster as mxd
-        from myproject.features import MyFeature
-
-        @mxd.metaxify(feature=MyFeature)
-        @dg.asset
-        def my_asset():
-            ...
-        ```
-
-    ??? example "Apply to `dagster.AssetSpec`"
-        ```py
-        import dagster as dg
-        import metaxy.ext.dagster as mxd
-
         asset_spec = dg.AssetSpec(key="my_asset")
         asset_spec = mxd.metaxify(feature=MyFeature)(asset_spec)
-        ```
-
-    ??? example "Use `"metaxy/feature"` asset metadata key"
-        ```py
-        import dagster as dg
-        import metaxy as mx
-        import metaxy.ext.dagster as mxd
-
-        @mxd.metaxify
-        @dg.asset(metadata={"metaxy/feature": "my/feature/key"})
-        def my_asset(store: mx.MetadataStore):
-            with store:
-                increment = store.resolve_update("my/feature/key")
-
-            ...
         ```
     """
 
