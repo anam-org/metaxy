@@ -12,6 +12,16 @@ When the same setting is defined in multiple places, Metaxy uses the following p
 
 Configuration files are discovered automatically by searching in the current or parent directories.
 
+## Templating Environment Variables
+
+Metaxy supports templating environment variables in configuration files using the `${VARIABLE_NAME}` syntax.
+
+!!! example
+    ```toml {title="metaxy.toml"}
+    [stores.branch.config]
+    root_path = "s3://my-bucket/${BRANCH_NAME}"
+    ```
+
 ## Configuration Options
 
 <!-- dprint-ignore-start -->
