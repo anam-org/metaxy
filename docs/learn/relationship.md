@@ -2,12 +2,17 @@
 
 Metaxy supports a few common mappings from parent to child samples out of the box. These include:
 
-- `1:1` mapping with [metaxy.LineageRelationshipType.identity] (the default one)
-- `1:N` mapping with [metaxy.LineageRelationshipType.expansion]
-- `N:1` mapping with [metaxy.LineageRelationshipType.aggregation]
+- `1:1` mapping with [`LineageRelationship.identity`][metaxy.models.lineage.LineageRelationship.identity] (the default one)
 
-Always use these classmethods to create instances of lineage relationships. Under the hood, they use Pydantic's discriminated union to ensure that the correct type is constructed based on the provided data.
+- `1:N` mapping with [`LineageRelationship.expansion`][metaxy.models.lineage.LineageRelationship.expansion]
+
+- `N:1` mapping with [`LineageRelationship.aggregation`][metaxy.models.lineage.LineageRelationship.aggregation]
+
+!!! tip
+
+    Always use these classmethods to create instances of lineage relationships.
+    They use Pydantic's discriminated unions under the hood to ensure correct type construction.
 
 ## Examples
 
-- [1:N example](../examples/one-to-many.md) provides a toy pipeline demonstrating how to define and use `1:N` lineage relationships in Metaxy.
+- [1:N example](../examples/one-to-many.md) demonstrates how to use `1:N` lineage relationships in Metaxy.

@@ -102,7 +102,6 @@ def _get_type_string(annotation: Any) -> str:
 def build_column_lineage(
     feature_cls: type[mx.BaseFeature],
     feature_spec: mx.FeatureSpec | None = None,
-    inherit_feature_key_as_asset_key: bool = True,
 ) -> dg.TableColumnLineage | None:
     """Build column-level lineage from feature dependencies.
 
@@ -116,7 +115,6 @@ def build_column_lineage(
     Args:
         feature_cls: The downstream feature class.
         feature_spec: The downstream feature specification. If None, uses feature_cls.spec().
-        inherit_feature_key_as_asset_key: Whether to use feature keys as asset keys.
 
     Returns:
         TableColumnLineage mapping downstream columns to their upstream sources,
@@ -138,8 +136,7 @@ def build_column_lineage(
         upstream_feature_cls = mx.get_feature_by_key(dep.feature)
         upstream_feature_spec = upstream_feature_cls.spec()
         upstream_asset_key = get_asset_key_for_metaxy_feature_spec(
-            upstream_feature_spec,
-            inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
+            upstream_feature_spec
         )
         upstream_columns = set(upstream_feature_cls.model_fields.keys())
 

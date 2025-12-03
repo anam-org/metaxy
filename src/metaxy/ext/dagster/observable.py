@@ -6,6 +6,7 @@ from typing import Any
 import dagster as dg
 
 import metaxy as mx
+from metaxy.ext.dagster.constants import DAGSTER_METAXY_FEATURE_METADATA_KEY
 from metaxy.ext.dagster.metaxify import metaxify
 from metaxy.ext.dagster.utils import compute_stats_from_lazy_frame
 
@@ -15,7 +16,6 @@ def observable_metaxy_asset(
     *,
     store_resource_key: str = "store",
     # metaxify kwargs
-    inherit_feature_key_as_asset_key: bool = False,
     inject_metaxy_kind: bool = True,
     inject_code_version: bool = True,
     set_description: bool = True,
@@ -34,8 +34,6 @@ def observable_metaxy_asset(
     Args:
         feature: The Metaxy feature to observe.
         store_resource_key: Resource key for the MetadataStore (default: `"store"`).
-        inherit_feature_key_as_asset_key: If True, use the Metaxy feature key as the
-            Dagster asset key.
         inject_metaxy_kind: Whether to inject `"metaxy"` kind into asset kinds.
         inject_code_version: Whether to inject the Metaxy feature code version.
         set_description: Whether to set description from feature class docstring.
@@ -47,12 +45,12 @@ def observable_metaxy_asset(
         import metaxy.ext.dagster as mxd
         from myproject.features import ExternalFeature
 
-        @mxd.observable_metaxy_asset(feature=ExternalFeature, key="external_data")
+        @mxd.observable_metaxy_asset(feature=ExternalFeature)
         def external_data(context, store, lazy_df):
             pass
 
         # With custom metadata - return a dict
-        @mxd.observable_metaxy_asset(feature=ExternalFeature, key="external_data")
+        @mxd.observable_metaxy_asset(feature=ExternalFeature)
         def external_data_with_metrics(context, store, lazy_df):
             # Run aggregations in the database
             total = lazy_df.select(nw.col("value").sum()).collect().item(0, 0)
@@ -67,16 +65,19 @@ def observable_metaxy_asset(
 
     def decorator(fn: Callable[..., Any]) -> dg.SourceAsset:
         # Build an AssetSpec from kwargs and enrich with metaxify
+        # Merge user metadata with metaxy/feature
+        user_metadata = observable_kwargs.pop("metadata", None) or {}
         spec = dg.AssetSpec(
             key=observable_kwargs.pop("key", None) or fn.__name__,
             group_name=observable_kwargs.pop("group_name", None),
             tags=observable_kwargs.pop("tags", None),
-            metadata=observable_kwargs.pop("metadata", None),
+            metadata={
+                **user_metadata,
+                DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.to_string(),
+            },
             description=observable_kwargs.pop("description", None),
         )
         enriched = metaxify(
-            feature=feature_key,
-            inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
             inject_metaxy_kind=inject_metaxy_kind,
             inject_code_version=inject_code_version,
             set_description=set_description,
