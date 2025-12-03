@@ -10,11 +10,27 @@ from narwhals.typing import Frame
 from typing_extensions import Self
 
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
+
+
+class InMemoryMetadataStoreConfig(MetadataStoreConfig):
+    """Configuration for InMemoryMetadataStore.
+
+    Example:
+        ```python
+        config = InMemoryMetadataStoreConfig(
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+        store = InMemoryMetadataStore.from_config(config)
+        ```
+    """
+
+    pass
 
 
 class InMemoryMetadataStore(MetadataStore):
@@ -103,7 +119,7 @@ class InMemoryMetadataStore(MetadataStore):
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: Narwhals Frame (eager or lazy) with metadata (already validated)
             **kwargs: Backend-specific parameters (currently unused)
         """
         df_polars: pl.DataFrame = collect_to_polars(df)
@@ -270,3 +286,7 @@ class InMemoryMetadataStore(MetadataStore):
         """Display string for this store."""
         status = "open" if self._is_open else "closed"
         return f"InMemoryMetadataStore(status={status})"
+
+    @classmethod
+    def config_model(cls) -> type[InMemoryMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        return InMemoryMetadataStoreConfig

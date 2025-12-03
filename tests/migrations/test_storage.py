@@ -923,3 +923,176 @@ def test_get_migration_summary(storage: SystemTableStorage):
     assert set(summary["completed_features"]) == {"feature/a", "feature/b"}
     assert summary["failed_features"] == {"feature/c": "Test error"}
     assert summary["total_features_processed"] == 3
+
+
+# ========== Tests for expected_features parameter ==========
+
+
+def test_get_migration_status_with_expected_features(storage: SystemTableStorage):
+    """Test get_migration_status() with expected_features parameter.
+
+    This tests the bugfix for detecting when a migration YAML has been modified
+    after initial completion (e.g., new operations added).
+    """
+    migration_id = "mig_expected"
+
+    # Start migration and complete features
+    storage.write_event(
+        Event.migration_started(project="test", migration_id=migration_id)
+    )
+    storage.write_event(
+        Event.feature_completed(
+            project="test",
+            migration_id=migration_id,
+            feature_key="feature/a",
+            rows_affected=100,
+        )
+    )
+    storage.write_event(
+        Event.feature_completed(
+            project="test",
+            migration_id=migration_id,
+            feature_key="feature/b",
+            rows_affected=200,
+        )
+    )
+    storage.write_event(
+        Event.migration_completed(project="test", migration_id=migration_id)
+    )
+
+    # Without expected_features, status is COMPLETED
+    assert (
+        storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
+    )
+
+    # With expected_features matching completed features, status is COMPLETED
+    assert (
+        storage.get_migration_status(
+            migration_id, "test", expected_features=["feature/a", "feature/b"]
+        )
+        == MigrationStatus.COMPLETED
+    )
+
+    # With expected_features including a feature that wasn't completed, status is IN_PROGRESS
+    # This simulates when a new operation is added to an already-completed migration
+    assert (
+        storage.get_migration_status(
+            migration_id,
+            "test",
+            expected_features=["feature/a", "feature/b", "feature/c"],
+        )
+        == MigrationStatus.IN_PROGRESS
+    )
+
+
+def test_get_migration_status_expected_features_subset(storage: SystemTableStorage):
+    """Test that completed features being a superset of expected is OK."""
+    migration_id = "mig_superset"
+
+    # Complete more features than expected
+    storage.write_event(
+        Event.migration_started(project="test", migration_id=migration_id)
+    )
+    for fk in ["feature/a", "feature/b", "feature/c"]:
+        storage.write_event(
+            Event.feature_completed(
+                project="test",
+                migration_id=migration_id,
+                feature_key=fk,
+                rows_affected=100,
+            )
+        )
+    storage.write_event(
+        Event.migration_completed(project="test", migration_id=migration_id)
+    )
+
+    # Expect only feature/a - should still be COMPLETED since all expected are done
+    assert (
+        storage.get_migration_status(
+            migration_id, "test", expected_features=["feature/a"]
+        )
+        == MigrationStatus.COMPLETED
+    )
+
+
+def test_get_migration_status_expected_features_with_failed_migration(
+    storage: SystemTableStorage,
+):
+    """Test expected_features with a failed migration."""
+    migration_id = "mig_failed_expected"
+
+    storage.write_event(
+        Event.migration_started(project="test", migration_id=migration_id)
+    )
+    storage.write_event(
+        Event.feature_completed(
+            project="test",
+            migration_id=migration_id,
+            feature_key="feature/a",
+            rows_affected=100,
+        )
+    )
+    storage.write_event(
+        Event.migration_failed(
+            project="test",
+            migration_id=migration_id,
+            error_message="Fatal error",
+        )
+    )
+
+    # Even with expected_features, a FAILED migration stays FAILED
+    assert (
+        storage.get_migration_status(
+            migration_id, "test", expected_features=["feature/a", "feature/b"]
+        )
+        == MigrationStatus.FAILED
+    )
+
+
+def test_get_migration_summary_with_expected_features(storage: SystemTableStorage):
+    """Test get_migration_summary() with expected_features parameter."""
+    migration_id = "mig_summary_expected"
+
+    storage.write_event(
+        Event.migration_started(project="test", migration_id=migration_id)
+    )
+    storage.write_event(
+        Event.feature_completed(
+            project="test",
+            migration_id=migration_id,
+            feature_key="feature/a",
+            rows_affected=100,
+        )
+    )
+    storage.write_event(
+        Event.migration_completed(project="test", migration_id=migration_id)
+    )
+
+    # Summary without expected_features shows COMPLETED
+    summary = storage.get_migration_summary(migration_id, "test")
+    assert summary["status"] == MigrationStatus.COMPLETED
+
+    # Summary with expected_features that aren't all completed shows IN_PROGRESS
+    summary = storage.get_migration_summary(
+        migration_id, "test", expected_features=["feature/a", "feature/b"]
+    )
+    assert summary["status"] == MigrationStatus.IN_PROGRESS
+    assert summary["completed_features"] == ["feature/a"]
+
+
+def test_get_migration_status_empty_expected_features(storage: SystemTableStorage):
+    """Test that empty expected_features list is ignored."""
+    migration_id = "mig_empty_expected"
+
+    storage.write_event(
+        Event.migration_started(project="test", migration_id=migration_id)
+    )
+    storage.write_event(
+        Event.migration_completed(project="test", migration_id=migration_id)
+    )
+
+    # Empty list should behave same as None
+    assert (
+        storage.get_migration_status(migration_id, "test", expected_features=[])
+        == MigrationStatus.COMPLETED
+    )

@@ -52,6 +52,10 @@ dagster = [
   "dagster>=1.12.3",
 ]
 
+lancedb = [
+  "lancedb>=0.15.0",
+]
+
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
 mx = "metaxy.cli.app:main"
@@ -72,6 +76,7 @@ dev = [
   "ruff>=0.13.1",
   "syrupy>=5.0.0",
   "ibis-framework[duckdb,clickhouse]>=11.0.0",
+  "lancedb>=0.15.0",
   "basedpyright>=1.32.1",
   "vulture>=2.14",
   "prek>=0.2.11",
@@ -107,10 +112,14 @@ docs = [
   "mkdocs-api-autonav>=0.4.0",
   "mkdocs-metaxy",
   "examples",
+  "mkdocs-macros-plugin>=1.5.0",
 ]
 
 [tool.ruff]
 target-version = "py310"
+
+# temporary
+exclude = ["examples/example-dagster"]
 
 [tool.ruff.lint]
 extend-select = [
@@ -177,6 +186,8 @@ include = [
   "examples",
 ]
 exclude = [
+  # temporary
+  "examples/example-dagster/src/example_dagster/definitions.py",
   "**/node_modules",
   "**/__pycache__",
   "**/*venv/**/*",
@@ -191,6 +202,8 @@ filterwarnings = [
   "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",
   "ignore:Global Metaxy configuration not initialized:UserWarning",
   "ignore::hypothesis.errors.NonInteractiveExampleWarning",
+  "ignore::metaxy.metadata_store.warnings.MetaxyColumnMissingWarning",
+  "ignore::metaxy.metadata_store.warnings.PolarsMaterializationWarning",
 ]
 markers = [
   "inmemory: InMemory store tests",

@@ -8,9 +8,11 @@ from narwhals.typing import IntoFrame
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
+    DAGSTER_METAXY_INFO_METADATA_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
+from metaxy.ext.dagster.utils import build_feature_info_metadata, build_partition_filter
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
 from metaxy.models.constants import METAXY_MATERIALIZATION_ID
 from metaxy.models.types import ValidatedFeatureKey
@@ -29,7 +31,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         This IOManager is using `"metaxy/feature"` Dagster metadata key to map Dagster assets into Metaxy features.
         It expects it to be set on the assets being loaded or materialized.
 
-        !!! example
+        ??? example
 
             ```py
             import dagster as dg
@@ -47,8 +49,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
 
         To tell Metaxy which column to use when filtering partitioned assets, set `"partition_by"` Dagster metadata key.
 
-        Example:
-
+        ??? example
             ```py
             import dagster as dg
 
@@ -109,16 +110,25 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             context.log.debug(
                 f"Reading metadata for Metaxy feature {self._feature_key_from_context(context).to_string()} from {self.metadata_store.display()}"
             )
-            df = self.metadata_store.read_metadata(
-                feature=self._feature_key_from_context(context)
+
+            # Build partition filter if applicable
+            partition_col = (
+                context.definition_metadata.get(DAGSTER_METAXY_PARTITION_KEY)
+                if context.has_asset_partitions
+                else None
+            )
+            partition_key = (
+                context.asset_partition_key if context.has_asset_partitions else None
+            )
+            filters = build_partition_filter(
+                partition_col,  # pyright: ignore[reportArgumentType]
+                partition_key,
             )
 
-            if context.has_asset_partitions:
-                col = context.definition_metadata[DAGSTER_METAXY_PARTITION_KEY]
-                assert isinstance(col, str)
-                df = df.filter(nw.col(col) == context.asset_partition_key)
-
-            return df
+            return self.metadata_store.read_metadata(
+                feature=self._feature_key_from_context(context),
+                filters=filters,
+            )
 
     def handle_output(self, context: "dg.OutputContext", obj: MetaxyOutput) -> None:
         """Write feature metadata to [`MetadataStore`][metaxy.MetadataStore].
@@ -159,18 +169,12 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         with self.metadata_store:
             key = self._feature_key_from_context(context)
 
-            feature = mx.get_feature_by_key(key)
-
             context.add_output_metadata(
                 {
                     "metaxy/feature": key.to_string(),
-                    "metaxy/info": {
-                        "project": feature.project,
-                        "feature_code_version": feature.spec().code_version,
-                        "feature_version": feature.feature_version(),
-                    },
+                    DAGSTER_METAXY_INFO_METADATA_KEY: build_feature_info_metadata(key),
                     "metaxy/store": {
-                        "type": self.metadata_store.__class__.__name__,
+                        "type": self.metadata_store.__class__.__module__,
                         "versioning_engine": self.metadata_store._versioning_engine,
                         **self.metadata_store.get_store_metadata(key),
                     },
@@ -178,6 +182,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             )
 
             try:
+                feature = mx.get_feature_by_key(key)
                 materialized_in_run = (
                     self.metadata_store.read_metadata(
                         feature,

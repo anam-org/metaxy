@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from types import TracebackType
@@ -11,6 +10,8 @@ from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
 import narwhals as nw
 from narwhals.typing import Frame, IntoFrame
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
 from metaxy._utils import switch_implementation_to_polars
@@ -34,9 +35,11 @@ from metaxy.metadata_store.warnings import (
 )
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
+    METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_VERSION,
+    METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
@@ -56,8 +59,89 @@ if TYPE_CHECKING:
     pass
 
 
+# TypeVar for config types - used for typing from_config method
+MetadataStoreConfigT = TypeVar("MetadataStoreConfigT", bound="MetadataStoreConfig")
+
+
+class MetadataStoreConfig(BaseSettings):
+    """Base configuration class for metadata stores.
+
+    This class defines common configuration fields shared by all metadata store types.
+    Store-specific config classes should inherit from this and add their own fields.
+
+    Example:
+        ```python
+        from metaxy.metadata_store.duckdb import DuckDBMetadataStoreConfig
+
+        config = DuckDBMetadataStoreConfig(
+            database="metadata.db",
+            hash_algorithm=HashAlgorithm.MD5,
+        )
+
+        store = DuckDBMetadataStore.from_config(config)
+        ```
+    """
+
+    model_config = SettingsConfigDict(frozen=True, extra="forbid")
+
+    fallback_stores: list[str] = Field(
+        default_factory=list,
+        description="List of fallback store names to search when features are not found in the current store.",
+    )
+
+    hash_algorithm: HashAlgorithm | None = Field(
+        default=None,
+        description="Hash algorithm for versioning. If None, uses store's default.",
+    )
+
+    versioning_engine: Literal["auto", "native", "polars"] = Field(
+        default="auto",
+        description="Which versioning engine to use: 'auto' (prefer native), 'native', or 'polars'.",
+    )
+
+
 VersioningEngineT = TypeVar("VersioningEngineT", bound=VersioningEngine)
 VersioningEngineOptions = Literal["auto", "native", "polars"]
+
+# Mapping of system columns to their expected Narwhals dtypes
+# Used to cast Null-typed columns to correct types
+# Note: Struct columns (METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD) are not cast
+_SYSTEM_COLUMN_DTYPES = {
+    METAXY_PROVENANCE: nw.String,
+    METAXY_FEATURE_VERSION: nw.String,
+    METAXY_SNAPSHOT_VERSION: nw.String,
+    METAXY_DATA_VERSION: nw.String,
+    METAXY_CREATED_AT: nw.Datetime,
+    METAXY_MATERIALIZATION_ID: nw.String,
+}
+
+
+def _cast_present_system_columns(
+    df: nw.DataFrame[Any] | nw.LazyFrame[Any],
+) -> nw.DataFrame[Any] | nw.LazyFrame[Any]:
+    """Cast system columns with Null/Unknown dtype to their correct types.
+
+    This handles edge cases where empty DataFrames or certain operations
+    result in Null-typed columns (represented as nw.Unknown in Narwhals)
+    that break downstream processing.
+
+    Args:
+        df: Narwhals DataFrame or LazyFrame
+
+    Returns:
+        DataFrame with system columns cast to correct types
+    """
+    schema = df.collect_schema()
+    columns_to_cast = []
+
+    for col_name, expected_dtype in _SYSTEM_COLUMN_DTYPES.items():
+        if col_name in schema and schema[col_name] == nw.Unknown:
+            columns_to_cast.append(nw.col(col_name).cast(expected_dtype))
+
+    if columns_to_cast:
+        df = df.with_columns(columns_to_cast)
+
+    return df
 
 
 class MetadataStore(ABC):
@@ -141,17 +225,88 @@ class MetadataStore(ABC):
 
         self.fallback_stores = fallback_stores or []
 
+    @classmethod
+    @abstractmethod
+    def config_model(cls) -> type[MetadataStoreConfig]:
+        """Return the configuration model class for this store type.
+
+        Subclasses must override this to return their specific config class.
+
+        Returns:
+            The config class type (e.g., DuckDBMetadataStoreConfig)
+
+        Note:
+            Subclasses override this with a more specific return type.
+            Type checkers may show a warning about incompatible override,
+            but this is intentional - each store returns its own config type.
+        """
+        ...
+
+    @classmethod
+    def from_config(cls, config: MetadataStoreConfig, **kwargs: Any) -> Self:
+        """Create a store instance from a configuration object.
+
+        This method creates a store by:
+        1. Converting the config to a dict
+        2. Resolving fallback store names to actual store instances
+        3. Calling the store's __init__ with the config parameters
+
+        Args:
+            config: Configuration object (should be the type returned by config_model())
+            **kwargs: Additional arguments passed directly to the store constructor
+                (e.g., materialization_id for runtime parameters not in config)
+
+        Returns:
+            A new store instance configured according to the config object
+
+        Example:
+            ```python
+            from metaxy.metadata_store.duckdb import (
+                DuckDBMetadataStore,
+                DuckDBMetadataStoreConfig,
+            )
+
+            config = DuckDBMetadataStoreConfig(
+                database="metadata.db",
+                fallback_stores=["prod"],
+            )
+
+            store = DuckDBMetadataStore.from_config(config)
+            ```
+        """
+        # Convert config to dict, excluding unset values
+        config_dict = config.model_dump(exclude_unset=True)
+
+        # Pop and resolve fallback store names to actual store instances
+        fallback_store_names = config_dict.pop("fallback_stores", [])
+        fallback_stores = [
+            MetaxyConfig.get().get_store(name) for name in fallback_store_names
+        ]
+
+        # Create store with resolved fallback stores, config, and extra kwargs
+        return cls(fallback_stores=fallback_stores, **config_dict, **kwargs)
+
     @property
     def hash_truncation_length(self) -> int:
         return MetaxyConfig.get().hash_truncation_length or 64
+
+    @property
+    def materialization_id(self) -> str | None:
+        """The external orchestration ID for this store instance.
+
+        If set, all metadata writes include this ID in the `metaxy_materialization_id` column,
+        allowing filtering of rows written during a specific materialization run.
+        """
+        return self._materialization_id
 
     @overload
     def resolve_update(
         self,
         feature: type[BaseFeature],
         *,
-        samples: Frame | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
+        samples: IntoFrame | Frame | None = None,
+        filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
+        global_filters: Sequence[nw.Expr] | None = None,
         lazy: Literal[False] = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -163,8 +318,9 @@ class MetadataStore(ABC):
         self,
         feature: type[BaseFeature],
         *,
-        samples: Frame | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
+        samples: IntoFrame | Frame | None = None,
+        filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
+        global_filters: Sequence[nw.Expr] | None = None,
         lazy: Literal[True],
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -175,8 +331,9 @@ class MetadataStore(ABC):
         self,
         feature: type[BaseFeature],
         *,
-        samples: Frame | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
+        samples: IntoFrame | Frame | None = None,
+        filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
+        global_filters: Sequence[nw.Expr] | None = None,
         lazy: bool = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -201,10 +358,15 @@ class MetadataStore(ABC):
 
                 Setting this parameter during normal operations is not required.
 
-            filters: A mapping from feature keys (as strings) to lists of Narwhals filter expressions.
+            filters: A mapping from feature keys to lists of Narwhals filter expressions.
+                Keys can be feature classes, FeatureKey objects, or string paths.
                 Applied at read-time. May filter the current feature,
                 in this case it will also be applied to `samples` (if provided).
-                Example: `{"upstream/feature": [nw.col("x") > 10], ...}`
+                Example: `{UpstreamFeature: [nw.col("x") > 10], ...}`
+            global_filters: A list of Narwhals filter expressions applied to all features.
+                These filters are combined with any feature-specific filters from `filters`.
+                Useful for filtering by common columns like `sample_uid` across all features.
+                Example: `[nw.col("sample_uid").is_in(["s1", "s2"])]`
             lazy: Whether to return a [metaxy.versioning.types.LazyIncrement][] or a [metaxy.versioning.types.Increment][].
             versioning_engine: Override the store's versioning engine for this operation.
             skip_comparison: If True, skip the increment comparison logic and return all
@@ -228,20 +390,40 @@ class MetadataStore(ABC):
         """
         import narwhals as nw
 
-        filters = filters or defaultdict(list)
+        # Convert samples to Narwhals frame if not already
+        samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None
+        if samples is not None:
+            if isinstance(samples, (nw.DataFrame, nw.LazyFrame)):
+                samples_nw = samples
+            else:
+                samples_nw = nw.from_native(samples)
+
+        # Normalize filter keys to FeatureKey
+        normalized_filters: dict[FeatureKey, list[nw.Expr]] = {}
+        if filters:
+            for key, exprs in filters.items():
+                feature_key = self._resolve_feature_key(key)
+                normalized_filters[feature_key] = list(exprs)
+
+        # Convert global_filters to a list for easy concatenation
+        global_filter_list = list(global_filters) if global_filters else []
 
         graph = current_graph()
         plan = graph.get_feature_plan(feature.spec().key)
 
         # Root features without samples: error (samples required)
-        if not plan.deps and samples is None:
+        if not plan.deps and samples_nw is None:
             raise ValueError(
                 f"Feature {feature.spec().key} has no upstream dependencies (root feature). "
                 f"Must provide 'samples' parameter with sample_uid and {METAXY_PROVENANCE_BY_FIELD} columns. "
                 f"Root features require manual {METAXY_PROVENANCE_BY_FIELD} computation."
             )
 
-        current_feature_filters = [*filters.get(feature.spec().key.to_string(), [])]
+        # Combine feature-specific filters with global filters
+        current_feature_filters = [
+            *normalized_filters.get(feature.spec().key, []),
+            *global_filter_list,
+        ]
 
         current_metadata = self.read_metadata_in_store(
             feature,
@@ -256,14 +438,14 @@ class MetadataStore(ABC):
         filters_by_key: dict[FeatureKey, list[nw.Expr]] = {}
 
         # if samples are provided, use them as source of truth for upstream data
-        if samples is not None:
+        if samples_nw is not None:
             # Apply filters to samples if any
-            filtered_samples = samples
+            filtered_samples = samples_nw
             if current_feature_filters:
-                filtered_samples = samples.filter(current_feature_filters)
+                filtered_samples = samples_nw.filter(current_feature_filters)
 
             # fill in METAXY_PROVENANCE column if it's missing (e.g. for root features)
-            samples = self.hash_struct_version_column(
+            samples_nw = self.hash_struct_version_column(
                 plan,
                 df=filtered_samples,
                 struct_column=METAXY_PROVENANCE_BY_FIELD,
@@ -272,8 +454,8 @@ class MetadataStore(ABC):
 
             # For root features, add data_version columns if they don't exist
             # (root features have no computation, so data_version equals provenance)
-            if METAXY_DATA_VERSION_BY_FIELD not in samples.columns:
-                samples = samples.with_columns(
+            if METAXY_DATA_VERSION_BY_FIELD not in samples_nw.columns:
+                samples_nw = samples_nw.with_columns(
                     nw.col(METAXY_PROVENANCE_BY_FIELD).alias(
                         METAXY_DATA_VERSION_BY_FIELD
                     ),
@@ -281,9 +463,14 @@ class MetadataStore(ABC):
                 )
         else:
             for upstream_spec in plan.deps or []:
+                # Combine feature-specific filters with global filters for upstream
+                upstream_filters = [
+                    *normalized_filters.get(upstream_spec.key, []),
+                    *global_filter_list,
+                ]
                 upstream_feature_metadata = self.read_metadata(
                     upstream_spec.key,
-                    filters=filters.get(upstream_spec.key.to_string(), []),
+                    filters=upstream_filters,
                 )
                 if upstream_feature_metadata is not None:
                     upstream_by_key[upstream_spec.key] = upstream_feature_metadata
@@ -331,22 +518,22 @@ class MetadataStore(ABC):
                     break
 
             if (
-                samples is not None
-                and samples.implementation != self.native_implementation()
+                samples_nw is not None
+                and samples_nw.implementation != self.native_implementation()
             ):
                 if not switched_to_polars:
                     if engine_mode == "native":
                         # Always raise error for samples with wrong implementation, regardless
                         # of fallback stores, because samples come from user argument, not from fallback
                         raise VersioningEngineMismatchError(
-                            f"versioning_engine='native' but provided `samples` have implementation {samples.implementation}, "
+                            f"versioning_engine='native' but provided `samples` have implementation {samples_nw.implementation}, "
                             f"expected {self.native_implementation()}"
                         )
                     elif engine_mode == "auto":
                         PolarsMaterializationWarning.warn_on_implementation_mismatch(
                             expected=self.native_implementation(),
-                            actual=samples.implementation,
-                            message=f"Provided `samples` have implementation {samples.implementation}. Using Polars for resolving the increment instead.",
+                            actual=samples_nw.implementation,
+                            message=f"Provided `samples` have implementation {samples_nw.implementation}. Using Polars for resolving the increment instead.",
                         )
                 implementation = nw.Implementation.POLARS
                 switched_to_polars = True
@@ -354,8 +541,8 @@ class MetadataStore(ABC):
         if switched_to_polars:
             if current_metadata:
                 current_metadata = switch_implementation_to_polars(current_metadata)
-            if samples:
-                samples = switch_implementation_to_polars(samples)
+            if samples_nw:
+                samples_nw = switch_implementation_to_polars(samples_nw)
             for upstream_key, df in upstream_by_key.items():
                 upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
 
@@ -364,10 +551,10 @@ class MetadataStore(ABC):
         ) as engine:
             if skip_comparison:
                 # Skip comparison: return all upstream samples as added
-                if samples is not None:
+                if samples_nw is not None:
                     # Root features or user-provided samples: use samples directly
                     # Note: samples already has metaxy_provenance computed
-                    added = samples.lazy()
+                    added = samples_nw.lazy()
                 else:
                     # Non-root features: load all upstream with provenance
                     added = engine.load_upstream_with_provenance(
@@ -383,7 +570,7 @@ class MetadataStore(ABC):
                     upstream=upstream_by_key,
                     hash_algorithm=self.hash_algorithm,
                     filters=filters_by_key,
-                    sample=samples.lazy() if samples is not None else None,
+                    sample=samples_nw.lazy() if samples_nw is not None else None,
                 )
 
         # Convert None to empty DataFrames
@@ -444,8 +631,15 @@ class MetadataStore(ABC):
 
         Raises:
             FeatureNotFoundError: If feature not found in any store
-            SystemDataNotFoundError: When attempting to read non-existant Metaxy system data
+            SystemDataNotFoundError: When attempting to read non-existent Metaxy system data
             ValueError: If both feature_version and current_only=True are provided
+
+        !!! info
+            When this method is called with default arguments, it will return the latest (by `metaxy_created_at`)
+            metadata for the current feature version. Therefore, it's perfectly suitable for most use cases.
+
+        !!! warning
+            The order of rows is not guaranteed.
         """
         filters = filters or []
         columns = columns or []
@@ -613,6 +807,72 @@ class MetadataStore(ABC):
 
         self._validate_schema(df_nw)
         self.write_metadata_to_store(feature_key, df_nw)
+
+    def write_metadata_multi(
+        self,
+        metadata: Mapping[Any, IntoFrame],
+        materialization_id: str | None = None,
+    ) -> None:
+        """
+        Write metadata for multiple features in reverse topological order.
+
+        Processes features so that dependents are written before their dependencies.
+        This ordering ensures that downstream features are written first, which can
+        be useful for certain data consistency requirements or when features need
+        to be processed in a specific order.
+
+        Args:
+            metadata: Mapping from feature keys to metadata DataFrames.
+                Keys can be any type coercible to FeatureKey (string, sequence,
+                FeatureKey, or BaseFeature class). Values must be DataFrames
+                compatible with Narwhals, containing required system columns.
+            materialization_id: Optional external orchestration ID for all writes.
+                Overrides the store's default `materialization_id` if provided.
+                Applied to all feature writes in this batch.
+
+        Raises:
+            MetadataSchemaError: If any DataFrame schema is invalid
+            StoreNotOpenError: If store is not open
+            ValueError: If writing to a feature from a different project than expected
+
+        Note:
+            - Must be called within a `MetadataStore.open(mode="write")` context manager.
+            - Empty mappings are handled gracefully (no-op).
+            - Each feature's metadata is written via `write_metadata`, so all
+              validation and system column handling from that method applies.
+
+        Example:
+            ```py
+            with store.open(mode="write"):
+                store.write_metadata_multi({
+                    ChildFeature: child_df,
+                    ParentFeature: parent_df,
+                })
+            # Features are written in reverse topological order:
+            # ChildFeature first, then ParentFeature
+            ```
+        """
+        if not metadata:
+            return
+
+        # Build mapping from resolved keys to dataframes in one pass
+        resolved_metadata = {
+            self._resolve_feature_key(key): df for key, df in metadata.items()
+        }
+
+        # Get reverse topological order (dependents first)
+        graph = current_graph()
+        sorted_keys = graph.topological_sort_features(
+            list(resolved_metadata.keys()), descending=True
+        )
+
+        # Write metadata in reverse topological order
+        for feature_key in sorted_keys:
+            self.write_metadata(
+                feature_key,
+                resolved_metadata[feature_key],
+                materialization_id=materialization_id,
+            )
 
     @abstractmethod
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
@@ -1077,6 +1337,11 @@ class MetadataStore(ABC):
                 struct_column=METAXY_DATA_VERSION_BY_FIELD,
                 hash_column=METAXY_DATA_VERSION,
             )
+
+        # Cast system columns with Null dtype to their correct types
+        # This handles edge cases where empty DataFrames or certain operations
+        # result in Null-typed columns that break downstream processing
+        df = _cast_present_system_columns(df)
 
         return df
 

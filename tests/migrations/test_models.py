@@ -271,14 +271,13 @@ def test_diff_migration_roundtrip():
 
 
 def test_operation_config_valid():
-    from metaxy.migrations.ops import DataVersionReconciliation
-
     config = OperationConfig(
         type="metaxy.migrations.ops.DataVersionReconciliation",
         features=["feature/a", "feature/b"],
     )
 
-    assert config.type == DataVersionReconciliation
+    # type is now stored as a string for lazy loading
+    assert config.type == "metaxy.migrations.ops.DataVersionReconciliation"
     assert config.features == ["feature/a", "feature/b"]
 
 
@@ -292,8 +291,6 @@ def test_operation_config_empty_features():
 
 
 def test_operation_config_roundtrip():
-    from metaxy.migrations.ops import DataVersionReconciliation
-
     original = OperationConfig(
         type="metaxy.migrations.ops.DataVersionReconciliation",
         features=["feature/a", "feature/b"],
@@ -307,7 +304,12 @@ def test_operation_config_roundtrip():
     # Deserialize back
     restored = OperationConfig.model_validate(dict_form)
 
-    assert restored.type == original.type == DataVersionReconciliation
+    # type is now a string (lazy loading)
+    assert (
+        restored.type
+        == original.type
+        == "metaxy.migrations.ops.DataVersionReconciliation"
+    )
     assert restored.features == original.features
     # Extra fields are preserved
     assert dict_form["custom_field"] == "value"
@@ -500,3 +502,245 @@ def test_get_failed_features_with_retry(store):
         assert len(summary["completed_features"]) == 2  # feature_1 and feature_3
         assert len(summary["failed_features"]) == 1  # only feature_2
         assert "feature_2" in summary["failed_features"]
+
+
+# ============================================================================
+# MigrationStatusInfo Tests
+# ============================================================================
+
+
+def test_migration_status_info_properties():
+    """Test MigrationStatusInfo computed properties."""
+    from metaxy.metadata_store.system import MigrationStatus
+    from metaxy.migrations.models import MigrationStatusInfo
+
+    status_info = MigrationStatusInfo(
+        migration_id="test_001",
+        status=MigrationStatus.IN_PROGRESS,
+        expected_features=["feature/a", "feature/b", "feature/c", "feature/d"],
+        completed_features=["feature/a", "feature/b"],
+        failed_features={"feature/c": "Error message"},
+        pending_features=["feature/d"],
+    )
+
+    assert status_info.features_total == 4
+    # features_remaining = pending (1) + failed (1) = 2
+    assert status_info.features_remaining == 2
+
+
+def test_migration_status_info_failed_features_count_as_remaining():
+    """Test that failed features are counted in features_remaining.
+
+    This is important because failed features need to be retried, so they
+    should not be considered "done". Previously, only pending features were
+    counted, which caused the CLI to show "All features completed" even when
+    some features had failed.
+    """
+    from metaxy.metadata_store.system import MigrationStatus
+    from metaxy.migrations.models import MigrationStatusInfo
+
+    # Scenario: 2 features expected, 1 completed, 1 failed, 0 pending
+    status_info = MigrationStatusInfo(
+        migration_id="test_failed_remaining",
+        status=MigrationStatus.IN_PROGRESS,
+        expected_features=["feature/a", "feature/b"],
+        completed_features=["feature/a"],
+        failed_features={"feature/b": "Some error"},
+        pending_features=[],  # No pending features
+    )
+
+    assert status_info.features_total == 2
+    # Even though pending is empty, failed features count as remaining
+    assert status_info.features_remaining == 1
+    assert len(status_info.pending_features) == 0
+    assert len(status_info.failed_features) == 1
+
+
+def test_migration_status_info_empty():
+    """Test MigrationStatusInfo with empty lists."""
+    from metaxy.metadata_store.system import MigrationStatus
+    from metaxy.migrations.models import MigrationStatusInfo
+
+    status_info = MigrationStatusInfo(
+        migration_id="test_002",
+        status=MigrationStatus.NOT_STARTED,
+        expected_features=[],
+        completed_features=[],
+        failed_features={},
+        pending_features=[],
+    )
+
+    assert status_info.features_total == 0
+    assert status_info.features_remaining == 0
+
+
+def test_migration_status_info_all_completed():
+    """Test MigrationStatusInfo when all features are completed."""
+    from metaxy.metadata_store.system import MigrationStatus
+    from metaxy.migrations.models import MigrationStatusInfo
+
+    status_info = MigrationStatusInfo(
+        migration_id="test_003",
+        status=MigrationStatus.COMPLETED,
+        expected_features=["feature/a", "feature/b"],
+        completed_features=["feature/a", "feature/b"],
+        failed_features={},
+        pending_features=[],
+    )
+
+    assert status_info.features_total == 2
+    assert status_info.features_remaining == 0
+
+
+# ============================================================================
+# get_status_info Method Tests
+# ============================================================================
+
+
+def test_full_graph_migration_get_status_info(store):
+    """Test Migration.get_status_info() convenience method."""
+    from metaxy.metadata_store.system import Event, MigrationStatus, SystemTableStorage
+
+    storage = SystemTableStorage(store)
+
+    with store:
+        migration = FullGraphMigration(
+            migration_id="test_status_info",
+            parent="initial",
+            created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
+            snapshot_version="snap1",
+            ops=[
+                {
+                    "type": "metaxy.migrations.ops.DataVersionReconciliation",
+                    "features": ["feature/a", "feature/b", "feature/c"],
+                }
+            ],
+        )
+
+        # Before any events, status should be NOT_STARTED
+        status_info = migration.get_status_info(store, "test")
+        assert status_info.status == MigrationStatus.NOT_STARTED
+        assert status_info.expected_features == ["feature/a", "feature/b", "feature/c"]
+        assert status_info.completed_features == []
+        assert status_info.failed_features == {}
+        assert status_info.pending_features == ["feature/a", "feature/b", "feature/c"]
+        assert status_info.features_total == 3
+        assert status_info.features_remaining == 3
+
+        # Start migration and complete some features
+        storage.write_event(
+            Event.migration_started(project="test", migration_id=migration.migration_id)
+        )
+        storage.write_event(
+            Event.feature_completed(
+                project="test",
+                migration_id=migration.migration_id,
+                feature_key="feature/a",
+                rows_affected=100,
+            )
+        )
+
+        status_info = migration.get_status_info(store, "test")
+        assert status_info.status == MigrationStatus.IN_PROGRESS
+        assert status_info.completed_features == ["feature/a"]
+        assert status_info.features_remaining == 2
+        assert set(status_info.pending_features) == {"feature/b", "feature/c"}
+
+        # Fail one feature
+        storage.write_event(
+            Event.feature_failed(
+                project="test",
+                migration_id=migration.migration_id,
+                feature_key="feature/b",
+                error_message="Test error",
+            )
+        )
+
+        status_info = migration.get_status_info(store, "test")
+        assert status_info.failed_features == {"feature/b": "Test error"}
+        assert status_info.pending_features == ["feature/c"]
+        # features_remaining = pending (1) + failed (1) = 2
+        assert status_info.features_remaining == 2
+
+
+# ============================================================================
+# Lazy Import Tests for operations property
+# ============================================================================
+
+
+def test_operations_property_lazy_import():
+    """Test that Migration.operations lazily imports operation classes."""
+    migration = FullGraphMigration(
+        migration_id="test_lazy_001",
+        parent="initial",
+        created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
+        snapshot_version="snap1",
+        ops=[
+            {
+                "type": "metaxy.migrations.ops.DataVersionReconciliation",
+                "features": ["feature/a"],
+            }
+        ],
+    )
+
+    # Access operations property - should successfully import the class
+    operations = migration.operations
+    assert len(operations) == 1
+    assert operations[0].__class__.__name__ == "DataVersionReconciliation"
+
+
+def test_operations_property_invalid_import():
+    """Test that invalid operation class path raises clear error."""
+    migration = FullGraphMigration(
+        migration_id="test_invalid_001",
+        parent="initial",
+        created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
+        snapshot_version="snap1",
+        ops=[
+            {
+                "type": "nonexistent.module.FakeOperation",
+                "features": ["feature/a"],
+            }
+        ],
+    )
+
+    # Accessing operations should raise ValueError with clear message
+    with pytest.raises(ValueError, match="Failed to import operation class"):
+        _ = migration.operations
+
+
+def test_operations_property_invalid_class_name():
+    """Test that invalid class name in valid module raises clear error."""
+    migration = FullGraphMigration(
+        migration_id="test_invalid_002",
+        parent="initial",
+        created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
+        snapshot_version="snap1",
+        ops=[
+            {
+                "type": "metaxy.migrations.ops.NonExistentClass",
+                "features": ["feature/a"],
+            }
+        ],
+    )
+
+    with pytest.raises(ValueError, match="Failed to import operation class"):
+        _ = migration.operations
+
+
+def test_operation_config_string_type_allows_reading_invalid_paths():
+    """Test that OperationConfig with string type can be read even if path is invalid.
+
+    This is a key feature - we can read migration YAML files even if the
+    operation classes have been renamed or don't exist yet.
+    """
+    # This should NOT raise an error at config creation time
+    config = OperationConfig(
+        type="some.future.module.NewOperation",
+        features=["feature/a"],
+    )
+
+    # The type is stored as a string
+    assert config.type == "some.future.module.NewOperation"
+
+    # Error only occurs when trying to instantiate via Migration.operations

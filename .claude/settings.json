@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff check --fix",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "basedpyright --level error",
+            "timeout": 30
+          },
+          {
+            "type": "prompt",
+            "prompt": "Evaluate whether Claude should stop working. If there are any linter errors left, fix them.",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,16 +1,4 @@
 # serializer version: 1
-# name: test_full_definition_version_includes_project
-  dict({
-    'feature_version_a': '3731d5aef6d53cfda612433171c52401406f94fd1c3482e7754ef2b24d85d170',
-    'feature_version_b': '3731d5aef6d53cfda612433171c52401406f94fd1c3482e7754ef2b24d85d170',
-    'feature_versions_same': True,
-    'project_a': 'project_a',
-    'project_b': 'project_b',
-    'tracking_version_a': '0ca59e2bb82e25236ba4106492b55e07a7b492b3b02af78f5ad8c118902709a4',
-    'tracking_version_b': '66a8dde0715df8e963604f527abed737c3b68f3386b50d0d87d82d9b79d5b80c',
-    'tracking_versions_differ': True,
-  })
-# ---
 # name: test_feature_version_unchanged_by_project
   'fcd6985a4dea45488450141be5c4712fd47781b4d0a7e42f04760c376eadf42f'
 # ---
@@ -24,6 +12,18 @@
     'upstream_a_version': '8fd9019605c792a83a2cab5aaac4aea7a1e8524e51b728c0e02beb8032ee0ec1',
     'upstream_b_project': 'project_b',
     'upstream_b_version': '8fd9019605c792a83a2cab5aaac4aea7a1e8524e51b728c0e02beb8032ee0ec1',
+  })
+# ---
+# name: test_full_definition_version_includes_project
+  dict({
+    'feature_version_a': '3731d5aef6d53cfda612433171c52401406f94fd1c3482e7754ef2b24d85d170',
+    'feature_version_b': '3731d5aef6d53cfda612433171c52401406f94fd1c3482e7754ef2b24d85d170',
+    'feature_versions_same': True,
+    'project_a': 'project_a',
+    'project_b': 'project_b',
+    'tracking_version_a': '6f6fceab49451f2623271b994a455de26563c5c4cda4602359918ab7f680515d',
+    'tracking_version_b': '7cbbfe6fb0e0b96d9b2c614631967664c5823c60a981cb2882d3e968838b143a',
+    'tracking_versions_differ': True,
   })
 # ---
 # name: test_project_in_graph_snapshot
@@ -43,5 +43,5 @@
   })
 # ---
 # name: test_tracking_version_deterministic
-  'bb5935b179438b23c44cfbe1e83c6dd62337eb42fc60832268acf84920dd1155'
+  'ee786b387ab2510b11ebb6cafe5e31ddc2c8937e0b04a58923a5bfac8a495048'
 # ---

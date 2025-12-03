@@ -523,39 +523,26 @@ def render(
         from metaxy.metadata_store.system.storage import SystemTableStorage
 
         with metadata_store:
-            # Read features for this snapshot
             storage = SystemTableStorage(metadata_store)
-            features_df = storage.read_features(
-                current=False, snapshot_version=snapshot
-            )
-
-            if features_df.height == 0:
-                console.print(f"[red]✗[/red] No features found for snapshot {snapshot}")
-                raise SystemExit(1)
-
-            # Convert DataFrame to snapshot_data format expected by from_snapshot
-            import json
-
-            snapshot_data = {}
-            for row in features_df.iter_rows(named=True):
-                feature_key_str = row["feature_key"]
-                snapshot_data[feature_key_str] = {
-                    "feature_spec": json.loads(row["feature_spec"]),
-                    "feature_class_path": row["feature_class_path"],
-                    "metaxy_feature_version": row["metaxy_feature_version"],
-                }
-
-            # Reconstruct graph from snapshot
             try:
-                graph = FeatureGraph.from_snapshot(snapshot_data)
+                graph = storage.load_graph_from_snapshot(snapshot_version=snapshot)
+            except ValueError as e:
+                from metaxy.cli.utils import print_error
+
+                print_error(console, "Snapshot error", e)
+                raise SystemExit(1)
             except ImportError as e:
-                console.print(f"[red]✗[/red] Failed to load snapshot: {e}")
+                from metaxy.cli.utils import print_error
+
+                print_error(console, "Failed to load snapshot", e)
                 console.print(
                     "[yellow]Hint:[/yellow] Feature classes may have been moved or deleted."
                 )
                 raise SystemExit(1) from e
             except Exception as e:
-                console.print(f"[red]✗[/red] Failed to load snapshot: {e}")
+                from metaxy.cli.utils import print_error
+
+                print_error(console, "Failed to load snapshot", e)
                 raise SystemExit(1) from e
 
             console.print(
@@ -591,7 +578,9 @@ def render(
     try:
         rendered = renderer.render()
     except Exception as e:
-        console.print(f"[red]✗[/red] Rendering failed: {e}")
+        from metaxy.cli.utils import print_error
+
+        print_error(console, "Rendering failed", e)
         import traceback
 
         traceback.print_exc()
@@ -604,7 +593,9 @@ def render(
                 f.write(rendered)
             console.print(f"[green]✓[/green] Rendered graph saved to: {output}")
         except Exception as e:
-            console.print(f"[red]✗[/red] Failed to write to file: {e}")
+            from metaxy.cli.utils import print_error
+
+            print_error(console, "Failed to write to file", e)
             raise SystemExit(1)
     else:
         # Print to stdout using data_console

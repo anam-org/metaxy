@@ -23,10 +23,12 @@ def get_env_var_name(
         Environment variable name (e.g., "METAXY_EXT__SQLMODEL__ENABLE")
 
     Example:
-        >>> get_env_var_name(["store"], "METAXY_")
-        'METAXY_STORE'
-        >>> get_env_var_name(["ext", "sqlmodel", "enable"], "METAXY_")
-        'METAXY_EXT__SQLMODEL__ENABLE'
+        ```py
+        get_env_var_name(["store"], "METAXY_")
+        # 'METAXY_STORE'
+        get_env_var_name(["ext", "sqlmodel", "enable"], "METAXY_")
+        # 'METAXY_EXT__SQLMODEL__ENABLE'
+        ```
     """
     var_name = env_nested_delimiter.join(field_path)
     return f"{env_prefix}{var_name}".upper()
@@ -42,10 +44,12 @@ def get_toml_path(field_path: list[str]) -> str:
         TOML key path (e.g., "ext.sqlmodel.enable")
 
     Example:
-        >>> get_toml_path(["store"])
-        'store'
-        >>> get_toml_path(["ext", "sqlmodel", "enable"])
-        'ext.sqlmodel.enable'
+        ```py
+        get_toml_path(["store"])
+        # 'store'
+        get_toml_path(["ext", "sqlmodel", "enable"])
+        # 'ext.sqlmodel.enable'
+        ```
     """
     return ".".join(field_path)
 
@@ -131,9 +135,11 @@ def extract_field_info(
         - is_nested: Whether this represents a nested model
 
     Example:
-        >>> info = extract_field_info(MetaxyConfig)
-        >>> info[0]
-        {'name': 'store', 'path': ['store'], 'type': 'str', 'default': 'dev', ...}
+        ```py
+        info = extract_field_info(MetaxyConfig)
+        info[0]
+        # {'name': 'store', 'path': ['store'], 'type': 'str', 'default': 'dev', ...}
+        ```
     """
     path_prefix = path_prefix or []
     fields_info = []
@@ -185,6 +191,12 @@ def extract_field_info(
         else:
             required = False
 
+        # Check for mkdocs_metaxy_hide in json_schema_extra
+        json_schema_extra = field_info.json_schema_extra
+        hide_from_docs = False
+        if isinstance(json_schema_extra, dict):
+            hide_from_docs = json_schema_extra.get("mkdocs_metaxy_hide", False)
+
         field_dict = {
             "name": field_name,
             "path": current_path,
@@ -193,6 +205,7 @@ def extract_field_info(
             "description": description,
             "required": required,
             "is_nested": is_nested_model,
+            "hide_from_docs": hide_from_docs,
         }
 
         fields_info.append(field_dict)
@@ -223,11 +236,12 @@ def generate_toml_example(
         TOML configuration string
 
     Example:
-        >>> toml = generate_toml_example(fields, include_tool_section=True)
-        >>> print(toml)
-        [tool.metaxy]
-        store = "dev"
-        ...
+        ```py
+        toml = generate_toml_example(fields, include_tool_section=True)
+        print(toml)
+        # [tool.metaxy]
+        # store = "dev"
+        ```
     """
     lines = []
 
@@ -602,6 +616,7 @@ def generate_individual_field_doc(
     include_tool_prefix: bool = False,
     header_level: int = 3,
     env_var_path: list[str] | None = None,
+    header_name: str | None = None,
 ) -> str:
     """Generate documentation for an individual field with tabs and env var.
 
@@ -612,16 +627,17 @@ def generate_individual_field_doc(
         include_tool_prefix: Whether this is for pyproject.toml (needs [tool.metaxy] prefix)
         header_level: Header level (default 3 for ###)
         env_var_path: Optional path for env var generation (defaults to field["path"])
+        header_name: Optional name for the header (defaults to field name without path prefix)
 
     Returns:
         Markdown string for the field documentation
     """
     lines = []
 
-    # Field header
-    field_path = get_toml_path(field["path"])
+    # Field header - use just the field name, not the full path with prefix
+    display_name = header_name if header_name is not None else field["name"]
     header_prefix = "#" * header_level
-    lines.append(f"{header_prefix} `{field_path}`")
+    lines.append(f"{header_prefix} `{display_name}`")
     lines.append("")
 
     # Description

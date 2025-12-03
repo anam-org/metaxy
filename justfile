@@ -73,3 +73,6 @@ test-and-submit:
     gt modify
     gt sync
     gt ss --no--interactive
+
+init-example name:
+    uv init --lib --name {{name}} examples/{{name}}

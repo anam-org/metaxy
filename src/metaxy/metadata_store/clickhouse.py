@@ -5,8 +5,27 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
-from metaxy.metadata_store.ibis import IbisMetadataStore
+from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
 from metaxy.versioning.types import HashAlgorithm
+
+
+class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
+    """Configuration for ClickHouseMetadataStore.
+
+    Inherits connection_string, connection_params, table_prefix, auto_create_tables from IbisMetadataStoreConfig.
+
+    Example:
+        ```python
+        config = ClickHouseMetadataStoreConfig(
+            connection_string="clickhouse://localhost:9000/default",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+        store = ClickHouseMetadataStore.from_config(config)
+        ```
+    """
+
+    pass  # All fields inherited from IbisMetadataStoreConfig
 
 
 class ClickHouseMetadataStore(IbisMetadataStore):
@@ -159,3 +178,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         hash_functions[HashAlgorithm.XXHASH64] = xxhash64_hash
 
         return hash_functions
+
+    @classmethod
+    def config_model(cls) -> type[ClickHouseMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        return ClickHouseMetadataStoreConfig

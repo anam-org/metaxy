@@ -5,7 +5,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
 import pydantic
-from pydantic import model_validator
+from pydantic import AwareDatetime, Field, model_validator
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
@@ -532,6 +532,9 @@ class FeatureGraph:
 
         source_set = set(validated_sources)
         visited = set()
+        post_order = []
+        source_set = set(sources)
+        visited = set()
         post_order = []  # Reverse topological order
 
         def visit(key: FeatureKey):
@@ -561,8 +564,10 @@ class FeatureGraph:
     def topological_sort_features(
         self,
         feature_keys: Sequence[CoercibleToFeatureKey] | None = None,
+        *,
+        descending: bool = False,
     ) -> list[FeatureKey]:
-        """Sort feature keys in topological order (dependencies first).
+        """Sort feature keys in topological order.
 
         Uses stable alphabetical ordering when multiple nodes are at the same level.
         This ensures deterministic output for diff comparisons and migrations.
@@ -573,14 +578,18 @@ class FeatureGraph:
             feature_keys: List of feature keys to sort. Each element can be string, sequence,
                 FeatureKey, or BaseFeature class. If None, sorts all features
                 (both Feature classes and standalone specs) in the graph.
+            descending: If False (default), dependencies appear before dependents.
+                For a chain A -> B -> C, returns [A, B, C].
+                If True, dependents appear before dependencies.
+                For a chain A -> B -> C, returns [C, B, A].
 
         Returns:
-            List of feature keys sorted so dependencies appear before dependents
+            List of feature keys sorted in topological order
 
         Example:
             ```py
             graph = FeatureGraph.get_active()
-            # Sort specific features
+            # Sort specific features (dependencies first)
             sorted_keys = graph.topological_sort_features([
                 FeatureKey(["video", "raw"]),
                 FeatureKey(["video", "scene"]),
@@ -591,6 +600,9 @@ class FeatureGraph:
 
             # Sort all features in the graph (including standalone specs)
             all_sorted = graph.topological_sort_features()
+
+            # Sort with dependents first (useful for processing leaf nodes before roots)
+            reverse_sorted = graph.topological_sort_features(descending=True)
             ```
         """
         # Determine which features to sort
@@ -633,6 +645,8 @@ class FeatureGraph:
             visit(key)
 
         # Post-order DFS gives topological order (dependencies before dependents)
+        if descending:
+            return list(reversed(result))
         return result
 
     @property
@@ -1032,6 +1046,41 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
+
+    # System columns - automatically managed by Metaxy
+    # Most of them are optional since Metaxy injects them into dataframes at some point
+    metaxy_provenance_by_field: dict[str, str] = Field(
+        default_factory=dict,
+        description="Field-level provenance hashes (maps field names to hashes)",
+    )
+    metaxy_provenance: str | None = Field(
+        default=None,
+        description="Hash of metaxy_provenance_by_field",
+    )
+    metaxy_feature_version: str | None = Field(
+        default=None,
+        description="Hash of the feature definition (dependencies + fields + code_versions)",
+    )
+    metaxy_snapshot_version: str | None = Field(
+        default=None,
+        description="Hash of the entire feature graph snapshot",
+    )
+    metaxy_data_version_by_field: dict[str, str] | None = Field(
+        default=None,
+        description="Field-level data version hashes (maps field names to version hashes)",
+    )
+    metaxy_data_version: str | None = Field(
+        default=None,
+        description="Hash of metaxy_data_version_by_field",
+    )
+    metaxy_created_at: AwareDatetime | None = Field(
+        default=None,
+        description="Timestamp when the metadata row was created (UTC)",
+    )
+    metaxy_materialization_id: str | None = Field(
+        default=None,
+        description="External orchestration run ID (e.g., Dagster Run ID)",
+    )
 
     @model_validator(mode="after")
     def _validate_id_columns_exist(self) -> Self:
