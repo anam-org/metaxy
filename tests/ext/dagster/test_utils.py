@@ -151,6 +151,46 @@ class TestGenerateMaterializationEvents:
         assert events[0].data_version is not None
         assert events[0].data_version.value != "empty"
 
+    def test_includes_runtime_metadata(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that each event includes metaxy/feature, metaxy/info, and metaxy/store runtime metadata."""
+        _write_feature_data(feature_a, ["1", "2"], resources, instance)
+
+        specs = [dg.AssetSpec("my_asset", metadata={"metaxy/feature": "test/utils/a"})]
+
+        context = dg.build_asset_context()
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        metadata = events[0].metadata
+        assert metadata is not None
+
+        # Check metaxy/feature
+        assert metadata["metaxy/feature"] == "test/utils/a"
+
+        # Check metaxy/info structure
+        info = metadata["metaxy/info"]
+        assert isinstance(info, dict)
+        assert "feature" in info
+        assert "metaxy" in info
+        assert info["feature"]["project"] == mx.MetaxyConfig.get().project
+        assert info["feature"]["version"] == feature_a.feature_version()
+        assert info["metaxy"]["version"] == mx.__version__
+        assert info["metaxy"]["plugins"] == mx.MetaxyConfig.get().plugins
+
+        # Check metaxy/store matches actual store
+        store_meta = metadata["metaxy/store"]
+        assert isinstance(store_meta, dict)
+        store_cls = metadata_store.__class__
+        assert store_meta["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
+        assert store_meta["display"] == metadata_store.display()
+        assert store_meta["versioning_engine"] == metadata_store._versioning_engine
+
     def test_uses_asset_spec_key(
         self,
         feature_a: type[mx.BaseFeature],
@@ -269,6 +309,46 @@ class TestGenerateObservationEvents:
         # data_version should be set (based on mean of metaxy_created_at)
         assert events[0].data_version is not None
         assert events[0].data_version.value != "empty"
+
+    def test_includes_runtime_metadata(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that each event includes metaxy/feature, metaxy/info, and metaxy/store runtime metadata."""
+        _write_feature_data(feature_a, ["1", "2"], resources, instance)
+
+        specs = [dg.AssetSpec("my_asset", metadata={"metaxy/feature": "test/utils/a"})]
+
+        context = dg.build_asset_context()
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        metadata = events[0].metadata
+        assert metadata is not None
+
+        # Check metaxy/feature
+        assert metadata["metaxy/feature"] == "test/utils/a"
+
+        # Check metaxy/info structure
+        info = metadata["metaxy/info"]
+        assert isinstance(info, dict)
+        assert "feature" in info
+        assert "metaxy" in info
+        assert info["feature"]["project"] == mx.MetaxyConfig.get().project
+        assert info["feature"]["version"] == feature_a.feature_version()
+        assert info["metaxy"]["version"] == mx.__version__
+        assert info["metaxy"]["plugins"] == mx.MetaxyConfig.get().plugins
+
+        # Check metaxy/store matches actual store
+        store_meta = metadata["metaxy/store"]
+        assert isinstance(store_meta, dict)
+        store_cls = metadata_store.__class__
+        assert store_meta["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
+        assert store_meta["display"] == metadata_store.display()
+        assert store_meta["versioning_engine"] == metadata_store._versioning_engine
 
     def test_uses_asset_spec_key(
         self,
