@@ -85,8 +85,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             namespace["model_config"] = ConfigDict(frozen=False)
 
         # Check plugin config for defaults
-        config = MetaxyConfig.get()
-        sqlmodel_config = config.get_plugin("sqlmodel", SQLModelPluginConfig)
+        sqlmodel_config = MetaxyConfig.get_plugin("sqlmodel", SQLModelPluginConfig)
         if inject_primary_key is None:
             inject_primary_key = sqlmodel_config.inject_primary_key
         if inject_index is None:

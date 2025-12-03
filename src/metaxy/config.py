@@ -311,8 +311,14 @@ class MetaxyConfig(BaseSettings):
 
     @classmethod
     def get_plugin(cls, name: str, plugin_cls: type[PluginConfigT]) -> PluginConfigT:
-        """Get the plugin config from the global Metaxy config."""
-        ext = cls.get().ext
+        """Get the plugin config from the global Metaxy config.
+
+        Unlike `get()`, this method does not warn when the global config is not
+        initialized. This is intentional because plugins may call this at import
+        time to read their configuration, and returning default plugin config
+        is always safe.
+        """
+        ext = cls.get(_allow_default_config=True).ext
         if name in ext:
             existing = ext[name]
             if isinstance(existing, plugin_cls):
@@ -356,16 +362,23 @@ class MetaxyConfig(BaseSettings):
         return (init_settings, env_settings, toml_settings)
 
     @classmethod
-    def get(cls) -> "MetaxyConfig":
-        """Get the current Metaxy configuration."""
+    def get(cls, *, _allow_default_config: bool = False) -> "MetaxyConfig":
+        """Get the current Metaxy configuration.
+
+        Args:
+            _allow_default_config: Internal parameter. When True, returns default
+                config without warning if global config is not set. Used by methods
+                like `get_plugin` that may be called at import time.
+        """
         cfg = _metaxy_config.get()
         if cfg is None:
-            warnings.warn(
-                UserWarning(
-                    "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project='default')."
-                ),
-                stacklevel=2,
-            )
+            if not _allow_default_config:
+                warnings.warn(
+                    UserWarning(
+                        "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project='default')."
+                    ),
+                    stacklevel=2,
+                )
             return cls(project="default")
         else:
             return cfg
