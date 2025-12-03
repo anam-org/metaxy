@@ -17,6 +17,7 @@ Configuration files are discovered automatically by searching in the current or 
 Metaxy supports templating environment variables in configuration files using the `${VARIABLE_NAME}` syntax.
 
 !!! example
+
     ```toml {title="metaxy.toml"}
     [stores.branch.config]
     root_path = "s3://my-bucket/${BRANCH_NAME}"

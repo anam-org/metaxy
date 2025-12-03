@@ -10,6 +10,7 @@ Unleash the full power of `@metaxify` on Dagster!
 
 <!-- dprint-ignore-start -->
 !!! example
+
     Set the well-known `"metaxy/feature"` key (1):
     { .annotate }
 
@@ -57,6 +58,7 @@ This integration provides:
 
 <!-- dprint-ignore-start -->
 !!! example "Root Asset"
+
     Let's define an asset that doesn't have any upstream Metaxy features.
 
     ```python {title="defs.py"}
@@ -105,6 +107,7 @@ This is useful when Metaxy features are populated outside of Dagster (e.g., by e
 
 <!-- dprint-ignore-start -->
 !!! example "Basic Observable Asset"
+
     ```python
     import dagster as dg
     import metaxy as mx

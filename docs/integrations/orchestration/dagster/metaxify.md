@@ -65,8 +65,9 @@ If the asset already has a column schema defined, Metaxy columns are appended (u
 columns take precedence for columns with the same name).
 
 !!! warning
-Pydantic feature schema may not match the corresponding table schema in the metadata store.
-This will be improved in the future.
+
+    Pydantic feature schema may not match the corresponding table schema in the metadata store.
+    This will be improved in the future.
 
 <!-- dprint-ignore-start -->
 === "Dagster UI"
