@@ -3277,28 +3277,28 @@ Metaxy delegates all versioning computations and operations to external compute 
 <p>These metadata stores can be found <a href="databases/">here</a>.</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
-</div>
 <p><a href="databases/clickhouse/">ClickHouse</a> is an excellent choice for a production metadata store.</p>
+</div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-</div>
 <p>Some of them such as <a href="databases/lancedb/">LanceDB</a> or <a href="databases/duckdb/">DuckDB</a> can also act as local compute engines.</p>
+</div>
 <h2 id="storage-only">Storage Only<a class="headerlink" href="#storage-only" title="Permanent link">&para;</a></h2>
 <p>These metadata stores only provide storage and rely on <strong>local</strong> (also referred to as <strong>embedded</strong>) <strong>compute</strong>.</p>
 <p>The available storage-only stores can be found <a href="storage/">here</a>.</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
-</div>
 <p><a href="storage/delta/">DeltaLake</a> is an excellent choice for a storage-only metadata store.</p>
+</div>
 <h2 id="choosing-the-right-metadata-store">Choosing the Right Metadata Store<a class="headerlink" href="#choosing-the-right-metadata-store" title="Permanent link">&para;</a></h2>
 <p>Compute-backed stores are typically more performant, but require additional infrastructure and maintenance.</p>
 <p>For <strong>production</strong> environments that need to handle <strong>big metadata</strong> volumes, consider database-backed stores.</p>
 <p>For development, testing, branch deployments, and other scenarios where you want to keep things simple, consider using a storage-only store.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-</div>
 <p>Not all metadata stores support parallel writes.
 For example, DuckDB requires <a href="https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes">application level work-arounds</a>.</p>
+</div>
 <h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Learn more about <a href="../../learn/metadata-stores/">using metadata stores</a></li>
