@@ -347,3 +347,105 @@ def test_store_respects_configured_hash_algorithm() -> None:
 
     # Store should use the configured algorithm
     assert store.hash_algorithm == HashAlgorithm.MD5
+
+
+def test_env_var_expansion_in_toml_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that ${VAR} syntax expands environment variables in TOML config."""
+    # Set environment variables
+    monkeypatch.setenv("DAGSTER_CLOUD_GIT_BRANCH", "feature-branch")
+    monkeypatch.setenv("MY_PROJECT_NAME", "test-project")
+
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+store = "dev"
+project = "${MY_PROJECT_NAME}"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+
+[stores.dev.config]
+branch = "${DAGSTER_CLOUD_GIT_BRANCH}"
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    assert config.project == "test-project"
+    assert config.stores["dev"].config["branch"] == "feature-branch"
+
+
+def test_env_var_expansion_with_default_value(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that ${VAR:-default} syntax uses default when env var is not set."""
+    # Ensure the variable is NOT set
+    monkeypatch.delenv("UNSET_VAR", raising=False)
+    # Set one variable to verify it takes precedence over default
+    monkeypatch.setenv("SET_VAR", "actual-value")
+
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+store = "dev"
+project = "${UNSET_VAR:-default-project}"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+
+[stores.dev.config]
+value_with_default = "${SET_VAR:-fallback}"
+unset_with_default = "${ANOTHER_UNSET:-my-default}"
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    assert config.project == "default-project"
+    assert config.stores["dev"].config["value_with_default"] == "actual-value"
+    assert config.stores["dev"].config["unset_with_default"] == "my-default"
+
+
+def test_env_var_expansion_unset_becomes_empty_string(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that ${VAR} without default becomes empty string when unset."""
+    monkeypatch.delenv("UNSET_VAR", raising=False)
+
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+store = "dev"
+migrations_dir = "prefix-${UNSET_VAR}-suffix"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    assert config.migrations_dir == "prefix--suffix"
+
+
+def test_env_var_expansion_in_nested_structures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that env vars are expanded in nested dicts and lists."""
+    monkeypatch.setenv("STORE_PATH", "/data/metadata")
+    monkeypatch.setenv("FALLBACK_STORE", "prod")
+
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+store = "dev"
+entrypoints = ["${STORE_PATH}/features", "another/path"]
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+
+[stores.dev.config]
+path = "${STORE_PATH}"
+fallback_stores = ["${FALLBACK_STORE}"]
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    assert config.entrypoints == ["/data/metadata/features", "another/path"]
+    assert config.stores["dev"].config["path"] == "/data/metadata"
+    assert config.stores["dev"].config["fallback_stores"] == ["prod"]
