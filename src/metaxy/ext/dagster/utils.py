@@ -315,6 +315,9 @@ def build_runtime_feature_metadata(
 
     Returns:
         A dictionary containing all runtime metadata:
+        - `metaxy/feature`: Feature key as string
+        - `metaxy/info`: Feature and metaxy library information (from `build_feature_info_metadata`)
+        - `metaxy/store`: Store type and configuration
         - `dagster/row_count`: Total row count
         - `dagster/partition_row_count`: Row count (only if partitioned)
         - `dagster/table_name`: Table name from store (if available)
@@ -344,8 +347,17 @@ def build_runtime_feature_metadata(
         # Get store metadata
         store_metadata = store.get_store_metadata(feature_key)
 
-        # Build metadata dict
+        # Build metadata dict with metaxy info and store info
+        store_cls = store.__class__
         metadata: dict[str, Any] = {
+            "metaxy/feature": feature_key.to_string(),
+            "metaxy/info": build_feature_info_metadata(feature_key),
+            "metaxy/store": {
+                "type": f"{store_cls.__module__}.{store_cls.__qualname__}",
+                "display": store.display(),
+                "versioning_engine": store._versioning_engine,
+                **store_metadata,
+            },
             "dagster/row_count": stats.row_count,
         }
 
