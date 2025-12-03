@@ -973,17 +973,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#orchestration-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Orchestration Integration
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3206,17 +3195,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#orchestration-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Orchestration Integration
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3286,12 +3264,10 @@
 
 
 <h1 id="system-column-registry">System Column Registry<a class="headerlink" href="#system-column-registry" title="Permanent link">&para;</a></h1>
-<p>Metaxy reserves a small set of <a href="../../reference/api/constants/">system-managed columns</a> that it attaches to feature
+<p>Metaxy reserves a set of <a href="../../reference/api/constants/">system-managed columns</a> that it attaches to user-defined feature
 metadata tables. These columns are part of the platform contract and are used by
-the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../reference/api/metadata-stores/#metaxy.MetadataStore">metadata store</a>, versioning engine, and migration tooling to keep track of
-feature lineage.</p>
-<p>All system column names start with the <code>metaxy_</code> prefix to avoid collisions with
-user-defined feature fields. Only the prefixed forms are supported.</p>
+the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../reference/api/metadata-stores/#metaxy.MetadataStore">metadata store</a>, versioning engine, and migration tooling.</p>
+<p>All system column names start with the <code>metaxy_</code> prefix.</p>
 <h2 id="canonical-column-names">Canonical column names<a class="headerlink" href="#canonical-column-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -3365,8 +3341,6 @@ user-defined feature fields. Only the prefixed forms are supported.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="orchestration-integration">Orchestration Integration<a class="headerlink" href="#orchestration-integration" title="Permanent link">&para;</a></h2>
-<p>The <code>metaxy_materialization_id</code> column enables integration with external orchestration systems like Dagster, Airflow, or Prefect. This column allows you to track which orchestration run produced specific metadata records, simplifying debugging, monitoring, and filtering.</p>
 
 
 

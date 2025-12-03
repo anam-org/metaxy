@@ -3266,14 +3266,39 @@
 <h1 id="lineage-relationships">Lineage Relationships<a class="headerlink" href="#lineage-relationships" title="Permanent link">&para;</a></h1>
 <p>Metaxy supports a few common mappings from parent to child samples out of the box. These include:</p>
 <ul>
-<li><code>1:1</code> mapping with [metaxy.LineageRelationshipType.identity] (the default one)</li>
-<li><code>1:N</code> mapping with [metaxy.LineageRelationshipType.expansion]</li>
-<li><code>N:1</code> mapping with [metaxy.LineageRelationshipType.aggregation]</li>
+<li>
+<p><code>1:1</code> mapping with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.lineage.LineageRelationship.identity&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../reference/api/definitions/relationship/#metaxy.models.lineage.LineageRelationship.identity"><code>LineageRelationship.identity</code></a> (the default one)</p>
+</li>
+<li>
+<p><code>1:N</code> mapping with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.lineage.LineageRelationship.expansion&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../reference/api/definitions/relationship/#metaxy.models.lineage.LineageRelationship.expansion"><code>LineageRelationship.expansion</code></a></p>
+</li>
+<li>
+<p><code>N:1</code> mapping with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.lineage.LineageRelationship.aggregation&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../reference/api/definitions/relationship/#metaxy.models.lineage.LineageRelationship.aggregation"><code>LineageRelationship.aggregation</code></a></p>
+</li>
 </ul>
-<p>Always use these classmethods to create instances of lineage relationships. Under the hood, they use Pydantic's discriminated union to ensure that the correct type is constructed based on the provided data.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Always use these classmethods to create instances of lineage relationships.
+They use Pydantic's discriminated unions under the hood to ensure correct type construction.</p>
+</div>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../examples/one-to-many/">1:N example</a> provides a toy pipeline demonstrating how to define and use <code>1:N</code> lineage relationships in Metaxy.</li>
+<li><a href="../../examples/one-to-many/">1:N example</a> demonstrates how to use <code>1:N</code> lineage relationships in Metaxy.</li>
 </ul>
 
 
