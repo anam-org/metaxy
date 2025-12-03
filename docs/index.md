@@ -110,6 +110,8 @@ Metaxy is:
 
 - Learn more about [feature definitions](./learn/feature-definitions.md) or [versioning](./learn/data-versioning.md)
 
+- View complete, end-to-end [examples](./examples/index.md)
+
 - Explore [Metaxy integrations](integrations/index.md)
 
 - Use Metaxy [from the command line](./reference/cli.md)

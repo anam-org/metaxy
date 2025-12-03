@@ -242,6 +242,7 @@ nav:
         - Configuration: integrations/plugins/sqlalchemy/configuration.md
         - API: integrations/plugins/sqlalchemy/api.md
   - Examples:
+    - examples/index.md
     - One To Many: examples/one-to-many.md
   - CLI: reference/cli.md
   - API:

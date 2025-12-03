@@ -40,8 +40,4 @@ The full list can be found [here](https://anam-org.github.io/metaxy/main/integra
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Examples
-
-See [examples](https://github.com/anam-org/metaxy/tree/main/examples).
-
 <img referrerpolicy="no-referrer" src="https://static.scarf.sh/a.png?x-pxid=22cb75dc-201e-4a72-9fb2-c3a53ce9207e&page=README.md" />
