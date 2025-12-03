@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://anam-org.github.io/metaxy/main/integrations/orchestration/dagster/api/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../metaxify/">
       
       
         <link rel="next" href="../../../metadata-stores/">
@@ -1082,6 +1082,8 @@
       
         
       
+        
+      
     
     
     
@@ -1133,6 +1135,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metaxify/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    @metaxify
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -3987,7 +4017,7 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../metaxify/" class="md-path__link">
           
   <span class="md-ellipsis">
     Integrations
@@ -4016,7 +4046,7 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../metaxify/" class="md-path__link">
           
   <span class="md-ellipsis">
     Orchestration
@@ -4037,7 +4067,7 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../metaxify/" class="md-path__link">
           
   <span class="md-ellipsis">
     Dagster
@@ -4133,80 +4163,7 @@
         <p>Inject Metaxy metadata into a Dagster <a class="autorefs autorefs-external" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetsDefinition"><code>AssetsDefinition</code></a> or <a class="autorefs autorefs-external" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec"><code>AssetSpec</code></a>.</p>
 <p>Modifies assets that have <code>metaxy/feature</code> metadata set or when <code>feature</code> argument is provided.
 Can be used with or without parentheses.</p>
-<p>The decorated asset or spec is enriched with Metaxy:</p>
-<ul>
-<li>
-<p><strong>Asset key</strong> is determined as follows:</p>
-<ol>
-<li>
-<p>If <code>key</code> argument is provided, it overrides everything.</p>
-</li>
-<li>
-<p>Otherwise, the key is resolved using existing logic:</p>
-<ul>
-<li>If <code>"dagster/attributes": {"asset_key": ...}</code> is set on the feature spec, that's used.</li>
-<li>Else if <code>inherit_feature_key_as_asset_key</code> is True, the Metaxy feature key is used.</li>
-<li>Else the original Dagster asset key is kept.</li>
-</ul>
-</li>
-<li>
-<p>If <code>key_prefix</code> is provided, it's prepended to the resolved key.</p>
-</li>
-</ol>
-</li>
-<li>
-<p><strong>Dependencies</strong> for upstream Metaxy features are injected into <code>deps</code>. The dep keys follow the same logic.</p>
-</li>
-<li>
-<p><strong>Code version</strong> from the feature spec is appended to the asset's code version in the format <code>metaxy:&lt;version&gt;</code>.</p>
-</li>
-<li>
-<p><strong>Metadata</strong> from the feature spec is injected into the Dagster asset metadata. All <a href="https://docs.dagster.io/guides/build/assets/metadata-and-tags#standard-metadata-types">standard metadata</a> types are supported.</p>
-</li>
-<li>
-<p><strong>Description</strong> from the feature class docstring is used if the asset spec doesn't have a description set.</p>
-</li>
-<li>
-<p><strong>Kind</strong> <code>"metaxy"</code> is injected into asset kinds if <code>inject_metaxy_kind</code> is <code>True</code> and there are less than 3 kinds currently.</p>
-</li>
-<li>
-<p><strong>Tags</strong> <code>metaxy/feature</code> and <code>metaxy/project</code> are injected into the asset tags.</p>
-</li>
-<li>
-<p><strong>Arbitrary asset attributes</strong> from <code>"dagster/attributes"</code> in the feature spec metadata
-  (such as <code>group_name</code>, <code>owners</code>, <code>tags</code>) are applied to the asset spec (with replacement).</p>
-</li>
-<li>
-<p><strong>Column schema</strong> from Pydantic fields is injected into the asset metadata under <code>dagster/column_schema</code>.
-  Field types are converted to strings, and field descriptions are used as column descriptions.
-  If the asset already has a column schema defined, Metaxy columns are appended (user-defined
-  columns take precedence for columns with the same name).</p>
-</li>
-</ul>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Pydantic feature schema may not match the corresponding table schema in the metadata store.</p>
-</div>
-<ul>
-<li>
-<p><strong>Column lineage</strong> is injected into the asset metadata under <code>dagster/column_lineage</code>.
-  Tracks which upstream columns each downstream column depends on by analyzing:</p>
-<ul>
-<li>
-<p><strong>Direct pass-through</strong>: Columns with the same name in both upstream and downstream features.</p>
-</li>
-<li>
-<p><strong><code>FeatureDep.rename</code></strong>: Renamed columns trace back to their original upstream column names.</p>
-</li>
-<li>
-<p><strong><code>FeatureSpec.lineage</code></strong>: ID column relationships based on lineage type (identity, aggregation, expansion).</p>
-</li>
-</ul>
-<p>Column lineage is derived from Pydantic model fields on the feature class.
-If the asset already has column lineage defined, Metaxy lineage is merged with user-defined
-lineage (user-defined dependencies are appended to Metaxy-detected dependencies for each column).</p>
-</li>
-</ul>
+<p>Learn more about <code>@metaxify</code> and see example screenshots <a href="../metaxify/">here</a>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4324,55 +4281,45 @@ column provenance via <code>FeatureDep.rename</code>, <code>FeatureSpec.lineage<
 <p>Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
 <code>"metaxy/feature"</code> metadata. This is a perfectly valid setup since Metaxy writes are append-only.</p>
 </div>
-<div class="admonition warning">
-<p class="admonition-title">Using <code>@metaxify</code> with multi assets</p>
-<p>The <code>feature</code> argument cannot be used with <code>@dg.multi_asset</code> that produces multiple outputs.
-Instead, set <code>"metaxy/feature"</code> metadata on the right output's <code>AssetSpec</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@mxd</span><span class="o">.</span><span class="n">metaxify</span><span class="p">()</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nd">@dg</span><span class="o">.</span><span class="n">multi_asset</span><span class="p">(</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">specs</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="n">dg</span><span class="o">.</span><span class="n">AssetSpec</span><span class="p">(</span><span class="s2">&quot;output_a&quot;</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;metaxy/feature&quot;</span><span class="p">:</span> <span class="s2">&quot;feature/a&quot;</span><span class="p">}),</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="n">dg</span><span class="o">.</span><span class="n">AssetSpec</span><span class="p">(</span><span class="s2">&quot;output_b&quot;</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;metaxy/feature&quot;</span><span class="p">:</span> <span class="s2">&quot;feature/b&quot;</span><span class="p">}),</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="p">]</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_multi_asset</span><span class="p">():</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="o">...</span>
-</span></code></pre></div>
-</div>
 <div class="admonition example">
-<p class="admonition-title">Apply to <code>dagster.AssetDefinition</code></p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dg</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy.ext.dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mxd</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">myproject.features</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyFeature</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nd">@mxd</span><span class="o">.</span><span class="n">metaxify</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">MyFeature</span><span class="p">)</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nd">@dg</span><span class="o">.</span><span class="n">asset</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_asset</span><span class="p">():</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="o">...</span>
+<p class="admonition-title">Example</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dg</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy.ext.dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mxd</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nd">@mxd</span><span class="o">.</span><span class="n">metaxify</span><span class="p">()</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nd">@dg</span><span class="o">.</span><span class="n">asset</span><span class="p">(</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="hll">        <span class="s2">&quot;metaxy/feature&quot;</span><span class="p">:</span> <span class="s2">&quot;my/feature/key&quot;</span>
+</span></span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="p">},</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_asset</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">MetadataStore</span><span class="p">):</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">with</span> <span class="n">store</span><span class="p">:</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">increment</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="s2">&quot;my/feature/key&quot;</span><span class="p">)</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="o">...</span>
 </span></code></pre></div>
 </div>
 <details class="example">
-<summary>Apply to <code>dagster.AssetSpec</code></summary>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dg</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy.ext.dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mxd</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">asset_spec</span> <span class="o">=</span> <span class="n">dg</span><span class="o">.</span><span class="n">AssetSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;my_asset&quot;</span><span class="p">)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">asset_spec</span> <span class="o">=</span> <span class="n">mxd</span><span class="o">.</span><span class="n">metaxify</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">MyFeature</span><span class="p">)(</span><span class="n">asset_spec</span><span class="p">)</span>
+<summary>With <code>@multi_asset</code></summary>
+<p class="annotate">Multiple Metaxy features can be produced by the same <code>@multi_asset</code>. (1)</p>
+<ol>
+<li>Typically, they are produced independently of each other</li>
+</ol>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@mxd</span><span class="o">.</span><span class="n">metaxify</span><span class="p">()</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nd">@dg</span><span class="o">.</span><span class="n">multi_asset</span><span class="p">(</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">specs</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="n">dg</span><span class="o">.</span><span class="n">AssetSpec</span><span class="p">(</span><span class="s2">&quot;output_a&quot;</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;metaxy/feature&quot;</span><span class="p">:</span> <span class="s2">&quot;feature/a&quot;</span><span class="p">}),</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">dg</span><span class="o">.</span><span class="n">AssetSpec</span><span class="p">(</span><span class="s2">&quot;output_b&quot;</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;metaxy/feature&quot;</span><span class="p">:</span> <span class="s2">&quot;feature/b&quot;</span><span class="p">}),</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="p">]</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_multi_asset</span><span class="p">():</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="o">...</span>
 </span></code></pre></div>
 </details>
 <details class="example">
-<summary>Use <code>"metaxy/feature"</code> asset metadata key</summary>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dg</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy.ext.dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mxd</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nd">@mxd</span><span class="o">.</span><span class="n">metaxify</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nd">@dg</span><span class="o">.</span><span class="n">asset</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;metaxy/feature&quot;</span><span class="p">:</span> <span class="s2">&quot;my/feature/key&quot;</span><span class="p">})</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_asset</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">MetadataStore</span><span class="p">):</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">with</span> <span class="n">store</span><span class="p">:</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="n">increment</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="s2">&quot;my/feature/key&quot;</span><span class="p">)</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="o">...</span>
+<summary>With <code>dagster.AssetSpec</code></summary>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">asset_spec</span> <span class="o">=</span> <span class="n">dg</span><span class="o">.</span><span class="n">AssetSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;my_asset&quot;</span><span class="p">)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">asset_spec</span> <span class="o">=</span> <span class="n">mxd</span><span class="o">.</span><span class="n">metaxify</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">MyFeature</span><span class="p">)(</span><span class="n">asset_spec</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -4385,34 +4332,34 @@ Instead, set <code>"metaxy/feature"</code> metadata on the right output's <code>
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/metaxy/ext/dagster/metaxify.py</code></summary>
-                    <div class="language-python highlight"><pre><span></span><code><span id="__span-0-178"><a id="__codelineno-0-178" name="__codelineno-0-178"></a><a href="#__codelineno-0-178"><span class="linenos" data-linenos="178 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="__span-0-179"><a id="__codelineno-0-179" name="__codelineno-0-179"></a><a href="#__codelineno-0-179"><span class="linenos" data-linenos="179 "></span></a>    <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a><a href="#__codelineno-0-180"><span class="linenos" data-linenos="180 "></span></a>    <span class="n">_asset</span><span class="p">:</span> <span class="s2">&quot;_T | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-181"><a id="__codelineno-0-181" name="__codelineno-0-181"></a><a href="#__codelineno-0-181"><span class="linenos" data-linenos="181 "></span></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a><a href="#__codelineno-0-182"><span class="linenos" data-linenos="182 "></span></a>    <span class="n">feature</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">CoercibleToFeatureKey</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a><a href="#__codelineno-0-183"><span class="linenos" data-linenos="183 "></span></a>    <span class="n">key</span><span class="p">:</span> <span class="n">CoercibleToAssetKey</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-184"><a id="__codelineno-0-184" name="__codelineno-0-184"></a><a href="#__codelineno-0-184"><span class="linenos" data-linenos="184 "></span></a>    <span class="n">key_prefix</span><span class="p">:</span> <span class="n">CoercibleToAssetKeyPrefix</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-185"><a id="__codelineno-0-185" name="__codelineno-0-185"></a><a href="#__codelineno-0-185"><span class="linenos" data-linenos="185 "></span></a>    <span class="n">inherit_feature_key_as_asset_key</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-186"><a id="__codelineno-0-186" name="__codelineno-0-186"></a><a href="#__codelineno-0-186"><span class="linenos" data-linenos="186 "></span></a>    <span class="n">inject_metaxy_kind</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-187"><a id="__codelineno-0-187" name="__codelineno-0-187"></a><a href="#__codelineno-0-187"><span class="linenos" data-linenos="187 "></span></a>    <span class="n">inject_code_version</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-188"><a id="__codelineno-0-188" name="__codelineno-0-188"></a><a href="#__codelineno-0-188"><span class="linenos" data-linenos="188 "></span></a>    <span class="n">set_description</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-189"><a id="__codelineno-0-189" name="__codelineno-0-189"></a><a href="#__codelineno-0-189"><span class="linenos" data-linenos="189 "></span></a>    <span class="n">inject_column_schema</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-190"><a id="__codelineno-0-190" name="__codelineno-0-190"></a><a href="#__codelineno-0-190"><span class="linenos" data-linenos="190 "></span></a>    <span class="n">inject_column_lineage</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-191"><a id="__codelineno-0-191" name="__codelineno-0-191"></a><a href="#__codelineno-0-191"><span class="linenos" data-linenos="191 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-192"><a id="__codelineno-0-192" name="__codelineno-0-192"></a><a href="#__codelineno-0-192"><span class="linenos" data-linenos="192 "></span></a>    <span class="c1"># Actual initialization happens in __new__, but we set defaults here for type checkers</span>
-</span><span id="__span-0-193"><a id="__codelineno-0-193" name="__codelineno-0-193"></a><a href="#__codelineno-0-193"><span class="linenos" data-linenos="193 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">feature</span> <span class="o">=</span> <span class="p">(</span>
-</span><span id="__span-0-194"><a id="__codelineno-0-194" name="__codelineno-0-194"></a><a href="#__codelineno-0-194"><span class="linenos" data-linenos="194 "></span></a>        <span class="n">mx</span><span class="o">.</span><span class="n">coerce_to_feature_key</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span> <span class="k">if</span> <span class="n">feature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
-</span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a><a href="#__codelineno-0-195"><span class="linenos" data-linenos="195 "></span></a>    <span class="p">)</span>
-</span><span id="__span-0-196"><a id="__codelineno-0-196" name="__codelineno-0-196"></a><a href="#__codelineno-0-196"><span class="linenos" data-linenos="196 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">key</span> <span class="o">=</span> <span class="n">dg</span><span class="o">.</span><span class="n">AssetKey</span><span class="o">.</span><span class="n">from_coercible</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
-</span><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a><a href="#__codelineno-0-197"><span class="linenos" data-linenos="197 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">key_prefix</span> <span class="o">=</span> <span class="p">(</span>
-</span><span id="__span-0-198"><a id="__codelineno-0-198" name="__codelineno-0-198"></a><a href="#__codelineno-0-198"><span class="linenos" data-linenos="198 "></span></a>        <span class="n">dg</span><span class="o">.</span><span class="n">AssetKey</span><span class="o">.</span><span class="n">from_coercible</span><span class="p">(</span><span class="n">key_prefix</span><span class="p">)</span> <span class="k">if</span> <span class="n">key_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
-</span><span id="__span-0-199"><a id="__codelineno-0-199" name="__codelineno-0-199"></a><a href="#__codelineno-0-199"><span class="linenos" data-linenos="199 "></span></a>    <span class="p">)</span>
-</span><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a><a href="#__codelineno-0-200"><span class="linenos" data-linenos="200 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inherit_feature_key_as_asset_key</span> <span class="o">=</span> <span class="n">inherit_feature_key_as_asset_key</span>
-</span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a><a href="#__codelineno-0-201"><span class="linenos" data-linenos="201 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inject_metaxy_kind</span> <span class="o">=</span> <span class="n">inject_metaxy_kind</span>
-</span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a><a href="#__codelineno-0-202"><span class="linenos" data-linenos="202 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inject_code_version</span> <span class="o">=</span> <span class="n">inject_code_version</span>
-</span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a><a href="#__codelineno-0-203"><span class="linenos" data-linenos="203 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_description</span> <span class="o">=</span> <span class="n">set_description</span>
-</span><span id="__span-0-204"><a id="__codelineno-0-204" name="__codelineno-0-204"></a><a href="#__codelineno-0-204"><span class="linenos" data-linenos="204 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inject_column_schema</span> <span class="o">=</span> <span class="n">inject_column_schema</span>
-</span><span id="__span-0-205"><a id="__codelineno-0-205" name="__codelineno-0-205"></a><a href="#__codelineno-0-205"><span class="linenos" data-linenos="205 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inject_column_lineage</span> <span class="o">=</span> <span class="n">inject_column_lineage</span>
+                    <div class="language-python highlight"><pre><span></span><code><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a><a href="#__codelineno-0-121"><span class="linenos" data-linenos="121 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><a href="#__codelineno-0-122"><span class="linenos" data-linenos="122 "></span></a>    <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a><a href="#__codelineno-0-123"><span class="linenos" data-linenos="123 "></span></a>    <span class="n">_asset</span><span class="p">:</span> <span class="s2">&quot;_T | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><a href="#__codelineno-0-124"><span class="linenos" data-linenos="124 "></span></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><a href="#__codelineno-0-125"><span class="linenos" data-linenos="125 "></span></a>    <span class="n">feature</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">CoercibleToFeatureKey</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a><a href="#__codelineno-0-126"><span class="linenos" data-linenos="126 "></span></a>    <span class="n">key</span><span class="p">:</span> <span class="n">CoercibleToAssetKey</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a><a href="#__codelineno-0-127"><span class="linenos" data-linenos="127 "></span></a>    <span class="n">key_prefix</span><span class="p">:</span> <span class="n">CoercibleToAssetKeyPrefix</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a><a href="#__codelineno-0-128"><span class="linenos" data-linenos="128 "></span></a>    <span class="n">inherit_feature_key_as_asset_key</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a><a href="#__codelineno-0-129"><span class="linenos" data-linenos="129 "></span></a>    <span class="n">inject_metaxy_kind</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130"></a><a href="#__codelineno-0-130"><span class="linenos" data-linenos="130 "></span></a>    <span class="n">inject_code_version</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a><a href="#__codelineno-0-131"><span class="linenos" data-linenos="131 "></span></a>    <span class="n">set_description</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><a href="#__codelineno-0-132"><span class="linenos" data-linenos="132 "></span></a>    <span class="n">inject_column_schema</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a><a href="#__codelineno-0-133"><span class="linenos" data-linenos="133 "></span></a>    <span class="n">inject_column_lineage</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a><a href="#__codelineno-0-134"><span class="linenos" data-linenos="134 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a><a href="#__codelineno-0-135"><span class="linenos" data-linenos="135 "></span></a>    <span class="c1"># Actual initialization happens in __new__, but we set defaults here for type checkers</span>
+</span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136"></a><a href="#__codelineno-0-136"><span class="linenos" data-linenos="136 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">feature</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a><a href="#__codelineno-0-137"><span class="linenos" data-linenos="137 "></span></a>        <span class="n">mx</span><span class="o">.</span><span class="n">coerce_to_feature_key</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span> <span class="k">if</span> <span class="n">feature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="__span-0-138"><a id="__codelineno-0-138" name="__codelineno-0-138"></a><a href="#__codelineno-0-138"><span class="linenos" data-linenos="138 "></span></a>    <span class="p">)</span>
+</span><span id="__span-0-139"><a id="__codelineno-0-139" name="__codelineno-0-139"></a><a href="#__codelineno-0-139"><span class="linenos" data-linenos="139 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">key</span> <span class="o">=</span> <span class="n">dg</span><span class="o">.</span><span class="n">AssetKey</span><span class="o">.</span><span class="n">from_coercible</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="__span-0-140"><a id="__codelineno-0-140" name="__codelineno-0-140"></a><a href="#__codelineno-0-140"><span class="linenos" data-linenos="140 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">key_prefix</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-0-141"><a id="__codelineno-0-141" name="__codelineno-0-141"></a><a href="#__codelineno-0-141"><span class="linenos" data-linenos="141 "></span></a>        <span class="n">dg</span><span class="o">.</span><span class="n">AssetKey</span><span class="o">.</span><span class="n">from_coercible</span><span class="p">(</span><span class="n">key_prefix</span><span class="p">)</span> <span class="k">if</span> <span class="n">key_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="__span-0-142"><a id="__codelineno-0-142" name="__codelineno-0-142"></a><a href="#__codelineno-0-142"><span class="linenos" data-linenos="142 "></span></a>    <span class="p">)</span>
+</span><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a><a href="#__codelineno-0-143"><span class="linenos" data-linenos="143 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inherit_feature_key_as_asset_key</span> <span class="o">=</span> <span class="n">inherit_feature_key_as_asset_key</span>
+</span><span id="__span-0-144"><a id="__codelineno-0-144" name="__codelineno-0-144"></a><a href="#__codelineno-0-144"><span class="linenos" data-linenos="144 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inject_metaxy_kind</span> <span class="o">=</span> <span class="n">inject_metaxy_kind</span>
+</span><span id="__span-0-145"><a id="__codelineno-0-145" name="__codelineno-0-145"></a><a href="#__codelineno-0-145"><span class="linenos" data-linenos="145 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inject_code_version</span> <span class="o">=</span> <span class="n">inject_code_version</span>
+</span><span id="__span-0-146"><a id="__codelineno-0-146" name="__codelineno-0-146"></a><a href="#__codelineno-0-146"><span class="linenos" data-linenos="146 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_description</span> <span class="o">=</span> <span class="n">set_description</span>
+</span><span id="__span-0-147"><a id="__codelineno-0-147" name="__codelineno-0-147"></a><a href="#__codelineno-0-147"><span class="linenos" data-linenos="147 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inject_column_schema</span> <span class="o">=</span> <span class="n">inject_column_schema</span>
+</span><span id="__span-0-148"><a id="__codelineno-0-148" name="__codelineno-0-148"></a><a href="#__codelineno-0-148"><span class="linenos" data-linenos="148 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inject_column_lineage</span> <span class="o">=</span> <span class="n">inject_column_lineage</span>
 </span></code></pre></div>
                   </details>
 
