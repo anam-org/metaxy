@@ -128,6 +128,7 @@ jobs:
           --cov=src/metaxy
           --cov-report=term-missing
           --cov-report=xml
+          --cov-report=json
           --durations=10
           --junit-xml=./junit.xml
 
@@ -161,6 +162,10 @@ jobs:
           xml-skip-covered: true
           report-only-changed-files: true
           unique-id-for-comment: ${{ matrix.python-version }}
+
+      - name: Update Coverage Badge
+        if: ${{ github.ref == 'refs/heads/main' && matrix.python-version == '3.10' }}
+        uses: we-cli/coverage-badge-action@main
 
   docs:
     runs-on: depot-ubuntu-latest

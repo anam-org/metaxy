@@ -18,7 +18,6 @@ from metaxy.migrations import (
     MigrationExecutor,
     MigrationResult,
     SystemTableStorage,
-    detect_diff_migration,
 )
 from metaxy.models.feature import (
     BaseFeature,
@@ -153,7 +152,6 @@ __all__ = [
     "BaseOperation",
     "DataVersionReconciliation",
     "MetadataBackfill",
-    "detect_diff_migration",
     "MetaxyConfig",
     "StoreConfig",
     "init_metaxy",
