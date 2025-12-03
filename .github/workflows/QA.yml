@@ -192,8 +192,8 @@ jobs:
         run: cd docs/slides && bun run build -- slides-introduction.md --out dist --base ./
       - name: Build Docs
         id: docs
-        # run: uv run mkdocs build --strict
-        run: nix develop --command uv run mkdocs build --strict
+        # Use Nix for mkdocs (for libstdc++), but skip Slidev build inside Nix to avoid libc mismatch with bun.
+        run: METAXY_SKIP_SLIDEV=1 nix develop --command uv run mkdocs build --strict
       - name: Cleanup on failure
         if: always()
         run: bash .github/scripts/restore-env.sh
