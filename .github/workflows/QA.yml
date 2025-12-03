@@ -180,6 +180,8 @@ jobs:
       - uses: nicknovitski/nix-develop@v1
       - name: Sync Python dependencies
         run: uv python pin 3.10 && uv sync --all-extras --all-groups
+      - name: Restore original environment
+        run: bash .github/scripts/restore-env.sh
       - name: Setup bun (outside Nix environment)
         uses: oven-sh/setup-bun@v2
         with:
@@ -190,9 +192,8 @@ jobs:
         run: cd docs/slides && bun run build -- slides-introduction.md --out dist --base ./
       - name: Build Docs
         id: docs
-        run: uv run mkdocs build --strict
-      - name: Restore original environment
-        run: bash .github/scripts/restore-env.sh
+        # run: uv run mkdocs build --strict
+        run: nix develop --command uv run mkdocs build --strict
       - name: Cleanup on failure
         if: always()
         run: bash .github/scripts/restore-env.sh
