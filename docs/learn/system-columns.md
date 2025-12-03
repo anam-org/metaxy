@@ -1,12 +1,10 @@
 # System Column Registry
 
-Metaxy reserves a small set of [system-managed columns](../reference/api/constants.md) that it attaches to feature
+Metaxy reserves a set of [system-managed columns](../reference/api/constants.md) that it attaches to user-defined feature
 metadata tables. These columns are part of the platform contract and are used by
-the [metadata store][metaxy.MetadataStore], versioning engine, and migration tooling to keep track of
-feature lineage.
+the [metadata store][metaxy.MetadataStore], versioning engine, and migration tooling.
 
-All system column names start with the `metaxy_` prefix to avoid collisions with
-user-defined feature fields. Only the prefixed forms are supported.
+All system column names start with the `metaxy_` prefix.
 
 ## Canonical column names
 
@@ -22,7 +20,3 @@ user-defined feature fields. Only the prefixed forms are supported.
 | `metaxy_full_definition_version` | Hash of the entire feature Pydanitc model schema and the Metaxy project | string  | true   |
 | `metaxy_created_at`              | Timestamp when the metadata row was created                             | sample  | string |
 | `metaxy_materialization_id`      | External orchestration run ID (e.g., Dagster, Airflow) for tracking     | run     | string |
-
-## Orchestration Integration
-
-The `metaxy_materialization_id` column enables integration with external orchestration systems like Dagster, Airflow, or Prefect. This column allows you to track which orchestration run produced specific metadata records, simplifying debugging, monitoring, and filtering.

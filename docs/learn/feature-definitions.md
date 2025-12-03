@@ -97,7 +97,7 @@ transcript_spec = TranscriptFeatureSpec(
     fields=[
         FieldSpec(
             key="text",
-            deps=[FieldDep(feature=VideoFeature.spec().key, fields=["audio"])],
+            deps=[FieldDep(feature=VideoFeature, fields=["audio"])],
         )
     ],
 )

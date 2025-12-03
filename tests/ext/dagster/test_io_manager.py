@@ -658,16 +658,16 @@ class TestMultipleAssetsPerFeature:
             ids = set(all_data.to_native()["id"].to_list())
             assert ids == {"a1", "a2", "a3", "b1", "b2"}
 
-    def test_multiple_assets_with_inherit_feature_key(
+    def test_multiple_assets_with_same_feature_key(
         self,
         shared_feature: type[mx.BaseFeature],
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test multiple assets using inherit_feature_key_as_asset_key while writing to the same feature."""
+        """Test multiple assets using the same feature key as asset key."""
         import metaxy.ext.dagster as mxd
 
-        @mxd.metaxify(inherit_feature_key_as_asset_key=True)
+        @mxd.metaxify
         @dg.asset(
             metadata={"metaxy/feature": "features/shared"},
             io_manager_key="metaxy_io_manager",
@@ -683,7 +683,7 @@ class TestMultipleAssetsPerFeature:
                 }
             )
 
-        @mxd.metaxify(inherit_feature_key_as_asset_key=True)
+        @mxd.metaxify
         @dg.asset(
             metadata={"metaxy/feature": "features/shared"},
             io_manager_key="metaxy_io_manager",
