@@ -525,6 +525,18 @@ class IbisMetadataStore(MetadataStore, ABC):
         sanitized_info = sanitize_uri(backend_info)
         return f"{self.__class__.__name__}(backend={sanitized_info})"
 
+    def get_store_metadata(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
+        """Return store metadata including table name.
+
+        Args:
+            feature_key: Feature key to get metadata for.
+
+        Returns:
+            Dictionary with `table_name` key.
+        """
+        resolved_key = self._resolve_feature_key(feature_key)
+        return {"table_name": self.get_table_name(resolved_key)}
+
     @classmethod
     def config_model(cls) -> type[IbisMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
         return IbisMetadataStoreConfig

@@ -38,7 +38,7 @@ Unleash the full power of `@metaxify` on Dagster!
         ```
 <!-- dprint-ignore-end -->
 
-It will take care of bringing the right lineage, description, metadata, and other transferable properties from the Metaxy feature to the Dagster asset.
+It will take care of bringing the right lineage, description, metadata (including all [standard metadata](https://docs.dagster.io/guides/build/assets/metadata-and-tags#standard-metadata-types)), and other transferable properties from the Metaxy feature to the Dagster asset.
 
 ## What's in the box
 
