@@ -201,6 +201,7 @@ nav:
       - integrations/orchestration/index.md
       - Dagster:
         - integrations/orchestration/dagster/index.md
+        - '@metaxify': integrations/orchestration/dagster/metaxify.md
         - API: integrations/orchestration/dagster/api.md
     - Metadata Stores:
       - integrations/metadata-stores/index.md

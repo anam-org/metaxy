@@ -10,45 +10,34 @@ Unleash the full power of `@metaxify` on Dagster!
 
 <!-- dprint-ignore-start -->
 !!! example
-    ```python {hl_lines="4"}
-    import metaxy.ext.dagster as mxd
-    from my_feature import MyFeature
-
-    @mxd.metaxify(feature=MyFeature)
-    @dg.asset
-    def my_asset():
-      ...
-    ```
-
-??? info "Using `"metaxy/feature"` Dagster metadata key"
-    Alternatively, set the well-known `"metaxy/feature"` key (1):
+    Set the well-known `"metaxy/feature"` key (1):
     { .annotate }
 
     1. :man_raising_hand: point it to... the Metaxy feature key!
-    !!! example
 
-        ```python
-        import dagster as dg
-        import metaxy as mx
+    ```python
+    import dagster as dg
+    import metaxy.ext.dagster as mxd
 
-        @mx.metaxify
-        @dg.asset(metadata={"metaxy/feature": "my/metaxy/feature"})
-        def my_asset():
-        ...
-        ```
+    @mxd.metaxify()
+    @dg.asset(metadata={"metaxy/feature": "my/metaxy/feature"})
+    def my_asset():
+      ...
+    ```
 <!-- dprint-ignore-end -->
 
-It will take care of bringing the right lineage, description, metadata (including all [standard metadata](https://docs.dagster.io/guides/build/assets/metadata-and-tags#standard-metadata-types)), and other transferable properties from the Metaxy feature to the Dagster asset.
+`@metaxify` will take care of injecting information (such as asset dependencies or metadata) from the Metaxy feature to the Dagster asset.
+Learn more about `@metaxify` (with example screenshots) [here](metaxify.md).
 
 ## What's in the box
 
 This integration provides:
 
-- [`metaxify`][metaxy.ext.dagster.metaxify.metaxify] - a decorator that enriches Dagster asset definitions with Metaxy information such as upstream dependencies, description, metadata, code version, table schema, column lineage, and so on.
+- [`metaxify`][metaxy.ext.dagster.metaxify.metaxify] - a decorator that enriches Dagster asset definitions with Metaxy information such as upstream dependencies, description, metadata, code version, table schema, column lineage, and so on. More info and some screenshots [here](metaxify.md).
+
+- [`MetaxyIOManager`][metaxy.ext.dagster.io_manager.MetaxyIOManager] - an IO manager that reads and writes Dagster assets that are Metaxy features and logs useful runtime metadata.
 
 - [`MetaxyStoreFromConfigResource`][metaxy.ext.dagster.MetaxyStoreFromConfigResource] - a resource that provides access to [`MetadataStore`][metaxy.MetadataStore]
-
-- [`MetaxyIOManager`][metaxy.ext.dagster.io_manager.MetaxyIOManager] - an IO manager that reads and writes Dagster assets that are Metaxy features
 
 - [`generate_materialize_results`][metaxy.ext.dagster.utils.generate_materialize_results] / [`generate_observe_results`][metaxy.ext.dagster.utils.generate_observe_results] - generators for yielding `dagster.MaterializeResult` or `dagster.ObserveResult` events from Dagster assets (and multi-assets), with automatic topological ordering, partition filtering, logging row counts, and setting [Dagster data versions](https://docs.dagster.io/guides/build/assets/asset-versioning-and-caching#step-three-computing-your-own-data-versions).
 
