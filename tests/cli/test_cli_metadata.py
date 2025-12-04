@@ -1040,3 +1040,242 @@ def test_metadata_status_root_feature_missing_metadata(
             assert "root_feature" in result.stdout
             assert "missing metadata" in result.stdout
             assert "rows: 0" in result.stdout
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_with_filter(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Test status command with --filter flag to filter metadata by column value."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write upstream metadata with a 'category' column for filtering
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3, 4, 5],
+                "value": ["val_1", "val_2", "val_3", "val_4", "val_5"],
+                "category": ["A", "A", "B", "B", "A"],
+                "metaxy_provenance_by_field": [
+                    {"default": f"hash{i}"} for i in range(1, 6)
+                ],
+            }
+        )
+
+        feature_key_root = FeatureKey(["video", "files_root"])
+        feature_cls_root = graph.get_feature_by_key(feature_key_root)
+
+        with graph.use(), store:
+            store.write_metadata(feature_cls_root, upstream_data)
+
+        # Write downstream metadata for only category A samples (3 samples)
+        with graph.use(), store:
+            feature_key = FeatureKey(["video", "files"])
+            feature_cls = graph.get_feature_by_key(feature_key)
+            # Resolve the full increment first
+            increment = store.resolve_update(feature_cls, lazy=False)
+            # Filter to only category A samples and write
+            added_df = increment.added.to_polars().filter(pl.col("category") == "A")
+            store.write_metadata(feature_cls, added_df)
+
+        # Check status with filter for category A - should be up-to-date
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--filter",
+            "category = 'A'",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            assert feature["feature_key"] == "video/files"
+            # With filter for category A, should show 3 rows and be up-to-date
+            assert feature["rows"] == 3
+            assert feature["status"] == "up_to_date"
+            assert feature["needs_update"] is False
+        else:
+            assert "video/files" in result.stdout
+            assert "rows: 3" in result.stdout
+            assert "up-to-date" in result.stdout
+
+        # Check status with filter for category B - should need updates
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--filter",
+            "category = 'B'",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            # With filter for category B, should show 0 rows (no B samples written)
+            # and 2 samples need to be added
+            assert feature["rows"] == 0
+            assert feature["added"] == 2
+            assert feature["needs_update"] is True
+        else:
+            assert "video/files" in result.stdout
+            assert "rows: 0" in result.stdout
+            assert "added: 2" in result.stdout
+
+
+def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
+    """Test status command with invalid --filter syntax."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Try to check status with invalid filter syntax
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--filter",
+            "invalid syntax !!!",
+            "--format",
+            "json",
+            check=False,
+        )
+
+        assert result.returncode == 1
+        # Error is handled by cyclopts and output to stderr
+        assert "Invalid filter syntax" in result.stderr
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_with_multiple_filters(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Test status command with multiple --filter flags (combined with AND)."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write upstream metadata with 'category' and 'status' columns
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3, 4, 5],
+                "value": ["val_1", "val_2", "val_3", "val_4", "val_5"],
+                "category": ["A", "A", "B", "B", "A"],
+                "status": ["active", "inactive", "active", "inactive", "active"],
+                "metaxy_provenance_by_field": [
+                    {"default": f"hash{i}"} for i in range(1, 6)
+                ],
+            }
+        )
+
+        feature_key_root = FeatureKey(["video", "files_root"])
+        feature_cls_root = graph.get_feature_by_key(feature_key_root)
+
+        with graph.use(), store:
+            store.write_metadata(feature_cls_root, upstream_data)
+
+        # Write downstream metadata for all samples
+        with graph.use(), store:
+            feature_key = FeatureKey(["video", "files"])
+            feature_cls = graph.get_feature_by_key(feature_key)
+            increment = store.resolve_update(feature_cls, lazy=False)
+            store.write_metadata(feature_cls, increment.added.to_polars())
+
+        # Check status with multiple filters: category A AND status active
+        # Should match sample_uids 1 and 5
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--filter",
+            "category = 'A'",
+            "--filter",
+            "status = 'active'",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            # Multiple filters are AND-ed: category A AND status active = 2 rows
+            assert feature["rows"] == 2
+            assert feature["status"] == "up_to_date"
+        else:
+            assert "video/files" in result.stdout
+            assert "rows: 2" in result.stdout

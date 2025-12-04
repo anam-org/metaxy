@@ -241,6 +241,7 @@ def get_feature_metadata_status(
     metadata_store: MetadataStore,
     *,
     use_fallback: bool = False,
+    global_filters: Sequence[nw.Expr] | None = None,
 ) -> FeatureMetadataStatusWithIncrement:
     """Get metadata status for a single feature.
 
@@ -253,6 +254,8 @@ def get_feature_metadata_status(
             When True, checks fallback stores if metadata is missing in the primary store.
             When False (default), only checks the primary store.
             Note: resolve_update always uses the primary store only.
+        global_filters: List of Narwhals filter expressions to apply to all features.
+            These filters are applied when reading metadata and resolving updates.
 
     Returns:
         FeatureMetadataStatusWithIncrement containing status and lazy increment
@@ -284,6 +287,7 @@ def get_feature_metadata_status(
             key,
             columns=list(id_columns_seq) if id_columns_seq is not None else None,
             allow_fallback=use_fallback,
+            filters=list(global_filters) if global_filters else None,
         )
         row_count = count_lazy_rows(metadata_lazy)
         metadata_exists = True
@@ -309,6 +313,7 @@ def get_feature_metadata_status(
     lazy_increment = metadata_store.resolve_update(
         feature_cls,
         lazy=True,
+        global_filters=list(global_filters) if global_filters else None,
     )
 
     # Count changes
