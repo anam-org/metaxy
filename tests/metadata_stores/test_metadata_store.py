@@ -462,3 +462,29 @@ def test_write_metadata_casts_null_typed_system_columns(
         # Datetime is cast without timezone since nw.Datetime defaults to no tz
         assert result.schema["metaxy_created_at"] == pl.Datetime("us")
         assert result.schema["metaxy_materialization_id"] == pl.String
+
+
+def test_resolve_update_accepts_feature_key(
+    populated_store: InMemoryMetadataStore, features: dict[str, type[BaseFeature]]
+) -> None:
+    """Test that resolve_update accepts FeatureKey in addition to feature class."""
+    # UpstreamFeatureA = features["UpstreamFeatureA"]
+    DownstreamFeature = features["DownstreamFeature"]
+
+    with populated_store.open("write"):
+        # Test with feature class (existing behavior)
+        increment_from_class = populated_store.resolve_update(DownstreamFeature)
+        assert increment_from_class.added is not None
+
+        # Test with FeatureKey (new behavior)
+        feature_key = FeatureKey(["downstream"])
+        increment_from_key = populated_store.resolve_update(feature_key)
+        assert increment_from_key.added is not None
+
+        # Both should return equivalent results
+        assert len(increment_from_class.added) == len(increment_from_key.added)
+
+        # Test with string path (also a CoercibleToFeatureKey)
+        increment_from_string = populated_store.resolve_update("downstream")
+        assert increment_from_string.added is not None
+        assert len(increment_from_string.added) == len(increment_from_class.added)

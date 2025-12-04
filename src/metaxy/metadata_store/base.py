@@ -44,7 +44,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
-from metaxy.models.feature import BaseFeature, FeatureGraph, current_graph
+from metaxy.models.feature import FeatureGraph, current_graph
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import (
     CoercibleToFeatureKey,
@@ -228,7 +228,7 @@ class MetadataStore(ABC):
     @overload
     def resolve_update(
         self,
-        feature: type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         samples: IntoFrame | Frame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
@@ -242,7 +242,7 @@ class MetadataStore(ABC):
     @overload
     def resolve_update(
         self,
-        feature: type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         samples: IntoFrame | Frame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
@@ -255,7 +255,7 @@ class MetadataStore(ABC):
 
     def resolve_update(
         self,
-        feature: type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         samples: IntoFrame | Frame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
@@ -334,28 +334,29 @@ class MetadataStore(ABC):
         # Convert global_filters to a list for easy concatenation
         global_filter_list = list(global_filters) if global_filters else []
 
+        feature_key = self._resolve_feature_key(feature)
         graph = current_graph()
-        plan = graph.get_feature_plan(feature.spec().key)
+        plan = graph.get_feature_plan(feature_key)
 
         # Root features without samples: error (samples required)
         if not plan.deps and samples_nw is None:
             raise ValueError(
-                f"Feature {feature.spec().key} has no upstream dependencies (root feature). "
+                f"Feature {feature_key} has no upstream dependencies (root feature). "
                 f"Must provide 'samples' parameter with sample_uid and {METAXY_PROVENANCE_BY_FIELD} columns. "
                 f"Root features require manual {METAXY_PROVENANCE_BY_FIELD} computation."
             )
 
         # Combine feature-specific filters with global filters
         current_feature_filters = [
-            *normalized_filters.get(feature.spec().key, []),
+            *normalized_filters.get(feature_key, []),
             *global_filter_list,
         ]
 
         current_metadata = self.read_metadata_in_store(
-            feature,
+            feature_key,
             filters=[
                 nw.col(METAXY_FEATURE_VERSION)
-                == graph.get_feature_version(feature.spec().key),
+                == graph.get_feature_version(feature_key),
                 *current_feature_filters,
             ],
         )
