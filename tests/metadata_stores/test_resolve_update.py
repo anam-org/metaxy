@@ -20,6 +20,7 @@ import warnings
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
+import narwhals as nw
 import polars.testing as pl_testing
 import pytest
 from hypothesis.errors import NonInteractiveExampleWarning
@@ -660,7 +661,6 @@ def test_resolve_update_filters_with_feature_class_key(
     graph: FeatureGraph,
 ):
     """Test that resolve_update accepts feature classes as filter keys."""
-    import narwhals as nw
     import polars as pl
 
     store = default_store
@@ -717,7 +717,6 @@ def test_resolve_update_filters_with_feature_key_object(
     graph: FeatureGraph,
 ):
     """Test that resolve_update accepts FeatureKey objects as filter keys."""
-    import narwhals as nw
     import polars as pl
 
     store = default_store
@@ -776,7 +775,6 @@ def test_resolve_update_global_filters(
     graph: FeatureGraph,
 ):
     """Test that resolve_update applies global_filters to all features."""
-    import narwhals as nw
     import polars as pl
 
     store = default_store
@@ -834,7 +832,6 @@ def test_resolve_update_global_filters_combined_with_filters(
     graph: FeatureGraph,
 ):
     """Test that global_filters are combined with feature-specific filters."""
-    import narwhals as nw
     import polars as pl
 
     store = default_store
