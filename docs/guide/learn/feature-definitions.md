@@ -131,7 +131,7 @@ The [Data Versioning](data-versioning.md) docs explain more about how Metaxy cal
 
 ## Attaching user-defined metadata
 
-Users can [attach](../reference/api/definitions/feature-spec.md#metaxy.FeatureSpec.metadata) arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
+Users can [attach](../../reference/api/definitions/feature-spec.md#metaxy.FeatureSpec.metadata) arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
 This metadata does not influence graph topology or the versioning system.
 
 ## Fully Qualified Field Key

@@ -30,7 +30,7 @@ Upstream Metaxy features are injected into `deps`.
 
 ## Code Version
 
-Metaxy's feature spec [code version](../../../learn/data-versioning.md) is appended to the asset's code version in the format `metaxy:<version>`.
+Metaxy's feature spec [code version](../../../guide/learn/data-versioning.md) is appended to the asset's code version in the format `metaxy:<version>`.
 
 ![Code Version](../../../assets/screenshots/dagster/code_version.png)
 

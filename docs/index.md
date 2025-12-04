@@ -25,9 +25,9 @@
 
 ---
 
-Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
+Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](guide/learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
 
-It's [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data and [metadata storage](learn/metadata-stores.md).
+It's [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data and [metadata storage](guide/learn/metadata-stores.md).
 
 It has no strict infrastructure requirements and can run computations in external databases or locally.
 
@@ -64,7 +64,7 @@ Metaxy builds a *versioned graphs* from feature definitions and tracks version c
 
 ## Quickstart
 
-Head to [Quickstart](./overview/quickstart.md) (WIP!).
+Head to [Quickstart](./guide/overview/quickstart.md) (WIP!).
 
 ## About Metaxy
 
@@ -79,14 +79,14 @@ Metaxy is:
 
 - **🤸 flexible** to work around restrictions consciously:
 
-    - [features](./learn/feature-definitions.md) are defined as [Pydantic](https://docs.pydantic.dev/latest/) models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY
+    - [features](./guide/learn/feature-definitions.md) are defined as [Pydantic](https://docs.pydantic.dev/latest/) models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY
     - has a **migrations system** to compensate for reconciling field provenances and metadata when computations are not desired
 
 - **🪨 rock solid** when it matters:
 
-    - [field provenance](./learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
+    - [field provenance](./guide/learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
     - changes to topology, feature versioning, or individual samples **ruthlessly propagate downstream**
-    - unique [field-level dependency system](./learn/feature-definitions.md#field-level-dependencies) prevents unnecessary recomputations for features that depend on partial data
+    - unique [field-level dependency system](./guide/learn/feature-definitions.md#field-level-dependencies) prevents unnecessary recomputations for features that depend on partial data
     - metadata is **append-only** to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).
 
 - **📈 scalable**:
@@ -96,19 +96,19 @@ Metaxy is:
 
 - **🧑‍💻 dev friendly**:
 
-    - clean, [intuitive Python API](./learn/syntactic-sugar.md) that stays out of your way when you don't need it
-    - [feature discovery](./learn/feature-discovery.md) system for effortless dependency management
+    - clean, [intuitive Python API](./guide/learn/syntactic-sugar.md) that stays out of your way when you don't need it
+    - [feature discovery](./guide/learn/feature-discovery.md) system for effortless dependency management
     - comprehensive **type hints** and Pydantic integration for excellent IDE support
     - first-class support for **local development, testing, preview environments, CI/CD**
     - [CLI](./reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
     - [integrations](integrations/index.md) with popular tools such as SQLModel and Dagster.
-    - [testing helpers](./learn/testing.md) that you're going to appreciate
+    - [testing helpers](./guide/learn/testing.md) that you're going to appreciate
 
 ## What's Next?
 
-- Itching to write some Metaxy code? Continue to [Quickstart](./overview/quickstart.md) (WIP!).
+- Itching to write some Metaxy code? Continue to [Quickstart](./guide/overview/quickstart.md) (WIP!).
 
-- Learn more about [feature definitions](./learn/feature-definitions.md) or [versioning](./learn/data-versioning.md)
+- Learn more about [feature definitions](./guide/learn/feature-definitions.md) or [versioning](./guide/learn/data-versioning.md)
 
 - View complete, end-to-end [examples](./examples/index.md)
 

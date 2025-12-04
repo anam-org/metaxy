@@ -63,4 +63,4 @@ This includes joining upstream features, hashing their versions, and filtering o
 
 ## Metadata Store Implementations
 
-Metaxy provides ready `MetadataStore` [implementations](../integrations/metadata-stores/index.md) for popular databases and storage systems.
+Metaxy provides ready `MetadataStore` [implementations](../../integrations/metadata-stores/index.md) for popular databases and storage systems.

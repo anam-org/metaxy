@@ -1,6 +1,6 @@
 # System Column Registry
 
-Metaxy reserves a set of [system-managed columns](../reference/api/constants.md) that it attaches to user-defined feature
+Metaxy reserves a set of [system-managed columns](../../reference/api/constants.md) that it attaches to user-defined feature
 metadata tables. These columns are part of the platform contract and are used by
 the [metadata store][metaxy.MetadataStore], versioning engine, and migration tooling.
 
