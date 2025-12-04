@@ -27,11 +27,14 @@
 
 Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](guide/learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
 
-It's [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data and [metadata storage](guide/learn/metadata-stores.md).
+It's [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data or [metadata storage](guide/learn/metadata-stores.md). There are no strict infrastructure requirements.
 
-It has no strict infrastructure requirements and can run computations in external databases or locally.
+Metaxy can scale to handle large amounts of **big metadata**.
 
-It can scale to handle large amounts of **big metadata**.
+All of this is possible thanks to (1) [Narwhals](https://narwhals-dev.github.io/narwhals/), [Ibis](https://ibis-project.org/), and a few clever tricks.
+{ .annotate }
+
+1. we really do stand on the shoulders of giants
 
 ## What problem exactly does Metaxy solve?
 
@@ -58,9 +61,9 @@ Until now, a general solution for this problem did not exist, but this is not th
 
 ## Metaxy's solution
 
-Metaxy solves the first set of problems with a **feature** and **field** dependency system, and the second set with a **migrations** system.
+Metaxy solves the first set of problems with a hybrid [feature](./guide/learn/feature-definitions.md) and [field](./guide/learn/feature-definitions.md#field-level-dependencies) dependency system, and the second set with a **migrations** system.
 
-Metaxy builds a *versioned graphs* from feature definitions and tracks version changes.
+Metaxy builds a *versioned graph* from feature definitions and [tracks version changes](./guide/learn/data-versioning.md) across feature definitions and individual samples.
 
 ## Quickstart
 
@@ -76,6 +79,7 @@ Metaxy is:
     - supports **lakehouse storage** formats such as DeltaLake or DuckLake
     - is **agnostic to tabular compute engines**: Polars, Spark, Pandas, and databases thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
     - we totally don't care how is the multi-modal **data** produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata
+    - blends right in with orchestrators: see the excellent [Dagster integration](./integrations/orchestration/dagster/index.md) :octopus:
 
 - **🤸 flexible** to work around restrictions consciously:
 
