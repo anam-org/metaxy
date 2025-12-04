@@ -32,6 +32,48 @@ T = TypeVar("T")
 _ENV_VAR_PATTERN = re.compile(r"\$\{([^}:]+)(?::-([^}]*))?\}")
 
 
+class InvalidConfigError(Exception):
+    """Raised when Metaxy configuration is invalid.
+
+    This error includes helpful context about where the configuration was loaded from
+    and how environment variables can affect configuration.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        config_file: Path | None = None,
+    ):
+        self.config_file = config_file
+        self.base_message = message
+
+        # Build the full error message with context
+        parts = [message]
+
+        if config_file:
+            parts.append(f"Config file: {config_file}")
+
+        parts.append(
+            "Note: METAXY_* environment variables can override config file settings "
+        )
+
+        super().__init__("\n".join(parts))
+
+    @classmethod
+    def from_config(cls, config: "MetaxyConfig", message: str) -> "InvalidConfigError":
+        """Create an InvalidConfigError from a MetaxyConfig instance.
+
+        Args:
+            config: The MetaxyConfig instance that has the invalid configuration.
+            message: The error message describing what's wrong.
+
+        Returns:
+            An InvalidConfigError with context from the config.
+        """
+        return cls(message, config_file=config._config_file)
+
+
 def _expand_env_vars(value: Any) -> Any:
     """Recursively expand environment variables in config values.
 
@@ -287,8 +329,9 @@ class MetaxyConfig(BaseSettings):
                 try:
                     __import__(module)
                 except Exception as e:
-                    raise ValueError(
-                        f"Failed to load Metaxy plugin '{name}' (defined in \"ext\" config field): {e}"
+                    raise InvalidConfigError.from_config(
+                        self,
+                        f"Failed to load Metaxy plugin '{name}' (defined in \"ext\" config field): {e}",
                     ) from e
 
     @field_validator("project")
@@ -613,16 +656,17 @@ class MetaxyConfig(BaseSettings):
         from metaxy.versioning.types import HashAlgorithm
 
         if len(self.stores) == 0:
-            raise ValueError(
-                "No Metaxy stores available. They should be configured in metaxy.toml|pyproject.toml or via environment variables."
+            raise InvalidConfigError.from_config(
+                self,
+                "No Metaxy stores available. They should be configured in metaxy.toml|pyproject.toml or via environment variables.",
             )
 
         name = name or self.store
 
         if name not in self.stores:
-            raise ValueError(
-                f"Store '{name}' not found in config. "
-                f"Available stores: {list(self.stores.keys())}"
+            raise InvalidConfigError.from_config(
+                self,
+                f"Store '{name}' not found in config. Available stores: {list(self.stores.keys())}",
             )
 
         store_config = self.stores[name]
@@ -631,7 +675,10 @@ class MetaxyConfig(BaseSettings):
         store_class = store_config.type
 
         if expected_type is not None and not issubclass(store_class, expected_type):
-            raise TypeError(f"Store '{name}' is not of type '{expected_type.__name__}'")
+            raise InvalidConfigError.from_config(
+                self,
+                f"Store '{name}' is not of type '{expected_type.__name__}'",
+            )
 
         # Extract configuration and prepare for typed config model
         config_copy = store_config.config.copy()
@@ -668,12 +715,27 @@ class MetaxyConfig(BaseSettings):
             else:
                 extra_kwargs[key] = value
 
-        typed_config = config_model_cls.model_validate(config_copy)
+        try:
+            typed_config = config_model_cls.model_validate(config_copy)
+        except Exception as e:
+            raise InvalidConfigError.from_config(
+                self,
+                f"Failed to validate config for store '{name}': {e}",
+            ) from e
 
         # Instantiate using from_config() - fallback stores are resolved via MetaxyConfig.get()
         # Use self.use() to ensure this config is available for fallback resolution
-        with self.use():
-            store = store_class.from_config(typed_config, **extra_kwargs)
+        try:
+            with self.use():
+                store = store_class.from_config(typed_config, **extra_kwargs)
+        except InvalidConfigError:
+            # Don't re-wrap InvalidConfigError (e.g., from nested fallback store resolution)
+            raise
+        except Exception as e:
+            raise InvalidConfigError.from_config(
+                self,
+                f"Failed to instantiate store '{name}' ({store_class.__name__}): {e}",
+            ) from e
 
         # Verify the store actually uses the hash algorithm we configured
         # (in case a store subclass overrides the default or ignores the parameter)
@@ -682,14 +744,18 @@ class MetaxyConfig(BaseSettings):
             configured_hash_algorithm is not None
             and store.hash_algorithm != configured_hash_algorithm
         ):
-            raise ValueError(
+            raise InvalidConfigError.from_config(
+                self,
                 f"Store '{name}' ({store_class.__name__}) was configured with "
                 f"hash_algorithm='{configured_hash_algorithm.value}' but is using "
                 f"'{store.hash_algorithm.value}'. The store class may have overridden "
-                f"the hash algorithm. All stores must use the same hash algorithm."
+                f"the hash algorithm. All stores must use the same hash algorithm.",
             )
 
         if expected_type is not None and not isinstance(store, expected_type):
-            raise TypeError(f"Store '{name}' is not of type '{expected_type.__name__}'")
+            raise InvalidConfigError.from_config(
+                self,
+                f"Store '{name}' is not of type '{expected_type.__name__}'",
+            )
 
         return store

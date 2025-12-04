@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from metaxy.config import MetaxyConfig, StoreConfig
+from metaxy.config import InvalidConfigError, MetaxyConfig, StoreConfig
 from metaxy.metadata_store import InMemoryMetadataStore
 
 
@@ -207,7 +207,7 @@ def test_get_store_nonexistent_raises() -> None:
         }
     )
 
-    with pytest.raises(ValueError, match="Store 'nonexistent' not found"):
+    with pytest.raises(InvalidConfigError, match="Store 'nonexistent' not found"):
         config.get_store("nonexistent")
 
 
@@ -616,3 +616,192 @@ def test_config_file_attribute_none_when_created_directly() -> None:
     config = MetaxyConfig(project="direct-config")
 
     assert config.config_file is None
+
+
+def test_get_store_error_includes_config_file_path(tmp_path: Path) -> None:
+    """Test that get_store error messages include the config file path."""
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+project = "test-project"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    # Try to get a non-existent store
+    with pytest.raises(InvalidConfigError) as exc_info:
+        config.get_store("nonexistent")
+
+    error_message = str(exc_info.value)
+    assert "nonexistent" in error_message
+    assert str(config_file.resolve()) in error_message
+    assert "Config file:" in error_message
+    assert "METAXY_" in error_message  # Check env var note is included
+
+
+def test_get_store_error_no_stores_includes_config_file_path(tmp_path: Path) -> None:
+    """Test that 'no stores available' error includes config file path."""
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+project = "test-project"
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    # Try to get a store when none are configured
+    with pytest.raises(InvalidConfigError) as exc_info:
+        config.get_store("dev")
+
+    error_message = str(exc_info.value)
+    assert "No Metaxy stores available" in error_message
+    assert str(config_file.resolve()) in error_message
+    assert "Config file:" in error_message
+    assert "METAXY_" in error_message  # Check env var note is included
+
+
+def test_get_store_error_without_config_file_no_path_in_message() -> None:
+    """Test that get_store error doesn't include config file path when not loaded from file."""
+    config = MetaxyConfig(
+        project="direct-config",
+        stores={
+            "dev": StoreConfig(
+                type="metaxy.metadata_store.InMemoryMetadataStore",
+                config={},
+            )
+        },
+    )
+
+    # Try to get a non-existent store
+    with pytest.raises(InvalidConfigError) as exc_info:
+        config.get_store("nonexistent")
+
+    error_message = str(exc_info.value)
+    assert "nonexistent" in error_message
+    assert "Config file:" not in error_message
+    # Env var note should still be included
+    assert "METAXY_" in error_message
+
+
+def test_get_store_error_from_config_includes_config_file_path(tmp_path: Path) -> None:
+    """Test that from_config errors include the config file path."""
+    config_file = tmp_path / "metaxy.toml"
+    # Use a Delta store with a path that will fail when opening
+    config_file.write_text("""
+project = "test-project"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "s3://nonexistent-bucket-that-does-not-exist/path"
+fallback_stores = ["nonexistent_store"]
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    # This should fail when trying to instantiate the store (fallback store doesn't exist)
+    with pytest.raises(InvalidConfigError) as exc_info:
+        config.get_store("dev")
+
+    error_message = str(exc_info.value)
+    # The error comes from the nested get_store call for the fallback store
+    assert "nonexistent_store" in error_message
+    assert "not found in config" in error_message
+    assert str(config_file.resolve()) in error_message
+    assert "Config file:" in error_message
+    assert "METAXY_" in error_message
+
+
+def test_get_store_error_invalid_config_includes_config_file_path(
+    tmp_path: Path,
+) -> None:
+    """Test that config validation errors include the config file path."""
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+project = "test-project"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+
+[stores.dev.config]
+# Missing required db_path, but add an invalid field
+invalid_field_that_does_not_exist = "should fail validation"
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    # This should fail when trying to validate the config
+    with pytest.raises(InvalidConfigError) as exc_info:
+        config.get_store("dev")
+
+    error_message = str(exc_info.value)
+    assert "Failed to validate config" in error_message
+    assert str(config_file.resolve()) in error_message
+    assert "Config file:" in error_message
+    assert "METAXY_" in error_message
+
+
+def test_get_store_error_fallback_store_instantiation_fails(tmp_path: Path) -> None:
+    """Test error when a fallback store exists but fails to instantiate."""
+    config_file = tmp_path / "metaxy.toml"
+    # Use a Delta store with a fallback store that has invalid config
+    config_file.write_text("""
+project = "test-project"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "s3://valid-bucket/path"
+fallback_stores = ["branch"]
+
+[stores.branch]
+type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+
+[stores.branch.config]
+# DuckDB requires database field, this will fail validation
+invalid_field = "should_fail"
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    # This should fail when trying to instantiate the fallback store
+    with pytest.raises(InvalidConfigError) as exc_info:
+        config.get_store("dev")
+
+    error_message = str(exc_info.value)
+    # Error should mention the failing store
+    assert "branch" in error_message or "Failed to validate" in error_message
+    assert str(config_file.resolve()) in error_message
+    assert "Config file:" in error_message
+    assert "METAXY_" in error_message
+    # Should NOT have duplicated error messages (no nested InvalidConfigError wrapping)
+    # Count occurrences of "Config file:" - should be exactly 1
+    assert error_message.count("Config file:") == 1
+
+
+def test_invalid_config_error_attributes() -> None:
+    """Test that InvalidConfigError has the expected attributes."""
+    from pathlib import Path
+
+    # Test with config file
+    error = InvalidConfigError("Test message", config_file=Path("/path/to/config.toml"))
+    assert error.config_file == Path("/path/to/config.toml")
+    assert error.base_message == "Test message"
+    assert "Test message" in str(error)
+    assert "/path/to/config.toml" in str(error)
+    assert "METAXY_" in str(error)
+
+    # Test without config file
+    error_no_file = InvalidConfigError("Another message")
+    assert error_no_file.config_file is None
+    assert error_no_file.base_message == "Another message"
+    assert "Another message" in str(error_no_file)
+    assert "Config file:" not in str(error_no_file)
+    assert "METAXY_" in str(error_no_file)
