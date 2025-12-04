@@ -5,3 +5,5 @@ This is the Python SDK for Metaxy's configuration. See [config file reference](.
 ::: metaxy.MetaxyConfig
 
 ::: metaxy.StoreConfig
+
+::: metaxy.config.InvalidConfigError

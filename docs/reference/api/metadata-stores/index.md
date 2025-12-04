@@ -1,9 +1,10 @@
 # Metadata Stores
 
-Metaxy abstracts interactions with metadata behind an interface called [MetadaStore][metaxy.metadata_store.base.MetadataStore].
+Metaxy abstracts interactions with metadata behind an interface called [`MetadataStore`][metaxy.metadata_store.base.MetadataStore].
 
 Users can extend this class to implement support for arbitrary metadata storage such as databases, lakehouse formats, or really any kind of external system.
-Metaxy has built-in support for the following metadata store types:
+
+Here are some of the built-in metadata store types:
 
 ## Databases
 
@@ -22,6 +23,8 @@ Metaxy has built-in support for the following metadata store types:
 - [DeltaMetadataStore](../../../integrations/metadata-stores/storage/delta/index.md)
 
 - [InMemoryMetadataStore](./memory.md)
+
+The full list can be found [here](../../../integrations/metadata-stores/index.md)
 
 ---
 
