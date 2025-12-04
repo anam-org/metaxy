@@ -1,6 +1,7 @@
 """Job builder for observing Metaxy feature assets."""
 
 import logging
+from collections.abc import Mapping
 from typing import Any
 
 import dagster as dg
@@ -113,9 +114,11 @@ def _build_observation_job_for_spec(
     *,
     partitions_def: dg.PartitionsDefinition | None,
     store_resource_key: str,
-    tags: dict[str, str] | None,
+    tags: Mapping[str, str] | None,
 ) -> dg.JobDefinition:
     """Build an observation job for a single asset spec."""
+    tags = tags or {}
+
     feature_key_str = spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY]
     feature_key = mx.coerce_to_feature_key(feature_key_str)
     job_name = f"observe_{feature_key.table_name}"
@@ -125,8 +128,11 @@ def _build_observation_job_for_spec(
     @dg.job(
         name=job_name,
         partitions_def=partitions_def,
-        tags=tags,
-        description=f"Observe Metaxy feature: {spec.key.to_user_string()}",
+        tags={
+            **tags,
+            "metaxy/feature": feature_key.to_string(),
+        },
+        description=f"Observe Metaxy feature {feature_key.to_string()} (Dagster asset: `{spec.key.to_user_string()}`)",
     )
     def observation_job() -> None:
         op()
