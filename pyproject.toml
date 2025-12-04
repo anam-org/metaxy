@@ -1,12 +1,22 @@
 [project]
 name = "metaxy"
 version = "0.0.1.dev1"
-description = "Add your description here"
+description = "Pluggable versioned metadata management for incremental multi-modal pipelines."
 readme = "README.md"
 authors = [
   { name = "Daniel Gafni", email = "danielgafni16@gmail.com" },
 ]
 requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
 dependencies = [
   "cyclopts",
   "narwhals>=2.9.0",
@@ -59,6 +69,11 @@ lancedb = [
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
 mx = "metaxy.cli.app:main"
+
+[project.urls]
+Documentation = "https://metaxy.dev"
+Repository = "https://github.com/anam-org/metaxy"
+Issues = "https://github.com/anam-org/metaxy/issues"
 
 [build-system]
 requires = ["uv_build>=0.8.14,<0.9.0"]
