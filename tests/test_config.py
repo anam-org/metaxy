@@ -544,3 +544,75 @@ root_path = "{branch_path}"
     branch_store = dev_store.fallback_stores[0]
     assert isinstance(branch_store, DeltaMetadataStore)
     assert len(branch_store.fallback_stores) == 0
+
+
+def test_config_file_attribute_set_when_loaded_from_file(tmp_path: Path) -> None:
+    """Test that config_file attribute is set when loading from a TOML file."""
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+project = "test-project"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    assert config.config_file is not None
+    assert config.config_file == config_file.resolve()
+    assert config.config_file.name == "metaxy.toml"
+
+
+def test_config_file_attribute_set_when_auto_discovered(tmp_path: Path) -> None:
+    """Test that config_file attribute is set when auto-discovering config."""
+    import os
+
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+project = "discovered-project"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+""")
+
+    # Change to tmp_path so auto-discovery finds the config
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(tmp_path)
+        config = MetaxyConfig.load()
+
+        assert config.config_file is not None
+        assert config.config_file == config_file.resolve()
+        assert config.project == "discovered-project"
+    finally:
+        os.chdir(original_cwd)
+
+
+def test_config_file_attribute_none_when_no_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that config_file attribute is None when no config file is used."""
+    import os
+
+    # Change to an empty directory with no config files
+    empty_dir = tmp_path / "empty"
+    empty_dir.mkdir()
+
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(empty_dir)
+        # Disable parent search to ensure no config file is found
+        config = MetaxyConfig.load(search_parents=False)
+
+        assert config.config_file is None
+    finally:
+        os.chdir(original_cwd)
+
+
+def test_config_file_attribute_none_when_created_directly() -> None:
+    """Test that config_file attribute is None when config is created directly."""
+    config = MetaxyConfig(project="direct-config")
+
+    assert config.config_file is None
