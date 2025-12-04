@@ -2,7 +2,7 @@
 
 !!! warning
 
-This page is WIP
+    This page is WIP
 
 ## Config-Based Discovery
 
