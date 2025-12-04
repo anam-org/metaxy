@@ -142,9 +142,9 @@ class SpeechToText(
 
 { .annotated }
 
-1. This `audio` field [automatically depends][metaxy.FieldsMapping.default] on the `audio` field of the `Video` feature, because their names match.
+1. This `audio` field [automatically depends][metaxy.models.fields_mapping.FieldsMapping.default] on the `audio` field of the `Video` feature, because their names match.
 
-2. This `frames` field [automatically depends][metaxy.FieldsMapping.default] on the `frames` field of the `Video` feature, because their names match.
+2. This `frames` field [automatically depends][metaxy.models.fields_mapping.FieldsMapping.default] on the `frames` field of the `Video` feature, because their names match.
 
 Running `metaxy graph render --format mermaid` produces this graph:
 

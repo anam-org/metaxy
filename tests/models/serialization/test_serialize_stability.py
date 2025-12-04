@@ -1,8 +1,12 @@
 """Test that push_graph_snapshot produces stable snapshot_versions."""
 
+from typing import Any, cast
+
 from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
+
+SnapshotPayload = dict[str, dict[str, Any]]
 
 
 def test_push_graph_snapshot_stability(
@@ -58,7 +62,9 @@ def test_push_graph_snapshot_stability(
             snapshot_dict = graph.to_snapshot()
 
             # Reconstruct graph from snapshot
-            reconstructed_graph = FeatureGraph.from_snapshot(snapshot_dict)
+            reconstructed_graph = FeatureGraph.from_snapshot(
+                cast(SnapshotPayload, snapshot_dict)
+            )
             reconstructed_snapshot_version = reconstructed_graph.snapshot_version
 
             # Reconstructed graph should have the same snapshot_version
@@ -146,7 +152,9 @@ def test_snapshot_version_deterministic_across_stores(
 
     # Get snapshot dict and reconstruct
     snapshot_dict = graph.to_snapshot()
-    reconstructed_graph = FeatureGraph.from_snapshot(snapshot_dict)
+    reconstructed_graph = FeatureGraph.from_snapshot(
+        cast(SnapshotPayload, snapshot_dict)
+    )
     snapshot_version_3 = reconstructed_graph.snapshot_version
 
     # Should still be identical

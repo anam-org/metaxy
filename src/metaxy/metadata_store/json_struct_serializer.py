@@ -96,7 +96,8 @@ class JsonStructSerializerMixin:
                 ].cast("string")
             if null_casts:
                 mem = mem.mutate(**null_casts)
-            return nw.from_native(mem, eager_only=False)
+            result = nw.from_native(mem, eager_only=False)
+            return result if isinstance(result, nw.LazyFrame) else result.lazy()
 
         # If it's already a Narwhals LazyFrame (but not Ibis), return as-is to avoid surprises
         if isinstance(frame, nw.LazyFrame):
@@ -380,7 +381,7 @@ class JsonStructSerializerMixin:
             base_cols = [
                 col
                 for col in ibis_table.columns
-                if col not in prov_field_columns.values()
+                if col not in prov_field_columns.values() and col != prov_const
             ]
             ibis_table = ibis_table.select(
                 *[ibis_table[col] for col in base_cols],
@@ -405,6 +406,7 @@ class JsonStructSerializerMixin:
                 col
                 for col in ibis_table.columns
                 if col not in data_version_field_columns.values()
+                and col != data_ver_const
             ]
             ibis_table = ibis_table.select(
                 *[ibis_table[col] for col in base_cols],
