@@ -171,7 +171,6 @@ color="#999">---</font><br/>• transcription <small>(v: ac412b3c)</small></div>
 ## Tracking Definitions Changes
 
 Imagine the `audio` field of the `Video` feature changes (1):
-
 { .annotate }
 
 1. Perhaps, something like denoising has been applied externally
