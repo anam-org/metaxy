@@ -101,16 +101,20 @@ class FeatureGraph:
             feature: Feature class to register
 
         Raises:
-            ValueError: If a feature with the same key is already registered
+            ValueError: If a feature with a different import path but the same key is already registered
                        or if duplicate column names would result from renaming operations
         """
         if feature.spec().key in self.features_by_key:
             existing = self.features_by_key[feature.spec().key]
-            raise ValueError(
-                f"Feature with key {feature.spec().key.to_string()} already registered. "
-                f"Existing: {existing.__name__}, New: {feature.__name__}. "
-                f"Each feature key must be unique within a graph."
-            )
+            # Allow quiet replacement if it's the same class (same import path)
+            existing_path = f"{existing.__module__}.{existing.__name__}"
+            new_path = f"{feature.__module__}.{feature.__name__}"
+            if existing_path != new_path:
+                raise ValueError(
+                    f"Feature with key {feature.spec().key.to_string()} already registered. "
+                    f"Existing: {existing_path}, New: {new_path}. "
+                    f"Each feature key must be unique within a graph."
+                )
 
         # Validate that there are no duplicate column names across dependencies after renaming
         if feature.spec().deps:
