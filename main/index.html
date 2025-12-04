@@ -3411,9 +3411,12 @@
 </div>
 <hr />
 <p>Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks <strong>metadata</strong>: sample <a href="guide/learn/data-versioning/">versions</a>, dependencies, and data lineage across complex computational graphs.</p>
-<p>It's <a href="#about-metaxy">agnostic</a> to orchestration frameworks, compute engines, data and <a href="guide/learn/metadata-stores/">metadata storage</a>.</p>
-<p>It has no strict infrastructure requirements and can run computations in external databases or locally.</p>
-<p>It can scale to handle large amounts of <strong>big metadata</strong>.</p>
+<p>It's <a href="#about-metaxy">agnostic</a> to orchestration frameworks, compute engines, data or <a href="guide/learn/metadata-stores/">metadata storage</a>. There are no strict infrastructure requirements.</p>
+<p>Metaxy can scale to handle large amounts of <strong>big metadata</strong>.</p>
+<p class="annotate">All of this is possible thanks to (1) <a href="https://narwhals-dev.github.io/narwhals/">Narwhals</a>, <a href="https://ibis-project.org/">Ibis</a>, and a few clever tricks.</p>
+<ol>
+<li>we really do stand on the shoulders of giants</li>
+</ol>
 <h2 id="what-problem-exactly-does-metaxy-solve">What problem exactly does Metaxy solve?<a class="headerlink" href="#what-problem-exactly-does-metaxy-solve" title="Permanent link">&para;</a></h2>
 <p>Data, ML and AI workloads processing <strong>large amounts</strong> of images, videos, audios, texts, or any other kind of data can be very expensive to run.
 In contrast to traditional data engineering, re-running the whole pipeline on changes is no longer an option.
@@ -3442,8 +3445,8 @@ Therefore, it becomes crucially important to correctly implement incremental pro
 <p>Tracking and propagating these changes correctly to the right subset of samples and features can become incredibly complicated.
 Until now, a general solution for this problem did not exist, but this is not the case anymore.</p>
 <h2 id="metaxys-solution">Metaxy's solution<a class="headerlink" href="#metaxys-solution" title="Permanent link">&para;</a></h2>
-<p>Metaxy solves the first set of problems with a <strong>feature</strong> and <strong>field</strong> dependency system, and the second set with a <strong>migrations</strong> system.</p>
-<p>Metaxy builds a <em>versioned graphs</em> from feature definitions and tracks version changes.</p>
+<p>Metaxy solves the first set of problems with a hybrid <a href="guide/learn/feature-definitions/">feature</a> and <a href="guide/learn/feature-definitions/#field-level-dependencies">field</a> dependency system, and the second set with a <strong>migrations</strong> system.</p>
+<p>Metaxy builds a <em>versioned graph</em> from feature definitions and <a href="guide/learn/data-versioning/">tracks version changes</a> across feature definitions and individual samples.</p>
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
 <p>Head to <a href="guide/overview/quickstart/">Quickstart</a> (WIP!).</p>
 <h2 id="about-metaxy">About Metaxy<a class="headerlink" href="#about-metaxy" title="Permanent link">&para;</a></h2>
@@ -3456,6 +3459,7 @@ Until now, a general solution for this problem did not exist, but this is not th
 <li>supports <strong>lakehouse storage</strong> formats such as DeltaLake or DuckLake</li>
 <li>is <strong>agnostic to tabular compute engines</strong>: Polars, Spark, Pandas, and databases thanks to <a href="https://narwhals-dev.github.io/narwhals/">Narwhals</a></li>
 <li>we totally don't care how is the multi-modal <strong>data</strong> produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata</li>
+<li>blends right in with orchestrators: see the excellent <a href="integrations/orchestration/dagster/">Dagster integration</a> <img alt="🐙" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f419.svg" title=":octopus:" /></li>
 </ul>
 </li>
 <li>
