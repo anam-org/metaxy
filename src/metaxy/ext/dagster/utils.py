@@ -297,7 +297,7 @@ def build_runtime_feature_metadata(
     feature_key: mx.FeatureKey,
     store: mx.MetadataStore | MetaxyStoreFromConfigResource,
     lazy_df: nw.LazyFrame[Any],
-    context: dg.AssetExecutionContext | dg.OutputContext,
+    context: dg.AssetExecutionContext | dg.OpExecutionContext | dg.OutputContext,
     *,
     partition_row_count: int | None = None,
 ) -> dict[str, Any]:

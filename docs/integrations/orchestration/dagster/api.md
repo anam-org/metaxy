@@ -52,6 +52,14 @@
       heading_level: 3
 <!-- dprint-ignore-end -->
 
+## Observation Jobs
+
+<!-- dprint-ignore-start -->
+::: metaxy.ext.dagster.observation_job.build_metaxy_observation_job
+    options:
+      heading_level: 3
+<!-- dprint-ignore-end -->
+
 ## Resources
 
 <!-- dprint-ignore-start -->
