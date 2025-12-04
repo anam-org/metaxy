@@ -74,22 +74,23 @@ Hurray! You get the idea.
 
 ## Field-Level Dependencies
 
-A core (I'll be straight: a killer) feature of Metaxy is the concept of **field-level dependencies**.
+A core (1) feature of Metaxy is the concept of **field-level dependencies**.
 These are used to define dependencies between logical fields of features.
+{ .annotate }
+
+1. really a killer :gun:
 
 !!! abstract
 
-    A **field** is not to be confused with metadata _column_ (Pydantic fields).
-    Fields are completely independent from them.
+    A **Metaxy field** is not to be confused with **metadata column**.
+    Columns refer to **metadata** and are stored in metadata stores (such as databases) supported by Metaxy. (1)
+    { .annotate }
 
-Columns refer to _metadata_ and are stored in metadata stores (such as databases) supported by Metaxy.
+    1. columns can be defined with [**Pydantic fields**][pydantic.Field] :sweat_smile:
 
-Fields refer to _data_ and are logical -- users are free to define them as they see fit.
-Fields are supposed to represent parts of data that users care about.
-For example, a `Video` feature -- an `.mp4` file -- may have `frames` and `audio` fields.
-
-Downstream features can depend on specific fields of upstream features.
-This enables fine-grained control over field provenance, avoiding unnecessary reprocessing.
+    Fields refer to **data** and are **purely logical** - users are free to define them as they see fit.
+    Fields are supposed to represent parts of data that users care about.
+    For example, a `Video` feature - an `.mp4` file - may have `frames` and `audio` fields.
 
 At this point, careful readers have probably noticed that the `Transcript` feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
 Let's express this with Metaxy:
@@ -135,5 +136,14 @@ This metadata does not influence graph topology or the versioning system.
 
 ## Fully Qualified Field Key
 
-A **fully qualified field key (FQFK)** is an identifier that uniquely identifies a field within the whole feature graph.
-It consists of the **feature key** and the **field key**, separated by a colon, for example: `/raw/video:frames`, `/raw/video:audio/english`.
+!!! abstract
+
+    A **fully qualified field key (FQFK)** is an identifier that uniquely identifies a field within the whole feature graph.
+
+It consists of the **feature key** and the **field key**, separated by a colon.
+
+!!! example
+
+    -  `/raw/video:frames`
+
+    -  `/raw/video:audio/english`
