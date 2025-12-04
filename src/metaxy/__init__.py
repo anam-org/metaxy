@@ -90,7 +90,7 @@ def init_metaxy(
 ) -> MetaxyConfig:
     """Main user-facing initialization function for Metaxy. It loads the configuration and features.
 
-    Features are [discovered](../../learn/feature-discovery.md) from installed Python packages metadata.
+    Features are [discovered](../../guide/learn/feature-discovery.md) from installed Python packages metadata.
 
     Args:
         config_file (Path | None, optional): Path to the configuration file.

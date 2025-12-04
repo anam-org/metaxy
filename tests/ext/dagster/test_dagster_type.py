@@ -365,8 +365,11 @@ class TestWithDagsterAsset:
         """Test that feature_to_dagster_type works with @dg.asset."""
         from metaxy.ext.dagster import metaxify
 
-        @metaxify(feature=simple_feature)
-        @dg.asset(dagster_type=feature_to_dagster_type(simple_feature))
+        @metaxify
+        @dg.asset(
+            metadata={"metaxy/feature": "test/simple"},
+            dagster_type=feature_to_dagster_type(simple_feature),
+        )
         def my_asset():
             return pl.DataFrame({"id": [1], "name": ["test"], "value": [1.0]})
 

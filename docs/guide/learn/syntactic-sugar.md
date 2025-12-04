@@ -25,7 +25,9 @@ Metaxy really loves you, the user!
 Both `FeatureKey` and `FieldKey` accept:
 
 - **String format**: `FeatureKey("prefix/feature")`
+
 - **Sequence format**: `FeatureKey(["prefix", "feature"])`
+
 - **Same type**: `FeatureKey(another_feature_key)` -- for full Inception mode
 
 All formats produce equivalent keys, internally represented as a sequence of parts.
@@ -70,7 +72,7 @@ spec = FeatureSpec(
 
 ### Fields Mapping
 
-Metaxy uses a bunch of common sense heuristics [automatically find parent fields](../reference/api/definitions/fields-mapping.md) by matching on their names. This is enabled by default. For example, using the same field names in upstream and downstream features will automatically create a dependency between these fields:
+Metaxy uses a bunch of common sense heuristics [automatically find parent fields](../../reference/api/definitions/fields-mapping.md) by matching on their names. This is enabled by default. For example, using the same field names in upstream and downstream features will automatically create a dependency between these fields:
 
 ```py
 class Parent(BaseFeature, spec=FeatureSpec(fields=["my_field"], ...):

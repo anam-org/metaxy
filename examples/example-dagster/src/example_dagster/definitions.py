@@ -19,7 +19,6 @@ class AudioEmbeddings(mx.BaseFeature, spec=upstream_spec):
 downstream_spec = mx.FeatureSpec(
     key="audio/clusters",
     id_columns=["audio_id"],
-    fields=["cluster_id"],
     deps=[AudioEmbeddings],
 )
 

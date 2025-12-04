@@ -1,23 +1,40 @@
-# Metaxy
-
 <p align="center">
   <img src="assets/metaxy.svg" alt="Metaxy Logo" width="100"/>
 </p>
 
+<h1 align="center">Metaxy</h1>
+
+<p align="center">
+  <a href="https://pypi.org/project/metaxy/"><img src="https://img.shields.io/pypi/v/metaxy.svg?color=4644ad" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/metaxy/"><img src="https://img.shields.io/pypi/pyversions/metaxy.svg?color=4644ad" alt="Python versions"></a>
+  <a href="https://pypi.org/project/metaxy/"><img src="https://img.shields.io/pypi/dm/metaxy.svg?color=4644ad" alt="PyPI downloads"></a>
+  <a href="https://github.com/anam-org/metaxy/actions/workflows/QA.yml"><img src="https://github.com/anam-org/metaxy/actions/workflows/QA.yml/badge.svg" alt="CI"></a>
+  <a href="https://docs.astral.sh/ruff/"><img src="https://img.shields.io/badge/linting-ruff-4644ad" alt="Ruff"></a>
+  <a href="https://docs.basedpyright.com"><img src="https://img.shields.io/badge/basedpyright-checked-4644ad" alt="basedpyright - checked"></a>
+  <a href="https://prek.j178.dev"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/assets/badge/v0.json" alt="prek"></a>
+</p>
+
 ---
 
-> [!WARNING]
-> Metaxy hasn't been publicly released yet.
+!!! warning
+    Metaxy hasn't been publicly released yet, but you can try the latest dev release:
+
+    ```shell
+    pip install --pre metaxy
+    ```
 
 ---
 
-Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
+Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](guide/learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
 
-It's [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data and [metadata storage](learn/metadata-stores.md).
+It's [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data or [metadata storage](guide/learn/metadata-stores.md). There are no strict infrastructure requirements.
 
-It has no strict infrastructure requirements and can run computations in external databases or locally.
+Metaxy can scale to handle large amounts of **big metadata**.
 
-It can scale to handle large amounts of **big metadata**.
+All of this is possible thanks to (1) [Narwhals](https://narwhals-dev.github.io/narwhals/), [Ibis](https://ibis-project.org/), and a few clever tricks.
+{ .annotate }
+
+1. we really do stand on the shoulders of giants
 
 ## What problem exactly does Metaxy solve?
 
@@ -44,13 +61,13 @@ Until now, a general solution for this problem did not exist, but this is not th
 
 ## Metaxy's solution
 
-Metaxy solves the first set of problems with a **feature** and **field** dependency system, and the second set with a **migrations** system.
+Metaxy solves the first set of problems with a hybrid [feature](./guide/learn/feature-definitions.md) and [field](./guide/learn/feature-definitions.md#field-level-dependencies) dependency system, and the second set with a **migrations** system.
 
-Metaxy builds a *versioned graphs* from feature definitions and tracks version changes.
+Metaxy builds a *versioned graph* from feature definitions and [tracks version changes](./guide/learn/data-versioning.md) across feature definitions and individual samples.
 
 ## Quickstart
 
-Head to [Quickstart](./overview/quickstart.md) (WIP!).
+Head to [Quickstart](./guide/overview/quickstart.md) (WIP!).
 
 ## About Metaxy
 
@@ -62,17 +79,18 @@ Metaxy is:
     - supports **lakehouse storage** formats such as DeltaLake or DuckLake
     - is **agnostic to tabular compute engines**: Polars, Spark, Pandas, and databases thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
     - we totally don't care how is the multi-modal **data** produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata
+    - blends right in with orchestrators: see the excellent [Dagster integration](./integrations/orchestration/dagster/index.md) :octopus:
 
 - **🤸 flexible** to work around restrictions consciously:
 
-    - [features](./learn/feature-definitions.md) are defined as [Pydantic](https://docs.pydantic.dev/latest/) models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY
+    - [features](./guide/learn/feature-definitions.md) are defined as [Pydantic](https://docs.pydantic.dev/latest/) models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY
     - has a **migrations system** to compensate for reconciling field provenances and metadata when computations are not desired
 
 - **🪨 rock solid** when it matters:
 
-    - [field provenance](./learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
+    - [field provenance](./guide/learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
     - changes to topology, feature versioning, or individual samples **ruthlessly propagate downstream**
-    - unique [field-level dependency system](./learn/feature-definitions.md#field-level-dependencies) prevents unnecessary recomputations for features that depend on partial data
+    - unique [field-level dependency system](./guide/learn/feature-definitions.md#field-level-dependencies) prevents unnecessary recomputations for features that depend on partial data
     - metadata is **append-only** to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).
 
 - **📈 scalable**:
@@ -82,19 +100,21 @@ Metaxy is:
 
 - **🧑‍💻 dev friendly**:
 
-    - clean, [intuitive Python API](./learn/syntactic-sugar.md) that stays out of your way when you don't need it
-    - [feature discovery](./learn/feature-discovery.md) system for effortless dependency management
+    - clean, [intuitive Python API](./guide/learn/syntactic-sugar.md) that stays out of your way when you don't need it
+    - [feature discovery](./guide/learn/feature-discovery.md) system for effortless dependency management
     - comprehensive **type hints** and Pydantic integration for excellent IDE support
     - first-class support for **local development, testing, preview environments, CI/CD**
     - [CLI](./reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
     - [integrations](integrations/index.md) with popular tools such as SQLModel and Dagster.
-    - [testing helpers](./learn/testing.md) that you're going to appreciate
+    - [testing helpers](./guide/learn/testing.md) that you're going to appreciate
 
 ## What's Next?
 
-- Itching to write some Metaxy code? Continue to [Quickstart](./overview/quickstart.md) (WIP!).
+- Itching to write some Metaxy code? Continue to [Quickstart](./guide/overview/quickstart.md) (WIP!).
 
-- Learn more about [feature definitions](./learn/feature-definitions.md) or [versioning](./learn/data-versioning.md)
+- Learn more about [feature definitions](./guide/learn/feature-definitions.md) or [versioning](./guide/learn/data-versioning.md)
+
+- View complete, end-to-end [examples](./examples/index.md)
 
 - Explore [Metaxy integrations](integrations/index.md)
 

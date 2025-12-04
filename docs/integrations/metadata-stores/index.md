@@ -9,15 +9,24 @@ The most common example of such stores is databases.
 Metaxy delegates all versioning computations and operations to external compute as much as possible. (1)
 { .annotate }
 
-1. :fire: Typically the entire [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update] can be executed externally!
+1. :fire: Typically (1) the entire [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update] can be executed externally!
+   {.annotate}
+
+   1. Except the cases enumerated in [../../guide/learn/metadata-stores.md]
 
 These metadata stores can be found [here](./databases/index.md).
 
+!!! warning
+
+    Metaxy does not handle infrastructure setup. Make sure to have large tables partitioned as appropriate for your use case.
+
 !!! example
-[ClickHouse](./databases/clickhouse/index.md) is an excellent choice for a production metadata store.
+
+    [ClickHouse](./databases/clickhouse/index.md) is an excellent choice for a production metadata store.
 
 !!! tip
-Some of them such as [LanceDB](./databases/lancedb/index.md) or [DuckDB](./databases/duckdb/index.md) can also act as local compute engines.
+
+    Some of them such as [LanceDB](./databases/lancedb/index.md) or [DuckDB](./databases/duckdb/index.md) can also act as local compute engines.
 
 ## Storage Only
 
@@ -26,7 +35,8 @@ These metadata stores only provide storage and rely on **local** (also referred 
 The available storage-only stores can be found [here](./storage/index.md).
 
 !!! example
-[DeltaLake](./storage/delta/index.md) is an excellent choice for a storage-only metadata store.
+
+    [DeltaLake](./storage/delta/index.md) is an excellent choice for a storage-only metadata store.
 
 ## Choosing the Right Metadata Store
 
@@ -37,9 +47,10 @@ For **production** environments that need to handle **big metadata** volumes, co
 For development, testing, branch deployments, and other scenarios where you want to keep things simple, consider using a storage-only store.
 
 !!! warning
-Not all metadata stores support parallel writes.
-For example, DuckDB requires [application level work-arounds](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
+
+    Not all metadata stores support parallel writes.
+    For example, DuckDB requires [application level work-arounds](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
 
 ## Reference
 
-- Learn more about [using metadata stores](../../learn/metadata-stores.md)
+- Learn more about [using metadata stores](../../guide/learn/metadata-stores.md)

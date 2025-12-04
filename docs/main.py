@@ -33,8 +33,9 @@ def define_env(env):
         if not current_dir.exists():
             return ""
 
-        # Find all direct child directories that have an index.md
         children = []
+
+        # Find all direct child directories that have an index.md
         for item in sorted(current_dir.iterdir()):
             if item.is_dir():
                 index_file = item / "index.md"
@@ -46,6 +47,13 @@ def define_env(env):
                     )
                     rel_path = f"./{item.name}/index.md"
                     children.append(f"- [{title}]({rel_path})")
+
+        # Find sibling .md files (excluding index.md)
+        for item in sorted(current_dir.iterdir()):
+            if item.is_file() and item.suffix == ".md" and item.name != "index.md":
+                title = _get_page_title(item) or item.stem.replace("-", " ").title()
+                rel_path = f"./{item.name}"
+                children.append(f"- [{title}]({rel_path})")
 
         if not children:
             return ""

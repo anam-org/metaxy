@@ -55,6 +55,13 @@ def push(
     with metadata_store.open("write"):
         result = SystemTableStorage(metadata_store).push_graph_snapshot(tags=tags)
 
+        # Log store metadata for the system table
+        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
+
+        store_metadata = metadata_store.get_store_metadata(FEATURE_VERSIONS_KEY)
+        if store_metadata:
+            console.print(f"[dim]Recorded at: {store_metadata}[/dim]")
+
         # Scenario 1: New snapshot (computational changes)
         if not result.already_pushed:
             console.print("[green]✓[/green] Recorded feature graph")

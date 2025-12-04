@@ -12,6 +12,17 @@ When the same setting is defined in multiple places, Metaxy uses the following p
 
 Configuration files are discovered automatically by searching in the current or parent directories.
 
+## Templating Environment Variables
+
+Metaxy supports templating environment variables in configuration files using the `${VARIABLE_NAME}` syntax.
+
+!!! example
+
+    ```toml {title="metaxy.toml"}
+    [stores.branch.config]
+    root_path = "s3://my-bucket/${BRANCH_NAME}"
+    ```
+
 ## Configuration Options
 
 <!-- dprint-ignore-start -->
@@ -37,16 +48,15 @@ The `stores` field configures metadata store backends. Each store is defined by:
 
     # Development store (in-memory) with fallback to production
     [stores.dev]
-    type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+    type = "metaxy.metadata_store.deltalake.DeltaMetadataStore"
     [stores.dev.config]
-    db_path = ":memory:"
+    root_path = "${HOME}/.metaxy/metadata"
     fallback_stores = ["prod"]
 
     # Production store
     [stores.prod]
-    type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
-    [stores.prod.config]
-    db_path = "s3://my-bucket/metadata.duckdb"
+    type = "metaxy.metadata_store.deltalake.DeltaMetadataStore"
+    config = { root_path = "s3://my-bucket/metadata" }
     ```
 
 === "pyproject.toml"
@@ -56,15 +66,14 @@ The `stores` field configures metadata store backends. Each store is defined by:
     store = "dev"
 
     [tool.metaxy.stores.dev]
-    type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+    type = "metaxy.metadata_store.deltalake.DeltaMetadataStore"
     [tool.metaxy.stores.dev.config]
-    db_path = ":memory:"
+    root_path = "${HOME}/.metaxy/metadata"
     fallback_stores = ["prod"]
 
     [tool.metaxy.stores.prod]
-    type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
-    [tool.metaxy.stores.prod.config]
-    db_path = "s3://my-bucket/metadata.duckdb"
+    type = "metaxy.metadata_store.deltalake.DeltaMetadataStore"
+    config = { root_path = "s3://my-bucket/metadata" }
     ```
 
 ## Configuring Metadata Stores

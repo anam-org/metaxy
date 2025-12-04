@@ -958,6 +958,32 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
         assert "already recorded" in result3.stderr
 
 
+def test_graph_push_logs_store_metadata(metaxy_project: TempMetaxyProject):
+    """Test that graph push logs store metadata (e.g., table name for DuckDB)."""
+
+    def features():
+        from metaxy import FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
+
+        class VideoFiles(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli("graph", "push")
+
+        assert result.returncode == 0
+        # Should log store metadata (DuckDB shows table_name)
+        assert "Recorded at:" in result.stderr
+        assert "table_name" in result.stderr
+        assert "metaxy_system__feature_versions" in result.stderr
+
+
 def test_graph_push_multiple_features_metadata_changes(
     metaxy_project: TempMetaxyProject,
 ):
