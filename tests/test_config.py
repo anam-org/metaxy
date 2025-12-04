@@ -449,3 +449,98 @@ fallback_stores = ["${FALLBACK_STORE}"]
     assert config.entrypoints == ["/data/metadata/features", "another/path"]
     assert config.stores["dev"].config["path"] == "/data/metadata"
     assert config.stores["dev"].config["fallback_stores"] == ["prod"]
+
+
+def test_get_store_with_fallback_chain_delta(tmp_path: Path) -> None:
+    """Test that fallback stores are correctly attached for Delta stores via config.
+
+    This tests the specific issue where get_store() was not correctly resolving
+    fallback store names to store instances for stores that use from_config().
+    """
+    from metaxy.metadata_store.delta import DeltaMetadataStore
+
+    dev_path = tmp_path / "dev"
+    staging_path = tmp_path / "staging"
+    prod_path = tmp_path / "prod"
+
+    config = MetaxyConfig(
+        stores={
+            "dev": StoreConfig(
+                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                config={
+                    "root_path": str(dev_path),
+                    "fallback_stores": ["staging"],
+                },
+            ),
+            "staging": StoreConfig(
+                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                config={
+                    "root_path": str(staging_path),
+                    "fallback_stores": ["prod"],
+                },
+            ),
+            "prod": StoreConfig(
+                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                config={
+                    "root_path": str(prod_path),
+                },
+            ),
+        },
+    )
+
+    dev_store = config.get_store("dev")
+
+    assert isinstance(dev_store, DeltaMetadataStore)
+    assert len(dev_store.fallback_stores) == 1, (
+        f"Expected 1 fallback store, got {len(dev_store.fallback_stores)}. "
+        f"Fallback stores are not being correctly resolved via config.get_store()."
+    )
+
+    staging_store = dev_store.fallback_stores[0]
+    assert isinstance(staging_store, DeltaMetadataStore)
+    assert len(staging_store.fallback_stores) == 1
+
+    prod_store = staging_store.fallback_stores[0]
+    assert isinstance(prod_store, DeltaMetadataStore)
+    assert len(prod_store.fallback_stores) == 0
+
+
+def test_get_store_with_fallback_chain_delta_from_toml(tmp_path: Path) -> None:
+    """Test that fallback stores are correctly attached when loading Delta stores from TOML.
+
+    This tests the specific issue where get_store() was not correctly resolving
+    fallback store names to store instances when loading from a TOML config file.
+    """
+    from metaxy.metadata_store.delta import DeltaMetadataStore
+
+    dev_path = tmp_path / "dev"
+    branch_path = tmp_path / "branch"
+
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text(f"""
+project = "test-project"
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+[stores.dev.config]
+root_path = "{dev_path}"
+fallback_stores = ["branch"]
+
+[stores.branch]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+[stores.branch.config]
+root_path = "{branch_path}"
+""")
+
+    config = MetaxyConfig.load(config_file)
+    dev_store = config.get_store("dev")
+
+    assert isinstance(dev_store, DeltaMetadataStore)
+    assert len(dev_store.fallback_stores) == 1, (
+        f"Expected 1 fallback store, got {len(dev_store.fallback_stores)}. "
+        f"Fallback stores are not being correctly resolved via config.get_store() from TOML."
+    )
+
+    branch_store = dev_store.fallback_stores[0]
+    assert isinstance(branch_store, DeltaMetadataStore)
+    assert len(branch_store.fallback_stores) == 0

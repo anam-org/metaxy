@@ -602,3 +602,55 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
 # 2. This is the correct behavior: samples come from user argument, not from fallback stores
 # 3. Testing this is complex because samples need proper metadata columns before the
 #    implementation check, and creating native (Ibis) samples in tests is non-trivial
+
+
+def test_fallback_stores_opened_on_demand_when_reading(
+    tmp_path, graph: FeatureGraph
+) -> None:
+    """Test that fallback stores are opened on demand when reading metadata.
+
+    This tests the fix for a bug where fallback stores were not opened when
+    the primary store tried to read from them, resulting in StoreNotOpenError
+    being raised (or worse, being masked as FeatureNotFoundError).
+    """
+    from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+    from metaxy._testing.models import SampleFeatureSpec
+    from metaxy.metadata_store.delta import DeltaMetadataStore
+
+    class TestFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["fallback_open_test", "feature"]),
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    dev_path = tmp_path / "dev"
+    branch_path = tmp_path / "branch"
+
+    # Create stores with fallback chain
+    branch_store = DeltaMetadataStore(root_path=branch_path)
+    dev_store = DeltaMetadataStore(root_path=dev_path, fallback_stores=[branch_store])
+
+    # Write data to the fallback (branch) store
+    with branch_store.open(mode="write"):
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
+            }
+        )
+        branch_store.write_metadata(TestFeature, metadata)
+
+    # Now open only the dev store and try to read - it should find data in fallback
+    # The fallback store should be opened on demand
+    with dev_store:
+        result = dev_store.read_metadata(TestFeature)
+        assert result is not None
+        collected = result.collect()
+        assert len(collected) == 3
