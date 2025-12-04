@@ -63,6 +63,18 @@ def get_partition_filter(
     return build_partition_filter(partition_col, context.partition_key)
 
 
+def compute_row_count(lazy_df: nw.LazyFrame) -> int:  # pyright: ignore[reportMissingTypeArgument]
+    """Compute row count from a narwhals LazyFrame.
+
+    Args:
+        lazy_df: A narwhals LazyFrame.
+
+    Returns:
+        The number of rows in the frame.
+    """
+    return lazy_df.select(nw.len()).collect().item(0, 0)  # pyright: ignore[reportReturnType]
+
+
 def compute_stats_from_lazy_frame(lazy_df: nw.LazyFrame) -> FeatureStats:  # pyright: ignore[reportMissingTypeArgument]
     """Compute statistics from a narwhals LazyFrame.
 
@@ -198,8 +210,10 @@ def generate_materialize_results(
 
             stats = compute_stats_from_lazy_frame(lazy_df)
 
-            # Build runtime metadata using shared function
-            metadata = build_runtime_feature_metadata(key, store, lazy_df, context)
+            # Build runtime metadata using shared function, passing pre-computed row count
+            metadata = build_runtime_feature_metadata(
+                key, store, lazy_df, context, partition_row_count=stats.row_count
+            )
 
             # Get materialized-in-run count if materialization_id is set
             if store.materialization_id is not None:
@@ -284,6 +298,8 @@ def build_runtime_feature_metadata(
     store: mx.MetadataStore | MetaxyStoreFromConfigResource,
     lazy_df: nw.LazyFrame[Any],
     context: dg.AssetExecutionContext | dg.OutputContext,
+    *,
+    partition_row_count: int | None = None,
 ) -> dict[str, Any]:
     """Build runtime metadata for a Metaxy feature in Dagster.
 
@@ -294,15 +310,17 @@ def build_runtime_feature_metadata(
         feature_key: The Metaxy feature key.
         store: The metadata store (used for store-specific metadata like URI, table_name).
         lazy_df: The LazyFrame containing the feature data (for stats and preview).
+            For partitioned assets, this should be filtered to the current partition.
         context: Dagster context for determining partition state and logging errors.
+        partition_row_count: Optional pre-computed partition row count to avoid re-computing.
 
     Returns:
         A dictionary containing all runtime metadata:
         - `metaxy/feature`: Feature key as string
         - `metaxy/info`: Feature and metaxy library information (from `build_feature_info_metadata`)
         - `metaxy/store`: Store type and configuration
-        - `dagster/row_count`: Total row count
-        - `dagster/partition_row_count`: Row count (only if partitioned)
+        - `dagster/row_count`: Total row count (across all partitions)
+        - `dagster/partition_row_count`: Row count for current partition (only if partitioned)
         - `dagster/table_name`: Table name from store (if available)
         - `dagster/uri`: URI from store (if available)
         - `dagster/table`: Table preview
@@ -324,8 +342,9 @@ def build_runtime_feature_metadata(
     )
 
     try:
-        # Compute stats from the lazy frame
-        stats = compute_stats_from_lazy_frame(lazy_df)
+        # Use pre-computed partition_row_count if provided, otherwise compute
+        if partition_row_count is None:
+            partition_row_count = compute_row_count(lazy_df)
 
         # Get store metadata
         store_metadata = store.get_store_metadata(feature_key)
@@ -341,12 +360,16 @@ def build_runtime_feature_metadata(
                 "versioning_engine": store._versioning_engine,
                 **store_metadata,
             },
-            "dagster/row_count": stats.row_count,
         }
 
-        # Add partition_row_count for partitioned assets
+        # For partitioned assets, compute total row count by re-reading without filters
         if context is not None and context.has_partition_key:
-            metadata["dagster/partition_row_count"] = stats.row_count
+            # Read entire feature (no partition filter) for total count
+            full_lazy_df = store.read_metadata(feature_key)
+            metadata["dagster/row_count"] = compute_row_count(full_lazy_df)
+            metadata["dagster/partition_row_count"] = partition_row_count
+        else:
+            metadata["dagster/row_count"] = partition_row_count
 
         # Map store metadata to dagster standard keys
         if "table_name" in store_metadata:
@@ -428,7 +451,9 @@ def generate_observe_results(
                 continue
 
             stats = compute_stats_from_lazy_frame(lazy_df)
-            metadata = build_runtime_feature_metadata(key, store, lazy_df, context)
+            metadata = build_runtime_feature_metadata(
+                key, store, lazy_df, context, partition_row_count=stats.row_count
+            )
 
         yield dg.ObserveResult(
             asset_key=asset_spec.key,
