@@ -3391,19 +3391,22 @@ It's a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model.</p>
 </details>
 <p>Hurray! You get the idea.</p>
 <h2 id="field-level-dependencies">Field-Level Dependencies<a class="headerlink" href="#field-level-dependencies" title="Permanent link">&para;</a></h2>
-<p>A core (I'll be straight: a killer) feature of Metaxy is the concept of <strong>field-level dependencies</strong>.
+<p class="annotate">A core (1) feature of Metaxy is the concept of <strong>field-level dependencies</strong>.
 These are used to define dependencies between logical fields of features.</p>
+<ol>
+<li>really a killer <img alt="🔫" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f52b.svg" title=":gun:" /></li>
+</ol>
 <div class="admonition abstract">
 <p class="admonition-title">Abstract</p>
-<p>A <strong>field</strong> is not to be confused with metadata <em>column</em> (Pydantic fields).
-Fields are completely independent from them.</p>
-</div>
-<p>Columns refer to <em>metadata</em> and are stored in metadata stores (such as databases) supported by Metaxy.</p>
-<p>Fields refer to <em>data</em> and are logical -- users are free to define them as they see fit.
+<p class="annotate">A <strong>Metaxy field</strong> is not to be confused with <strong>metadata column</strong>.
+Columns refer to <strong>metadata</strong> and are stored in metadata stores (such as databases) supported by Metaxy. (1)</p>
+<ol>
+<li>columns can be defined with <a class="autorefs autorefs-external" href="https://docs.pydantic.dev/latest/api/fields/#pydantic.fields.Field"><strong>Pydantic fields</strong></a> <img alt="😅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f605.svg" title=":sweat_smile:" /></li>
+</ol>
+<p>Fields refer to <strong>data</strong> and are <strong>purely logical</strong> - users are free to define them as they see fit.
 Fields are supposed to represent parts of data that users care about.
-For example, a <code>Video</code> feature -- an <code>.mp4</code> file -- may have <code>frames</code> and <code>audio</code> fields.</p>
-<p>Downstream features can depend on specific fields of upstream features.
-This enables fine-grained control over field provenance, avoiding unnecessary reprocessing.</p>
+For example, a <code>Video</code> feature - an <code>.mp4</code> file - may have <code>frames</code> and <code>audio</code> fields.</p>
+</div>
 <p>At this point, careful readers have probably noticed that the <code>Transcript</code> feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
 Let's express this with Metaxy:</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldDep</span><span class="p">,</span> <span class="n">FieldSpec</span>
@@ -3441,8 +3444,22 @@ See <a href="../syntactic-sugar/">syntactic sugar</a> for more details.</p>
 <p>Users can <a href="../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec.metadata">attach</a> arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
 This metadata does not influence graph topology or the versioning system.</p>
 <h2 id="fully-qualified-field-key">Fully Qualified Field Key<a class="headerlink" href="#fully-qualified-field-key" title="Permanent link">&para;</a></h2>
-<p>A <strong>fully qualified field key (FQFK)</strong> is an identifier that uniquely identifies a field within the whole feature graph.
-It consists of the <strong>feature key</strong> and the <strong>field key</strong>, separated by a colon, for example: <code>/raw/video:frames</code>, <code>/raw/video:audio/english</code>.</p>
+<div class="admonition abstract">
+<p class="admonition-title">Abstract</p>
+<p>A <strong>fully qualified field key (FQFK)</strong> is an identifier that uniquely identifies a field within the whole feature graph.</p>
+</div>
+<p>It consists of the <strong>feature key</strong> and the <strong>field key</strong>, separated by a colon.</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<ul>
+<li>
+<p><code>/raw/video:frames</code></p>
+</li>
+<li>
+<p><code>/raw/video:audio/english</code></p>
+</li>
+</ul>
+</div>
 
 
 
