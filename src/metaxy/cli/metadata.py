@@ -153,6 +153,10 @@ def status(
                 )
             else:
                 data_console.print(status_with_increment.status.format_status_line())
+                # Print store metadata (table_name, uri, etc.)
+                store_metadata = status_with_increment.status.store_metadata
+                if store_metadata:
+                    data_console.print("    ", store_metadata)
                 if verbose:
                     for line in status_with_increment.sample_details(feature_cls):
                         data_console.print(line)
