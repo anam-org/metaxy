@@ -84,7 +84,14 @@ def observable_metaxy_asset(
         )(spec)
 
         def _observe(context: dg.AssetExecutionContext) -> dg.ObserveResult:
-            store: mx.MetadataStore = getattr(context.resources, store_resource_key)
+            try:
+                store: mx.MetadataStore = object.__getattribute__(
+                    context.resources, store_resource_key
+                )
+            except AttributeError as exc:  # pragma: no cover - defensive
+                raise AttributeError(
+                    f"Resource '{store_resource_key}' is not available on context.resources"
+                ) from exc
 
             with store:
                 lazy_df = store.read_metadata(feature_key)

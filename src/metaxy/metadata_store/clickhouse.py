@@ -1,11 +1,15 @@
 """ClickHouse metadata store - thin wrapper around IbisMetadataStore."""
 
-from typing import TYPE_CHECKING, Any
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any, cast
+
+import ibis
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
+from metaxy.models.types import FeatureKey
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -19,13 +23,25 @@ class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
         config = ClickHouseMetadataStoreConfig(
             connection_string="clickhouse://localhost:9000/default",
             hash_algorithm=HashAlgorithm.XXHASH64,
+            mutations_sync=2,  # Wait for all replicas
         )
 
         store = ClickHouseMetadataStore.from_config(config)
         ```
     """
 
-    pass  # All fields inherited from IbisMetadataStoreConfig
+    mutations_sync: int = 1
+    """Consistency level for DELETE/UPDATE mutations.
+
+    ClickHouse mutations (ALTER TABLE UPDATE/DELETE) are asynchronous by default.
+    This setting controls synchronization behavior:
+
+    - `0`: Asynchronous (fire-and-forget). Fastest, but changes may not be immediately visible.
+    - `1`: Wait for mutation to complete on this replica (default). Good balance of speed and consistency.
+    - `2`: Wait for mutation to complete on all replicas. Strongest consistency, slowest.
+
+    See: https://clickhouse.com/docs/en/operations/settings/settings#mutations_sync
+    """
 
 
 class ClickHouseMetadataStore(IbisMetadataStore):
@@ -54,6 +70,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         *,
         connection_params: dict[str, Any] | None = None,
         fallback_stores: list["MetadataStore"] | None = None,
+        mutations_sync: int = 1,
         **kwargs: Any,
     ):
         """
@@ -87,6 +104,8 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
             fallback_stores: Ordered list of read-only fallback stores.
 
+            mutations_sync: Consistency level for DELETE/UPDATE mutations (0=async, 1=this replica, 2=all replicas).
+
             **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]`
 
         Raises:
@@ -98,6 +117,9 @@ class ClickHouseMetadataStore(IbisMetadataStore):
                 "Must provide either connection_string or connection_params. "
                 "Example: connection_string='clickhouse://localhost:9000/default'"
             )
+
+        # Store mutations_sync setting
+        self._mutations_sync = mutations_sync
 
         # Initialize Ibis store with ClickHouse backend
         super().__init__(
@@ -115,14 +137,48 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         """
         return HashAlgorithm.XXHASH64
 
+    @contextmanager
+    def open(self, mode="read"):  # noqa: ANN001
+        """Open ClickHouse connection and set mutation settings at session level."""
+        with super().open(mode) as store:
+            try:
+                cast(Any, self.conn).raw_sql(
+                    f"SET mutations_sync={self._mutations_sync}"
+                )
+            except Exception:
+                # Best-effort; avoid failing open on setting errors
+                pass
+            yield store
+
+    def _delete_metadata_impl(
+        self,
+        feature_key: Any,
+        filter_expr: Any,
+    ) -> int:
+        """Defer to generic Ibis delete implementation."""
+        target_key = (
+            feature_key
+            if isinstance(feature_key, FeatureKey)
+            else self._resolve_feature_key(feature_key)
+        )
+        return super()._delete_metadata_impl(target_key, filter_expr)
+
+    def _mutate_metadata_impl(
+        self,
+        feature_key: Any,
+        filter_expr: Any,
+        updates: dict[str, Any],
+    ) -> int:
+        """Disable in-place UPDATE; ClickHouse mutations are append-only."""
+        raise NotImplementedError(
+            "Mutations are append-only for ClickHouse; in-place UPDATE disabled."
+        )
+
     def _create_hash_functions(self):
         """Create ClickHouse-specific hash functions for Ibis expressions.
 
         Implements MD5 and xxHash functions using ClickHouse's native functions.
         """
-        # Import ibis for wrapping built-in SQL functions
-        import ibis
-
         hash_functions = {}
 
         # ClickHouse MD5 implementation

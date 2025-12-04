@@ -153,36 +153,42 @@ class PolarsVersioningEngine(VersioningEngine):
     def keep_latest_by_group(
         df: FrameT,
         group_columns: list[str],
-        timestamp_column: str,
+        order_by_columns: list[str],
     ) -> FrameT:
-        """Keep only the latest row per group based on a timestamp column.
+        """Keep only the latest row per group based on ordered columns.
 
         Args:
             df: Narwhals DataFrame/LazyFrame backed by Polars
             group_columns: Columns to group by (typically ID columns)
-            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+            order_by_columns: Columns to order by (highest value wins)
 
         Returns:
             Narwhals DataFrame/LazyFrame with only the latest row per group
 
         Raises:
-            ValueError: If timestamp_column doesn't exist in df
+            ValueError: If order_by_columns is empty or none exist in df
         """
         assert df.implementation == nw.Implementation.POLARS, (
             "Only Polars DataFrames are accepted"
         )
 
-        # Check if timestamp_column exists
-        if timestamp_column not in df.columns:
+        if not order_by_columns:
+            raise ValueError("order_by_columns must contain at least one column")
+
+        # Keep only columns that exist to avoid runtime errors
+        present_order_cols = [col for col in order_by_columns if col in df.columns]
+        if not present_order_cols:
             raise ValueError(
-                f"Timestamp column '{timestamp_column}' not found in DataFrame. "
+                f"None of the order_by_columns {order_by_columns} found in DataFrame. "
                 f"Available columns: {df.columns}"
             )
 
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
 
+        descending = [True] * len(present_order_cols)
+
         result = df_pl.group_by(group_columns).agg(
-            pl.col("*").sort_by(timestamp_column).last()
+            pl.col("*").sort_by(present_order_cols, descending=descending).first()
         )
 
         # Convert back to Narwhals
