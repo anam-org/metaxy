@@ -6,20 +6,13 @@ import json
 from typing import TYPE_CHECKING, Annotated, Any
 
 import cyclopts
-from pydantic import TypeAdapter
 
 from metaxy.cli.console import console, data_console, error_console
-from metaxy.cli.utils import (
-    CLIError,
-    FeatureSelector,
-    OutputFormat,
-    exit_with_error,
-    load_graph_for_command,
-)
-from metaxy.graph.status import FullFeatureMetadataRepresentation
+from metaxy.cli.utils import FeatureSelector, FilterArgs, OutputFormat
 
 if TYPE_CHECKING:
     pass
+
 
 # Metadata subcommand app
 app = cyclopts.App(
@@ -41,6 +34,7 @@ def status(
             help="Metadata store name (defaults to configured default store).",
         ),
     ] = None,
+    filters: FilterArgs | None = None,
     snapshot_version: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -76,12 +70,19 @@ def status(
         $ metaxy metadata status --feature feat1 --feature feat2
         $ metaxy metadata status --all-features
         $ metaxy metadata status --store dev --all-features
+        $ metaxy metadata status --all-features --filter "status = 'active'"
     """
     from metaxy.cli.context import AppContext
+    from metaxy.cli.utils import CLIError, exit_with_error, load_graph_for_command
     from metaxy.graph.status import get_feature_metadata_status
+
+    filters = filters or []
 
     # Validate feature selection
     selector.validate(format)
+
+    # Filters are already parsed by the converter
+    global_filters = filters if filters else None
 
     context = AppContext.get()
     metadata_store = context.get_store(store)
@@ -133,12 +134,12 @@ def status(
 
         # Collect status for all features
         needs_update = False
-        feature_reps: dict[str, FullFeatureMetadataRepresentation] = {}
+        feature_reps: dict[str, Any] = {}
 
         for feature_key in valid_keys:
             feature_cls = graph.features_by_key[feature_key]
             status_with_increment = get_feature_metadata_status(
-                feature_cls, metadata_store
+                feature_cls, metadata_store, global_filters=global_filters
             )
 
             if status_with_increment.status.needs_update:
@@ -158,6 +159,10 @@ def status(
 
         # Output JSON result
         if format == "json":
+            from pydantic import TypeAdapter
+
+            from metaxy.graph.status import FullFeatureMetadataRepresentation
+
             adapter = TypeAdapter(dict[str, FullFeatureMetadataRepresentation])
             output: dict[str, Any] = {
                 "snapshot_version": snapshot_version,
@@ -233,6 +238,7 @@ def drop(
         $ metaxy metadata drop --store dev --all-features --confirm
     """
     from metaxy.cli.context import AppContext
+    from metaxy.cli.utils import CLIError, exit_with_error
 
     # Validate feature selection
     selector.validate(format)
