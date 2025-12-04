@@ -3332,23 +3332,21 @@
 <h1 id="feature-system">Feature System<a class="headerlink" href="#feature-system" title="Permanent link">&para;</a></h1>
 <p>Metaxy has a declarative (defined statically at class level), expressive, flexible feature system.
 It has been inspired by <a href="https://dagster.io/">Dagster</a>'s Software-Defined Assets and <a href="https://nixos.org/">Nix</a>.</p>
+<div class="admonition abstract">
+<p class="admonition-title">Abstract</p>
 <p>Features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.
 But it can be just pure <strong>metadata</strong> as well.</p>
-<p>I will highlight <strong>data</strong> and <strong>metadata</strong> with bold so it really stands out.</p>
-<p>Metaxy is responsible for providing correct <strong>metadata</strong> to users.
-During incremental processing, Metaxy will automatically resolve added, changed and deleted <strong>metadata</strong> rows and calculate the right <a href="../data-versioning/">sample versions</a> for them.
-Metaxy does not interact with <strong>data</strong> directly, the user is responsible for writing it, typically using <strong>metadata</strong> to identify sample locations in storage (it's a good idea to inject the sample version into the data sample identifier).
-Metaxy is designed to be used with systems that do not overwrite existing <strong>metadata</strong> (Metaxy only appends <strong>metadata</strong>) and therefore <strong>data</strong> as well (while we cannot enforce that since the user is responsible for writing the data, it's easily achievable by <strong>including the sample version into the data sample identifier</strong>).</p>
-<p>I hope we can stop using bold for <strong>data</strong> and <strong>metadata</strong> from now on, hopefully we've made our point.</p>
-<div class="admonition tip">
-<p class="admonition-title">Include sample version in your data path</p>
-<p>Include the sample version in your data path to ensure strong consistency guarantees.
-I mean it.
-Really do it!</p>
 </div>
-<p>Features live on a global <code>FeatureGraph</code> object (typically users do not need to interact with it directly).
-Features are bound to a specific Metaxy project, but can be moved between projects over time.
-Features must have unique (across all projects) <code>FeatureKey</code> associated with them.</p>
+<p>I will highlight <strong>data</strong> and <strong>metadata</strong> with bold so it really stands out.</p>
+<p>Metaxy is responsible for providing correct <strong>metadata</strong> to users.</p>
+<p>During incremental processing, Metaxy will automatically resolve added, changed and deleted <strong>metadata</strong> rows and calculate the right <a href="../data-versioning/">sample versions</a> for them.</p>
+<p>Metaxy does not interact with <strong>data</strong> directly, the user is responsible for writing it, typically using <strong>metadata</strong> to identify sample locations in storage.</p>
+<div class="admonition tip">
+<p class="admonition-title">Keeping Historical Data</p>
+<p>Include <code>metaxy_data_version</code> in your data path to avoid collisions between different versions of the same data sample.
+Doing this will ensure that newer samples are never written over older ones.</p>
+</div>
+<p>I hope we can stop using bold for <strong>data</strong> and <strong>metadata</strong> from now on, hopefully we've made our point.</p>
 <h2 id="feature-definitions">Feature Definitions<a class="headerlink" href="#feature-definitions" title="Permanent link">&para;</a></h2>
 <p>Metaxy provides a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
 
@@ -3357,6 +3355,11 @@ Features must have unique (across all projects) <code>FeatureKey</code> associat
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../../reference/api/definitions/feature/#metaxy.BaseFeature"><code>BaseFeature</code></a> class that can be extended to create user-defined features.
 It's a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model.</p>
+<div class="admonition abstract">
+<p class="admonition-title">Abstract</p>
+<p>Features must have unique (across all projects) <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt;" href="../../reference/api/types/#metaxy.FeatureKey"><code>FeatureKey</code></a> associated with them.</p>
+<p>Users must provide one or more ID columns to <code>FeatureSpec</code>, telling Metaxy how to uniquely identify feature samples.</p>
+</div>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseFeature</span><span class="p">,</span> <span class="n">FeatureSpec</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -3365,26 +3368,36 @@ It's a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model.</p>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">):</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
 </span></code></pre></div>
-<p>Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your <code>FeatureSpec</code>.</p>
-<p>That's it!
-Since it's a root feature, it doesn't have any dependencies.
-Easy.</p>
+<p>Since <code>VideoFeature</code> is a <strong>root feature</strong>, it doesn't have any dependencies.</p>
+<p>That's it! Easy.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
 <p>You may now use <code>VideoFeature.spec()</code> class method to access the original feature spec: it's bound to the class.</p>
+</div>
 <p>Now let's define a child feature.</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Transcript</span><span class="p">(</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">BaseFeature</span><span class="p">,</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/processed/transcript&quot;</span><span class="p">,</span> <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;video_id&quot;</span><span class="p">]</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">VideoFeature</span><span class="p">]),</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">):</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">transcript_path</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">speakers_json_path</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">num_speakers</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="n">key</span><span class="o">=</span><span class="s2">&quot;/processed/transcript&quot;</span><span class="p">,</span> <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;video_id&quot;</span><span class="p">],</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">VideoFeature</span><span class="p">]</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="p">),</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">):</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">transcript_path</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">speakers_json_path</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">num_speakers</span><span class="p">:</span> <span class="nb">int</span>
 </span></code></pre></div>
+<details class="abstract">
+<summary>The God <code>FeatureGraph</code> object</summary>
+<p>Features live on a global <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureGraph&lt;/span&gt;" href="../../reference/api/definitions/graph/#metaxy.FeatureGraph"><code>FeatureGraph</code></a> object (typically users do not need to interact with it directly).</p>
+</details>
 <p>Hurray! You get the idea.</p>
 <h2 id="field-level-dependencies">Field-Level Dependencies<a class="headerlink" href="#field-level-dependencies" title="Permanent link">&para;</a></h2>
 <p>A core (I'll be straight: a killer) feature of Metaxy is the concept of <strong>field-level dependencies</strong>.
 These are used to define dependencies between logical fields of features.</p>
+<div class="admonition abstract">
+<p class="admonition-title">Abstract</p>
 <p>A <strong>field</strong> is not to be confused with metadata <em>column</em> (Pydantic fields).
 Fields are completely independent from them.</p>
+</div>
 <p>Columns refer to <em>metadata</em> and are stored in metadata stores (such as databases) supported by Metaxy.</p>
 <p>Fields refer to <em>data</em> and are logical -- users are free to define them as they see fit.
 Fields are supposed to represent parts of data that users care about.
@@ -3392,7 +3405,7 @@ For example, a <code>Video</code> feature -- an <code>.mp4</code> file -- may ha
 <p>Downstream features can depend on specific fields of upstream features.
 This enables fine-grained control over field provenance, avoiding unnecessary reprocessing.</p>
 <p>At this point, careful readers have probably noticed that the <code>Transcript</code> feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
-Let's express that with Metaxy:</p>
+Let's express this with Metaxy:</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldDep</span><span class="p">,</span> <span class="n">FieldSpec</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">video_spec</span> <span class="o">=</span> <span class="n">FeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/video&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;audio&quot;</span><span class="p">,</span> <span class="s2">&quot;frames&quot;</span><span class="p">])</span>

@@ -3220,7 +3220,8 @@ For this purpose, Metaxy implements <a class="autorefs autorefs-internal" title=
 <p>Implicit boolean columns (e.g., <code>NOT is_active</code>)</p>
 </li>
 </ul>
-<p>Example usage:</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.models.filter_expression</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_filter_string</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">df</span> <span class="o">=</span> <span class="o">...</span>  <span class="c1"># a Narwhals frame</span>
@@ -3230,6 +3231,7 @@ For this purpose, Metaxy implements <a class="autorefs autorefs-internal" title=
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
 </span></code></pre></div>
+</div>
 
 
 

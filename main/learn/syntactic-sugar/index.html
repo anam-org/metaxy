@@ -3424,9 +3424,15 @@ This is fully typed and only affects <strong>constructor arguments</strong>, so 
 <h2 id="keys">Keys<a class="headerlink" href="#keys" title="Permanent link">&para;</a></h2>
 <p>Both <code>FeatureKey</code> and <code>FieldKey</code> accept:</p>
 <ul>
-<li><strong>String format</strong>: <code>FeatureKey("prefix/feature")</code></li>
-<li><strong>Sequence format</strong>: <code>FeatureKey(["prefix", "feature"])</code></li>
-<li><strong>Same type</strong>: <code>FeatureKey(another_feature_key)</code> -- for full Inception mode</li>
+<li>
+<p><strong>String format</strong>: <code>FeatureKey("prefix/feature")</code></p>
+</li>
+<li>
+<p><strong>Sequence format</strong>: <code>FeatureKey(["prefix", "feature"])</code></p>
+</li>
+<li>
+<p><strong>Same type</strong>: <code>FeatureKey(another_feature_key)</code> -- for full Inception mode</p>
+</li>
 </ul>
 <p>All formats produce equivalent keys, internally represented as a sequence of parts.</p>
 <h2 id="feature-dep">Feature Dep<a class="headerlink" href="#feature-dep" title="Permanent link">&para;</a></h2>
