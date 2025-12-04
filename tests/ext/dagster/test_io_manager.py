@@ -46,20 +46,35 @@ def downstream_feature(
 class TestMetaxyIOManagerHandleOutput:
     """Test handle_output functionality."""
 
-    def test_handle_output_with_none_logs_metadata(
+    def test_handle_output_with_none_logs_metadata_when_data_exists(
         self,
         upstream_feature: type[mx.BaseFeature],
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test that handle_output with None just logs metadata without writing."""
+        """Test that handle_output with None logs metadata when feature data exists externally."""
+        # First write data externally (not via IOManager)
+        store = mx.MetaxyConfig.get().get_store("dev")
+        with store.open("write"):
+            store.write_metadata(
+                upstream_feature,
+                pl.DataFrame(
+                    {
+                        "id": ["ext1", "ext2"],
+                        "metaxy_provenance_by_field": [
+                            {"value": "v1"},
+                            {"value": "v2"},
+                        ],
+                    }
+                ),
+            )
 
         @dg.asset(
             metadata={"metaxy/feature": "features/upstream"},
             io_manager_key="metaxy_io_manager",
         )
         def my_asset():
-            # Return None - IOManager should just log metadata
+            # Return None - data was written externally, IOManager should still log metadata
             return None
 
         result = dg.materialize(
@@ -69,12 +84,89 @@ class TestMetaxyIOManagerHandleOutput:
         )
 
         assert result.success
-        # Check that output metadata was logged
+        # Metadata should be logged since feature data exists
         event = result.get_asset_materialization_events()[0]
         metadata = event.step_materialization_data.materialization.metadata
         assert "metaxy/feature" in metadata
         assert "metaxy/info" in metadata
         assert "metaxy/store" in metadata
+
+    def test_handle_output_with_none_no_metadata_when_data_missing(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that handle_output with None doesn't log metadata when feature data doesn't exist."""
+
+        @dg.asset(
+            metadata={"metaxy/feature": "features/upstream"},
+            io_manager_key="metaxy_io_manager",
+        )
+        def my_asset():
+            # Return None and no data exists - no metadata should be logged
+            return None
+
+        result = dg.materialize(
+            [my_asset],
+            resources=resources,
+            instance=instance,
+        )
+
+        assert result.success
+        # No metadata should be logged when feature data doesn't exist
+        event = result.get_asset_materialization_events()[0]
+        metadata = event.step_materialization_data.materialization.metadata
+        assert "metaxy/feature" not in metadata
+        assert "metaxy/info" not in metadata
+        assert "metaxy/store" not in metadata
+
+    def test_handle_output_with_none_logs_metadata_when_written_in_asset(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that handle_output with None logs metadata when data is written inside the asset."""
+
+        @dg.asset(
+            metadata={"metaxy/feature": "features/upstream"},
+            io_manager_key="metaxy_io_manager",
+        )
+        def my_asset(store: dg.ResourceParam[mx.MetadataStore]):
+            # Write data directly to store inside the asset
+            with store.open("write"):
+                store.write_metadata(
+                    upstream_feature,
+                    pl.DataFrame(
+                        {
+                            "id": ["in_asset_1", "in_asset_2"],
+                            "metaxy_provenance_by_field": [
+                                {"value": "v1"},
+                                {"value": "v2"},
+                            ],
+                        }
+                    ),
+                )
+            # Return None - IOManager should still log metadata from the data we just wrote
+            return None
+
+        result = dg.materialize(
+            [my_asset],
+            resources=resources,
+            instance=instance,
+        )
+
+        assert result.success
+        # Metadata should be logged since feature data was written inside the asset
+        event = result.get_asset_materialization_events()[0]
+        metadata = event.step_materialization_data.materialization.metadata
+        assert "metaxy/feature" in metadata
+        assert metadata["metaxy/feature"].value == "features/upstream"
+        assert "metaxy/info" in metadata
+        assert "metaxy/store" in metadata
+        # Should have 2 rows
+        assert metadata["dagster/row_count"].value == 2
 
     def test_handle_output_with_metaxy_output_writes_data(
         self,
@@ -200,12 +292,28 @@ class TestMetaxyIOManagerMetadata:
         instance: dg.DagsterInstance,
     ):
         """Test that output metadata includes feature version info."""
+        # First write data externally so metadata can be read
+        store = mx.MetaxyConfig.get().get_store("dev")
+        with store.open("write"):
+            store.write_metadata(
+                upstream_feature,
+                pl.DataFrame(
+                    {
+                        "id": ["a", "b"],
+                        "metaxy_provenance_by_field": [
+                            {"value": "v1"},
+                            {"value": "v2"},
+                        ],
+                    }
+                ),
+            )
 
         @dg.asset(
             metadata={"metaxy/feature": "features/upstream"},
             io_manager_key="metaxy_io_manager",
         )
         def my_asset():
+            # Return None - data was written externally
             return None
 
         result = dg.materialize(
@@ -239,7 +347,20 @@ class TestMetaxyIOManagerMetadata:
         # Check metaxy/store contains store type info
         store_meta = metadata["metaxy/store"].value
         assert isinstance(store_meta, dict)
-        assert "type" in store_meta
+
+        # Get the actual store from config to verify values
+        actual_store = mx.MetaxyConfig.get().get_store("dev")
+        store_cls = actual_store.__class__
+
+        # Type should be fully qualified class name
+        expected_type = f"{store_cls.__module__}.{store_cls.__qualname__}"
+        assert store_meta["type"] == expected_type
+
+        # Display should match store.display()
+        assert store_meta["display"] == actual_store.display()
+
+        # versioning_engine should match
+        assert store_meta["versioning_engine"] == actual_store._versioning_engine
 
     def test_materialized_in_run_count(
         self,
@@ -537,16 +658,16 @@ class TestMultipleAssetsPerFeature:
             ids = set(all_data.to_native()["id"].to_list())
             assert ids == {"a1", "a2", "a3", "b1", "b2"}
 
-    def test_multiple_assets_with_inherit_feature_key(
+    def test_multiple_assets_with_same_feature_key(
         self,
         shared_feature: type[mx.BaseFeature],
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test multiple assets using inherit_feature_key_as_asset_key while writing to the same feature."""
+        """Test multiple assets using the same feature key as asset key."""
         import metaxy.ext.dagster as mxd
 
-        @mxd.metaxify(inherit_feature_key_as_asset_key=True)
+        @mxd.metaxify
         @dg.asset(
             metadata={"metaxy/feature": "features/shared"},
             io_manager_key="metaxy_io_manager",
@@ -562,7 +683,7 @@ class TestMultipleAssetsPerFeature:
                 }
             )
 
-        @mxd.metaxify(inherit_feature_key_as_asset_key=True)
+        @mxd.metaxify
         @dg.asset(
             metadata={"metaxy/feature": "features/shared"},
             io_manager_key="metaxy_io_manager",

@@ -8,11 +8,13 @@ from narwhals.typing import IntoFrame
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
-    DAGSTER_METAXY_INFO_METADATA_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
-from metaxy.ext.dagster.utils import build_feature_info_metadata, build_partition_filter
+from metaxy.ext.dagster.utils import (
+    build_partition_filter,
+    build_runtime_feature_metadata,
+)
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
 from metaxy.models.constants import METAXY_MATERIALIZATION_ID
 from metaxy.models.types import ValidatedFeatureKey
@@ -169,26 +171,24 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         with self.metadata_store:
             key = self._feature_key_from_context(context)
 
-            context.add_output_metadata(
-                {
-                    "metaxy/feature": key.to_string(),
-                    DAGSTER_METAXY_INFO_METADATA_KEY: build_feature_info_metadata(key),
-                    "metaxy/store": {
-                        "type": self.metadata_store.__class__.__module__,
-                        "versioning_engine": self.metadata_store._versioning_engine,
-                        **self.metadata_store.get_store_metadata(key),
-                    },
-                }
-            )
-
             try:
                 feature = mx.get_feature_by_key(key)
+
+                # Build runtime metadata from data (includes metaxy/feature, metaxy/info,
+                # metaxy/store, row count, table preview, etc.)
+                lazy_df = self.metadata_store.read_metadata(feature)
+                runtime_metadata = build_runtime_feature_metadata(
+                    key, self.metadata_store, lazy_df, context
+                )
+                context.add_output_metadata(runtime_metadata)
+
+                # Get materialized-in-run count
+                mat_lazy_df = self.metadata_store.read_metadata(
+                    feature,
+                    filters=[nw.col(METAXY_MATERIALIZATION_ID) == context.run_id],
+                )
                 materialized_in_run = (
-                    self.metadata_store.read_metadata(
-                        feature,
-                        filters=[nw.col(METAXY_MATERIALIZATION_ID) == context.run_id],
-                    )
-                    .select(feature.spec().id_columns)
+                    mat_lazy_df.select(feature.spec().id_columns)
                     .unique()
                     .collect()
                     .to_native()
@@ -197,5 +197,4 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
                     {"metaxy/materialized_in_run": len(materialized_in_run)}
                 )
             except FeatureNotFoundError:
-                context.add_output_metadata({"metaxy/materialized_in_run": 0})
-                return
+                pass

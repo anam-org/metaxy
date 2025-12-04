@@ -1,6 +1,6 @@
 # Versioning
 
-Metaxy calculates a few types of versions at [feature](feature-definitions.md), [field](feature-definitions.md), and sample levels.
+Metaxy calculates a few types of versions at [feature](feature-definitions.md), [field](feature-definitions.md), and [sample](#samples) levels.
 
 Metaxy's versioning system is declarative, static, deterministic and idempotent.
 
@@ -10,7 +10,7 @@ Feature and field versions are defined by the feature graph topology and the use
 
 All versions are computed ahead of time: feature and field versions can be immediately derived from code (and we keep historical graph snapshots for them), and calculating sample versions requires access to the metadata store.
 
-Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash [length](../reference/configuration.md#hash_truncation_length) can be configured.
+Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash [length](../../reference/configuration.md#hash_truncation_length) can be configured.
 
 Here is how these versions are calculated, from bottom to top.
 
@@ -36,16 +36,17 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 
 - **Snapshot Version**: is computed from the **Feature Versions** of all features defined on the graph.
 
-> [!NOTE] Why Do We Need Snapshot Version?
-> This value is used to uniquely encode versioned feature graph topology in historical snapshots.
+??? "How is snapshot version used?"
+
+    This value is used to uniquely encode versioned feature graph topology. `metaxy graph push` CLI can be used to keep track of previous versions of the feature graph, enabling features such as data version reconciliation migrations.
 
 ### Samples
 
 These versions are sample-level and require access to the metadata store in order to compute them.
 
-- **Provenance By Field** is computed from the upstream **Provenance By Fields** (with respect to defined [field-level dependencies](feature-definitions.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
+- **Provenance By Field** is computed from the upstream **Provenance By Field** (with respect to defined [field-level dependencies](feature-definitions.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
 
-| sample_uid | provenance_by_field                           |
+| sample_uid | metaxy_provenance_by_field                    |
 | ---------- | --------------------------------------------- |
 | video_001  | `{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}` |
 | video_002  | `{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}` |
@@ -54,20 +55,24 @@ These versions are sample-level and require access to the metadata store in orde
 
 - **Sample Version** is derived from the **Provenance By Field** by simply hashing it.
 
-This is the end game of the versioning system. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.
+Computing this value is the goal of the entire versioning engine. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.
+
+!!! tip "Customizing Sample Versions"
+
+    Users can override the computed sample-level versions by setting `metaxy_data_version_by_field` on their metadata. This can be used for eliminating false-positives (e.g. content-based hashing), when sometimes data stays the same even after upstream has changed. This customization only affects how downstream increments are calculated.
 
 ## Practical Example
 
 Consider a video processing pipeline with these features:
 
+??? tip "Simplified Metaxy Definitions"
+
+    This example uses Metaxy's [syntactic sugar](syntactic-sugar.md) for cleaner code.
+    Feature classes can be passed directly to `deps` instead of wrapping in `FeatureDep`,
+    and field names matching upstream fields automatically create field-level dependencies.
+
 ```python
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureSpec,
-    FieldDep,
-    FieldSpec,
-)
+from metaxy import Feature, FeatureSpec, FieldDep, FieldSpec
 
 
 class Video(
@@ -75,14 +80,8 @@ class Video(
     spec=FeatureSpec(
         key="example/video",
         fields=[
-            FieldSpec(
-                key="audio",
-                code_version="1",
-            ),
-            FieldSpec(
-                key="frames",
-                code_version="1",
-            ),
+            FieldSpec(key="audio", code_version="1"),
+            FieldSpec(key="frames", code_version="1"),
         ],
     ),
 ):
@@ -97,28 +96,10 @@ class Crop(
     Feature,
     spec=FeatureSpec(
         key="example/crop",
-        deps=[FeatureDep(feature=Video)],
+        deps=[Video],
         fields=[
-            FieldSpec(
-                key="audio",
-                code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=Video,
-                        fields=["audio"],
-                    )
-                ],
-            ),
-            FieldSpec(
-                key="frames",
-                code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=Video,
-                        fields=["frames"],
-                    )
-                ],
-            ),
+            FieldSpec(key="audio", code_version="1"),  # (1)!
+            FieldSpec(key="frames", code_version="1"),  # (2)!
         ],
     ),
 ):
@@ -129,21 +110,12 @@ class FaceDetection(
     Feature,
     spec=FeatureSpec(
         key="example/face_detection",
-        deps=[
-            FeatureDep(
-                feature=Crop,
-            )
-        ],
+        deps=[Crop],
         fields=[
             FieldSpec(
                 key="faces",
                 code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=Crop,
-                        fields=["frames"],
-                    )
-                ],
+                deps=[FieldDep(feature=Crop, fields=["frames"])],
             ),
         ],
     ),
@@ -155,27 +127,24 @@ class SpeechToText(
     Feature,
     spec=FeatureSpec(
         key="example/stt",
-        deps=[
-            FeatureDep(
-                feature=Video,
-            )
-        ],
+        deps=[Video],
         fields=[
             FieldSpec(
                 key="transcription",
                 code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=Video,
-                        fields=["audio"],
-                    )
-                ],
+                deps=[FieldDep(feature=Video, fields=["audio"])],
             ),
         ],
     ),
 ):
     pass
 ```
+
+{ .annotated }
+
+1. This `audio` field [automatically depends][metaxy.FieldsMapping.default] on the `audio` field of the `Video` feature, because their names match.
+
+2. This `frames` field [automatically depends][metaxy.FieldsMapping.default] on the `frames` field of the `Video` feature, because their names match.
 
 Running `metaxy graph render --format mermaid` produces this graph:
 
@@ -201,16 +170,17 @@ color="#999">---</font><br/>• transcription <small>(v: ac412b3c)</small></div>
 
 ## Tracking Definitions Changes
 
-Imagine the `audio` field of the `Video` feature changes (perhaps denoising was applied):
+Imagine the `audio` field of the `Video` feature changes (1):
+{ .annotate }
+
+1. Perhaps, something like denoising has been applied externally
 
 ```diff
          key="example/video",
          fields=[
-             FieldSpec(
-                 key="audio",
--                code_version="1",
-+                code_version="2",
-             ),
+-            FieldSpec(key="audio", code_version="1"),
++            FieldSpec(key="audio", code_version="2"),
+             FieldSpec(key="frames", code_version="1"),
 ```
 
 Run `metaxy graph diff` to see what changed:
@@ -242,34 +212,39 @@ color="#CC0000">ac412b</font> → <font color="#00AA00">058410</font>)</div>"]
     example_video --> example_stt
 ```
 
-Notice:
+!!! info
 
-- `Video`, `Crop`, and `SpeechToText` changed (highlighted)
-- `FaceDetection` remained unchanged (depends only on `frames`, not `audio`)
-- Audio field versions changed throughout the graph
-- Frame field versions stayed the same
+    - `Video`, `Crop`, and `SpeechToText` have changed
+
+    - `FaceDetection` remained unchanged (depends only on `frames` and not on `audio`)
+
+    - Audio field versions have changed throughout the graph
+
+    - Frame field versions have stayed the same
 
 ## Incremental Computation
 
-The metadata store's `calculate_provenance_by_field()` method:
+The single most important piece of code in Metaxy is the [`resolve_update`][metaxy.MetadataStore.resolve_update] method.
+It handles the following:
 
 1. Joins upstream feature metadata
+
 2. Computes sample versions
+
 3. Compares against existing metadata
+
 4. Returns diff: added, changed, removed samples
 
 Typically, steps 1-3 can be run directly in the database. Analytical databases such as ClickHouse or Snowflake can efficiently handle these operations.
 
-The Python pipeline then processes only the delta
+The Python pipeline then only handles the increment.
 
 ```python
 with store:  # MetadataStore
     # Metaxy computes provenance_by_field and identifies changes
-    diff = store.resolve_update(MyFeature)
+    increment = store.resolve_update(MyFeature)
 
     # Process only changed samples
 ```
 
-The `diff` object has attributes for new upstream samples, samples with new versions, and samples that have been removed from upstream metadata.
-
-This approach avoids expensive recomputation when nothing changed, while ensuring correctness when dependencies update.
+The `increment` object has attributes for new upstream samples, samples with new versions, and samples that have been removed from upstream metadata.

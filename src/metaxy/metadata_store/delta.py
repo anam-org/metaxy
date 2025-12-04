@@ -364,7 +364,7 @@ class DeltaMetadataStore(MetadataStore):
         return f"DeltaMetadataStore({', '.join(details)})"
 
     def get_store_metadata(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
-        return {"path": self._feature_uri(self._resolve_feature_key(feature_key))}
+        return {"uri": self._feature_uri(self._resolve_feature_key(feature_key))}
 
     @classmethod
     def config_model(cls) -> type[DeltaMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]

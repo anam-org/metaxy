@@ -12,7 +12,11 @@ from metaxy.ext.dagster.metaxify import metaxify
 from metaxy.ext.dagster.observable import observable_metaxy_asset
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 from metaxy.ext.dagster.selection import select_metaxy_assets
-from metaxy.ext.dagster.table_metadata import build_column_lineage, build_column_schema
+from metaxy.ext.dagster.table_metadata import (
+    build_column_lineage,
+    build_column_schema,
+    build_table_preview_metadata,
+)
 from metaxy.ext.dagster.utils import (
     FeatureStats,
     build_partition_filter,
@@ -28,6 +32,7 @@ __all__ = [
     "feature_to_dagster_type",
     "build_column_schema",
     "build_column_lineage",
+    "build_table_preview_metadata",
     "observable_metaxy_asset",
     "select_metaxy_assets",
     "generate_materialize_results",

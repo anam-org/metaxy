@@ -2,8 +2,9 @@
 # pyright: reportImportCycles=false
 
 import os
+import re
 import warnings
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
@@ -26,6 +27,44 @@ if TYPE_CHECKING:
     )
 
 T = TypeVar("T")
+
+# Pattern for ${VAR} or ${VAR:-default} syntax
+_ENV_VAR_PATTERN = re.compile(r"\$\{([^}:]+)(?::-([^}]*))?\}")
+
+
+def _expand_env_vars(value: Any) -> Any:
+    """Recursively expand environment variables in config values.
+
+    Supports:
+    - ${VAR} - substitutes with environment variable value, empty string if not set
+    - ${VAR:-default} - substitutes with environment variable value, or default if not set
+
+    Args:
+        value: The value to expand (can be string, dict, list, or other)
+
+    Returns:
+        The value with environment variables expanded
+    """
+    if isinstance(value, str):
+
+        def replace_match(match: re.Match[str]) -> str:
+            var_name = match.group(1)
+            default = match.group(2)  # None if no default specified
+            env_value = os.environ.get(var_name)
+            if env_value is not None:
+                return env_value
+            elif default is not None:
+                return default
+            else:
+                return ""
+
+        return _ENV_VAR_PATTERN.sub(replace_match, value)
+    elif isinstance(value, Mapping):
+        return {k: _expand_env_vars(v) for k, v in value.items()}
+    elif isinstance(value, Sequence):
+        return [_expand_env_vars(item) for item in value]
+    else:
+        return value
 
 
 class TomlConfigSettingsSource(PydanticBaseSettingsSource):
@@ -56,7 +95,11 @@ class TomlConfigSettingsSource(PydanticBaseSettingsSource):
         return None
 
     def _load_toml(self) -> dict[str, Any]:
-        """Load TOML file and extract metaxy config."""
+        """Load TOML file and extract metaxy config.
+
+        Environment variables in the format ${VAR} or ${VAR:-default} are
+        expanded in string values.
+        """
         if self.toml_file is None:
             return {}
 
@@ -65,9 +108,12 @@ class TomlConfigSettingsSource(PydanticBaseSettingsSource):
 
         # Extract [tool.metaxy] from pyproject.toml or root from metaxy.toml
         if self.toml_file.name == "pyproject.toml":
-            return data.get("tool", {}).get("metaxy", {})
+            config = data.get("tool", {}).get("metaxy", {})
         else:
-            return data
+            config = data
+
+        # Expand environment variables in config values
+        return _expand_env_vars(config)
 
     def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str, bool]:
         """Get field value from TOML data."""
@@ -149,6 +195,7 @@ class MetaxyConfig(BaseSettings):
 
     3. Config file (`metaxy.toml` or `[tool.metaxy]` in `pyproject.toml` )
 
+    Environment variables can be templated with `${MY_VAR:-default}` syntax.
 
     Example: Accessing current configuration
         ```py
@@ -159,6 +206,12 @@ class MetaxyConfig(BaseSettings):
     Example: Getting a configured metadata store
         ```py
         store = config.get_store("prod")
+        ```
+
+    Example: Templating environment variables
+        ```toml {title="metaxy.toml"}
+        [stores.branch.config]
+        root_path = "s3://my-bucket/${BRANCH_NAME}"
         ```
 
     The default store is `"dev"`; `METAXY_STORE` can be used to override it.
@@ -258,8 +311,14 @@ class MetaxyConfig(BaseSettings):
 
     @classmethod
     def get_plugin(cls, name: str, plugin_cls: type[PluginConfigT]) -> PluginConfigT:
-        """Get the plugin config from the global Metaxy config."""
-        ext = cls.get().ext
+        """Get the plugin config from the global Metaxy config.
+
+        Unlike `get()`, this method does not warn when the global config is not
+        initialized. This is intentional because plugins may call this at import
+        time to read their configuration, and returning default plugin config
+        is always safe.
+        """
+        ext = cls.get(_allow_default_config=True).ext
         if name in ext:
             existing = ext[name]
             if isinstance(existing, plugin_cls):
@@ -303,16 +362,23 @@ class MetaxyConfig(BaseSettings):
         return (init_settings, env_settings, toml_settings)
 
     @classmethod
-    def get(cls) -> "MetaxyConfig":
-        """Get the current Metaxy configuration."""
+    def get(cls, *, _allow_default_config: bool = False) -> "MetaxyConfig":
+        """Get the current Metaxy configuration.
+
+        Args:
+            _allow_default_config: Internal parameter. When True, returns default
+                config without warning if global config is not set. Used by methods
+                like `get_plugin` that may be called at import time.
+        """
         cfg = _metaxy_config.get()
         if cfg is None:
-            warnings.warn(
-                UserWarning(
-                    "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project='default')."
-                ),
-                stacklevel=2,
-            )
+            if not _allow_default_config:
+                warnings.warn(
+                    UserWarning(
+                        "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project='default')."
+                    ),
+                    stacklevel=2,
+                )
             return cls(project="default")
         else:
             return cfg

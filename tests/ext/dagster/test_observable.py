@@ -180,7 +180,7 @@ class TestObserveMetaxyAsset:
     ):
         """Test that observable_metaxy_asset creates a SourceAsset."""
 
-        @mxd.observable_metaxy_asset(feature=observable_feature, key="my_observable")
+        @mxd.observable_metaxy_asset(feature=observable_feature)
         def my_observable(context, store, lazy_df):
             pass
 
@@ -190,8 +190,8 @@ class TestObserveMetaxyAsset:
         # Check that it's observable
         assert my_observable.is_observable
 
-        # Check the key is correct
-        assert my_observable.key == dg.AssetKey("my_observable")
+        # Check the key is derived from the feature key
+        assert my_observable.key == dg.AssetKey(["test", "observable"])
 
     def test_observe_with_custom_metadata(
         self,

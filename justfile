@@ -76,3 +76,11 @@ test-and-submit:
 
 init-example name:
     uv init --lib --name {{name}} examples/{{name}}
+
+version-bump:
+    uv version --bump dev
+    echo "__version__ = \"$(uv version --short)\"" > src/metaxy/_version.py
+
+publish-dev:
+    uv build
+    uv publish "./dist/metaxy-$(uv version --short)-py3-none-any.whl"

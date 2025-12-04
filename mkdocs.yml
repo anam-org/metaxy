@@ -185,26 +185,29 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Overview:
-    - Quickstart: overview/quickstart.md
-    - Feature Dependencies: overview/feature-dependencies.md
+  - User Guide:
+    - guide/index.md
+    - Getting Started:
+      - Quickstart: guide/overview/quickstart.md
+      - Feature Dependencies: guide/overview/feature-dependencies.md
+    - Concepts:
+      - Metadata Stores: guide/learn/metadata-stores.md
+      - Feature Definitions: guide/learn/feature-definitions.md
+      - Versioning: guide/learn/data-versioning.md
+      - Feature Discovery: guide/learn/feature-discovery.md
+      - Syntactic Sugar: guide/learn/syntactic-sugar.md
+      - Lineage Relationship: guide/learn/relationship.md
+      - Filters: guide/learn/filters.md
+      - Testing: guide/learn/testing.md
+      - System Columns: guide/learn/system-columns.md
   - Slides: slides/intro.md
-  - Learn:
-    - Metadata Stores: learn/metadata-stores.md
-    - Feature Definitions: learn/feature-definitions.md
-    - Versioning: learn/data-versioning.md
-    - Feature Discovery: learn/feature-discovery.md
-    - Syntactic Sugar: learn/syntactic-sugar.md
-    - Lineage Relationship: learn/relationship.md
-    - Filters: learn/filters.md
-    - Testing: learn/testing.md
-    - System Columns: learn/system-columns.md
   - Integrations:
     - integrations/index.md
     - Orchestration:
       - integrations/orchestration/index.md
       - Dagster:
         - integrations/orchestration/dagster/index.md
+        - '@metaxify': integrations/orchestration/dagster/metaxify.md
         - API: integrations/orchestration/dagster/api.md
     - Metadata Stores:
       - integrations/metadata-stores/index.md
@@ -245,27 +248,30 @@ nav:
         - Configuration: integrations/plugins/sqlalchemy/configuration.md
         - API: integrations/plugins/sqlalchemy/api.md
   - Examples:
+    - examples/index.md
     - One To Many: examples/one-to-many.md
-  - CLI: reference/cli.md
-  - API:
-    - reference/api/index.md
-    - Definitions:
-      - reference/api/definitions/index.md
-      - Feature Spec: reference/api/definitions/feature-spec.md
-      - Feature: reference/api/definitions/feature.md
-      - Field: reference/api/definitions/field.md
-      - Fields Mapping: reference/api/definitions/fields-mapping.md
-      - Lineage Relationship: reference/api/definitions/relationship.md
-      - Graph: reference/api/definitions/graph.md
-      - Filters: reference/api/definitions/filters.md
-    - Config: reference/api/config.md
-    - Types: reference/api/types.md
-    - Constants: reference/api/constants.md
-    - Metadata Stores:
-      - reference/api/metadata-stores/index.md
-      - Memory: reference/api/metadata-stores/memory.md
-      - Exceptions: reference/api/metadata-stores/exceptions.md
-  - Configuration: reference/configuration.md
+  - Reference:
+    - reference/index.md
+    - API:
+      - reference/api/index.md
+      - Definitions:
+        - reference/api/definitions/index.md
+        - Feature Spec: reference/api/definitions/feature-spec.md
+        - Feature: reference/api/definitions/feature.md
+        - Field: reference/api/definitions/field.md
+        - Fields Mapping: reference/api/definitions/fields-mapping.md
+        - Lineage Relationship: reference/api/definitions/relationship.md
+        - Graph: reference/api/definitions/graph.md
+        - Filters: reference/api/definitions/filters.md
+      - Config: reference/api/config.md
+      - Types: reference/api/types.md
+      - Constants: reference/api/constants.md
+      - Metadata Stores:
+        - reference/api/metadata-stores/index.md
+        - Memory: reference/api/metadata-stores/memory.md
+        - Exceptions: reference/api/metadata-stores/exceptions.md
+    - Configuration: reference/configuration.md
+    - CLI: reference/cli.md
 
 extra:
   social:

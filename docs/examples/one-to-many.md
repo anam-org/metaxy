@@ -162,6 +162,6 @@ Metaxy provides a convenient API for modeling `1:N` relationships: [LineageRelat
 
 Learn more about:
 
-- [Features and Fields](../learn/feature-definitions.md)
-- [Relationships](../learn/relationship.md)
-- [Fields Mapping](../learn/syntactic-sugar.md#fields-mapping)
+- [Features and Fields](../guide/learn/feature-definitions.md)
+- [Relationships](../guide/learn/relationship.md)
+- [Fields Mapping](../guide/learn/syntactic-sugar.md#fields-mapping)
