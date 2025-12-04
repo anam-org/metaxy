@@ -476,8 +476,12 @@ class TestPartitionedAssets:
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test that materialization events filter by partition key."""
-        # Write data for two partitions
+        """Test that materialization events filter by partition key.
+
+        dagster/row_count should show total rows across all partitions.
+        dagster/partition_row_count should show rows for the current partition.
+        """
+        # Write data for two partitions (5 total rows)
         self._write_partitioned_data(
             partitioned_feature,
             "2024-01-01",
@@ -505,20 +509,26 @@ class TestPartitionedAssets:
             )
         ]
 
-        # Test with partition "2024-01-01" (3 rows)
+        # Test with partition "2024-01-01" (3 rows in partition, 5 total)
         context = dg.build_asset_context(partition_key="2024-01-01")
         events = list(mxd.generate_materialize_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
+        assert (
+            events[0].metadata["dagster/row_count"] == 5
+        )  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 3
 
-        # Test with partition "2024-01-02" (2 rows)
+        # Test with partition "2024-01-02" (2 rows in partition, 5 total)
         context = dg.build_asset_context(partition_key="2024-01-02")
         events = list(mxd.generate_materialize_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
+        assert (
+            events[0].metadata["dagster/row_count"] == 5
+        )  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 2
 
     def test_observation_filters_by_partition(
@@ -529,8 +539,12 @@ class TestPartitionedAssets:
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test that observation events filter by partition key."""
-        # Write data for two partitions
+        """Test that observation events filter by partition key.
+
+        dagster/row_count should show total rows across all partitions.
+        dagster/partition_row_count should show rows for the current partition.
+        """
+        # Write data for two partitions (6 total rows)
         self._write_partitioned_data(
             partitioned_feature,
             "2024-01-01",
@@ -558,20 +572,26 @@ class TestPartitionedAssets:
             )
         ]
 
-        # Test with partition "2024-01-01" (2 rows)
+        # Test with partition "2024-01-01" (2 rows in partition, 6 total)
         context = dg.build_asset_context(partition_key="2024-01-01")
         events = list(mxd.generate_observe_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
+        assert (
+            events[0].metadata["dagster/row_count"] == 6
+        )  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 2
 
-        # Test with partition "2024-01-02" (4 rows)
+        # Test with partition "2024-01-02" (4 rows in partition, 6 total)
         context = dg.build_asset_context(partition_key="2024-01-02")
         events = list(mxd.generate_observe_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
+        assert (
+            events[0].metadata["dagster/row_count"] == 6
+        )  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 4
 
     def test_no_partition_by_metadata_returns_all_rows(
@@ -856,7 +876,11 @@ class TestPartitionedMultiAssetIntegration:
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test partitioned @multi_asset with generate_materialize_results."""
+        """Test partitioned @multi_asset with generate_materialize_results.
+
+        dagster/row_count should show total rows across all partitions.
+        dagster/partition_row_count should show rows for the current partition.
+        """
         # Write data for partition 2024-01-01: X has 3 rows, Y has 2 rows
         self._write_partitioned_data(
             partitioned_feature_x,
@@ -875,6 +899,7 @@ class TestPartitionedMultiAssetIntegration:
             instance,
         )
         # Write data for partition 2024-01-02: X has 1 row, Y has 4 rows
+        # Total: X=4 rows, Y=6 rows
         self._write_partitioned_data(
             partitioned_feature_x,
             "2024-01-02",
@@ -931,6 +956,19 @@ class TestPartitionedMultiAssetIntegration:
 
         assert len(mat_x.records) == 1
         assert len(mat_y.records) == 1
+        # Total: X=4 rows, Y=6 rows
+        assert (
+            mat_x.records[0]
+            .asset_materialization.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            .value
+            == 4
+        )
+        assert (
+            mat_y.records[0]
+            .asset_materialization.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            .value
+            == 6
+        )
         # Partition 2024-01-01: X=3 rows, Y=2 rows
         assert (
             mat_x.records[0]
@@ -958,6 +996,19 @@ class TestPartitionedMultiAssetIntegration:
         mat_x = instance.fetch_materializations(dg.AssetKey("part_multi_x"), limit=1)
         mat_y = instance.fetch_materializations(dg.AssetKey("part_multi_y"), limit=1)
 
+        # Total: X=4 rows, Y=6 rows (same as before)
+        assert (
+            mat_x.records[0]
+            .asset_materialization.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            .value
+            == 4
+        )
+        assert (
+            mat_y.records[0]
+            .asset_materialization.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            .value
+            == 6
+        )
         # Partition 2024-01-02: X=1 row, Y=4 rows
         assert (
             mat_x.records[0]
@@ -980,7 +1031,11 @@ class TestPartitionedMultiAssetIntegration:
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test partitioned @multi_observable_source_asset with generate_observe_results."""
+        """Test partitioned @multi_observable_source_asset with generate_observe_results.
+
+        dagster/row_count should show total rows across all partitions.
+        dagster/partition_row_count should show rows for the current partition.
+        """
         # Write data for partition 2024-01-01: X has 5 rows, Y has 1 row
         self._write_partitioned_data(
             partitioned_feature_x,
@@ -999,6 +1054,7 @@ class TestPartitionedMultiAssetIntegration:
             instance,
         )
         # Write data for partition 2024-01-02: X has 2 rows, Y has 3 rows
+        # Total: X=7 rows, Y=4 rows
         self._write_partitioned_data(
             partitioned_feature_x,
             "2024-01-02",
@@ -1058,6 +1114,19 @@ class TestPartitionedMultiAssetIntegration:
 
         assert len(obs_x.records) == 1
         assert len(obs_y.records) == 1
+        # Total: X=7 rows, Y=4 rows
+        assert (
+            obs_x.records[0]
+            .asset_observation.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            .value
+            == 7
+        )
+        assert (
+            obs_y.records[0]
+            .asset_observation.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            .value
+            == 4
+        )
         # Partition 2024-01-01: X=5 rows, Y=1 row
         assert (
             obs_x.records[0]
@@ -1082,6 +1151,19 @@ class TestPartitionedMultiAssetIntegration:
         obs_x = instance.fetch_observations(dg.AssetKey("part_obs_x"), limit=1)
         obs_y = instance.fetch_observations(dg.AssetKey("part_obs_y"), limit=1)
 
+        # Total: X=7 rows, Y=4 rows (same as before)
+        assert (
+            obs_x.records[0]
+            .asset_observation.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            .value
+            == 7
+        )
+        assert (
+            obs_y.records[0]
+            .asset_observation.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            .value
+            == 4
+        )
         # Partition 2024-01-02: X=2 rows, Y=3 rows
         assert (
             obs_x.records[0]
