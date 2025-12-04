@@ -2,20 +2,20 @@
 
 ## Installation
 
-Install Metaxy with `deltalake` --- an easy way to setup a [`MetadataStore`](../learn/metadata-stores.md) locally:
+Install Metaxy with `deltalake` - an easy way to setup a [`MetadataStore`](../learn/metadata-stores.md) locally:
 
 ```shell
 pip install 'metaxy[delta]'
 ```
 
-## Create a minimal Metaxy config
+## Drop a `metaxy.toml` file
 
 ```toml {title="metaxy.toml"}
 entrypoints = ["features.py"]
 
 [stores.dev]
 type = "metaxy.metadata_store.deltalake.DeltaMetadataStore"
-config = { path = "/tmp/metaxy.delta" }
+config = { root_path = "${HOME}/.metaxy/deltalake" }
 ```
 
 ## Define a root feature
@@ -87,13 +87,6 @@ with store.open("write"):
 
 We have now successfully recorded the metadata for the computed samples! Processed samples will no longer be returned by `MetadataStore.resolve_update` during future pipeline runs.
 
-> [!WARNING] No Write Time Uniqueness Checks!
-> Metaxy doesn't enforce deduplication or uniqueness checks at **write time** for performance reasons.
-> While `MetadataStore.resolve_update` is guaranteed to never return the same versioned sample twice, it's up to the user to ensure that samples are not written multiple times to the metadata store.
-> Configuring deduplication or uniqueness checks in the store (database) is a good idea.
-> For example, the [SQLModel integration](../integrations/plugins/sqlmodel/index.md) can inject a composite primary key on `metaxy_data_version`, `metaxy_created_at` and the user-defined ID columns.
-> However, Metaxy only uses the latest version (by `metaxy_created_at`) at **read time**.
-
 ---
 
 ## Next Steps
@@ -106,10 +99,10 @@ Continue to [next section](feature-dependencies.md) to learn how to add more fea
 
 - Learn more about [feature definitions](../learn/feature-definitions.md) or [versioning](../learn/data-versioning.md)
 
-- Explore [Metaxy integrations](../integrations/index.md)
+- Explore [Metaxy integrations](../../integrations/index.md)
 
-- Use Metaxy [from the command line](../reference/cli.md)
+- Use Metaxy [from the command line](../../reference/cli.md)
 
-- Learn how to [configure Metaxy](../reference/configuration.md)
+- Learn how to [configure Metaxy](../../reference/configuration.md)
 
-- Get lost in our [API Reference](../reference/api/index.md)
+- Get lost in our [API Reference](../../reference/api/index.md)
