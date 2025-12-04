@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import tomli
 from pydantic import Field as PydanticField
-from pydantic import field_validator
+from pydantic import PrivateAttr, field_validator
 from pydantic.types import ImportString
 from pydantic_settings import (
     BaseSettings,
@@ -269,6 +269,17 @@ class MetaxyConfig(BaseSettings):
         description="Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
     )
 
+    # Private attribute to track which config file was used (set by load())
+    _config_file: Path | None = PrivateAttr(default=None)
+
+    @property
+    def config_file(self) -> Path | None:
+        """The config file path used to load this configuration.
+
+        Returns None if the config was created directly (not via load()).
+        """
+        return self._config_file
+
     def _load_plugins(self) -> None:
         """Load enabled plugins. Must be called after config is set."""
         for name, module in BUILTIN_PLUGINS.items():
@@ -498,9 +509,13 @@ class MetaxyConfig(BaseSettings):
             cls.settings_customise_sources = custom_sources  # type: ignore[assignment]
             config = cls()
             cls.settings_customise_sources = original_method  # type: ignore[method-assign]
+            # Store the resolved config file path
+            config._config_file = toml_path.resolve()
         else:
             # Use default sources (auto-discovery + env vars)
             config = cls()
+            # No config file used
+            config._config_file = None
 
         cls.set(config)
 
