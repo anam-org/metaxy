@@ -197,26 +197,26 @@ def generate_materialize_results(
 
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
-        partition_filters = get_partition_filter(context, asset_spec)
+        partition_col = asset_spec.metadata.get(DAGSTER_METAXY_PARTITION_KEY)
 
         with store:
             try:
-                lazy_df = store.read_metadata(key, filters=partition_filters)
+                # Build runtime metadata (handles reading, filtering, and stats internally)
+                metadata, stats = build_runtime_feature_metadata(
+                    key,
+                    store,
+                    context,
+                    partition_col=partition_col,  # pyright: ignore[reportArgumentType]
+                )
             except FeatureNotFoundError:
                 context.log.exception(
                     f"Feature {key.to_string()} not found in store, skipping materialization result"
                 )
                 continue
 
-            stats = compute_stats_from_lazy_frame(lazy_df)
-
-            # Build runtime metadata using shared function, passing pre-computed row count
-            metadata = build_runtime_feature_metadata(
-                key, store, lazy_df, context, partition_row_count=stats.row_count
-            )
-
             # Get materialized-in-run count if materialization_id is set
             if store.materialization_id is not None:
+                partition_filters = get_partition_filter(context, asset_spec)
                 mat_filters = partition_filters + [
                     nw.col(METAXY_MATERIALIZATION_ID) == store.materialization_id
                 ]
@@ -296,26 +296,29 @@ def build_feature_info_metadata(
 def build_runtime_feature_metadata(
     feature_key: mx.FeatureKey,
     store: mx.MetadataStore | MetaxyStoreFromConfigResource,
-    lazy_df: nw.LazyFrame[Any],
     context: dg.AssetExecutionContext | dg.OpExecutionContext | dg.OutputContext,
     *,
-    partition_row_count: int | None = None,
-) -> dict[str, Any]:
+    partition_col: str | None = None,
+) -> tuple[dict[str, Any], FeatureStats]:
     """Build runtime metadata for a Metaxy feature in Dagster.
 
     This function consolidates all runtime metadata construction for Dagster events.
     It is used by the IOManager, generate_materialize_results, and generate_observe_results.
 
+    Handles reading data from the store and applying partition filters automatically
+    based on the context's partition key.
+
     Args:
         feature_key: The Metaxy feature key.
         store: The metadata store (used for store-specific metadata like URI, table_name).
-        lazy_df: The LazyFrame containing the feature data (for stats and preview).
-            For partitioned assets, this should be filtered to the current partition.
         context: Dagster context for determining partition state and logging errors.
-        partition_row_count: Optional pre-computed partition row count to avoid re-computing.
+        partition_col: Optional column name to filter by for partitioned assets.
+            If provided and context has a partition key, data will be filtered.
 
     Returns:
-        A dictionary containing all runtime metadata:
+        A tuple of (metadata_dict, feature_stats) where:
+
+        metadata_dict contains:
         - `metaxy/feature`: Feature key as string
         - `metaxy/info`: Feature and metaxy library information (from `build_feature_info_metadata`)
         - `metaxy/store`: Store type and configuration
@@ -325,13 +328,19 @@ def build_runtime_feature_metadata(
         - `dagster/uri`: URI from store (if available)
         - `dagster/table`: Table preview
 
-        Returns empty dict if an error occurs during metadata collection.
+        feature_stats contains row_count and data_version for the partition-filtered data.
+
+        Returns (empty dict, empty stats) if an error occurs during metadata collection.
+
+    Raises:
+        FeatureNotFoundError: If the feature is not found in the store.
 
     Example:
         ```python
         with store:
-            lazy_df = store.read_metadata(feature_key)
-            metadata = build_runtime_feature_metadata(feature_key, store, lazy_df, context)
+            metadata, stats = build_runtime_feature_metadata(
+                feature_key, store, context, partition_col="date"
+            )
             context.add_output_metadata(metadata)
         ```
     """
@@ -341,10 +350,16 @@ def build_runtime_feature_metadata(
         build_table_preview_metadata,
     )
 
+    # Build partition filter if applicable
+    partition_key = context.partition_key if context.has_partition_key else None
+    partition_filters = build_partition_filter(partition_col, partition_key)
+
+    # Read data with partition filters applied (may raise FeatureNotFoundError)
+    lazy_df = store.read_metadata(feature_key, filters=partition_filters)
+
     try:
-        # Use pre-computed partition_row_count if provided, otherwise compute
-        if partition_row_count is None:
-            partition_row_count = compute_row_count(lazy_df)
+        # Compute stats from filtered data (includes data_version for callers)
+        stats = compute_stats_from_lazy_frame(lazy_df)
 
         # Get store metadata
         store_metadata = store.get_store_metadata(feature_key)
@@ -363,13 +378,13 @@ def build_runtime_feature_metadata(
         }
 
         # For partitioned assets, compute total row count by re-reading without filters
-        if context is not None and context.has_partition_key:
+        if context.has_partition_key:
             # Read entire feature (no partition filter) for total count
             full_lazy_df = store.read_metadata(feature_key)
             metadata["dagster/row_count"] = compute_row_count(full_lazy_df)
-            metadata["dagster/partition_row_count"] = partition_row_count
+            metadata["dagster/partition_row_count"] = stats.row_count
         else:
-            metadata["dagster/row_count"] = partition_row_count
+            metadata["dagster/row_count"] = stats.row_count
 
         # Map store metadata to dagster standard keys
         if "table_name" in store_metadata:
@@ -378,17 +393,19 @@ def build_runtime_feature_metadata(
         if "uri" in store_metadata:
             metadata["dagster/uri"] = dg.MetadataValue.path(store_metadata["uri"])
 
-        # Build table preview
+        # Build table preview (from partition-filtered data)
         feature_cls = mx.get_feature_by_key(feature_key)
         schema = build_column_schema(feature_cls)
         metadata["dagster/table"] = build_table_preview_metadata(lazy_df, schema)
 
-        return metadata
+        return metadata, stats
+    except FeatureNotFoundError:
+        raise
     except Exception:
         context.log.exception(
             f"Failed to build runtime metadata for feature {feature_key.to_string()}"
         )
-        return {}
+        return {}, FeatureStats(row_count=0, data_version=dg.DataVersion("empty"))
 
 
 def generate_observe_results(
@@ -439,21 +456,22 @@ def generate_observe_results(
 
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
-        partition_filters = get_partition_filter(context, asset_spec)
+        partition_col = asset_spec.metadata.get(DAGSTER_METAXY_PARTITION_KEY)
 
         with store:
             try:
-                lazy_df = store.read_metadata(key, filters=partition_filters)
+                # Build runtime metadata (handles reading, filtering, and stats internally)
+                metadata, stats = build_runtime_feature_metadata(
+                    key,
+                    store,
+                    context,
+                    partition_col=partition_col,  # pyright: ignore[reportArgumentType]
+                )
             except FeatureNotFoundError:
                 context.log.exception(
                     f"Feature {key.to_string()} not found in store, skipping observation result"
                 )
                 continue
-
-            stats = compute_stats_from_lazy_frame(lazy_df)
-            metadata = build_runtime_feature_metadata(
-                key, store, lazy_df, context, partition_row_count=stats.row_count
-            )
 
         yield dg.ObserveResult(
             asset_key=asset_spec.key,
