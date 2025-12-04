@@ -74,6 +74,7 @@ class MigrationExecutor:
         project: str,
         *,
         dry_run: bool = False,
+        rerun: bool = False,
     ) -> "MigrationResult":
         """Execute migration with event logging and resumability.
 
@@ -82,7 +83,7 @@ class MigrationExecutor:
         2. Get features to process from migration
         3. Sort features topologically using FeatureGraph.topological_sort_features()
         4. For each feature:
-           - Check if already completed (resume support)
+           - Check if already completed (resume support, unless rerun=True)
            - Log feature_started
            - Execute migration logic
            - Log feature_completed/failed
@@ -93,6 +94,7 @@ class MigrationExecutor:
             store: Metadata store to operate on
             project: Project name for event tracking
             dry_run: If True, only validate without executing
+            rerun: If True, re-run all steps including already completed ones
 
         Returns:
             MigrationResult with execution details
@@ -106,11 +108,11 @@ class MigrationExecutor:
         # Delegate to migration's execute method (which uses this executor internally)
         if isinstance(migration, DiffMigration):
             return self._execute_diff_migration(
-                migration, store, project, dry_run=dry_run
+                migration, store, project, dry_run=dry_run, rerun=rerun
             )
         elif isinstance(migration, FullGraphMigration):
             return self._execute_full_graph_migration(
-                migration, store, project, dry_run=dry_run
+                migration, store, project, dry_run=dry_run, rerun=rerun
             )
         else:
             # Custom migration subclass - call its execute method directly
@@ -122,6 +124,7 @@ class MigrationExecutor:
         store: "MetadataStore",
         project: str,
         dry_run: bool,
+        rerun: bool = False,
     ) -> "MigrationResult":
         """Execute DiffMigration with topological sorting.
 
@@ -187,9 +190,13 @@ class MigrationExecutor:
                 )
 
             for feature_key_str in affected_features_to_process:
-                # Check if already completed (resume support)
-                if not dry_run and self.storage.is_feature_completed(
-                    migration.migration_id, feature_key_str, project
+                # Check if already completed (resume support, unless rerun=True)
+                if (
+                    not dry_run
+                    and not rerun
+                    and self.storage.is_feature_completed(
+                        migration.migration_id, feature_key_str, project
+                    )
                 ):
                     affected_features_list.append(feature_key_str)
                     continue
@@ -331,6 +338,7 @@ class MigrationExecutor:
         store: "MetadataStore",
         project: str,
         dry_run: bool,
+        rerun: bool = False,
     ) -> "MigrationResult":
         """Execute FullGraphMigration with topological sorting.
 
@@ -383,9 +391,13 @@ class MigrationExecutor:
             for feature_key_obj in sorted_features:
                 feature_key_str = feature_key_obj.to_string()
 
-                # Check if already completed (resume support)
-                if not dry_run and self.storage.is_feature_completed(
-                    migration.migration_id, feature_key_str, project
+                # Check if already completed (resume support, unless rerun=True)
+                if (
+                    not dry_run
+                    and not rerun
+                    and self.storage.is_feature_completed(
+                        migration.migration_id, feature_key_str, project
+                    )
                 ):
                     affected_features_list.append(feature_key_str)
                     continue
