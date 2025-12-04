@@ -174,11 +174,17 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             try:
                 feature = mx.get_feature_by_key(key)
 
-                # Build runtime metadata from data (includes metaxy/feature, metaxy/info,
-                # metaxy/store, row count, table preview, etc.)
-                lazy_df = self.metadata_store.read_metadata(feature)
-                runtime_metadata = build_runtime_feature_metadata(
-                    key, self.metadata_store, lazy_df, context
+                # Get partition column from metadata
+                partition_col = context.definition_metadata.get(
+                    DAGSTER_METAXY_PARTITION_KEY
+                )
+
+                # Build runtime metadata (handles reading and filtering internally)
+                runtime_metadata, _ = build_runtime_feature_metadata(
+                    key,
+                    self.metadata_store,
+                    context,
+                    partition_col=partition_col,  # pyright: ignore[reportArgumentType]
                 )
                 context.add_output_metadata(runtime_metadata)
 

@@ -569,6 +569,71 @@ class TestMetaxyIOManagerPartitions:
         # Should have read all 6 rows (all partitions)
         assert captured_data["total"] == 6
 
+    def test_partitioned_output_metadata_reports_correct_counts(
+        self,
+        partitioned_feature: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that partitioned asset output metadata reports correct row counts.
+
+        dagster/row_count should show total rows across all partitions at time of materialization.
+        dagster/partition_row_count should show rows for the current partition.
+
+        Since materializations happen sequentially:
+        - When partition "a" is materialized: 3 rows total (3 in partition a)
+        - When partition "b" is materialized: 5 rows total (2 in partition b)
+        - When partition "c" is materialized: 9 rows total (4 in partition c)
+        """
+
+        @dg.asset(
+            metadata={
+                "metaxy/feature": "features/partitioned",
+                "partition_by": "partition",
+            },
+            io_manager_key="metaxy_io_manager",
+            partitions_def=partitions_def,
+        )
+        def partitioned_asset(context: dg.AssetExecutionContext):
+            partition = context.partition_key
+            # Each partition has different number of rows
+            row_counts = {"a": 3, "b": 2, "c": 4}
+            count = row_counts[partition]
+            return pl.DataFrame(
+                {
+                    "id": [f"{partition}_{i}" for i in range(count)],
+                    "partition": [partition] * count,
+                    "metaxy_provenance_by_field": [
+                        {"value": f"v{i}"} for i in range(count)
+                    ],
+                }
+            )
+
+        # Materialize all partitions sequentially
+        # After each materialization, check the metadata
+        expected_totals = {"a": 3, "b": 5, "c": 9}  # cumulative totals
+        expected_partition_counts = {"a": 3, "b": 2, "c": 4}
+
+        for partition in ["a", "b", "c"]:
+            result = dg.materialize(
+                [partitioned_asset],
+                resources=resources,
+                instance=instance,
+                partition_key=partition,
+            )
+            assert result.success
+
+            # Check the materialization metadata
+            event = result.get_asset_materialization_events()[0]
+            metadata = event.step_materialization_data.materialization.metadata
+
+            assert metadata["dagster/row_count"].value == expected_totals[partition]
+            assert (
+                metadata["dagster/partition_row_count"].value
+                == expected_partition_counts[partition]
+            )
+
 
 class TestMultipleAssetsPerFeature:
     """Test multiple Dagster assets contributing to the same Metaxy feature."""
