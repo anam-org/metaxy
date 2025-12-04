@@ -459,13 +459,14 @@ def test_metadata_status_up_to_date(
             feature = data["features"]["video/files"]
             assert feature["feature_key"] == "video/files"
             assert feature["status"] == "up_to_date"
-            assert feature["rows"] == 3
-            assert feature["added"] == 0
-            assert feature["changed"] == 0
+            assert feature["store_rows"] == 3
+            assert feature["missing"] == 0
+            assert feature["stale"] == 0
+            assert feature["orphaned"] == 0
         else:
             assert "video/files" in result.stdout
             assert "up-to-date" in result.stdout
-            assert "rows: 3" in result.stdout
+            assert "store: 3" in result.stdout
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
@@ -517,13 +518,14 @@ def test_metadata_status_missing_metadata(
             feature = data["features"]["video/files"]
             assert feature["feature_key"] == "video/files"
             assert feature["status"] == "missing"
-            assert feature["rows"] == 0
-            assert feature["added"] == 3
-            assert feature["changed"] == 0
+            assert feature["store_rows"] == 0
+            assert feature["missing"] == 3
+            assert feature["stale"] == 0
+            assert feature["orphaned"] == 0
         else:
             assert "video/files" in result.stdout
             assert "missing metadata" in result.stdout
-            assert "rows: 0" in result.stdout
+            assert "store: 0" in result.stdout
 
 
 def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject):
@@ -738,7 +740,7 @@ def test_metadata_status_with_verbose(
             assert any("sample_uid" in detail for detail in feature["sample_details"])
         else:
             assert "video/files" in result.stdout
-            assert "Added samples" in result.stdout
+            assert "Missing samples" in result.stdout
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
@@ -985,14 +987,15 @@ def test_metadata_status_root_feature(
             assert feature["feature_key"] == "root_feature"
             assert feature["is_root_feature"] is True
             assert feature["status"] == "root_feature"
-            assert feature["rows"] == 3
-            # Root features don't have meaningful added/changed counts (excluded from JSON)
-            assert "added" not in feature
-            assert "changed" not in feature
+            assert feature["store_rows"] == 3
+            # Root features don't have meaningful missing/stale/orphaned counts (excluded from JSON)
+            assert "missing" not in feature
+            assert "stale" not in feature
+            assert "orphaned" not in feature
         else:
             assert "root_feature" in result.stdout
             assert "root feature" in result.stdout
-            assert "rows: 3" in result.stdout
+            assert "store: 3" in result.stdout
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
@@ -1035,11 +1038,11 @@ def test_metadata_status_root_feature_missing_metadata(
             # Missing metadata takes precedence over root feature status
             assert feature["status"] == "missing"
             assert feature["metadata_exists"] is False
-            assert feature["rows"] == 0
+            assert feature["store_rows"] == 0
         else:
             assert "root_feature" in result.stdout
             assert "missing metadata" in result.stdout
-            assert "rows: 0" in result.stdout
+            assert "store: 0" in result.stdout
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
@@ -1123,12 +1126,12 @@ def test_metadata_status_with_filter(
             feature = data["features"]["video/files"]
             assert feature["feature_key"] == "video/files"
             # With filter for category A, should show 3 rows and be up-to-date
-            assert feature["rows"] == 3
+            assert feature["store_rows"] == 3
             assert feature["status"] == "up_to_date"
             assert feature["needs_update"] is False
         else:
             assert "video/files" in result.stdout
-            assert "rows: 3" in result.stdout
+            assert "store: 3" in result.stdout
             assert "up-to-date" in result.stdout
 
         # Check status with filter for category B - should need updates
@@ -1149,13 +1152,13 @@ def test_metadata_status_with_filter(
             feature = data["features"]["video/files"]
             # With filter for category B, should show 0 rows (no B samples written)
             # and 2 samples need to be added
-            assert feature["rows"] == 0
-            assert feature["added"] == 2
+            assert feature["store_rows"] == 0
+            assert feature["missing"] == 2
             assert feature["needs_update"] is True
         else:
             assert "video/files" in result.stdout
-            assert "rows: 0" in result.stdout
-            assert "added: 2" in result.stdout
+            assert "store: 0" in result.stdout
+            assert "missing: 2" in result.stdout
 
 
 def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
@@ -1274,8 +1277,8 @@ def test_metadata_status_with_multiple_filters(
             data = json.loads(result.stdout)
             feature = data["features"]["video/files"]
             # Multiple filters are AND-ed: category A AND status active = 2 rows
-            assert feature["rows"] == 2
+            assert feature["store_rows"] == 2
             assert feature["status"] == "up_to_date"
         else:
             assert "video/files" in result.stdout
-            assert "rows: 2" in result.stdout
+            assert "store: 2" in result.stdout
