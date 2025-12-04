@@ -17,15 +17,15 @@ The following syntax is supported:
 
 - Implicit boolean columns (e.g., `NOT is_active`)
 
-Example usage:
+!!! example
 
-```py
-from metaxy.models.filter_expression import parse_filter_string
+    ```py
+    from metaxy.models.filter_expression import parse_filter_string
 
-df = ...  # a Narwhals frame
+    df = ...  # a Narwhals frame
 
-# Parse a SQL WHERE clause into a backend-agnostic Narwhals expression
-expr = parse_filter_string("(age > 25 OR age < 18) AND status != 'deleted'")
+    # Parse a SQL WHERE clause into a backend-agnostic Narwhals expression
+    expr = parse_filter_string("(age > 25 OR age < 18) AND status != 'deleted'")
 
-df = df.filter(expr)
-```
+    df = df.filter(expr)
+    ```

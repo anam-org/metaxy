@@ -3,31 +3,36 @@
 Metaxy has a declarative (defined statically at class level), expressive, flexible feature system.
 It has been inspired by [Dagster](https://dagster.io/)'s Software-Defined Assets and [Nix](https://nixos.org/).
 
-Features represent tabular **metadata**, typically containing references to external multi-modal **data** such as files, images, or videos.
-But it can be just pure **metadata** as well.
+!!! abstract
+
+    Features represent tabular **metadata**, typically containing references to external multi-modal **data** such as files, images, or videos.
+    But it can be just pure **metadata** as well.
 
 I will highlight **data** and **metadata** with bold so it really stands out.
 
 Metaxy is responsible for providing correct **metadata** to users.
+
 During incremental processing, Metaxy will automatically resolve added, changed and deleted **metadata** rows and calculate the right [sample versions](data-versioning.md) for them.
-Metaxy does not interact with **data** directly, the user is responsible for writing it, typically using **metadata** to identify sample locations in storage (it's a good idea to inject the sample version into the data sample identifier).
-Metaxy is designed to be used with systems that do not overwrite existing **metadata** (Metaxy only appends **metadata**) and therefore **data** as well (while we cannot enforce that since the user is responsible for writing the data, it's easily achievable by **including the sample version into the data sample identifier**).
+
+Metaxy does not interact with **data** directly, the user is responsible for writing it, typically using **metadata** to identify sample locations in storage.
+
+!!! tip "Keeping Historical Data"
+
+    Include `metaxy_data_version` in your data path to avoid collisions between different versions of the same data sample.
+    Doing this will ensure that newer samples are never written over older ones.
 
 I hope we can stop using bold for **data** and **metadata** from now on, hopefully we've made our point.
-
-> [!tip] Include sample version in your data path
-> Include the sample version in your data path to ensure strong consistency guarantees.
-> I mean it.
-> Really do it!
-
-Features live on a global `FeatureGraph` object (typically users do not need to interact with it directly).
-Features are bound to a specific Metaxy project, but can be moved between projects over time.
-Features must have unique (across all projects) `FeatureKey` associated with them.
 
 ## Feature Definitions
 
 Metaxy provides a [`BaseFeature`][metaxy.BaseFeature] class that can be extended to create user-defined features.
 It's a [Pydantic](https://docs.pydantic.dev/latest/) model.
+
+!!! abstract
+
+    Features must have unique (across all projects) [`FeatureKey`][metaxy.FeatureKey] associated with them.
+
+    Users must provide one or more ID columns to `FeatureSpec`, telling Metaxy how to uniquely identify feature samples.
 
 ```py
 from metaxy import BaseFeature, FeatureSpec
@@ -39,25 +44,31 @@ class VideoFeature(
     path: str
 ```
 
-Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your `FeatureSpec`.
+Since `VideoFeature` is a **root feature**, it doesn't have any dependencies.
 
-That's it!
-Since it's a root feature, it doesn't have any dependencies.
-Easy.
+That's it! Easy.
 
-You may now use `VideoFeature.spec()` class method to access the original feature spec: it's bound to the class.
+!!! tip
+
+    You may now use `VideoFeature.spec()` class method to access the original feature spec: it's bound to the class.
 
 Now let's define a child feature.
 
 ```py
 class Transcript(
     BaseFeature,
-    spec=FeatureSpec(key="/processed/transcript", id_columns=["video_id"] deps=[VideoFeature]),
+    spec=FeatureSpec(
+        key="/processed/transcript", id_columns=["video_id"], deps=[VideoFeature]
+    ),
 ):
     transcript_path: str
     speakers_json_path: str
     num_speakers: int
 ```
+
+??? abstract "The God `FeatureGraph` object"
+
+    Features live on a global [`FeatureGraph`][metaxy.FeatureGraph] object (typically users do not need to interact with it directly).
 
 Hurray! You get the idea.
 
@@ -66,8 +77,10 @@ Hurray! You get the idea.
 A core (I'll be straight: a killer) feature of Metaxy is the concept of **field-level dependencies**.
 These are used to define dependencies between logical fields of features.
 
-A **field** is not to be confused with metadata _column_ (Pydantic fields).
-Fields are completely independent from them.
+!!! abstract
+
+    A **field** is not to be confused with metadata _column_ (Pydantic fields).
+    Fields are completely independent from them.
 
 Columns refer to _metadata_ and are stored in metadata stores (such as databases) supported by Metaxy.
 
@@ -79,7 +92,7 @@ Downstream features can depend on specific fields of upstream features.
 This enables fine-grained control over field provenance, avoiding unnecessary reprocessing.
 
 At this point, careful readers have probably noticed that the `Transcript` feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
-Let's express that with Metaxy:
+Let's express this with Metaxy:
 
 ```py
 from metaxy import FieldDep, FieldSpec

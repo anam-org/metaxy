@@ -25,7 +25,9 @@ Metaxy really loves you, the user!
 Both `FeatureKey` and `FieldKey` accept:
 
 - **String format**: `FeatureKey("prefix/feature")`
+
 - **Sequence format**: `FeatureKey(["prefix", "feature"])`
+
 - **Same type**: `FeatureKey(another_feature_key)` -- for full Inception mode
 
 All formats produce equivalent keys, internally represented as a sequence of parts.

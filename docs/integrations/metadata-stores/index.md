@@ -9,9 +9,16 @@ The most common example of such stores is databases.
 Metaxy delegates all versioning computations and operations to external compute as much as possible. (1)
 { .annotate }
 
-1. :fire: Typically the entire [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update] can be executed externally!
+1. :fire: Typically (1) the entire [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update] can be executed externally!
+   {.annotate}
+
+   1. Except the cases enumerated in [../../learn/metadata-stores.md]
 
 These metadata stores can be found [here](./databases/index.md).
+
+!!! warning
+
+    Metaxy does not handle infrastructure setup. Make sure to have large tables partitioned as appropriate for your use case.
 
 !!! example
 
