@@ -568,6 +568,8 @@ class MetadataStore(ABC):
         !!! warning
             The order of rows is not guaranteed.
         """
+        self._check_open()
+
         filters = filters or []
         columns = columns or []
 
@@ -637,20 +639,22 @@ class MetadataStore(ABC):
 
             return lazy_frame
 
-        # Try fallback stores
+        # Try fallback stores (opened on demand)
         if allow_fallback:
             for store in self.fallback_stores:
                 try:
-                    # Use full read_metadata to handle nested fallback chains
-                    return store.read_metadata(
-                        feature,
-                        feature_version=feature_version,
-                        filters=filters,
-                        columns=columns,
-                        allow_fallback=True,
-                        current_only=current_only,
-                        latest_only=latest_only,
-                    )
+                    # Open fallback store on demand for reading
+                    with store:
+                        # Use full read_metadata to handle nested fallback chains
+                        return store.read_metadata(
+                            feature,
+                            feature_version=feature_version,
+                            filters=filters,
+                            columns=columns,
+                            allow_fallback=True,
+                            current_only=current_only,
+                            latest_only=latest_only,
+                        )
                 except FeatureNotFoundError:
                     # Try next fallback store
                     continue
