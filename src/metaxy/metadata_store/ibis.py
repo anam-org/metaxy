@@ -9,7 +9,7 @@ Supports any SQL database that Ibis supports:
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import narwhals as nw
 from narwhals.typing import Frame
@@ -483,7 +483,8 @@ class IbisMetadataStore(MetadataStore, ABC):
         table = self.conn.table(table_name)
 
         # Wrap Ibis table with Narwhals (stays lazy in SQL)
-        nw_lazy: nw.LazyFrame[Any] = nw.from_native(table, eager_only=False)
+        native_frame = nw.from_native(table, eager_only=False)
+        nw_lazy: nw.LazyFrame[Any] = cast(nw.LazyFrame[Any], cast(object, native_frame))
 
         # Apply feature_version filter (stays in SQL via Narwhals)
         if feature_version is not None:

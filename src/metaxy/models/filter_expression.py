@@ -109,10 +109,27 @@ def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
             node.expression
         )
 
+    # IS / IS NOT operators
+    if isinstance(node, exp.Is):
+        left = node.this
+        right = node.expression
+        if left is None or right is None:
+            raise FilterParseError("IS operator requires two operands.")
+
+        left_operand = _operand_info(left)
+        right_operand = _operand_info(right)
+
+        null_comparison = _maybe_null_comparison(left_operand, right_operand, node)
+        if null_comparison is not None:
+            return null_comparison
+
+        result = left_operand.expr == right_operand.expr
+        return ~result if _is_is_not_node(node) else result
+
     # Comparison operators - direct mapping to Narwhals operations
     if isinstance(node, (exp.EQ, exp.NEQ, exp.GT, exp.LT, exp.GTE, exp.LTE)):
-        left = getattr(node, "this", None)
-        right = getattr(node, "expression", None)
+        left = node.this
+        right = node.expression
         if left is None or right is None:
             raise FilterParseError(
                 f"Comparison operator {type(node).__name__} requires two operands."
@@ -210,27 +227,30 @@ def _operand_info(node: exp.Expression) -> OperandInfo:
     raise FilterParseError(f"Unsupported operand: {node.sql()}")
 
 
+def _is_is_not_node(node: exp.Expression) -> bool:
+    """Return True when the node represents an IS NOT comparison."""
+    return bool(node.args.get("isnot"))
+
+
 def _maybe_null_comparison(
     left: OperandInfo,
     right: OperandInfo,
     node: exp.Expression,
 ) -> nw.Expr | None:
     """Handle SQL NULL comparisons, converting to IS NULL / IS NOT NULL."""
+    eq_like = isinstance(node, (exp.EQ, exp.NEQ, exp.Is))
+    if not eq_like:
+        return None
+
+    negate = isinstance(node, exp.NEQ) or _is_is_not_node(node)
+
     if left.is_literal and left.literal_value is None and right.is_column:
         column_expr = right.expr
-        if isinstance(node, exp.EQ):
-            return column_expr.is_null()
-        if isinstance(node, exp.NEQ):
-            return ~column_expr.is_null()
-        return None
+        return ~column_expr.is_null() if negate else column_expr.is_null()
 
     if right.is_literal and right.literal_value is None and left.is_column:
         column_expr = left.expr
-        if isinstance(node, exp.EQ):
-            return column_expr.is_null()
-        if isinstance(node, exp.NEQ):
-            return ~column_expr.is_null()
-        return None
+        return ~column_expr.is_null() if negate else column_expr.is_null()
 
     return None
 

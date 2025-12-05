@@ -165,6 +165,42 @@ def test_parsed_expression_equals_narwhals_expression_null() -> None:
     assert parsed_result == expected_result == [True, True]
 
 
+def test_parsed_expression_equals_narwhals_expression_is_null_operator() -> None:
+    """Test IS NULL operator is handled."""
+    parsed = parse_filter_string("deleted_at IS NULL")
+    expected = nw.col("deleted_at").is_null()
+
+    df = pl.DataFrame({"deleted_at": [None, "2024-01-01", None, "2024-02-01"]})
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = (
+        lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
+    )
+    expected_result = (
+        lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
+    )
+
+    assert parsed_result == expected_result == [True, True]
+
+
+def test_parsed_expression_equals_narwhals_expression_is_not_null_operator() -> None:
+    """Test IS NOT NULL operator is handled."""
+    parsed = parse_filter_string("deleted_at IS NOT NULL")
+    expected = ~nw.col("deleted_at").is_null()
+
+    df = pl.DataFrame({"deleted_at": [None, "2024-01-01", None, "2024-02-01"]})
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = (
+        lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
+    )
+    expected_result = (
+        lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
+    )
+
+    assert parsed_result == expected_result == [False, False]
+
+
 @pytest.mark.parametrize(
     ("filter_string", "expected_expr", "expected_values"),
     [
