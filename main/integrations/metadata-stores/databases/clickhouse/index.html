@@ -3389,10 +3389,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#alembic-migrations" class="md-nav__link">
+  <a href="#sqlalchemy-and-alembic-migrations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Alembic Migrations
+        SQLAlchemy and Alembic Migrations
       
     </span>
   </a>
@@ -3401,6 +3401,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Optimization
+      
+    </span>
+  </a>
   
 </li>
       
@@ -3589,17 +3600,27 @@
 </tr>
 </tbody>
 </table>
-<h3 id="alembic-migrations">Alembic Migrations<a class="headerlink" href="#alembic-migrations" title="Permanent link">&para;</a></h3>
-<p>For Alembic migrations, use <a href="https://clickhouse.com/docs/integrations/python"><code>clickhouse-connect</code></a>:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clickhouse-connect
+<h3 id="sqlalchemy-and-alembic-migrations">SQLAlchemy and Alembic Migrations<a class="headerlink" href="#sqlalchemy-and-alembic-migrations" title="Permanent link">&para;</a></h3>
+<p>For better SQLAlchemy and Alembic migrations support, use the community <a href="https://github.com/xzkostyan/clickhouse-sqlalchemy"><code>clickhouse-sqlalchemy</code></a> driver:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clickhouse-sqlalchemy
 </span></code></pre></div>
 <details class="note">
-<summary>Alternative Community Driver</summary>
-<p>Alternatively, use the community <a href="https://github.com/xzkostyan/clickhouse-sqlalchemy"><code>clickhouse-sqlalchemy</code></a> driver.</p>
+<summary>Alternative: ClickHouse Connect</summary>
+<p>Alternatively, use the official <a href="https://clickhouse.com/docs/integrations/python"><code>clickhouse-connect</code></a> driver.</p>
 </details>
 <div class="admonition tip">
 <p class="admonition-title">Alembic Integration</p>
 <p>See <a href="../../../plugins/sqlalchemy/#alembic-integration">Alembic setup guide</a> for additional instructions on how to use Alembic with Metaxy.</p>
+</div>
+<h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">Table Partitioning and Ordering</p>
+<p>For optimal query performance, create your ClickHouse tables with:</p>
+<ul>
+<li><strong>Partitioning</strong>: Partition your tables!</li>
+<li><strong>ORDER BY</strong>: Use <code>(metaxy_feature_version, &lt;id_columns&gt;, metaxy_created_at)</code></li>
+</ul>
+<p>ClickHouse doesn't have indexing, instead it relies on partitioning and ordering to optimize queries.</p>
 </div>
 <h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
 <ul>
