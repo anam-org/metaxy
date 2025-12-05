@@ -8,7 +8,10 @@ import dagster as dg
 import metaxy as mx
 from metaxy.ext.dagster.constants import DAGSTER_METAXY_FEATURE_METADATA_KEY
 from metaxy.ext.dagster.metaxify import metaxify
-from metaxy.ext.dagster.utils import compute_stats_from_lazy_frame
+from metaxy.ext.dagster.utils import (
+    build_feature_event_tags,
+    compute_stats_from_lazy_frame,
+)
 
 
 def observable_metaxy_asset(
@@ -99,6 +102,7 @@ def observable_metaxy_asset(
             return dg.ObserveResult(
                 data_version=stats.data_version,
                 metadata=metadata,
+                tags=build_feature_event_tags(feature_key),
             )
 
         # Apply observable_source_asset decorator

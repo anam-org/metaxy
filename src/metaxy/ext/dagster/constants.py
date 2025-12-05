@@ -7,4 +7,7 @@ DAGSTER_METAXY_INFO_METADATA_KEY = "metaxy/info"
 DAGSTER_COLUMN_SCHEMA_METADATA_KEY = "dagster/column_schema"
 DAGSTER_COLUMN_LINEAGE_METADATA_KEY = "dagster/column_lineage"
 
+DAGSTER_METAXY_FEATURE_VERSION_TAG_KEY = "metaxy/feature_version"
+DAGSTER_METAXY_FEATURE_CODE_VERSION_TAG_KEY = "metaxy/feature_code_version"
+
 METAXY_DAGSTER_METADATA_KEY = "dagster/attributes"

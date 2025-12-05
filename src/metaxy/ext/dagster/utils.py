@@ -6,7 +6,9 @@ import narwhals as nw
 
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
+    DAGSTER_METAXY_FEATURE_CODE_VERSION_TAG_KEY,
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
+    DAGSTER_METAXY_FEATURE_VERSION_TAG_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
@@ -38,6 +40,44 @@ def build_partition_filter(
     if partition_col is None or partition_key is None:
         return []
     return [nw.col(partition_col) == partition_key]
+
+
+_DAGSTER_TAG_VALUE_MAX_LENGTH = 63
+
+
+def build_feature_event_tags(feature: mx.CoercibleToFeatureKey) -> dict[str, str]:
+    """Build tags for Dagster events (MaterializeResult, ObserveResult, AssetObservation).
+
+    Creates a dictionary with version tags for the given Metaxy feature.
+    These tags can be used to filter and search for events in the Dagster UI.
+
+    Args:
+        feature: The Metaxy feature (class, key, or string).
+
+    Returns:
+        A dictionary with the following tags:
+
+        - `metaxy/feature`: The feature key as table_name format (uses `__` separator
+          since Dagster tags don't allow `/` in values).
+        - `metaxy/feature_version`: The feature version (combines spec + dependencies),
+          truncated to 63 characters (Dagster limit).
+        - `metaxy/feature_code_version`: The feature spec code version,
+          truncated to 63 characters (Dagster limit).
+    """
+    feature_key = mx.coerce_to_feature_key(feature)
+    feature_cls = mx.get_feature_by_key(feature_key)
+    feature_spec = feature_cls.spec()
+    return {
+        # Use table_name format since Dagster tags don't allow '/' in values
+        DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.table_name,
+        # Truncate version hashes to 63 chars (Dagster tag value limit)
+        DAGSTER_METAXY_FEATURE_VERSION_TAG_KEY: feature_cls.feature_version()[
+            :_DAGSTER_TAG_VALUE_MAX_LENGTH
+        ],
+        DAGSTER_METAXY_FEATURE_CODE_VERSION_TAG_KEY: feature_spec.code_version[
+            :_DAGSTER_TAG_VALUE_MAX_LENGTH
+        ],
+    }
 
 
 def get_partition_filter(
@@ -230,6 +270,7 @@ def generate_materialize_results(
             asset_key=asset_spec.key,
             metadata=metadata,
             data_version=stats.data_version,
+            tags=build_feature_event_tags(key),
         )
 
 
@@ -477,4 +518,5 @@ def generate_observe_results(
             asset_key=asset_spec.key,
             metadata=metadata,
             data_version=stats.data_version,
+            tags=build_feature_event_tags(key),
         )
