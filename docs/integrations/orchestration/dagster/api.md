@@ -55,6 +55,14 @@
 ## Observation Jobs
 
 <!-- dprint-ignore-start -->
+::: metaxy.ext.dagster.observation_job.build_metaxy_multi_observation_job
+    options:
+      heading_level: 3
+<!-- dprint-ignore-end -->
+
+---
+
+<!-- dprint-ignore-start -->
 ::: metaxy.ext.dagster.observation_job.build_metaxy_observation_job
     options:
       heading_level: 3
