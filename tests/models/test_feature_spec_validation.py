@@ -106,15 +106,15 @@ def test_duplicate_field_keys_in_feature_class_definition():
             pass
 
 
-def test_field_keys_case_sensitive():
-    """Test that field keys are case-sensitive (different cases are not duplicates)."""
-    # This should not raise any errors - case matters
+def test_field_keys_with_similar_names():
+    """Test that field keys with similar but different names are not duplicates."""
+    # This should not raise any errors - similar names are distinct
     spec = SampleFeatureSpec(
         key="test/feature",
         fields=[
-            FieldSpec(key=FieldKey(["Data"])),
-            FieldSpec(key=FieldKey(["data"])),  # Different case, not a duplicate
-            FieldSpec(key=FieldKey(["DATA"])),  # Different case, not a duplicate
+            FieldSpec(key=FieldKey(["data_v1"])),
+            FieldSpec(key=FieldKey(["data_v2"])),  # Different suffix, not a duplicate
+            FieldSpec(key=FieldKey(["data_raw"])),  # Different suffix, not a duplicate
         ],
     )
     assert len(spec.fields) == 3

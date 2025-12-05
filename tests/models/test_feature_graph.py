@@ -649,8 +649,8 @@ class TestDeterministicOrdering:
         assert a_idx < m2_idx
         assert z_idx < b2_idx
 
-    def test_case_insensitive_alphabetical_ordering(self, graph: FeatureGraph):
-        """Test that alphabetical ordering is case-insensitive."""
+    def test_alphabetical_ordering(self, graph: FeatureGraph):
+        """Test that same-level features are sorted alphabetically."""
 
         class FeatureParent(
             BaseFeature,
@@ -661,31 +661,31 @@ class TestDeterministicOrdering:
         ):
             pass
 
-        # Create children with mixed case names
-        class FeatureZ(
+        # Create children with names that test alphabetical ordering
+        class FeatureZulu(
             BaseFeature,
             spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "Z"]),
+                key=FeatureKey(["test", "zulu"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
                 deps=[FeatureDep(feature=FeatureParent)],
             ),
         ):
             pass
 
-        class Featurea(
+        class FeatureAlpha(
             BaseFeature,
             spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "a"]),
+                key=FeatureKey(["test", "alpha"]),
                 fields=[FieldSpec(key=FieldKey(["a"]))],
                 deps=[FeatureDep(feature=FeatureParent)],
             ),
         ):
             pass
 
-        class FeatureM(
+        class FeatureMike(
             BaseFeature,
             spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "M"]),
+                key=FeatureKey(["test", "mike"]),
                 fields=[FieldSpec(key=FieldKey(["m"]))],
                 deps=[FeatureDep(feature=FeatureParent)],
             ),
@@ -697,11 +697,11 @@ class TestDeterministicOrdering:
         # Parent should be first
         assert sorted_keys[0] == FeatureParent.spec().key
 
-        # Children should be in case-insensitive alphabetical order
-        # a < M < Z (case-insensitive)
-        assert sorted_keys[1] == Featurea.spec().key
-        assert sorted_keys[2] == FeatureM.spec().key
-        assert sorted_keys[3] == FeatureZ.spec().key
+        # Children should be in alphabetical order
+        # alpha < mike < zulu
+        assert sorted_keys[1] == FeatureAlpha.spec().key
+        assert sorted_keys[2] == FeatureMike.spec().key
+        assert sorted_keys[3] == FeatureZulu.spec().key
 
 
 class TestEdgeCases:

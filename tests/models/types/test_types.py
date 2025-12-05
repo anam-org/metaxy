@@ -117,10 +117,12 @@ class TestFeatureKey:
         with pytest.raises(TypeError, match="takes from 1 to 2 positional arguments"):
             FeatureKey("a", "b", "c")  # pyright: ignore[reportCallIssue]
 
-    def test_empty_string_splits_to_empty_list(self):
-        """Test empty string handling."""
-        key = FeatureKey("")
-        assert list(key.parts) == [""]
+    def test_empty_string_rejected(self):
+        """Test that empty string is rejected as invalid."""
+        import pytest
+
+        with pytest.raises(Exception):  # ValidationError
+            FeatureKey("")
 
     def test_single_part(self):
         """Test single part key."""
@@ -287,33 +289,33 @@ class TestJSONSerialization:
         key = FeatureKey("a/b/c")
         json_data = key.model_dump()
 
-        # Should be a list, not a dict with "parts" key
-        assert isinstance(json_data, list)
-        assert json_data == ["a", "b", "c"]
+        # Should be a string for JSON dict key compatibility
+        assert isinstance(json_data, str)
+        assert json_data == "a/b/c"
 
     def test_feature_key_json_serialization_from_list(self):
-        """Test that FeatureKey from list serializes to list format."""
+        """Test that FeatureKey from list serializes to string format."""
         key = FeatureKey(["a", "b", "c"])
         json_data = key.model_dump()
 
-        assert isinstance(json_data, list)
-        assert json_data == ["a", "b", "c"]
+        assert isinstance(json_data, str)
+        assert json_data == "a/b/c"
 
     def test_field_key_json_serialization_from_string(self):
-        """Test that FieldKey from string serializes to list format."""
+        """Test that FieldKey from string serializes to string format."""
         key = FieldKey("a/b/c")
         json_data = key.model_dump()
 
-        assert isinstance(json_data, list)
-        assert json_data == ["a", "b", "c"]
+        assert isinstance(json_data, str)
+        assert json_data == "a/b/c"
 
     def test_field_key_json_serialization_from_list(self):
-        """Test that FieldKey from list serializes to list format."""
+        """Test that FieldKey from list serializes to string format."""
         key = FieldKey(["a", "b", "c"])
         json_data = key.model_dump()
 
-        assert isinstance(json_data, list)
-        assert json_data == ["a", "b", "c"]
+        assert isinstance(json_data, str)
+        assert json_data == "a/b/c"
 
     def test_feature_key_json_roundtrip(self):
         """Test that FeatureKey can be serialized and deserialized."""
@@ -322,8 +324,8 @@ class TestJSONSerialization:
         key = FeatureKey("a/b/c")
         json_str = json.dumps(key.model_dump())
 
-        # Should serialize to ["a", "b", "c"]
-        assert json_str == '["a", "b", "c"]'
+        # Should serialize to "a/b/c"
+        assert json_str == '"a/b/c"'
 
         # Should be able to deserialize
         json_data = json.loads(json_str)
@@ -338,8 +340,8 @@ class TestJSONSerialization:
         key = FieldKey("x/y/z")
         json_str = json.dumps(key.model_dump())
 
-        # Should serialize to ["x", "y", "z"]
-        assert json_str == '["x", "y", "z"]'
+        # Should serialize to "x/y/z"
+        assert json_str == '"x/y/z"'
 
         # Should be able to deserialize
         json_data = json.loads(json_str)
@@ -358,9 +360,9 @@ class TestJSONSerialization:
         model = MyModel(key=FeatureKey(["a", "b", "c"]))
         json_data = model.model_dump()
 
-        # key should be serialized as a list
-        assert isinstance(json_data["key"], list)
-        assert json_data["key"] == ["a", "b", "c"]
+        # key should be serialized as a string (for JSON dict key compatibility)
+        assert isinstance(json_data["key"], str)
+        assert json_data["key"] == "a/b/c"
 
     def test_field_key_in_pydantic_model(self):
         """Test FieldKey serialization when used as a field in Pydantic model."""
@@ -373,9 +375,9 @@ class TestJSONSerialization:
         model = MyModel(key=FieldKey(["x", "y"]))
         json_data = model.model_dump()
 
-        # key should be serialized as a list
-        assert isinstance(json_data["key"], list)
-        assert json_data["key"] == ["x", "y"]
+        # key should be serialized as a string (for JSON dict key compatibility)
+        assert isinstance(json_data["key"], str)
+        assert json_data["key"] == "x/y"
 
 
 class TestFeatureSpecIntegration:
@@ -492,14 +494,14 @@ class TestFeatureSpecIntegration:
         assert spec.fields[0].key.to_string() == "field/one"
         assert spec.fields[1].key.to_string() == "field/two"
 
-        # Verify JSON serialization
+        # Verify JSON serialization - keys are now serialized as strings
         json_data = spec.model_dump(mode="json")
-        assert json_data["key"] == ["my", "complete", "feature"]
+        assert json_data["key"] == "my/complete/feature"
         assert json_data["deps"] is not None  # Type narrowing for type checker
-        assert json_data["deps"][0]["feature"] == ["upstream", "one"]
-        assert json_data["deps"][1]["feature"] == ["upstream", "two"]
-        assert json_data["fields"][0]["key"] == ["field", "one"]
-        assert json_data["fields"][1]["key"] == ["field", "two"]
+        assert json_data["deps"][0]["feature"] == "upstream/one"
+        assert json_data["deps"][1]["feature"] == "upstream/two"
+        assert json_data["fields"][0]["key"] == "field/one"
+        assert json_data["fields"][1]["key"] == "field/two"
 
 
 class TestEdgeCases:

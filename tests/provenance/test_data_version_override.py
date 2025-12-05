@@ -117,12 +117,12 @@ def test_basic_data_version_override(graph: FeatureGraph, snapshot) -> None:
 
 
 def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> None:
-    """Test A→B→C where A has custom data_version, verify C's provenance traces back correctly."""
+    """Test feature_a→feature_b→feature_c where feature_a has custom data_version, verify feature_c's provenance traces back correctly."""
 
     class FeatureA(
         SampleFeature,
         spec=SampleFeatureSpec(
-            key=FeatureKey(["A"]),
+            key=FeatureKey(["feature_a"]),
             fields=[
                 FieldSpec(key=FieldKey(["field_a"]), code_version="1"),
             ],
@@ -133,15 +133,15 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
     class FeatureB(
         SampleFeature,
         spec=SampleFeatureSpec(
-            key=FeatureKey(["B"]),
-            deps=[FeatureDep(feature=FeatureKey(["A"]))],
+            key=FeatureKey(["feature_b"]),
+            deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
             fields=[
                 FieldSpec(
                     key=FieldKey(["field_b"]),
                     code_version="1",
                     deps=[
                         FieldDep(
-                            feature=FeatureKey(["A"]),
+                            feature=FeatureKey(["feature_a"]),
                             fields=[FieldKey(["field_a"])],
                         )
                     ],
@@ -154,15 +154,15 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
     class FeatureC(
         SampleFeature,
         spec=SampleFeatureSpec(
-            key=FeatureKey(["C"]),
-            deps=[FeatureDep(feature=FeatureKey(["B"]))],
+            key=FeatureKey(["feature_c"]),
+            deps=[FeatureDep(feature=FeatureKey(["feature_b"]))],
             fields=[
                 FieldSpec(
                     key=FieldKey(["field_c"]),
                     code_version="1",
                     deps=[
                         FieldDep(
-                            feature=FeatureKey(["B"]),
+                            feature=FeatureKey(["feature_b"]),
                             fields=[FieldKey(["field_b"])],
                         )
                     ],
@@ -195,7 +195,7 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
     b_plan = graph.get_feature_plan(FeatureB.spec().key)
     b_engine = PolarsVersioningEngine(b_plan)
     b_result = b_engine.load_upstream_with_provenance(
-        upstream={FeatureKey(["A"]): a_df},
+        upstream={FeatureKey(["feature_a"]): a_df},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
     )
@@ -204,7 +204,7 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
     c_plan = graph.get_feature_plan(FeatureC.spec().key)
     c_engine = PolarsVersioningEngine(c_plan)
     c_result = c_engine.load_upstream_with_provenance(
-        upstream={FeatureKey(["B"]): b_result},
+        upstream={FeatureKey(["feature_b"]): b_result},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
     )

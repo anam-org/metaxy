@@ -452,10 +452,10 @@ def test_property_code_version_multiple_fields(num_fields: int) -> None:
 
 @given(
     field_names=st.lists(
-        st.text(
-            alphabet=st.characters(whitelist_categories=("Ll", "Lu", "Nd")),
-            min_size=1,
-            max_size=10,
+        # Generate valid field names: start with lowercase letter, followed by lowercase/digits/underscores
+        # but avoid double underscores which are now invalid
+        st.from_regex(r"[a-z](?:[a-z0-9]|(?:_(?!_))){0,9}", fullmatch=True).filter(
+            lambda s: "__" not in s
         ),
         min_size=1,
         max_size=5,

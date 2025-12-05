@@ -20,23 +20,27 @@ from metaxy.models.types import FeatureKey, FieldKey
 # ============================================================================
 
 
-# Strategy for valid key part strings (no "/" or "__")
+# Strategy for valid first key part (must start with lowercase letter or underscore)
 @st.composite
-def valid_key_part(draw: st.DrawFn) -> str:
-    """Generate a valid key part that doesn't contain "/" or "__"."""
-    # Generate alphanumeric with underscores and hyphens
-    part = draw(
-        st.text(
-            alphabet=st.characters(
-                whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="_-"
-            ),
-            min_size=1,
-            max_size=20,
-        )
-    )
+def valid_first_key_part(draw: st.DrawFn) -> str:
+    """Generate a valid first key part that starts with lowercase letter or underscore."""
+    # First character: lowercase letter or underscore
+    # Subsequent characters: lowercase letters, digits, underscores, hyphens
+    part = draw(st.from_regex(r"[a-z_][a-z0-9_-]{0,19}", fullmatch=True))
     # Ensure no double underscores
     assume("__" not in part)
-    assume("/" not in part)
+    return part
+
+
+# Strategy for valid subsequent key parts (can start with letter, digit, or underscore)
+@st.composite
+def valid_other_key_part(draw: st.DrawFn) -> str:
+    """Generate a valid key part (not first) that can start with letter, digit, or underscore."""
+    # First character: lowercase letter, digit, or underscore (no hyphen)
+    # Subsequent characters: lowercase letters, digits, underscores, hyphens
+    part = draw(st.from_regex(r"[a-z0-9_][a-z0-9_-]{0,19}", fullmatch=True))
+    # Ensure no double underscores
+    assume("__" not in part)
     return part
 
 
@@ -45,7 +49,17 @@ def valid_key_part(draw: st.DrawFn) -> str:
 def key_parts_list(draw: st.DrawFn) -> list[str]:
     """Generate a list of valid key parts."""
     n_parts = draw(st.integers(min_value=1, max_value=5))
-    return draw(st.lists(valid_key_part(), min_size=n_parts, max_size=n_parts))
+    if n_parts == 0:
+        return []
+    # First part must start with letter or underscore
+    first_part = draw(valid_first_key_part())
+    if n_parts == 1:
+        return [first_part]
+    # Remaining parts can start with letter, digit, or underscore
+    other_parts = draw(
+        st.lists(valid_other_key_part(), min_size=n_parts - 1, max_size=n_parts - 1)
+    )
+    return [first_part] + other_parts
 
 
 # Strategy for generating unique lists of key parts
@@ -239,10 +253,10 @@ class TestFeatureKeyProperties:
         """Test JSON serialization roundtrip."""
         key = FeatureKey(parts)
 
-        # Serialize
+        # Serialize - keys now serialize as strings for JSON dict key compatibility
         json_data = key.model_dump()
-        assert isinstance(json_data, list)
-        assert json_data == parts
+        assert isinstance(json_data, str)
+        assert json_data == "/".join(parts)
 
         # JSON string roundtrip
         json_str = json.dumps(json_data)
@@ -327,10 +341,10 @@ class TestFieldKeyProperties:
         """Test JSON serialization roundtrip."""
         key = FieldKey(parts)
 
-        # Serialize
+        # Serialize - keys now serialize as strings for JSON dict key compatibility
         json_data = key.model_dump()
-        assert isinstance(json_data, list)
-        assert json_data == parts
+        assert isinstance(json_data, str)
+        assert json_data == "/".join(parts)
 
         # JSON string roundtrip
         json_str = json.dumps(json_data)
@@ -417,8 +431,8 @@ class TestFeatureSpecProperties:
         # Serialize to JSON
         json_data = spec.model_dump(mode="json")
 
-        # Key should be serialized as a list
-        assert isinstance(json_data["key"], list)
+        # Key should be serialized as a string for JSON dict key compatibility
+        assert isinstance(json_data["key"], str)
 
         # Should be able to reconstruct
         spec_restored = SampleFeatureSpec(**json_data)
@@ -501,8 +515,8 @@ class TestFeatureDepProperties:
         # Serialize to JSON
         json_data = dep.model_dump(mode="json")
 
-        # Key should be serialized as a list
-        assert isinstance(json_data["feature"], list)
+        # Key should be serialized as a string for JSON dict key compatibility
+        assert isinstance(json_data["feature"], str)
         assert json_data["columns"] == ["col1", "col2"]  # Tuple becomes list in JSON
         assert json_data["rename"] == {"col1": "new_col1"}
 
@@ -551,8 +565,8 @@ class TestFieldSpecProperties:
         # Serialize to JSON
         json_data = field.model_dump(mode="json")
 
-        # Key should be serialized as a list
-        assert isinstance(json_data["key"], list)
+        # Key should be serialized as a string for JSON dict key compatibility
+        assert isinstance(json_data["key"], str)
         assert json_data["code_version"] == "7"
 
         # Should be able to reconstruct
@@ -671,11 +685,11 @@ class TestComplexIntegration:
         # Test JSON serialization
         json_data = container.model_dump(mode="json")
 
-        # All keys should be serialized as lists
+        # All keys should be serialized as strings for JSON dict key compatibility
         for item in json_data["items"]:
-            assert isinstance(item["feature_key"], list)
-            assert isinstance(item["field_key"], list)
-        assert isinstance(json_data["main_feature"]["key"], list)
+            assert isinstance(item["feature_key"], str)
+            assert isinstance(item["field_key"], str)
+        assert isinstance(json_data["main_feature"]["key"], str)
 
         # Roundtrip
         container_restored = MyContainerModel(**json_data)
@@ -711,28 +725,25 @@ class TestEdgeCasesWithHypothesis:
             assert len(feature_key.parts) == 0
             assert feature_key.to_string() == ""
 
-    @given(
-        text=st.text(
-            alphabet=st.characters(blacklist_categories=("Cc", "Cs")), min_size=1
-        )
-    )
-    def test_unicode_in_keys(self, text: str):
-        """Test Unicode characters in keys (excluding "/" and "__")."""
-        assume("/" not in text)
-        assume("__" not in text)
+    def test_unicode_in_keys_rejected(self):
+        """Test that Unicode characters in keys are rejected.
 
-        # Single part with unicode
-        feature_key = FeatureKey([text])
-        assert feature_key.parts == (text,)
-        assert feature_key.to_string() == text
+        Keys must contain only lowercase ASCII letters, digits, underscores, and hyphens
+        to ensure SQL compatibility across databases.
+        """
+        import pytest
 
-        # Multiple parts with unicode
-        parts = [text, "normal", text + "2"]
-        field_key = FieldKey(parts)
-        assert list(field_key.parts) == parts
-        assert field_key.to_string() == "/".join(parts)
+        # Unicode characters should be rejected
+        with pytest.raises(Exception):  # ValidationError
+            FeatureKey(["café"])
 
-    @given(parts=st.lists(valid_key_part(), min_size=1, max_size=3))
+        with pytest.raises(Exception):  # ValidationError
+            FieldKey(["日本語"])
+
+        with pytest.raises(Exception):  # ValidationError
+            FeatureKey(["hello_世界"])
+
+    @given(parts=key_parts_list())
     def test_key_as_dict_key(self, parts: list[str]):
         """Test that keys work properly as dictionary keys."""
         feature_key1 = FeatureKey(parts)
