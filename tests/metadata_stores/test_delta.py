@@ -44,27 +44,19 @@ def test_delta_local_absolute_path(tmp_path, test_features) -> None:
         assert result.collect().to_native().height == 1
 
 
-def test_delta_feature_uri_with_leading_slash_key(tmp_path) -> None:
-    """Verify _feature_uri handles feature keys with leading slashes correctly.
-
-    When a FeatureKey like '/feature' is created, it splits into parts ('', 'feature').
-    The empty part must be filtered out to prevent creating an absolute path that
-    would cause os.path.join to discard the root_uri.
-
-    This was a bug where DeltaMetadataStore('/tmp/rofl') with feature key '/test'
-    would write to '/test.delta' instead of '/tmp/rofl/test.delta'.
-    """
+def test_delta_feature_uri_generation(tmp_path) -> None:
+    """Verify _feature_uri generates correct URIs for valid feature keys."""
     from metaxy.models.types import FeatureKey
 
     store_path = tmp_path / "delta_store"
     store = DeltaMetadataStore(store_path)
 
-    # Keys with leading slashes create empty first parts when split
+    # Valid feature keys and their expected URI suffixes
     test_cases = [
-        ("/feature", "feature.delta"),
-        ("//double", "double.delta"),
+        ("feature", "feature.delta"),
         ("a/b/c", "a/b/c.delta"),
         ("normal", "normal.delta"),
+        ("my_feature/v1", "my_feature/v1.delta"),
     ]
 
     for key_str, expected_suffix in test_cases:
@@ -75,6 +67,28 @@ def test_delta_feature_uri_with_leading_slash_key(tmp_path) -> None:
             f"For key '{key_str}' (parts={key.parts}), "
             f"expected '{expected_uri}', got '{uri}'"
         )
+
+
+def test_delta_feature_key_validation_rejects_empty_parts(tmp_path) -> None:
+    """Ensure FeatureKey rejects invalid keys with empty parts.
+
+    Leading slashes like '/feature' would create empty parts ('', 'feature')
+    which are now rejected at validation time to prevent path bugs.
+    """
+    import pytest
+
+    from metaxy.models.types import FeatureKey
+
+    # Keys with leading slashes or empty parts should be rejected
+    invalid_keys = [
+        "/feature",  # Leading slash creates empty first part
+        "//double",  # Double slash creates empty parts
+        "a//b",  # Empty part in the middle
+    ]
+
+    for key_str in invalid_keys:
+        with pytest.raises(Exception):  # ValidationError
+            FeatureKey(key_str)
 
 
 def test_delta_s3_storage_options_passed(
