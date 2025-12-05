@@ -1,6 +1,6 @@
 [project]
 name = "metaxy"
-version = "0.0.1.dev6"
+version = "0.0.1.dev7"
 description = "Pluggable versioned metadata management for incremental multi-modal pipelines."
 readme = "README.md"
 authors = [
