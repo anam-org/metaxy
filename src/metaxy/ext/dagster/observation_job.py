@@ -14,6 +14,7 @@ from metaxy.ext.dagster.constants import (
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 from metaxy.ext.dagster.utils import (
+    build_feature_event_tags,
     build_partition_filter,
     compute_row_count,
 )
@@ -447,6 +448,7 @@ def _build_observation_op_for_specs(
                 asset_key=spec.key,
                 partition=partition_key,
                 metadata=metadata,
+                tags=build_feature_event_tags(feature_key),
             )
         )
 
