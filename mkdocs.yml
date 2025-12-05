@@ -235,6 +235,7 @@ nav:
           - Configuration: integrations/metadata-stores/storage/delta/configuration.md
           - API: integrations/metadata-stores/storage/delta/api.md
     - Plugins:
+      - integrations/plugins/index.md
       - SQLModel:
         - integrations/plugins/sqlmodel/index.md
         - Configuration: integrations/plugins/sqlmodel/configuration.md
