@@ -20,6 +20,7 @@ import warnings
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
+import polars as pl
 import polars.testing as pl_testing
 import pytest
 from hypothesis.errors import NonInteractiveExampleWarning
@@ -892,3 +893,128 @@ def test_resolve_update_global_filters_combined_with_filters(
         assert len(increment.added) == 2
         added_df = increment.added.lazy().collect().to_polars()
         assert set(added_df["sample_uid"].to_list()) == {"s2", "s3"}
+
+
+# ============= TEST: SCHEMA EVOLUTION =============
+
+
+def test_resolve_update_handles_schema_evolution_with_changed_fields(
+    any_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test that resolve_update handles schema evolution when FieldSpec changes.
+
+    This tests the scenario where:
+    1. Upstream feature is written with fields: {old_field_a, old_field_b}
+    2. FieldSpec is changed to: {new_field_x, new_field_y}
+    3. The metaxy_feature_version filter returns 0 rows (version changed)
+    4. But stored data schema still has old struct fields
+    5. Code should NOT fail with StructFieldNotFoundError when accessing new fields
+
+    The fix handles this by checking the struct schema and using empty string
+    placeholders for missing fields, since the query returns 0 rows anyway.
+    """
+    from metaxy import FieldDep, FieldKey, FieldSpec
+
+    store = any_store
+
+    # Phase 1: Create upstream feature with OLD fields and write data
+    class UpstreamV1(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="schema_evolution_upstream",
+            fields=[
+                FieldSpec(key=FieldKey(["old_field_a"]), code_version="1"),
+                FieldSpec(key=FieldKey(["old_field_b"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    # Write upstream data with old schema
+    upstream_data_v1 = pl.DataFrame(
+        {
+            "sample_uid": ["s1", "s2", "s3"],
+            "metaxy_provenance_by_field": [
+                {"old_field_a": "hash1a", "old_field_b": "hash1b"},
+                {"old_field_a": "hash2a", "old_field_b": "hash2b"},
+                {"old_field_a": "hash3a", "old_field_b": "hash3b"},
+            ],
+            "metaxy_feature_version": [
+                UpstreamV1.feature_version(),
+                UpstreamV1.feature_version(),
+                UpstreamV1.feature_version(),
+            ],
+            "metaxy_data_version_by_field": [
+                {"old_field_a": "dv1a", "old_field_b": "dv1b"},
+                {"old_field_a": "dv2a", "old_field_b": "dv2b"},
+                {"old_field_a": "dv3a", "old_field_b": "dv3b"},
+            ],
+        }
+    )
+
+    with store, graph.use():
+        store.write_metadata(UpstreamV1, upstream_data_v1)
+
+    # Phase 2: Create NEW graph with DIFFERENT fields for upstream
+    # and a downstream feature that depends on it
+    graph2 = FeatureGraph()
+    with graph2.use():
+
+        class UpstreamV2(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key="schema_evolution_upstream",
+                fields=[
+                    # Different fields than what's stored!
+                    FieldSpec(key=FieldKey(["new_field_x"]), code_version="2"),
+                    FieldSpec(key=FieldKey(["new_field_y"]), code_version="2"),
+                ],
+            ),
+        ):
+            pass
+
+        class DownstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key="schema_evolution_downstream",
+                deps=[
+                    FeatureDep(feature=UpstreamV2),
+                ],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["output"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["schema_evolution_upstream"]),
+                                fields=[
+                                    FieldKey(["new_field_x"]),
+                                    FieldKey(["new_field_y"]),
+                                ],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+        ):
+            pass
+
+        # Now try to resolve_update for downstream
+        # This should NOT fail even though:
+        # - Stored data has struct with {old_field_a, old_field_b}
+        # - Code expects {new_field_x, new_field_y}
+        # Because metaxy_feature_version filter will return 0 rows
+        with store:
+            # This used to fail with StructFieldNotFoundError
+            # Now it should work because we handle missing struct fields
+            increment = store.resolve_update(DownstreamFeature)
+
+            # Should return empty increment (no matching upstream data)
+            # The key is that it doesn't crash
+            assert increment is not None
+            # Since feature version changed, upstream should be filtered out
+            # and downstream should have 0 samples (no matching upstream data)
+            assert len(increment.added) == 0
+            assert len(increment.changed) == 0
+            assert len(increment.removed) == 0

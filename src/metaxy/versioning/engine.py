@@ -302,18 +302,54 @@ class VersioningEngine(ABC):
             feature_key
         ].renamed_data_version_by_field_col
 
+    def _get_struct_field_names(self, df: FrameT, struct_column: str) -> set[str]:
+        """Get the field names from a struct column in the DataFrame.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame
+            struct_column: Name of the struct column
+
+        Returns:
+            Set of field names in the struct, or empty set if column doesn't exist
+        """
+        schema = df.collect_schema()
+        if struct_column not in schema.names():
+            return set()
+
+        struct_type = schema[struct_column]
+        if not isinstance(struct_type, nw.Struct):
+            return set()
+
+        return {f.name for f in struct_type.fields}
+
     def get_field_provenance_exprs(
         self,
+        df: FrameT | None = None,
     ) -> dict[FieldKey, dict[FQFieldKey, nw.Expr]]:
         """Returns a mapping from field keys to data structures that determine provenances for each field.
         Each value is itself a mapping from fully qualified field keys of upstream features to an expression that selects the corresponding upstream data version.
 
         Resolves field-level dependencies. Only actual parent fields are considered.
 
-        Note:
+        Args:
+            df: Optional DataFrame to check struct schemas against. If provided,
+                missing struct fields will return empty string instead of raising
+                StructFieldNotFoundError. This enables schema evolution where
+                upstream data may have been written with a different FieldSpec.
+
+        !!! abstract
             This reads from upstream `metaxy_data_version_by_field` instead of `metaxy_provenance_by_field`,
-            enabling users to control version propagation by overriding data_version values.
+            enabling users to control version propagation by overriding this column.
         """
+        # Build a mapping of struct column name -> existing field names (for schema evolution)
+        existing_struct_fields: dict[str, set[str]] = {}
+        if df is not None:
+            for feature_key in self.feature_transformers_by_key:
+                struct_col = self.get_renamed_data_version_by_field_col(feature_key)
+                existing_struct_fields[struct_col] = self._get_struct_field_names(
+                    df, struct_col
+                )
+
         res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
         # THIS LINES HERE
         # ARE THE PINNACLE OF METAXY
@@ -324,9 +360,23 @@ class VersioningEngine(ABC):
             ).items():
                 # Read from data_version_by_field instead of provenance_by_field
                 # This enables user-defined versioning control
-                field_provenance[fq_key] = nw.col(
-                    self.get_renamed_data_version_by_field_col(fq_key.feature)
-                ).struct.field(parent_field_spec.key.to_struct_key())
+                struct_col = self.get_renamed_data_version_by_field_col(fq_key.feature)
+                field_name = parent_field_spec.key.to_struct_key()
+
+                # Check if field exists in the struct (for schema evolution)
+                # If we have schema info and the field doesn't exist, use empty string
+                if (
+                    df is not None
+                    and struct_col in existing_struct_fields
+                    and field_name not in existing_struct_fields[struct_col]
+                ):
+                    # Field doesn't exist in the stored data - use empty string placeholder
+                    # This handles schema evolution where fields were added/removed
+                    field_provenance[fq_key] = nw.lit("")
+                else:
+                    field_provenance[fq_key] = nw.col(struct_col).struct.field(
+                        field_name
+                    )
             res[field_spec.key] = field_provenance
         return res
 
@@ -360,8 +410,9 @@ class VersioningEngine(ABC):
         temp_concat_cols: dict[str, str] = {}  # field_key_str -> temp_col_name
         field_key_strs: dict[FieldKey, str] = {}  # field_key -> field_key_str
 
-        # Get field provenance expressions
-        field_provenance_exprs = self.get_field_provenance_exprs()
+        # Get field provenance expressions (pass df for schema-aware field access)
+        # This handles schema evolution where upstream struct may have different fields
+        field_provenance_exprs = self.get_field_provenance_exprs(df)
 
         for field_spec in self.plan.feature.fields:
             field_key_str = field_spec.key.to_struct_key()
