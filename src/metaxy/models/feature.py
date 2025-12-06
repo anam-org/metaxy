@@ -15,6 +15,7 @@ from metaxy.models.constants import (
     METAXY_FULL_DEFINITION_VERSION,
 )
 from metaxy.models.feature_spec import (
+    SYSTEM_METADATA_KEY,
     FeatureSpec,
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
@@ -94,6 +95,37 @@ class FeatureGraph:
     def all_specs_by_key(self) -> dict[FeatureKey, FeatureSpec]:
         return {**self.feature_specs_by_key, **self.standalone_specs_by_key}
 
+    def _create_error_table_spec(self, original_spec: FeatureSpec) -> FeatureSpec:
+        """Create an error table spec for a feature.
+
+        Error tables are system features that capture errors during feature computation.
+        They have the same ID columns as the original feature but no dependencies.
+
+        Args:
+            original_spec: The original feature spec to create an error table for
+
+        Returns:
+            A new FeatureSpec for the error table
+        """
+        from metaxy.models.feature_spec import (
+            ERROR_TABLE_METADATA_KEY,
+        )
+        from metaxy.models.field import FieldSpec
+        from metaxy.models.types import FeatureKey, FieldKey
+
+        error_key = FeatureKey(tuple(original_spec.key.parts) + ("errors",))
+
+        return FeatureSpec(
+            key=error_key,
+            id_columns=original_spec.id_columns,
+            deps=[],
+            fields=[FieldSpec(key=FieldKey(["default"]))],
+            metadata={
+                ERROR_TABLE_METADATA_KEY: True,
+                SYSTEM_METADATA_KEY: True,
+            },
+        )
+
     def add_feature(self, feature: type["BaseFeature"]) -> None:
         """Add a feature to the graph.
 
@@ -122,6 +154,10 @@ class FeatureGraph:
 
         self.features_by_key[feature.spec().key] = feature
         self.feature_specs_by_key[feature.spec().key] = feature.spec()
+
+        # Create and register the error table for this feature
+        error_spec = self._create_error_table_spec(feature.spec())
+        self.feature_specs_by_key[error_spec.key] = error_spec
 
     def add_feature_spec(self, spec: FeatureSpec) -> None:
         import warnings
@@ -506,7 +542,10 @@ class FeatureGraph:
         return truncate_hash(hasher.hexdigest())
 
     def get_downstream_features(
-        self, sources: Sequence[CoercibleToFeatureKey]
+        self,
+        sources: Sequence[CoercibleToFeatureKey],
+        *,
+        include_system: bool = False,
     ) -> list[FeatureKey]:
         """Get all features downstream of sources, topologically sorted.
 
@@ -515,6 +554,8 @@ class FeatureGraph:
 
         Args:
             sources: List of source feature keys. Each element can be string, sequence, FeatureKey, or BaseFeature class.
+            include_system: If True, include system features (like error tables).
+                Defaults to False.
 
         Returns:
             List of downstream feature keys in topological order (dependencies first).
@@ -535,13 +576,10 @@ class FeatureGraph:
         validated_sources = ValidatedFeatureKeySequenceAdapter.validate_python(sources)
 
         source_set = set(validated_sources)
-        visited = set()
-        post_order = []
-        source_set = set(sources)
-        visited = set()
-        post_order = []  # Reverse topological order
+        visited: set[FeatureKey] = set()
+        post_order: list[FeatureKey] = []
 
-        def visit(key: FeatureKey):
+        def visit(key: FeatureKey) -> None:
             """DFS traversal."""
             if key in visited:
                 return
@@ -549,6 +587,9 @@ class FeatureGraph:
 
             # Find all features that depend on this one
             for feature_key, feature_spec in self.feature_specs_by_key.items():
+                # Skip system features unless explicitly included
+                if feature_spec.is_system and not include_system:
+                    continue
                 if feature_spec.deps:
                     for dep in feature_spec.deps:
                         if dep.feature == key:
@@ -570,6 +611,7 @@ class FeatureGraph:
         feature_keys: Sequence[CoercibleToFeatureKey] | None = None,
         *,
         descending: bool = False,
+        include_system: bool = False,
     ) -> list[FeatureKey]:
         """Sort feature keys in topological order.
 
@@ -586,6 +628,8 @@ class FeatureGraph:
                 For a chain A -> B -> C, returns [A, B, C].
                 If True, dependents appear before dependencies.
                 For a chain A -> B -> C, returns [C, B, A].
+            include_system: If True, include system features (like error tables).
+                Defaults to False.
 
         Returns:
             List of feature keys sorted in topological order
@@ -611,8 +655,12 @@ class FeatureGraph:
         """
         # Determine which features to sort
         if feature_keys is None:
-            # Include both Feature classes and standalone specs
-            keys_to_sort = set(self.feature_specs_by_key.keys())
+            # Include both Feature classes and standalone specs, filtering system features
+            keys_to_sort = set()
+            for key, spec in self.feature_specs_by_key.items():
+                if spec.is_system and not include_system:
+                    continue
+                keys_to_sort.add(key)
         else:
             # Validate and coerce the feature keys
             validated_keys = ValidatedFeatureKeySequenceAdapter.validate_python(
