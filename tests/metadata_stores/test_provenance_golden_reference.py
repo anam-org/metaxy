@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, TypeAlias
 
 import polars as pl
@@ -38,6 +39,11 @@ from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
+)
+from metaxy.models.constants import (
+    METAXY_CREATED_AT,
+    METAXY_DELETED_AT,
+    METAXY_PROVENANCE_BY_FIELD,
 )
 from metaxy.models.plan import FeaturePlan
 
@@ -249,6 +255,59 @@ def test_store_resolve_update_matches_golden_provenance(
             check_row_order=True,
             check_column_order=False,
         )
+
+
+def test_soft_deleted_rows_filtered_by_default(any_store: MetadataStore):
+    """Soft-deleted metadata rows should be hidden by default and opt-in with include_deleted."""
+
+    class SoftDeleteFeature(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="soft_delete",
+            fields=["value"],
+        ),
+    ):
+        value: int | None = None
+
+    base_time = datetime(2024, 1, 1, tzinfo=timezone.utc)
+
+    initial_df = pl.DataFrame(
+        {
+            "sample_uid": ["a", "b"],
+            "value": [1, 2],
+            METAXY_PROVENANCE_BY_FIELD: [{"value": "p1"}, {"value": "p2"}],
+            METAXY_CREATED_AT: [base_time, base_time],
+        }
+    )
+
+    tombstone_df = pl.DataFrame(
+        {
+            "sample_uid": ["a"],
+            "value": [1],
+            METAXY_PROVENANCE_BY_FIELD: [{"value": "p_del"}],
+            METAXY_CREATED_AT: [base_time + timedelta(seconds=1)],
+            METAXY_DELETED_AT: [base_time + timedelta(seconds=1)],
+        }
+    )
+
+    with any_store:
+        any_store.write_metadata(SoftDeleteFeature, initial_df)
+        any_store.write_metadata(SoftDeleteFeature, tombstone_df)
+
+        active = any_store.read_metadata(SoftDeleteFeature).collect().to_polars()
+        assert active.filter(pl.col("sample_uid") == "a").is_empty()
+        assert active[METAXY_DELETED_AT].is_null().all()
+
+        with_deleted = (
+            any_store.read_metadata(SoftDeleteFeature, include_soft_deleted=True)
+            .collect()
+            .to_polars()
+        )
+        assert set(with_deleted["sample_uid"]) == {"a", "b"}
+        deleted_row = with_deleted.filter(pl.col("sample_uid") == "a")
+        assert deleted_row[METAXY_DELETED_AT].is_null().any() is False
+        active_row = with_deleted.filter(pl.col("sample_uid") == "b")
+        assert active_row[METAXY_DELETED_AT].is_null().all()
 
 
 # ============= TEST: DEDUPLICATION WITH DUPLICATES =============

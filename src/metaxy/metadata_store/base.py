@@ -38,6 +38,7 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_DELETED_AT,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
@@ -114,6 +115,7 @@ _SYSTEM_COLUMN_DTYPES = {
     METAXY_SNAPSHOT_VERSION: nw.String,
     METAXY_DATA_VERSION: nw.String,
     METAXY_CREATED_AT: nw.Datetime,
+    METAXY_DELETED_AT: nw.Datetime,
     METAXY_MATERIALIZATION_ID: nw.String,
 }
 
@@ -652,9 +654,12 @@ class MetadataStore(ABC):
         allow_fallback: bool = True,
         current_only: bool = True,
         latest_only: bool = True,
+        include_soft_deleted: bool = False,
     ) -> nw.LazyFrame[Any]:
         """
         Read metadata with optional fallback to upstream stores.
+
+        By default, soft-deleted rows (where `metaxy_deleted_at` is non-NULL) are filtered out.
 
         Args:
             feature: Feature to read metadata for
@@ -665,6 +670,7 @@ class MetadataStore(ABC):
             allow_fallback: If `True`, check fallback stores on local miss
             current_only: If `True`, only return rows with current feature_version
             latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
+            include_soft_deleted: If `True`, include soft-deleted rows in the result. Previous historical materializations of the same feature version will be effectively removed from the output otherwise.
 
         Returns:
             Narwhals LazyFrame with metadata
@@ -676,7 +682,8 @@ class MetadataStore(ABC):
 
         !!! info
             When this method is called with default arguments, it will return the latest (by `metaxy_created_at`)
-            metadata for the current feature version. Therefore, it's perfectly suitable for most use cases.
+            metadata for the current feature version excluding soft-deleted rows. Therefore, it's perfectly suitable
+            for most use cases.
 
         !!! warning
             The order of rows is not guaranteed.
@@ -688,6 +695,9 @@ class MetadataStore(ABC):
 
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
+
+        # If caller wants soft-deleted records, do not filter them out later
+        filter_deleted = not include_soft_deleted and not is_system_table
 
         # Validate mutually exclusive parameters
         if feature_version is not None and current_only:
@@ -733,17 +743,21 @@ class MetadataStore(ABC):
                 f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
             )
 
-        if lazy_frame is not None and not is_system_table and latest_only:
-            from metaxy.models.constants import METAXY_CREATED_AT
-
-            # Apply deduplication
-            lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
-                df=lazy_frame,
-                group_columns=list(
+        if lazy_frame is not None and not is_system_table:
+            # Deduplicate first (records have +1μs created_at so they win)
+            # Then filter soft-deleted rows
+            if latest_only:
+                id_cols = list(
                     self._resolve_feature_plan(feature_key).feature.id_columns
-                ),
-                timestamp_column=METAXY_CREATED_AT,
-            )
+                )
+                lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
+                    df=lazy_frame,
+                    group_columns=id_cols,
+                    timestamp_column=METAXY_CREATED_AT,
+                )
+
+            if filter_deleted:
+                lazy_frame = lazy_frame.filter(nw.col(METAXY_DELETED_AT).is_null())
 
         if lazy_frame is not None:
             # After dedup, filter to requested columns if specified
@@ -767,6 +781,7 @@ class MetadataStore(ABC):
                             allow_fallback=True,
                             current_only=current_only,
                             latest_only=latest_only,
+                            include_soft_deleted=include_soft_deleted,
                         )
                 except FeatureNotFoundError:
                     # Try next fallback store
@@ -1439,6 +1454,13 @@ class MetadataStore(ABC):
 
             df = df.with_columns(
                 nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT)
+            )
+
+        if METAXY_DELETED_AT not in df.columns:
+            df = df.with_columns(
+                nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(
+                    METAXY_DELETED_AT
+                )
             )
 
         # Add materialization_id if not already present
