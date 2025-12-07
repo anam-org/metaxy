@@ -12,6 +12,7 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_DELETED_AT,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
@@ -169,6 +170,7 @@ class UpstreamPreparer(Generic[FrameT]):
             METAXY_DATA_VERSION,
             METAXY_DATA_VERSION_BY_FIELD,
             METAXY_CREATED_AT,
+            METAXY_DELETED_AT,
             METAXY_MATERIALIZATION_ID,
         }
         id_cols = set(self.engine.shared_id_columns)
