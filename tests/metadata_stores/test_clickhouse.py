@@ -316,6 +316,7 @@ def test_clickhouse_json_column_type(
                 metaxy_data_version_by_field JSON,
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -338,11 +339,12 @@ def test_clickhouse_json_column_type(
                 metaxy_data_version_by_field,
                 metaxy_data_version,
                 metaxy_created_at,
+                metaxy_deleted_at,
                 metaxy_materialization_id,
                 metaxy_feature_spec_version
             ) VALUES
-            (1, '{provenance_json}', 'prov1', 'v1', 'sv1', '{version_json}', 'dv1', now(), 'm1', 'fs1'),
-            (2, '{provenance_json}', 'prov2', 'v1', 'sv1', '{version_json}', 'dv2', now(), 'm1', 'fs1')
+            (1, '{provenance_json}', 'prov1', 'v1', 'sv1', '{version_json}', 'dv1', now(), NULL, 'm1', 'fs1'),
+            (2, '{provenance_json}', 'prov2', 'v1', 'sv1', '{version_json}', 'dv2', now(), NULL, 'm1', 'fs1')
         """
         )
 
@@ -403,6 +405,7 @@ def test_clickhouse_map_column_type(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -423,11 +426,12 @@ def test_clickhouse_map_column_type(
                 metaxy_data_version_by_field,
                 metaxy_data_version,
                 metaxy_created_at,
+                metaxy_deleted_at,
                 metaxy_materialization_id,
                 metaxy_feature_spec_version
             ) VALUES
-            (1, {{'frames': 'hash1', 'audio': 'hash2'}}, 'prov1', 'v1', 'sv1', {{'frames': 'v1', 'audio': 'v1'}}, 'dv1', now(), 'm1', 'fs1'),
-            (2, {{'frames': 'hash3', 'audio': 'hash4'}}, 'prov2', 'v1', 'sv1', {{'frames': 'v2', 'audio': 'v2'}}, 'dv2', now(), 'm1', 'fs1')
+            (1, {{'frames': 'hash1', 'audio': 'hash2'}}, 'prov1', 'v1', 'sv1', {{'frames': 'v1', 'audio': 'v1'}}, 'dv1', now(), NULL, 'm1', 'fs1'),
+            (2, {{'frames': 'hash3', 'audio': 'hash4'}}, 'prov2', 'v1', 'sv1', {{'frames': 'v2', 'audio': 'v2'}}, 'dv2', now(), NULL, 'm1', 'fs1')
         """
         )
 
@@ -491,6 +495,7 @@ def test_clickhouse_map_column_empty_table_read(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -550,6 +555,7 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -647,6 +653,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -757,6 +764,7 @@ def test_clickhouse_user_defined_map_column(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -849,6 +857,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -931,6 +940,7 @@ def test_clickhouse_auto_cast_struct_for_map_false(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -992,6 +1002,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -1093,6 +1104,7 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -1170,6 +1182,7 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
@@ -1250,6 +1263,7 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
             ) ENGINE = MergeTree()

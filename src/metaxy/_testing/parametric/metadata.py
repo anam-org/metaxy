@@ -21,6 +21,7 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_DELETED_AT,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
@@ -343,6 +344,7 @@ def feature_metadata_strategy(
 
     df = df.with_columns(
         pl.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+        pl.lit(None, dtype=pl.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT),
     )
 
     # If id_columns_df was provided, replace the generated ID columns with provided ones
@@ -801,6 +803,8 @@ def downstream_metadata_strategy(
         nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         # Add created_at timestamp
         nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+        # Soft delete column defaults to NULL
+        nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT),
         # Add materialization_id (nullable)
         nw.lit(None, dtype=nw.String).alias(METAXY_MATERIALIZATION_ID),
     )
