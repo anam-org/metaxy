@@ -409,9 +409,10 @@ class TestBuildMetaxyMultiObservationJob:
         )
 
         assert job.name == "observe_all"
-        assert "Observe 2 Metaxy features:" in (job.description or "")
-        assert "- `test/obs_job/a`" in (job.description or "")
-        assert "- `test/obs_job/b`" in (job.description or "")
+        assert "Observe 2 Metaxy assets:" in (job.description or "")
+        # Description now shows asset_key → feature_key mapping
+        assert "test/obs_job/a" in (job.description or "")
+        assert "test/obs_job/b" in (job.description or "")
 
         # Execute the job
         result = job.execute_in_process(resources=resources, instance=instance)
@@ -462,7 +463,7 @@ class TestBuildMetaxyMultiObservationJob:
         )
 
         assert job.name == "observe_all"
-        assert "Observe 2 Metaxy features:" in (job.description or "")
+        assert "Observe 2 Metaxy assets:" in (job.description or "")
 
         # Execute the job
         result = job.execute_in_process(resources=resources, instance=instance)
@@ -640,3 +641,204 @@ class TestBuildMetaxyMultiObservationJob:
         """Test that ValueError is raised if neither assets nor selection is provided."""
         with pytest.raises(ValueError, match="Must provide either"):
             mxd.build_metaxy_multi_observation_job(name="observe_nothing")
+
+
+class TestMultiObservationJobWithMetaxyPartition:
+    """Tests for build_metaxy_multi_observation_job with metaxy/partition.
+
+    When multiple Dagster assets contribute to the same Metaxy feature via
+    metaxy/partition metadata, the observation job should spawn an op for
+    each asset, not each unique feature.
+    """
+
+    @pytest.fixture
+    def shared_feature(self) -> type[mx.BaseFeature]:
+        """Create a feature with a region field that will be partitioned across assets."""
+        spec = mx.FeatureSpec(
+            key=["test", "obs_job", "shared"],
+            id_columns=["id"],
+            fields=["region", "value"],
+        )
+
+        class SharedFeature(mx.BaseFeature, spec=spec):
+            id: str
+
+        return SharedFeature
+
+    def _write_partitioned_data(
+        self,
+        feature: type[mx.BaseFeature],
+        partition_metadata: dict[str, str],
+        rows: list[dict[str, Any]],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ) -> None:
+        """Helper to write data with a metaxy/partition value."""
+        asset_name = "_".join(partition_metadata.values())
+
+        @mxd.metaxify()
+        @dg.asset(
+            name=f"write_{asset_name}",
+            metadata={
+                "metaxy/feature": feature.spec().key.to_string(),
+                "metaxy/partition": partition_metadata,
+            },
+            io_manager_key="metaxy_io_manager",
+        )
+        def write_data():
+            return pl.DataFrame(rows)
+
+        dg.materialize([write_data], resources=resources, instance=instance)
+
+    def test_multi_observation_job_spawns_op_per_asset_with_metaxy_partition(
+        self,
+        shared_feature: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that job spawns one op per asset when assets share the same feature via metaxy/partition."""
+        # Write US region data
+        self._write_partitioned_data(
+            shared_feature,
+            {"region": "us"},
+            [
+                {
+                    "id": "us_1",
+                    "region": "us",
+                    "metaxy_provenance_by_field": {"value": "v1", "region": "fixed"},
+                },
+                {
+                    "id": "us_2",
+                    "region": "us",
+                    "metaxy_provenance_by_field": {"value": "v2", "region": "fixed"},
+                },
+            ],
+            resources,
+            instance,
+        )
+
+        # Write EU region data
+        self._write_partitioned_data(
+            shared_feature,
+            {"region": "eu"},
+            [
+                {
+                    "id": "eu_1",
+                    "region": "eu",
+                    "metaxy_provenance_by_field": {"value": "v3", "region": "fixed"},
+                },
+                {
+                    "id": "eu_2",
+                    "region": "eu",
+                    "metaxy_provenance_by_field": {"value": "v4", "region": "fixed"},
+                },
+                {
+                    "id": "eu_3",
+                    "region": "eu",
+                    "metaxy_provenance_by_field": {"value": "v5", "region": "fixed"},
+                },
+            ],
+            resources,
+            instance,
+        )
+
+        # Create two assets that both point to the same feature with different partitions
+        # Note: We do NOT use @metaxify() here because metaxify() changes the asset key
+        # to match the feature key, which would make both assets have the same key.
+        # Instead, we keep distinct asset keys (obs_us, obs_eu) that both write to
+        # the same Metaxy feature via metaxy/partition.
+        @dg.asset(
+            metadata={
+                "metaxy/feature": "test/obs_job/shared",
+                "metaxy/partition": {"region": "us"},
+            },
+        )
+        def obs_us():
+            pass
+
+        @dg.asset(
+            metadata={
+                "metaxy/feature": "test/obs_job/shared",
+                "metaxy/partition": {"region": "eu"},
+            },
+        )
+        def obs_eu():
+            pass
+
+        # Build the multi observation job - should have 2 ops (one per asset)
+        job = mxd.build_metaxy_multi_observation_job(
+            name="observe_shared",
+            assets=[obs_us, obs_eu],
+        )
+
+        # The job description should mention both assets
+        assert job.description is not None
+        # Even though they share the same feature key, we should see 2 assets mentioned
+        # (this tests the fix - before, only 1 would be present)
+        assert "Observe 2" in job.description
+
+        # Execute the job
+        result = job.execute_in_process(resources=resources, instance=instance)
+        assert result.success
+
+        # Check observations for BOTH assets
+        # Each asset (obs_us, obs_eu) should have its own observation with correct row counts
+        obs_us_records = instance.fetch_observations(dg.AssetKey("obs_us"), limit=10)
+        assert len(obs_us_records.records) == 1, (
+            f"Expected 1 observation for obs_us, but got {len(obs_us_records.records)}"
+        )
+        # obs_us should see only US region rows (2 rows)
+        obs_us_meta = obs_us_records.records[0].asset_observation.metadata  # pyright: ignore[reportOptionalMemberAccess]
+        assert obs_us_meta["dagster/row_count"].value == 2, (
+            f"Expected obs_us to see 2 rows (US region only), "
+            f"but got {obs_us_meta['dagster/row_count'].value}"
+        )
+
+        obs_eu_records = instance.fetch_observations(dg.AssetKey("obs_eu"), limit=10)
+        assert len(obs_eu_records.records) == 1, (
+            f"Expected 1 observation for obs_eu, but got {len(obs_eu_records.records)}"
+        )
+        # obs_eu should see only EU region rows (3 rows)
+        obs_eu_meta = obs_eu_records.records[0].asset_observation.metadata  # pyright: ignore[reportOptionalMemberAccess]
+        assert obs_eu_meta["dagster/row_count"].value == 3, (
+            f"Expected obs_eu to see 3 rows (EU region only), "
+            f"but got {obs_eu_meta['dagster/row_count'].value}"
+        )
+
+    def test_multi_observation_job_metadata_shows_both_assets(
+        self,
+        shared_feature: type[mx.BaseFeature],
+    ):
+        """Test that job metadata references both assets even when they share a feature."""
+
+        # Note: We do NOT use @metaxify() here because it would change both asset keys
+        # to be the same (the feature key)
+        @dg.asset(
+            metadata={
+                "metaxy/feature": "test/obs_job/shared",
+                "metaxy/partition": {"region": "us"},
+            },
+        )
+        def obs_us():
+            pass
+
+        @dg.asset(
+            metadata={
+                "metaxy/feature": "test/obs_job/shared",
+                "metaxy/partition": {"region": "eu"},
+            },
+        )
+        def obs_eu():
+            pass
+
+        job = mxd.build_metaxy_multi_observation_job(
+            name="observe_shared",
+            assets=[obs_us, obs_eu],
+        )
+
+        # Job metadata should reference both assets
+        assert job.metadata is not None
+        asset_metadata_keys = [k for k in job.metadata if k.startswith("metaxy/asset/")]
+        assert len(asset_metadata_keys) == 2, (
+            f"Expected 2 asset metadata entries, got {len(asset_metadata_keys)}: {asset_metadata_keys}"
+        )
