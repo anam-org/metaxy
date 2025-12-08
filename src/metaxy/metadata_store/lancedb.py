@@ -310,6 +310,18 @@ class LanceDBMetadataStore(MetadataStore):
         if self._table_exists(table_name):
             self.conn.drop_table(table_name)
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr],
+        *,
+        current_only: bool,
+    ) -> None:
+        """Hard delete not yet supported for LanceDB backend."""
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not yet implement hard delete"
+        )
+
     def read_metadata_in_store(
         self,
         feature: CoercibleToFeatureKey,

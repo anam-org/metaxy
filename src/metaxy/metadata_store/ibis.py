@@ -453,6 +453,99 @@ class IbisMetadataStore(MetadataStore, ABC):
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr],
+        *,
+        current_only: bool,
+    ) -> None:
+        """Backend-specific hard delete implementation for SQL databases.
+
+        Translates Narwhals filter expression to Ibis and executes DELETE in database.
+
+        Args:
+            feature_key: Feature to delete from
+            filters: Narwhals expressions to filter records
+        """
+        table_name = self.get_table_name(feature_key)
+
+        filter_list = list(filters)
+        if current_only and not self._is_system_table(feature_key):
+            from metaxy.models.constants import METAXY_FEATURE_VERSION
+            from metaxy.models.feature import current_graph
+
+            version_filter = nw.col(
+                METAXY_FEATURE_VERSION
+            ) == current_graph().get_feature_version(feature_key)
+            filter_list = [version_filter, *filter_list]
+
+        if not filter_list:
+            return
+
+        # Read and filter directly using the store's lazy path
+        filtered = self.read_metadata_in_store(feature_key, filters=filter_list)
+        if filtered is None:
+            return
+
+        # Extract the underlying Ibis table expression with filter applied
+        ibis_filtered = filtered.to_native()
+
+        # Construct DELETE SQL from compiled SELECT
+        # Get WHERE clause by compiling the filtered table to SQL
+        select_sql = str(ibis_filtered.compile())
+
+        # Execute DELETE using backend's SQL execution method
+        raw_conn = self._get_raw_connection()
+        if raw_conn is not None:
+            import sqlglot
+
+            from metaxy.metadata_store.utils import _strip_table_qualifiers
+
+            parsed = sqlglot.parse_one(select_sql)
+            where_expr = parsed.args.get("where")
+            if where_expr is not None:
+                predicate = where_expr.this
+                predicate = predicate.transform(_strip_table_qualifiers())
+                where_clause = predicate.sql()
+                delete_stmt = f"DELETE FROM {table_name} WHERE {where_clause}"
+
+                # Log for debugging
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.debug(f"Executing DELETE: {delete_stmt}")
+
+                raw_conn.execute(delete_stmt)
+            else:
+                # No WHERE clause - would delete all rows, which is dangerous
+                # Let's print the SQL for debugging
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to extract WHERE clause from SQL: {select_sql}")
+                raise NotImplementedError(
+                    f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}"
+                )
+        else:
+            raise NotImplementedError(
+                f"Hard delete not yet implemented for {self.__class__.__name__}. "
+                f"Override _get_raw_connection() to provide raw SQL execution capability."
+            )
+
+    def _get_raw_connection(self) -> Any | None:
+        """Get raw database connection from Ibis backend.
+
+        Override in subclasses to provide access to underlying connection
+        for executing raw SQL (e.g., DELETE statements).
+
+        Returns:
+            Raw connection object, or None if not available
+        """
+        # Default: no raw connection available
+        # Subclasses like DuckDBMetadataStore can override
+        return None
+
     def read_metadata_in_store(
         self,
         feature: CoercibleToFeatureKey,

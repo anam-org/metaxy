@@ -178,6 +178,44 @@ class InMemoryMetadataStore(MetadataStore):
         if storage_key in self._storage:
             del self._storage[storage_key]
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr],
+        *,
+        current_only: bool,
+    ) -> None:
+        """Hard delete rows by filtering them out of in-memory storage."""
+        storage_key = self._get_storage_key(feature_key)
+        if storage_key not in self._storage:
+            return
+
+        df = self._storage[storage_key]
+        nw_df = nw.from_native(df, eager_only=True)
+        from functools import reduce
+
+        filter_list = list(filters)
+        if current_only and not self._is_system_table(feature_key):
+            from metaxy.models.constants import METAXY_FEATURE_VERSION
+            from metaxy.models.feature import current_graph
+
+            version_filter = nw.col(
+                METAXY_FEATURE_VERSION
+            ) == current_graph().get_feature_version(feature_key)
+            filter_list = [version_filter, *filter_list]
+
+        if not filter_list:
+            return
+
+        to_delete = nw_df.filter(*filter_list)
+        combined = reduce(lambda acc, expr: acc & expr, filter_list[1:], filter_list[0])
+
+        if len(to_delete) == 0:
+            return
+
+        kept = nw_df.filter(~combined)
+        self._storage[storage_key] = kept.to_native()
+
     def read_metadata_in_store(
         self,
         feature: CoercibleToFeatureKey,

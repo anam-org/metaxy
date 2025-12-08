@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
+from datetime import datetime, timedelta, timezone
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
@@ -1474,7 +1475,7 @@ class MetadataStore(ABC):
                 nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT)
             )
 
-        if METAXY_DELETED_AT not in df.columns:
+        if METAXY_DELETED_AT not in columns:
             df = df.with_columns(
                 nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(
                     METAXY_DELETED_AT
@@ -1575,6 +1576,25 @@ class MetadataStore(ABC):
         """
         pass
 
+    @abstractmethod
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr],
+        *,
+        current_only: bool,
+    ) -> None:
+        """Backend-specific hard delete implementation.
+
+        Args:
+            feature_key: Feature to delete from
+            filters: Narwhals expressions to filter records
+            current_only: Whether to only affect the records with the current feature version
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not yet support delete_metadata."
+        )
+
     def drop_feature_metadata(self, feature: CoercibleToFeatureKey) -> None:
         """Drop all metadata for a feature.
 
@@ -1596,6 +1616,61 @@ class MetadataStore(ABC):
         self._check_open()
         feature_key = self._resolve_feature_key(feature)
         self._drop_feature_metadata_impl(feature_key)
+
+    def delete_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        filters: Sequence[nw.Expr] | nw.Expr,
+        *,
+        soft: bool = True,
+        current_only: bool = True,
+    ):
+        """Delete records matching provided filters.
+
+        Performs a soft delete by default. This is achieved by setting metaxy_deleted_at to the current timestamp.
+        Subsequent [[MetadataStore.read_metadata]] calls would ignore these records by default.
+
+        Args:
+            feature: Feature to delete from.
+            filters: One or more Narwhals expressions or a sequence of expressions that determine which records to delete.
+            soft: Whether to perform a soft delete.
+            current_only: Whether to only affect the records with the current feature version. Set this to False to also affect historical metadata.
+        """
+        self._check_open()
+
+        feature_key = self._resolve_feature_key(feature)
+
+        if isinstance(filters, nw.Expr):
+            filter_list = [filters]
+        else:
+            filter_list = list(filters)
+
+        if soft:
+            lazy = self.read_metadata(
+                feature_key,
+                filters=filter_list,
+                include_soft_deleted=False,
+                current_only=current_only,
+                allow_fallback=False,
+            )
+            # Append tombstones without physically deleting (append-only)
+            # Add 1μs to created_at so tombstones are slightly newer for deduplication
+            now = datetime.now(timezone.utc)
+
+            tombstones = lazy.with_columns(
+                [
+                    nw.lit(now).alias(METAXY_DELETED_AT),
+                    (
+                        nw.col(METAXY_CREATED_AT) + nw.lit(timedelta(microseconds=1))
+                    ).alias(METAXY_CREATED_AT),
+                ]
+            )
+            self.write_metadata(feature_key, tombstones.to_native())
+
+        else:
+            self._delete_metadata_impl(
+                feature_key, filter_list, current_only=current_only
+            )
 
     @abstractmethod
     def read_metadata_in_store(
