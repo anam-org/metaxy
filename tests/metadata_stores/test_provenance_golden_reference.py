@@ -314,11 +314,6 @@ def test_soft_deleted_rows_filtered_by_default(any_store: MetadataStore):
 def test_soft_delete_historical_version_preserves_latest(any_store: MetadataStore):
     """Soft-deleting old versions should not hide the current version."""
 
-    if any_store.__class__.__name__ != "InMemoryMetadataStore":
-        pytest.xfail(
-            "Soft delete restoration pending hard delete support for non-memory backends"
-        )
-
     class VersionedFeature(
         SampleFeature,
         spec=SampleFeatureSpec(
@@ -384,11 +379,6 @@ def test_soft_delete_historical_version_preserves_latest(any_store: MetadataStor
 
 def test_soft_delete_then_overwrite_restores_row(any_store: MetadataStore):
     """Writing new metadata after a soft delete should make the row active again."""
-
-    if any_store.__class__.__name__ != "InMemoryMetadataStore":
-        pytest.xfail(
-            "Soft delete restoration pending hard delete support for non-memory backends"
-        )
 
     class RestoreFeature(
         SampleFeature,
@@ -535,9 +525,6 @@ def test_hard_delete(any_store: MetadataStore):
 def test_hard_delete_historical_version_preserves_latest(any_store: MetadataStore):
     """Hard-deleting old versions should keep the latest version intact."""
 
-    if any_store.__class__.__name__ != "InMemoryMetadataStore":
-        pytest.xfail("Hard delete pending for non-memory backends")
-
     class VersionedHardDeleteFeature(
         SampleFeature,
         spec=SampleFeatureSpec(
@@ -591,9 +578,6 @@ def test_hard_delete_historical_version_preserves_latest(any_store: MetadataStor
 
 def test_hard_delete_then_overwrite_restores_row(any_store: MetadataStore):
     """Writing new metadata after a hard delete should reintroduce the row."""
-
-    if any_store.__class__.__name__ != "InMemoryMetadataStore":
-        pytest.xfail("Hard delete pending for non-memory backends")
 
     class RestoreHardDeleteFeature(
         SampleFeature,
