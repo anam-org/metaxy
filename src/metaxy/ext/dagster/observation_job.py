@@ -11,10 +11,12 @@ import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
+    DAGSTER_METAXY_PARTITION_METADATA_KEY,
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 from metaxy.ext.dagster.utils import (
     build_feature_event_tags,
+    build_metaxy_partition_filter,
     build_partition_filter,
     compute_row_count,
 )
@@ -35,7 +37,7 @@ def build_metaxy_multi_observation_job(
 ) -> dg.JobDefinition:
     """Build a dynamic Dagster job that observes multiple Metaxy feature assets.
 
-    Creates a job that dynamically spawns one op per feature, yielding
+    Creates a job that dynamically spawns one op per asset, yielding
     [`AssetObservation`](https://docs.dagster.io/api/python-api/ops#dagster.AssetObservation) events.
     Uses Dagster's dynamic orchestration to process multiple assets in parallel.
 
@@ -187,30 +189,28 @@ def build_metaxy_multi_observation_job(
             )
     partitions_def = first_partitions_def
 
-    # Build feature keys for description
+    # Build feature keys for description (may have duplicates when multiple assets share a feature)
     feature_keys = [
         mx.coerce_to_feature_key(spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY])
         for spec in metaxy_specs
     ]
 
-    # Build a mapping of feature key -> spec for the dynamic op
-    spec_by_feature_key = {
-        spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY]: spec
-        for spec in metaxy_specs
-    }
+    # Build a mapping of asset key -> spec for the dynamic op
+    # This ensures each asset gets its own op, even if multiple assets share the same feature
+    spec_by_asset_key = {spec.key.to_user_string(): spec for spec in metaxy_specs}
 
-    # Op that emits dynamic outputs for each feature
+    # Op that emits dynamic outputs for each asset
     @dg.op(name=f"{name}_fanout", out=dg.DynamicOut(str))
-    def fanout_features() -> Any:
-        for feature_key_str in spec_by_feature_key:
-            # Use table_name as mapping key (safe for Dagster identifiers)
-            fk = mx.coerce_to_feature_key(feature_key_str)
-            yield dg.DynamicOutput(feature_key_str, mapping_key=fk.table_name)
+    def fanout_assets() -> Any:
+        for asset_key_str in spec_by_asset_key:
+            # Use asset key (with / replaced by __) as mapping key for Dagster identifiers
+            safe_mapping_key = asset_key_str.replace("/", "__")
+            yield dg.DynamicOutput(asset_key_str, mapping_key=safe_mapping_key)
 
     # Build the shared observation op
     observe_op = _build_observation_op_for_specs(
         name=f"{name}_observe",
-        spec_by_feature_key=spec_by_feature_key,
+        spec_by_asset_key=spec_by_asset_key,
         store_resource_key=store_resource_key,
     )
 
@@ -223,9 +223,12 @@ def build_metaxy_multi_observation_job(
             dg.MetadataValue.asset(spec.key)
         )
 
-    # Build description as markdown list
-    feature_list = "\n".join(f"- `{fk.to_string()}`" for fk in feature_keys)
-    description = f"Observe {len(metaxy_specs)} Metaxy features:\n\n{feature_list}"
+    # Build description as markdown list showing both assets and features
+    asset_list = "\n".join(
+        f"- `{spec.key.to_user_string()}` → `{spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY]}`"
+        for spec in metaxy_specs
+    )
+    description = f"Observe {len(metaxy_specs)} Metaxy assets:\n\n{asset_list}"
 
     @dg.job(
         name=name,
@@ -236,8 +239,8 @@ def build_metaxy_multi_observation_job(
         **kwargs,
     )
     def observation_job() -> None:
-        feature_keys_dynamic = fanout_features()
-        feature_keys_dynamic.map(observe_op)
+        asset_keys_dynamic = fanout_assets()
+        asset_keys_dynamic.map(observe_op)
 
     return observation_job
 
@@ -344,18 +347,18 @@ def _build_observation_job_for_spec(
     feature_key = mx.coerce_to_feature_key(feature_key_str)
     job_name = f"observe_{feature_key.table_name}"
 
-    # Build the shared observation op with a single spec
-    spec_by_feature_key = {feature_key_str: spec}
+    # Build the shared observation op with a single spec (keyed by asset key)
+    spec_by_asset_key = {spec.key.to_user_string(): spec}
     observe_op = _build_observation_op_for_specs(
         name=f"observe_{spec.key.to_python_identifier()}",
-        spec_by_feature_key=spec_by_feature_key,
+        spec_by_asset_key=spec_by_asset_key,
         store_resource_key=store_resource_key,
     )
 
-    # Create an op that returns the feature key string (needed for graph composition)
-    @dg.op(name=f"get_feature_key_{spec.key.to_python_identifier()}")
-    def get_feature_key() -> str:
-        return feature_key_str
+    # Create an op that returns the asset key string (needed for graph composition)
+    @dg.op(name=f"get_asset_key_{spec.key.to_python_identifier()}")
+    def get_asset_key() -> str:
+        return spec.key.to_user_string()
 
     @dg.job(
         name=job_name,
@@ -372,24 +375,24 @@ def _build_observation_job_for_spec(
         **kwargs,
     )
     def observation_job() -> None:
-        observe_op(get_feature_key())
+        observe_op(get_asset_key())
 
     return observation_job
 
 
 def _build_observation_op_for_specs(
     name: str,
-    spec_by_feature_key: dict[str, dg.AssetSpec],
+    spec_by_asset_key: dict[str, dg.AssetSpec],
     store_resource_key: str,
 ) -> dg.OpDefinition:
     """Build an op that observes a Metaxy feature asset.
 
     This op is shared between single-asset and multi-asset observation jobs.
-    It takes a feature key string as input and looks up the corresponding spec.
+    It takes an asset key string as input and looks up the corresponding spec.
 
     Args:
         name: Name for the op.
-        spec_by_feature_key: Mapping from feature key strings to asset specs.
+        spec_by_asset_key: Mapping from asset key strings to asset specs.
         store_resource_key: Resource key for the MetadataStore.
 
     Returns:
@@ -401,22 +404,29 @@ def _build_observation_op_for_specs(
         required_resource_keys={store_resource_key},
         out=dg.Out(Nothing),
     )
-    def observe_feature(context: dg.OpExecutionContext, feature_key_str: str) -> None:
-        spec = spec_by_feature_key[feature_key_str]
+    def observe_asset(context: dg.OpExecutionContext, asset_key_str: str) -> None:
+        spec = spec_by_asset_key[asset_key_str]
+        feature_key_str = spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY]
         feature_key = mx.coerce_to_feature_key(feature_key_str)
         partition_col = spec.metadata.get(DAGSTER_METAXY_PARTITION_KEY)
+        metaxy_partition = spec.metadata.get(DAGSTER_METAXY_PARTITION_METADATA_KEY)
 
         store: mx.MetadataStore | MetaxyStoreFromConfigResource = getattr(
             context.resources, store_resource_key
         )
 
-        # Build partition filter if partitioned
+        # Build partition filters:
+        # 1. Dagster partition filter (for time/date partitions)
         partition_key = context.partition_key if context.has_partition_key else None
-        partition_filters = build_partition_filter(partition_col, partition_key)
+        dagster_partition_filters = build_partition_filter(partition_col, partition_key)
+        # 2. Metaxy partition filter (for multi-asset logical partitions)
+        metaxy_partition_filters = build_metaxy_partition_filter(metaxy_partition)
+        # Combine both filter types
+        all_filters = dagster_partition_filters + metaxy_partition_filters
 
         with store:
             try:
-                lazy_df = store.read_metadata(feature_key, filters=partition_filters)
+                lazy_df = store.read_metadata(feature_key, filters=all_filters)
             except FeatureNotFoundError:
                 context.log.warning(
                     f"Feature {feature_key.to_string()} not found in store, "
@@ -452,4 +462,4 @@ def _build_observation_op_for_specs(
             )
         )
 
-    return observe_feature
+    return observe_asset
