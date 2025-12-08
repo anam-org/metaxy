@@ -3614,13 +3614,12 @@
 </div>
 <h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
 <div class="admonition tip">
-<p class="admonition-title">Table Partitioning and Ordering</p>
+<p class="admonition-title">Table Design</p>
 <p>For optimal query performance, create your ClickHouse tables with:</p>
 <ul>
 <li><strong>Partitioning</strong>: Partition your tables!</li>
-<li><strong>ORDER BY</strong>: Use <code>(metaxy_feature_version, &lt;id_columns&gt;, metaxy_created_at)</code></li>
+<li><strong>Primary Key</strong>: It's probably a good idea to use <code>(metaxy_feature_version, &lt;id_columns&gt;, metaxy_created_at)</code></li>
 </ul>
-<p>ClickHouse doesn't have indexing, instead it relies on partitioning and ordering to optimize queries.</p>
 </div>
 <h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
 <ul>
