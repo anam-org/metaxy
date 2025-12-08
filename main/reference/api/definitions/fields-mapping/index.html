@@ -4084,9 +4084,10 @@
 <h1 id="fields-mapping">Fields Mapping<a class="headerlink" href="#fields-mapping" title="Permanent link">&para;</a></h1>
 <p>Metaxy provides a few helpers when defining field-level dependencies:</p>
 <ul>
-<li>the default mapping that matches on field names or suffixes with [[metaxy.FieldsMapping.identity]] (the default one)</li>
-<li><code>specific</code> mapping with [[metaxy.FieldsMapping.default]]</li>
-<li><code>all</code> mapping with [[metaxy.FieldsMapping.all]]</li>
+<li>the default mapping that matches on field names or suffixes with [[metaxy.models.fields_mapping.FieldsMapping.default]] (the default one)</li>
+<li><code>specific</code> mapping with [[metaxy.models.fields_mapping.FieldsMapping.specific]]</li>
+<li><code>all</code> mapping with [[metaxy.models.fields_mapping.FieldsMapping.all]]</li>
+<li><code>none</code> mapping with [[metaxy.models.fields_mapping.FieldsMapping.none]]</li>
 </ul>
 <p>Always use these classmethods to create instances of lineage relationships. Under the hood, they use Pydantic's discriminated union to ensure that the correct type is constructed based on the provided data.</p>
 <hr />
@@ -4283,7 +4284,7 @@ dependencies which are defined directly.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -4701,7 +4702,7 @@ Keys and values can be strings, sequences, or FieldKey instances.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -4823,7 +4824,7 @@ Keys and values can be strings, sequences, or FieldKey instances.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -5001,7 +5002,7 @@ Keys and values can be strings, sequences, or FieldKey instances.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -5126,7 +5127,7 @@ Keys and values can be strings, sequences, or FieldKey instances.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -5250,7 +5251,7 @@ Keys and values can be strings, sequences, or FieldKey instances.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
