@@ -1291,8 +1291,15 @@ def test_hard_delete_memory_store_only(any_store: MetadataStore):
 def test_hard_delete(any_store: MetadataStore):
     """Hard delete removes rows from storage."""
 
-    if any_store.__class__.__name__ != "InMemoryMetadataStore":
-        pytest.xfail("Hard delete pending for non-memory backends")
+    unsupported = {
+        "ClickHouseMetadataStore",
+        "LanceDBMetadataStore",
+        "DuckDBMetadataStore",
+        "DeltaMetadataStore",
+        "BigQueryMetadataStore",
+    }
+    if any_store.__class__.__name__ in unsupported:
+        pytest.xfail(f"Hard delete pending for {any_store.__class__.__name__}")
 
     class UserProfile(
         SampleFeature,

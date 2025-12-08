@@ -681,6 +681,20 @@ class IbisMetadataStore(MetadataStore, ABC):
         resolved_key = self._resolve_feature_key(feature_key)
         return {"table_name": self.get_table_name(resolved_key)}
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr],
+        *,
+        current_only: bool,
+    ) -> None:
+        """Hard delete not supported for Ibis stores - use soft deletes instead."""
+        _ = (filters, current_only)
+        raise NotImplementedError(
+            f"Hard delete not supported for {self.__class__.__name__}. "
+            "Use delete_metadata() with soft=True (default) for soft deletes."
+        )
+
     @classmethod
     def config_model(cls) -> type[IbisMetadataStoreConfig]:
         return IbisMetadataStoreConfig

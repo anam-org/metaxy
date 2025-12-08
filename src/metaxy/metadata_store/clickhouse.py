@@ -4,11 +4,11 @@ It takes care of some ClickHouse-specific logic such as `nw.Struct` type convers
 
 from typing import TYPE_CHECKING, Any
 
+import ibis
 import narwhals as nw
 from pydantic import Field
 
 if TYPE_CHECKING:
-    import ibis
     from ibis.expr.schema import Schema as IbisSchema
 
     from metaxy.metadata_store.base import MetadataStore
