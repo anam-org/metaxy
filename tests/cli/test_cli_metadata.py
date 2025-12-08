@@ -7,57 +7,6 @@ import polars as pl
 import pytest
 
 from metaxy._testing import TempMetaxyProject
-from metaxy.metadata_store.system import SystemTableStorage
-
-
-def _write_sample_metadata(
-    metaxy_project: TempMetaxyProject,
-    feature_key_str: str,
-    store_name: str = "dev",
-    sample_uids: list[int] | None = None,
-):
-    """Helper to write sample metadata for a feature.
-
-    NOTE: This function must be called within a graph.use() context,
-    and the same graph context must be active when reading the metadata.
-
-    Args:
-        metaxy_project: Test project
-        feature_key_str: Feature key as string (e.g., "video/files")
-        store_name: Name of store to write to (default: "dev")
-        sample_uids: List of sample IDs to use (default: [1, 2, 3])
-    """
-    from metaxy.models.types import FeatureKey
-
-    if sample_uids is None:
-        sample_uids = [1, 2, 3]
-
-    # Parse feature key
-    feature_key = FeatureKey(feature_key_str.split("/"))
-
-    # Get feature class from project's graph (imported from the features module)
-    graph = metaxy_project.graph
-    feature_cls = graph.get_feature_by_key(feature_key)
-
-    # Create sample data with provenance_by_field column
-    sample_data = pl.DataFrame(
-        {
-            "sample_uid": sample_uids,
-            "value": [f"val_{i}" for i in sample_uids],
-            "metaxy_provenance_by_field": [
-                {"default": f"hash{i}"} for i in sample_uids
-            ],
-        }
-    )
-
-    # Write metadata directly to store
-    store = metaxy_project.stores[store_name]
-    # Use the project's graph context so the store can resolve feature plans
-    with graph.use():
-        with store:
-            store.write_metadata(feature_cls, sample_data)
-            # Record the feature graph snapshot so copy_metadata can determine snapshot_version
-            SystemTableStorage(store).push_graph_snapshot()
 
 
 def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject):
@@ -78,7 +27,7 @@ def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject
 
     with metaxy_project.with_features(features):
         # Write actual metadata for the feature
-        _write_sample_metadata(metaxy_project, "video/files")
+        metaxy_project.write_sample_metadata("video/files")
 
         # Try to drop without specifying features
         result = metaxy_project.run_cli(
@@ -110,7 +59,7 @@ def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for the feature
-        _write_sample_metadata(metaxy_project, "video/files")
+        metaxy_project.write_sample_metadata("video/files")
 
         # Try to drop without --confirm
         result = metaxy_project.run_cli(
@@ -151,8 +100,8 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for both features
-        _write_sample_metadata(metaxy_project, "video/files")
-        _write_sample_metadata(metaxy_project, "audio/files")
+        metaxy_project.write_sample_metadata("video/files")
+        metaxy_project.write_sample_metadata("audio/files")
 
         # Drop one feature
         result = metaxy_project.run_cli(
@@ -210,9 +159,9 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for all features
-        _write_sample_metadata(metaxy_project, "video/files")
-        _write_sample_metadata(metaxy_project, "audio/files")
-        _write_sample_metadata(metaxy_project, "text/files")
+        metaxy_project.write_sample_metadata("video/files")
+        metaxy_project.write_sample_metadata("audio/files")
+        metaxy_project.write_sample_metadata("text/files")
 
         # Drop multiple features
         result = metaxy_project.run_cli(
@@ -264,8 +213,8 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for both features
-        _write_sample_metadata(metaxy_project, "video/files")
-        _write_sample_metadata(metaxy_project, "audio/files")
+        metaxy_project.write_sample_metadata("video/files")
+        metaxy_project.write_sample_metadata("audio/files")
 
         # Drop all features
         result = metaxy_project.run_cli(
@@ -274,8 +223,8 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for both features
-        _write_sample_metadata(metaxy_project, "video/files")
-        _write_sample_metadata(metaxy_project, "audio/files")
+        metaxy_project.write_sample_metadata("video/files")
+        metaxy_project.write_sample_metadata("audio/files")
 
         # Drop all features
         result = metaxy_project.run_cli(
@@ -375,7 +324,7 @@ def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for the feature
-        _write_sample_metadata(metaxy_project, "video/files")
+        metaxy_project.write_sample_metadata("video/files")
 
         # Drop with explicit store
         result = metaxy_project.run_cli(
@@ -436,7 +385,7 @@ def test_metadata_status_up_to_date(
         store = metaxy_project.stores["dev"]
 
         # Write upstream metadata (this opens/closes store internally)
-        _write_sample_metadata(metaxy_project, "video/files_root")
+        metaxy_project.write_sample_metadata("video/files_root")
 
         # Now compute and write downstream metadata with correct provenance
         with graph.use(), store:
@@ -507,7 +456,7 @@ def test_metadata_status_missing_metadata(
 
     with metaxy_project.with_features(features):
         # Write upstream metadata but not for VideoFiles
-        _write_sample_metadata(metaxy_project, "video/files_root")
+        metaxy_project.write_sample_metadata("video/files_root")
 
         # Check status - should show missing metadata
         result = metaxy_project.run_cli(
@@ -566,7 +515,7 @@ def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject)
 
     with metaxy_project.with_features(features):
         # Write upstream but not downstream - needs update
-        _write_sample_metadata(metaxy_project, "video/files_root")
+        metaxy_project.write_sample_metadata("video/files_root")
 
         # Check status with --assert-in-sync
         result = metaxy_project.run_cli(
@@ -618,8 +567,8 @@ def test_metadata_status_multiple_features(
 
     with metaxy_project.with_features(features):
         # Write metadata for root and video but not audio
-        _write_sample_metadata(metaxy_project, "files_root")
-        _write_sample_metadata(metaxy_project, "video/files")
+        metaxy_project.write_sample_metadata("files_root")
+        metaxy_project.write_sample_metadata("video/files")
 
         # Check status for both
         result = metaxy_project.run_cli(
@@ -729,7 +678,7 @@ def test_metadata_status_with_verbose(
 
     with metaxy_project.with_features(features):
         # Write upstream but not downstream - there will be samples to add
-        _write_sample_metadata(metaxy_project, "video/files_root")
+        metaxy_project.write_sample_metadata("video/files_root")
         # Check status with verbose
         result = metaxy_project.run_cli(
             [
@@ -791,7 +740,7 @@ def test_metadata_status_with_explicit_store(
         store = metaxy_project.stores["dev"]
 
         # Write upstream metadata (this opens/closes store internally)
-        _write_sample_metadata(metaxy_project, "video/files_root", store_name="dev")
+        metaxy_project.write_sample_metadata("video/files_root", store_name="dev")
 
         # Now compute and write downstream metadata with correct provenance
         with graph.use(), store:
@@ -935,7 +884,7 @@ def test_metadata_status_all_features(
 
     with metaxy_project.with_features(features):
         # Write metadata for root only
-        _write_sample_metadata(metaxy_project, "files_root")
+        metaxy_project.write_sample_metadata("files_root")
 
         # Check status for all features
         result = metaxy_project.run_cli(
@@ -982,7 +931,7 @@ def test_metadata_status_root_feature(
 
     with metaxy_project.with_features(features):
         # Write metadata for the root feature
-        _write_sample_metadata(metaxy_project, "root_feature")
+        metaxy_project.write_sample_metadata("root_feature")
 
         # Check status for the root feature
         result = metaxy_project.run_cli(
@@ -1394,8 +1343,8 @@ def test_metadata_status_with_progress_flag(
         store = metaxy_project.stores["dev"]
 
         # Write upstream metadata (5 samples)
-        _write_sample_metadata(
-            metaxy_project, "video/files_root", sample_uids=[1, 2, 3, 4, 5]
+        metaxy_project.write_sample_metadata(
+            "video/files_root", id_values={"sample_uid": [1, 2, 3, 4, 5]}
         )
 
         # Write downstream metadata for only 2 out of 5 samples (40% processed)
@@ -1475,7 +1424,7 @@ def test_metadata_status_verbose_includes_progress(
         store = metaxy_project.stores["dev"]
 
         # Write upstream metadata
-        _write_sample_metadata(metaxy_project, "video/files_root")
+        metaxy_project.write_sample_metadata("video/files_root")
 
         # Write downstream for only 1 out of 3 samples
         with graph.use(), store:
@@ -1536,7 +1485,7 @@ def test_metadata_status_progress_for_root_feature(
 
     with metaxy_project.with_features(features):
         # Write metadata for the root feature
-        _write_sample_metadata(metaxy_project, "root_feature")
+        metaxy_project.write_sample_metadata("root_feature")
 
         # Check status with --progress flag
         result = metaxy_project.run_cli(
@@ -1599,7 +1548,7 @@ def test_metadata_status_progress_100_percent(
         store = metaxy_project.stores["dev"]
 
         # Write upstream metadata
-        _write_sample_metadata(metaxy_project, "video/files_root")
+        metaxy_project.write_sample_metadata("video/files_root")
 
         # Write downstream metadata for all samples
         with graph.use(), store:
@@ -1626,6 +1575,564 @@ def test_metadata_status_progress_100_percent(
         feature = data["features"]["video/files"]
         assert feature["status"] == "up_to_date"
         assert feature["progress_percentage"] == 100.0
+
+
+# ============================================================================
+# Tests for metadata delete command
+# ============================================================================
+
+
+def test_metadata_delete_requires_yes_for_hard_delete_without_filters(
+    metaxy_project: TempMetaxyProject,
+):
+    """Test that hard delete without filters requires --yes flag."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write metadata
+        metaxy_project.write_sample_metadata("logs")
+
+        # Try hard delete without --yes and without filters
+        result = metaxy_project.run_cli(
+            ["metadata", "delete", "--feature", "logs", "--soft=false"],
+            check=False,
+        )
+
+        assert result.returncode == 1
+        output = result.stdout + result.stderr
+        assert "MISSING_CONFIRMATION" in output or "requires --yes" in output
+
+
+def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProject):
+    """Test soft delete with a filter."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            ),
+        ):
+            level: str | None = None
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write metadata with different log levels
+        test_data = pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2", "s3"],
+                "level": ["debug", "info", "warn"],
+                METAXY_PROVENANCE_BY_FIELD: [
+                    {"level": "p1"},
+                    {"level": "p2"},
+                    {"level": "p3"},
+                ],
+            }
+        )
+
+        feature_key = FeatureKey(["logs"])
+        feature_cls = graph.get_feature_by_key(feature_key)
+
+        with graph.use(), store:
+            store.write_metadata(feature_cls, test_data)
+
+        # Soft delete debug logs
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "logs",
+                "--filter",
+                "level = 'debug'",
+                "--soft",
+            ]
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Deletion complete" in output
+        assert "soft delete" in output
+
+        # Verify data was soft deleted
+        with graph.use(), store:
+            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            assert remaining.height == 2
+            assert set(remaining["level"]) == {"info", "warn"}
+
+            # Check soft deleted is still in store when including deleted
+            all_data = (
+                store.read_metadata(feature_cls, include_soft_deleted=True)
+                .collect()
+                .to_polars()
+            )
+            assert all_data.height == 3
+
+
+def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProject):
+    """Test hard delete with a filter."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            ),
+        ):
+            level: str | None = None
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write metadata with different log levels
+        test_data = pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2", "s3"],
+                "level": ["debug", "info", "warn"],
+                METAXY_PROVENANCE_BY_FIELD: [
+                    {"level": "p1"},
+                    {"level": "p2"},
+                    {"level": "p3"},
+                ],
+            }
+        )
+
+        feature_key = FeatureKey(["logs"])
+        feature_cls = graph.get_feature_by_key(feature_key)
+
+        with graph.use(), store:
+            store.write_metadata(feature_cls, test_data)
+
+        # Hard delete debug logs
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "logs",
+                "--filter",
+                "level = 'debug'",
+                "--soft=false",
+            ]
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Deletion complete" in output
+        assert "hard delete" in output
+
+        # Verify data was physically removed
+        with graph.use(), store:
+            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            assert remaining.height == 2
+            assert set(remaining["level"]) == {"info", "warn"}
+
+            # Check that hard-deleted row is NOT in store even when including deleted
+            all_data = (
+                store.read_metadata(feature_cls, include_soft_deleted=True)
+                .collect()
+                .to_polars()
+            )
+            assert all_data.height == 2
+
+
+def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject):
+    """Test deleting metadata from multiple features."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class LogsA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs_a"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class LogsB(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs_b"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write metadata to both features
+        metaxy_project.write_sample_metadata("logs_a")
+        metaxy_project.write_sample_metadata("logs_b")
+
+        # Delete from both with filter
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "logs_a",
+                "--feature",
+                "logs_b",
+                "--filter",
+                "sample_uid = 1",
+                "--soft",
+            ]
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Deletion complete" in output
+
+
+def test_metadata_delete_all_features(metaxy_project: TempMetaxyProject):
+    """Test deleting from all features."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class LogsA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs_a"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class LogsB(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs_b"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write metadata to both features
+        metaxy_project.write_sample_metadata("logs_a")
+        metaxy_project.write_sample_metadata("logs_b")
+
+        # Delete from all features with filter
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--all-features",
+                "--filter",
+                "sample_uid = 1",
+                "--soft",
+            ]
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Deletion complete" in output
+
+
+def test_metadata_delete_invalid_feature(metaxy_project: TempMetaxyProject):
+    """Test that delete warns about missing features."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            ),
+        ):
+            level: str | None = None
+
+    with metaxy_project.with_features(features):
+        # Try to delete from non-existent feature
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "nonexistent/feature",
+                "--filter",
+                "sample_uid = 1",
+                "--soft",
+            ],
+            check=False,
+        )
+
+        assert result.returncode == 1
+        assert "NO_FEATURES" in result.stdout or "No valid features" in result.stdout
+
+
+def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject):
+    """Test delete with multiple filters combined with AND."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            ),
+        ):
+            level: str | None = None
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write metadata with log levels and status
+        test_data = pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2", "s3", "s4"],
+                "level": ["debug", "debug", "info", "warn"],
+                "status": ["old", "new", "old", "new"],
+                METAXY_PROVENANCE_BY_FIELD: [
+                    {"level": f"p{i}", "status": f"p{i}"} for i in range(1, 5)
+                ],
+            }
+        )
+
+        feature_key = FeatureKey(["logs"])
+        feature_cls = graph.get_feature_by_key(feature_key)
+
+        with graph.use(), store:
+            store.write_metadata(feature_cls, test_data)
+
+        # Delete debug AND old (should delete only s1)
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "logs",
+                "--filter",
+                "level = 'debug'",
+                "--filter",
+                "status = 'old'",
+                "--soft",
+            ]
+        )
+
+        assert result.returncode == 0
+
+        # Verify only s1 was deleted
+        with graph.use(), store:
+            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            assert remaining.height == 3
+            assert "s1" not in remaining["sample_uid"].to_list()
+
+
+def test_metadata_delete_with_invalid_filter(metaxy_project: TempMetaxyProject):
+    """Test delete with invalid filter syntax."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            ),
+        ):
+            level: str | None = None
+
+    with metaxy_project.with_features(features):
+        # Try delete with invalid filter
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "logs",
+                "--filter",
+                "invalid syntax !!!",
+                "--soft",
+            ],
+            check=False,
+        )
+
+        assert result.returncode == 1
+        assert "Invalid filter syntax" in result.stderr
+
+
+def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject):
+    """Test deleting all rows with --yes flag."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write metadata
+        metaxy_project.write_sample_metadata("logs")
+
+        # Hard delete all rows with --yes
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "logs",
+                "--soft=false",
+                "--yes",
+            ]
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Deletion complete" in output
+
+        # Verify all rows were deleted
+        feature_key = FeatureKey(["logs"])
+        feature_cls = graph.get_feature_by_key(feature_key)
+
+        with graph.use(), store:
+            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            assert remaining.height == 0
+
+
+def test_metadata_delete_soft_delete_without_filter_no_yes_required(
+    metaxy_project: TempMetaxyProject,
+):
+    """Test that soft delete without filters does not require --yes flag."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write metadata
+        metaxy_project.write_sample_metadata("logs")
+
+        # Soft delete all rows without --yes (should succeed)
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "logs",
+                "--soft",
+            ]
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Deletion complete" in output
+
+        # Verify rows were soft deleted
+        feature_key = FeatureKey(["logs"])
+        feature_cls = graph.get_feature_by_key(feature_key)
+
+        with graph.use(), store:
+            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            assert remaining.height == 0
+
+            # Check soft deleted rows still exist
+            all_data = (
+                store.read_metadata(feature_cls, include_soft_deleted=True)
+                .collect()
+                .to_polars()
+            )
+            assert all_data.height == 3
+
+
+def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProject):
+    """Test that delete requires either --feature or --all-features."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            ),
+        ):
+            level: str | None = None
+
+    with metaxy_project.with_features(features):
+        # Try to delete without specifying features
+        result = metaxy_project.run_cli(
+            ["metadata", "delete", "--filter", "sample_uid = 1", "--soft"],
+            check=False,
+        )
+
+        assert result.returncode == 1
+
+
+# ============================================================================
 
 
 def test_metadata_status_progress_no_input_display(
@@ -1660,8 +2167,8 @@ def test_metadata_status_progress_no_input_display(
 
     with metaxy_project.with_features(features):
         # Write upstream metadata with sample_uids
-        _write_sample_metadata(
-            metaxy_project, "video/files_root", sample_uids=[1, 2, 3]
+        metaxy_project.write_sample_metadata(
+            "video/files_root", id_values={"sample_uid": [1, 2, 3]}
         )
 
         # Check status with --progress flag and a filter that excludes all rows
@@ -2066,7 +2573,7 @@ root_path = "{prod_path}"
 
     with project.with_features(features):
         # Write metadata to dev store
-        _write_sample_metadata(project, "video/files", store_name="dev")
+        project.write_sample_metadata("video/files", store_name="dev")
 
         # Copy from dev to prod (positional args before keyword args)
         result = project.run_cli(
@@ -2126,8 +2633,8 @@ root_path = "{prod_path}"
 
     with project.with_features(features):
         # Write metadata to dev store
-        _write_sample_metadata(project, "video/files", store_name="dev")
-        _write_sample_metadata(project, "audio/files", store_name="dev")
+        project.write_sample_metadata("video/files", store_name="dev")
+        project.write_sample_metadata("audio/files", store_name="dev")
 
         # Copy multiple features from dev to prod using positional args
         result = project.run_cli(
@@ -2187,8 +2694,8 @@ root_path = "{prod_path}"
 
     with project.with_features(features):
         # Write metadata with more samples
-        _write_sample_metadata(
-            project, "video/files", store_name="dev", sample_uids=[1, 2, 3, 4, 5]
+        project.write_sample_metadata(
+            "video/files", store_name="dev", id_values={"sample_uid": [1, 2, 3, 4, 5]}
         )
 
         # Copy with filter - only sample_uid <= 2
@@ -2250,7 +2757,7 @@ root_path = "{prod_path}"
 
     with project.with_features(features):
         # Write metadata only for video/files
-        _write_sample_metadata(project, "video/files", store_name="dev")
+        project.write_sample_metadata("video/files", store_name="dev")
 
         # Try to copy including a non-existent feature
         result = project.run_cli(

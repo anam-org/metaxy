@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+from functools import reduce
 from typing import TYPE_CHECKING, Annotated, Any
 
 import cyclopts
+import narwhals as nw
 from rich.table import Table
 
 from metaxy.cli.console import console, data_console, error_console
@@ -362,6 +364,118 @@ def status(
 
         # Exit with error if assert_in_sync and updates needed
         if assert_in_sync and needs_update:
+            raise SystemExit(1)
+
+
+@app.command()
+def delete(
+    *,
+    selector: FeatureSelector = FeatureSelector(),
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--store"],
+            help="Metadata store name (defaults to configured default store).",
+        ),
+    ] = None,
+    filters: FilterArgs | None = None,
+    soft: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--soft"],
+            help="Whether to mark records with deletion timestamps vs physically remove them.",
+        ),
+    ] = True,
+    yes: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--yes"],
+            help="Confirm deletion without prompting (required for hard deletes without filters).",
+        ),
+    ] = False,
+) -> None:
+    """Delete metadata rows matching filters.
+
+    Examples:
+        $ metaxy metadata delete --feature user_features --filter "status = 'inactive'"
+        $ metaxy metadata delete --all-features --filter "created_at < '2024-01-01'" --soft=false
+        $ metaxy metadata delete --feature test_feature --filter "1=1" --yes  # Delete all rows
+    """
+    from metaxy.cli.context import AppContext
+    from metaxy.cli.utils import CLIError, exit_with_error
+
+    filters = filters or []
+    selector.validate("plain")
+
+    # Require --yes confirmation for hard deletes when no filters provided
+    if not soft and not filters and not yes:
+        exit_with_error(
+            CLIError(
+                code="MISSING_CONFIRMATION",
+                message="Hard deleting all metadata requires --yes flag to prevent accidental deletion.",
+                hint="Use --yes to confirm, or provide --filter to restrict deletion.",
+            ),
+            "plain",
+        )
+
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+
+    with metadata_store:
+        # Resolve feature keys without loading full graph
+        from metaxy.models.feature import FeatureGraph
+
+        graph = FeatureGraph.get_active()
+        valid_keys, missing_keys = selector.resolve_keys(graph, "plain")
+
+        if missing_keys:
+            missing = ", ".join(k.to_string() for k in missing_keys)
+            console.print(
+                f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {missing}"
+            )
+        if not valid_keys:
+            exit_with_error(
+                CLIError(
+                    code="NO_FEATURES",
+                    message="No valid features selected for deletion.",
+                ),
+                "plain",
+            )
+
+        # Combine filters with AND, or use empty list for "delete all"
+        combined_filter: nw.Expr | list[nw.Expr]
+        if filters:
+            combined_filter = (
+                reduce(lambda acc, expr: acc & expr, filters[1:], filters[0])
+                if len(filters) > 1
+                else filters[0]
+            )
+        else:
+            # No filters means "delete all" - pass empty list to allow optimized paths
+            # (e.g., TRUNCATE TABLE in Ibis backend)
+            combined_filter = []
+
+        errors: dict[str, str] = {}
+
+        with metadata_store.open("write"):
+            for feature_key in valid_keys:
+                try:
+                    metadata_store.delete_metadata(
+                        feature_key,
+                        filters=combined_filter,
+                        soft=soft,
+                    )
+                except Exception as e:  # pragma: no cover - CLI surface
+                    error_msg = str(e)
+                    errors[feature_key.to_string()] = error_msg
+                    error_console.print(
+                        f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}"
+                    )
+
+        mode_str = "soft" if soft else "hard"
+        console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete)")
+
+        if errors:
             raise SystemExit(1)
 
 
