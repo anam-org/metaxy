@@ -3,7 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Annotated, Any, NamedTuple, TypeAlias, overload
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Literal,
+    NamedTuple,
+    TypeAlias,
+    overload,
+)
 
 from pydantic import (
     BeforeValidator,
@@ -507,3 +515,5 @@ ValidatedFieldKeySequenceAdapter: TypeAdapter[ValidatedFieldKeySequence] = TypeA
 )
 
 FeatureDepMetadata: TypeAlias = dict[str, Any]
+
+AccessMode = Literal["read", "write"]

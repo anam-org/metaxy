@@ -177,6 +177,26 @@ class InMemoryMetadataStore(MetadataStore):
         if storage_key in self._storage:
             del self._storage[storage_key]
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+    ) -> None:
+        """Hard delete rows by filtering them out of in-memory storage."""
+        storage_key = self._get_storage_key(feature_key)
+        if storage_key not in self._storage:
+            return
+
+        df = self._storage[storage_key]
+        nw_df = nw.from_native(df, eager_only=True)
+        to_delete = nw_df.filter(filter_expr)
+
+        if len(to_delete) == 0:
+            return
+
+        kept = nw_df.filter(~filter_expr)
+        self._storage[storage_key] = kept.to_native()
+
     def read_metadata_in_store(
         self,
         feature: CoercibleToFeatureKey,

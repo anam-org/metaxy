@@ -5,6 +5,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
+from datetime import datetime, timezone
+from functools import reduce
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
@@ -1555,6 +1557,22 @@ class MetadataStore(ABC):
         """
         pass
 
+    @abstractmethod
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+    ) -> None:
+        """Backend-specific hard delete implementation.
+
+        Args:
+            feature_key: Feature to delete from
+            filter_expr: Narwhals expression to filter records
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not yet support delete_metadata."
+        )
+
     def drop_feature_metadata(self, feature: CoercibleToFeatureKey) -> None:
         """Drop all metadata for a feature.
 
@@ -1576,6 +1594,92 @@ class MetadataStore(ABC):
         self._check_open()
         feature_key = self._resolve_feature_key(feature)
         self._drop_feature_metadata_impl(feature_key)
+
+    def delete_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        filters: Sequence[nw.Expr] | nw.Expr,
+        *,
+        soft: bool = True,
+        current_only: bool = True,
+    ):
+        """Delete records matching provided filters.
+
+        Performs a soft delete by default. This is achieved by setting metaxy_deleted_at to the current timestamp.
+        Subsequent [[MetadataStore.read_metadata]] calls would drop these records by default.
+
+        Args:
+            feature: Feature to delete from.
+            filters: Single Narwhals expression or a sequence of expressions to combine with logical AND.
+            soft: Whether to perform a soft delete.
+            current_only: When soft deleting, restrict to the latest feature version.
+        """
+        self._check_open()
+
+        feature_key = self._resolve_feature_key(feature)
+
+        if isinstance(filters, nw.Expr):
+            filter_expr = filters
+        else:
+            filter_list = list(filters)
+            filter_expr = reduce(
+                lambda acc, expr: acc & expr, filter_list[1:], filter_list[0]
+            )
+
+        if soft:
+            lazy = self.read_metadata(
+                feature_key,
+                filters=[filter_expr],
+                include_soft_deleted=False,
+                latest_only=current_only,
+                allow_fallback=False,
+            )
+            if lazy is None:
+                raise FeatureNotFoundError(
+                    f"Feature {feature_key.to_string()} not found in store; cannot soft delete."
+                )
+
+            df = lazy.collect()
+            nw_df = nw.from_native(df, eager_only=True)
+
+            # Append tombstones without physically deleting (append-only)
+            # Add 1μs to created_at so tombstones are slightly newer for deduplication
+            now = datetime.now(timezone.utc)
+
+            # Convert to native for datetime arithmetic, add 1μs, convert back
+            native_df = nw_df.to_native()
+            from typing import cast
+
+            import polars as pl
+
+            # Convert to Polars DataFrame for consistent datetime operations
+            if isinstance(native_df, pl.DataFrame):
+                pl_df = native_df
+            else:
+                # PyArrow Table or Pandas - convert to Polars
+                import pyarrow as pa
+
+                if isinstance(native_df, pa.Table):
+                    pl_df = cast(pl.DataFrame, pl.from_arrow(native_df))
+                else:
+                    # Pandas or other - always pass DataFrame not Series
+                    pl_df = cast(pl.DataFrame, pl.from_pandas(native_df))
+
+            # Apply tombstone transformations using Polars
+            pl_df = pl_df.with_columns(
+                [
+                    pl.lit(now).alias(METAXY_DELETED_AT),
+                    (pl.col(METAXY_CREATED_AT) + pl.duration(microseconds=1)).alias(
+                        METAXY_CREATED_AT
+                    ),
+                ]
+            )
+
+            tombstones = nw.from_native(pl_df, eager_only=True)
+            self.write_metadata(feature_key, tombstones)
+
+        else:
+            self._delete_metadata_impl(feature_key, filter_expr)
 
     @abstractmethod
     def read_metadata_in_store(
