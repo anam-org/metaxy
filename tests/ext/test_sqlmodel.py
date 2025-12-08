@@ -1706,7 +1706,7 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
 
     Verifies that:
     - When explicitly enabled, composite PK is injected
-    - PK includes: id_columns + metaxy_created_at + metaxy_data_version
+    - PK includes: metaxy_feature_version + id_columns + metaxy_created_at
     - Works with both default and custom id_columns
     """
 
@@ -1739,9 +1739,9 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
     # Check columns in constraint
     column_names = [col.name for col in pk_constraint.columns]
     assert column_names == [
+        "metaxy_feature_version",
         "sample_uid",
         "metaxy_created_at",
-        "metaxy_data_version",
     ]
 
 
@@ -1784,7 +1784,7 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
 
     Verifies that:
     - Composite PK is created from spec.id_columns (not hardcoded column names)
-    - PK includes: custom id_columns + metaxy_created_at + metaxy_data_version
+    - PK includes: metaxy_feature_version + custom id_columns + metaxy_created_at
     - Works with multi-column id_columns
     """
 
@@ -1819,10 +1819,10 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
     # Check columns in constraint - should use custom id_columns from spec
     column_names = [col.name for col in pk_constraint.columns]
     assert column_names == [
+        "metaxy_feature_version",
         "user_id",  # From spec.id_columns
         "session_id",  # From spec.id_columns
         "metaxy_created_at",
-        "metaxy_data_version",
     ]
 
 

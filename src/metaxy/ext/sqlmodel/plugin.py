@@ -70,9 +70,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             namespace: Class namespace (attributes and methods)
             spec: Metaxy FeatureSpec (required for concrete features)
             inject_primary_key: If True, automatically create composite primary key
-                including id_columns + (metaxy_created_at, metaxy_data_version).
+                including (metaxy_feature_version, *id_columns, metaxy_created_at).
             inject_index: If True, automatically create composite index
-                including id_columns + (metaxy_created_at, metaxy_data_version).
+                including (metaxy_feature_version, *id_columns, metaxy_created_at).
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
@@ -175,11 +175,14 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         # Prepare constraints if requested
         constraints = []
         if inject_primary_key or inject_index:
-            # Composite key/index columns: id_columns + metaxy_created_at + metaxy_data_version
-            key_columns = list(spec.id_columns) + [
-                METAXY_CREATED_AT,
-                METAXY_DATA_VERSION,
-            ]
+            # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
+            key_columns = (
+                [METAXY_FEATURE_VERSION]
+                + list(spec.id_columns)
+                + [
+                    METAXY_CREATED_AT,
+                ]
+            )
 
             if inject_primary_key:
                 pk_constraint = PrimaryKeyConstraint(*key_columns, name="metaxy_pk")

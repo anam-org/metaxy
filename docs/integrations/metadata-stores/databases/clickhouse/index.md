@@ -39,14 +39,12 @@ pip install clickhouse-sqlalchemy
 
 ## Performance Optimization
 
-!!! tip "Table Partitioning and Ordering"
+!!! tip "Table Design"
 
     For optimal query performance, create your ClickHouse tables with:
 
     - **Partitioning**: Partition your tables!
-    - **ORDER BY**: Use `(metaxy_feature_version, <id_columns>, metaxy_created_at)`
-
-    ClickHouse doesn't have indexing, instead it relies on partitioning and ordering to optimize queries.
+    - **Primary Key**: It's probably a good idea to use `(metaxy_feature_version, <id_columns>, metaxy_created_at)`
 
 ## Reference
 
