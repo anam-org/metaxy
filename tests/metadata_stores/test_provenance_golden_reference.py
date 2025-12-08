@@ -457,7 +457,6 @@ def test_hard_delete_memory_store_only(any_store: MetadataStore):
 
     unsupported = {
         "ClickHouseMetadataStore",
-        "LanceDBMetadataStore",
     }
     if any_store.__class__.__name__ in unsupported:
         pytest.xfail(f"Hard delete pending for {any_store.__class__.__name__}")
