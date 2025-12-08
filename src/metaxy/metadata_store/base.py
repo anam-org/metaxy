@@ -1573,6 +1573,14 @@ class MetadataStore(ABC):
             f"{self.__class__.__name__} does not yet support delete_metadata."
         )
 
+    def soft_delete_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        filters: Sequence[nw.Expr] | nw.Expr,
+    ):
+        """Soft delete convenience wrapper."""
+        return self.delete_metadata(feature=feature, filters=filters, soft=True)
+
     def drop_feature_metadata(self, feature: CoercibleToFeatureKey) -> None:
         """Drop all metadata for a feature.
 
