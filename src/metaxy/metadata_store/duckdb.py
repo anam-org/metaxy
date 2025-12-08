@@ -441,6 +441,14 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
         return candidate
 
+    def _get_raw_connection(self) -> DuckDBPyConnection:
+        """Get raw DuckDB connection for executing SQL statements.
+
+        Returns:
+            DuckDBPyConnection for executing raw SQL
+        """
+        return self._duckdb_raw_connection()
+
     @classmethod
     def config_model(cls) -> type[DuckDBMetadataStoreConfig]:
         return DuckDBMetadataStoreConfig
