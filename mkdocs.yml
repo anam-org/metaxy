@@ -198,6 +198,7 @@ nav:
       - Optional Dependencies: guide/learn/optional-dependencies.md
       - Filters: guide/learn/filters.md
       - Testing: guide/learn/testing.md
+      - Cleanup: guide/learn/cleanup.md
       - System Columns: guide/learn/system-columns.md
   - Integrations:
     - integrations/index.md
