@@ -17,6 +17,10 @@ from narwhals.typing import Frame
 from pydantic import Field
 from typing_extensions import Self
 
+from metaxy.metadata_store._sql_utils import (
+    predicate_from_select_sql,
+    validate_identifier,
+)
 from metaxy.metadata_store.base import (
     MetadataStore,
     MetadataStoreConfig,
@@ -709,6 +713,39 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         resolved_key = self._resolve_feature_key(feature_key)
         return {"table_name": self.get_table_name(resolved_key)}
+
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+    ) -> int:
+        """Delete rows matching filter expression from the feature table.
+
+        Args:
+            feature_key: Feature to delete from
+            filter_expr: Narwhals expression to filter records for deletion
+
+        Returns:
+            Number of rows deleted, or -1 if count unavailable
+        """
+        table_name = self.get_table_name(feature_key)
+        validate_identifier(table_name, context="table name")
+
+        if table_name not in self.conn.list_tables():
+            return 0
+
+        table = self.conn.table(table_name)
+        nw_table = nw.from_native(table, eager_only=False)
+        filtered_native = nw_table.filter(filter_expr).to_native()
+        predicate = predicate_from_select_sql(ibis.to_sql(filtered_native))
+
+        delete_sql = f"DELETE FROM {table_name} WHERE {predicate}"
+        result = self._execute_raw_sql(delete_sql)
+        rows_deleted = self._rowcount_or_default(result, default=-1)
+
+        if rows_deleted >= 0:
+            return int(rows_deleted)
+        return -1
 
     @classmethod
     def config_model(cls) -> type[IbisMetadataStoreConfig]:

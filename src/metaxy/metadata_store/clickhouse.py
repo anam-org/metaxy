@@ -4,14 +4,18 @@ It takes care of some ClickHouse-specific logic such as `nw.Struct` type convers
 
 from typing import TYPE_CHECKING, Any
 
+import ibis
 import narwhals as nw
 
 if TYPE_CHECKING:
-    import ibis
     from ibis.expr.schema import Schema as IbisSchema
 
     from metaxy.metadata_store.base import MetadataStore
 
+from metaxy.metadata_store._sql_utils import (
+    predicate_from_select_sql,
+    validate_identifier,
+)
 from metaxy.metadata_store.ibis import (
     Frame,
     IbisMetadataStore,
@@ -521,3 +525,31 @@ class ClickHouseMetadataStore(IbisMetadataStore):
     @classmethod
     def config_model(cls) -> type[ClickHouseMetadataStoreConfig]:
         return ClickHouseMetadataStoreConfig
+
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+    ) -> int:
+        """Override to normalize ClickHouse-specific datetime parsing in predicates."""
+        table_name = self.get_table_name(feature_key)
+        validate_identifier(table_name, context="table name")
+
+        if table_name not in self.conn.list_tables():
+            return 0
+
+        table = self.conn.table(table_name)
+        nw_table = nw.from_native(table, eager_only=False)
+        filtered_native = nw_table.filter(filter_expr).to_native()
+        predicate = predicate_from_select_sql(ibis.to_sql(filtered_native))
+        predicate = predicate.replace(
+            "PARSEDATETIMEBESTEFFORT", "parseDateTimeBestEffort"
+        )
+
+        delete_sql = f"DELETE FROM {table_name} WHERE {predicate}"
+        result = self._execute_raw_sql(delete_sql)
+        rows_deleted = self._rowcount_or_default(result, default=-1)
+
+        if rows_deleted >= 0:
+            return int(rows_deleted)
+        return -1
