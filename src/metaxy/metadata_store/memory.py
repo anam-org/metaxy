@@ -178,6 +178,41 @@ class InMemoryMetadataStore(MetadataStore):
         if storage_key in self._storage:
             del self._storage[storage_key]
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr] | None,
+        *,
+        current_only: bool,  # noqa: ARG002 - version filtering handled by base class
+    ) -> None:
+        """Hard delete rows by filtering them out of in-memory storage.
+
+        Args:
+            feature_key: Feature to delete from
+            filters: Narwhals filter expressions (version filter already applied by base class)
+            current_only: Not used here - version filtering handled by base class
+        """
+        storage_key = self._get_storage_key(feature_key)
+        if storage_key not in self._storage:
+            return
+
+        filter_list = list(filters or [])
+        if not filter_list:
+            del self._storage[storage_key]
+            return
+
+        df = self._storage[storage_key]
+        nw_df = nw.from_native(df, eager_only=True)
+
+        # Combine all filters with AND, then invert to keep rows not matching deletion criteria
+        combined_filter = filter_list[0]
+        for expr in filter_list[1:]:
+            combined_filter = combined_filter & expr
+        kept = nw_df.filter(~combined_filter)
+
+        if len(kept) < len(nw_df):
+            self._storage[storage_key] = kept.to_native()
+
     def read_metadata_in_store(
         self,
         feature: CoercibleToFeatureKey,

@@ -55,6 +55,8 @@ METAXY_CREATED_AT = f"{SYSTEM_COLUMN_PREFIX}created_at"
 METAXY_DELETED_AT = f"{SYSTEM_COLUMN_PREFIX}deleted_at"
 """Timestamp when the metadata row was soft-deleted."""
 
+"""Temporary ordering column name used for deduplication."""
+
 METAXY_MATERIALIZATION_ID = f"{SYSTEM_COLUMN_PREFIX}materialization_id"
 """External orchestration run ID (e.g., Dagster Run ID, Airflow Run ID) for tracking pipeline executions."""
 

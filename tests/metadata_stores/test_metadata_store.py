@@ -1,6 +1,6 @@
 """Tests for metadata store."""
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 
 import narwhals as nw
 import polars as pl
@@ -81,6 +81,31 @@ def features(graph: FeatureGraph):
 
 
 @pytest.fixture
+def make_upstream_a_data():
+    def _make(
+        *,
+        sample_uids: Sequence[int],
+        prefix: str,
+        include_path: bool,
+    ) -> pl.DataFrame:
+        data = {
+            "sample_uid": list(sample_uids),
+            "metaxy_provenance_by_field": [
+                {
+                    "frames": f"{prefix}{uid}_frames",
+                    "audio": f"{prefix}{uid}_audio",
+                }
+                for uid in sample_uids
+            ],
+        }
+        if include_path:
+            data["path"] = [f"/data/{uid}.mp4" for uid in sample_uids]
+        return pl.DataFrame(data)
+
+    return _make
+
+
+@pytest.fixture
 def UpstreamFeatureA(features: dict[str, type[BaseFeature]]):
     return features["UpstreamFeatureA"]
 
@@ -98,23 +123,17 @@ def empty_store(graph: FeatureGraph) -> Iterator[InMemoryMetadataStore]:
 
 @pytest.fixture
 def populated_store(
-    graph: FeatureGraph, UpstreamFeatureA
+    graph: FeatureGraph, UpstreamFeatureA, make_upstream_a_data
 ) -> Iterator[InMemoryMetadataStore]:
     """Store with sample upstream data."""
     store = InMemoryMetadataStore()
 
     with store.open("write"):
         # Add upstream feature A
-        upstream_a_data = pl.DataFrame(
-            {
-                "sample_uid": [1, 2, 3],
-                "path": ["/data/1.mp4", "/data/2.mp4", "/data/3.mp4"],
-                "metaxy_provenance_by_field": [
-                    {"frames": "hash_a1_frames", "audio": "hash_a1_audio"},
-                    {"frames": "hash_a2_frames", "audio": "hash_a2_audio"},
-                    {"frames": "hash_a3_frames", "audio": "hash_a3_audio"},
-                ],
-            }
+        upstream_a_data = make_upstream_a_data(
+            sample_uids=[1, 2, 3],
+            prefix="hash_a",
+            include_path=True,
         )
         with store.allow_cross_project_writes():
             store.write_metadata(UpstreamFeatureA, upstream_a_data)
@@ -124,7 +143,7 @@ def populated_store(
 
 @pytest.fixture
 def multi_env_stores(
-    graph: FeatureGraph, UpstreamFeatureA
+    graph: FeatureGraph, UpstreamFeatureA, make_upstream_a_data
 ) -> Iterator[dict[str, InMemoryMetadataStore]]:
     """Multi-environment store setup (prod, staging, dev)."""
     prod = InMemoryMetadataStore()
@@ -133,15 +152,10 @@ def multi_env_stores(
 
     with prod:
         # Populate prod with upstream data
-        upstream_data = pl.DataFrame(
-            {
-                "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
-                    {"frames": "prod_hash1", "audio": "prod_hash1"},
-                    {"frames": "prod_hash2", "audio": "prod_hash2"},
-                    {"frames": "prod_hash3", "audio": "prod_hash3"},
-                ],
-            }
+        upstream_data = make_upstream_a_data(
+            sample_uids=[1, 2, 3],
+            prefix="prod_hash",
+            include_path=False,
         )
         with prod.allow_cross_project_writes():
             prod.write_metadata(UpstreamFeatureA, upstream_data)
@@ -153,19 +167,14 @@ def multi_env_stores(
 
 
 def test_write_and_read_metadata(
-    empty_store: InMemoryMetadataStore, UpstreamFeatureA
+    empty_store: InMemoryMetadataStore, UpstreamFeatureA, make_upstream_a_data
 ) -> None:
     """Test basic write and read operations."""
     with empty_store.open("write"):
-        metadata = pl.DataFrame(
-            {
-                "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
-                    {"frames": "hash1", "audio": "hash1"},
-                    {"frames": "hash2", "audio": "hash2"},
-                    {"frames": "hash3", "audio": "hash3"},
-                ],
-            }
+        metadata = make_upstream_a_data(
+            sample_uids=[1, 2, 3],
+            prefix="hash",
+            include_path=False,
         )
 
         with empty_store.allow_cross_project_writes():
@@ -194,27 +203,22 @@ def test_write_invalid_schema(
                 empty_store.write_metadata(UpstreamFeatureA, invalid_df)
 
 
-def test_write_append(empty_store: InMemoryMetadataStore, UpstreamFeatureA) -> None:
+def test_write_append(
+    empty_store: InMemoryMetadataStore,
+    UpstreamFeatureA,
+    make_upstream_a_data,
+) -> None:
     """Test that writes are append-only."""
     with empty_store.open("write"):
-        df1 = pl.DataFrame(
-            {
-                "sample_uid": [1, 2],
-                "metaxy_provenance_by_field": [
-                    {"frames": "h1", "audio": "h1"},
-                    {"frames": "h2", "audio": "h2"},
-                ],
-            }
+        df1 = make_upstream_a_data(
+            sample_uids=[1, 2],
+            prefix="h",
+            include_path=False,
         )
-
-        df2 = pl.DataFrame(
-            {
-                "sample_uid": [3, 4],
-                "metaxy_provenance_by_field": [
-                    {"frames": "h3", "audio": "h3"},
-                    {"frames": "h4", "audio": "h4"},
-                ],
-            }
+        df2 = make_upstream_a_data(
+            sample_uids=[3, 4],
+            prefix="h",
+            include_path=False,
         )
 
         with empty_store.allow_cross_project_writes():
@@ -321,6 +325,45 @@ def test_read_no_fallback(
     with dev:
         with pytest.raises(FeatureNotFoundError):
             dev.read_metadata(UpstreamFeatureA, allow_fallback=False)
+
+
+def test_soft_delete_from_fallback_creates_soft_deletion_marker(
+    multi_env_stores: dict[str, InMemoryMetadataStore], UpstreamFeatureA
+) -> None:
+    """Soft delete should allow targeting fallback data and write markers locally."""
+    dev = multi_env_stores["dev"]
+    staging = multi_env_stores["staging"]
+    prod = multi_env_stores["prod"]
+
+    with dev, staging, prod:
+        assert not dev.has_feature(UpstreamFeatureA, check_fallback=False)
+
+        dev.delete_metadata(
+            UpstreamFeatureA,
+            filters=nw.col("sample_uid") == 1,
+            soft=True,
+            current_only=True,
+        )
+
+        soft_deletion_markers = collect_to_polars(
+            dev.read_metadata(
+                UpstreamFeatureA,
+                include_soft_deleted=True,
+                allow_fallback=False,
+            )
+        )
+        assert soft_deletion_markers.height == 1
+        assert soft_deletion_markers["sample_uid"].to_list() == [1]
+        assert soft_deletion_markers["metaxy_deleted_at"].is_not_null().all()
+
+        active = collect_to_polars(
+            dev.read_metadata(
+                UpstreamFeatureA,
+                filters=[nw.col("sample_uid") == 1],
+                allow_fallback=True,
+            )
+        )
+        assert active.is_empty()
 
 
 def test_write_to_dev_not_prod(
@@ -459,8 +502,7 @@ def test_write_metadata_casts_null_typed_system_columns(
         assert result.schema["metaxy_feature_version"] == pl.String
         assert result.schema["metaxy_snapshot_version"] == pl.String
         assert result.schema["metaxy_data_version"] == pl.String
-        # Datetime is cast without timezone since nw.Datetime defaults to no tz
-        assert result.schema["metaxy_created_at"] == pl.Datetime("us")
+        assert result.schema["metaxy_created_at"] == pl.Datetime("us", time_zone="UTC")
         assert result.schema["metaxy_materialization_id"] == pl.String
 
 
