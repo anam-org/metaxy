@@ -323,6 +323,45 @@ def test_read_no_fallback(
             dev.read_metadata(UpstreamFeatureA, allow_fallback=False)
 
 
+def test_soft_delete_from_fallback_creates_soft_deletion_marker(
+    multi_env_stores: dict[str, InMemoryMetadataStore], UpstreamFeatureA
+) -> None:
+    """Soft delete should allow targeting fallback data and write markers locally."""
+    dev = multi_env_stores["dev"]
+    staging = multi_env_stores["staging"]
+    prod = multi_env_stores["prod"]
+
+    with dev, staging, prod:
+        assert not dev.has_feature(UpstreamFeatureA, check_fallback=False)
+
+        dev.delete_metadata(
+            UpstreamFeatureA,
+            filters=nw.col("sample_uid") == 1,
+            soft=True,
+            current_only=True,
+        )
+
+        soft_deletion_markers = collect_to_polars(
+            dev.read_metadata(
+                UpstreamFeatureA,
+                include_soft_deleted=True,
+                allow_fallback=False,
+            )
+        )
+        assert soft_deletion_markers.height == 1
+        assert soft_deletion_markers["sample_uid"].to_list() == [1]
+        assert soft_deletion_markers["metaxy_deleted_at"].is_not_null().all()
+
+        active = collect_to_polars(
+            dev.read_metadata(
+                UpstreamFeatureA,
+                filters=[nw.col("sample_uid") == 1],
+                allow_fallback=True,
+            )
+        )
+        assert active.is_empty()
+
+
 def test_write_to_dev_not_prod(
     multi_env_stores: dict[str, InMemoryMetadataStore],
     UpstreamFeatureA,
@@ -459,8 +498,7 @@ def test_write_metadata_casts_null_typed_system_columns(
         assert result.schema["metaxy_feature_version"] == pl.String
         assert result.schema["metaxy_snapshot_version"] == pl.String
         assert result.schema["metaxy_data_version"] == pl.String
-        # Datetime is cast without timezone since nw.Datetime defaults to no tz
-        assert result.schema["metaxy_created_at"] == pl.Datetime("us")
+        assert result.schema["metaxy_created_at"] == pl.Datetime("us", time_zone="UTC")
         assert result.schema["metaxy_materialization_id"] == pl.String
 
 

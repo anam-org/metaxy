@@ -338,6 +338,18 @@ class DeltaMetadataStore(MetadataStore):
         # This marks rows as deleted in transaction log without physically removing files
         delta_table.delete()
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr] | None = None,
+        *,
+        current_only: bool,
+    ) -> None:
+        """Hard delete not yet supported for Delta backend."""
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not yet implement hard delete"
+        )
+
     def read_metadata_in_store(
         self,
         feature: CoercibleToFeatureKey,

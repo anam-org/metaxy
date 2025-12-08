@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Annotated, Any, NamedTuple, TypeAlias, overload
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    NamedTuple,
+    TypeAlias,
+    overload,
+)
 
 from pydantic import (
     BeforeValidator,

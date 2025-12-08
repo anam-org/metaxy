@@ -453,6 +453,79 @@ class IbisMetadataStore(MetadataStore, ABC):
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr] | None,
+        **_kwargs: Any,
+    ) -> None:
+        """Backend-specific hard delete implementation for SQL databases.
+
+        Translates Narwhals filter expression to Ibis and executes DELETE in database.
+
+        Args:
+            feature_key: Feature to delete from
+            filters: Narwhals expressions to filter records
+        """
+        table_name = self.get_table_name(feature_key)
+
+        current_only = bool(_kwargs.get("current_only", False))
+        if current_only and not self._is_system_table(feature_key):
+            raise NotImplementedError(
+                f"{self.__class__.__name__} does not yet support current_only deletes"
+            )
+
+        filter_list = list(filters or [])
+        if not filter_list:
+            if table_name not in self.conn.list_tables():
+                return
+            conn = cast(Any, self.conn)
+            conn.truncate_table(table_name)
+            return
+
+        # Read and filter directly using the store's lazy path
+        filtered = self.read_metadata_in_store(
+            feature_key, filters=filter_list if filter_list else None
+        )
+        if filtered is None:
+            return
+
+        # Extract the underlying Ibis table expression with filter applied
+        ibis_filtered = cast("ibis.expr.types.Table", filtered.to_native())
+
+        # Construct DELETE SQL from compiled SELECT
+        # Get WHERE clause by compiling the filtered table to SQL
+        select_sql = str(ibis_filtered.compile())
+
+        # Execute DELETE using backend's SQL execution method
+        conn = cast(Any, self.conn)
+        from metaxy.metadata_store.utils import (
+            _extract_where_expression,
+            _strip_table_qualifiers,
+        )
+
+        dialect = self.backend
+        if dialect is None and self.connection_string:
+            if self.connection_string.startswith("clickhouse"):
+                dialect = "clickhouse"
+        predicate = _extract_where_expression(select_sql, dialect=dialect)
+        if predicate is not None:
+            predicate = predicate.transform(_strip_table_qualifiers())
+            where_clause = (
+                predicate.sql(dialect=dialect) if dialect else predicate.sql()
+            )
+            if dialect == "clickhouse":
+                where_clause = where_clause.replace(
+                    "PARSEDATETIMEBESTEFFORT", "parseDateTimeBestEffort"
+                )
+            delete_stmt = f"DELETE FROM {table_name} WHERE {where_clause}"
+
+            conn.raw_sql(delete_stmt)
+        else:
+            raise ValueError(
+                f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}"
+            )
+
     def read_metadata_in_store(
         self,
         feature: CoercibleToFeatureKey,
