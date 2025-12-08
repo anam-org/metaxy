@@ -24,6 +24,7 @@ from metaxy.metadata_store.base import (
 from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     HashAlgorithmNotSupportedError,
+    StoreNotOpenError,
     TableNotFoundError,
 )
 from metaxy.metadata_store.types import AccessMode
@@ -281,7 +282,6 @@ class IbisMetadataStore(MetadataStore, ABC):
         Raises:
             StoreNotOpenError: If store is not open
         """
-        from metaxy.metadata_store.exceptions import StoreNotOpenError
 
         if self._conn is None:
             raise StoreNotOpenError(

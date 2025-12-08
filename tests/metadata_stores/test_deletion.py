@@ -128,7 +128,6 @@ def test_write_delete_write_sequence(
     ):
         value: int | None = None
 
-    # First write
     write1_df = make_value_df(
         sample_uids=["x"],
         values=[100],
@@ -136,7 +135,6 @@ def test_write_delete_write_sequence(
         created_at=[base_time],
     )
 
-    # Delete (soft delete)
     delete_df = make_value_df(
         sample_uids=["x"],
         values=[100],
@@ -145,7 +143,6 @@ def test_write_delete_write_sequence(
         deleted_at=[base_time + timedelta(seconds=1)],
     )
 
-    # Second write (resurrection)
     write2_df = make_value_df(
         sample_uids=["x"],
         values=[200],
@@ -158,14 +155,12 @@ def test_write_delete_write_sequence(
         any_store.write_metadata(WriteDeleteWriteFeature, delete_df)
         any_store.write_metadata(WriteDeleteWriteFeature, write2_df)
 
-        # Default: should see only the latest write (value=200)
         active = any_store.read_metadata(WriteDeleteWriteFeature).collect().to_polars()
         assert len(active) == 1
         assert active["sample_uid"][0] == "x"
         assert active["value"][0] == 200
         assert active[METAXY_DELETED_AT].is_null().all()
 
-        # With deleted: should see latest (write2) because deduplication picks it over soft deletes
         with_deleted = (
             any_store.read_metadata(WriteDeleteWriteFeature, include_soft_deleted=True)
             .collect()
@@ -194,7 +189,6 @@ def test_write_delete_write_delete_sequence(
     ):
         value: int | None = None
 
-    # First write
     write1_df = make_value_df(
         sample_uids=["y"],
         values=[100],
@@ -202,7 +196,6 @@ def test_write_delete_write_delete_sequence(
         created_at=[base_time],
     )
 
-    # First delete
     delete1_df = make_value_df(
         sample_uids=["y"],
         values=[100],
@@ -211,7 +204,6 @@ def test_write_delete_write_delete_sequence(
         deleted_at=[base_time + timedelta(seconds=1)],
     )
 
-    # Second write
     write2_df = make_value_df(
         sample_uids=["y"],
         values=[200],
@@ -219,7 +211,6 @@ def test_write_delete_write_delete_sequence(
         created_at=[base_time + timedelta(seconds=2)],
     )
 
-    # Second delete
     delete2_df = make_value_df(
         sample_uids=["y"],
         values=[200],
@@ -234,13 +225,11 @@ def test_write_delete_write_delete_sequence(
         any_store.write_metadata(WriteDeleteWriteDeleteFeature, write2_df)
         any_store.write_metadata(WriteDeleteWriteDeleteFeature, delete2_df)
 
-        # Default: no active rows (latest is a soft delete)
         active = (
             any_store.read_metadata(WriteDeleteWriteDeleteFeature).collect().to_polars()
         )
         assert active.is_empty()
 
-        # With deleted: should see the latest soft delete (value=200 deleted)
         with_deleted = (
             any_store.read_metadata(
                 WriteDeleteWriteDeleteFeature, include_soft_deleted=True
@@ -342,6 +331,7 @@ def test_soft_delete_then_overwrite_restores_row(
         provenance=["p1"],
         created_at=[base_time],
     )
+
     with any_store:
         any_store.write_metadata(RestoreFeature, initial)
         any_store.delete_metadata(RestoreFeature, filters=nw.col("sample_uid") == "a")
@@ -523,19 +513,11 @@ def test_hard_delete_then_overwrite_restores_row(
     ):
         value: int | None = None
 
-    restored_time = base_time + timedelta(minutes=1)
-
     initial = make_value_df(
         sample_uids=["a"],
         values=[1],
         provenance=["p1"],
         created_at=[base_time],
-    )
-    replacement = make_value_df(
-        sample_uids=["a"],
-        values=[2],
-        provenance=["p2"],
-        created_at=[restored_time],
     )
 
     with any_store:
@@ -552,6 +534,12 @@ def test_hard_delete_then_overwrite_restores_row(
         )
         assert after_delete.is_empty()
 
+        replacement = make_value_df(
+            sample_uids=["a"],
+            values=[2],
+            provenance=["p2"],
+            created_at=[base_time + timedelta(minutes=1)],
+        )
         any_store.write_metadata(RestoreHardDeleteFeature, replacement)
 
         active = any_store.read_metadata(RestoreHardDeleteFeature).collect().to_polars()
