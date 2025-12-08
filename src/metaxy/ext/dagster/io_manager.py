@@ -9,6 +9,7 @@ import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
+    DAGSTER_METAXY_PARTITION_METADATA_KEY,
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 from metaxy.ext.dagster.utils import (
@@ -174,9 +175,14 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             try:
                 feature = mx.get_feature_by_key(key)
 
-                # Get partition column from metadata
+                # Get partition column from metadata (for Dagster partitions)
                 partition_col = context.definition_metadata.get(
                     DAGSTER_METAXY_PARTITION_KEY
+                )
+
+                # Get metaxy partition from metadata (for multi-asset logical partitions)
+                metaxy_partition = context.definition_metadata.get(
+                    DAGSTER_METAXY_PARTITION_METADATA_KEY
                 )
 
                 # Build runtime metadata (handles reading and filtering internally)
@@ -185,10 +191,10 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
                     self.metadata_store,
                     context,
                     partition_col=partition_col,  # pyright: ignore[reportArgumentType]
+                    metaxy_partition=metaxy_partition,  # pyright: ignore[reportArgumentType]
                 )
                 context.add_output_metadata(runtime_metadata)
 
-                # Get materialized-in-run count
                 mat_lazy_df = self.metadata_store.read_metadata(
                     feature,
                     filters=[nw.col(METAXY_MATERIALIZATION_ID) == context.run_id],

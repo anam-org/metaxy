@@ -6,10 +6,14 @@ from typing import Any
 import dagster as dg
 
 import metaxy as mx
-from metaxy.ext.dagster.constants import DAGSTER_METAXY_FEATURE_METADATA_KEY
+from metaxy.ext.dagster.constants import (
+    DAGSTER_METAXY_FEATURE_METADATA_KEY,
+    DAGSTER_METAXY_PARTITION_METADATA_KEY,
+)
 from metaxy.ext.dagster.metaxify import metaxify
 from metaxy.ext.dagster.utils import (
     build_feature_event_tags,
+    build_metaxy_partition_filter,
     compute_stats_from_lazy_frame,
 )
 
@@ -89,8 +93,16 @@ def observable_metaxy_asset(
         def _observe(context: dg.AssetExecutionContext) -> dg.ObserveResult:
             store: mx.MetadataStore = getattr(context.resources, store_resource_key)
 
+            # Check for metaxy/partition metadata to apply filtering
+            metaxy_partition = enriched.metadata.get(
+                DAGSTER_METAXY_PARTITION_METADATA_KEY
+            )
+            filters = build_metaxy_partition_filter(
+                metaxy_partition  # pyright: ignore[reportArgumentType]
+            )
+
             with store:
-                lazy_df = store.read_metadata(feature_key)
+                lazy_df = store.read_metadata(feature_key, filters=filters)
                 stats = compute_stats_from_lazy_frame(lazy_df)
 
                 # Call the user's function - it can return additional metadata

@@ -10,6 +10,7 @@ from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_FEATURE_VERSION_TAG_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
+    DAGSTER_METAXY_PARTITION_METADATA_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
@@ -40,6 +41,22 @@ def build_partition_filter(
     if partition_col is None or partition_key is None:
         return []
     return [nw.col(partition_col) == partition_key]
+
+
+def build_metaxy_partition_filter(
+    partition_metadata: dict[str, str] | None,
+) -> list[nw.Expr]:
+    """Build filter expressions from metaxy/partition metadata.
+
+    Args:
+        partition_metadata: Dict mapping column name to value, e.g., {"region": "us"}
+
+    Returns:
+        List of filter expressions (one per column/value pair).
+    """
+    if partition_metadata is None:
+        return []
+    return [nw.col(col) == value for col, value in partition_metadata.items()]
 
 
 _DAGSTER_TAG_VALUE_MAX_LENGTH = 63
@@ -238,6 +255,9 @@ def generate_materialize_results(
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
         partition_col = asset_spec.metadata.get(DAGSTER_METAXY_PARTITION_KEY)
+        metaxy_partition = asset_spec.metadata.get(
+            DAGSTER_METAXY_PARTITION_METADATA_KEY
+        )
 
         with store:
             try:
@@ -247,6 +267,7 @@ def generate_materialize_results(
                     store,
                     context,
                     partition_col=partition_col,  # pyright: ignore[reportArgumentType]
+                    metaxy_partition=metaxy_partition,  # pyright: ignore[reportArgumentType]
                 )
             except FeatureNotFoundError:
                 context.log.exception(
@@ -256,11 +277,12 @@ def generate_materialize_results(
 
             # Get materialized-in-run count if materialization_id is set
             if store.materialization_id is not None:
-                partition_filters = get_partition_filter(context, asset_spec)
-                mat_filters = partition_filters + [
-                    nw.col(METAXY_MATERIALIZATION_ID) == store.materialization_id
-                ]
-                mat_df = store.read_metadata(key, filters=mat_filters)
+                mat_df = store.read_metadata(
+                    key,
+                    filters=[
+                        nw.col(METAXY_MATERIALIZATION_ID) == store.materialization_id
+                    ],
+                )
                 metadata["metaxy/materialized_in_run"] = (
                     mat_df.select(nw.len()).collect().item(0, 0)
                 )
@@ -340,6 +362,7 @@ def build_runtime_feature_metadata(
     context: dg.AssetExecutionContext | dg.OpExecutionContext | dg.OutputContext,
     *,
     partition_col: str | None = None,
+    metaxy_partition: dict[str, str] | None = None,
 ) -> tuple[dict[str, Any], FeatureStats]:
     """Build runtime metadata for a Metaxy feature in Dagster.
 
@@ -353,8 +376,11 @@ def build_runtime_feature_metadata(
         feature_key: The Metaxy feature key.
         store: The metadata store (used for store-specific metadata like URI, table_name).
         context: Dagster context for determining partition state and logging errors.
-        partition_col: Optional column name to filter by for partitioned assets.
+        partition_col: Optional column name to filter by for Dagster partitioned assets.
             If provided and context has a partition key, data will be filtered.
+        metaxy_partition: Optional dict mapping column names to values.
+            Is expected to be set on Dagster assets that contribute to the same Metaxy feature.
+            Allows computing individual metadata for these assets.
 
     Returns:
         A tuple of (metadata_dict, feature_stats) where:
@@ -391,12 +417,17 @@ def build_runtime_feature_metadata(
         build_table_preview_metadata,
     )
 
-    # Build partition filter if applicable
+    # Build Dagster partition filter if applicable (for time/date partitions etc.)
     partition_key = context.partition_key if context.has_partition_key else None
-    partition_filters = build_partition_filter(partition_col, partition_key)
+    dagster_partition_filters = build_partition_filter(partition_col, partition_key)
 
-    # Read data with partition filters applied (may raise FeatureNotFoundError)
-    lazy_df = store.read_metadata(feature_key, filters=partition_filters)
+    # Build metaxy partition filter (for multi-asset logical partitions)
+    metaxy_partition_filters = build_metaxy_partition_filter(metaxy_partition)
+
+    # Combine both filter types for reading this asset's view of the data
+    all_filters = dagster_partition_filters + metaxy_partition_filters
+
+    lazy_df = store.read_metadata(feature_key, filters=all_filters)
 
     try:
         # Compute stats from filtered data (includes data_version for callers)
@@ -418,13 +449,18 @@ def build_runtime_feature_metadata(
             },
         }
 
-        # For partitioned assets, compute total row count by re-reading without filters
+        # For Dagster partitioned assets, compute total row count by re-reading
+        # with only Dagster partition filters (not metaxy partition)
         if context.has_partition_key:
-            # Read entire feature (no partition filter) for total count
-            full_lazy_df = store.read_metadata(feature_key)
+            # Read with only dagster partition filter for total count
+            full_lazy_df = store.read_metadata(
+                feature_key, filters=metaxy_partition_filters
+            )
             metadata["dagster/row_count"] = compute_row_count(full_lazy_df)
             metadata["dagster/partition_row_count"] = stats.row_count
         else:
+            # When metaxy_partition is set, stats.row_count is the partition-filtered count
+            # dagster/row_count should reflect what this asset sees
             metadata["dagster/row_count"] = stats.row_count
 
         # Map store metadata to dagster standard keys
@@ -498,15 +534,20 @@ def generate_observe_results(
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
         partition_col = asset_spec.metadata.get(DAGSTER_METAXY_PARTITION_KEY)
+        metaxy_partition = asset_spec.metadata.get(
+            DAGSTER_METAXY_PARTITION_METADATA_KEY
+        )
 
         with store:
             try:
                 # Build runtime metadata (handles reading, filtering, and stats internally)
+                # For observers with no metaxy_partition, this reads all data
                 metadata, stats = build_runtime_feature_metadata(
                     key,
                     store,
                     context,
                     partition_col=partition_col,  # pyright: ignore[reportArgumentType]
+                    metaxy_partition=metaxy_partition,  # pyright: ignore[reportArgumentType]
                 )
             except FeatureNotFoundError:
                 context.log.exception(
