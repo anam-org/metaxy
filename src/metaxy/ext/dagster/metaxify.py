@@ -56,8 +56,11 @@ class metaxify:
             column provenance via `FeatureDep.rename`, `FeatureSpec.lineage`, and direct pass-through.
 
     !!! tip
-        Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
-        `"metaxy/feature"` metadata. This is a perfectly valid setup since Metaxy writes are append-only.
+        Multiple Dagster assets can contribute to the same Metaxy feature.
+        This is a perfectly valid setup since Metaxy writes are append-only. In order to do this, set the following metadata keys:
+
+            - `"metaxy/feature"` pointing to the same Metaxy feature key
+            - `"metaxy/partition"` should be set to a dictionary mapping column names to values produced by the specific Dagster asset
 
     !!! example
         ```py  {hl_lines="8"}
@@ -103,6 +106,37 @@ class metaxify:
         )
         asset_spec = mxd.metaxify()(asset_spec)
         ```
+
+    ??? example "Combining multiple Dagster assets into the same Metaxy feature"
+        ```py
+        @dg.asset(
+            metadata={
+                "metaxy/feature": "my/feature/key",
+                "metaxy/partition": {"dataset": "a"},
+            },
+        )
+        def my_feature_dataset_a():
+            ...
+
+        @dg.asset(
+            metadata={
+                "metaxy/feature": "my/feature/key",
+                "metaxy/partition": {"dataset": "b"},
+            },
+        )
+        def my_feature_dataset_b():
+            ...
+        ```
+
+    ??? example "With `"metaxy/partition"` and `"metaxy/feature"`
+        ```py
+        asset_spec = dg.AssetSpec(
+            key="my_asset",
+            metadata={"metaxy/feature": "my/feature/key", "metaxy/partition": "my/partition"},
+        )
+        asset_spec = mxd.metaxify()(asset_spec)
+        ```
+
     """
 
     key: dg.AssetKey | None
