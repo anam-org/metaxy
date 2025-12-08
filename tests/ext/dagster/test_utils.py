@@ -11,13 +11,13 @@ import metaxy.ext.dagster as mxd
 
 
 @pytest.fixture
-def metadata_store() -> mx.MetadataStore:
+def metadata_store(metaxy_config: mx.MetaxyConfig) -> mx.MetadataStore:
     """Get the MetadataStore from the current config."""
-    return mx.MetaxyConfig.get().get_store("dev")
+    return metaxy_config.get_store("dev")
 
 
 @pytest.fixture
-def feature_a() -> type[mx.BaseFeature]:
+def feature_a(metaxy_config: mx.MetaxyConfig) -> type[mx.BaseFeature]:
     """Create feature A (no dependencies)."""
     spec = mx.FeatureSpec(
         key=["test", "utils", "a"],
@@ -32,7 +32,9 @@ def feature_a() -> type[mx.BaseFeature]:
 
 
 @pytest.fixture
-def feature_b(feature_a: type[mx.BaseFeature]) -> type[mx.BaseFeature]:
+def feature_b(
+    metaxy_config: mx.MetaxyConfig, feature_a: type[mx.BaseFeature]
+) -> type[mx.BaseFeature]:
     """Create feature B (depends on A)."""
     spec = mx.FeatureSpec(
         key=["test", "utils", "b"],
@@ -48,7 +50,9 @@ def feature_b(feature_a: type[mx.BaseFeature]) -> type[mx.BaseFeature]:
 
 
 @pytest.fixture
-def feature_c(feature_b: type[mx.BaseFeature]) -> type[mx.BaseFeature]:
+def feature_c(
+    metaxy_config: mx.MetaxyConfig, feature_b: type[mx.BaseFeature]
+) -> type[mx.BaseFeature]:
     """Create feature C (depends on B, so transitively on A)."""
     spec = mx.FeatureSpec(
         key=["test", "utils", "c"],
@@ -484,7 +488,9 @@ class TestPartitionedAssets:
         return dg.StaticPartitionsDefinition(["2024-01-01", "2024-01-02"])
 
     @pytest.fixture
-    def partitioned_feature(self) -> type[mx.BaseFeature]:
+    def partitioned_feature(
+        self, metaxy_config: mx.MetaxyConfig
+    ) -> type[mx.BaseFeature]:
         """Create a feature with a partition column."""
         spec = mx.FeatureSpec(
             key=["test", "utils", "partitioned"],
@@ -868,7 +874,9 @@ class TestPartitionedMultiAssetIntegration:
         return dg.StaticPartitionsDefinition(["2024-01-01", "2024-01-02"])
 
     @pytest.fixture
-    def partitioned_feature_x(self) -> type[mx.BaseFeature]:
+    def partitioned_feature_x(
+        self, metaxy_config: mx.MetaxyConfig
+    ) -> type[mx.BaseFeature]:
         """Create partitioned feature X."""
         spec = mx.FeatureSpec(
             key=["test", "utils", "partitioned_x"],
@@ -883,7 +891,9 @@ class TestPartitionedMultiAssetIntegration:
 
     @pytest.fixture
     def partitioned_feature_y(
-        self, partitioned_feature_x: type[mx.BaseFeature]
+        self,
+        metaxy_config: mx.MetaxyConfig,
+        partitioned_feature_x: type[mx.BaseFeature],
     ) -> type[mx.BaseFeature]:
         """Create partitioned feature Y (depends on X)."""
         spec = mx.FeatureSpec(
