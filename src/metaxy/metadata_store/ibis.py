@@ -11,6 +11,7 @@ from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, cast
 
+import ibis
 import narwhals as nw
 from narwhals.typing import Frame
 from pydantic import Field
@@ -298,6 +299,11 @@ class IbisMetadataStore(MetadataStore, ABC):
             StoreNotOpenError: If store is not open
         """
         return self.ibis_conn
+
+    def _execute_raw_sql(self, sql: str) -> Any:
+        """Run raw SQL on the underlying backend."""
+        backend = self.conn
+        return cast(Any, backend).raw_sql(sql)
 
     @contextmanager
     def open(self, mode: AccessMode = "read") -> Iterator[Self]:
