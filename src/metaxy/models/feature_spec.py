@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Annotated, Any, TypeAlias, overload
 import narwhals as nw
 import pydantic
 from pydantic import BeforeValidator
-from pydantic.types import JsonValue
 from typing_extensions import Self
 
 from metaxy.models.bases import FrozenBaseModel
@@ -200,7 +199,7 @@ class FeatureSpec(FrozenBaseModel):
         default_factory=LineageRelationship.identity,
         description="Lineage relationship of this feature.",
     )
-    metadata: dict[str, JsonValue] = pydantic.Field(
+    metadata: dict[str, Any] = pydantic.Field(
         default_factory=dict,
         description="Metadata attached to this feature.",
     )
@@ -216,7 +215,7 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[FeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             lineage: LineageRelationship | None = None,
-            metadata: Mapping[str, JsonValue] | None = None,
+            metadata: dict[str, Any] | None = None,
             **kwargs: Any,
         ) -> None: ...
 
@@ -230,7 +229,7 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             lineage: LineageRelationship | None = None,
-            metadata: Mapping[str, JsonValue] | None = None,
+            metadata: dict[str, Any] | None = None,
             **kwargs: Any,
         ) -> None: ...
 
@@ -243,7 +242,7 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[FeatureDep] | list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             lineage: LineageRelationship | None = None,
-            metadata: Mapping[str, JsonValue] | None = None,
+            metadata: dict[str, Any] | None = None,
             **kwargs: Any,
         ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
 
