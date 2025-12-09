@@ -13,7 +13,11 @@ import polars as pl
 
 import metaxy as mx
 from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
-from metaxy.models.constants import ALL_SYSTEM_COLUMNS, SYSTEM_COLUMNS_WITH_LINEAGE
+from metaxy.models.constants import (
+    ALL_SYSTEM_COLUMNS,
+    METAXY_CREATED_AT,
+    SYSTEM_COLUMNS_WITH_LINEAGE,
+)
 
 
 def build_column_schema(feature_cls: type[mx.BaseFeature]) -> dg.TableSchema:
@@ -280,6 +284,79 @@ def _get_id_column_mapping(
     return mapping
 
 
+def _collect_tail(lazy_df: nw.LazyFrame[Any], n_rows: int) -> pl.DataFrame:
+    """Collect the last N rows from a LazyFrame.
+
+    Handles both Polars and Ibis backends:
+    - Polars: Uses .tail() directly
+    - Ibis: Uses sort + head since tail() is not available
+
+    For backends without tail(), we sort by `metaxy_created_at` (which always
+    exists in Metaxy feature tables) to get the most recent rows.
+
+    Args:
+        lazy_df: A narwhals LazyFrame to collect from.
+        n_rows: Number of rows to collect from the end.
+
+    Returns:
+        A Polars DataFrame containing the last n_rows.
+    """
+    if hasattr(
+        lazy_df._compliant_frame, "tail"
+    ):  # there is no better way to check whether .tail is supported :)
+        # Polars and other backends that support tail()
+        return lazy_df.tail(n_rows).collect().to_polars()
+    else:
+        # For backends without tail() (e.g., Ibis), use sort + head to simulate it
+        # Sort descending by metaxy_created_at (latest first), take head(n_rows),
+        # then sort ascending to restore chronological order
+        lazy_df = _cast_json_columns_to_string(lazy_df)
+        return (
+            lazy_df.sort(METAXY_CREATED_AT, descending=True)
+            .head(n_rows)
+            .sort(METAXY_CREATED_AT)
+            .collect()
+            .to_polars()
+        )
+
+
+def _cast_json_columns_to_string(lazy_df: nw.LazyFrame[Any]) -> nw.LazyFrame[Any]:
+    """Cast JSON columns to strings for PyArrow compatibility.
+
+    ClickHouse's JSON type causes PyArrow conversion errors because the driver
+    returns dict objects when PyArrow expects bytes/strings. This function
+    casts JSON columns to strings at the Ibis level before collection.
+
+    Args:
+        lazy_df: A narwhals LazyFrame wrapping an Ibis table.
+
+    Returns:
+        The LazyFrame with JSON columns cast to strings.
+    """
+    if lazy_df.implementation != nw.Implementation.IBIS:
+        return lazy_df
+
+    import ibis.expr.datatypes as dt
+
+    # Get the native Ibis table
+    ibis_table = lazy_df.to_native()
+    schema = ibis_table.schema()
+
+    # Find JSON columns
+    json_columns = [
+        name for name, dtype in schema.items() if isinstance(dtype, dt.JSON)
+    ]
+
+    if not json_columns:
+        return lazy_df
+
+    # Cast JSON columns to string
+    casts = {col: ibis_table[col].cast("string") for col in json_columns}
+    ibis_table = ibis_table.mutate(**casts)
+
+    return nw.from_native(ibis_table, eager_only=False)
+
+
 def build_table_preview_metadata(
     lazy_df: nw.LazyFrame[Any],
     schema: dg.TableSchema,
@@ -308,8 +385,10 @@ def build_table_preview_metadata(
         This is automatically injected by [`MetaxyIOManager`][metaxy.ext.dagster.io_manager.MetaxyIOManager]
     """
     # Collect the last n_rows from the LazyFrame
-    collected_df = lazy_df.tail(n_rows).collect()
-    df_polars: pl.DataFrame = collected_df.to_native()  # pyright: ignore[reportAssignmentType]
+    # .tail() is not implemented for Ibis lazy frames in Narwhals, since it's often undefined
+    # for most SQL engines. See https://github.com/narwhals-dev/narwhals/issues/2389
+    # For Ibis backends, we use with_row_index + filter to get the last N rows.
+    df_polars = _collect_tail(lazy_df, n_rows)
 
     # Handle empty DataFrames
     if df_polars.is_empty():

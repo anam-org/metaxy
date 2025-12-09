@@ -273,3 +273,79 @@ def test_clickhouse_config_with_fallback_stores(
 
     with dev_store.open("write"):
         assert dev_store._is_open
+
+
+def test_clickhouse_json_column_roundtrip(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test if JSON columns cause PyArrow conversion issues.
+
+    ClickHouse's JSON type causes PyArrow conversion errors because the driver
+    returns dict objects when PyArrow expects bytes/strings. The _collect_tail
+    function casts JSON columns to strings to work around this.
+
+    Args:
+        clickhouse_db: Connection string fixture
+        test_graph: Feature graph fixture (for context)
+        test_features: Dict with test feature classes
+    """
+    import narwhals as nw
+
+    from metaxy.ext.dagster.table_metadata import _collect_tail
+
+    table_prefix = "json_test_"
+    table_name = f"{table_prefix}test_stores__upstream_a"
+
+    with ClickHouseMetadataStore(
+        clickhouse_db, auto_create_tables=False, table_prefix=table_prefix
+    ) as store:
+        conn = store.conn
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with JSON column (ClickHouse's native JSON type)
+        conn.raw_sql(f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                metaxy_provenance_by_field String,
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field String,
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(3, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String,
+                extra_json JSON
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """)
+
+        # Insert data with JSON via SQL
+        conn.raw_sql(f"""
+            INSERT INTO {table_name} (
+                sample_uid,
+                metaxy_provenance_by_field,
+                metaxy_provenance,
+                metaxy_feature_version,
+                metaxy_snapshot_version,
+                metaxy_data_version_by_field,
+                metaxy_data_version,
+                metaxy_created_at,
+                metaxy_materialization_id,
+                metaxy_feature_spec_version,
+                extra_json
+            ) VALUES
+            (1, 'pbf1', 'p1', 'v1', 'sv1', 'dvbf1', 'dv1', now(), 'm1', 's1', '{{"key": "value1"}}'),
+            (2, 'pbf2', 'p2', 'v1', 'sv1', 'dvbf2', 'dv2', now(), 'm1', 's1', '{{"key": "value2"}}')
+        """)
+
+        # Read back via Ibis table directly (not through store.read_metadata)
+        table = conn.table(table_name)
+        lazy_df = nw.from_native(table, eager_only=False)
+
+        # Try to collect - does JSON column cause issues?
+        result = _collect_tail(lazy_df, n_rows=2)
+        assert len(result) == 2
+
+        conn.drop_table(table_name)

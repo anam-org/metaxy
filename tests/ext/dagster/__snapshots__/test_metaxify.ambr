@@ -1,21 +1,44 @@
 # serializer version: 1
-# name: TestMetaxifyCodeVersion.test_metaxify_appends_to_existing_code_version
+# name: TestMetaxifyCodeVersion.test_metaxify_appends_to_existing_code_version[clickhouse]
   'v1.0.0,metaxy:16616c823b97d8b6a52db066bd0282ba9adf0e6797d7be0e4061a202ae7bd469'
 # ---
-# name: TestMetaxifyCodeVersion.test_metaxify_asset_spec_injects_code_version
+# name: TestMetaxifyCodeVersion.test_metaxify_appends_to_existing_code_version[delta]
+  'v1.0.0,metaxy:16616c823b97d8b6a52db066bd0282ba9adf0e6797d7be0e4061a202ae7bd469'
+# ---
+# name: TestMetaxifyCodeVersion.test_metaxify_asset_spec_injects_code_version[clickhouse]
   'metaxy:16616c823b97d8b6a52db066bd0282ba9adf0e6797d7be0e4061a202ae7bd469'
 # ---
-# name: TestMetaxifyCodeVersion.test_metaxify_injects_code_version
+# name: TestMetaxifyCodeVersion.test_metaxify_asset_spec_injects_code_version[delta]
   'metaxy:16616c823b97d8b6a52db066bd0282ba9adf0e6797d7be0e4061a202ae7bd469'
 # ---
-# name: TestMetaxifyDescription.test_metaxify_asset_spec_injects_description
+# name: TestMetaxifyCodeVersion.test_metaxify_injects_code_version[clickhouse]
+  'metaxy:16616c823b97d8b6a52db066bd0282ba9adf0e6797d7be0e4061a202ae7bd469'
+# ---
+# name: TestMetaxifyCodeVersion.test_metaxify_injects_code_version[delta]
+  'metaxy:16616c823b97d8b6a52db066bd0282ba9adf0e6797d7be0e4061a202ae7bd469'
+# ---
+# name: TestMetaxifyDescription.test_metaxify_asset_spec_injects_description[clickhouse]
   '''
   This is the feature documentation.
   
   It describes what this feature does.
   '''
 # ---
-# name: TestMetaxifyDescription.test_metaxify_injects_description_from_docstring
+# name: TestMetaxifyDescription.test_metaxify_asset_spec_injects_description[delta]
+  '''
+  This is the feature documentation.
+  
+  It describes what this feature does.
+  '''
+# ---
+# name: TestMetaxifyDescription.test_metaxify_injects_description_from_docstring[clickhouse]
+  '''
+  This is the feature documentation.
+  
+  It describes what this feature does.
+  '''
+# ---
+# name: TestMetaxifyDescription.test_metaxify_injects_description_from_docstring[delta]
   '''
   This is the feature documentation.
   
