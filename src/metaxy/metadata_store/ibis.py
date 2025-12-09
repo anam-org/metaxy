@@ -398,14 +398,17 @@ class IbisMetadataStore(MetadataStore, ABC):
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
+        table_name = self.get_table_name(feature_key)
+
+        # Apply backend-specific transformations before writing
+        df = self.transform_before_write(df, feature_key, table_name)
+
         if df.implementation == nw.Implementation.IBIS:
             df_to_insert = df.to_native()  # Ibis expression
         else:
             from metaxy._utils import collect_to_polars
 
             df_to_insert = collect_to_polars(df)  # Polars DataFrame
-
-        table_name = self.get_table_name(feature_key)
 
         try:
             self.conn.insert(table_name, obj=df_to_insert)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
@@ -482,6 +485,9 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Get Ibis table reference
         table = self.conn.table(table_name)
 
+        # Apply backend-specific transformations (e.g., cast JSON columns for ClickHouse)
+        table = self.transform_after_read(table, feature_key)
+
         # Wrap Ibis table with Narwhals (stays lazy in SQL)
         native_frame = nw.from_native(table, eager_only=False)
         nw_lazy: nw.LazyFrame[Any] = cast(nw.LazyFrame[Any], cast(object, native_frame))
@@ -503,6 +509,47 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
         return nw_lazy
+
+    def transform_after_read(
+        self, table: "ibis.Table", feature_key: "FeatureKey"
+    ) -> "ibis.Table":
+        """Transform Ibis table before wrapping with Narwhals.
+
+        Override in subclasses to apply backend-specific transformations.
+
+        !!! example
+            ClickHouse needs to cast JSON columns to Struct for
+            PyArrow compatibility.
+
+        Args:
+            table: Ibis table reference
+            feature_key: The feature key being read (use to get field names)
+
+        Returns:
+            Transformed Ibis table (default: unchanged)
+        """
+        return table
+
+    def transform_before_write(
+        self, df: Frame, feature_key: "FeatureKey", table_name: str
+    ) -> Frame:
+        """Transform DataFrame before writing to the store.
+
+        Override in subclasses to apply backend-specific transformations.
+
+        !!! example
+            ClickHouse needs to convert Polars Struct columns to
+            Map-compatible format when the table has Map columns.
+
+        Args:
+            df: Narwhals DataFrame to be written
+            feature_key: The feature key being written to
+            table_name: The target table name
+
+        Returns:
+            Transformed DataFrame (default: unchanged)
+        """
+        return df
 
     def _can_compute_native(self) -> bool:
         """
