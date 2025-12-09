@@ -13,7 +13,10 @@ import polars as pl
 
 import metaxy as mx
 from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
-from metaxy.models.constants import ALL_SYSTEM_COLUMNS, SYSTEM_COLUMNS_WITH_LINEAGE
+from metaxy.models.constants import (
+    ALL_SYSTEM_COLUMNS,
+    SYSTEM_COLUMNS_WITH_LINEAGE,
+)
 
 
 def build_column_schema(feature_cls: type[mx.BaseFeature]) -> dg.TableSchema:
