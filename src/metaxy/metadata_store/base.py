@@ -9,7 +9,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
 import narwhals as nw
-from narwhals.typing import Frame, IntoFrame
+from narwhals.typing import Frame, FrameT, IntoFrame
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
@@ -528,6 +528,108 @@ class MetadataStore(ABC):
                 if isinstance(removed, nw.LazyFrame)
                 else removed,
             )
+
+    def compute_provenance(
+        self,
+        feature: CoercibleToFeatureKey,
+        df: FrameT,
+    ) -> FrameT:
+        """Compute provenance columns for a DataFrame with pre-joined upstream data.
+
+        !!! note
+            This method may be useful in very rare cases.
+            Rely on [`MetadataStore.resolve_update`][metaxy.metadata_store.base.MetadataStore.resolve_update] instead.
+
+        Use this method when you perform custom joins outside of Metaxy's auto-join
+        system but still want Metaxy to compute provenance. The method computes
+        metaxy_provenance_by_field, metaxy_provenance, metaxy_data_version_by_field,
+        and metaxy_data_version columns based on the upstream metadata.
+
+        !!! info
+            The input DataFrame must contain the renamed metaxy_data_version_by_field
+            columns from each upstream feature. The naming convention follows the pattern
+            `metaxy_data_version_by_field__<feature_key.to_column_suffix()>`. For example, for an
+            upstream feature with key `["video", "raw"]`, the column should be named
+            `metaxy_data_version_by_field__video_raw`.
+
+        Args:
+            feature: The feature to compute provenance for.
+            df: A DataFrame containing pre-joined upstream data with renamed
+                metaxy_data_version_by_field columns from each upstream feature.
+
+        Returns:
+            The input DataFrame with provenance columns added. Returns the same
+            frame type as the input, either an eager DataFrame or a LazyFrame.
+
+        Raises:
+            StoreNotOpenError: If the store is not open.
+            ValueError: If required upstream `metaxy_data_version_by_field` columns
+                are missing from the DataFrame.
+
+        Example:
+            ```py
+
+                # Read upstream metadata
+                video_df = store.read_metadata(VideoFeature).collect()
+                audio_df = store.read_metadata(AudioFeature).collect()
+
+                # Rename data_version_by_field columns to the expected convention
+                video_df = video_df.rename({
+                    "metaxy_data_version_by_field": "metaxy_data_version_by_field__video_raw"
+                })
+                audio_df = audio_df.rename({
+                    "metaxy_data_version_by_field": "metaxy_data_version_by_field__audio_raw"
+                })
+
+                # Perform custom join
+                joined = video_df.join(audio_df, on="sample_uid", how="inner")
+
+                # Compute provenance
+                with_provenance = store.compute_provenance(MyFeature, joined)
+
+                # Pass to resolve_update
+                increment = store.resolve_update(MyFeature, samples=with_provenance)
+            ```
+        """
+        self._check_open()
+
+        feature_key = self._resolve_feature_key(feature)
+        graph = current_graph()
+        plan = graph.get_feature_plan(feature_key)
+
+        # Use native implementation if DataFrame matches, otherwise fall back to Polars
+        implementation = self.native_implementation()
+        if df.implementation != implementation:
+            implementation = nw.Implementation.POLARS
+            df = switch_implementation_to_polars(df)
+
+        with self.create_versioning_engine(
+            plan=plan, implementation=implementation
+        ) as engine:
+            # Validate required upstream columns exist
+            expected_columns = {
+                dep.feature: engine.get_renamed_data_version_by_field_col(dep.feature)
+                for dep in (plan.feature_deps or [])
+            }
+
+            df_columns = set(df.collect_schema().names())
+            missing_columns = [
+                f"{col} (from upstream feature {key.to_string()})"
+                for key, col in expected_columns.items()
+                if col not in df_columns
+            ]
+
+            if missing_columns:
+                raise ValueError(
+                    f"DataFrame is missing required upstream columns for computing "
+                    f"provenance of feature {feature_key.to_string()}. "
+                    f"Missing columns: {missing_columns}. "
+                    f"Make sure to rename metaxy_data_version_by_field columns from "
+                    f"each upstream feature using the pattern "
+                    f"metaxy_data_version_by_field__<feature_key.table_name>."
+                )
+
+            return engine.compute_provenance_columns(df, hash_algo=self.hash_algorithm)
 
     def read_metadata(
         self,
