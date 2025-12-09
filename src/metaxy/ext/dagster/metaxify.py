@@ -43,8 +43,6 @@ class metaxify:
         key_prefix: Prefix to prepend to the resolved asset key. Also applied to upstream
             dependency keys. Cannot be used with `key`.
         inject_metaxy_kind: Whether to inject `"metaxy"` kind into asset kinds.
-            Currently, kinds count is limited by 3, and `metaxify` will skip kind injection
-            if there are already 3 kinds on the asset.
         inject_code_version: Whether to inject the Metaxy feature code version into the asset's
             code version. The version is appended in the format `metaxy:<version>`.
         set_description: Whether to set the asset description from the feature class docstring
@@ -410,7 +408,7 @@ def _metaxify_spec(
 
     # Build kinds
     kinds_to_add: set[str] = set()
-    if inject_metaxy_kind and len(spec.kinds) < 3:
+    if inject_metaxy_kind:
         kinds_to_add.add(DAGSTER_METAXY_KIND)
 
     # Extract dagster attributes (excluding asset_key which is handled separately)
