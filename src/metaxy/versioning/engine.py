@@ -449,6 +449,118 @@ class VersioningEngine(ABC):
 
         return df
 
+    def compute_provenance_columns(
+        self,
+        df: FrameT,
+        hash_algo: HashAlgorithm,
+    ) -> FrameT:
+        """Compute provenance columns for a pre-joined DataFrame.
+
+        This method computes metaxy_provenance_by_field, metaxy_provenance,
+        metaxy_data_version_by_field, and metaxy_data_version columns from a
+        DataFrame that already contains the renamed upstream metaxy_data_version_by_field
+        columns. Use this when you have performed custom joins outside of Metaxy's
+        auto-join system.
+
+        The input DataFrame must contain columns named following the pattern
+        metaxy_data_version_by_field__<feature_key_parts_joined_by_underscore>
+        for each upstream feature dependency. For example, if the upstream feature
+        has key ["video", "raw"], the column should be named
+        metaxy_data_version_by_field__video_raw.
+
+        Args:
+            df: A Narwhals DataFrame or LazyFrame containing pre-joined upstream
+                data with renamed metaxy_data_version_by_field columns.
+            hash_algo: The hash algorithm to use for computing provenance hashes.
+
+        Returns:
+            The input DataFrame with provenance columns added. The renamed upstream
+            metaxy_data_version_by_field columns are dropped from the result.
+        """
+        hash_length = MetaxyConfig.get().hash_truncation_length or 64
+
+        # Build concatenation columns for each field
+        temp_concat_cols: dict[str, str] = {}
+        field_key_strs: dict[FieldKey, str] = {}
+
+        # Get field provenance expressions
+        field_provenance_exprs = self.get_field_provenance_exprs()
+
+        for field_spec in self.plan.feature.fields:
+            field_key_str = field_spec.key.to_struct_key()
+            field_key_strs[field_spec.key] = field_key_str
+            temp_col_name = f"__concat_{field_key_str}"
+            temp_concat_cols[field_key_str] = temp_col_name
+
+            # Build concatenation components
+            components: list[nw.Expr] = [
+                nw.lit(field_spec.key.to_string()),
+                nw.lit(str(field_spec.code_version)),
+            ]
+
+            # Add upstream provenance values in deterministic order
+            parent_field_exprs = field_provenance_exprs.get(field_spec.key, {})
+            for fq_field_key in sorted(parent_field_exprs.keys()):
+                components.append(nw.lit(fq_field_key.to_string()))
+                components.append(parent_field_exprs[fq_field_key])
+
+            concat_expr = nw.concat_str(components, separator="|")
+            df = df.with_columns(concat_expr.alias(temp_col_name))
+
+        # Hash each concatenation column
+        temp_hash_cols: dict[str, str] = {}
+        for field_key_str, concat_col in temp_concat_cols.items():
+            hash_col_name = f"__hash_{field_key_str}"
+            temp_hash_cols[field_key_str] = hash_col_name
+
+            df = self.hash_string_column(
+                df, concat_col, hash_col_name, hash_algo
+            ).with_columns(nw.col(hash_col_name).str.slice(0, hash_length))
+
+        # Build provenance_by_field struct
+        df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)
+
+        # Compute sample-level provenance hash
+        df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)
+
+        # Drop temporary columns
+        temp_columns_to_drop = list(temp_concat_cols.values()) + list(
+            temp_hash_cols.values()
+        )
+        df = df.drop(*temp_columns_to_drop)
+
+        # Drop renamed upstream system columns
+        current_columns = df.collect_schema().names()
+        columns_to_drop = []
+        for transformer in self.feature_transformers_by_key.values():
+            renamed_prov_col = transformer.renamed_provenance_col
+            renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
+            renamed_data_version_by_field_col = (
+                transformer.renamed_data_version_by_field_col
+            )
+            if renamed_prov_col in current_columns:
+                columns_to_drop.append(renamed_prov_col)
+            if renamed_prov_by_field_col in current_columns:
+                columns_to_drop.append(renamed_prov_by_field_col)
+            if renamed_data_version_by_field_col in current_columns:
+                columns_to_drop.append(renamed_data_version_by_field_col)
+
+        if columns_to_drop:
+            df = df.drop(*columns_to_drop)
+
+        # Add data_version columns (default to provenance values)
+        from metaxy.models.constants import (
+            METAXY_DATA_VERSION,
+            METAXY_DATA_VERSION_BY_FIELD,
+        )
+
+        df = df.with_columns(
+            nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+            nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
+        )
+
+        return df
+
     def hash_struct_version_column(
         self,
         df: FrameT,
