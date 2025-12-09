@@ -149,23 +149,25 @@ class TestMetaxifyBasic:
         asset_spec = list(my_asset.specs)[0]
         assert DAGSTER_METAXY_KIND not in asset_spec.kinds
 
-    def test_metaxify_skips_kind_when_already_3_kinds(
+    def test_metaxify_adds_kind_with_existing_kinds(
         self, upstream_feature: type[mx.BaseFeature]
     ):
-        """Test that kind injection is skipped when asset already has 3 kinds."""
+        """Test that kind injection works when asset already has some kinds."""
 
         @metaxify()
         @dg.asset(
             metadata={"metaxy/feature": "test/upstream"},
-            kinds={"python", "sql", "dbt"},
+            kinds={"python", "sql"},
         )
         def my_asset():
             pass
 
         asset_spec = list(my_asset.specs)[0]
-        # Should have original 3 kinds, not metaxy
+        # Should have original 2 kinds plus metaxy
         assert len(asset_spec.kinds) == 3
-        assert DAGSTER_METAXY_KIND not in asset_spec.kinds
+        assert DAGSTER_METAXY_KIND in asset_spec.kinds
+        assert "python" in asset_spec.kinds
+        assert "sql" in asset_spec.kinds
 
     def test_metaxify_injects_feature_info(
         self, upstream_feature: type[mx.BaseFeature]
