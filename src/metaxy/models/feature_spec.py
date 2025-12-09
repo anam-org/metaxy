@@ -329,7 +329,7 @@ class FeatureSpec(FrozenBaseModel):
         hasher = hashlib.sha256()
         hasher.update(spec_json.encode("utf-8"))
 
-        return hasher.hexdigest()
+        return truncate_hash(hasher.hexdigest())
 
 
 FeatureSpecWithIDColumns: TypeAlias = FeatureSpec

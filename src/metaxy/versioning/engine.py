@@ -12,6 +12,7 @@ from narwhals.typing import FrameT
 
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
+    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
@@ -139,8 +140,13 @@ class VersioningEngine(ABC):
 
         # Drop system columns that aren't needed for provenance calculation
         # Keep only METAXY_PROVENANCE and METAXY_PROVENANCE_BY_FIELD
-        # Drop METAXY_FEATURE_VERSION and METAXY_SNAPSHOT_VERSION to avoid collisions
-        columns_to_drop = [METAXY_FEATURE_VERSION, METAXY_SNAPSHOT_VERSION]
+        # Drop METAXY_FEATURE_VERSION, METAXY_SNAPSHOT_VERSION, and METAXY_FEATURE_SPEC_VERSION
+        # to avoid collisions when joining multiple upstream features
+        columns_to_drop = [
+            METAXY_FEATURE_VERSION,
+            METAXY_SNAPSHOT_VERSION,
+            METAXY_FEATURE_SPEC_VERSION,
+        ]
 
         for feature_key, renamed_df in dfs.items():
             cols = renamed_df.df.collect_schema().names()
