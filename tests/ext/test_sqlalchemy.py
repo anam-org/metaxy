@@ -190,6 +190,43 @@ def test_get_metaxy_system_metadata():
         assert "metaxy_system__events" in metadata.tables
 
 
+def test_feature_versions_table_columns_match_polars_schema():
+    """Regression test: SQLAlchemy feature_versions table must have all columns from Polars schema.
+
+    This test ensures that the SQLAlchemy table definition in create_system_tables()
+    stays in sync with FEATURE_VERSIONS_SCHEMA defined in models.py.
+    Missing columns (like feature_spec, feature_class_path) would cause runtime errors
+    when writing to the database.
+    """
+    from metaxy.metadata_store.system.models import FEATURE_VERSIONS_SCHEMA
+
+    config = MetaxyConfig(
+        project="test",
+        store="test_store",
+        stores={  # pyright: ignore[reportArgumentType]
+            "test_store": {
+                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "config": {"database": ":memory:"},
+            }
+        },
+    )
+
+    with config.use():
+        store = config.get_store(expected_type=IbisMetadataStore)
+        _, metadata = get_system_slqa_metadata(store)
+
+        feature_versions_table = metadata.tables["metaxy_system__feature_versions"]
+        sqla_column_names = {col.name for col in feature_versions_table.columns}
+        polars_column_names = set(FEATURE_VERSIONS_SCHEMA.keys())
+
+        # All Polars schema columns must exist in SQLAlchemy table
+        missing_columns = polars_column_names - sqla_column_names
+        assert not missing_columns, (
+            f"SQLAlchemy feature_versions table is missing columns: {missing_columns}. "
+            f"Update create_system_tables() in plugin.py to include these columns."
+        )
+
+
 def test_get_features_sqlalchemy_metadata_filtered_by_project(config_project_a):
     """Test that user features are filtered by project."""
     from sqlmodel import SQLModel

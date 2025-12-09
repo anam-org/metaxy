@@ -66,7 +66,9 @@ def create_system_tables(
         Column(METAXY_SNAPSHOT_VERSION, String, index=True),
         # Metadata columns
         Column("recorded_at", DateTime, index=True),
-        Column("feature_schema", String),  # JSON string
+        Column("feature_spec", String),  # Full serialized FeatureSpec as JSON string
+        Column("feature_schema", String),  # Full Pydantic model schema as JSON string
+        Column("feature_class_path", String),  # Python import path to Feature class
         Column("tags", String, default="{}"),  # JSON string
         # Additional indexes
         Index(
