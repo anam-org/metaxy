@@ -67,6 +67,9 @@ lancedb = [
   "lancedb>=0.15.0",
   "polars>=1.36.1",
 ]
+vortex = [
+  "vortex-data>=0.56.0; python_version >= '3.11'",
+]
 
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
@@ -149,7 +152,7 @@ extend-select = [
 [tool.ruff.lint.flake8-tidy-imports]
 # Ban certain modules from being imported at module level, instead requiring
 # that they're imported lazily (e.g., within a function definition).
-banned-module-level-imports = ["ibis", "duckdb"]
+banned-module-level-imports = ["ibis", "duckdb", "vortex"]
 
 [tool.uv.workspace]
 members = [
@@ -242,6 +245,9 @@ markers = [
   "inmemory: InMemory store tests",
   "duckdb: DuckDB store tests",
   "clickhouse: ClickHouse store tests",
+  "delta: Delta Lake store tests",
+  "lancedb: LanceDB store tests",
+  "vortex: Vortex store tests",
   "ibis: Ibis-based store tests (DuckDB, ClickHouse)",
   "native: Stores with native compute capabilities",
   "polars: Stores using Polars for compute",
