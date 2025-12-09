@@ -169,6 +169,18 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         self._log_output_metadata(context)
 
     def _log_output_metadata(self, context: dg.OutputContext):
+        # Check if expensive runtime metadata was already logged (e.g., via generate_materialize_results)
+        # dagster/row_count requires database reads and is always set by build_runtime_feature_metadata,
+        # so we use it as a sentinel to detect if metadata was already computed
+        # Using step_context.get_output_metadata() to check for existing metadata
+        # See: https://github.com/dagster-io/dagster/issues/17923
+        existing_metadata = context.step_context.get_output_metadata(context.name)
+        if existing_metadata and "dagster/row_count" in existing_metadata:
+            context.log.debug(
+                "Skipping runtime metadata logging - already logged via MaterializeResult"
+            )
+            return
+
         with self.metadata_store:
             key = self._feature_key_from_context(context)
 
