@@ -127,18 +127,6 @@ def _get_store_sqlalchemy_url(
 
     Raises:
         ValueError: If sqlalchemy_url is empty
-
-    Example:
-        ```python
-        # Ibis store uses clickhouse://localhost:8443/default (HTTP)
-        # SQLAlchemy needs clickhouse+native:// on port 9000 for reflection
-        url = _get_store_sqlalchemy_url(
-            store,
-            protocol="clickhouse+native",
-            port=9000,
-        )
-        # Returns: clickhouse+native://localhost:9000/default
-        ```
     """
     if not store.sqlalchemy_url:
         raise ValueError("IbisMetadataStore has an empty `sqlalchemy_url`.")
@@ -206,8 +194,7 @@ def get_system_slqa_metadata(
         ValueError: If store's sqlalchemy_url is empty
 
     Note:
-        For ClickHouse, the `sqlalchemy_url` property already returns the native
-        protocol with port 9000, so you typically don't need to override these.
+        Metadata stores do their best at providing the correct `sqlalchemy_url`, so you typically don't need to modify the output of this function.
     """
     url = _get_store_sqlalchemy_url(store, protocol=protocol, port=port)
     metadata = _get_system_metadata(table_prefix=store._table_prefix)
@@ -367,8 +354,7 @@ def filter_feature_sqla_metadata(
         ImportError: If source_metadata is None and SQLModel is not installed
 
     Note:
-        For ClickHouse, the `sqlalchemy_url` property already returns the native
-        protocol with port 9000, so you typically don't need to override these.
+        Metadata stores do their best at providing the correct `sqlalchemy_url`, so you typically don't need to modify the output of this function.
 
     Example: Basic Usage
 
