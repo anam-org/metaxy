@@ -275,54 +275,60 @@ def test_clickhouse_config_with_fallback_stores(
         assert dev_store._is_open
 
 
-def test_clickhouse_json_column_roundtrip(
+def test_clickhouse_json_column_type(
     clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
 ) -> None:
-    """Test if JSON columns cause PyArrow conversion issues.
+    """Test that native ClickHouse JSON columns are handled correctly.
 
-    ClickHouse's JSON type causes PyArrow conversion errors because the driver
-    returns dict objects when PyArrow expects bytes/strings. The _collect_tail
-    function casts JSON columns to strings to work around this.
+    When tables are created via SQLModel/Alembic with sa_type=JSON, ClickHouse
+    creates native JSON columns. The ClickHouse driver returns dict objects for
+    these, which PyArrow cannot handle. The store casts them to String.
 
-    Args:
-        clickhouse_db: Connection string fixture
-        test_graph: Feature graph fixture (for context)
-        test_features: Dict with test feature classes
+    Note: We cast to String rather than Struct because ClickHouse's
+    String -> Tuple CAST expects tuple syntax `('v1', 'v2')`, not JSON
+    syntax `{"k": "v"}`. The JSON string can be parsed downstream if needed.
+
+    This test simulates production usage where tables are pre-created with
+    JSON columns (like metaxy_provenance_by_field, metaxy_data_version_by_field).
     """
-    import narwhals as nw
+    import json
 
-    from metaxy.ext.dagster.table_metadata import _collect_tail
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
 
-    table_prefix = "json_test_"
-    table_name = f"{table_prefix}test_stores__upstream_a"
-
-    with ClickHouseMetadataStore(
-        clickhouse_db, auto_create_tables=False, table_prefix=table_prefix
-    ) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
         conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
         if table_name in conn.list_tables():
             conn.drop_table(table_name)
 
-        # Create table with JSON column (ClickHouse's native JSON type)
-        conn.raw_sql(f"""
+        # Create table with native JSON columns (like SQLModel/Alembic would)
+        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+            f"""
             CREATE TABLE {table_name} (
                 sample_uid Int64,
-                metaxy_provenance_by_field String,
+                metaxy_provenance_by_field JSON,
                 metaxy_provenance String,
                 metaxy_feature_version String,
                 metaxy_snapshot_version String,
-                metaxy_data_version_by_field String,
+                metaxy_data_version_by_field JSON,
                 metaxy_data_version String,
-                metaxy_created_at DateTime64(3, 'UTC'),
+                metaxy_created_at DateTime64(6, 'UTC'),
                 metaxy_materialization_id String,
-                metaxy_feature_spec_version String,
-                extra_json JSON
+                metaxy_feature_spec_version String
             ) ENGINE = MergeTree()
             ORDER BY sample_uid
-        """)
+        """
+        )
 
-        # Insert data with JSON via SQL
-        conn.raw_sql(f"""
+        # Insert data with JSON values via SQL
+        # UpstreamFeatureA has fields: frames, audio
+        provenance_json = json.dumps({"frames": "hash1", "audio": "hash2"})
+        version_json = json.dumps({"frames": "v1", "audio": "v1"})
+        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+            f"""
             INSERT INTO {table_name} (
                 sample_uid,
                 metaxy_provenance_by_field,
@@ -333,19 +339,199 @@ def test_clickhouse_json_column_roundtrip(
                 metaxy_data_version,
                 metaxy_created_at,
                 metaxy_materialization_id,
-                metaxy_feature_spec_version,
-                extra_json
+                metaxy_feature_spec_version
             ) VALUES
-            (1, 'pbf1', 'p1', 'v1', 'sv1', 'dvbf1', 'dv1', now(), 'm1', 's1', '{{"key": "value1"}}'),
-            (2, 'pbf2', 'p2', 'v1', 'sv1', 'dvbf2', 'dv2', now(), 'm1', 's1', '{{"key": "value2"}}')
-        """)
+            (1, '{provenance_json}', 'prov1', 'v1', 'sv1', '{version_json}', 'dv1', now(), 'm1', 'fs1'),
+            (2, '{provenance_json}', 'prov2', 'v1', 'sv1', '{version_json}', 'dv2', now(), 'm1', 'fs1')
+        """
+        )
 
-        # Read back via Ibis table directly (not through store.read_metadata)
-        table = conn.table(table_name)
-        lazy_df = nw.from_native(table, eager_only=False)
+        # Read via read_metadata_in_store (no feature_version filter)
+        # This uses transform_after_read internally
+        # Without the fix, this would raise:
+        # "pyarrow.lib.ArrowTypeError: Expected bytes, got a 'dict' object"
+        read_result = store.read_metadata_in_store(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
 
-        # Try to collect - does JSON column cause issues?
-        result = _collect_tail(lazy_df, n_rows=2)
         assert len(result) == 2
+        assert set(result["sample_uid"].to_list()) == {1, 2}
+        # JSON columns are cast to String (not Struct, due to ClickHouse CAST limitations)
+        assert isinstance(result["metaxy_provenance_by_field"][0], str)
+        assert isinstance(result["metaxy_data_version_by_field"][0], str)
+        # The JSON string can be parsed if needed
+        parsed = json.loads(result["metaxy_provenance_by_field"][0])
+        assert "frames" in parsed
+        assert "audio" in parsed
 
+        # Clean up
+        conn.drop_table(table_name)
+
+
+def test_clickhouse_map_column_type(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test that ClickHouse Map(K,V) columns are converted to Struct on read.
+
+    When tables have Map(String, String) columns (common in ClickHouse for
+    key-value data), the store should convert them to Struct for compatibility
+    with Narwhals/Polars downstream processing.
+
+    This also tests the write path: Polars Struct columns should be converted
+    to Map-compatible format when inserting into tables with Map columns.
+    """
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with Map columns (alternative to JSON for key-value data)
+        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Insert data with Map values via SQL
+        # UpstreamFeatureA has fields: frames, audio
+        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+            f"""
+            INSERT INTO {table_name} (
+                sample_uid,
+                metaxy_provenance_by_field,
+                metaxy_provenance,
+                metaxy_feature_version,
+                metaxy_snapshot_version,
+                metaxy_data_version_by_field,
+                metaxy_data_version,
+                metaxy_created_at,
+                metaxy_materialization_id,
+                metaxy_feature_spec_version
+            ) VALUES
+            (1, {{'frames': 'hash1', 'audio': 'hash2'}}, 'prov1', 'v1', 'sv1', {{'frames': 'v1', 'audio': 'v1'}}, 'dv1', now(), 'm1', 'fs1'),
+            (2, {{'frames': 'hash3', 'audio': 'hash4'}}, 'prov2', 'v1', 'sv1', {{'frames': 'v2', 'audio': 'v2'}}, 'dv2', now(), 'm1', 'fs1')
+        """
+        )
+
+        # Read via read_metadata_in_store
+        # This uses transform_after_read which should convert Map to Struct
+        read_result = store.read_metadata_in_store(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
+
+        assert len(result) == 2
+        assert set(result["sample_uid"].to_list()) == {1, 2}
+
+        # Map columns should be converted to Struct (dict in Python)
+        provenance = result["metaxy_provenance_by_field"][0]
+        assert isinstance(provenance, dict), f"Expected dict, got {type(provenance)}"
+        assert "frames" in provenance
+        assert "audio" in provenance
+        assert provenance["frames"] == "hash1"
+        assert provenance["audio"] == "hash2"
+
+        # Clean up
+        conn.drop_table(table_name)
+
+
+def test_clickhouse_map_column_resolve_update_write_metadata(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test resolve_update and write_metadata with Map(String, String) columns.
+
+    This tests the full workflow that was failing in production:
+    1. Create table with Map columns
+    2. Call resolve_update with Polars DataFrame (has Struct columns)
+    3. Call write_metadata which should transform Struct -> JSON for Map insertion
+    4. Read back and verify data
+
+    The key issue was that Polars Struct -> pl.Object conversion failed because
+    Ibis doesn't know how to handle pl.Object type.
+    """
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with Map columns (the production schema)
+        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Create sample data with Struct columns (like production Polars DataFrame)
+        samples = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"frames": "hash1", "audio": "hash2"},
+                    {"frames": "hash3", "audio": "hash4"},
+                    {"frames": "hash5", "audio": "hash6"},
+                ],
+            }
+        )
+
+        # resolve_update should work (materializes to Polars for comparison)
+        increment = store.resolve_update(feature_cls, samples=samples)
+        assert increment is not None
+        assert len(increment.added) == 3
+        assert len(increment.changed) == 0
+        assert len(increment.removed) == 0
+
+        # write_metadata should work (Struct -> JSON string for Map columns)
+        # This is where the original error occurred: KeyError: Object
+        store.write_metadata(feature_cls, samples)
+
+        # Read back and verify
+        read_result = store.read_metadata_in_store(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
+
+        assert len(result) == 3
+        assert set(result["sample_uid"].to_list()) == {1, 2, 3}
+
+        # Map columns should be converted back to Struct (dict in Python)
+        provenance = result["metaxy_provenance_by_field"][0]
+        assert isinstance(provenance, dict), f"Expected dict, got {type(provenance)}"
+        assert "frames" in provenance
+        assert "audio" in provenance
+
+        # Clean up
         conn.drop_table(table_name)
