@@ -4381,7 +4381,12 @@
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#metaxy.models.constants.METAXY_FEATURE_VERSION">METAXY_FEATURE_VERSION</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.models.constants.METAXY_SNAPSHOT_VERSION&lt;/span&gt;
+  &lt;/span&gt;" href="#metaxy.models.constants.METAXY_FEATURE_VERSION">METAXY_FEATURE_VERSION</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.models.constants.METAXY_FEATURE_SPEC_VERSION&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.models.constants.METAXY_FEATURE_SPEC_VERSION">METAXY_FEATURE_SPEC_VERSION</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.models.constants.METAXY_SNAPSHOT_VERSION&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -4435,7 +4440,12 @@
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#metaxy.models.constants.METAXY_FEATURE_VERSION">METAXY_FEATURE_VERSION</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.models.constants.METAXY_SNAPSHOT_VERSION&lt;/span&gt;
+  &lt;/span&gt;" href="#metaxy.models.constants.METAXY_FEATURE_VERSION">METAXY_FEATURE_VERSION</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.models.constants.METAXY_FEATURE_SPEC_VERSION&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.models.constants.METAXY_FEATURE_SPEC_VERSION">METAXY_FEATURE_SPEC_VERSION</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.models.constants.METAXY_SNAPSHOT_VERSION&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -4565,22 +4575,22 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/constants.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a><a href="#__codelineno-0-90"><span class="linenos" data-linenos=" 90 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">is_system_column</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a><a href="#__codelineno-0-91"><span class="linenos" data-linenos=" 91 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a column name is a system-managed column.</span>
-</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><a href="#__codelineno-0-92"><span class="linenos" data-linenos=" 92 "></span></a>
-</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><a href="#__codelineno-0-93"><span class="linenos" data-linenos=" 93 "></span></a><span class="sd">    Args:</span>
-</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a><a href="#__codelineno-0-94"><span class="linenos" data-linenos=" 94 "></span></a><span class="sd">        name: Column name to check</span>
-</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a><a href="#__codelineno-0-95"><span class="linenos" data-linenos=" 95 "></span></a>
-</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><a href="#__codelineno-0-96"><span class="linenos" data-linenos=" 96 "></span></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><a href="#__codelineno-0-97"><span class="linenos" data-linenos=" 97 "></span></a><span class="sd">        True if the column is a system column, False otherwise</span>
-</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a><a href="#__codelineno-0-98"><span class="linenos" data-linenos=" 98 "></span></a>
-</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a><a href="#__codelineno-0-99"><span class="linenos" data-linenos=" 99 "></span></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a><a href="#__codelineno-0-100"><span class="linenos" data-linenos="100 "></span></a><span class="sd">        &gt;&gt;&gt; is_system_column(&quot;metaxy_feature_version&quot;)</span>
-</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a><a href="#__codelineno-0-101"><span class="linenos" data-linenos="101 "></span></a><span class="sd">        True</span>
-</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a><a href="#__codelineno-0-102"><span class="linenos" data-linenos="102 "></span></a><span class="sd">        &gt;&gt;&gt; is_system_column(&quot;my_column&quot;)</span>
-</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a><a href="#__codelineno-0-103"><span class="linenos" data-linenos="103 "></span></a><span class="sd">        False</span>
-</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a><a href="#__codelineno-0-104"><span class="linenos" data-linenos="104 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a><a href="#__codelineno-0-105"><span class="linenos" data-linenos="105 "></span></a>    <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ALL_SYSTEM_COLUMNS</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><a href="#__codelineno-0-92"><span class="linenos" data-linenos=" 92 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">is_system_column</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><a href="#__codelineno-0-93"><span class="linenos" data-linenos=" 93 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a column name is a system-managed column.</span>
+</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a><a href="#__codelineno-0-94"><span class="linenos" data-linenos=" 94 "></span></a>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a><a href="#__codelineno-0-95"><span class="linenos" data-linenos=" 95 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><a href="#__codelineno-0-96"><span class="linenos" data-linenos=" 96 "></span></a><span class="sd">        name: Column name to check</span>
+</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><a href="#__codelineno-0-97"><span class="linenos" data-linenos=" 97 "></span></a>
+</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a><a href="#__codelineno-0-98"><span class="linenos" data-linenos=" 98 "></span></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a><a href="#__codelineno-0-99"><span class="linenos" data-linenos=" 99 "></span></a><span class="sd">        True if the column is a system column, False otherwise</span>
+</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a><a href="#__codelineno-0-100"><span class="linenos" data-linenos="100 "></span></a>
+</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a><a href="#__codelineno-0-101"><span class="linenos" data-linenos="101 "></span></a><span class="sd">    Examples:</span>
+</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a><a href="#__codelineno-0-102"><span class="linenos" data-linenos="102 "></span></a><span class="sd">        &gt;&gt;&gt; is_system_column(&quot;metaxy_feature_version&quot;)</span>
+</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a><a href="#__codelineno-0-103"><span class="linenos" data-linenos="103 "></span></a><span class="sd">        True</span>
+</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a><a href="#__codelineno-0-104"><span class="linenos" data-linenos="104 "></span></a><span class="sd">        &gt;&gt;&gt; is_system_column(&quot;my_column&quot;)</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a><a href="#__codelineno-0-105"><span class="linenos" data-linenos="105 "></span></a><span class="sd">        False</span>
+</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a><a href="#__codelineno-0-106"><span class="linenos" data-linenos="106 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a><a href="#__codelineno-0-107"><span class="linenos" data-linenos="107 "></span></a>    <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ALL_SYSTEM_COLUMNS</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -4640,25 +4650,25 @@ each feature, so keeping them from upstream would cause conflicts.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/constants.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><a href="#__codelineno-0-108"><span class="linenos" data-linenos="108 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">is_droppable_system_column</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a><a href="#__codelineno-0-109"><span class="linenos" data-linenos="109 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a column should be dropped when joining upstream features.</span>
-</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><a href="#__codelineno-0-110"><span class="linenos" data-linenos="110 "></span></a>
-</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><a href="#__codelineno-0-111"><span class="linenos" data-linenos="111 "></span></a><span class="sd">    Droppable columns (feature_version, snapshot_version) are recalculated for</span>
-</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a><a href="#__codelineno-0-112"><span class="linenos" data-linenos="112 "></span></a><span class="sd">    each feature, so keeping them from upstream would cause conflicts.</span>
-</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a><a href="#__codelineno-0-113"><span class="linenos" data-linenos="113 "></span></a>
-</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a><a href="#__codelineno-0-114"><span class="linenos" data-linenos="114 "></span></a><span class="sd">    Args:</span>
-</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a><a href="#__codelineno-0-115"><span class="linenos" data-linenos="115 "></span></a><span class="sd">        name: Column name to check</span>
-</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a><a href="#__codelineno-0-116"><span class="linenos" data-linenos="116 "></span></a>
-</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a><a href="#__codelineno-0-117"><span class="linenos" data-linenos="117 "></span></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a><a href="#__codelineno-0-118"><span class="linenos" data-linenos="118 "></span></a><span class="sd">        True if the column should be dropped during joins, False otherwise</span>
-</span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a><a href="#__codelineno-0-119"><span class="linenos" data-linenos="119 "></span></a>
-</span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><a href="#__codelineno-0-120"><span class="linenos" data-linenos="120 "></span></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a><a href="#__codelineno-0-121"><span class="linenos" data-linenos="121 "></span></a><span class="sd">        &gt;&gt;&gt; is_droppable_system_column(&quot;metaxy_feature_version&quot;)</span>
-</span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><a href="#__codelineno-0-122"><span class="linenos" data-linenos="122 "></span></a><span class="sd">        True</span>
-</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a><a href="#__codelineno-0-123"><span class="linenos" data-linenos="123 "></span></a><span class="sd">        &gt;&gt;&gt; is_droppable_system_column(&quot;metaxy_provenance_by_field&quot;)</span>
-</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><a href="#__codelineno-0-124"><span class="linenos" data-linenos="124 "></span></a><span class="sd">        False</span>
-</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><a href="#__codelineno-0-125"><span class="linenos" data-linenos="125 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a><a href="#__codelineno-0-126"><span class="linenos" data-linenos="126 "></span></a>    <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_DROPPABLE_COLUMNS</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><a href="#__codelineno-0-110"><span class="linenos" data-linenos="110 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">is_droppable_system_column</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><a href="#__codelineno-0-111"><span class="linenos" data-linenos="111 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a column should be dropped when joining upstream features.</span>
+</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a><a href="#__codelineno-0-112"><span class="linenos" data-linenos="112 "></span></a>
+</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a><a href="#__codelineno-0-113"><span class="linenos" data-linenos="113 "></span></a><span class="sd">    Droppable columns (feature_version, snapshot_version) are recalculated for</span>
+</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a><a href="#__codelineno-0-114"><span class="linenos" data-linenos="114 "></span></a><span class="sd">    each feature, so keeping them from upstream would cause conflicts.</span>
+</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a><a href="#__codelineno-0-115"><span class="linenos" data-linenos="115 "></span></a>
+</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a><a href="#__codelineno-0-116"><span class="linenos" data-linenos="116 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a><a href="#__codelineno-0-117"><span class="linenos" data-linenos="117 "></span></a><span class="sd">        name: Column name to check</span>
+</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a><a href="#__codelineno-0-118"><span class="linenos" data-linenos="118 "></span></a>
+</span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a><a href="#__codelineno-0-119"><span class="linenos" data-linenos="119 "></span></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><a href="#__codelineno-0-120"><span class="linenos" data-linenos="120 "></span></a><span class="sd">        True if the column should be dropped during joins, False otherwise</span>
+</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a><a href="#__codelineno-0-121"><span class="linenos" data-linenos="121 "></span></a>
+</span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><a href="#__codelineno-0-122"><span class="linenos" data-linenos="122 "></span></a><span class="sd">    Examples:</span>
+</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a><a href="#__codelineno-0-123"><span class="linenos" data-linenos="123 "></span></a><span class="sd">        &gt;&gt;&gt; is_droppable_system_column(&quot;metaxy_feature_version&quot;)</span>
+</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><a href="#__codelineno-0-124"><span class="linenos" data-linenos="124 "></span></a><span class="sd">        True</span>
+</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><a href="#__codelineno-0-125"><span class="linenos" data-linenos="125 "></span></a><span class="sd">        &gt;&gt;&gt; is_droppable_system_column(&quot;metaxy_provenance_by_field&quot;)</span>
+</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a><a href="#__codelineno-0-126"><span class="linenos" data-linenos="126 "></span></a><span class="sd">        False</span>
+</span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a><a href="#__codelineno-0-127"><span class="linenos" data-linenos="127 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a><a href="#__codelineno-0-128"><span class="linenos" data-linenos="128 "></span></a>    <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_DROPPABLE_COLUMNS</span>
 </span></code></pre></div>
             </details>
     </div>
