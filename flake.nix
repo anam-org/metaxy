@@ -61,8 +61,8 @@
           );
         };
       in {
-        # Default shell with Python 3.10
-        default = mkPythonShell pkgs.python310;
+        # Default shell with Python 3.11
+        default = mkPythonShell pkgs.python311;
 
         # Individual shells for each Python version
         "python3.10" = mkPythonShell pkgs.python310;

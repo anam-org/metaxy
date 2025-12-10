@@ -235,6 +235,10 @@ nav:
           - integrations/metadata-stores/storage/delta/index.md
           - Configuration: integrations/metadata-stores/storage/delta/configuration.md
           - API: integrations/metadata-stores/storage/delta/api.md
+        - Vortex:
+          - integrations/metadata-stores/storage/vortex/index.md
+          - Configuration: integrations/metadata-stores/storage/vortex/configuration.md
+          - API: integrations/metadata-stores/storage/vortex/api.md
     - Plugins:
       - integrations/plugins/index.md
       - SQLModel:

@@ -104,3 +104,5 @@ example-snapshot-update *EXAMPLES:
 # Run example snapshot tests
 test-example-snapshots:
     uv run pytest tests/examples/test_example_snapshots.py -v
+venv:
+    source .venv/bin/activate
