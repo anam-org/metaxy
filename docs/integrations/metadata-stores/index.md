@@ -28,6 +28,8 @@ These metadata stores can be found [here](./databases/index.md).
 
     Some of them such as [LanceDB](./databases/lancedb/index.md) or [DuckDB](./databases/duckdb/index.md) can also act as local compute engines.
 
+    For high-performance columnar storage with excellent compression, consider [Vortex](./storage/vortex/index.md).
+
 ## Storage Only
 
 These metadata stores only provide storage and rely on **local** (also referred to as **embedded**) **compute**.

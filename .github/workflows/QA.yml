@@ -73,11 +73,11 @@ jobs:
   #       uses: DeterminateSystems/magic-nix-cache-action@v8
   #     - uses: nicknovitski/nix-develop@v1
   #     - name: Sync dependencies
-  #       run: uv python pin 3.10 && uv sync --all-extras --all-groups
+  #       run: uv python pin 3.11 && uv sync --all-extras --all-groups
   #     - name: Replace bundled Node.js with Nix Node.js
   #       run: |
   #         # Find the bundled node binary and replace it with Nix's node
-  #         BUNDLED_NODE=$(find .venv/lib/python3.10/site-packages/nodejs_wheel/bin -name "node" -type f 2>/dev/null || true)
+  #         BUNDLED_NODE=$(find .venv/lib/python3.11/site-packages/nodejs_wheel/bin -name "node" -type f 2>/dev/null || true)
   #         if [ -n "$BUNDLED_NODE" ]; then
   #           rm -f "$BUNDLED_NODE"
   #           ln -s "$(which node)" "$BUNDLED_NODE"
@@ -117,7 +117,7 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
         with:
-           # use devshell for Python 3.10
+           # use devshell for Python
           arguments: "'.#\"python${{ matrix.python-version }}\"'"
       - name: Install Dependencies
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
@@ -139,7 +139,7 @@ jobs:
 
       - name: Test Execution Summary
         # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
-        if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
+        if: ${{ always() && matrix.python-version == '3.11' && github.event_name == 'pull_request' }}
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: ./junit.xml
@@ -179,7 +179,7 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
       - name: Sync dependencies
-        run: uv python pin 3.10 && uv sync --all-extras --all-groups
+        run: uv python pin 3.11 && uv sync --all-extras --all-groups
       - name: Build Docs
         id: docs
         run: uv run mkdocs build --strict
