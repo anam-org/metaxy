@@ -384,7 +384,7 @@ class JsonStructSerializerMixin:
             base_cols = [
                 col
                 for col in ibis_table.columns
-                if col not in prov_field_columns.values()
+                if col not in prov_field_columns.values() and col != prov_const
             ]
             ibis_table = ibis_table.select(
                 *[ibis_table[col] for col in base_cols],
@@ -409,6 +409,7 @@ class JsonStructSerializerMixin:
                 col
                 for col in ibis_table.columns
                 if col not in data_version_field_columns.values()
+                and col != data_ver_const
             ]
             ibis_table = ibis_table.select(
                 *[ibis_table[col] for col in base_cols],

@@ -334,7 +334,7 @@ class VersioningEngine(ABC):
         Resolves field-level dependencies. Only actual parent fields are considered.
 
         Note:
-            This reads from upstream `metaxy_data_version_by_field` instead of `metaxy_provenance_by_field`,
+            This reads from upstream `metaxy_data_version_by_field` instead of [metaxy_provenance_by_field][metaxy.models.constants.METAXY_PROVENANCE_BY_FIELD],
             enabling users to control version propagation by overriding data_version values.
         """
         res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
@@ -435,7 +435,7 @@ class VersioningEngine(ABC):
             temp_hash_cols.values()
         )
 
-        df = df.drop(*temp_columns_to_drop)
+        df = df.drop(*temp_columns_to_drop, strict=False)
 
         # Drop version columns if present (they come from upstream and shouldn't be in the result)
         version_columns = ["metaxy_feature_version", "metaxy_snapshot_version"]
@@ -464,6 +464,21 @@ class VersioningEngine(ABC):
         from metaxy.models.constants import (
             METAXY_DATA_VERSION,
         )
+
+        # Ensure flattened data_version_by_field columns exist (mirror provenance_by_field)
+        prov_prefix = f"{METAXY_PROVENANCE_BY_FIELD}__"
+        data_prefix = f"{METAXY_DATA_VERSION_BY_FIELD}__"
+        for col in current_columns:
+            if col.startswith(prov_prefix):
+                field_name = col.split("__", 1)[1]
+                target_col = f"{data_prefix}{field_name}"
+                if target_col not in current_columns:
+                    df = df.with_columns(nw.col(col).alias(target_col))
+
+        if METAXY_PROVENANCE_BY_FIELD not in df.columns:
+            df = df.with_columns(
+                nw.lit(None, dtype=nw.String).alias(METAXY_PROVENANCE_BY_FIELD)
+            )
 
         df = df.with_columns(
             nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),

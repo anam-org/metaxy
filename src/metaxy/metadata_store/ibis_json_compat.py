@@ -160,11 +160,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
                 )
                 return lf
 
-            return LazyIncrement(
+            lazy_result = LazyIncrement(
                 added=ensure(result.added),
                 changed=ensure(result.changed),
                 removed=ensure(result.removed),
             )
+            return lazy_result
 
         frames = {}
         for name in ["added", "changed", "removed"]:
@@ -175,11 +176,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             frame = self._post_process_polars_frame(frame)
             frames[name] = frame
 
-        return Increment(
+        eager_result = Increment(
             added=frames["added"],
             changed=frames["changed"],
             removed=frames["removed"],
         )
+        return eager_result
 
     def _post_process_polars_frame(self, frame: FrameT) -> FrameT:
         """Rebuild struct columns from flattened provenance fields in Polars."""
@@ -282,7 +284,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         else:
             samples_native = collect_to_polars(df)
 
-        polars_df: pl.DataFrame | pl.LazyFrame
+        if df.implementation == nw.Implementation.POLARS:
+            samples_native = df.to_native()
+        else:
+            samples_native = collect_to_polars(df)
+
+        plan = self._resolve_feature_plan(feature)
         if isinstance(samples_native, (pl.DataFrame, pl.LazyFrame)):
             polars_df = samples_native
         else:
