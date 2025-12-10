@@ -300,6 +300,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_PROVENANCE,
         },
+        nullable=False,
     )
 
     metaxy_provenance_by_field: dict[str, str] = Field(
@@ -309,6 +310,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_PROVENANCE_BY_FIELD,
         },
+        nullable=False,
     )
 
     metaxy_feature_version: str | None = Field(
@@ -317,6 +319,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_FEATURE_VERSION,
         },
+        nullable=False,
     )
 
     metaxy_feature_spec_version: str | None = Field(
@@ -325,6 +328,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_FEATURE_SPEC_VERSION,
         },
+        nullable=False,
     )
 
     metaxy_snapshot_version: str | None = Field(
@@ -333,6 +337,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_SNAPSHOT_VERSION,
         },
+        nullable=False,
     )
 
     metaxy_data_version: str | None = Field(
@@ -341,6 +346,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_DATA_VERSION,
         },
+        nullable=False,
     )
 
     metaxy_data_version_by_field: dict[str, str] | None = Field(
@@ -350,6 +356,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_DATA_VERSION_BY_FIELD,
         },
+        nullable=False,
     )
 
     metaxy_created_at: AwareDatetime | None = Field(
@@ -359,6 +366,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_CREATED_AT,
         },
+        nullable=False,
     )
 
     metaxy_materialization_id: str | None = Field(
@@ -367,6 +375,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_MATERIALIZATION_ID,
         },
+        nullable=True,
     )
 
 
