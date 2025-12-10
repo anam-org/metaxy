@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 import narwhals as nw
-import polars as pl
 from narwhals.typing import Frame
 from pydantic import Field
 from typing_extensions import Self
@@ -292,29 +291,11 @@ class LanceDBMetadataStore(MetadataStore):
 
         table_name = self._table_name(feature_key)
 
-        # LanceDB supports both Polars DataFrames and Arrow tables directly
-        # Try Polars first (native integration), fall back to Arrow if needed
-        try:
-            if self._table_exists(table_name):
-                table = self._get_table(table_name)
-                # Use Polars DataFrame directly - LanceDB handles conversion
-                table.add(df_polars)  # type: ignore[attr-defined]
-            else:
-                # Create table from Polars DataFrame - LanceDB handles schema
-                self.conn.create_table(table_name, data=df_polars)  # type: ignore[attr-defined]
-        except TypeError as exc:
-            if not self._should_fallback_to_arrow(exc):
-                raise
-            # Defensive fallback: Modern LanceDB (>=0.3) accepts Polars DataFrames natively,
-            # but fall back to Arrow if an older version or edge case doesn't support it.
-            # This ensures compatibility across LanceDB versions.
-            logger.debug("Falling back to Arrow format for LanceDB write: %s", exc)
-            arrow_table = df_polars.to_arrow()
-            if self._table_exists(table_name):
-                table = self._get_table(table_name)
-                table.add(arrow_table)  # type: ignore[attr-defined]
-            else:
-                self.conn.create_table(table_name, data=arrow_table)  # type: ignore[attr-defined]
+        if self._table_exists(table_name):
+            table = self._get_table(table_name)
+            table.add(df_polars)  # type: ignore[attr-defined]
+        else:
+            self.conn.create_table(table_name, data=df_polars)  # type: ignore[attr-defined]
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop Lance table for feature.
@@ -358,10 +339,9 @@ class LanceDBMetadataStore(MetadataStore):
             return None
 
         table = self._get_table(table_name)
-        # https://github.com/lancedb/lancedb/issues/1539
-        # Fall back to eager Arrow conversion until LanceDB issue #1539 is resolved.
-        arrow_table = table.to_arrow()
-        pl_lazy = pl.DataFrame(arrow_table).lazy()
+        # LanceDB's to_polars() returns a Polars LazyFrame directly
+        # (fixed in Polars via https://github.com/pola-rs/polars/pull/25654)
+        pl_lazy = table.to_polars()
         nw_lazy = nw.from_native(pl_lazy)
 
         if filters:
@@ -371,13 +351,6 @@ class LanceDBMetadataStore(MetadataStore):
             nw_lazy = nw_lazy.select(columns)
 
         return nw_lazy
-
-    @staticmethod
-    def _should_fallback_to_arrow(exc: TypeError) -> bool:
-        """Return True when TypeError likely originates from Polars support gaps."""
-        message = str(exc).lower()
-        polars_markers = ("polars", "dataframe", "lazyframe", "data frame")
-        return any(marker in message for marker in polars_markers)
 
     # Display ------------------------------------------------------------------
 
