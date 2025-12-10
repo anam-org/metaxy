@@ -105,7 +105,7 @@ class metaxify:
         asset_spec = mxd.metaxify()(asset_spec)
         ```
 
-    ??? example "Combining multiple Dagster assets into the same Metaxy feature"
+    ??? example "Multiple Dagster assets contributing to the same Metaxy feature"
         ```py
         @dg.asset(
             metadata={
@@ -125,16 +125,6 @@ class metaxify:
         def my_feature_dataset_b():
             ...
         ```
-
-    ??? example "With `"metaxy/partition"` and `"metaxy/feature"`
-        ```py
-        asset_spec = dg.AssetSpec(
-            key="my_asset",
-            metadata={"metaxy/feature": "my/feature/key", "metaxy/partition": "my/partition"},
-        )
-        asset_spec = mxd.metaxify()(asset_spec)
-        ```
-
     """
 
     key: dg.AssetKey | None
