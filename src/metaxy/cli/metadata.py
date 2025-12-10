@@ -6,12 +6,14 @@ import json
 from typing import TYPE_CHECKING, Annotated, Any
 
 import cyclopts
+from rich.table import Table
 
 from metaxy.cli.console import console, data_console, error_console
 from metaxy.cli.utils import FeatureSelector, FilterArgs, OutputFormat
 
 if TYPE_CHECKING:
-    pass
+    from metaxy import BaseFeature
+    from metaxy.graph.status import FeatureMetadataStatusWithIncrement
 
 
 # Metadata subcommand app
@@ -54,6 +56,13 @@ def status(
         cyclopts.Parameter(
             name=["--verbose"],
             help="Show additional details about samples needing updates.",
+        ),
+    ] = False,
+    allow_fallback_stores: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--allow-fallback-stores"],
+            help="Read metadata from fallback stores if not found in primary store.",
         ),
     ] = False,
     format: Annotated[
@@ -135,11 +144,17 @@ def status(
         # Collect status for all features
         needs_update = False
         feature_reps: dict[str, Any] = {}
+        collected_statuses: list[
+            tuple[type[BaseFeature], FeatureMetadataStatusWithIncrement]
+        ] = []
 
         for feature_key in valid_keys:
             feature_cls = graph.features_by_key[feature_key]
             status_with_increment = get_feature_metadata_status(
-                feature_cls, metadata_store, global_filters=global_filters
+                feature_cls,
+                metadata_store,
+                use_fallback=allow_fallback_stores,
+                global_filters=global_filters,
             )
 
             if status_with_increment.status.needs_update:
@@ -147,19 +162,75 @@ def status(
 
             if format == "json":
                 feature_reps[feature_key.to_string()] = (
-                    status_with_increment.to_representation(
-                        feature_cls=feature_cls, verbose=verbose
-                    )
+                    status_with_increment.to_representation(verbose=verbose)
                 )
             else:
-                data_console.print(status_with_increment.status.format_status_line())
-                # Print store metadata (table_name, uri, etc.)
-                store_metadata = status_with_increment.status.store_metadata
-                if store_metadata:
-                    data_console.print("    ", store_metadata)
+                collected_statuses.append((feature_cls, status_with_increment))
+
+        # Output plain format as Rich Table
+        if format == "plain":
+            from metaxy.graph.status import _STATUS_ICONS
+
+            table = Table(show_header=True, header_style="bold")
+            table.add_column("Status", justify="center", no_wrap=True)
+            table.add_column("Feature", no_wrap=False)
+            table.add_column("Materialized", justify="right", no_wrap=True)
+            table.add_column("Missing", justify="right", no_wrap=True)
+            table.add_column("Stale", justify="right", no_wrap=True)
+            table.add_column("Orphaned", justify="right", no_wrap=True)
+            table.add_column("Info", no_wrap=False)
+
+            verbose_details: list[tuple[str, list[str]]] = []
+
+            for feature_cls, status_with_increment in collected_statuses:
+                status = status_with_increment.status
+                icon = _STATUS_ICONS[status.status_category]
+                feature_key_str = status.feature_key.to_string()
+
+                # Format store metadata for Info column
+                info_str = str(status.store_metadata) if status.store_metadata else ""
+
+                # For root features, show "-" for Missing/Stale/Orphaned
+                if status.is_root_feature:
+                    table.add_row(
+                        icon,
+                        feature_key_str,
+                        str(status.store_row_count),
+                        "-",
+                        "-",
+                        "-",
+                        info_str,
+                    )
+                else:
+                    table.add_row(
+                        icon,
+                        feature_key_str,
+                        str(status.store_row_count),
+                        str(status.missing_count),
+                        str(status.stale_count),
+                        str(status.orphaned_count),
+                        info_str,
+                    )
+
+                # Collect verbose details for later
                 if verbose:
-                    for line in status_with_increment.sample_details(feature_cls):
+                    sample_details = status_with_increment.sample_details()
+                    if sample_details:
+                        verbose_details.append((feature_key_str, sample_details))
+
+            data_console.print(table)
+
+            # Print verbose sample details after the table
+            if verbose and verbose_details:
+                for feature_key_str, details in verbose_details:
+                    data_console.print()  # Blank line before each feature
+                    data_console.print(
+                        f"[bold cyan]`{feature_key_str}` preview[/bold cyan]"
+                    )
+                    data_console.print()  # Blank line after title
+                    for line in details:
                         data_console.print(line)
+                        data_console.print()  # Blank line after each section
 
         # Output JSON result
         if format == "json":

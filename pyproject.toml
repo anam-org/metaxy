@@ -21,7 +21,7 @@ dependencies = [
   "cyclopts",
   "narwhals>=2.9.0",
   "platformdirs>=4.5.0",
-  "polars>=1.33.1",
+  "polars>=1.35.0",
   "polars-hash>=0.5.1",
   "pydantic>=2.11.9",
   "pydantic-settings>=2.11.0",

@@ -11,6 +11,7 @@ pip install 'metaxy[delta]'
 ## Drop a `metaxy.toml` file
 
 ```toml {title="metaxy.toml"}
+project = "quickstart"
 entrypoints = ["features.py"]
 
 [stores.dev]
