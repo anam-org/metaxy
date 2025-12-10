@@ -126,6 +126,33 @@ def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
         result = left_operand.expr == right_operand.expr
         return ~result if _is_is_not_node(node) else result
 
+    # IN / NOT IN operators
+    if isinstance(node, exp.In):
+        left = node.this
+        right = node.expressions
+        if left is None or right is None:
+            raise FilterParseError(
+                "IN operator requires a column and a list of values."
+            )
+
+        column_operand = _operand_info(left)
+        if not column_operand.is_column:
+            raise FilterParseError("IN operator left-hand side must be a column.")
+
+        # Extract literal values from the list
+        values: list[LiteralValue] = []
+        for item in right:
+            item_info = _operand_info(item)
+            if not item_info.is_literal:
+                raise FilterParseError("IN operator values must be literals.")
+            values.append(item_info.literal_value)
+
+        result = column_operand.expr.is_in(values)
+        # Check if this is NOT IN
+        if node.args.get("is_not"):
+            return ~result
+        return result
+
     # Comparison operators - direct mapping to Narwhals operations
     if isinstance(node, (exp.EQ, exp.NEQ, exp.GT, exp.LT, exp.GTE, exp.LTE)):
         left = node.this
