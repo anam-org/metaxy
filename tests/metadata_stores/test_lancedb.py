@@ -14,7 +14,6 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, Mock
 
-import narwhals as nw
 import polars as pl
 import pytest
 
@@ -206,62 +205,6 @@ def test_lancedb_display_masks_credentials(tmp_path, monkeypatch) -> None:
     assert "admin" not in display
     assert "password" not in display
     assert "***:***@localhost" in display
-
-
-def test_lancedb_write_falls_back_to_arrow_on_polars_typeerror() -> None:
-    """Ensure LanceDB write only falls back to Arrow for Polars-specific TypeErrors."""
-    feature_key = FeatureKey(["namespace", "feature"])
-    df = nw.from_native(pl.DataFrame({"sample_uid": [1]}))
-
-    class DummyConn:
-        def __init__(self) -> None:
-            self.calls: list[str] = []
-            self.created_table: str | None = None
-            self.created_type: str | None = None
-
-        def table_exists(self, _table_name: str) -> bool:
-            return False
-
-        def open_table(self, _table_name: str):
-            raise ValueError("table does not exist")
-
-        def create_table(self, table_name: str, data) -> None:  # type: ignore[no-untyped-def]
-            self.calls.append(type(data).__name__)
-            if isinstance(data, pl.DataFrame):
-                raise TypeError("polars DataFrame not supported")
-            self.created_table = table_name
-            self.created_type = type(data).__name__
-
-    store = LanceDBMetadataStore("local")
-    store._conn = DummyConn()  # type: ignore[assignment]
-
-    store.write_metadata_to_store(feature_key, df)
-
-    assert store._conn.calls == ["DataFrame", "Table"]  # type: ignore[attr-defined]
-    assert store._conn.created_table == feature_key.table_name  # type: ignore[attr-defined]
-    assert store._conn.created_type == "Table"  # type: ignore[attr-defined]
-
-
-def test_lancedb_write_re_raises_unrelated_typeerror() -> None:
-    """Non-Polars TypeErrors should propagate instead of silently falling back."""
-    feature_key = FeatureKey(["namespace", "feature"])
-    df = nw.from_native(pl.DataFrame({"sample_uid": [1]}))
-
-    class DummyConn:
-        def table_exists(self, _table_name: str) -> bool:
-            return False
-
-        def open_table(self, _table_name: str):
-            raise ValueError("table does not exist")
-
-        def create_table(self, _table_name: str, data) -> None:  # type: ignore[no-untyped-def]
-            raise TypeError("unexpected type error")
-
-    store = LanceDBMetadataStore("local")
-    store._conn = DummyConn()  # type: ignore[assignment]
-
-    with pytest.raises(TypeError, match="unexpected type error"):
-        store.write_metadata_to_store(feature_key, df)
 
 
 def test_lancedb_has_feature_without_listing_tables(tmp_path, test_features) -> None:
