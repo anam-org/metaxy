@@ -147,7 +147,7 @@ def compute_stats_from_lazy_frame(lazy_df: nw.LazyFrame) -> FeatureStats:  # pyr
     """
     stats = lazy_df.select(
         nw.len().alias("__count"),
-        nw.col(METAXY_CREATED_AT).mean().alias("__mean_ts"),
+        nw.col(METAXY_CREATED_AT).cast(nw.Float64).mean().alias("__mean_ts"),
     ).collect()
 
     row_count: int = stats.item(0, "__count")

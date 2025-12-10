@@ -719,8 +719,8 @@ class TestMultipleAssetsPerFeature:
             all_data = store.read_metadata(shared_feature).collect()
             assert len(all_data) == 5  # 3 from A + 2 from B
 
-            # Verify all IDs are present
-            ids = set(all_data.to_native()["id"].to_list())
+            # Verify all IDs are present (convert to list via Narwhals for backend compatibility)
+            ids = set(all_data["id"].to_list())
             assert ids == {"a1", "a2", "a3", "b1", "b2"}
 
     def test_multiple_assets_with_same_feature_key(
@@ -828,7 +828,7 @@ class TestMultipleAssetsPerFeature:
             with store:
                 data = store.read_metadata(shared_feature).collect()
                 captured_data["count"] = len(data)
-                captured_data["ids"] = set(data.to_native()["id"].to_list())
+                captured_data["ids"] = set(data["id"].to_list())
 
         # Materialize sources
         dg.materialize([source_one], resources=resources, instance=instance)

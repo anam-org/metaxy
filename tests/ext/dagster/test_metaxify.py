@@ -916,7 +916,7 @@ class TestMetaxifyMaterialization:
             with store:
                 upstream_data = store.read_metadata(upstream_feature).collect()
                 captured_data["rows"] = len(upstream_data)
-                captured_data["ids"] = upstream_data.to_native()["id"].to_list()
+                captured_data["ids"] = upstream_data["id"].to_list()
             return pl.DataFrame(
                 {
                     "id": ["result"],
@@ -990,7 +990,7 @@ class TestMetaxifyMaterialization:
         def downstream_asset(upstream_data):
             collected = upstream_data.collect()
             captured_data["rows"] = len(collected)
-            captured_data["ids"] = collected.to_native()["id"].to_list()
+            captured_data["ids"] = collected["id"].to_list()
             return pl.DataFrame(
                 {
                     "id": ["result"],

@@ -190,7 +190,7 @@ class TestMultiAssetPartitionMaterialization:
         with mx.MetaxyConfig.get().get_store("dev") as store:
             data_after_a = store.read_metadata(shared_feature).collect()
             assert len(data_after_a) == 2
-            assert set(data_after_a.to_native()["region"].to_list()) == {"us"}
+            assert set(data_after_a["region"].to_list()) == {"us"}
 
         # Materialize asset_b (EU region)
         result_b = dg.materialize(
@@ -204,8 +204,8 @@ class TestMultiAssetPartitionMaterialization:
         with mx.MetaxyConfig.get().get_store("dev") as store:
             all_data = store.read_metadata(shared_feature).collect()
             assert len(all_data) == 5  # 2 US + 3 EU
-            assert set(all_data.to_native()["region"].to_list()) == {"us", "eu"}
-            assert set(all_data.to_native()["id"].to_list()) == {
+            assert set(all_data["region"].to_list()) == {"us", "eu"}
+            assert set(all_data["id"].to_list()) == {
                 "us_1",
                 "us_2",
                 "eu_1",
@@ -420,8 +420,8 @@ class TestCompleteScenario:
         with mx.MetaxyConfig.get().get_store("dev") as store:
             all_data = store.read_metadata(shared_feature).collect()
             assert len(all_data) == 5
-            assert set(all_data.to_native()["region"].to_list()) == {"us", "eu"}
-            assert set(all_data.to_native()["id"].to_list()) == {
+            assert set(all_data["region"].to_list()) == {"us", "eu"}
+            assert set(all_data["id"].to_list()) == {
                 "us_1",
                 "us_2",
                 "eu_1",
