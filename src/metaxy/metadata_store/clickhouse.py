@@ -1,4 +1,6 @@
-"""ClickHouse metadata store - thin wrapper around IbisMetadataStore."""
+"""This module implements [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] for ClickHouse.
+
+It takes care of some ClickHouse-specific logic such as `nw.Struct` type conversion against ClickHouse types such as `Map(K,V)`."""
 
 from typing import TYPE_CHECKING, Any
 
@@ -27,7 +29,7 @@ class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
     Example:
         ```python
         config = ClickHouseMetadataStoreConfig(
-            connection_string="clickhouse://localhost:9000/default",
+            connection_string="clickhouse://localhost:8443/default",
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
@@ -40,7 +42,7 @@ class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
 
 class ClickHouseMetadataStore(IbisMetadataStore):
     """
-    [ClickHouse](https://clickhouse.com/) metadata storeusing [Ibis](https://ibis-project.org/) backend.
+    [ClickHouse](https://clickhouse.com/) metadata store using [Ibis](https://ibis-project.org/) backend.
 
     Example: Connection Parameters
         ```py
@@ -48,7 +50,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             backend="clickhouse",
             connection_params={
                 "host": "localhost",
-                "port": 9000,
+                "port": 8443,
                 "database": "default",
                 "user": "default",
                 "password": ""
@@ -74,18 +76,16 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
                 Format: `clickhouse://[user[:password]@]host[:port]/database[?param=value]`
 
-                Examples:
+                Example:
                     ```
-                    - "clickhouse://localhost:9000/default"
-                    - "clickhouse://user:pass@host:9000/db"
-                    - "clickhouse://host:9000/db?secure=true"
+                    "clickhouse://localhost:8443/default"
                     ```
 
             connection_params: Alternative to connection_string, specify params as dict:
 
                 - host: Server host
 
-                - port: Server port (default: `9000`)
+                - port: Server port (default: `8443`)
 
                 - database: Database name
 
@@ -106,7 +106,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         if connection_string is None and connection_params is None:
             raise ValueError(
                 "Must provide either connection_string or connection_params. "
-                "Example: connection_string='clickhouse://localhost:9000/default'"
+                "Example: connection_string='clickhouse://localhost:8443/default'"
             )
 
         # Cache for ClickHouse table schemas (cleared on close)
@@ -211,8 +211,10 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         """Transform ClickHouse-specific column types for PyArrow compatibility.
 
         Handles:
-        - JSON columns: Cast to String (ClickHouse driver returns dict, PyArrow expects bytes)
-        - Map(K,V) columns: Convert to Struct by extracting keys
+
+        - `JSON` columns: Cast to String (ClickHouse driver returns dict, PyArrow expects bytes)
+
+        - `Map(K,V)` columns: Convert to Struct by extracting keys
 
         For Map columns, we use ClickHouse's `tuple()` function to build a named tuple
         from map key accesses, which Ibis/PyArrow converts to Struct.
@@ -381,6 +383,65 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         pl_df = pl_df.with_columns(transformations)
 
         return nw.from_native(pl_df, eager_only=False)
+
+    @property
+    def sqlalchemy_url(self) -> str:
+        """Get SQLAlchemy-compatible connection URL for ClickHouse.
+
+        Overrides the base implementation to return the native protocol format
+        (`clickhouse+native://`) which is required for better SQLAlchemy/Alembic
+        reflection support in `clickhouse-sqlalchemy`.
+
+        The HTTP protocol used by Ibis has [limited reflection
+        capabilities](https://github.com/xzkostyan/clickhouse-sqlalchemy/issues/15).
+
+        Port mapping (assumes default ports):
+
+        - HTTP `8123` (non-secure) → Native `9000`
+
+        - HTTP `8443` (secure) → Native `9440`
+
+        For secure connections, adds `secure=True` query parameter.
+
+        Returns:
+            SQLAlchemy-compatible URL string with native protocol
+
+        Raises:
+            ValueError: If connection_string is not available
+        """
+        from sqlalchemy.engine.url import make_url
+
+        base_url = super().sqlalchemy_url
+        url = make_url(base_url)
+
+        # Determine if secure based on port or existing secure param
+        is_secure = url.port == 8443 or (
+            url.query and url.query.get("secure") == "True"
+        )
+
+        # Map HTTP ports to native ports
+        if url.port == 8443:
+            native_port = 9440
+        elif url.port == 8123:
+            native_port = 9000
+        else:
+            # Non-standard port - assume secure if original was secure
+            native_port = 9440 if is_secure else 9000
+
+        # Build new URL with native protocol
+        url = url.set(
+            drivername="clickhouse+native",
+            port=native_port,
+        )
+
+        # Handle query parameters - add secure=True for secure connections
+        if is_secure:
+            # Remove protocol=https (HTTP-specific) and ensure secure=True
+            new_query = {k: v for k, v in (url.query or {}).items() if k != "protocol"}
+            new_query["secure"] = "True"
+            url = url.set(query=new_query)
+
+        return url.render_as_string(hide_password=False)
 
     @classmethod
     def config_model(cls) -> type[ClickHouseMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
