@@ -270,6 +270,36 @@ class TestFeatureVersionTruncation:
             version_truncated = TestFeature2.feature_version()
             assert len(version_truncated) == 16
 
+    def test_feature_spec_version_truncation(self, graph):
+        """Test that feature spec versions are truncated."""
+        from metaxy.models.feature_spec import FeatureSpec
+
+        spec = FeatureSpec(
+            key=FeatureKey(["test", "spec_truncation"]),
+            fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
+            id_columns=["sample_uid"],
+        )
+
+        # Without truncation - full 64 character SHA256 hex digest
+        MetaxyConfig.reset()
+        version_full = spec.feature_spec_version
+        assert len(version_full) == 64
+
+        # With truncation enabled
+        config = MetaxyConfig(hash_truncation_length=16)
+        with config.use():
+            version_truncated = spec.feature_spec_version
+            assert len(version_truncated) == 16
+            # Truncated version should be prefix of full version
+            assert version_full.startswith(version_truncated)
+
+        # Different truncation length
+        config = MetaxyConfig(hash_truncation_length=24)
+        with config.use():
+            version_24 = spec.feature_spec_version
+            assert len(version_24) == 24
+            assert version_full.startswith(version_24)
+
     def test_snapshot_version_truncation(self, graph):
         """Test that snapshot versions are truncated."""
 

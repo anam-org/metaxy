@@ -14,11 +14,11 @@
   <a href="https://prek.j178.dev"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/docs/assets/badge-v0.json" alt="prek"></a>
 </p>
 
-Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks feature versions, (partial) data dependencies, and lineage across complex computation graphs.
+Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks feature versions, data dependencies - including multi-modal components - and lineage across complex computational graphs.
 
-Metaxy's goal is to provide a standard instrument for any kind of multi-modal (or just tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, manipulations over metadata, migrations, and more.
+Metaxy's goal is to provide a standard instrument for any kind of multi-modal (or just purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations with metadata.
 
-Read the [docs](https://anam-org.github.io/metaxy) to learn more.
+Read the [docs](https://anam-org.github.io/metaxy) to discover more about Metaxy.
 
 ## Installation
 
@@ -30,7 +30,7 @@ pip install --pre metaxy
 
 ## Integrating Metaxy in your project
 
-Metaxy is highly pluggable and generally can be used with any kind of incremental pipelines, storage, metadata stores, and dataframe libraries.
+Metaxy is highly pluggable and generally can be used with any kind of incremental pipelines, storage, metadata storage, and dataframe libraries.
 
 Metaxy provides integrations with popular tools such as [Dagster](https://anam-org.github.io/metaxy/main/integrations/orchestration/dagster), [ClickHouse](https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://anam-org.github.io/metaxy/main/integrations/metadata-stores/storage/delta/), [SQLModel](https://anam-org.github.io/metaxy/main/integrations/plugins/sqlmodel/).
 

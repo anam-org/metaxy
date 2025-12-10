@@ -38,6 +38,7 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
@@ -109,6 +110,7 @@ VersioningEngineOptions = Literal["auto", "native", "polars"]
 _SYSTEM_COLUMN_DTYPES = {
     METAXY_PROVENANCE: nw.String,
     METAXY_FEATURE_VERSION: nw.String,
+    METAXY_FEATURE_SPEC_VERSION: nw.String,
     METAXY_SNAPSHOT_VERSION: nw.String,
     METAXY_DATA_VERSION: nw.String,
     METAXY_CREATED_AT: nw.Datetime,
@@ -1333,15 +1335,17 @@ class MetadataStore(ABC):
         """
         feature_key = self._resolve_feature_key(feature)
 
-        # Check if feature_version and snapshot_version already exist in DataFrame
+        # Check if version columns already exist in DataFrame
         has_feature_version = METAXY_FEATURE_VERSION in df.columns
         has_snapshot_version = METAXY_SNAPSHOT_VERSION in df.columns
+        has_feature_spec_version = METAXY_FEATURE_SPEC_VERSION in df.columns
 
         # In suppression mode (migrations), use existing values as-is
         if (
             _suppress_feature_version_warning.get()
             and has_feature_version
             and has_snapshot_version
+            and has_feature_spec_version
         ):
             pass  # Use existing values for migrations
         else:
@@ -1352,10 +1356,12 @@ class MetadataStore(ABC):
                 columns_to_drop.append(METAXY_FEATURE_VERSION)
             if has_snapshot_version:
                 columns_to_drop.append(METAXY_SNAPSHOT_VERSION)
+            if has_feature_spec_version:
+                columns_to_drop.append(METAXY_FEATURE_SPEC_VERSION)
             if columns_to_drop:
                 df = df.drop(*columns_to_drop)
 
-            # Get current feature version and snapshot_version from code and add them
+            # Get current feature version, feature_spec_version, and snapshot_version from code
             # Use duck typing to avoid Ray serialization issues with issubclass
             if (
                 isinstance(feature, type)
@@ -1363,11 +1369,13 @@ class MetadataStore(ABC):
                 and callable(feature.feature_version)
             ):
                 current_feature_version = feature.feature_version()
+                current_feature_spec_version = feature.feature_spec_version()
             else:
                 from metaxy import get_feature_by_key
 
                 feature_cls = get_feature_by_key(feature_key)
                 current_feature_version = feature_cls.feature_version()
+                current_feature_spec_version = feature_cls.feature_spec_version()
 
             # Get snapshot_version from active graph
             from metaxy.models.feature import FeatureGraph
@@ -1379,6 +1387,9 @@ class MetadataStore(ABC):
                 [
                     nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),
                     nw.lit(current_snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+                    nw.lit(current_feature_spec_version).alias(
+                        METAXY_FEATURE_SPEC_VERSION
+                    ),
                 ]
             )
 
