@@ -9,6 +9,10 @@ The following syntax is supported:
 
 - Logical operators: `AND`, `OR`, `NOT`
 
+- Set membership: `IN`, `NOT IN`
+
+- Null checks: `IS NULL`, `IS NOT NULL`
+
 - Parentheses for grouping
 
 - Column references (identifiers or dotted paths)
