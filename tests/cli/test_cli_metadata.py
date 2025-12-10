@@ -1293,3 +1293,40 @@ def test_metadata_status_with_multiple_filters(
             assert "video/files" in result.stdout
             assert "✓" in result.stdout  # Up-to-date icon
             assert "2" in result.stdout  # Materialized count
+
+
+def test_metadata_status_error_representation():
+    """Test that FullFeatureMetadataRepresentation handles error status correctly."""
+    from metaxy.graph.status import FullFeatureMetadataRepresentation
+
+    # Create an error representation
+    error_rep = FullFeatureMetadataRepresentation(
+        feature_key="audio/files",
+        status="error",
+        needs_update=False,
+        metadata_exists=False,
+        store_rows=0,
+        missing=None,
+        stale=None,
+        orphaned=None,
+        target_version="",
+        is_root_feature=False,
+        error_message="Simulated error: KeyError 'some_field'",
+    )
+
+    # Verify the model serializes correctly
+    data = error_rep.model_dump()
+    assert data["status"] == "error"
+    assert data["error_message"] == "Simulated error: KeyError 'some_field'"
+    assert data["feature_key"] == "audio/files"
+
+
+def test_metadata_status_error_icon_exists():
+    """Test that the error status icon is defined."""
+    from metaxy.graph.status import _STATUS_ICONS, _STATUS_TEXTS
+
+    # Verify error icon and text exist
+    assert "error" in _STATUS_ICONS
+    assert "error" in _STATUS_TEXTS
+    assert _STATUS_ICONS["error"] == "[red]![/red]"
+    assert _STATUS_TEXTS["error"] == "error"

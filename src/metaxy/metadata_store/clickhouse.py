@@ -272,15 +272,18 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             return table[col_name].cast("string")
 
         feature_cls = graph.features_by_key[feature_key]
-        field_names = [f.key.to_string() for f in feature_cls.spec().fields]
+        # Use to_struct_key() for struct field names (uses "_" separator, not "/")
+        # This matches how provenance/data_version fields are accessed elsewhere
+        field_names = [f.key.to_struct_key() for f in feature_cls.spec().fields]
 
         if not field_names:
             return table[col_name].cast("string")
 
-        # Build Struct from map key access: {field1: map['field1'], field2: map['field2']}
-        # Ibis's ibis.struct() creates a struct from a dict of expressions
+        # Build Struct from map key access using safe access via .get()
+        # This returns empty string for missing keys instead of throwing KeyError
+        # This is essential for empty tables/maps where keys don't exist yet
         map_col = table[col_name]
-        struct_dict = {name: map_col[name] for name in field_names}
+        struct_dict = {name: map_col.get(name, "") for name in field_names}  # pyright: ignore[reportAttributeAccessIssue]
 
         return ibis.struct(struct_dict)
 

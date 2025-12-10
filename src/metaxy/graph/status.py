@@ -27,7 +27,7 @@ class FullFeatureMetadataRepresentation(BaseModel):
     """Full JSON-safe representation of feature metadata status."""
 
     feature_key: str
-    status: Literal["missing", "needs_update", "up_to_date", "root_feature"]
+    status: Literal["missing", "needs_update", "up_to_date", "root_feature", "error"]
     needs_update: bool
     metadata_exists: bool
     store_rows: int
@@ -38,9 +38,12 @@ class FullFeatureMetadataRepresentation(BaseModel):
     is_root_feature: bool = False
     sample_details: list[str] | None = None
     store_metadata: dict[str, Any] | None = None
+    error_message: str | None = None
 
 
-StatusCategory = Literal["missing", "needs_update", "up_to_date", "root_feature"]
+StatusCategory = Literal[
+    "missing", "needs_update", "up_to_date", "root_feature", "error"
+]
 
 # Status display configuration
 _STATUS_ICONS: dict[StatusCategory, str] = {
@@ -48,6 +51,7 @@ _STATUS_ICONS: dict[StatusCategory, str] = {
     "root_feature": "[blue]○[/blue]",
     "needs_update": "[yellow]⚠[/yellow]",
     "up_to_date": "[green]✓[/green]",
+    "error": "[red]![/red]",
 }
 
 _STATUS_TEXTS: dict[StatusCategory, str] = {
@@ -55,6 +59,7 @@ _STATUS_TEXTS: dict[StatusCategory, str] = {
     "root_feature": "root feature",
     "needs_update": "needs update",
     "up_to_date": "up-to-date",
+    "error": "error",
 }
 
 

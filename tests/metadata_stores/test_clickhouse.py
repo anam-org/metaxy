@@ -452,6 +452,67 @@ def test_clickhouse_map_column_type(
         conn.drop_table(table_name)
 
 
+def test_clickhouse_map_column_empty_table_read(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test reading from an EMPTY table with Map(String, String) columns.
+
+    This tests the critical scenario where:
+    1. A table exists with Map(String, String) columns (e.g., metaxy_data_version_by_field)
+    2. The table has NO data yet (empty)
+    3. transform_after_read converts Map -> Struct
+    4. The Struct schema must still be correctly typed even when the Map is empty
+
+    The bug was that when converting Map to Struct for an empty table, Ibis
+    used map[key] which validates keys exist, failing with KeyError.
+
+    The fix uses map.get(key, "") instead of map[key] to safely handle empty maps.
+    """
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create EMPTY table with Map columns (like production ClickHouse schema)
+        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Try to read from the empty table
+        # This should NOT raise KeyError even though the Map is empty
+        # The error was: KeyError: 'frames'
+        # Because the Map->Struct conversion couldn't handle empty maps
+        read_result = store.read_metadata_in_store(feature_cls)
+
+        # Reading from an empty table should return None or empty result
+        if read_result is not None:
+            result = collect_to_polars(read_result)
+            assert len(result) == 0
+
+        # Clean up
+        conn.drop_table(table_name)
+
+
 def test_clickhouse_map_column_resolve_update_write_metadata(
     clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
 ) -> None:
