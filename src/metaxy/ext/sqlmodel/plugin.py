@@ -389,6 +389,8 @@ def filter_feature_sqlmodel_metadata(
     filter_by_project: bool = True,
     inject_primary_key: bool | None = None,
     inject_index: bool | None = None,
+    protocol: str | None = None,
+    port: int | None = None,
 ) -> tuple[str, "MetaData"]:
     """Get SQLAlchemy URL and filtered SQLModel feature metadata for a metadata store.
 
@@ -411,6 +413,10 @@ def filter_feature_sqlmodel_metadata(
                            If False, do not inject. If None, uses config default.
         inject_index: If True, inject composite index.
                      If False, do not inject. If None, uses config default.
+        protocol: Optional protocol to replace the existing one in the URL.
+            Useful when Ibis uses a different protocol than SQLAlchemy requires.
+        port: Optional port to replace the existing one in the URL.
+            Useful when the SQLAlchemy driver uses a different port than Ibis.
 
     Returns:
         Tuple of (sqlalchemy_url, filtered_metadata)
@@ -418,7 +424,11 @@ def filter_feature_sqlmodel_metadata(
     Raises:
         ValueError: If store's sqlalchemy_url is empty
 
-    Example:
+    Note:
+        For ClickHouse, the `sqlalchemy_url` property already returns the native
+        protocol with port 9000, so you typically don't need to override these.
+
+    Example: Basic Usage
 
         ```py
         from sqlmodel import SQLModel
@@ -442,8 +452,8 @@ def filter_feature_sqlmodel_metadata(
         context.configure(url=url, target_metadata=target_metadata)
         ```
     """
-
     from sqlalchemy import MetaData
+    from sqlalchemy.engine.url import make_url
 
     config = MetaxyConfig.get()
 
@@ -461,6 +471,17 @@ def filter_feature_sqlmodel_metadata(
     if not store.sqlalchemy_url:
         raise ValueError("IbisMetadataStore has an empty `sqlalchemy_url`.")
     url = store.sqlalchemy_url
+
+    # Replace protocol and/or port if specified using SQLAlchemy's URL utilities
+    if protocol is not None or port is not None:
+        parsed_url = make_url(url)
+        if protocol is not None and port is not None:
+            parsed_url = parsed_url.set(drivername=protocol, port=port)
+        elif protocol is not None:
+            parsed_url = parsed_url.set(drivername=protocol)
+        elif port is not None:
+            parsed_url = parsed_url.set(port=port)
+        url = parsed_url.render_as_string(hide_password=False)
 
     # Create new metadata with transformed table names
     filtered_metadata = MetaData()

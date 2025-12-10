@@ -108,22 +108,60 @@ def create_system_tables(
     return feature_versions_table, events_table
 
 
-def _get_store_sqlalchemy_url(store: IbisMetadataStore) -> str:
+def _get_store_sqlalchemy_url(
+    store: IbisMetadataStore,
+    protocol: str | None = None,
+    port: int | None = None,
+) -> str:
     """Get SQLAlchemy URL from an IbisMetadataStore instance.
 
     Args:
         store: IbisMetadataStore instance
+        protocol: Optional protocol (drivername) to replace the existing one.
+            Useful when Ibis uses a different protocol than SQLAlchemy requires.
+        port: Optional port to replace the existing one. Useful when the
+            SQLAlchemy driver uses a different port than Ibis.
 
     Returns:
         SQLAlchemy connection URL string
 
     Raises:
         ValueError: If sqlalchemy_url is empty
+
+    Example:
+        ```python
+        # Ibis store uses clickhouse://localhost:8443/default (HTTP)
+        # SQLAlchemy needs clickhouse+native:// on port 9000 for reflection
+        url = _get_store_sqlalchemy_url(
+            store,
+            protocol="clickhouse+native",
+            port=9000,
+        )
+        # Returns: clickhouse+native://localhost:9000/default
+        ```
     """
     if not store.sqlalchemy_url:
         raise ValueError("IbisMetadataStore has an empty `sqlalchemy_url`.")
 
-    return store.sqlalchemy_url
+    base_url = store.sqlalchemy_url
+
+    if protocol is None and port is None:
+        return base_url
+
+    # Use SQLAlchemy's URL utilities for proper parsing
+    from sqlalchemy.engine.url import make_url
+
+    url = make_url(base_url)
+
+    # Apply protocol and port overrides
+    if protocol is not None and port is not None:
+        url = url.set(drivername=protocol, port=port)
+    elif protocol is not None:
+        url = url.set(drivername=protocol)
+    elif port is not None:
+        url = url.set(port=port)
+
+    return url.render_as_string(hide_password=False)
 
 
 def _get_system_metadata(
@@ -146,6 +184,8 @@ def _get_system_metadata(
 
 def get_system_slqa_metadata(
     store: IbisMetadataStore,
+    protocol: str | None = None,
+    port: int | None = None,
 ) -> tuple[str, MetaData]:
     """Get SQLAlchemy URL and Metaxy system tables metadata for a metadata store.
 
@@ -154,14 +194,22 @@ def get_system_slqa_metadata(
 
     Args:
         store: IbisMetadataStore instance
+        protocol: Optional protocol (drivername) to replace the existing one in the URL.
+            Useful when Ibis uses a different protocol than SQLAlchemy requires.
+        port: Optional port to replace the existing one in the URL.
+            Useful when the SQLAlchemy driver uses a different port than Ibis.
 
     Returns:
         Tuple of (sqlalchemy_url, system_metadata)
 
     Raises:
         ValueError: If store's sqlalchemy_url is empty
+
+    Note:
+        For ClickHouse, the `sqlalchemy_url` property already returns the native
+        protocol with port 9000, so you typically don't need to override these.
     """
-    url = _get_store_sqlalchemy_url(store)
+    url = _get_store_sqlalchemy_url(store, protocol=protocol, port=port)
     metadata = _get_system_metadata(table_prefix=store._table_prefix)
     return url, metadata
 
@@ -286,6 +334,8 @@ def filter_feature_sqla_metadata(
     filter_by_project: bool = True,
     inject_primary_key: bool | None = None,
     inject_index: bool | None = None,
+    protocol: str | None = None,
+    port: int | None = None,
 ) -> tuple[str, MetaData]:
     """Get SQLAlchemy URL and feature table metadata for a metadata store.
 
@@ -304,6 +354,10 @@ def filter_feature_sqla_metadata(
                            If False, do not inject. If None, uses config default.
         inject_index: If True, inject composite index.
                      If False, do not inject. If None, uses config default.
+        protocol: Optional protocol to replace the existing one in the URL.
+            Useful when Ibis uses a different protocol than SQLAlchemy requires.
+        port: Optional port to replace the existing one in the URL.
+            Useful when the SQLAlchemy driver uses a different port than Ibis.
 
     Returns:
         Tuple of (sqlalchemy_url, filtered_metadata)
@@ -311,6 +365,10 @@ def filter_feature_sqla_metadata(
     Raises:
         ValueError: If store's sqlalchemy_url is empty
         ImportError: If source_metadata is None and SQLModel is not installed
+
+    Note:
+        For ClickHouse, the `sqlalchemy_url` property already returns the native
+        protocol with port 9000, so you typically don't need to override these.
 
     Example: Basic Usage
 
@@ -343,7 +401,7 @@ def filter_feature_sqla_metadata(
         url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata)
         ```
     """
-    url = _get_store_sqlalchemy_url(store)
+    url = _get_store_sqlalchemy_url(store, protocol=protocol, port=port)
     metadata = _get_features_metadata(
         source_metadata=source_metadata,
         store=store,
