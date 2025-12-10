@@ -84,3 +84,6 @@ version-bump:
 publish-dev:
     uv build
     uv publish "./dist/metaxy-$(uv version --short)-py3-none-any.whl"
+
+venv:
+    source .venv/bin/activate

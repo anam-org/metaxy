@@ -1,6 +1,7 @@
 """Common fixtures for metadata store tests."""
 
 import socket
+import sys
 import uuid
 from collections.abc import Generator
 from pathlib import Path
@@ -23,6 +24,7 @@ from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.lancedb import LanceDBMetadataStore
+from metaxy.metadata_store.vortex import VortexMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 # Note: clickhouse_server and clickhouse_db fixtures are defined in tests/conftest.py
@@ -198,6 +200,19 @@ class AllStoresCases:
         lancedb_path = tmp_path / "lancedb_store"
         return LanceDBMetadataStore(
             uri=lancedb_path,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+    @pytest.mark.vortex
+    @pytest.mark.polars
+    @pytest.mark.skipif(
+        sys.version_info < (3, 11),
+        reason="VortexMetadataStore requires Python 3.11+",
+    )
+    def case_vortex(self, tmp_path: Path) -> MetadataStore:
+        vortex_path = tmp_path / "vortex_store"
+        return VortexMetadataStore(
+            root_path=vortex_path,
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
