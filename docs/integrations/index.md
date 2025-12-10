@@ -5,7 +5,7 @@
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
--   :custom-dagster:{ .lg .middle } [**Dagster**](orchestration/dagster/index.md)
+  - :custom-dagster:{ .lg .middle } [**Dagster**](orchestration/dagster/index.md)
 
     ---
 
@@ -33,7 +33,7 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
 <!-- dprint-ignore-start -->
 
--   :custom-bigquery-blue:{ .lg .middle } [**BigQuery**](metadata-stores/databases/bigquery/index.md)
+  - :custom-bigquery-blue:{ .lg .middle } [**BigQuery**](metadata-stores/databases/bigquery/index.md)
 
     ---
 
@@ -44,68 +44,68 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
     [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/bigquery/index.md)
 
     [:octicons-arrow-right-24: API docs](metadata-stores/databases/bigquery/api.md)
+
+  - :custom-clickhouse:{ .lg .middle } [**ClickHouse**](metadata-stores/databases/clickhouse/index.md)
+
+    ---
+
+    :material-tag-outline: Database
+
+    Leverage the lightning-fast analytical [ClickHouse](https://clickhouse.com/) database for large metadata volume and high-throughput setups.
+
+    !!! success "Recommended"
+
+        Ideal for production.
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/clickhouse/index.md)
+
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/clickhouse/api.md)
+
+  - :custom-deltalake:{ .lg .middle } [**Delta Lake**](metadata-stores/storage/delta/index.md)
+
+    ---
+
+    :material-tag-outline: Storage
+
+    Store metadata in [Delta Lake](https://delta.io/) format in local files or remote object stores (S3, GCS, and others). (1)
+
+    !!! success "Recommended"
+
+        Ideal for dev environments.
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta/index.md)
+
+    [:octicons-arrow-right-24: API docs](metadata-stores/storage/delta/api.md)
+
+  - :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb/index.md)
+
+    ---
+
+    :material-tag-outline: Database • :material-tag-outline: Storage
+
+    Use [DuckDB](https://duckdb.org/) - a fast analytical database with support for local and remote compute.
+    [DuckLake](https://ducklake.select/) is available as well.
+
+    !!! warning
+
+        DuckDB is not recommended for production due to [parallel writes limitations](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb/index.md)
+
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/duckdb/api.md)
+
+  - :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb/index.md)
+
+    ---
+
+    :material-tag-outline: Database • :material-tag-outline: Storage
+
+    Use the multi-modal [LanceDB](https://lancedb.com/) database or [Lance](https://lancedb.com/docs/overview/lance/) storage format. (2)
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb/index.md)
+
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/lancedb/api.md)
 <!-- dprint-ignore-end -->
-
-- :custom-clickhouse:{ .lg .middle } [**ClickHouse**](metadata-stores/databases/clickhouse/index.md)
-
-  ---
-
-  :material-tag-outline: Database
-
-  Leverage the lightning-fast analytical [ClickHouse](https://clickhouse.com/) database for large metadata volume and high-throughput setups.
-
-  !!! success "Recommended"
-
-      Ideal for production.
-
-  [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/clickhouse/index.md)
-
-  [:octicons-arrow-right-24: API docs](metadata-stores/databases/clickhouse/api.md)
-
-- :custom-deltalake:{ .lg .middle } [**Delta Lake**](metadata-stores/storage/delta/index.md)
-
-  ---
-
-  :material-tag-outline: Storage
-
-  Store metadata in [Delta Lake](https://delta.io/) format in local files or remote object stores (S3, GCS, and others).
-
-  !!! success "Recommended"
-
-      Ideal for dev environments.
-
-  [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta/index.md)
-
-  [:octicons-arrow-right-24: API docs](metadata-stores/storage/delta/api.md)
-
-- :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb/index.md)
-
-  ---
-
-  :material-tag-outline: Database • :material-tag-outline: Storage
-
-  Use [DuckDB](https://duckdb.org/) - a fast analytical database with support for local and remote compute.
-  [DuckLake](https://ducklake.select/) is available as well.
-
-  !!! warning
-
-      DuckDB is not recommended for production due to [parallel writes limitations](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
-
-  [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb/index.md)
-
-  [:octicons-arrow-right-24: API docs](metadata-stores/databases/duckdb/api.md)
-
-- :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb/index.md)
-
-  ---
-
-  :material-tag-outline: Database • :material-tag-outline: Storage
-
-  Use the multi-modal [LanceDB](https://lancedb.com/) database or [Lance](https://lancedb.com/docs/overview/lance/) storage format. (2)
-
-  [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb/index.md)
-
-  [:octicons-arrow-right-24: API docs](metadata-stores/databases/lancedb/api.md)
 
 </div>
 </div>
