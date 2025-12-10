@@ -45,7 +45,7 @@ class TestProjectDetection:
                     "pip",
                     "install",
                     "-e",
-                    str(Path.cwd()),
+                    f"{Path.cwd()}[duckdb]",
                     "--python",
                     str(python),
                 ],
