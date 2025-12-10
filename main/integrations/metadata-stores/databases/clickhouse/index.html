@@ -3366,15 +3366,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#struct-columns-and-json-storage" class="md-nav__link">
+  <a href="#metaxys-versioning-struct-columns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Struct Columns and JSON Storage
+        Metaxy's Versioning Struct Columns
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Struct Columns and JSON Storage">
+    <nav class="md-nav" aria-label="Metaxy&#39;s Versioning Struct Columns">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -3575,10 +3575,10 @@
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[clickhouse]&#39;</span>
 </span></code></pre></div>
-<h2 id="struct-columns-and-json-storage">Struct Columns and JSON Storage<a class="headerlink" href="#struct-columns-and-json-storage" title="Permanent link">&para;</a></h2>
-<p>Metaxy uses struct columns (<code>metaxy_provenance_by_field</code>, <code>metaxy_data_version_by_field</code>) to track field-level versioning. In Python world this corresponds to <code>dict[str, str]</code>.</p>
+<h2 id="metaxys-versioning-struct-columns">Metaxy's Versioning Struct Columns<a class="headerlink" href="#metaxys-versioning-struct-columns" title="Permanent link">&para;</a></h2>
+<p>Metaxy uses struct columns (<code>metaxy_provenance_by_field</code>, <code>metaxy_data_version_by_field</code>) to track field-level versioning. In Python world this corresponds to <code>dict[str, str]</code>. In ClickHouse, there are several options to represent these columns.</p>
 <h3 id="how-clickhouse-handles-structs">How ClickHouse Handles Structs<a class="headerlink" href="#how-clickhouse-handles-structs" title="Permanent link">&para;</a></h3>
-<p>ClickHouse offers multiple approaches for structured data:</p>
+<p>ClickHouse offers multiple approaches to represent Metaxy's structured versioning columns:</p>
 <table>
 <thead>
 <tr>
@@ -3589,21 +3589,50 @@
 </thead>
 <tbody>
 <tr>
-<td><a href="https://clickhouse.com/docs/sql-reference/data-types/newjson"><code>JSON</code></a></td>
-<td>Native JSON with typed subcolumns</td>
-<td>Improved query performance on JSON paths</td>
+<td><a href="https://clickhouse.com/docs/sql-reference/data-types/map"><code>Map(String, String)</code></a></td>
+<td>Native key-value map</td>
+<td><strong>Recommended for Metaxy</strong> because of dynamic keys</td>
 </tr>
 <tr>
-<td><a href="https://clickhouse.com/docs/sql-reference/data-types/map"><code>Map(K, V)</code></a></td>
-<td>Native key-value map</td>
-<td>When schema is <code>dict[K, V]</code>, even better performance</td>
+<td><a href="https://clickhouse.com/docs/sql-reference/data-types/newjson"><code>JSON</code></a></td>
+<td>Native JSON with typed subcolumns</td>
+<td>Less performant than <code>Map(String, String)</code> but more flexible than <code>Nested</code></td>
+</tr>
+<tr>
+<td><a href="https://clickhouse.com/docs/sql-reference/data-types/nested-data-structures/nested"><code>Nested(field_1 String, ...)</code></a></td>
+<td>Static struct with named fields</td>
+<td>More performant than <code>Map(String, String)</code> but keys are static</td>
 </tr>
 </tbody>
 </table>
+<div class="admonition success">
+<p class="admonition-title">Recommended: <code>Map(String, String)</code></p>
+<p>For Metaxy's <code>metaxy_provenance_by_field</code> and <code>metaxy_data_version_by_field</code> columns, use <code>Map(String, String)</code>:</p>
+<ul>
+<li>
+<p><strong>No migrations required</strong> when feature fields change</p>
+</li>
+<li>
+<p><strong>Good performance</strong> for key-value lookups</p>
+</li>
+</ul>
+</div>
 <h3 id="sqlalchemy-and-alembic-migrations">SQLAlchemy and Alembic Migrations<a class="headerlink" href="#sqlalchemy-and-alembic-migrations" title="Permanent link">&para;</a></h3>
-<p>For better SQLAlchemy and Alembic migrations support, use the community <a href="https://github.com/xzkostyan/clickhouse-sqlalchemy"><code>clickhouse-sqlalchemy</code></a> driver:</p>
+<p>For SQLAlchemy and Alembic migrations support, use the <a href="https://github.com/xzkostyan/clickhouse-sqlalchemy"><code>clickhouse-sqlalchemy</code></a> driver with the <strong>native protocol</strong>:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clickhouse-sqlalchemy
 </span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Use Native Clickhouse Protocol</p>
+<p>The HTTP protocol has <a href="https://github.com/xzkostyan/clickhouse-sqlalchemy/issues/15">limited reflection support</a>. Always use the native protocol (<code>clickhouse+native://</code>) for full SQLAlchemy/Alembic compatibility:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">connection_string</span> <span class="o">=</span> <span class="s2">&quot;clickhouse+native://user:pass@localhost:9000/default&quot;</span>
+</span></code></pre></div>
+<p>The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.clickhouse.ClickHouseMetadataStore.sqlalchemy_url&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-property&quot;&gt;&lt;code&gt;property&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="api/#metaxy.metadata_store.clickhouse.ClickHouseMetadataStore.sqlalchemy_url"><code>ClickHouseMetadataStore.sqlalchemy_url</code></a> property is tweaked to return the native connection string variant.</p>
+</div>
 <details class="note">
 <summary>Alternative: ClickHouse Connect</summary>
 <p>Alternatively, use the official <a href="https://clickhouse.com/docs/integrations/python"><code>clickhouse-connect</code></a> driver.</p>
