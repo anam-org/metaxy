@@ -464,9 +464,10 @@ def test_metadata_status_up_to_date(
             assert feature["stale"] == 0
             assert feature["orphaned"] == 0
         else:
+            # Check for table output with ✓ icon for up-to-date status
             assert "video/files" in result.stdout
-            assert "up-to-date" in result.stdout
-            assert "store: 3" in result.stdout
+            assert "✓" in result.stdout
+            assert "3" in result.stdout  # Materialized count
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
@@ -523,9 +524,10 @@ def test_metadata_status_missing_metadata(
             assert feature["stale"] == 0
             assert feature["orphaned"] == 0
         else:
+            # Check for table output with ✗ icon for missing metadata
             assert "video/files" in result.stdout
-            assert "missing metadata" in result.stdout
-            assert "store: 0" in result.stdout
+            assert "✗" in result.stdout
+            assert "3" in result.stdout  # Missing count
 
 
 def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject):
@@ -810,8 +812,9 @@ def test_metadata_status_with_explicit_store(
             assert feature["status"] == "up_to_date"
             assert feature["needs_update"] is False
         else:
+            # Check for table output with ✓ icon for up-to-date status
             assert "video/files" in result.stdout
-            assert "up-to-date" in result.stdout
+            assert "✓" in result.stdout
 
 
 def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProject):
@@ -941,10 +944,11 @@ def test_metadata_status_all_features(
             assert data["features"]["files_root"]["is_root_feature"] is True
             assert data["features"]["files_root"]["status"] == "root_feature"
         else:
+            # Check for table output with feature names and ○ icon for root feature
             assert "files_root" in result.stdout
             assert "video/files" in result.stdout
             assert "audio/files" in result.stdout
-            assert "root feature" in result.stdout
+            assert "○" in result.stdout  # Root feature icon
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
@@ -993,9 +997,10 @@ def test_metadata_status_root_feature(
             assert "stale" not in feature
             assert "orphaned" not in feature
         else:
+            # Check for table output with ○ icon for root feature
             assert "root_feature" in result.stdout
-            assert "root feature" in result.stdout
-            assert "store: 3" in result.stdout
+            assert "○" in result.stdout  # Root feature icon
+            assert "3" in result.stdout  # Materialized count
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
@@ -1040,9 +1045,10 @@ def test_metadata_status_root_feature_missing_metadata(
             assert feature["metadata_exists"] is False
             assert feature["store_rows"] == 0
         else:
+            # Check for table output with ✗ icon for missing metadata
             assert "root_feature" in result.stdout
-            assert "missing metadata" in result.stdout
-            assert "store: 0" in result.stdout
+            assert "✗" in result.stdout  # Missing metadata icon
+            assert "0" in result.stdout  # Materialized count
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
@@ -1130,9 +1136,10 @@ def test_metadata_status_with_filter(
             assert feature["status"] == "up_to_date"
             assert feature["needs_update"] is False
         else:
+            # Check for table output with ✓ icon for up-to-date
             assert "video/files" in result.stdout
-            assert "store: 3" in result.stdout
-            assert "up-to-date" in result.stdout
+            assert "✓" in result.stdout  # Up-to-date icon
+            assert "3" in result.stdout  # Materialized count
 
         # Check status with filter for category B - should need updates
         result = metaxy_project.run_cli(
@@ -1156,9 +1163,11 @@ def test_metadata_status_with_filter(
             assert feature["missing"] == 2
             assert feature["needs_update"] is True
         else:
+            # Check for table output with ⚠ icon (needs update since missing=2)
+            # Note: metadata exists, just 0 rows match the filter
             assert "video/files" in result.stdout
-            assert "store: 0" in result.stdout
-            assert "missing: 2" in result.stdout
+            assert "⚠" in result.stdout  # Needs update icon
+            assert "2" in result.stdout  # Missing count
 
 
 def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
@@ -1280,5 +1289,7 @@ def test_metadata_status_with_multiple_filters(
             assert feature["store_rows"] == 2
             assert feature["status"] == "up_to_date"
         else:
+            # Check for table output with ✓ icon for up-to-date
             assert "video/files" in result.stdout
-            assert "store: 2" in result.stdout
+            assert "✓" in result.stdout  # Up-to-date icon
+            assert "2" in result.stdout  # Materialized count

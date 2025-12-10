@@ -19,7 +19,6 @@ from metaxy.models.types import (
 )
 
 if TYPE_CHECKING:
-    from metaxy import BaseFeature
     from metaxy.metadata_store.base import MetadataStore
     from metaxy.versioning.types import LazyIncrement
 
@@ -140,16 +139,12 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
 
     def sample_details(
         self,
-        feature_cls: type[BaseFeature],
         *,
         limit: int = 5,
     ) -> list[str]:
         """Return formatted sample preview lines for verbose output."""
         if self.lazy_increment is None:
             return []
-
-        id_columns_spec = feature_cls.spec().id_columns  # type: ignore[attr-defined]
-        id_columns_seq = tuple(id_columns_spec) if id_columns_spec is not None else None
 
         return [
             line.strip()
@@ -158,22 +153,18 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
                 self.status.missing_count,
                 self.status.stale_count,
                 self.status.orphaned_count,
-                id_columns_seq,
                 limit=limit,
             )
         ]
 
     def to_representation(
         self,
-        feature_cls: type[BaseFeature],
         *,
         verbose: bool,
     ) -> FullFeatureMetadataRepresentation:
         """Convert status to the full JSON representation used by the CLI."""
         sample_details = (
-            self.sample_details(feature_cls)
-            if verbose and self.lazy_increment
-            else None
+            self.sample_details() if verbose and self.lazy_increment else None
         )
         # For root features, missing/stale/orphaned are not meaningful
         missing = None if self.status.is_root_feature else self.status.missing_count
@@ -201,7 +192,6 @@ def format_sample_previews(
     missing_count: int,
     stale_count: int,
     orphaned_count: int,
-    id_columns: Sequence[str] | None = None,
     limit: int = 5,
 ) -> list[str]:
     """Format sample previews for missing, stale, and orphaned samples.
@@ -211,47 +201,36 @@ def format_sample_previews(
         missing_count: Number of missing samples (new from upstream)
         stale_count: Number of stale samples (outdated provenance)
         orphaned_count: Number of orphaned samples (removed from upstream)
-        id_columns: Columns to include in previews (defaults to ["sample_uid"])
         limit: Maximum number of samples to preview per category
 
     Returns:
-        List of formatted preview lines
+        List of formatted preview lines with Rich markup
     """
     lines: list[str] = []
-    cols = list(id_columns or ["sample_uid"])
 
     if missing_count > 0:
-        missing_preview_df = (
-            lazy_increment.added.select(cols).head(limit).collect().to_polars()
-        )
+        missing_preview_df = lazy_increment.added.head(limit).collect().to_polars()
         if missing_preview_df.height > 0:
-            preview_lines = [
-                ", ".join(f"{col}={row[col]}" for col in missing_preview_df.columns)
-                for row in missing_preview_df.to_dicts()
-            ]
-            lines.append("    Missing samples: " + "; ".join(preview_lines))
+            lines.append("[bold yellow]Missing samples:[/bold yellow]")
+            glimpse_str = missing_preview_df.glimpse(return_type="string")
+            if glimpse_str:
+                lines.append(glimpse_str)
 
     if stale_count > 0:
-        stale_preview_df = (
-            lazy_increment.changed.select(cols).head(limit).collect().to_polars()
-        )
+        stale_preview_df = lazy_increment.changed.head(limit).collect().to_polars()
         if stale_preview_df.height > 0:
-            preview_lines = [
-                ", ".join(f"{col}={row[col]}" for col in stale_preview_df.columns)
-                for row in stale_preview_df.to_dicts()
-            ]
-            lines.append("    Stale samples: " + "; ".join(preview_lines))
+            lines.append("[bold cyan]Stale samples:[/bold cyan]")
+            glimpse_str = stale_preview_df.glimpse(return_type="string")
+            if glimpse_str:
+                lines.append(glimpse_str)
 
     if orphaned_count > 0:
-        orphaned_preview_df = (
-            lazy_increment.removed.select(cols).head(limit).collect().to_polars()
-        )
+        orphaned_preview_df = lazy_increment.removed.head(limit).collect().to_polars()
         if orphaned_preview_df.height > 0:
-            preview_lines = [
-                ", ".join(f"{col}={row[col]}" for col in orphaned_preview_df.columns)
-                for row in orphaned_preview_df.to_dicts()
-            ]
-            lines.append("    Orphaned samples: " + "; ".join(preview_lines))
+            lines.append("[bold red]Orphaned samples:[/bold red]")
+            glimpse_str = orphaned_preview_df.glimpse(return_type="string")
+            if glimpse_str:
+                lines.append(glimpse_str)
 
     return lines
 

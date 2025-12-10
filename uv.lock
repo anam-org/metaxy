@@ -2555,7 +2555,7 @@ requires-dist = [
     { name = "mermaid-py", marker = "extra == 'mermaid'", specifier = ">=0.8.0" },
     { name = "narwhals", specifier = ">=2.9.0" },
     { name = "platformdirs", specifier = ">=4.5.0" },
-    { name = "polars", specifier = ">=1.33.1" },
+    { name = "polars", specifier = ">=1.35.0" },
     { name = "polars-hash", specifier = ">=0.5.1" },
     { name = "pyarrow", marker = "extra == 'ibis'", specifier = ">=18.0.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
