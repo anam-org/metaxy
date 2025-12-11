@@ -455,12 +455,6 @@ def test_soft_delete_then_overwrite_restores_row(any_store: MetadataStore):
 def test_hard_delete_memory_store_only(any_store: MetadataStore):
     """Hard delete currently implemented for in-memory store only."""
 
-    unsupported = {
-        "ClickHouseMetadataStore",
-    }
-    if any_store.__class__.__name__ in unsupported:
-        pytest.xfail(f"Hard delete pending for {any_store.__class__.__name__}")
-
     class UserProfile(
         SampleFeature,
         spec=SampleFeatureSpec(
@@ -502,9 +496,6 @@ def test_hard_delete_memory_store_only(any_store: MetadataStore):
 
 def test_hard_delete(any_store: MetadataStore):
     """Hard delete removes rows from storage."""
-
-    if any_store.__class__.__name__ != "InMemoryMetadataStore":
-        pytest.xfail("Hard delete pending for non-memory backends")
 
     class UserProfile(
         SampleFeature,
