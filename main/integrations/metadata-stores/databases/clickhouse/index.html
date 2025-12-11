@@ -3617,6 +3617,19 @@
 </li>
 </ul>
 </div>
+<div class="admonition warning">
+<p class="admonition-title">Special Map columns handling</p>
+<p>Metaxy transforms its system columns (<code>metaxy_provenance_by_field</code>, <code>metaxy_data_version_by_field</code>):</p>
+<ul>
+<li>
+<p><strong>Reading</strong>: System Map columns are converted into <a href="https://ibis-project.org/reference/datatypes#ibis.expr.datatypes.core.Struct">Ibis Structs</a> (e.g., <code>Struct[{"field_a": str, "field_b": str}]</code>)</p>
+</li>
+<li>
+<p><strong>Writing</strong>: If the input comes from Polars, then <a class="autorefs autorefs-external" href="https://docs.pola.rs/api/python/stable/reference/api/polars.datatypes.Struct.html#polars.datatypes.Struct">Polars Structs</a> are converted into expected ClickHouse Map format</p>
+</li>
+</ul>
+<p>User-defined Map columns are <strong>not transformed</strong>. They remain as <code>List[Struct[{"key": str, "value": str}]]</code> (Arrow's Map representation). Make sure to use the right format when providing a Polars DataFrame for writing.</p>
+</div>
 <h3 id="sqlalchemy-and-alembic-migrations">SQLAlchemy and Alembic Migrations<a class="headerlink" href="#sqlalchemy-and-alembic-migrations" title="Permanent link">&para;</a></h3>
 <p>For SQLAlchemy and Alembic migrations support, use the <a href="https://github.com/xzkostyan/clickhouse-sqlalchemy"><code>clickhouse-sqlalchemy</code></a> driver with the <strong>native protocol</strong>:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clickhouse-sqlalchemy
