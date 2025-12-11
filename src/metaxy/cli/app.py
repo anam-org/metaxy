@@ -60,6 +60,7 @@ def launcher(
 
     Auto-discovers configuration (`metaxy.toml` or `pyproject.toml`) in current or parent directories.
     Feature definitions are collected via [feature discovery](https://anam-org.github.io/metaxy/main/learn/feature-discovery/).
+    Supports loading environment variables from a `.env` file in the current directory.
     """
     import logging
     import os
@@ -90,6 +91,12 @@ app.command("metaxy.cli.metadata:app", name="metadata")
 
 def main():
     """Entry point for the CLI."""
+    from dotenv import load_dotenv
+
+    # Load .env from the current working directory before parsing CLI arguments
+    # This allows .env to configure METAXY_* environment variables for the CLI
+    load_dotenv(dotenv_path=Path.cwd() / ".env")
+
     app.meta()
 
 

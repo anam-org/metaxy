@@ -25,6 +25,7 @@ dependencies = [
   "polars-hash>=0.5.1",
   "pydantic>=2.11.9",
   "pydantic-settings>=2.11.0",
+  "python-dotenv>=1.0.0",
   "pyyaml>=6.0.0",
   "sqlglot>=28.1.0",
   "tomli>=2.3.0",
