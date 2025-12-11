@@ -39,6 +39,7 @@ class FullFeatureMetadataRepresentation(BaseModel):
     sample_details: list[str] | None = None
     store_metadata: dict[str, Any] | None = None
     error_message: str | None = None
+    progress_percentage: float | None = None
 
 
 StatusCategory = Literal[
@@ -96,6 +97,10 @@ class FeatureMetadataStatus(BaseModel):
     store_metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Store-specific metadata (e.g., table_name, uri)",
+    )
+    progress_percentage: float | None = Field(
+        default=None,
+        description="Percentage of input units processed (0-100). None if not computed or root feature.",
     )
 
     @property
@@ -189,6 +194,7 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
             is_root_feature=self.status.is_root_feature,
             sample_details=sample_details,
             store_metadata=self.status.store_metadata or None,
+            progress_percentage=self.status.progress_percentage,
         )
 
 
@@ -258,6 +264,7 @@ def get_feature_metadata_status(
     *,
     use_fallback: bool = False,
     global_filters: Sequence[nw.Expr] | None = None,
+    compute_progress: bool = False,
 ) -> FeatureMetadataStatusWithIncrement:
     """Get metadata status for a single feature.
 
@@ -272,6 +279,10 @@ def get_feature_metadata_status(
             Note: resolve_update always uses the primary store only.
         global_filters: List of Narwhals filter expressions to apply to all features.
             These filters are applied when reading metadata and resolving updates.
+        compute_progress: Whether to calculate progress percentage.
+            When True, computes what percentage of input units have been processed.
+            This requires additional computation (re-runs the input query).
+            Default is False.
 
     Returns:
         FeatureMetadataStatusWithIncrement containing status and lazy increment
@@ -342,6 +353,13 @@ def get_feature_metadata_status(
     stale_count = count_lazy_rows(lazy_increment.changed)
     orphaned_count = count_lazy_rows(lazy_increment.removed)
 
+    # Calculate progress if requested
+    progress_percentage: float | None = None
+    if compute_progress:
+        progress_percentage = metadata_store.calculate_input_progress(
+            lazy_increment, key
+        )
+
     status = FeatureMetadataStatus(
         feature_key=key,
         target_version=target_version,
@@ -352,6 +370,7 @@ def get_feature_metadata_status(
         orphaned_count=orphaned_count,
         needs_update=missing_count > 0 or stale_count > 0 or orphaned_count > 0,
         store_metadata=store_metadata,
+        progress_percentage=progress_percentage,
     )
     return FeatureMetadataStatusWithIncrement(
         status=status, lazy_increment=lazy_increment

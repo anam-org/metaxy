@@ -13,7 +13,6 @@ import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.constants import METAXY_PROVENANCE, METAXY_PROVENANCE_BY_FIELD
-from metaxy.models.lineage import ExpansionRelationship
 from metaxy.utils.hashing import get_hash_truncation_length
 
 if TYPE_CHECKING:
@@ -56,6 +55,18 @@ class LineageHandler(ABC):
         """
         pass
 
+    @property
+    def input_id_columns(self) -> list[str]:
+        """Columns that define a logical input unit.
+
+        These are the columns used to count distinct input units for progress calculation.
+        Delegates to FeaturePlan.input_id_columns.
+
+        Returns:
+            List of column names that define a logical input unit.
+        """
+        return self.plan.input_id_columns
+
 
 class IdentityLineageHandler(LineageHandler):
     """Handler for 1:1 identity lineage relationships.
@@ -90,12 +101,7 @@ class AggregationLineageHandler(LineageHandler):
         hash_algorithm: HashAlgorithm,
     ) -> tuple[FrameT, FrameT, list[str]]:
         """Aggregate expected provenance by grouping."""
-        id_columns = list(self.feature_spec.id_columns)
-        agg_result = self.feature_spec.lineage.get_aggregation_columns(id_columns)
-        assert agg_result is not None, (
-            "Aggregation relationship must have aggregation columns"
-        )
-        agg_columns = list(agg_result)
+        agg_columns = self.plan.input_id_columns
 
         # Aggregate expected provenance
         expected_agg = self._aggregate_provenance(expected, agg_columns, hash_algorithm)
@@ -187,9 +193,7 @@ class ExpansionLineageHandler(LineageHandler):
         hash_algorithm: HashAlgorithm,
     ) -> tuple[FrameT, FrameT, list[str]]:
         """Group current by parent ID columns."""
-        # Access the ExpansionRelationship to get the .on attribute
-        assert isinstance(self.feature_spec.lineage.relationship, ExpansionRelationship)
-        parent_columns = list(self.feature_spec.lineage.relationship.on)
+        parent_columns = self.plan.input_id_columns
 
         # Group current by parent columns and take any representative row
         current_grouped = (

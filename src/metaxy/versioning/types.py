@@ -1,5 +1,6 @@
 """Hash algorithms supported for field provenance calculation."""
 
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, NamedTuple
 
@@ -34,12 +35,21 @@ class PolarsIncrement(NamedTuple):
     removed: pl.DataFrame
 
 
-class PolarsLazyIncrement(NamedTuple):
-    """Like [`LazyIncrement`][metaxy.versioning.types.LazyIncrement], but converted to Polars lazy frames."""
+@dataclass(kw_only=True)
+class PolarsLazyIncrement:
+    """Like [`LazyIncrement`][metaxy.versioning.types.LazyIncrement], but converted to Polars lazy frames.
+
+    Attributes:
+        added: New samples from upstream not present in current metadata.
+        changed: Samples with different provenance.
+        removed: Samples in current metadata but not in upstream state.
+        input: Joined upstream metadata with [`FeatureDep`][metaxy.models.feature_spec.FeatureDep] rules applied.
+    """
 
     added: pl.LazyFrame
     changed: pl.LazyFrame
     removed: pl.LazyFrame
+    input: pl.LazyFrame | None = None
 
     def collect(self, **kwargs: Any) -> PolarsIncrement:
         """Collect into a [`PolarsIncrement`][metaxy.versioning.types.PolarsIncrement].
@@ -87,22 +97,21 @@ class Increment(NamedTuple):
         )
 
 
-class LazyIncrement(NamedTuple):
+@dataclass(kw_only=True)
+class LazyIncrement:
     """Result of an incremental update containing lazy dataframes.
 
-    Contains three sets of samples:
-
-    - added: New samples from upstream not present in current metadata
-
-    - changed: Samples with different provenance
-
-    - removed: Samples in current metadata but not in upstream state
-
+    Attributes:
+        added: New samples from upstream not present in current metadata.
+        changed: Samples with different provenance.
+        removed: Samples in current metadata but not in upstream state.
+        input: Joined upstream metadata with [`FeatureDep`][metaxy.models.feature_spec.FeatureDep] rules applied.
     """
 
     added: nw.LazyFrame[Any]
     changed: nw.LazyFrame[Any]
     removed: nw.LazyFrame[Any]
+    input: nw.LazyFrame[Any] | None = None
 
     def collect(self, **kwargs: Any) -> Increment:
         """Collect all lazy frames to eager DataFrames.
@@ -133,4 +142,5 @@ class LazyIncrement(NamedTuple):
             added=lazy_frame_to_polars(self.added),
             changed=lazy_frame_to_polars(self.changed),
             removed=lazy_frame_to_polars(self.removed),
+            input=lazy_frame_to_polars(self.input) if self.input is not None else None,
         )
