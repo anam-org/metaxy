@@ -59,16 +59,17 @@ def features(
     features_data: list[dict[str, Any]] = []
 
     for feature_key, feature_spec in graph.feature_specs_by_key.items():
-        if (
-            context.project
-            and get_feature_by_key(feature_key).project != context.project
-        ):
+        feature_cls = get_feature_by_key(feature_key)
+        if context.project and feature_cls.project != context.project:
             continue
 
         version = graph.get_feature_version(feature_key)
 
         # Determine if it's a root feature (no deps)
         is_root = not feature_spec.deps
+
+        # Get import path (module.ClassName)
+        import_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
 
         # Get the feature plan for resolved field dependencies
         feature_plan = graph.get_feature_plan(feature_key) if verbose else None
@@ -106,6 +107,8 @@ def features(
             "key": feature_key.to_string(),
             "version": version,
             "is_root": is_root,
+            "project": feature_cls.project,
+            "import_path": import_path,
             "field_count": len(fields_info),
             "fields": fields_info,
         }
@@ -134,60 +137,62 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
         data_console.print("[yellow]No features found in the current project.[/yellow]")
         return
 
-    # Create main table
-    table = Table(show_header=True, header_style="bold")
-    table.add_column("Type", justify="center", no_wrap=True)
-    table.add_column("Feature", no_wrap=True)
-    table.add_column("Fields", justify="right", no_wrap=True)
-    table.add_column("Version", no_wrap=True)
+    # Group features by project
 
-    if verbose:
-        table.add_column("Dependencies", no_wrap=False)
-
+    features_by_project: dict[str, list[dict[str, Any]]] = {}
     for feature in features_data:
-        # Root features get ○, dependent features get ◆
-        type_icon = "[cyan]○[/cyan]" if feature["is_root"] else "[blue]◆[/blue]"
+        project = feature["project"]
+        if project not in features_by_project:
+            features_by_project[project] = []
+        features_by_project[project].append(feature)
 
-        # Truncate version hash for display (first 12 chars)
-        version_display = (
-            feature["version"][:12] + "..."
-            if len(feature["version"]) > 12
-            else feature["version"]
+    # Output each project group
+    for project, project_features in features_by_project.items():
+        table = Table(
+            title=f"[bold]{project}[/bold]",
+            show_header=True,
+            header_style="bold",
         )
+        table.add_column("Feature", no_wrap=True)
+        table.add_column("Import Path", no_wrap=True)
 
         if verbose:
-            deps_display = ", ".join(feature.get("deps", [])) or "-"
-            table.add_row(
-                type_icon,
-                feature["key"],
-                str(feature["field_count"]),
-                version_display,
-                deps_display,
-            )
-        else:
-            table.add_row(
-                type_icon,
-                feature["key"],
-                str(feature["field_count"]),
-                version_display,
-            )
+            table.add_column("Dependencies")
 
-    data_console.print(table)
+        for feature in project_features:
+            if verbose:
+                deps_display = ", ".join(feature.get("deps", [])) or "-"
+                table.add_row(
+                    feature["key"],
+                    feature["import_path"],
+                    deps_display,
+                )
+            else:
+                table.add_row(
+                    feature["key"],
+                    feature["import_path"],
+                )
+
+        data_console.print(table)
+        data_console.print()
 
     # Summary
     root_count = sum(1 for f in features_data if f["is_root"])
     dependent_count = len(features_data) - root_count
-    data_console.print()
     data_console.print(
         f"[dim]Total: {len(features_data)} feature(s) "
-        f"([cyan]○[/cyan] {root_count} root, [blue]◆[/blue] {dependent_count} dependent)[/dim]"
+        f"({root_count} root, {dependent_count} dependent)[/dim]"
     )
 
     # Verbose: show field details for each feature
     if verbose:
         data_console.print()
         for feature in features_data:
-            data_console.print(f"[bold cyan]`{feature['key']}` fields[/bold cyan]")
+            data_console.print(
+                f"[bold cyan]{feature['key']}[/bold cyan] "
+                f"[dim]({feature['project']})[/dim] "
+                f"{feature['import_path']}"
+            )
 
             field_table = Table(show_header=True, header_style="bold dim")
             field_table.add_column("Field", no_wrap=True)

@@ -826,7 +826,9 @@ class MetadataStore(ABC):
         # if isinstance(df_nw, (pl.DataFrame, pl.LazyFrame)):
         df_nw = nw.from_native(df)
 
-        assert isinstance(df_nw, nw.DataFrame), "df must be a Narwhal DataFrame"
+        assert isinstance(df_nw, (nw.DataFrame, nw.LazyFrame)), (
+            f"df must be a Narwhals DataFrame, got {type(df_nw)}"
+        )
 
         # For system tables, write directly without feature_version tracking
         if is_system_table:

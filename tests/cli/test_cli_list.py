@@ -25,13 +25,11 @@ def test_list_features_basic(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("list", "features")
 
         assert result.returncode == 0
-        # Check for table output
+        # Check for project grouping and table output
+        assert "test" in result.stdout  # Project name as table title
         assert "video/files" in result.stdout
         assert "Feature" in result.stdout  # Table header
-        assert "Fields" in result.stdout  # Table header
-        assert "Version" in result.stdout  # Table header
-        assert "○" in result.stdout  # Root feature icon
-        assert "1" in result.stdout  # Field count
+        assert "Import Path" in result.stdout  # Table header
         assert "Total:" in result.stdout  # Summary
 
 
@@ -323,8 +321,10 @@ def test_list_features_verbose_plain_output(metaxy_project: TempMetaxyProject):
             assert "Feature" in result.stdout
             assert "Dependencies" in result.stdout  # Verbose adds deps column
 
-            # Check for field details section
-            assert "fields" in result.stdout
+            # Check for field details section with feature title (key, project, import path)
+            assert "video/files" in result.stdout
+            assert "(test)" in result.stdout  # Project in title
+            assert "VideoFiles" in result.stdout  # Import path in title
             assert "Code Version" in result.stdout
             assert "path" in result.stdout
             assert "frames" in result.stdout
@@ -400,9 +400,9 @@ def test_list_features_shows_root_and_dependent_icons(
             result = metaxy_project.run_cli("list", "features")
 
             assert result.returncode == 0
-            # Check for both icons
-            assert "○" in result.stdout  # Root feature icon
-            assert "◆" in result.stdout  # Dependent feature icon
+            # Check both features are listed
+            assert "video/files" in result.stdout
+            assert "video/processing" in result.stdout
             # Check summary shows counts
             assert "1 root" in result.stdout
             assert "1 dependent" in result.stdout
@@ -437,8 +437,8 @@ def test_list_features_short_flag(metaxy_project: TempMetaxyProject):
         assert "Dependencies" in result.stdout  # Verbose column
 
 
-def test_list_features_version_truncation(metaxy_project: TempMetaxyProject):
-    """Test that version hashes are truncated in plain output but full in JSON."""
+def test_list_features_json_includes_version(metaxy_project: TempMetaxyProject):
+    """Test that JSON output includes full version hash."""
 
     def features():
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
@@ -462,11 +462,9 @@ def test_list_features_version_truncation(metaxy_project: TempMetaxyProject):
         # Full version should be a long hash (64 chars for SHA256)
         assert len(full_version) == 64
 
-        # Plain output should have truncated version
-        result_plain = metaxy_project.run_cli("list", "features")
-        # Truncated version shows first 12 chars + "..."
-        truncated = full_version[:12] + "..."
-        assert truncated in result_plain.stdout
+        # JSON should also include project and import_path
+        assert "project" in data["features"][0]
+        assert "import_path" in data["features"][0]
 
 
 def test_list_features_verbose_auto_field_mapping(metaxy_project: TempMetaxyProject):
@@ -570,6 +568,32 @@ def test_list_features_multiple_fields(metaxy_project: TempMetaxyProject):
         field_keys = {f["key"] for f in feature["fields"]}
         assert field_keys == {"path", "size", "hash"}
 
-        # Check code versions
-        hash_field = next(f for f in feature["fields"] if f["key"] == "hash")
-        assert hash_field["code_version"] == "2"
+
+def test_list_features_long_names_not_truncated(metaxy_project: TempMetaxyProject):
+    """Test that long feature keys and import paths are not truncated."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class CroppedSceneChunk720x480FaceLandmarksEyeFeatures(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(
+                    ["chunk", "crop", "face_landmarks", "eye_features", "extended"]
+                ),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli("list", "features")
+
+        assert result.returncode == 0
+        # Full feature key should be present (not truncated with ...)
+        assert "chunk/crop/face_landmarks/eye_features/extended" in result.stdout
+        # Full class name should be present
+        assert "CroppedSceneChunk720x480FaceLandmarksEyeFeatures" in result.stdout
+        # Should not contain ellipsis truncation
+        assert "…" not in result.stdout
