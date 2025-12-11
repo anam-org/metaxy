@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from functools import reduce
 from typing import TYPE_CHECKING, Annotated, Any
 
 import cyclopts
@@ -23,6 +24,14 @@ app = cyclopts.App(
     console=console,  # pyrefly: ignore[unexpected-keyword]
     error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
 )
+
+
+def _combine_filters(filters: list[Any]) -> Any:
+    """Combine multiple filter expressions with AND."""
+
+    if len(filters) == 1:
+        return filters[0]
+    return reduce(lambda acc, expr: acc & expr, filters[1:], filters[0])
 
 
 @app.command()
@@ -362,6 +371,109 @@ def status(
 
         # Exit with error if assert_in_sync and updates needed
         if assert_in_sync and needs_update:
+            raise SystemExit(1)
+
+
+@app.command()
+def delete(
+    *,
+    selector: FeatureSelector = FeatureSelector(),
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--store"],
+            help="Metadata store name (defaults to configured default store).",
+        ),
+    ] = None,
+    filters: FilterArgs | None = None,
+    mode: Annotated[
+        str,
+        cyclopts.Parameter(
+            name=["--mode"],
+            help="Deletion mode: hard (physically remove) or soft (append tombstones).",
+        ),
+    ] = "hard",
+    format: Annotated[
+        OutputFormat,
+        cyclopts.Parameter(
+            name=["--format"],
+        ),
+    ] = "plain",
+) -> None:
+    """Delete metadata rows matching filters."""
+    from metaxy.cli.context import AppContext
+    from metaxy.cli.utils import CLIError, exit_with_error, load_graph_for_command
+
+    filters = filters or []
+    selector.validate(format)
+
+    if not filters:
+        exit_with_error(
+            CLIError(
+                code="MISSING_FILTER",
+                message="At least one --filter is required for deletion.",
+                hint="Use --filter \"column = 'value'\"",
+            ),
+            format,
+        )
+
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+
+    with metadata_store:
+        graph = load_graph_for_command(context, None, metadata_store, format)
+        valid_keys, missing_keys = selector.resolve_keys(graph, format)
+
+        if missing_keys and format == "plain":
+            missing = ", ".join(k.to_string() for k in missing_keys)
+            data_console.print(
+                f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {missing}"
+            )
+        if not valid_keys:
+            exit_with_error(
+                CLIError(
+                    code="NO_FEATURES",
+                    message="No valid features selected for deletion.",
+                ),
+                format,
+            )
+
+        combined_filter = _combine_filters(filters)
+        results: dict[str, Any] = {}
+        errors: dict[str, str] = {}
+
+        with metadata_store.open("write"):
+            for feature_key in valid_keys:
+                feature_cls = graph.features_by_key[feature_key]
+                try:
+                    metadata_store.delete_metadata(
+                        feature_cls,
+                        filters=combined_filter,
+                        soft=mode == "soft",
+                    )
+                except Exception as e:  # pragma: no cover - CLI surface
+                    errors[feature_key.to_string()] = str(e)
+
+        if format == "json":
+            output = {
+                "mode": mode,
+                "results": results,
+            }
+            if errors:
+                output["errors"] = errors
+            print(json.dumps(output, indent=2))
+            if errors:
+                raise SystemExit(1)
+            return
+
+        # plain output
+        data_console.print(f"[bold]Deletion mode:[/bold] {mode}")
+        for key, count in results.items():
+            data_console.print(f"  {key}: {count} row(s) affected")
+        if errors:
+            error_console.print("[red]Errors encountered:[/red]")
+            for key, msg in errors.items():
+                error_console.print(f"  {key}: {msg}")
             raise SystemExit(1)
 
 
