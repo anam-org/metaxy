@@ -327,12 +327,14 @@ def test_identity_lineage_resolve_increment(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=current,
-        upstream=upstream,
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=current,
+            upstream=upstream,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     # Identity: should detect one changed sample
@@ -422,12 +424,14 @@ def test_aggregation_lineage_resolve_increment_no_current(
 
     upstream = {FeatureKey(["sensor_readings"]): sensor_readings_metadata}
 
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=None,
-        upstream=upstream,
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=None,
+            upstream=upstream,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     added = added_lazy.collect()
@@ -506,12 +510,14 @@ def test_aggregation_lineage_resolve_increment_with_changes(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=current,
-        upstream=upstream,
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=current,
+            upstream=upstream,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     added = added_lazy.collect()
@@ -564,7 +570,7 @@ def test_aggregation_lineage_new_readings_trigger_change(
     )
 
     # First resolve: no current, so all readings are added
-    added_v1_lazy, _, _ = engine.resolve_increment_with_provenance(
+    added_v1_lazy, _, _, _ = engine.resolve_increment_with_provenance(
         current=None,
         upstream={FeatureKey(["sensor_readings"]): upstream_v1},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -631,12 +637,14 @@ def test_aggregation_lineage_new_readings_trigger_change(
     )
 
     # Resolve increment with new upstream
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=current_aggregated,
-        upstream={FeatureKey(["sensor_readings"]): upstream_v2},
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=current_aggregated,
+            upstream={FeatureKey(["sensor_readings"]): upstream_v2},
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     added = added_lazy.collect()
@@ -714,12 +722,14 @@ def test_expansion_lineage_resolve_increment_no_current(
 
     upstream = {FeatureKey(["video"]): video_metadata}
 
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=None,
-        upstream=upstream,
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=None,
+            upstream=upstream,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     added = added_lazy.collect()
@@ -797,12 +807,14 @@ def test_expansion_lineage_resolve_increment_video_changed(
     # Resolve increment with modified video metadata
     # The expansion handler will group video_frames_current by video_id to get one row per video
     # Then compare with upstream (which has 2 videos)
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=video_frames_current,  # Current frames for v1 (3 frames) and v2 (2 frames)
-        upstream={FeatureKey(["video"]): upstream_modified},
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=video_frames_current,  # Current frames for v1 (3 frames) and v2 (2 frames)
+            upstream={FeatureKey(["video"]): upstream_modified},
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     added = added_lazy.collect()
@@ -856,12 +868,14 @@ def test_expansion_lineage_new_video_added(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=video_frames_current,  # Has frames for v1 and v2 only
-        upstream={FeatureKey(["video"]): upstream_with_new_video},
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=video_frames_current,  # Has frames for v1 and v2 only
+            upstream={FeatureKey(["video"]): upstream_with_new_video},
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     added = added_lazy.collect()
@@ -908,12 +922,14 @@ def test_expansion_lineage_video_removed(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=video_frames_current,  # Has frames for v1 and v2
-        upstream={FeatureKey(["video"]): upstream_without_v2},  # Only v1
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=video_frames_current,  # Has frames for v1 and v2
+            upstream={FeatureKey(["video"]): upstream_without_v2},  # Only v1
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     added = added_lazy.collect()
@@ -1037,12 +1053,14 @@ def test_aggregation_lineage_upstream_data_version_change_triggers_update(
     )
 
     # Resolve increment with changed data_version
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=current_v1,
-        upstream={FeatureKey(["sensor_readings"]): upstream_v2},
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=current_v1,
+            upstream={FeatureKey(["sensor_readings"]): upstream_v2},
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     added = added_lazy.collect()
@@ -1150,12 +1168,14 @@ def test_expansion_lineage_upstream_data_version_change_triggers_update(
     )
 
     # Resolve increment with changed data_version for v2
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=current_v1,
-        upstream={FeatureKey(["video"]): upstream_v2},
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=current_v1,
+            upstream={FeatureKey(["video"]): upstream_v2},
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     added = added_lazy.collect()
@@ -1263,12 +1283,14 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=current_base,
-        upstream={FeatureKey(["sensor_readings"]): upstream_dv_changed},
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=current_base,
+            upstream={FeatureKey(["sensor_readings"]): upstream_dv_changed},
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
@@ -1301,12 +1323,14 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=current_base,
-        upstream={FeatureKey(["sensor_readings"]): upstream_prov_changed},
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=current_base,
+            upstream={FeatureKey(["sensor_readings"]): upstream_prov_changed},
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
@@ -1380,12 +1404,14 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=current_base,
-        upstream={FeatureKey(["video"]): upstream_dv_changed},
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=current_base,
+            upstream={FeatureKey(["video"]): upstream_dv_changed},
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
@@ -1408,12 +1434,14 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
-        current=current_base,
-        upstream={FeatureKey(["video"]): upstream_prov_changed},
-        hash_algorithm=HashAlgorithm.XXHASH64,
-        filters={},
-        sample=None,
+    added_lazy, changed_lazy, removed_lazy, _ = (
+        engine.resolve_increment_with_provenance(
+            current=current_base,
+            upstream={FeatureKey(["video"]): upstream_prov_changed},
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
     )
 
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())

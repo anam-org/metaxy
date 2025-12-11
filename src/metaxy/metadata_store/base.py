@@ -484,6 +484,7 @@ class MetadataStore(ABC):
                     # Root features or user-provided samples: use samples directly
                     # Note: samples already has metaxy_provenance computed
                     added = samples_nw.lazy()
+                    input_df = None  # Root features have no upstream input
                 else:
                     # Non-root features: load all upstream with provenance
                     added = engine.load_upstream_with_provenance(
@@ -491,15 +492,20 @@ class MetadataStore(ABC):
                         hash_algo=self.hash_algorithm,
                         filters=filters_by_key,
                     )
+                    input_df = (
+                        added  # Input is the same as added when skipping comparison
+                    )
                 changed = None
                 removed = None
             else:
-                added, changed, removed = engine.resolve_increment_with_provenance(
-                    current=current_metadata,
-                    upstream=upstream_by_key,
-                    hash_algorithm=self.hash_algorithm,
-                    filters=filters_by_key,
-                    sample=samples_nw.lazy() if samples_nw is not None else None,
+                added, changed, removed, input_df = (
+                    engine.resolve_increment_with_provenance(
+                        current=current_metadata,
+                        upstream=upstream_by_key,
+                        hash_algorithm=self.hash_algorithm,
+                        filters=filters_by_key,
+                        sample=samples_nw.lazy() if samples_nw is not None else None,
+                    )
                 )
 
         # Convert None to empty DataFrames
@@ -519,6 +525,9 @@ class MetadataStore(ABC):
                 removed=removed
                 if isinstance(removed, nw.LazyFrame)
                 else nw.from_native(removed),
+                input=input_df
+                if input_df is None or isinstance(input_df, nw.LazyFrame)
+                else nw.from_native(input_df),
             )
         else:
             return Increment(
@@ -1631,6 +1640,63 @@ class MetadataStore(ABC):
         Useful for logging purposes. This method should not expose sensitive information.
         """
         return {}
+
+    def calculate_input_progress(
+        self,
+        lazy_increment: LazyIncrement,
+        feature_key: CoercibleToFeatureKey,
+    ) -> float | None:
+        """Calculate progress percentage from lazy increment.
+
+        Uses the `input` field from LazyIncrement to count total input units
+        and compares with `added` to determine how many are missing.
+
+        Progress represents the percentage of input units that have been processed
+        at least once. Stale samples (in `changed`) are counted as processed since
+        they have existing metadata, even though they may need re-processing due to
+        upstream changes.
+
+        Args:
+            lazy_increment: The lazy increment containing input and added dataframes.
+            feature_key: The feature key to look up lineage information.
+
+        Returns:
+            Progress percentage (0-100), or None if input is not available.
+        """
+        if lazy_increment.input is None:
+            return None
+
+        key = self._resolve_feature_key(feature_key)
+        graph = current_graph()
+        plan = graph.get_feature_plan(key)
+
+        # Get the columns that define input units from the feature plan
+        input_id_columns = plan.input_id_columns
+
+        # Count distinct input units using two separate queries
+        # We can't use concat because input and added may have different schemas
+        # (e.g., nullable vs non-nullable columns)
+        total_units: int = (
+            lazy_increment.input.select(input_id_columns)
+            .unique()
+            .select(nw.len())
+            .collect()
+            .item()
+        )
+
+        if total_units == 0:
+            return None  # No input available from upstream
+
+        missing_units: int = (
+            lazy_increment.added.select(input_id_columns)
+            .unique()
+            .select(nw.len())
+            .collect()
+            .item()
+        )
+
+        processed_units = total_units - missing_units
+        return (processed_units / total_units) * 100
 
     def copy_metadata(
         self,

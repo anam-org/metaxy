@@ -55,7 +55,14 @@ def status(
         bool,
         cyclopts.Parameter(
             name=["--verbose"],
-            help="Show additional details about samples needing updates.",
+            help="Whether to display sample slices of dataframes.",
+        ),
+    ] = False,
+    progress: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--progress"],
+            help="Display progress percentage showing how many input units have been processed at least once. Stale samples are counted as processed.",
         ),
     ] = False,
     allow_fallback_stores: Annotated[
@@ -149,7 +156,10 @@ def status(
             ]
         ] = []
 
-        errors: list[tuple[str, str]] = []
+        errors: list[tuple[str, str, Exception]] = []
+
+        # Enable progress calculation if --progress or --verbose is set
+        compute_progress = progress or verbose
 
         for feature_key in valid_keys:
             feature_cls = graph.features_by_key[feature_key]
@@ -159,6 +169,7 @@ def status(
                     metadata_store,
                     use_fallback=allow_fallback_stores,
                     global_filters=global_filters,
+                    compute_progress=compute_progress,
                 )
 
                 if status_with_increment.status.needs_update:
@@ -175,7 +186,7 @@ def status(
             except Exception as e:
                 # Log the error and continue with other features
                 error_msg = str(e)
-                errors.append((feature_key.to_string(), error_msg))
+                errors.append((feature_key.to_string(), error_msg, e))
 
                 if format == "json":
                     from metaxy.graph.status import FullFeatureMetadataRepresentation
@@ -201,7 +212,19 @@ def status(
 
         # Output plain format as Rich Table
         if format == "plain":
+            from rich.traceback import Traceback
+
             from metaxy.graph.status import _STATUS_ICONS
+
+            # Print rich tracebacks for any errors before the table
+            if errors:
+                for feat, _, exc in errors:
+                    error_console.print(
+                        f"\n[bold red]Error processing feature:[/bold red] {feat}"
+                    )
+                    error_console.print(
+                        Traceback.from_exception(type(exc), exc, exc.__traceback__)
+                    )
 
             table = Table(show_header=True, header_style="bold")
             table.add_column("Status", justify="center", no_wrap=True)
@@ -240,13 +263,31 @@ def status(
                 icon = _STATUS_ICONS[status.status_category]
                 feature_key_str = status.feature_key.to_string()
 
+                # Determine if this is a "no input" case
+                no_input = (
+                    compute_progress
+                    and not status.is_root_feature
+                    and status.progress_percentage is None
+                )
+
+                # Format status column with progress if available
+                if status.progress_percentage is not None:
+                    status_str = f"{icon} ({status.progress_percentage:.0f}%)"
+                elif no_input:
+                    # Progress was requested but None means no upstream input available
+                    # Show warning icon since we can't determine status without input
+                    warning_icon = _STATUS_ICONS["needs_update"]
+                    status_str = f"{warning_icon} [dim](no input)[/dim]"
+                else:
+                    status_str = icon
+
                 # Format store metadata for Info column
                 info_str = str(status.store_metadata) if status.store_metadata else ""
 
-                # For root features, show "-" for Missing/Stale/Orphaned
-                if status.is_root_feature:
+                # For root features or no-input cases, show "-" for Missing/Stale/Orphaned
+                if status.is_root_feature or no_input:
                     table.add_row(
-                        icon,
+                        status_str,
                         feature_key_str,
                         str(status.store_row_count),
                         "-",
@@ -256,7 +297,7 @@ def status(
                     )
                 else:
                     table.add_row(
-                        icon,
+                        status_str,
                         feature_key_str,
                         str(status.store_row_count),
                         str(status.missing_count),
@@ -285,14 +326,12 @@ def status(
                         data_console.print(line)
                         data_console.print()  # Blank line after each section
 
-            # Print error summary
+            # Print error summary (tracebacks already printed above)
             if errors:
                 data_console.print()
                 data_console.print(
-                    f"[yellow]Warning:[/yellow] {len(errors)} feature(s) had errors:"
+                    f"[yellow]Warning:[/yellow] {len(errors)} feature(s) had errors (see tracebacks above)"
                 )
-                for feat, err in errors:
-                    data_console.print(f"  [red]•[/red] {feat}: {err}")
 
         # Output JSON result
         if format == "json":
@@ -315,7 +354,7 @@ def status(
                 ]
             if errors:
                 warnings_dict["errors"] = [
-                    {"feature": feat, "error": err} for feat, err in errors
+                    {"feature": feat, "error": err} for feat, err, _ in errors
                 ]
             if warnings_dict:
                 output["warnings"] = warnings_dict

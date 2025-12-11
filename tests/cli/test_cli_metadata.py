@@ -1330,3 +1330,344 @@ def test_metadata_status_error_icon_exists():
     assert "error" in _STATUS_TEXTS
     assert _STATUS_ICONS["error"] == "[red]![/red]"
     assert _STATUS_TEXTS["error"] == "error"
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_with_progress_flag(
+    metaxy_project: TempMetaxyProject,
+    output_format: str,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Test status command with --progress flag."""
+    # Clear METAXY_STORE env var to ensure we use the project's config
+    monkeypatch.delenv("METAXY_STORE", raising=False)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write upstream metadata (5 samples)
+        _write_sample_metadata(
+            metaxy_project, "video/files_root", sample_uids=[1, 2, 3, 4, 5]
+        )
+
+        # Write downstream metadata for only 2 out of 5 samples (40% processed)
+        with graph.use(), store:
+            feature_key = FeatureKey(["video", "files"])
+            feature_cls = graph.get_feature_by_key(feature_key)
+            increment = store.resolve_update(feature_cls, lazy=False)
+            partial_data = increment.added.to_polars().head(2)
+            store.write_metadata(feature_cls, partial_data)
+
+        # Check status with --progress flag
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--format",
+            output_format,
+            "--progress",
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            assert feature["feature_key"] == "video/files"
+            assert feature["status"] == "needs_update"
+            assert feature["progress_percentage"] is not None
+            # 2 processed out of 5 = 40%
+            assert abs(feature["progress_percentage"] - 40.0) < 0.1
+        else:
+            # Check for progress percentage in plain output
+            assert "video/files" in result.stdout
+            # Progress should be shown as (40%) next to status icon
+            assert "40%" in result.stdout or "40.0%" in result.stdout
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_verbose_includes_progress(
+    metaxy_project: TempMetaxyProject,
+    output_format: str,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Test that --verbose flag also enables progress calculation."""
+    # Clear METAXY_STORE env var to ensure we use the project's config
+    monkeypatch.delenv("METAXY_STORE", raising=False)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write upstream metadata
+        _write_sample_metadata(metaxy_project, "video/files_root")
+
+        # Write downstream for only 1 out of 3 samples
+        with graph.use(), store:
+            feature_key = FeatureKey(["video", "files"])
+            feature_cls = graph.get_feature_by_key(feature_key)
+            increment = store.resolve_update(feature_cls, lazy=False)
+            partial_data = increment.added.to_polars().head(1)
+            store.write_metadata(feature_cls, partial_data)
+
+        # Check status with --verbose (should also include progress)
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--format",
+            output_format,
+            "--verbose",
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            # Verbose should include progress
+            assert feature["progress_percentage"] is not None
+            # 1 processed out of 3 = 33.33%
+            assert abs(feature["progress_percentage"] - 33.33) < 0.1
+            # Verbose should also include sample details
+            assert feature["sample_details"] is not None
+        else:
+            # Check for progress in plain output
+            assert "video/files" in result.stdout
+            assert "33%" in result.stdout or "33.3%" in result.stdout
+
+
+def test_metadata_status_progress_for_root_feature(
+    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch
+):
+    """Test that root features show no progress (None) since they have no upstream input."""
+    # Clear METAXY_STORE env var to ensure we use the project's config
+    monkeypatch.delenv("METAXY_STORE", raising=False)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class RootFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["root_feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write metadata for the root feature
+        _write_sample_metadata(metaxy_project, "root_feature")
+
+        # Check status with --progress flag
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "root_feature",
+            "--format",
+            "json",
+            "--progress",
+        )
+
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        feature = data["features"]["root_feature"]
+        assert feature["is_root_feature"] is True
+        # Root features should have no progress (None excluded from JSON or null)
+        assert (
+            "progress_percentage" not in feature
+            or feature["progress_percentage"] is None
+        )
+
+
+def test_metadata_status_progress_100_percent(
+    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch
+):
+    """Test that fully processed features show 100% progress."""
+    # Clear METAXY_STORE env var to ensure we use the project's config
+    monkeypatch.delenv("METAXY_STORE", raising=False)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write upstream metadata
+        _write_sample_metadata(metaxy_project, "video/files_root")
+
+        # Write downstream metadata for all samples
+        with graph.use(), store:
+            feature_key = FeatureKey(["video", "files"])
+            feature_cls = graph.get_feature_by_key(feature_key)
+            increment = store.resolve_update(feature_cls, lazy=False)
+            store.write_metadata(feature_cls, increment.added.to_polars())
+
+        # Check status with --progress flag
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--format",
+            "json",
+            "--progress",
+        )
+
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        feature = data["features"]["video/files"]
+        assert feature["status"] == "up_to_date"
+        assert feature["progress_percentage"] == 100.0
+
+
+def test_metadata_status_progress_no_input_display(
+    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch
+):
+    """Test that non-root features with no upstream input show '(no input)' in plain format."""
+    # Clear METAXY_STORE env var to ensure we use the project's config
+    monkeypatch.delenv("METAXY_STORE", raising=False)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write upstream metadata with sample_uids
+        _write_sample_metadata(
+            metaxy_project, "video/files_root", sample_uids=[1, 2, 3]
+        )
+
+        # Check status with --progress flag and a filter that excludes all rows
+        # This simulates the "no input" scenario when all upstream data is filtered out
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--format",
+            "plain",
+            "--progress",
+            "--filter",
+            "sample_uid > 999",  # No samples match this filter
+        )
+
+        assert result.returncode == 0
+        # For non-root features with no input after filtering, should show "(no input)"
+        assert "no input" in result.stdout
+
+        # Check JSON format - should have null progress_percentage
+        result_json = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--format",
+            "json",
+            "--progress",
+            "--filter",
+            "sample_uid > 999",  # No samples match this filter
+        )
+
+        assert result_json.returncode == 0
+        data = json.loads(result_json.stdout)
+        feature = data["features"]["video/files"]
+        # Non-root feature with no upstream input should have null progress
+        # (key may be absent due to exclude_none or present with None value)
+        assert feature.get("progress_percentage") is None

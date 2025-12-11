@@ -606,7 +606,7 @@ class VersioningEngine(ABC):
         hash_algorithm: HashAlgorithm,
         filters: Mapping[FeatureKey, Sequence[nw.Expr]],
         sample: FrameT | None,
-    ) -> tuple[FrameT, FrameT | None, FrameT | None]:
+    ) -> tuple[FrameT, FrameT | None, FrameT | None, FrameT | None]:
         """Loads upstream data, filters, renames, joins it, calculates expected provenance, and compares it with existing provenance.
 
         Args:
@@ -620,8 +620,11 @@ class VersioningEngine(ABC):
                 IMPORTANT: metaxy_provenance must be a HASH, not a raw concatenation.
 
         Returns:
-            tuple[FrameT, FrameT | None, FrameT | None]
-                New samples appearing in upstream, samples with changed provenance (mismatch between expected and current state), and samples that have been removed from upstream but are in the current state. New samples DataFrame is never None, but may be empty. changed and removed DataFrames may be None (for the first increment on the feature).
+            tuple[FrameT, FrameT | None, FrameT | None, FrameT | None]
+                - added: New samples appearing in upstream. Never None, but may be empty.
+                - changed: Samples with changed provenance. May be None for first increment.
+                - removed: Samples removed from upstream. May be None for first increment.
+                - input: Joined upstream metadata with FeatureDep rules applied. None for root features.
 
         Note:
             Hash truncation length is read from MetaxyConfig.get().hash_truncation_length
@@ -633,6 +636,7 @@ class VersioningEngine(ABC):
                 "Root features should have no upstream dependencies"
             )
             expected = sample
+            input_df: FrameT | None = None  # Root features have no upstream input
             # Auto-compute metaxy_provenance if missing but metaxy_provenance_by_field exists
             cols = expected.collect_schema().names()
             if METAXY_PROVENANCE not in cols and METAXY_PROVENANCE_BY_FIELD in cols:
@@ -654,10 +658,12 @@ class VersioningEngine(ABC):
                 hash_algo=hash_algorithm,
                 filters=filters,
             )
+            # Store input before normalization (for progress calculation)
+            input_df = expected
 
         # Case 1: No current metadata - everything is added
         if current is None:
-            return expected, None, None
+            return expected, None, None, input_df
         assert current is not None
 
         # Case 2 & 3: Compare expected with current metadata
@@ -723,7 +729,7 @@ class VersioningEngine(ABC):
         )
 
         # Return lazy frames with ID and provenance columns (caller decides whether to collect)
-        return added, changed, removed
+        return added, changed, removed, input_df
 
     def _check_required_provenance_columns(self, df: FrameT, message: str):
         cols = df.collect_schema().names()

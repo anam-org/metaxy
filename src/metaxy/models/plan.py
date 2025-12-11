@@ -12,6 +12,7 @@ from metaxy.models.field import (
     SpecialFieldDep,
 )
 from metaxy.models.fields_mapping import FieldsMappingResolutionContext
+from metaxy.models.lineage import ExpansionRelationship, LineageRelationshipType
 from metaxy.models.types import CoercibleToFieldKey, ValidatedFieldKeyAdapter
 
 # Rebuild the model now that FeatureSpec is available
@@ -230,3 +231,67 @@ class FeaturePlan(FrozenBaseModel):
             result[field.key] = field_deps
 
         return result
+
+    @cached_property
+    def upstream_id_columns(self) -> list[str]:
+        """Union of all upstream ID columns after renames.
+
+        This is the set of columns used to join multiple upstream features.
+        Each upstream feature's id_columns are renamed according to FeatureDep.rename
+        before being combined.
+
+        Returns:
+            List of column names (order not guaranteed).
+        """
+        if not self.feature_deps or not self.deps:
+            return []
+
+        cols: set[str] = set()
+        deps_by_key = {dep.key: dep for dep in self.deps}
+
+        for feature_dep in self.feature_deps:
+            upstream_spec = deps_by_key.get(feature_dep.feature)
+            if upstream_spec is None:
+                continue
+
+            renames = feature_dep.rename or {}
+            for col in upstream_spec.id_columns:
+                renamed_col = renames.get(col, col)
+                cols.add(renamed_col)
+
+        return list(cols)
+
+    @cached_property
+    def input_id_columns(self) -> list[str]:
+        """Columns that uniquely identify an input sample for progress calculation.
+
+        The "input" is the joined upstream metadata after FeatureDep rules are applied.
+        The columns returned depend on the lineage relationship:
+
+        - Identity (1:1): Same as upstream_id_columns (each input row is a unit)
+        - Aggregation (N:1): Aggregation columns (each group is a unit)
+        - Expansion (1:N): Parent columns from ExpansionRelationship.on (each parent is a unit)
+
+        Returns:
+            List of column names that define a logical input unit.
+        """
+        relationship_type = self.feature.lineage.relationship.type
+
+        if relationship_type == LineageRelationshipType.IDENTITY:
+            return self.upstream_id_columns
+
+        elif relationship_type == LineageRelationshipType.AGGREGATION:
+            agg_result = self.feature.lineage.get_aggregation_columns(
+                list(self.feature.id_columns)
+            )
+            assert agg_result is not None, (
+                "Aggregation relationship must have aggregation columns"
+            )
+            return list(agg_result)
+
+        elif relationship_type == LineageRelationshipType.EXPANSION:
+            assert isinstance(self.feature.lineage.relationship, ExpansionRelationship)
+            return list(self.feature.lineage.relationship.on)
+
+        else:
+            raise ValueError(f"Unknown lineage relationship type: {relationship_type}")
