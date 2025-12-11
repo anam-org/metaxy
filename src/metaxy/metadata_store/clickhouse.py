@@ -214,12 +214,24 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         - `JSON` columns: Cast to String (ClickHouse driver returns dict, PyArrow expects bytes)
 
-        - `Map(K,V)` columns: Convert to Struct by extracting keys
+        - `Map(String, String)` metaxy columns: Convert to named Struct by extracting keys
 
-        For Map columns, we use ClickHouse's `tuple()` function to build a named tuple
-        from map key accesses, which Ibis/PyArrow converts to Struct.
+        For metaxy Map columns (`metaxy_provenance_by_field`, `metaxy_data_version_by_field`),
+        we build a named Struct from map key accesses using known field names from the
+        feature spec.
+
+        User-defined Map columns are left as-is and will appear in e.g. Polars as
+        `List[Struct{key, value}]` (the standard Arrow Map representation).
         """
         import ibis.expr.datatypes as dt
+
+        from metaxy.models.constants import (
+            METAXY_DATA_VERSION_BY_FIELD,
+            METAXY_PROVENANCE_BY_FIELD,
+        )
+
+        # Only convert these metaxy system Map columns to Struct
+        metaxy_map_columns = {METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD}
 
         schema = table.schema()
         mutations: dict[str, Any] = {}
@@ -229,10 +241,9 @@ class ClickHouseMetadataStore(IbisMetadataStore):
                 # JSON → String (can't convert to Struct due to ClickHouse CAST limitations)
                 mutations[col_name] = table[col_name].cast("string")
 
-            elif isinstance(dtype, dt.Map):
-                # Map(K,V) → Struct by extracting all keys from the map
-                # We need to know what keys exist - get them from the actual data
-                # using mapKeys() and building a struct dynamically
+            elif isinstance(dtype, dt.Map) and col_name in metaxy_map_columns:
+                # Only convert metaxy system Map(String, String) columns to Struct
+                # User-defined Map columns are left as-is
                 mutations[col_name] = self._map_to_struct_expr(
                     table, col_name, dtype, feature_key
                 )

@@ -4,6 +4,9 @@ from enum import Enum
 from typing import Any, NamedTuple
 
 import narwhals as nw
+import polars as pl
+
+from metaxy._utils import lazy_frame_to_polars
 
 
 class HashAlgorithm(Enum):
@@ -23,12 +26,47 @@ class HashAlgorithm(Enum):
     FARMHASH = "farmhash"  # Better than MD5, available in BigQuery
 
 
+class PolarsIncrement(NamedTuple):
+    """Like [`Increment`][metaxy.versioning.types.Increment], but converted to Polars frames."""
+
+    added: pl.DataFrame
+    changed: pl.DataFrame
+    removed: pl.DataFrame
+
+
+class PolarsLazyIncrement(NamedTuple):
+    """Like [`LazyIncrement`][metaxy.versioning.types.LazyIncrement], but converted to Polars lazy frames."""
+
+    added: pl.LazyFrame
+    changed: pl.LazyFrame
+    removed: pl.LazyFrame
+
+    def collect(self, **kwargs: Any) -> PolarsIncrement:
+        """Collect into a [`PolarsIncrement`][metaxy.versioning.types.PolarsIncrement].
+
+        Leverage [`polars.collect_all`](https://docs.pola.rs/api/python/stable/reference/api/polars.collect_all.html) to optimize the collection process and take advantage of common subplan elimination.
+
+        Args:
+            **kwargs: backend-specific keyword arguments to pass to the collect method of the lazy frames.
+
+        Returns:
+            PolarsIncrement: The collected increment.
+        """
+        added, changed, removed = pl.collect_all(
+            [self.added, self.changed, self.removed], **kwargs
+        )
+        return PolarsIncrement(added, changed, removed)
+
+
 class Increment(NamedTuple):
     """Result of an incremental update containing eager dataframes.
 
     Contains three sets of samples:
+
     - added: New samples from upstream not present in current metadata
+
     - changed: Samples with different provenance
+
     - removed: Samples in current metadata but not in upstream state
     """
 
@@ -37,27 +75,62 @@ class Increment(NamedTuple):
     removed: nw.DataFrame[Any]
 
     def collect(self) -> "Increment":
-        """No-op for eager Increment (already collected)."""
+        """Convenience method that's a no-op."""
         return self
+
+    def to_polars(self) -> PolarsIncrement:
+        """Convert to Polars."""
+        return PolarsIncrement(
+            added=self.added.to_polars(),
+            changed=self.changed.to_polars(),
+            removed=self.removed.to_polars(),
+        )
 
 
 class LazyIncrement(NamedTuple):
     """Result of an incremental update containing lazy dataframes.
 
     Contains three sets of samples:
+
     - added: New samples from upstream not present in current metadata
+
     - changed: Samples with different provenance
+
     - removed: Samples in current metadata but not in upstream state
+
     """
 
     added: nw.LazyFrame[Any]
     changed: nw.LazyFrame[Any]
     removed: nw.LazyFrame[Any]
 
-    def collect(self) -> Increment:
-        """Collect all lazy frames to eager DataFrames."""
+    def collect(self, **kwargs: Any) -> Increment:
+        """Collect all lazy frames to eager DataFrames.
+
+        Args:
+            **kwargs: backend-specific keyword arguments to pass to the collect method of the lazy frames.
+
+        Returns:
+            Increment: The collected increment.
+        """
         return Increment(
-            added=self.added.collect(),
-            changed=self.changed.collect(),
-            removed=self.removed.collect(),
+            added=self.added.collect(**kwargs),
+            changed=self.changed.collect(**kwargs),
+            removed=self.removed.collect(**kwargs),
+        )
+
+    def to_polars(self) -> PolarsLazyIncrement:
+        """Convert to Polars.
+
+        !!! tip
+            If the Narwhals lazy frames are already backed by Polars, this is a no-op.
+
+        !!! warning
+            If the Narwhals lazy frames are **not** backed by Polars, this will
+            trigger a full materialization for them.
+        """
+        return PolarsLazyIncrement(
+            added=lazy_frame_to_polars(self.added),
+            changed=lazy_frame_to_polars(self.changed),
+            removed=lazy_frame_to_polars(self.removed),
         )

@@ -20,7 +20,13 @@ from metaxy.versioning.engine import (
     RenamedDataFrame,
     VersioningEngine,
 )
-from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
+from metaxy.versioning.types import (
+    HashAlgorithm,
+    Increment,
+    LazyIncrement,
+    PolarsIncrement,
+    PolarsLazyIncrement,
+)
 
 __all__ = [
     "VersioningEngine",
@@ -28,4 +34,6 @@ __all__ = [
     "HashAlgorithm",
     "Increment",
     "LazyIncrement",
+    "PolarsIncrement",
+    "PolarsLazyIncrement",
 ]

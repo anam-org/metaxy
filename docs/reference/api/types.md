@@ -6,6 +6,16 @@
 
 ::: metaxy.versioning.types.Increment
 
+::: metaxy.versioning.types.PolarsIncrement
+    options:
+      members: true
+      show_if_no_docstring: true
+
+::: metaxy.versioning.types.PolarsLazyIncrement
+    options:
+      members: true
+      show_if_no_docstring: true
+
 ::: metaxy.HashAlgorithm
     options:
       show_if_no_docstring: true

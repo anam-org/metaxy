@@ -596,3 +596,103 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
 
         # Clean up
         conn.drop_table(table_name)
+
+
+def test_clickhouse_user_defined_map_column(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test that user-defined Map(String, T) columns are preserved (not transformed).
+
+    Users may define their own Map columns in ClickHouse tables. Unlike metaxy's
+    system columns (metaxy_provenance_by_field, metaxy_data_version_by_field),
+    user Map columns are NOT converted to Struct.
+
+    In Polars, ClickHouse Map columns appear as List[Struct{key, value}] because
+    that's how Arrow serializes Map types. This is different from metaxy columns
+    which are explicitly converted to named Struct for downstream compatibility.
+
+    This test verifies:
+    1. User Map columns are readable (no Ibis/PyArrow errors)
+    2. User Map columns remain as List[Struct{key,value}] format (not dict)
+    3. Metaxy Map columns are converted to dict (Struct)
+    """
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with both metaxy Map columns AND a user-defined Map column
+        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                user_metadata Map(String, String),
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Insert data with user Map column
+        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+            f"""
+            INSERT INTO {table_name} (
+                sample_uid,
+                user_metadata,
+                metaxy_provenance_by_field,
+                metaxy_provenance,
+                metaxy_feature_version,
+                metaxy_snapshot_version,
+                metaxy_data_version_by_field,
+                metaxy_data_version,
+                metaxy_created_at,
+                metaxy_materialization_id,
+                metaxy_feature_spec_version
+            ) VALUES
+            (1, {{'source': 'camera1', 'quality': 'high'}}, {{'frames': 'hash1', 'audio': 'hash2'}}, 'prov1', 'v1', 'sv1', {{'frames': 'v1', 'audio': 'v1'}}, 'dv1', now(), 'm1', 'fs1'),
+            (2, {{'source': 'camera2', 'resolution': '4k'}}, {{'frames': 'hash3', 'audio': 'hash4'}}, 'prov2', 'v1', 'sv1', {{'frames': 'v2', 'audio': 'v2'}}, 'dv2', now(), 'm1', 'fs1')
+        """
+        )
+
+        # Read via read_metadata_in_store
+        # This uses transform_after_read which should:
+        # - Convert metaxy Map columns to Struct (dict)
+        # - Leave user_metadata Map column as-is (List[Struct{key,value}])
+        read_result = store.read_metadata_in_store(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
+
+        assert len(result) == 2
+        assert set(result["sample_uid"].to_list()) == {1, 2}
+
+        # Metaxy Map columns should be converted to Struct (dict in Python)
+        provenance = result["metaxy_provenance_by_field"][0]
+        assert isinstance(provenance, dict), f"Expected dict, got {type(provenance)}"
+        assert provenance["frames"] == "hash1"
+
+        # User Map column remains as List[Struct{key,value}] in Polars
+        # This is the Arrow Map representation - NOT converted to dict
+        user_meta = result["user_metadata"][0]
+        # In Polars, each row's Map value is a Series of struct{key, value}
+        assert isinstance(user_meta, pl.Series), (
+            f"Expected pl.Series, got {type(user_meta)}"
+        )
+        # Verify we can access the data
+        assert len(user_meta) == 2  # Two key-value pairs: source, quality
+
+        # Clean up
+        conn.drop_table(table_name)
