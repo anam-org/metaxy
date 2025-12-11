@@ -9,9 +9,11 @@ from __future__ import annotations
 import narwhals as nw
 import polars as pl
 import pytest
+from pytest_cases import parametrize_with_cases
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
 from metaxy._testing.models import SampleFeatureSpec
+from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
@@ -19,6 +21,8 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
 )
+
+from .conftest import AllStoresCases
 
 
 @pytest.fixture
@@ -377,3 +381,145 @@ class TestComputeProvenance:
         # Data should be preserved
         assert result_pl["sample_uid"].to_list() == ["s1", "s2"]
         assert result_pl["value"].to_list() == [10, 20]
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_compute_provenance_eager_frame_computes_correctly(store: MetadataStore):
+    """Test that compute_provenance with eager DataFrame computes provenance correctly.
+
+    Verifies:
+    1. Return type is DataFrame (preserves eager evaluation)
+    2. Provenance columns are correctly computed
+    3. Data is preserved
+    4. Upstream renamed columns are dropped
+    """
+
+    class UpstreamFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="upstream",
+            fields=["value"],
+        ),
+    ):
+        sample_uid: str
+
+    class DownstreamFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="downstream",
+            deps=[FeatureDep(feature=UpstreamFeature)],
+            fields=["result"],
+        ),
+    ):
+        sample_uid: str
+
+    upstream_key = UpstreamFeature.spec().key
+    renamed_col = f"{METAXY_DATA_VERSION_BY_FIELD}__{upstream_key.table_name}"
+
+    # Eager input with multiple rows to verify full computation
+    df = pl.DataFrame(
+        {
+            "sample_uid": ["s1", "s2"],
+            "value": [10, 20],
+            renamed_col: [{"value": "hash1"}, {"value": "hash2"}],
+        }
+    )
+
+    with store:
+        result = store.compute_provenance(DownstreamFeature, nw.from_native(df))
+
+    # Should return eager
+    assert isinstance(result, nw.DataFrame)
+
+    # Verify provenance columns were added
+    result_pl = result.to_polars()
+    assert METAXY_PROVENANCE_BY_FIELD in result_pl.columns
+    assert METAXY_PROVENANCE in result_pl.columns
+    assert METAXY_DATA_VERSION_BY_FIELD in result_pl.columns
+    assert METAXY_DATA_VERSION in result_pl.columns
+
+    # Verify upstream column was dropped
+    assert renamed_col not in result_pl.columns
+
+    # Verify data is preserved
+    assert result_pl["sample_uid"].to_list() == ["s1", "s2"]
+    assert result_pl["value"].to_list() == [10, 20]
+
+    # Verify provenance was computed for each row (not empty/null)
+    provenance_values = result_pl[METAXY_PROVENANCE].to_list()
+    assert len(provenance_values) == 2
+    assert all(v is not None and v != "" for v in provenance_values)
+
+    # Different upstream hashes should produce different provenance
+    assert provenance_values[0] != provenance_values[1]
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_compute_provenance_lazy_frame_computes_correctly(store: MetadataStore):
+    """Test that compute_provenance with LazyFrame computes provenance correctly.
+
+    Verifies:
+    1. Return type is LazyFrame (preserves lazy evaluation)
+    2. Provenance columns are correctly computed after collecting
+    3. Data is preserved after collecting
+    4. Upstream renamed columns are dropped
+    """
+
+    class UpstreamFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="upstream",
+            fields=["value"],
+        ),
+    ):
+        sample_uid: str
+
+    class DownstreamFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="downstream",
+            deps=[FeatureDep(feature=UpstreamFeature)],
+            fields=["result"],
+        ),
+    ):
+        sample_uid: str
+
+    upstream_key = UpstreamFeature.spec().key
+    renamed_col = f"{METAXY_DATA_VERSION_BY_FIELD}__{upstream_key.table_name}"
+
+    # Lazy input with multiple rows to verify full computation
+    df = pl.DataFrame(
+        {
+            "sample_uid": ["s1", "s2"],
+            "value": [10, 20],
+            renamed_col: [{"value": "hash1"}, {"value": "hash2"}],
+        }
+    ).lazy()
+
+    with store:
+        result = store.compute_provenance(DownstreamFeature, nw.from_native(df))
+
+    # Should return lazy
+    assert isinstance(result, nw.LazyFrame)
+
+    # Collect and verify provenance columns were added
+    result_pl = result.collect().to_polars()
+    assert METAXY_PROVENANCE_BY_FIELD in result_pl.columns
+    assert METAXY_PROVENANCE in result_pl.columns
+    assert METAXY_DATA_VERSION_BY_FIELD in result_pl.columns
+    assert METAXY_DATA_VERSION in result_pl.columns
+
+    # Verify upstream column was dropped
+    assert renamed_col not in result_pl.columns
+
+    # Verify data is preserved
+    assert result_pl["sample_uid"].to_list() == ["s1", "s2"]
+    assert result_pl["value"].to_list() == [10, 20]
+
+    # Verify provenance was computed for each row (not empty/null)
+    provenance_values = result_pl[METAXY_PROVENANCE].to_list()
+    assert len(provenance_values) == 2
+    assert all(v is not None and v != "" for v in provenance_values)
+
+    # Different upstream hashes should produce different provenance
+    assert provenance_values[0] != provenance_values[1]
