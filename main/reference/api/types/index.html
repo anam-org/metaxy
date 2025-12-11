@@ -3375,6 +3375,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#metaxy.versioning.types.PolarsLazyIncrement.input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;input
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4759,6 +4770,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#metaxy.versioning.types.PolarsLazyIncrement.input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;input
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5755,28 +5777,61 @@
 <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.versioning.types.LazyIncrement</span>
 
 
-<a href="#metaxy.versioning.types.LazyIncrement" class="headerlink" title="Permanent link">&para;</a></h2>
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
 
+<a href="#metaxy.versioning.types.LazyIncrement" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">LazyIncrement</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">added</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">changed</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">removed</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="nb">input</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
-            <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.NamedTuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
 
 
 
         <p>Result of an incremental update containing lazy dataframes.</p>
-<p>Contains three sets of samples:</p>
-<ul>
-<li>
-<p>added: New samples from upstream not present in current metadata</p>
-</li>
-<li>
-<p>changed: Samples with different provenance</p>
-</li>
-<li>
-<p>removed: Samples in current metadata but not in upstream state</p>
-</li>
-</ul>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><span title="metaxy.versioning.types.LazyIncrement.added">added</span></code></b>
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>New samples from upstream not present in current metadata.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="metaxy.versioning.types.LazyIncrement.changed">changed</span></code></b>
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Samples with different provenance.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="metaxy.versioning.types.LazyIncrement.removed">removed</span></code></b>
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Samples in current metadata but not in upstream state.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="metaxy.versioning.types.LazyIncrement.input">input</span></code></b>
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>] | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>Joined upstream metadata with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureDep&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../definitions/feature-spec/#metaxy.FeatureDep"><code>FeatureDep</code></a> rules applied.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -5844,20 +5899,20 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/versioning/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a><a href="#__codelineno-0-107"><span class="linenos" data-linenos="107 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Increment</span><span class="p">:</span>
-</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><a href="#__codelineno-0-108"><span class="linenos" data-linenos="108 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect all lazy frames to eager DataFrames.</span>
-</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a><a href="#__codelineno-0-109"><span class="linenos" data-linenos="109 "></span></a>
-</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><a href="#__codelineno-0-110"><span class="linenos" data-linenos="110 "></span></a><span class="sd">    Args:</span>
-</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><a href="#__codelineno-0-111"><span class="linenos" data-linenos="111 "></span></a><span class="sd">        **kwargs: backend-specific keyword arguments to pass to the collect method of the lazy frames.</span>
-</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a><a href="#__codelineno-0-112"><span class="linenos" data-linenos="112 "></span></a>
-</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a><a href="#__codelineno-0-113"><span class="linenos" data-linenos="113 "></span></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a><a href="#__codelineno-0-114"><span class="linenos" data-linenos="114 "></span></a><span class="sd">        Increment: The collected increment.</span>
-</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a><a href="#__codelineno-0-115"><span class="linenos" data-linenos="115 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a><a href="#__codelineno-0-116"><span class="linenos" data-linenos="116 "></span></a>    <span class="k">return</span> <span class="n">Increment</span><span class="p">(</span>
-</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a><a href="#__codelineno-0-117"><span class="linenos" data-linenos="117 "></span></a>        <span class="n">added</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
-</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a><a href="#__codelineno-0-118"><span class="linenos" data-linenos="118 "></span></a>        <span class="n">changed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">changed</span><span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
-</span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a><a href="#__codelineno-0-119"><span class="linenos" data-linenos="119 "></span></a>        <span class="n">removed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
-</span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><a href="#__codelineno-0-120"><span class="linenos" data-linenos="120 "></span></a>    <span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a><a href="#__codelineno-0-116"><span class="linenos" data-linenos="116 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Increment</span><span class="p">:</span>
+</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a><a href="#__codelineno-0-117"><span class="linenos" data-linenos="117 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect all lazy frames to eager DataFrames.</span>
+</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a><a href="#__codelineno-0-118"><span class="linenos" data-linenos="118 "></span></a>
+</span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a><a href="#__codelineno-0-119"><span class="linenos" data-linenos="119 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><a href="#__codelineno-0-120"><span class="linenos" data-linenos="120 "></span></a><span class="sd">        **kwargs: backend-specific keyword arguments to pass to the collect method of the lazy frames.</span>
+</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a><a href="#__codelineno-0-121"><span class="linenos" data-linenos="121 "></span></a>
+</span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><a href="#__codelineno-0-122"><span class="linenos" data-linenos="122 "></span></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a><a href="#__codelineno-0-123"><span class="linenos" data-linenos="123 "></span></a><span class="sd">        Increment: The collected increment.</span>
+</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><a href="#__codelineno-0-124"><span class="linenos" data-linenos="124 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><a href="#__codelineno-0-125"><span class="linenos" data-linenos="125 "></span></a>    <span class="k">return</span> <span class="n">Increment</span><span class="p">(</span>
+</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a><a href="#__codelineno-0-126"><span class="linenos" data-linenos="126 "></span></a>        <span class="n">added</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+</span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a><a href="#__codelineno-0-127"><span class="linenos" data-linenos="127 "></span></a>        <span class="n">changed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">changed</span><span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a><a href="#__codelineno-0-128"><span class="linenos" data-linenos="128 "></span></a>        <span class="n">removed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+</span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a><a href="#__codelineno-0-129"><span class="linenos" data-linenos="129 "></span></a>    <span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -5872,7 +5927,12 @@
 
 
 <a href="#metaxy.versioning.types.LazyIncrement.to_polars" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_polars</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.PolarsLazyIncrement&lt;/span&gt;" href="#metaxy.versioning.types.PolarsLazyIncrement">PolarsLazyIncrement</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_polars</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.PolarsLazyIncrement&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.versioning.types.PolarsLazyIncrement">PolarsLazyIncrement</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5891,21 +5951,22 @@ trigger a full materialization for them.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/versioning/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><a href="#__codelineno-0-122"><span class="linenos" data-linenos="122 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">to_polars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PolarsLazyIncrement</span><span class="p">:</span>
-</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a><a href="#__codelineno-0-123"><span class="linenos" data-linenos="123 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert to Polars.</span>
-</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><a href="#__codelineno-0-124"><span class="linenos" data-linenos="124 "></span></a>
-</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><a href="#__codelineno-0-125"><span class="linenos" data-linenos="125 "></span></a><span class="sd">    !!! tip</span>
-</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a><a href="#__codelineno-0-126"><span class="linenos" data-linenos="126 "></span></a><span class="sd">        If the Narwhals lazy frames are already backed by Polars, this is a no-op.</span>
-</span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a><a href="#__codelineno-0-127"><span class="linenos" data-linenos="127 "></span></a>
-</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a><a href="#__codelineno-0-128"><span class="linenos" data-linenos="128 "></span></a><span class="sd">    !!! warning</span>
-</span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a><a href="#__codelineno-0-129"><span class="linenos" data-linenos="129 "></span></a><span class="sd">        If the Narwhals lazy frames are **not** backed by Polars, this will</span>
-</span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130"></a><a href="#__codelineno-0-130"><span class="linenos" data-linenos="130 "></span></a><span class="sd">        trigger a full materialization for them.</span>
-</span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a><a href="#__codelineno-0-131"><span class="linenos" data-linenos="131 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><a href="#__codelineno-0-132"><span class="linenos" data-linenos="132 "></span></a>    <span class="k">return</span> <span class="n">PolarsLazyIncrement</span><span class="p">(</span>
-</span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a><a href="#__codelineno-0-133"><span class="linenos" data-linenos="133 "></span></a>        <span class="n">added</span><span class="o">=</span><span class="n">lazy_frame_to_polars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">added</span><span class="p">),</span>
-</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a><a href="#__codelineno-0-134"><span class="linenos" data-linenos="134 "></span></a>        <span class="n">changed</span><span class="o">=</span><span class="n">lazy_frame_to_polars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">changed</span><span class="p">),</span>
-</span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a><a href="#__codelineno-0-135"><span class="linenos" data-linenos="135 "></span></a>        <span class="n">removed</span><span class="o">=</span><span class="n">lazy_frame_to_polars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="p">),</span>
-</span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136"></a><a href="#__codelineno-0-136"><span class="linenos" data-linenos="136 "></span></a>    <span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a><a href="#__codelineno-0-131"><span class="linenos" data-linenos="131 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">to_polars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PolarsLazyIncrement</span><span class="p">:</span>
+</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><a href="#__codelineno-0-132"><span class="linenos" data-linenos="132 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert to Polars.</span>
+</span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a><a href="#__codelineno-0-133"><span class="linenos" data-linenos="133 "></span></a>
+</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a><a href="#__codelineno-0-134"><span class="linenos" data-linenos="134 "></span></a><span class="sd">    !!! tip</span>
+</span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a><a href="#__codelineno-0-135"><span class="linenos" data-linenos="135 "></span></a><span class="sd">        If the Narwhals lazy frames are already backed by Polars, this is a no-op.</span>
+</span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136"></a><a href="#__codelineno-0-136"><span class="linenos" data-linenos="136 "></span></a>
+</span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a><a href="#__codelineno-0-137"><span class="linenos" data-linenos="137 "></span></a><span class="sd">    !!! warning</span>
+</span><span id="__span-0-138"><a id="__codelineno-0-138" name="__codelineno-0-138"></a><a href="#__codelineno-0-138"><span class="linenos" data-linenos="138 "></span></a><span class="sd">        If the Narwhals lazy frames are **not** backed by Polars, this will</span>
+</span><span id="__span-0-139"><a id="__codelineno-0-139" name="__codelineno-0-139"></a><a href="#__codelineno-0-139"><span class="linenos" data-linenos="139 "></span></a><span class="sd">        trigger a full materialization for them.</span>
+</span><span id="__span-0-140"><a id="__codelineno-0-140" name="__codelineno-0-140"></a><a href="#__codelineno-0-140"><span class="linenos" data-linenos="140 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-141"><a id="__codelineno-0-141" name="__codelineno-0-141"></a><a href="#__codelineno-0-141"><span class="linenos" data-linenos="141 "></span></a>    <span class="k">return</span> <span class="n">PolarsLazyIncrement</span><span class="p">(</span>
+</span><span id="__span-0-142"><a id="__codelineno-0-142" name="__codelineno-0-142"></a><a href="#__codelineno-0-142"><span class="linenos" data-linenos="142 "></span></a>        <span class="n">added</span><span class="o">=</span><span class="n">lazy_frame_to_polars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">added</span><span class="p">),</span>
+</span><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a><a href="#__codelineno-0-143"><span class="linenos" data-linenos="143 "></span></a>        <span class="n">changed</span><span class="o">=</span><span class="n">lazy_frame_to_polars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">changed</span><span class="p">),</span>
+</span><span id="__span-0-144"><a id="__codelineno-0-144" name="__codelineno-0-144"></a><a href="#__codelineno-0-144"><span class="linenos" data-linenos="144 "></span></a>        <span class="n">removed</span><span class="o">=</span><span class="n">lazy_frame_to_polars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="p">),</span>
+</span><span id="__span-0-145"><a id="__codelineno-0-145" name="__codelineno-0-145"></a><a href="#__codelineno-0-145"><span class="linenos" data-linenos="145 "></span></a>        <span class="nb">input</span><span class="o">=</span><span class="n">lazy_frame_to_polars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-146"><a id="__codelineno-0-146" name="__codelineno-0-146"></a><a href="#__codelineno-0-146"><span class="linenos" data-linenos="146 "></span></a>    <span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -5990,9 +6051,9 @@ trigger a full materialization for them.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/versioning/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><a href="#__codelineno-0-77"><span class="linenos" data-linenos="77 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Increment&quot;</span><span class="p">:</span>
-</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><a href="#__codelineno-0-78"><span class="linenos" data-linenos="78 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convenience method that&#39;s a no-op.&quot;&quot;&quot;</span>
-</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a><a href="#__codelineno-0-79"><span class="linenos" data-linenos="79 "></span></a>    <span class="k">return</span> <span class="bp">self</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a><a href="#__codelineno-0-87"><span class="linenos" data-linenos="87 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Increment&quot;</span><span class="p">:</span>
+</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a><a href="#__codelineno-0-88"><span class="linenos" data-linenos="88 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convenience method that&#39;s a no-op.&quot;&quot;&quot;</span>
+</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a><a href="#__codelineno-0-89"><span class="linenos" data-linenos="89 "></span></a>    <span class="k">return</span> <span class="bp">self</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -6017,13 +6078,13 @@ trigger a full materialization for them.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/versioning/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><a href="#__codelineno-0-81"><span class="linenos" data-linenos="81 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">to_polars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PolarsIncrement</span><span class="p">:</span>
-</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a><a href="#__codelineno-0-82"><span class="linenos" data-linenos="82 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert to Polars.&quot;&quot;&quot;</span>
-</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><a href="#__codelineno-0-83"><span class="linenos" data-linenos="83 "></span></a>    <span class="k">return</span> <span class="n">PolarsIncrement</span><span class="p">(</span>
-</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><a href="#__codelineno-0-84"><span class="linenos" data-linenos="84 "></span></a>        <span class="n">added</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">to_polars</span><span class="p">(),</span>
-</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a><a href="#__codelineno-0-85"><span class="linenos" data-linenos="85 "></span></a>        <span class="n">changed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">changed</span><span class="o">.</span><span class="n">to_polars</span><span class="p">(),</span>
-</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><a href="#__codelineno-0-86"><span class="linenos" data-linenos="86 "></span></a>        <span class="n">removed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">to_polars</span><span class="p">(),</span>
-</span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a><a href="#__codelineno-0-87"><span class="linenos" data-linenos="87 "></span></a>    <span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a><a href="#__codelineno-0-91"><span class="linenos" data-linenos="91 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">to_polars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PolarsIncrement</span><span class="p">:</span>
+</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><a href="#__codelineno-0-92"><span class="linenos" data-linenos="92 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert to Polars.&quot;&quot;&quot;</span>
+</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><a href="#__codelineno-0-93"><span class="linenos" data-linenos="93 "></span></a>    <span class="k">return</span> <span class="n">PolarsIncrement</span><span class="p">(</span>
+</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a><a href="#__codelineno-0-94"><span class="linenos" data-linenos="94 "></span></a>        <span class="n">added</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">to_polars</span><span class="p">(),</span>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a><a href="#__codelineno-0-95"><span class="linenos" data-linenos="95 "></span></a>        <span class="n">changed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">changed</span><span class="o">.</span><span class="n">to_polars</span><span class="p">(),</span>
+</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><a href="#__codelineno-0-96"><span class="linenos" data-linenos="96 "></span></a>        <span class="n">removed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">to_polars</span><span class="p">(),</span>
+</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><a href="#__codelineno-0-97"><span class="linenos" data-linenos="97 "></span></a>    <span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -6160,16 +6221,87 @@ trigger a full materialization for them.</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.versioning.types.PolarsLazyIncrement</span>
 
 
-<a href="#metaxy.versioning.types.PolarsLazyIncrement" class="headerlink" title="Permanent link">&para;</a></h2>
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
 
+<a href="#metaxy.versioning.types.PolarsLazyIncrement" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PolarsLazyIncrement</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">added</span><span class="p">:</span> <span class="n"><span title="polars.LazyFrame">LazyFrame</span></span><span class="p">,</span> <span class="n">changed</span><span class="p">:</span> <span class="n"><span title="polars.LazyFrame">LazyFrame</span></span><span class="p">,</span> <span class="n">removed</span><span class="p">:</span> <span class="n"><span title="polars.LazyFrame">LazyFrame</span></span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n"><span title="polars.LazyFrame">LazyFrame</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
-            <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.NamedTuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
 
 
 
-        <p>Like <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.LazyIncrement&lt;/span&gt;" href="#metaxy.versioning.types.LazyIncrement"><code>LazyIncrement</code></a>, but converted to Polars lazy frames.</p>
+        <p>Like <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.LazyIncrement&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.versioning.types.LazyIncrement"><code>LazyIncrement</code></a>, but converted to Polars lazy frames.</p>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.versioning.types.PolarsLazyIncrement.added&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-instance-attribute&quot;&gt;&lt;code&gt;instance-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.versioning.types.PolarsLazyIncrement.added">added</a></code></b>
+              (<code><span title="polars.LazyFrame">LazyFrame</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>New samples from upstream not present in current metadata.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.versioning.types.PolarsLazyIncrement.changed&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-instance-attribute&quot;&gt;&lt;code&gt;instance-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.versioning.types.PolarsLazyIncrement.changed">changed</a></code></b>
+              (<code><span title="polars.LazyFrame">LazyFrame</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Samples with different provenance.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.versioning.types.PolarsLazyIncrement.removed&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-instance-attribute&quot;&gt;&lt;code&gt;instance-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.versioning.types.PolarsLazyIncrement.removed">removed</a></code></b>
+              (<code><span title="polars.LazyFrame">LazyFrame</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Samples in current metadata but not in upstream state.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.versioning.types.PolarsLazyIncrement.input&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-class-attribute&quot;&gt;&lt;code&gt;class-attribute&lt;/code&gt;&lt;/small&gt;
+      &lt;small class=&quot;doc doc-label doc-label-instance-attribute&quot;&gt;&lt;code&gt;instance-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.versioning.types.PolarsLazyIncrement.input">input</a></code></b>
+              (<code><span title="polars.LazyFrame">LazyFrame</span> | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>Joined upstream metadata with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureDep&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../definitions/feature-spec/#metaxy.FeatureDep"><code>FeatureDep</code></a> rules applied.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -6255,6 +6387,29 @@ trigger a full materialization for them.</p>
 
 </div>
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.versioning.types.PolarsLazyIncrement.input" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.versioning.types.PolarsLazyIncrement.input</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#metaxy.versioning.types.PolarsLazyIncrement.input" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">input</span><span class="p">:</span> <span class="n"><span title="polars.LazyFrame">LazyFrame</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
 
 <h3 id="metaxy.versioning.types.PolarsLazyIncrement-functions">Functions<a href="#metaxy.versioning.types.PolarsLazyIncrement-functions" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -6304,21 +6459,21 @@ trigger a full materialization for them.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/versioning/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a><a href="#__codelineno-0-44"><span class="linenos" data-linenos="44 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PolarsIncrement</span><span class="p">:</span>
-</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a><a href="#__codelineno-0-45"><span class="linenos" data-linenos="45 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect into a [`PolarsIncrement`][metaxy.versioning.types.PolarsIncrement].</span>
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a><a href="#__codelineno-0-46"><span class="linenos" data-linenos="46 "></span></a>
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><a href="#__codelineno-0-47"><span class="linenos" data-linenos="47 "></span></a><span class="sd">    Leverage [`polars.collect_all`](https://docs.pola.rs/api/python/stable/reference/api/polars.collect_all.html) to optimize the collection process and take advantage of common subplan elimination.</span>
-</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a><a href="#__codelineno-0-48"><span class="linenos" data-linenos="48 "></span></a>
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><a href="#__codelineno-0-49"><span class="linenos" data-linenos="49 "></span></a><span class="sd">    Args:</span>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a><a href="#__codelineno-0-50"><span class="linenos" data-linenos="50 "></span></a><span class="sd">        **kwargs: backend-specific keyword arguments to pass to the collect method of the lazy frames.</span>
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a><a href="#__codelineno-0-51"><span class="linenos" data-linenos="51 "></span></a>
-</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><a href="#__codelineno-0-52"><span class="linenos" data-linenos="52 "></span></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><a href="#__codelineno-0-53"><span class="linenos" data-linenos="53 "></span></a><span class="sd">        PolarsIncrement: The collected increment.</span>
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a><a href="#__codelineno-0-54"><span class="linenos" data-linenos="54 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a><a href="#__codelineno-0-55"><span class="linenos" data-linenos="55 "></span></a>    <span class="n">added</span><span class="p">,</span> <span class="n">changed</span><span class="p">,</span> <span class="n">removed</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">collect_all</span><span class="p">(</span>
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a><a href="#__codelineno-0-56"><span class="linenos" data-linenos="56 "></span></a>        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">added</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">changed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a><a href="#__codelineno-0-57"><span class="linenos" data-linenos="57 "></span></a>    <span class="p">)</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><a href="#__codelineno-0-58"><span class="linenos" data-linenos="58 "></span></a>    <span class="k">return</span> <span class="n">PolarsIncrement</span><span class="p">(</span><span class="n">added</span><span class="p">,</span> <span class="n">changed</span><span class="p">,</span> <span class="n">removed</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a><a href="#__codelineno-0-54"><span class="linenos" data-linenos="54 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PolarsIncrement</span><span class="p">:</span>
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a><a href="#__codelineno-0-55"><span class="linenos" data-linenos="55 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect into a [`PolarsIncrement`][metaxy.versioning.types.PolarsIncrement].</span>
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a><a href="#__codelineno-0-56"><span class="linenos" data-linenos="56 "></span></a>
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a><a href="#__codelineno-0-57"><span class="linenos" data-linenos="57 "></span></a><span class="sd">    Leverage [`polars.collect_all`](https://docs.pola.rs/api/python/stable/reference/api/polars.collect_all.html) to optimize the collection process and take advantage of common subplan elimination.</span>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><a href="#__codelineno-0-58"><span class="linenos" data-linenos="58 "></span></a>
+</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a><a href="#__codelineno-0-59"><span class="linenos" data-linenos="59 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a><a href="#__codelineno-0-60"><span class="linenos" data-linenos="60 "></span></a><span class="sd">        **kwargs: backend-specific keyword arguments to pass to the collect method of the lazy frames.</span>
+</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><a href="#__codelineno-0-61"><span class="linenos" data-linenos="61 "></span></a>
+</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a><a href="#__codelineno-0-62"><span class="linenos" data-linenos="62 "></span></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a><a href="#__codelineno-0-63"><span class="linenos" data-linenos="63 "></span></a><span class="sd">        PolarsIncrement: The collected increment.</span>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><a href="#__codelineno-0-64"><span class="linenos" data-linenos="64 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><a href="#__codelineno-0-65"><span class="linenos" data-linenos="65 "></span></a>    <span class="n">added</span><span class="p">,</span> <span class="n">changed</span><span class="p">,</span> <span class="n">removed</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">collect_all</span><span class="p">(</span>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a><a href="#__codelineno-0-66"><span class="linenos" data-linenos="66 "></span></a>        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">added</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">changed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span>
+</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a><a href="#__codelineno-0-67"><span class="linenos" data-linenos="67 "></span></a>    <span class="p">)</span>
+</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a><a href="#__codelineno-0-68"><span class="linenos" data-linenos="68 "></span></a>    <span class="k">return</span> <span class="n">PolarsIncrement</span><span class="p">(</span><span class="n">added</span><span class="p">,</span> <span class="n">changed</span><span class="p">,</span> <span class="n">removed</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
