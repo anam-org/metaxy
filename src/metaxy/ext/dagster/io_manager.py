@@ -13,7 +13,7 @@ from metaxy.ext.dagster.constants import (
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 from metaxy.ext.dagster.utils import (
-    build_partition_filter,
+    build_partition_filter_from_input_context,
     build_runtime_feature_metadata,
 )
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
@@ -85,9 +85,11 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
     ) -> ValidatedFeatureKey:
         if isinstance(context, dg.InputContext):
             assert context.upstream_output is not None
-            assert context.upstream_output.metadata is not None
+            assert context.upstream_output.definition_metadata is not None
             return mx.ValidatedFeatureKeyAdapter.validate_python(
-                context.upstream_output.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY]
+                context.upstream_output.definition_metadata[
+                    DAGSTER_METAXY_FEATURE_METADATA_KEY
+                ]
             )
         elif isinstance(context, dg.OutputContext):
             return mx.ValidatedFeatureKeyAdapter.validate_python(
@@ -125,24 +127,23 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
                 else:
                     input_metadata[key] = value
 
-            if input_metadata:
+            # Only add input metadata if we have exactly one partition key
+            # (add_input_metadata internally uses asset_partition_key which fails with multiple)
+            # TODO: raise an issue in Dagter
+            # or implement our own observation logging for multiple partition keys
+            has_single_partition = (
+                context.has_asset_partitions
+                and len(list(context.asset_partition_keys)) == 1
+            )
+            if input_metadata and (
+                not context.has_asset_partitions or has_single_partition
+            ):
                 context.add_input_metadata(
                     input_metadata, description="Metadata Store Info"
                 )
 
-            # Build partition filter if applicable
-            partition_col = (
-                context.definition_metadata.get(DAGSTER_METAXY_PARTITION_KEY)
-                if context.has_asset_partitions
-                else None
-            )
-            partition_key = (
-                context.asset_partition_key if context.has_asset_partitions else None
-            )
-            filters = build_partition_filter(
-                partition_col,  # pyright: ignore[reportArgumentType]
-                partition_key,
-            )
+            # Build partition filters from context (handles partition_by and metaxy/partition)
+            filters = build_partition_filter_from_input_context(context)
 
             return self.metadata_store.read_metadata(
                 feature=feature_key,

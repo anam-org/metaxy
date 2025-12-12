@@ -25,6 +25,56 @@ class FeatureStats(NamedTuple):
     data_version: dg.DataVersion
 
 
+def build_partition_filter_from_input_context(
+    context: dg.InputContext,
+) -> list[nw.Expr]:
+    """Build partition filter expressions from an InputContext.
+
+    Extracts partition information from the upstream asset's metadata and the
+    current partition context to build appropriate filter expressions.
+
+    Handles:
+    - `partition_by` metadata: filters by the specified column using partition key(s)
+    - `metaxy/partition` metadata: additional static filters as {column: value} dict
+
+    Args:
+        context: Dagster InputContext for loading upstream data.
+
+    Returns:
+        List of filter expressions to apply when reading upstream data.
+    """
+    filters: list[nw.Expr] = []
+
+    # Get upstream asset's metadata
+    upstream_metadata = (
+        context.upstream_output.definition_metadata if context.upstream_output else None
+    )
+
+    if upstream_metadata is None:
+        return filters
+
+    # Handle partition_by: filter by Dagster partition key(s)
+    partition_col = upstream_metadata.get(DAGSTER_METAXY_PARTITION_KEY)
+    if partition_col and context.has_asset_partitions:
+        # Get all partition keys for this input (handles AllPartitionMapping, etc.)
+        partition_keys = list(context.asset_partition_keys)
+        if len(partition_keys) == 1:
+            filters.append(nw.col(partition_col) == partition_keys[0])
+        elif len(partition_keys) > 1:
+            filters.append(nw.col(partition_col).is_in(partition_keys))
+
+    # Handle metaxy/partition: additional static filters
+    metaxy_partition = upstream_metadata.get(DAGSTER_METAXY_PARTITION_METADATA_KEY)
+    if isinstance(metaxy_partition, dict):
+        for col, value in metaxy_partition.items():
+            if isinstance(value, list):
+                filters.append(nw.col(col).is_in(value))
+            else:
+                filters.append(nw.col(col) == value)
+
+    return filters
+
+
 def build_partition_filter(
     partition_col: str | None,
     partition_key: str | None,
