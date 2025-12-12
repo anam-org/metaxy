@@ -33,7 +33,7 @@
       }),
       dict({
         'feature_key': 'downstream',
-        'metaxy_feature_spec_version': 'af143063c036853af48f2606adb63f6fcd1d504e476acec7db65f8690249243b',
+        'metaxy_feature_spec_version': '1f929a2243be0d5c24ab595073d01576c5c8d0b5e70cab22648934dbab134fb8',
         'metaxy_feature_version': '7b8e38a11f800fb93c18c0e04c4609d7b52ec12b62177ba8355531d363f01751',
         'metaxy_snapshot_version': '1ab4ecd9d7af535b843dc22416dd99d5e430317c0a2bcd01fe83ffc2d7392da8',
       }),
@@ -45,7 +45,7 @@
       }),
       dict({
         'feature_key': 'downstream',
-        'metaxy_feature_spec_version': 'c92e13a1dc617e43f52222c839915122fd56cd17b0681425cbbad0b20b6c7e16',
+        'metaxy_feature_spec_version': 'd3f0a15cad968dc3c1bdeff296c28228e7be063f8a8c7a8007d05f2256f1ea36',
         'metaxy_feature_version': '7b8e38a11f800fb93c18c0e04c4609d7b52ec12b62177ba8355531d363f01751',
         'metaxy_snapshot_version': '1ab4ecd9d7af535b843dc22416dd99d5e430317c0a2bcd01fe83ffc2d7392da8',
       }),

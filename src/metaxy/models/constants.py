@@ -85,6 +85,19 @@ _DROPPABLE_COLUMNS = frozenset(
     }
 )
 
+# Columns that should be dropped before joining upstream features in FeatureDepTransformer
+# These are NOT needed for provenance calculation and would cause column name conflicts
+# when joining 3+ upstream features (e.g., metaxy_created_at_right already exists error)
+_COLUMNS_TO_DROP_BEFORE_JOIN = frozenset(
+    {
+        METAXY_FEATURE_VERSION,
+        METAXY_FEATURE_SPEC_VERSION,
+        METAXY_SNAPSHOT_VERSION,
+        METAXY_CREATED_AT,
+        METAXY_MATERIALIZATION_ID,
+    }
+)
+
 
 # --- Utility Functions -------------------------------------------------------------
 

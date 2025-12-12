@@ -132,6 +132,50 @@ class FeaturePlanCases:
 
         return graph, upstream_features, child_plan
 
+    def case_optional_dependency(self, graph: FeatureGraph) -> FeaturePlanOutput:
+        """Feature plan with optional dependency (tests left join behavior and NULL handling)."""
+
+        class RequiredParent(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="required_parent",
+                fields=["foo"],
+            ),
+        ):
+            sample_uid: str
+
+        class OptionalParent(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="optional_parent",
+                fields=["bar"],
+            ),
+        ):
+            sample_uid: str
+
+        class ChildFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="child",
+                deps=[
+                    FeatureDep(feature=RequiredParent, optional=False),
+                    FeatureDep(feature=OptionalParent, optional=True),
+                ],
+                fields=["computed"],
+            ),
+        ):
+            pass
+
+        # Get the feature plan for child
+        child_plan = graph.get_feature_plan(ChildFeature.spec().key)
+
+        upstream_features = {
+            RequiredParent.spec().key: RequiredParent,
+            OptionalParent.spec().key: OptionalParent,
+        }
+
+        return graph, upstream_features, child_plan
+
 
 # Removed: TruncationCases and metaxy_config fixture
 # Hash truncation is now tested in test_hash_algorithms.py

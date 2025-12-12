@@ -345,3 +345,13 @@ class FeaturePlan(FrozenBaseModel):
             result = result.intersection(cols)
 
         return list(result)
+
+    @cached_property
+    def optional_deps(self) -> list[FeatureDep]:
+        """Dependencies marked as optional (use left join)."""
+        return [dep for dep in (self.feature_deps or []) if dep.optional]
+
+    @cached_property
+    def required_deps(self) -> list[FeatureDep]:
+        """Dependencies that are required (use inner join)."""
+        return [dep for dep in (self.feature_deps or []) if not dep.optional]

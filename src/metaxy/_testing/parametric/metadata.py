@@ -593,6 +593,24 @@ def downstream_metadata_strategy(
         )
     )
 
+    # For optional dependencies, generate incomplete metadata by dropping some rows.
+    # This tests left join behavior where optional upstream samples may be missing.
+    optional_dep_keys = {dep.feature.to_string() for dep in feature_plan.optional_deps}
+    for feature_key_str, df in upstream_data.items():
+        if feature_key_str in optional_dep_keys and len(df) > 1:
+            # Drop approximately half of the rows (at least 1, keep at least 1)
+            num_to_keep = max(1, len(df) // 2)
+            # Use hypothesis to draw which rows to keep for reproducibility
+            keep_indices = draw(
+                st.lists(
+                    st.integers(min_value=0, max_value=len(df) - 1),
+                    min_size=num_to_keep,
+                    max_size=num_to_keep,
+                    unique=True,
+                )
+            )
+            upstream_data[feature_key_str] = df[keep_indices]
+
     # If there are no upstream features, return empty upstream and just the downstream
     if not upstream_data:
         # Generate standalone downstream metadata

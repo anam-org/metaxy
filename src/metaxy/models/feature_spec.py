@@ -53,6 +53,10 @@ class FeatureDep(pydantic.BaseModel):
             - `LineageRelationship.identity()` (default): 1:1 relationship, same cardinality
             - `LineageRelationship.aggregation(on=...)`: N:1, multiple upstream rows aggregate to one downstream
             - `LineageRelationship.expansion(on=...)`: 1:N, one upstream row expands to multiple downstream rows
+        optional: Whether individual samples of the downstream feature can be computed without
+            the corresponding samples of the upstream feature. If upstream samples are missing,
+            they are going to be represented as NULL values in the joined upstream metadata.
+            Defaults to False (required dependency).
 
     Example: Basic Usage
         ```py
@@ -75,6 +79,12 @@ class FeatureDep(pydantic.BaseModel):
         FeatureDep(
             feature="upstream",
             filters=["age >= 25", "status = 'active'"]
+        )
+
+        # Optional dependency (left join - samples preserved even if no match)
+        FeatureDep(
+            feature="enrichment/data",
+            optional=True
         )
         ```
 
@@ -121,6 +131,12 @@ class FeatureDep(pydantic.BaseModel):
         default_factory=LineageRelationship.identity,
         description="Lineage relationship between this upstream dependency and the downstream feature.",
     )
+    optional: bool = pydantic.Field(
+        default=False,
+        description="Whether individual samples of the downstream feature can be computed without "
+        "the corresponding samples of the upstream feature. If upstream samples are missing, "
+        "they are going to be represented as NULL values in the joined upstream metadata.",
+    )
 
     if TYPE_CHECKING:
 
@@ -133,6 +149,7 @@ class FeatureDep(pydantic.BaseModel):
             fields_mapping: FieldsMapping | None = None,
             filters: Sequence[str] | None = None,
             lineage: LineageRelationship | None = None,
+            optional: bool = False,
         ) -> None: ...
 
     @cached_property
