@@ -54,6 +54,11 @@ class FeatureDep(pydantic.BaseModel):
             Narwhals expressions (accessible via the `filters` property). Filters are automatically
             applied by FeatureDepTransformer after renames during all FeatureDep operations (including
             resolve_update and version computation).
+        optional: If True, use left join instead of inner join when joining this dependency.
+            Samples from required dependencies are preserved even when this optional dependency
+            has no matching data (NULL values will appear for this dependency's columns).
+            The first dependency in the list cannot be optional as it defines the sample universe.
+            Defaults to False (inner join / required dependency).
 
     Examples:
         ```py
@@ -90,6 +95,12 @@ class FeatureDep(pydantic.BaseModel):
             feature="upstream",
             filters=["age >= 25", "status = 'active'"]
         )
+
+        # Optional dependency (left join - samples preserved even if no match)
+        FeatureDep(
+            feature="enrichment/data",
+            optional=True
+        )
         ```
     """
 
@@ -107,6 +118,11 @@ class FeatureDep(pydantic.BaseModel):
         validation_alias=pydantic.AliasChoices("filters", "sql_filters"),
         serialization_alias="filters",
     )
+    optional: bool = pydantic.Field(
+        default=False,
+        description="If True, use left join (samples preserved even if no match). "
+        "First dependency cannot be optional.",
+    )
 
     if TYPE_CHECKING:
 
@@ -118,6 +134,7 @@ class FeatureDep(pydantic.BaseModel):
             rename: dict[str, str] | None = None,
             fields_mapping: FieldsMapping | None = None,
             filters: Sequence[str] | None = None,
+            optional: bool = False,
         ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
 
     @cached_property
@@ -289,6 +306,22 @@ class FeatureSpec(FrozenBaseModel):
         if self.id_columns is not None and len(self.id_columns) == 0:
             raise ValueError(
                 "id_columns must be non-empty if specified. Use None for default."
+            )
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def validate_first_dep_not_optional(self) -> Self:
+        """Validate that the first dependency is not optional.
+
+        The first dependency defines the sample universe and must use inner join.
+        Subsequent dependencies may be marked as optional (left join).
+        """
+        if self.deps and len(self.deps) > 0 and self.deps[0].optional:
+            raise ValueError(
+                f"The first dependency cannot be optional. "
+                f"Dependency '{self.deps[0].feature.to_string()}' is marked as optional=True, "
+                f"but the first dependency defines the sample universe and must be required. "
+                f"Reorder dependencies so a required dependency comes first."
             )
         return self
 

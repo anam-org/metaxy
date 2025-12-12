@@ -45,6 +45,11 @@ class FeatureDepTransformer:
     def upstream_feature_spec(self) -> FeatureSpec:
         return self.plan.parent_features_by_key[self.dep.feature]
 
+    @cached_property
+    def is_optional(self) -> bool:
+        """Whether this dependency uses left join (optional) or inner join (required)."""
+        return self.dep.optional
+
     def transform(
         self, df: FrameT, filters: Sequence[nw.Expr] | None = None
     ) -> RenamedDataFrame[FrameT]:
