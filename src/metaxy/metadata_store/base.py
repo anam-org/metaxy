@@ -354,14 +354,19 @@ class MetadataStore(ABC):
             *global_filter_list,
         ]
 
-        current_metadata = self.read_metadata_in_store(
-            feature_key,
-            filters=[
-                nw.col(METAXY_FEATURE_VERSION)
-                == graph.get_feature_version(feature_key),
-                *current_feature_filters,
-            ],
-        )
+        # Read current metadata with deduplication (latest_only=True by default)
+        # Use allow_fallback=False since we only want metadata from THIS store
+        # to determine what needs to be updated locally
+        try:
+            current_metadata: nw.LazyFrame[Any] | None = self.read_metadata(
+                feature_key,
+                filters=current_feature_filters if current_feature_filters else None,
+                allow_fallback=False,
+                current_only=True,  # filters by current feature_version
+                latest_only=True,  # deduplicates by id_columns, keeping latest
+            )
+        except FeatureNotFoundError:
+            current_metadata = None
 
         upstream_by_key: dict[FeatureKey, nw.LazyFrame[Any]] = {}
         filters_by_key: dict[FeatureKey, list[nw.Expr]] = {}

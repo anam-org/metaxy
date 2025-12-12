@@ -892,3 +892,812 @@ def test_resolve_update_global_filters_combined_with_filters(
         assert len(increment.added) == 2
         added_df = increment.added.lazy().collect().to_polars()
         assert set(added_df["sample_uid"].to_list()) == {"s2", "s3"}
+
+
+# ============= TEST: EXPANSION LINEAGE WITH MULTIPLE MATERIALIZATIONS =============
+
+
+def test_expansion_lineage_multiple_writes_with_resolve_update(
+    default_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test that resolve_update orphaned count is correct after multiple writes with expansion lineage.
+
+    This test simulates a realistic scenario where:
+    1. A user writes frames multiple times using resolve_update -> write_metadata
+    2. Each write might add different frames for the same parent videos
+    3. When checking status, orphaned should only count PARENT-level removals
+
+    The user reported: 151152 materialized, 755755 orphaned
+    This was likely caused by expansion lineage not properly grouping current
+    metadata by parent columns when calculating orphaned.
+    """
+    import polars as pl
+
+    from metaxy import FieldKey, FieldSpec
+    from metaxy.models.lineage import LineageRelationship
+
+    class Video(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["video"]),
+            id_columns=("video_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["resolution"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class VideoFrames(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["video_frames"]),
+            id_columns=("video_id", "frame_id"),
+            deps=[FeatureDep(feature=Video)],
+            fields=[
+                FieldSpec(key=FieldKey(["embedding"]), code_version="1"),
+            ],
+            lineage=LineageRelationship.expansion(on=["video_id"]),
+        ),
+    ):
+        pass
+
+    store = default_store
+
+    with store, graph.use():
+        # Write upstream video metadata for 2 videos
+        video_data = pl.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "resolution": ["1080p", "720p"],
+                "metaxy_provenance_by_field": [
+                    {"resolution": "res_hash_1"},
+                    {"resolution": "res_hash_2"},
+                ],
+                "metaxy_provenance": ["video_prov_1", "video_prov_2"],
+            }
+        )
+        store.write_metadata(Video, video_data)
+
+        import narwhals as nw
+
+        # First write: manually create frames for the first batch (since we need to compute them)
+        # In reality, user would compute frames and then write them
+        first_batch = pl.DataFrame(
+            {
+                "video_id": ["v1", "v1", "v2", "v2"],
+                "frame_id": [0, 1, 0, 1],
+                "embedding": ["emb_v1_0", "emb_v1_1", "emb_v2_0", "emb_v2_1"],
+            }
+        )
+        # Join with upstream to get proper data_version columns
+        upstream_df = store.read_metadata(Video).collect().to_polars()
+        first_batch_joined = first_batch.join(
+            upstream_df.select(
+                ["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]
+            ).rename(
+                {
+                    "metaxy_data_version_by_field": "metaxy_data_version_by_field__video",
+                    "metaxy_provenance": "__upstream_provenance",
+                }
+            ),
+            on="video_id",
+        )
+        # Use compute_provenance to get proper provenance from upstream
+        first_batch_with_prov = store.compute_provenance(
+            VideoFrames, nw.from_native(first_batch_joined)
+        )
+        store.write_metadata(VideoFrames, first_batch_with_prov)
+
+        # Second write: add more frames (simulating re-running the pipeline)
+        second_batch = pl.DataFrame(
+            {
+                "video_id": ["v1", "v1", "v2"],
+                "frame_id": [2, 3, 2],  # New frame IDs
+                "embedding": ["emb_v1_2", "emb_v1_3", "emb_v2_2"],
+            }
+        )
+        second_batch_joined = second_batch.join(
+            upstream_df.select(
+                ["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]
+            ).rename(
+                {
+                    "metaxy_data_version_by_field": "metaxy_data_version_by_field__video",
+                    "metaxy_provenance": "__upstream_provenance",
+                }
+            ),
+            on="video_id",
+        )
+        second_batch_with_prov = store.compute_provenance(
+            VideoFrames, nw.from_native(second_batch_joined)
+        )
+        store.write_metadata(VideoFrames, second_batch_with_prov)
+
+        # Now we have 7 total frames in the store:
+        # v1: frames 0, 1, 2, 3 (4 frames)
+        # v2: frames 0, 1, 2 (3 frames)
+
+        # Call resolve_update - upstream hasn't changed, so there should be:
+        # - 0 added (no new videos, but we'll see "added" for frames to process)
+        # - Changed frames might exist if provenance differs
+        # - 0 orphaned at the VIDEO level (both v1 and v2 still exist upstream)
+        increment = store.resolve_update(VideoFrames, lazy=False)
+
+        # With expansion lineage:
+        # - The comparison happens at the parent (video_id) level
+        # - Both v1 and v2 exist in upstream
+        # - So orphaned (removed) should be 0 at the parent level
+        removed_count = len(increment.removed)
+
+        # If this fails with a large removed_count, it means expansion lineage
+        # is not properly grouping current metadata before comparison
+        assert removed_count == 0, (
+            f"Expected 0 orphaned (no videos removed from upstream), "
+            f"but got {removed_count}. This suggests expansion lineage is counting "
+            f"at the frame level instead of the parent video level."
+        )
+
+
+def test_expansion_lineage_orphaned_when_upstream_removed(
+    default_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test orphaned count when upstream parents are removed.
+
+    This test verifies that when upstream videos are removed (or filtered out),
+    the orphaned count reflects the number of PARENTS removed, not the number
+    of child frames for those parents.
+
+    The user reported: 151152 materialized, 755755 orphaned
+    If the user had 5x more parent videos in their current frames than in the
+    filtered upstream, and each parent had ~5 frames on average, this could
+    explain the discrepancy.
+    """
+    import polars as pl
+
+    from metaxy import FieldKey, FieldSpec
+    from metaxy.models.lineage import LineageRelationship
+
+    class Video(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["video"]),
+            id_columns=("video_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["resolution"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class VideoFrames(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["video_frames"]),
+            id_columns=("video_id", "frame_id"),
+            deps=[FeatureDep(feature=Video)],
+            fields=[
+                FieldSpec(key=FieldKey(["embedding"]), code_version="1"),
+            ],
+            lineage=LineageRelationship.expansion(on=["video_id"]),
+        ),
+    ):
+        pass
+
+    store = default_store
+
+    with store, graph.use():
+        import narwhals as nw
+
+        # Write upstream video metadata for 5 videos
+        video_data = pl.DataFrame(
+            {
+                "video_id": ["v1", "v2", "v3", "v4", "v5"],
+                "resolution": ["1080p", "720p", "4K", "1080p", "720p"],
+                "metaxy_provenance_by_field": [
+                    {"resolution": f"res_hash_{i}"} for i in range(1, 6)
+                ],
+                "metaxy_provenance": [f"video_prov_{i}" for i in range(1, 6)],
+            }
+        )
+        store.write_metadata(Video, video_data)
+
+        # Write frames for ALL 5 videos (10 frames each = 50 total frames)
+        frame_rows = []
+        for vid in ["v1", "v2", "v3", "v4", "v5"]:
+            for fid in range(10):
+                frame_rows.append(
+                    {
+                        "video_id": vid,
+                        "frame_id": fid,
+                        "embedding": f"emb_{vid}_{fid}",
+                    }
+                )
+        frames_df = pl.DataFrame(frame_rows)
+
+        # Join with upstream to compute proper provenance
+        upstream_df = store.read_metadata(Video).collect().to_polars()
+        frames_joined = frames_df.join(
+            upstream_df.select(
+                ["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]
+            ).rename(
+                {
+                    "metaxy_data_version_by_field": "metaxy_data_version_by_field__video",
+                    "metaxy_provenance": "__upstream_provenance",
+                }
+            ),
+            on="video_id",
+        )
+        frames_with_prov = store.compute_provenance(
+            VideoFrames, nw.from_native(frames_joined)
+        )
+        store.write_metadata(VideoFrames, frames_with_prov)
+
+        # Now REMOVE 3 videos from upstream (simulating upstream data change)
+        # This is like the user's scenario where upstream was filtered/changed
+        store.drop_feature_metadata(Video)
+        reduced_video_data = pl.DataFrame(
+            {
+                "video_id": ["v1", "v2"],  # Only keep v1 and v2
+                "resolution": ["1080p", "720p"],
+                "metaxy_provenance_by_field": [
+                    {"resolution": "res_hash_1"},
+                    {"resolution": "res_hash_2"},
+                ],
+                "metaxy_provenance": ["video_prov_1", "video_prov_2"],
+            }
+        )
+        store.write_metadata(Video, reduced_video_data)
+
+        # Check status - current has frames for 5 videos, upstream only has 2
+        # Expected: 3 orphaned PARENTS (v3, v4, v5)
+        # Bug: might show 30 orphaned (all 30 frames for v3, v4, v5)
+        increment = store.resolve_update(VideoFrames, lazy=False)
+
+        removed_count = len(increment.removed)
+
+        # With expansion lineage, orphaned should be at PARENT level
+        # 3 videos were removed from upstream (v3, v4, v5)
+        # So orphaned should be 3, not 30
+        assert removed_count == 3, (
+            f"Expected 3 orphaned (3 parent videos removed from upstream: v3, v4, v5), "
+            f"but got {removed_count}. "
+            f"{'This is correct!' if removed_count == 3 else ''}"
+            f"{'Bug: counting at frame level instead of parent level.' if removed_count > 3 else ''}"
+        )
+
+
+def test_expansion_lineage_orphaned_with_duplicate_writes(
+    default_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test orphaned count when there are duplicate writes with expansion lineage.
+
+    This test reproduces the user's scenario where they wrote to the feature
+    multiple times (without deduplication) and see incorrect orphaned counts.
+
+    The issue: resolve_update uses read_metadata_in_store (no deduplication)
+    while get_feature_metadata_status.store_row_count uses read_metadata
+    (which has latest_only=True deduplication).
+
+    This can cause orphaned_count to be larger than store_row_count if there
+    are duplicate writes with the same id_columns.
+    """
+    import polars as pl
+
+    from metaxy import FieldKey, FieldSpec
+    from metaxy.models.lineage import LineageRelationship
+
+    class Video(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["video"]),
+            id_columns=("video_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["resolution"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class VideoFrames(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["video_frames"]),
+            id_columns=("video_id", "frame_id"),
+            deps=[FeatureDep(feature=Video)],
+            fields=[
+                FieldSpec(key=FieldKey(["embedding"]), code_version="1"),
+            ],
+            lineage=LineageRelationship.expansion(on=["video_id"]),
+        ),
+    ):
+        pass
+
+    store = default_store
+
+    with store, graph.use():
+        import narwhals as nw
+
+        # Write upstream video metadata for 2 videos
+        video_data = pl.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "resolution": ["1080p", "720p"],
+                "metaxy_provenance_by_field": [
+                    {"resolution": "res_hash_1"},
+                    {"resolution": "res_hash_2"},
+                ],
+                "metaxy_provenance": ["video_prov_1", "video_prov_2"],
+            }
+        )
+        store.write_metadata(Video, video_data)
+
+        # Write frames for both videos - FIRST WRITE
+        first_batch = pl.DataFrame(
+            {
+                "video_id": ["v1", "v1", "v2", "v2"],
+                "frame_id": [0, 1, 0, 1],
+                "embedding": ["emb_v1_0", "emb_v1_1", "emb_v2_0", "emb_v2_1"],
+            }
+        )
+        upstream_df = store.read_metadata(Video).collect().to_polars()
+        first_batch_joined = first_batch.join(
+            upstream_df.select(
+                ["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]
+            ).rename(
+                {
+                    "metaxy_data_version_by_field": "metaxy_data_version_by_field__video",
+                    "metaxy_provenance": "__upstream_provenance",
+                }
+            ),
+            on="video_id",
+        )
+        first_batch_with_prov = store.compute_provenance(
+            VideoFrames, nw.from_native(first_batch_joined)
+        )
+        store.write_metadata(VideoFrames, first_batch_with_prov)
+
+        # Write SAME frames again - SECOND WRITE (duplicate rows)
+        # This simulates user writing multiple times without deduplication
+        store.write_metadata(VideoFrames, first_batch_with_prov)
+
+        # Write SAME frames a THIRD time
+        store.write_metadata(VideoFrames, first_batch_with_prov)
+
+        # Now the store has 12 rows (4 frames x 3 writes)
+        # But read_metadata with latest_only=True should show 4 rows
+        # Let's verify this
+        current_deduplicated = store.read_metadata(VideoFrames).collect()
+        current_all = store.read_metadata(VideoFrames, latest_only=False).collect()
+
+        assert len(current_deduplicated) == 4, (
+            f"Expected 4 deduplicated rows, got {len(current_deduplicated)}"
+        )
+        assert len(current_all) == 12, (
+            f"Expected 12 total rows (with duplicates), got {len(current_all)}"
+        )
+
+        # Now check resolve_update - it uses read_metadata_in_store (no dedup)
+        # So it might see more rows than expected
+        increment = store.resolve_update(VideoFrames, lazy=False)
+
+        # With expansion lineage and proper grouping:
+        # - current is grouped by video_id, so we should only see 2 "groups" (v1, v2)
+        # - expected also has 2 videos (v1, v2)
+        # - orphaned should be 0 (both videos exist in both)
+        removed_count = len(increment.removed)
+
+        # BUG HYPOTHESIS: If resolve_update doesn't deduplicate, the grouping
+        # might still work (first distinct per video_id), but let's verify
+        assert removed_count == 0, (
+            f"Expected 0 orphaned (all videos exist in upstream), "
+            f"but got {removed_count}. This might indicate that resolve_update "
+            f"is not handling duplicate rows correctly."
+        )
+
+
+def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
+    default_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test orphaned count with identity lineage when writing multiple times without deduplication.
+
+    This reproduces the user's scenario where:
+    1. A2MRecords feature has identity lineage (1:1 with chunk_id)
+    2. User materializes multiple times, writing same chunks repeatedly
+    3. Store uses append mode (no deduplication)
+    4. When checking status, orphaned count is inflated
+
+    The bug: resolve_update uses read_metadata_in_store (no deduplication by default)
+    while metadata status store_row_count uses read_metadata with latest_only=True.
+
+    User reported: 151152 materialized, 755755 orphaned
+    This suggests ~5x more rows in the store than unique samples.
+    """
+    import polars as pl
+
+    from metaxy import FieldKey, FieldSpec
+
+    class Upstream(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["upstream"]),
+            id_columns=("chunk_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["video_path"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class Downstream(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["downstream"]),
+            id_columns=("chunk_id",),
+            deps=[FeatureDep(feature=Upstream)],
+            fields=[
+                FieldSpec(key=FieldKey(["result"]), code_version="1"),
+            ],
+            # Identity lineage (default) - 1:1 relationship
+        ),
+    ):
+        pass
+
+    store = default_store
+
+    with store, graph.use():
+        import narwhals as nw
+
+        # Write upstream metadata for 10 chunks
+        upstream_data = pl.DataFrame(
+            {
+                "chunk_id": [f"chunk_{i}" for i in range(10)],
+                "video_path": [f"/path/to/video_{i}.mp4" for i in range(10)],
+                "metaxy_provenance_by_field": [
+                    {"video_path": f"path_hash_{i}"} for i in range(10)
+                ],
+                "metaxy_provenance": [f"upstream_prov_{i}" for i in range(10)],
+            }
+        )
+        store.write_metadata(Upstream, upstream_data)
+
+        # First materialization: write downstream for all 10 chunks
+        downstream_batch = pl.DataFrame(
+            {
+                "chunk_id": [f"chunk_{i}" for i in range(10)],
+                "result": [f"result_{i}" for i in range(10)],
+            }
+        )
+        upstream_df = store.read_metadata(Upstream).collect().to_polars()
+        downstream_joined = downstream_batch.join(
+            upstream_df.select(
+                ["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]
+            ).rename(
+                {
+                    "metaxy_data_version_by_field": "metaxy_data_version_by_field__upstream",
+                    "metaxy_provenance": "__upstream_provenance",
+                }
+            ),
+            on="chunk_id",
+        )
+        downstream_with_prov = store.compute_provenance(
+            Downstream, nw.from_native(downstream_joined)
+        )
+        store.write_metadata(Downstream, downstream_with_prov)
+
+        # Write SAME data 4 more times (5 total writes, like the user scenario)
+        for _ in range(4):
+            store.write_metadata(Downstream, downstream_with_prov)
+
+        # Now we have 50 rows (10 chunks x 5 writes) in the store
+        # But read_metadata with latest_only=True should show 10 rows
+        current_deduplicated = store.read_metadata(Downstream).collect()
+        current_all = store.read_metadata(Downstream, latest_only=False).collect()
+
+        assert len(current_deduplicated) == 10, (
+            f"Expected 10 deduplicated rows, got {len(current_deduplicated)}"
+        )
+        assert len(current_all) == 50, (
+            f"Expected 50 total rows (with duplicates), got {len(current_all)}"
+        )
+
+        # Now check resolve_update
+        increment = store.resolve_update(Downstream, lazy=False)
+
+        # With identity lineage:
+        # - Each chunk should match 1:1 with upstream
+        # - All 10 chunks exist in both current and upstream
+        # - orphaned should be 0
+        removed_count = len(increment.removed)
+
+        # BUG: If resolve_update sees 50 rows (not deduplicated) and compares
+        # with 10 expected rows, it might show 40 orphaned (50-10=40)
+        # OR if provenance doesn't match, it could show even more
+        assert removed_count == 0, (
+            f"Expected 0 orphaned (all chunks exist in upstream), "
+            f"but got {removed_count}. This indicates resolve_update is seeing "
+            f"duplicate rows from multiple writes and not deduplicating them."
+        )
+
+
+def test_resolve_update_deduplicates_current_metadata_delta_store(
+    tmp_path,
+    graph: FeatureGraph,
+):
+    """Regression test: resolve_update must deduplicate current metadata when using append-mode stores.
+
+    This test reproduces the exact bug reported by the user:
+    - User materialized training/a2m feature 5+ times
+    - DeltaMetadataStore uses append mode (no automatic deduplication)
+    - 151152 materialized rows became 755755+ total rows (with duplicates)
+    - resolve_update saw all rows (not deduplicated) and reported 755755 orphaned
+
+    The fix: resolve_update now uses read_metadata() with latest_only=True
+    instead of read_metadata_in_store() which doesn't deduplicate.
+
+    This test MUST use DeltaMetadataStore (not InMemory) because:
+    - InMemoryMetadataStore uses dict storage which naturally deduplicates
+    - DeltaMetadataStore uses append mode, preserving duplicates
+    """
+    import polars as pl
+
+    from metaxy import FieldKey, FieldSpec
+    from metaxy.metadata_store.delta import DeltaMetadataStore
+
+    class Upstream(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["delta_dedup_test", "upstream"]),
+            id_columns=("chunk_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["video_path"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class Downstream(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["delta_dedup_test", "downstream"]),
+            id_columns=("chunk_id",),
+            deps=[FeatureDep(feature=Upstream)],
+            fields=[
+                FieldSpec(key=FieldKey(["result"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    # Use DeltaMetadataStore which has append mode by default
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+
+    with store.open(mode="write"), graph.use():
+        import narwhals as nw
+
+        # Write upstream metadata for 10 chunks
+        upstream_data = pl.DataFrame(
+            {
+                "chunk_id": [f"chunk_{i}" for i in range(10)],
+                "video_path": [f"/path/to/video_{i}.mp4" for i in range(10)],
+                "metaxy_provenance_by_field": [
+                    {"video_path": f"path_hash_{i}"} for i in range(10)
+                ],
+                "metaxy_provenance": [f"upstream_prov_{i}" for i in range(10)],
+            }
+        )
+        store.write_metadata(Upstream, upstream_data)
+
+        # First materialization: compute downstream for all 10 chunks
+        downstream_batch = pl.DataFrame(
+            {
+                "chunk_id": [f"chunk_{i}" for i in range(10)],
+                "result": [f"result_{i}" for i in range(10)],
+            }
+        )
+        upstream_df = store.read_metadata(Upstream).collect().to_polars()
+        downstream_joined = downstream_batch.join(
+            upstream_df.select(
+                ["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]
+            ).rename(
+                {
+                    # table_name uses underscores, not slashes
+                    "metaxy_data_version_by_field": "metaxy_data_version_by_field__delta_dedup_test_upstream",
+                    "metaxy_provenance": "__upstream_provenance",
+                }
+            ),
+            on="chunk_id",
+        )
+        downstream_with_prov = store.compute_provenance(
+            Downstream, nw.from_native(downstream_joined)
+        )
+        store.write_metadata(Downstream, downstream_with_prov)
+
+        # Write SAME data 4 more times (5 total writes, like the user scenario)
+        # This simulates the user materializing the same feature multiple times
+        for _ in range(4):
+            store.write_metadata(Downstream, downstream_with_prov)
+
+        # Verify we have 50 total rows but only 10 unique after deduplication
+        current_all = store.read_metadata(Downstream, latest_only=False).collect()
+        current_dedup = store.read_metadata(Downstream, latest_only=True).collect()
+
+        # Debug: check what read_metadata_in_store returns
+        from metaxy.models.constants import METAXY_FEATURE_VERSION
+
+        raw_metadata = store.read_metadata_in_store(
+            Downstream,
+            filters=[nw.col(METAXY_FEATURE_VERSION) == Downstream.feature_version()],
+        )
+        raw_count = len(raw_metadata.collect()) if raw_metadata else 0
+        print(f"\nDEBUG: Total rows (latest_only=False): {len(current_all)}")
+        print(f"DEBUG: Deduplicated rows (latest_only=True): {len(current_dedup)}")
+        print(f"DEBUG: read_metadata_in_store rows: {raw_count}")
+
+        assert len(current_all) == 50, f"Expected 50 total rows, got {len(current_all)}"
+        assert len(current_dedup) == 10, (
+            f"Expected 10 deduplicated rows, got {len(current_dedup)}"
+        )
+
+        # THE KEY TEST: resolve_update should see only 10 rows (deduplicated)
+        # and report 0 orphaned (all chunks exist in upstream)
+        increment = store.resolve_update(Downstream, lazy=False)
+
+        removed_count = len(increment.removed)
+        assert removed_count == 0, (
+            f"REGRESSION: Expected 0 orphaned (all chunks exist in upstream), "
+            f"but got {removed_count}. This indicates resolve_update is NOT "
+            f"deduplicating current metadata rows. "
+            f"With 50 total rows and 10 expected, the old buggy behavior would show 40 orphaned."
+        )
+
+
+def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
+    graph: FeatureGraph,
+):
+    """Test orphaned count when upstream data differs between fallback and local store.
+
+    This reproduces the user's actual scenario where:
+    1. User pulls upstream metadata from a FALLBACK store (production)
+    2. Upstream in fallback has MORE samples than local upstream
+    3. User materializes downstream based on fallback upstream
+    4. When checking status, local upstream has fewer samples
+    5. Orphaned count shows samples that exist in downstream but NOT in local upstream
+
+    The user reported: 151152 materialized, 755755 orphaned
+    This could happen if:
+    - Fallback upstream had 906907 samples (151152 + 755755)
+    - User materialized all of them
+    - Local upstream only has 151152 samples
+    - So 755755 samples in downstream have no matching upstream in local store
+    """
+    import polars as pl
+
+    from metaxy import FieldKey, FieldSpec
+    from metaxy.metadata_store.memory import InMemoryMetadataStore
+
+    class Upstream(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["upstream"]),
+            id_columns=("chunk_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["video_path"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class Downstream(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["downstream"]),
+            id_columns=("chunk_id",),
+            deps=[FeatureDep(feature=Upstream)],
+            fields=[
+                FieldSpec(key=FieldKey(["result"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    # Create fallback store with MORE upstream data
+    fallback_store = InMemoryMetadataStore()
+    # Create local store that reads upstream from fallback
+    local_store = InMemoryMetadataStore(fallback_stores=[fallback_store])
+
+    with fallback_store, local_store, graph.use():
+        import narwhals as nw
+
+        # Write upstream metadata to FALLBACK store for 100 chunks
+        fallback_upstream_data = pl.DataFrame(
+            {
+                "chunk_id": [f"chunk_{i}" for i in range(100)],
+                "video_path": [f"/path/to/video_{i}.mp4" for i in range(100)],
+                "metaxy_provenance_by_field": [
+                    {"video_path": f"path_hash_{i}"} for i in range(100)
+                ],
+                "metaxy_provenance": [f"upstream_prov_{i}" for i in range(100)],
+            }
+        )
+        fallback_store.write_metadata(Upstream, fallback_upstream_data)
+
+        # User reads upstream from fallback (via local_store) and materializes downstream
+        # This should read 100 chunks from fallback
+        upstream_df = local_store.read_metadata(Upstream).collect().to_polars()
+        assert len(upstream_df) == 100, (
+            f"Expected 100 upstream rows from fallback, got {len(upstream_df)}"
+        )
+
+        # User computes and writes downstream for all 100 chunks
+        downstream_batch = pl.DataFrame(
+            {
+                "chunk_id": [f"chunk_{i}" for i in range(100)],
+                "result": [f"result_{i}" for i in range(100)],
+            }
+        )
+        downstream_joined = downstream_batch.join(
+            upstream_df.select(
+                ["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]
+            ).rename(
+                {
+                    "metaxy_data_version_by_field": "metaxy_data_version_by_field__upstream",
+                    "metaxy_provenance": "__upstream_provenance",
+                }
+            ),
+            on="chunk_id",
+        )
+        downstream_with_prov = local_store.compute_provenance(
+            Downstream, nw.from_native(downstream_joined)
+        )
+        local_store.write_metadata(Downstream, downstream_with_prov)
+
+        # Now write LOCAL upstream with FEWER samples (only 20 chunks)
+        # This simulates the scenario where local upstream is out of sync with fallback
+        local_upstream_data = pl.DataFrame(
+            {
+                "chunk_id": [f"chunk_{i}" for i in range(20)],
+                "video_path": [f"/path/to/video_{i}.mp4" for i in range(20)],
+                "metaxy_provenance_by_field": [
+                    {"video_path": f"path_hash_{i}"} for i in range(20)
+                ],
+                "metaxy_provenance": [f"upstream_prov_{i}" for i in range(20)],
+            }
+        )
+        local_store.write_metadata(Upstream, local_upstream_data)
+
+        # Now check status WITHOUT fallback
+        # Create a new store without fallback to simulate checking local-only status
+        local_only_store = InMemoryMetadataStore()
+        with local_only_store:
+            # Copy upstream and downstream from local_store to local_only_store
+            upstream_data = local_store.read_metadata_in_store(Upstream)
+            downstream_data = local_store.read_metadata_in_store(Downstream)
+            assert upstream_data is not None
+            assert downstream_data is not None
+            local_only_store.write_metadata(Upstream, upstream_data.collect())
+            local_only_store.write_metadata(Downstream, downstream_data.collect())
+
+            # Check status:
+            # - Downstream has 100 chunks
+            # - Local upstream only has 20 chunks
+            # - So 80 chunks in downstream have no upstream -> orphaned = 80
+            increment = local_only_store.resolve_update(Downstream, lazy=False)
+
+            removed_count = len(increment.removed)
+            added_count = len(increment.added)
+
+            # Expected: 80 orphaned (chunks 20-99 have no upstream)
+            assert removed_count == 80, (
+                f"Expected 80 orphaned (100 downstream - 20 upstream), "
+                f"but got {removed_count}."
+            )
+
+            # Also check added: 0 because all local upstream (20 chunks) are in downstream
+            assert added_count == 0, (
+                f"Expected 0 added (all 20 local upstream chunks are in downstream), "
+                f"but got {added_count}."
+            )

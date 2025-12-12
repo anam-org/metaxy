@@ -69,9 +69,9 @@ def status(
         bool,
         cyclopts.Parameter(
             name=["--allow-fallback-stores"],
-            help="Read metadata from fallback stores if not found in primary store.",
+            help="Whether to read metadata from fallback stores.",
         ),
-    ] = False,
+    ] = True,
     format: Annotated[
         OutputFormat,
         cyclopts.Parameter(

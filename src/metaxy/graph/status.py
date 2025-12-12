@@ -262,7 +262,7 @@ def get_feature_metadata_status(
     feature_key: CoercibleToFeatureKey,
     metadata_store: MetadataStore,
     *,
-    use_fallback: bool = False,
+    use_fallback: bool = True,
     global_filters: Sequence[nw.Expr] | None = None,
     compute_progress: bool = False,
 ) -> FeatureMetadataStatusWithIncrement:
@@ -273,10 +273,7 @@ def get_feature_metadata_status(
             Accepts a string ("a/b/c"), sequence of strings (["a", "b", "c"]),
             FeatureKey instance, or BaseFeature class.
         metadata_store: The metadata store to query
-        use_fallback: Whether to read metadata row counts from fallback stores.
-            When True, checks fallback stores if metadata is missing in the primary store.
-            When False (default), only checks the primary store.
-            Note: resolve_update always uses the primary store only.
+        use_fallback: Whether to read metadata from fallback stores.
         global_filters: List of Narwhals filter expressions to apply to all features.
             These filters are applied when reading metadata and resolving updates.
         compute_progress: Whether to calculate progress percentage.
