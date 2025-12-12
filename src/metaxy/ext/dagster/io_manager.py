@@ -110,9 +110,25 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             A narwhals LazyFrame with the feature metadata.
         """
         with self.metadata_store:
-            context.log.debug(
-                f"Reading metadata for Metaxy feature {self._feature_key_from_context(context).to_string()} from {self.metadata_store.display()}"
-            )
+            feature_key = self._feature_key_from_context(context)
+            store_metadata = self.metadata_store.get_store_metadata(feature_key)
+
+            # Build input metadata, transforming special keys to dagster standard format
+            input_metadata: dict[str, Any] = {}
+            for key, value in store_metadata.items():
+                if key == "display":
+                    input_metadata["metaxy/store"] = value
+                elif key == "table_name":
+                    input_metadata["dagster/table_name"] = value
+                elif key == "uri":
+                    input_metadata["dagster/uri"] = dg.MetadataValue.path(value)
+                else:
+                    input_metadata[key] = value
+
+            if input_metadata:
+                context.add_input_metadata(
+                    input_metadata, description="Metadata Store Info"
+                )
 
             # Build partition filter if applicable
             partition_col = (
@@ -129,7 +145,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             )
 
             return self.metadata_store.read_metadata(
-                feature=self._feature_key_from_context(context),
+                feature=feature_key,
                 filters=filters,
             )
 
