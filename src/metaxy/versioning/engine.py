@@ -12,6 +12,9 @@ from narwhals.typing import FrameT
 
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_DELETED_AT,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
@@ -181,6 +184,7 @@ class VersioningEngine(ABC):
                 METAXY_DATA_VERSION,
                 METAXY_DATA_VERSION_BY_FIELD,
                 METAXY_CREATED_AT,
+                METAXY_DELETED_AT,
                 METAXY_MATERIALIZATION_ID,
             }
             id_cols = set(self.shared_id_columns)
@@ -443,10 +447,6 @@ class VersioningEngine(ABC):
             df = df.drop(*columns_to_drop)
 
         # Add data_version columns (default to provenance values)
-        from metaxy.models.constants import (
-            METAXY_DATA_VERSION,
-            METAXY_DATA_VERSION_BY_FIELD,
-        )
 
         df = df.with_columns(
             nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
