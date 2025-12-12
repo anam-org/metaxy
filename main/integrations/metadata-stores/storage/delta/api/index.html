@@ -2310,17 +2310,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#metaxy.metadata_store.delta.DeltaMetadataStore.get_store_metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_store_metadata
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#metaxy.metadata_store.delta.DeltaMetadataStore.config_model" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3648,17 +3637,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#metaxy.metadata_store.delta.DeltaMetadataStore.get_store_metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_store_metadata
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#metaxy.metadata_store.delta.DeltaMetadataStore.config_model" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4448,38 +4426,6 @@ Base defaults: mode="append", schema_mode="merge", storage_options.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="metaxy.metadata_store.delta.DeltaMetadataStore.get_store_metadata" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.delta.DeltaMetadataStore.get_store_metadata</span>
-
-
-<a href="#metaxy.metadata_store.delta.DeltaMetadataStore.get_store_metadata" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_store_metadata</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../../../../reference/api/types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Arbitrary key-value pairs with useful metadata like path in storage.</p>
-<p>Useful for logging purposes. This method should not expose sensitive information.</p>
-
-
-            <details class="mkdocstrings-source">
-              <summary>Source code in <code>src/metaxy/metadata_store/delta.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a><a href="#__codelineno-0-366"><span class="linenos" data-linenos="366 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">get_store_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature_key</span><span class="p">:</span> <span class="n">CoercibleToFeatureKey</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-</span><span id="__span-0-367"><a id="__codelineno-0-367" name="__codelineno-0-367"></a><a href="#__codelineno-0-367"><span class="linenos" data-linenos="367 "></span></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_uri</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolve_feature_key</span><span class="p">(</span><span class="n">feature_key</span><span class="p">))}</span>
-</span></code></pre></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h4 id="metaxy.metadata_store.delta.DeltaMetadataStore.config_model" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.metadata_store.delta.DeltaMetadataStore.config_model</span>
 
@@ -4519,9 +4465,9 @@ but this is intentional - each store returns its own config type.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/metadata_store/delta.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-369"><a id="__codelineno-0-369" name="__codelineno-0-369"></a><a href="#__codelineno-0-369"><span class="linenos" data-linenos="369 "></span></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-370"><a id="__codelineno-0-370" name="__codelineno-0-370"></a><a href="#__codelineno-0-370"><span class="linenos" data-linenos="370 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">config_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">[</span><span class="n">DeltaMetadataStoreConfig</span><span class="p">]:</span>  <span class="c1"># pyright: ignore[reportIncompatibleMethodOverride]</span>
-</span><span id="__span-0-371"><a id="__codelineno-0-371" name="__codelineno-0-371"></a><a href="#__codelineno-0-371"><span class="linenos" data-linenos="371 "></span></a>    <span class="k">return</span> <span class="n">DeltaMetadataStoreConfig</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-371"><a id="__codelineno-0-371" name="__codelineno-0-371"></a><a href="#__codelineno-0-371"><span class="linenos" data-linenos="371 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-372"><a id="__codelineno-0-372" name="__codelineno-0-372"></a><a href="#__codelineno-0-372"><span class="linenos" data-linenos="372 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">config_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">[</span><span class="n">DeltaMetadataStoreConfig</span><span class="p">]:</span>  <span class="c1"># pyright: ignore[reportIncompatibleMethodOverride]</span>
+</span><span id="__span-0-373"><a id="__codelineno-0-373" name="__codelineno-0-373"></a><a href="#__codelineno-0-373"><span class="linenos" data-linenos="373 "></span></a>    <span class="k">return</span> <span class="n">DeltaMetadataStoreConfig</span>
 </span></code></pre></div>
             </details>
     </div>
