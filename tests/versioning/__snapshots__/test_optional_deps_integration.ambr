@@ -1,0 +1,424 @@
+# serializer version: 1
+# name: TestJoinBehavior.test_all_required_deps_use_inner_join
+  list([
+    dict({
+      'data_a': 'a2',
+      'data_b': 'b2',
+      'metaxy_data_version_by_field__upstream_a': dict({
+        'data_a': 'hash_a2',
+      }),
+      'metaxy_data_version_by_field__upstream_b': dict({
+        'data_b': 'hash_b2',
+      }),
+      'metaxy_provenance__upstream_a': 'prov_a2',
+      'metaxy_provenance__upstream_b': 'prov_b2',
+      'metaxy_provenance_by_field__upstream_a': dict({
+        'data_a': 'hash_a2',
+      }),
+      'metaxy_provenance_by_field__upstream_b': dict({
+        'data_b': 'hash_b2',
+      }),
+      'sample_uid': 2,
+    }),
+    dict({
+      'data_a': 'a3',
+      'data_b': 'b3',
+      'metaxy_data_version_by_field__upstream_a': dict({
+        'data_a': 'hash_a3',
+      }),
+      'metaxy_data_version_by_field__upstream_b': dict({
+        'data_b': 'hash_b3',
+      }),
+      'metaxy_provenance__upstream_a': 'prov_a3',
+      'metaxy_provenance__upstream_b': 'prov_b3',
+      'metaxy_provenance_by_field__upstream_a': dict({
+        'data_a': 'hash_a3',
+      }),
+      'metaxy_provenance_by_field__upstream_b': dict({
+        'data_b': 'hash_b3',
+      }),
+      'sample_uid': 3,
+    }),
+  ])
+# ---
+# name: TestJoinBehavior.test_mixed_required_and_optional_deps
+  list([
+    dict({
+      'data_a': 'a2',
+      'data_b': 'b2',
+      'data_opt': 'o2',
+      'metaxy_data_version_by_field__optional': dict({
+        'data_opt': 'hash_o2',
+      }),
+      'metaxy_data_version_by_field__required_a': dict({
+        'data_a': 'hash_a2',
+      }),
+      'metaxy_data_version_by_field__required_b': dict({
+        'data_b': 'hash_b2',
+      }),
+      'metaxy_provenance__optional': 'prov_o2',
+      'metaxy_provenance__required_a': 'prov_a2',
+      'metaxy_provenance__required_b': 'prov_b2',
+      'metaxy_provenance_by_field__optional': dict({
+        'data_opt': 'hash_o2',
+      }),
+      'metaxy_provenance_by_field__required_a': dict({
+        'data_a': 'hash_a2',
+      }),
+      'metaxy_provenance_by_field__required_b': dict({
+        'data_b': 'hash_b2',
+      }),
+      'sample_uid': 2,
+    }),
+    dict({
+      'data_a': 'a3',
+      'data_b': 'b3',
+      'data_opt': None,
+      'metaxy_data_version_by_field__optional': None,
+      'metaxy_data_version_by_field__required_a': dict({
+        'data_a': 'hash_a3',
+      }),
+      'metaxy_data_version_by_field__required_b': dict({
+        'data_b': 'hash_b3',
+      }),
+      'metaxy_provenance__optional': None,
+      'metaxy_provenance__required_a': 'prov_a3',
+      'metaxy_provenance__required_b': 'prov_b3',
+      'metaxy_provenance_by_field__optional': None,
+      'metaxy_provenance_by_field__required_a': dict({
+        'data_a': 'hash_a3',
+      }),
+      'metaxy_provenance_by_field__required_b': dict({
+        'data_b': 'hash_b3',
+      }),
+      'sample_uid': 3,
+    }),
+  ])
+# ---
+# name: TestJoinBehavior.test_multiple_optional_deps
+  list([
+    dict({
+      'data_a': 'a1',
+      'data_b': None,
+      'data_req': 'r1',
+      'metaxy_data_version_by_field__optional_a': dict({
+        'data_a': 'hash_a1',
+      }),
+      'metaxy_data_version_by_field__optional_b': None,
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r1',
+      }),
+      'metaxy_provenance__optional_a': 'prov_a1',
+      'metaxy_provenance__optional_b': None,
+      'metaxy_provenance__required': 'prov_r1',
+      'metaxy_provenance_by_field__optional_a': dict({
+        'data_a': 'hash_a1',
+      }),
+      'metaxy_provenance_by_field__optional_b': None,
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r1',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'data_a': 'a2',
+      'data_b': 'b2',
+      'data_req': 'r2',
+      'metaxy_data_version_by_field__optional_a': dict({
+        'data_a': 'hash_a2',
+      }),
+      'metaxy_data_version_by_field__optional_b': dict({
+        'data_b': 'hash_b2',
+      }),
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r2',
+      }),
+      'metaxy_provenance__optional_a': 'prov_a2',
+      'metaxy_provenance__optional_b': 'prov_b2',
+      'metaxy_provenance__required': 'prov_r2',
+      'metaxy_provenance_by_field__optional_a': dict({
+        'data_a': 'hash_a2',
+      }),
+      'metaxy_provenance_by_field__optional_b': dict({
+        'data_b': 'hash_b2',
+      }),
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r2',
+      }),
+      'sample_uid': 2,
+    }),
+    dict({
+      'data_a': None,
+      'data_b': 'b3',
+      'data_req': 'r3',
+      'metaxy_data_version_by_field__optional_a': None,
+      'metaxy_data_version_by_field__optional_b': dict({
+        'data_b': 'hash_b3',
+      }),
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r3',
+      }),
+      'metaxy_provenance__optional_a': None,
+      'metaxy_provenance__optional_b': 'prov_b3',
+      'metaxy_provenance__required': 'prov_r3',
+      'metaxy_provenance_by_field__optional_a': None,
+      'metaxy_provenance_by_field__optional_b': dict({
+        'data_b': 'hash_b3',
+      }),
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r3',
+      }),
+      'sample_uid': 3,
+    }),
+    dict({
+      'data_a': None,
+      'data_b': 'b4',
+      'data_req': 'r4',
+      'metaxy_data_version_by_field__optional_a': None,
+      'metaxy_data_version_by_field__optional_b': dict({
+        'data_b': 'hash_b4',
+      }),
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r4',
+      }),
+      'metaxy_provenance__optional_a': None,
+      'metaxy_provenance__optional_b': 'prov_b4',
+      'metaxy_provenance__required': 'prov_r4',
+      'metaxy_provenance_by_field__optional_a': None,
+      'metaxy_provenance_by_field__optional_b': dict({
+        'data_b': 'hash_b4',
+      }),
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r4',
+      }),
+      'sample_uid': 4,
+    }),
+  ])
+# ---
+# name: TestJoinBehavior.test_optional_dep_left_join_full_match
+  list([
+    dict({
+      'data_opt': 'o1',
+      'data_req': 'r1',
+      'metaxy_data_version_by_field__optional': dict({
+        'data_opt': 'hash_o1',
+      }),
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r1',
+      }),
+      'metaxy_provenance__optional': 'prov_o1',
+      'metaxy_provenance__required': 'prov_r1',
+      'metaxy_provenance_by_field__optional': dict({
+        'data_opt': 'hash_o1',
+      }),
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r1',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'data_opt': 'o2',
+      'data_req': 'r2',
+      'metaxy_data_version_by_field__optional': dict({
+        'data_opt': 'hash_o2',
+      }),
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r2',
+      }),
+      'metaxy_provenance__optional': 'prov_o2',
+      'metaxy_provenance__required': 'prov_r2',
+      'metaxy_provenance_by_field__optional': dict({
+        'data_opt': 'hash_o2',
+      }),
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r2',
+      }),
+      'sample_uid': 2,
+    }),
+    dict({
+      'data_opt': 'o3',
+      'data_req': 'r3',
+      'metaxy_data_version_by_field__optional': dict({
+        'data_opt': 'hash_o3',
+      }),
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r3',
+      }),
+      'metaxy_provenance__optional': 'prov_o3',
+      'metaxy_provenance__required': 'prov_r3',
+      'metaxy_provenance_by_field__optional': dict({
+        'data_opt': 'hash_o3',
+      }),
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r3',
+      }),
+      'sample_uid': 3,
+    }),
+  ])
+# ---
+# name: TestJoinBehavior.test_optional_dep_left_join_no_match
+  list([
+    dict({
+      'data_opt': None,
+      'data_req': 'r1',
+      'metaxy_data_version_by_field__optional': None,
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r1',
+      }),
+      'metaxy_provenance__optional': None,
+      'metaxy_provenance__required': 'prov_r1',
+      'metaxy_provenance_by_field__optional': None,
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r1',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'data_opt': None,
+      'data_req': 'r2',
+      'metaxy_data_version_by_field__optional': None,
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r2',
+      }),
+      'metaxy_provenance__optional': None,
+      'metaxy_provenance__required': 'prov_r2',
+      'metaxy_provenance_by_field__optional': None,
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r2',
+      }),
+      'sample_uid': 2,
+    }),
+    dict({
+      'data_opt': None,
+      'data_req': 'r3',
+      'metaxy_data_version_by_field__optional': None,
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r3',
+      }),
+      'metaxy_provenance__optional': None,
+      'metaxy_provenance__required': 'prov_r3',
+      'metaxy_provenance_by_field__optional': None,
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r3',
+      }),
+      'sample_uid': 3,
+    }),
+  ])
+# ---
+# name: TestJoinBehavior.test_optional_dep_left_join_partial_match
+  list([
+    dict({
+      'data_opt': None,
+      'data_req': 'r1',
+      'metaxy_data_version_by_field__optional': None,
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r1',
+      }),
+      'metaxy_provenance__optional': None,
+      'metaxy_provenance__required': 'prov_r1',
+      'metaxy_provenance_by_field__optional': None,
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r1',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'data_opt': 'o2',
+      'data_req': 'r2',
+      'metaxy_data_version_by_field__optional': dict({
+        'data_opt': 'hash_o2',
+      }),
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r2',
+      }),
+      'metaxy_provenance__optional': 'prov_o2',
+      'metaxy_provenance__required': 'prov_r2',
+      'metaxy_provenance_by_field__optional': dict({
+        'data_opt': 'hash_o2',
+      }),
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r2',
+      }),
+      'sample_uid': 2,
+    }),
+    dict({
+      'data_opt': 'o3',
+      'data_req': 'r3',
+      'metaxy_data_version_by_field__optional': dict({
+        'data_opt': 'hash_o3',
+      }),
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r3',
+      }),
+      'metaxy_provenance__optional': 'prov_o3',
+      'metaxy_provenance__required': 'prov_r3',
+      'metaxy_provenance_by_field__optional': dict({
+        'data_opt': 'hash_o3',
+      }),
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r3',
+      }),
+      'sample_uid': 3,
+    }),
+    dict({
+      'data_opt': None,
+      'data_req': 'r4',
+      'metaxy_data_version_by_field__optional': None,
+      'metaxy_data_version_by_field__required': dict({
+        'data_req': 'hash_r4',
+      }),
+      'metaxy_provenance__optional': None,
+      'metaxy_provenance__required': 'prov_r4',
+      'metaxy_provenance_by_field__optional': None,
+      'metaxy_provenance_by_field__required': dict({
+        'data_req': 'hash_r4',
+      }),
+      'sample_uid': 4,
+    }),
+  ])
+# ---
+# name: TestProvenanceWithOptionalDeps.test_provenance_differs_with_vs_without_optional_data
+  dict({
+    'with_optional': dict({
+      'field_provenance': dict({
+        'default': '13545806255445103946',
+      }),
+      'sample_provenance': '5887158490130154775',
+      'sample_uid': 1,
+    }),
+    'without_optional': dict({
+      'field_provenance': dict({
+        'default': '13824768684300233899',
+      }),
+      'sample_provenance': '12924278870543288878',
+      'sample_uid': 1,
+    }),
+  })
+# ---
+# name: TestProvenanceWithOptionalDeps.test_provenance_is_deterministic_with_nulls
+  dict({
+    'field_provenance': dict({
+      'default': '13824768684300233899',
+    }),
+    'sample_provenance': '12924278870543288878',
+    'sample_uid': 1,
+  })
+# ---
+# name: TestProvenanceWithOptionalDeps.test_provenance_with_optional_dep_null_handling
+  list([
+    dict({
+      'field_provenance': dict({
+        'default': '13824768684300233899',
+      }),
+      'sample_provenance': '12924278870543288878',
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_provenance': dict({
+        'default': '17209215691681592257',
+      }),
+      'sample_provenance': '14215016939826533631',
+      'sample_uid': 2,
+    }),
+  ])
+# ---

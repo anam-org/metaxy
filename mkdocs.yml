@@ -194,6 +194,7 @@ nav:
       - Feature Discovery: guide/learn/feature-discovery.md
       - Syntactic Sugar: guide/learn/syntactic-sugar.md
       - Lineage Relationship: guide/learn/relationship.md
+      - Optional Dependencies: guide/learn/optional-dependencies.md
       - Filters: guide/learn/filters.md
       - Testing: guide/learn/testing.md
       - System Columns: guide/learn/system-columns.md

@@ -295,3 +295,24 @@ class FeaturePlan(FrozenBaseModel):
 
         else:
             raise ValueError(f"Unknown lineage relationship type: {relationship_type}")
+
+    @cached_property
+    def optional_deps(self) -> list[FeatureDep]:
+        """Dependencies marked as optional (use left join)."""
+        return [dep for dep in (self.feature_deps or []) if dep.optional]
+
+    @cached_property
+    def required_deps(self) -> list[FeatureDep]:
+        """Dependencies that are required (use inner join)."""
+        return [dep for dep in (self.feature_deps or []) if not dep.optional]
+
+    @cached_property
+    def main_dep(self) -> FeatureDep | None:
+        """The first (main) dependency that defines the sample universe.
+
+        The first dependency is always required and uses inner join.
+        It defines which samples exist in the downstream feature.
+        """
+        if self.feature_deps and len(self.feature_deps) > 0:
+            return self.feature_deps[0]
+        return None

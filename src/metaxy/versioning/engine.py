@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import narwhals as nw
 from narwhals.typing import FrameT
@@ -88,23 +88,60 @@ class VersioningEngine(ABC):
         return list(cols)
 
     def join(self, upstream: Mapping[FeatureKey, RenamedDataFrame[FrameT]]) -> FrameT:
-        """Join the renamed upstream dataframes on the intersection of renamed id_columns of all feature specs."""
+        """Join the renamed upstream dataframes respecting optional/required dependencies.
+
+        Required dependencies use inner join, optional dependencies use left join.
+        Join order follows the dependency declaration order in FeatureSpec.deps.
+        The first dependency defines the sample universe (always required).
+
+        Args:
+            upstream: Dictionary of upstream dataframes keyed by FeatureKey
+
+        Returns:
+            Joined dataframe with columns from all upstream features
+        """
         assert len(upstream) > 0, "No upstream dataframes provided"
 
-        key, renamed_df = next(iter(upstream.items()))
+        # If no feature_deps, fall back to original behavior (all inner joins)
+        if not self.plan.feature_deps:
+            key, renamed_df = next(iter(upstream.items()))
+            df = renamed_df.df
+            for next_key, renamed_df in upstream.items():
+                if key == next_key:
+                    continue
+                df = cast(
+                    FrameT,
+                    df.join(renamed_df.df, on=self.shared_id_columns, how="inner"),
+                )
+            return df
 
-        df = renamed_df.df
+        # Process in dependency declaration order
+        df: FrameT | None = None
 
-        for next_key, renamed_df in upstream.items():
-            if key == next_key:
+        for dep in self.plan.feature_deps:
+            if dep.feature not in upstream:
                 continue
-            # we do not need to provide a _suffix here
-            # because the columns are already renamed
-            # it's on the user to specify correct renames for colliding columns
-            df = cast(
-                FrameT, df.join(renamed_df.df, on=self.shared_id_columns, how="inner")
-            )
 
+            renamed_df = upstream[dep.feature]
+            transformer = self.feature_transformers_by_key[dep.feature]
+
+            if df is None:
+                # First dependency - becomes the base (always required)
+                df = renamed_df.df
+            else:
+                # Subsequent dependencies - join with appropriate type
+                join_type: Literal["inner", "left"] = (
+                    "left" if transformer.is_optional else "inner"
+                )
+                # We do not need to provide a _suffix here
+                # because the columns are already renamed
+                # it's on the user to specify correct renames for colliding columns
+                df = cast(
+                    FrameT,
+                    df.join(renamed_df.df, on=self.shared_id_columns, how=join_type),
+                )
+
+        assert df is not None, "No dataframes were joined"
         return df
 
     def prepare_upstream(
@@ -316,6 +353,10 @@ class VersioningEngine(ABC):
 
         Resolves field-level dependencies. Only actual parent fields are considered.
 
+        For optional dependencies that may have NULL values (due to left joins), the expression
+        handles NULLs by using a sentinel value "__NULL__" in the provenance concatenation.
+        This ensures deterministic provenance even when optional upstream data is missing.
+
         Note:
             This reads from upstream `metaxy_data_version_by_field` instead of `metaxy_provenance_by_field`,
             enabling users to control version propagation by overriding data_version values.
@@ -330,9 +371,19 @@ class VersioningEngine(ABC):
             ).items():
                 # Read from data_version_by_field instead of provenance_by_field
                 # This enables user-defined versioning control
-                field_provenance[fq_key] = nw.col(
+                base_expr = nw.col(
                     self.get_renamed_data_version_by_field_col(fq_key.feature)
                 ).struct.field(parent_field_spec.key.to_struct_key())
+
+                # Check if this is from an optional dependency
+                transformer = self.feature_transformers_by_key.get(fq_key.feature)
+                if transformer and transformer.is_optional:
+                    # Handle NULL values from optional dependencies
+                    # Use fill_null to replace NULL with sentinel for deterministic provenance
+                    field_provenance[fq_key] = base_expr.fill_null("__NULL__")
+                else:
+                    field_provenance[fq_key] = base_expr
+
             res[field_spec.key] = field_provenance
         return res
 

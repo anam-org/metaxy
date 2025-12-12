@@ -1,0 +1,41 @@
+# serializer version: 1
+# name: TestFeatureDepOptional.test_feature_spec_version_changes_when_optional_changes
+  dict({
+    'optional': '281852e459578582f6ebca395eb8a0a81aff3f0f229be1f40542e18b3568e6ab',
+    'required': 'e51eb03b2e8f57886a698ff6a4c84154a351514267cb04966a0488a14998bcba',
+  })
+# ---
+# name: TestFeatureDepOptional.test_optional_false_serializes_correctly
+  dict({
+    'columns': None,
+    'feature': 'test/feature',
+    'fields_mapping': dict({
+      'mapping': dict({
+        'exclude_fields': list([
+        ]),
+        'match_suffix': False,
+        'type': 'default',
+      }),
+    }),
+    'optional': False,
+    'rename': None,
+    'sql_filters': None,
+  })
+# ---
+# name: TestFeatureDepOptional.test_optional_true_serializes_correctly
+  dict({
+    'columns': None,
+    'feature': 'test/feature',
+    'fields_mapping': dict({
+      'mapping': dict({
+        'exclude_fields': list([
+        ]),
+        'match_suffix': False,
+        'type': 'default',
+      }),
+    }),
+    'optional': True,
+    'rename': None,
+    'sql_filters': None,
+  })
+# ---
