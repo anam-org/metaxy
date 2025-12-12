@@ -54,7 +54,9 @@ class PolarsLazyIncrement:
     def collect(self, **kwargs: Any) -> PolarsIncrement:
         """Collect into a [`PolarsIncrement`][metaxy.versioning.types.PolarsIncrement].
 
-        Leverage [`polars.collect_all`](https://docs.pola.rs/api/python/stable/reference/api/polars.collect_all.html) to optimize the collection process and take advantage of common subplan elimination.
+        !!! tip
+            Leverages [`polars.collect_all`](https://docs.pola.rs/api/python/stable/reference/api/polars.collect_all.html)
+            to optimize the collection process and take advantage of common subplan elimination.
 
         Args:
             **kwargs: backend-specific keyword arguments to pass to the collect method of the lazy frames.
@@ -116,17 +118,39 @@ class LazyIncrement:
     def collect(self, **kwargs: Any) -> Increment:
         """Collect all lazy frames to eager DataFrames.
 
+        !!! tip
+            If all lazy frames are Polars frames, leverages
+            [`polars.collect_all`](https://docs.pola.rs/api/python/stable/reference/api/polars.collect_all.html)
+            to optimize the collection process and take advantage of common subplan elimination.
+
         Args:
             **kwargs: backend-specific keyword arguments to pass to the collect method of the lazy frames.
 
         Returns:
             Increment: The collected increment.
         """
-        return Increment(
-            added=self.added.collect(**kwargs),
-            changed=self.changed.collect(**kwargs),
-            removed=self.removed.collect(**kwargs),
-        )
+        if (
+            self.added.implementation
+            == self.changed.implementation
+            == self.removed.implementation
+            == nw.Implementation.POLARS
+        ):
+            polars_eager_increment = PolarsLazyIncrement(
+                added=self.added.to_native(),
+                changed=self.changed.to_native(),
+                removed=self.removed.to_native(),
+            ).collect(**kwargs)
+            return Increment(
+                added=nw.from_native(polars_eager_increment.added),
+                changed=nw.from_native(polars_eager_increment.changed),
+                removed=nw.from_native(polars_eager_increment.removed),
+            )
+        else:
+            return Increment(
+                added=self.added.collect(**kwargs),
+                changed=self.changed.collect(**kwargs),
+                removed=self.removed.collect(**kwargs),
+            )
 
     def to_polars(self) -> PolarsLazyIncrement:
         """Convert to Polars.
