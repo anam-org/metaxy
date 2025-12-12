@@ -362,13 +362,32 @@ class TestCalculateInputProgress:
             store.write_metadata(Video, nw.from_native(upstream_data))
 
             # Write frames for 2 videos (multiple frames per video)
-            increment = store.resolve_update(VideoFrames, lazy=False)
-            # Get all frames from first 2 videos
-            # Filter by video_id to get frames for v1 and v2
-            partial_data = increment.added.to_polars().filter(
-                pl.col("video_id").is_in(["v1", "v2"])
+            # For expansion lineage, user must manually create expanded rows with frame_id
+            # Each video has 3 frames
+            frames_data = pl.DataFrame(
+                {
+                    "video_id": ["v1", "v1", "v1", "v2", "v2", "v2"],
+                    "frame_id": ["f1", "f2", "f3", "f1", "f2", "f3"],
+                    "embedding": ["emb1", "emb2", "emb3", "emb4", "emb5", "emb6"],
+                }
             )
-            store.write_metadata(VideoFrames, partial_data)
+            # Read upstream from store to get metaxy_data_version_by_field column
+            upstream_from_store = store.read_metadata(Video).collect().to_polars()
+            # Join with upstream to get provenance info
+            frames_with_upstream = frames_data.join(
+                upstream_from_store.select(
+                    "video_id",
+                    pl.col("metaxy_data_version_by_field").alias(
+                        f"metaxy_data_version_by_field{Video.spec().key.to_column_suffix()}"
+                    ),
+                ),
+                on="video_id",
+            )
+            # Compute provenance for VideoFrames
+            frames_with_prov = store.compute_provenance(
+                VideoFrames, nw.from_native(frames_with_upstream)
+            )
+            store.write_metadata(VideoFrames, frames_with_prov)
 
             # Progress should count by parent videos, not individual frames
             # 2 videos processed out of 3 = 66.67%

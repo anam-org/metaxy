@@ -1,6 +1,7 @@
 """Tests for metadata CLI commands."""
 
 import json
+from pathlib import Path
 
 import polars as pl
 import pytest
@@ -1671,3 +1672,260 @@ def test_metadata_status_progress_no_input_display(
         # Non-root feature with no upstream input should have null progress
         # (key may be absent due to exclude_none or present with None value)
         assert feature.get("progress_percentage") is None
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_with_fallback_stores(
+    tmp_path: Path,
+    output_format: str,
+):
+    """Test that metadata status correctly uses fallback stores for upstream metadata.
+
+    This test reproduces a scenario where:
+    1. Upstream feature metadata is only in the fallback store (e.g., production)
+    2. Downstream feature was materialized by reading upstream from fallback
+    3. Status should show downstream is up-to-date, NOT show inflated orphaned count
+
+    This was a bug where `--allow-fallback-stores` defaulted to False in CLI,
+    causing status to report orphaned samples when upstream was only in fallback.
+
+    NOTE: We use DeltaMetadataStore for both stores since they both default to XXHASH64
+    and work well together without Ibis backend conflicts.
+    """
+    # Create config with dev store that has prod as fallback (both Delta)
+    dev_path = tmp_path / "dev"
+    prod_path = tmp_path / "prod"
+
+    config_content = f'''project = "test"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{dev_path}"
+fallback_stores = ["prod"]
+
+[stores.prod]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.prod.config]
+root_path = "{prod_path}"
+'''
+
+    project = TempMetaxyProject(tmp_path, config_content=config_content)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class UpstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["upstream"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class DownstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["downstream"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[UpstreamFeature],
+            ),
+        ):
+            pass
+
+    with project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = project.graph
+        dev_store = project.stores["dev"]
+        prod_store = project.stores["prod"]
+
+        # Write upstream metadata ONLY to prod (fallback) store
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "value": ["val_1", "val_2", "val_3"],
+                "metaxy_provenance_by_field": [
+                    {"default": f"hash{i}"} for i in [1, 2, 3]
+                ],
+            }
+        )
+
+        upstream_key = FeatureKey(["upstream"])
+        upstream_cls = graph.get_feature_by_key(upstream_key)
+
+        with graph.use(), prod_store:
+            prod_store.write_metadata(upstream_cls, upstream_data)
+
+        # Now compute downstream metadata using dev store (reads upstream from fallback)
+        downstream_key = FeatureKey(["downstream"])
+        downstream_cls = graph.get_feature_by_key(downstream_key)
+
+        with graph.use(), dev_store:
+            # resolve_update should read upstream from fallback (prod) store
+            increment = dev_store.resolve_update(downstream_cls, lazy=False)
+            # Write downstream to dev store
+            dev_store.write_metadata(downstream_cls, increment.added.to_polars())
+
+        # Run CLI status command - should use fallback stores by default
+        result = project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "downstream",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["downstream"]
+            assert feature["feature_key"] == "downstream"
+            # Should be up-to-date with 0 orphaned (upstream is in fallback)
+            assert feature["status"] == "up_to_date", (
+                f"Expected status 'up_to_date' but got '{feature['status']}'. "
+                f"Orphaned: {feature.get('orphaned')}, Missing: {feature.get('missing')}. "
+                "This suggests fallback stores are not being used correctly."
+            )
+            assert feature["orphaned"] == 0, (
+                f"Expected 0 orphaned but got {feature['orphaned']}. "
+                "Orphaned count is inflated because upstream metadata in fallback store "
+                "is not being read."
+            )
+            assert feature["store_rows"] == 3
+        else:
+            # Check for table output with ✓ icon for up-to-date status
+            assert "downstream" in result.stdout
+            assert "✓" in result.stdout, (
+                f"Expected ✓ (up-to-date) but output was:\n{result.stdout}\n"
+                "This suggests fallback stores are not being used correctly."
+            )
+
+
+def test_metadata_status_fallback_disabled_shows_missing_row_count(
+    tmp_path: Path,
+):
+    """Test that disabling fallback stores affects how current feature's metadata is counted.
+
+    When --no-allow-fallback-stores is used and the feature's metadata exists ONLY
+    in the fallback store (not the primary), the status should show:
+    - store_rows=0 (not reading from fallback)
+    - metadata_exists=False
+
+    This contrasts with --allow-fallback-stores where metadata would be found in fallback.
+
+    NOTE: This test verifies the flag works for reading the CURRENT feature's metadata count.
+    """
+    # Create config with dev store that has prod as fallback (both Delta)
+    dev_path = tmp_path / "dev"
+    prod_path = tmp_path / "prod"
+
+    config_content = f'''project = "test"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{dev_path}"
+fallback_stores = ["prod"]
+
+[stores.prod]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.prod.config]
+root_path = "{prod_path}"
+'''
+
+    project = TempMetaxyProject(tmp_path, config_content=config_content)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class RootFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            """Root feature with no dependencies."""
+
+            pass
+
+    with project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = project.graph
+        prod_store = project.stores["prod"]
+
+        # Write root feature metadata ONLY to prod (fallback) store
+        root_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "value": ["val_1", "val_2", "val_3"],
+                "metaxy_provenance_by_field": [
+                    {"default": f"hash{i}"} for i in [1, 2, 3]
+                ],
+            }
+        )
+
+        root_key = FeatureKey(["root"])
+        root_cls = graph.get_feature_by_key(root_key)
+
+        with graph.use(), prod_store:
+            prod_store.write_metadata(root_cls, root_data)
+
+        # Run CLI status command WITH fallback enabled
+        # Should find 3 rows in fallback store
+        result_with_fallback = project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "root",
+            "--format",
+            "json",
+            # --allow-fallback-stores is True by default
+        )
+
+        assert result_with_fallback.returncode == 0
+        data = json.loads(result_with_fallback.stdout)
+        feature = data["features"]["root"]
+        assert feature["store_rows"] == 3, (
+            f"With fallback enabled, expected store_rows=3 but got {feature['store_rows']}"
+        )
+        assert feature["metadata_exists"] is True
+        # Root features show "root_feature" status
+        assert feature["status"] == "root_feature"
+
+        # Run CLI status command WITH fallback DISABLED
+        # Should NOT find any rows (not looking in fallback)
+        result_no_fallback = project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "root",
+            "--format",
+            "json",
+            "--no-allow-fallback-stores",
+        )
+
+        assert result_no_fallback.returncode == 0
+        data = json.loads(result_no_fallback.stdout)
+        feature = data["features"]["root"]
+
+        # Without fallback, metadata should not be found in primary store
+        assert feature["store_rows"] == 0, (
+            f"With fallback disabled, expected store_rows=0 but got {feature['store_rows']}"
+        )
+        assert feature["metadata_exists"] is False
+        # Missing metadata takes precedence over root feature status
+        assert feature["status"] == "missing"
