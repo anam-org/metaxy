@@ -1636,10 +1636,78 @@ class MetadataStore(ABC):
         """
         pass
 
-    def get_store_metadata(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
-        """Arbitrary key-value pairs with useful metadata like path in storage.
+    def find_store_for_feature(
+        self,
+        feature_key: CoercibleToFeatureKey,
+        *,
+        check_fallback: bool = True,
+    ) -> MetadataStore | None:
+        """Find the store that contains the given feature.
 
-        Useful for logging purposes. This method should not expose sensitive information.
+        Args:
+            feature_key: Feature to find
+            check_fallback: Whether to check fallback stores when the feature
+                is not found in the current store
+
+        Returns:
+            The store containing the feature, or None if not found
+        """
+        self._check_open()
+
+        # Check if feature exists in this store
+        if self.has_feature(feature_key):
+            return self
+
+        # Try fallback stores if enabled (opened on demand)
+        if check_fallback:
+            for store in self.fallback_stores:
+                with store:
+                    found = store.find_store_for_feature(
+                        feature_key, check_fallback=True
+                    )
+                    if found is not None:
+                        return found
+
+        return None
+
+    def get_store_metadata(
+        self,
+        feature_key: CoercibleToFeatureKey,
+        *,
+        check_fallback: bool = True,
+    ) -> dict[str, Any]:
+        """Arbitrary key-value pairs with useful metadata for logging purposes (like a path in storage).
+
+        This method should not expose sensitive information.
+
+        Args:
+            feature_key: Feature to get metadata for
+            check_fallback: Whether to check fallback stores when the feature
+                is not found in the current store
+
+        Returns:
+            Dictionary with store-specific metadata (e.g., `"display"`, `"table_name"`, `"uri"`)
+        """
+        store = self.find_store_for_feature(feature_key, check_fallback=check_fallback)
+        if store is None:
+            return {}
+        return {
+            "display": store.display(),
+            **store._get_store_metadata_impl(feature_key),
+        }
+
+    def _get_store_metadata_impl(
+        self, feature_key: CoercibleToFeatureKey
+    ) -> dict[str, Any]:
+        """Implementation of get_store_metadata for this specific store type.
+
+        Override in subclasses to return store-specific metadata.
+
+        Args:
+            feature_key: Feature to get metadata for
+
+        Returns:
+            Dictionary with store-specific metadata
         """
         return {}
 

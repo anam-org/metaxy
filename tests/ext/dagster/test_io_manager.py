@@ -223,6 +223,128 @@ class TestMetaxyIOManagerHandleOutput:
 class TestMetaxyIOManagerLoadInput:
     """Test load_input functionality."""
 
+    def test_load_input_from_fallback_store(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+        downstream_feature: type[mx.BaseFeature],
+        tmp_path,
+        instance: dg.DagsterInstance,
+    ):
+        """Test that load_input correctly reads from fallback store and attaches correct metadata.
+
+        This tests the fix for issue #549: when a feature is only in a fallback store,
+        the IO manager should read from the fallback and attach the fallback store's
+        metadata to the LOADED_INPUT event.
+        """
+        import metaxy.ext.dagster as mxd
+        from metaxy.metadata_store.delta import DeltaMetadataStore
+
+        # Create fallback and primary stores
+        fallback_path = tmp_path / "fallback"
+        primary_path = tmp_path / "primary"
+
+        fallback_store = DeltaMetadataStore(root_path=fallback_path)
+
+        # Write upstream data to fallback store only
+        with fallback_store.open("write"):
+            fallback_store.write_metadata(
+                upstream_feature,
+                pl.DataFrame(
+                    {
+                        "id": ["f1", "f2"],
+                        "metaxy_provenance_by_field": [
+                            {"value": "v1"},
+                            {"value": "v2"},
+                        ],
+                    }
+                ),
+            )
+
+        # Configure MetaxyConfig with primary store having fallback
+        fallback_store_config = mx.StoreConfig(
+            type="metaxy.metadata_store.delta.DeltaMetadataStore",
+            config={"root_path": str(fallback_path)},
+        )
+        primary_store_config = mx.StoreConfig(
+            type="metaxy.metadata_store.delta.DeltaMetadataStore",
+            config={
+                "root_path": str(primary_path),
+                "fallback_stores": ["fallback"],
+            },
+        )
+
+        with mx.MetaxyConfig(
+            stores={"dev": primary_store_config, "fallback": fallback_store_config}
+        ).use():
+            store_resource = mxd.MetaxyStoreFromConfigResource(name="dev")
+            resources = {
+                "store": store_resource,
+                "metaxy_io_manager": mxd.MetaxyIOManager(store=store_resource),
+            }
+
+            # Track what data was loaded
+            captured_data = {}
+
+            @dg.asset(
+                metadata={"metaxy/feature": "features/upstream"},
+                io_manager_key="metaxy_io_manager",
+            )
+            def upstream_asset():
+                # Return None - data already exists in fallback store
+                return None
+
+            @dg.asset(
+                metadata={"metaxy/feature": "features/downstream"},
+                io_manager_key="metaxy_io_manager",
+            )
+            def downstream_asset(upstream_asset: nw.LazyFrame):  # pyright: ignore[reportMissingTypeArgument]
+                # This receives data loaded via IO manager from fallback store
+                data = upstream_asset.collect()
+                captured_data["rows"] = len(data)
+                captured_data["ids"] = set(nw.to_native(data["id"]).to_list())
+                return None
+
+            # First materialize upstream (no-op, data in fallback)
+            result1 = dg.materialize(
+                assets=[upstream_asset],
+                resources=resources,
+                instance=instance,
+            )
+            assert result1.success
+
+            # Materialize downstream - this will load upstream from fallback via IO manager
+            result2 = dg.materialize(
+                assets=[upstream_asset, downstream_asset],
+                resources=resources,
+                instance=instance,
+                selection=[downstream_asset],
+            )
+            assert result2.success
+
+            # Verify downstream received data from fallback store
+            assert captured_data["rows"] == 2
+            assert captured_data["ids"] == {"f1", "f2"}
+
+            # Find the LOADED_INPUT event for the upstream_asset input
+            loaded_input_events = [
+                e for e in result2.all_events if e.event_type_value == "LOADED_INPUT"
+            ]
+            assert len(loaded_input_events) == 1
+
+            # Check the input metadata shows the fallback store
+            loaded_input_data = loaded_input_events[0].event_specific_data
+            input_metadata = loaded_input_data.metadata  # pyright: ignore
+            assert "metaxy/store" in input_metadata
+            # The store display should reference the fallback path
+            store_display = input_metadata["metaxy/store"].value
+            assert "fallback" in store_display  # pyright: ignore
+            assert "primary" not in store_display  # pyright: ignore
+
+            # Also verify dagster/uri points to fallback
+            assert "dagster/uri" in input_metadata
+            uri_value = input_metadata["dagster/uri"].value
+            assert "fallback" in str(uri_value)
+
     def test_load_input_reads_upstream_data(
         self,
         upstream_feature: type[mx.BaseFeature],

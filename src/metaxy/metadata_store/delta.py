@@ -363,7 +363,9 @@ class DeltaMetadataStore(MetadataStore):
         details.append(f"layout={self.layout}")
         return f"DeltaMetadataStore({', '.join(details)})"
 
-    def get_store_metadata(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
+    def _get_store_metadata_impl(
+        self, feature_key: CoercibleToFeatureKey
+    ) -> dict[str, Any]:
         return {"uri": self._feature_uri(self._resolve_feature_key(feature_key))}
 
     @classmethod

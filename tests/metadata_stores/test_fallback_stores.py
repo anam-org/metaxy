@@ -654,3 +654,128 @@ def test_fallback_stores_opened_on_demand_when_reading(
         assert result is not None
         collected = result.collect()
         assert len(collected) == 3
+
+
+def test_get_store_metadata_respects_fallback_stores(
+    tmp_path, graph: FeatureGraph
+) -> None:
+    """Test that get_store_metadata returns metadata from fallback store when feature is only there.
+
+    This tests the fix for issue #549: MetadataStore.get_store_metadata should respect
+    fallback stores, returning metadata from the fallback store where the feature is
+    actually found when it doesn't exist in the current store.
+    """
+    from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+    from metaxy._testing.models import SampleFeatureSpec
+    from metaxy.metadata_store.delta import DeltaMetadataStore
+
+    class TestFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["get_store_metadata_fallback_test", "feature"]),
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    primary_path = tmp_path / "primary"
+    fallback_path = tmp_path / "fallback"
+
+    # Create stores with fallback chain
+    fallback_store = DeltaMetadataStore(root_path=fallback_path)
+    primary_store = DeltaMetadataStore(
+        root_path=primary_path, fallback_stores=[fallback_store]
+    )
+
+    # Write data to the fallback store only
+    with fallback_store.open(mode="write"):
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
+            }
+        )
+        fallback_store.write_metadata(TestFeature, metadata)
+
+    # Now open only the primary store and call get_store_metadata
+    # It should return metadata from the fallback store
+    with primary_store:
+        store_metadata = primary_store.get_store_metadata(TestFeature)
+
+        # Should return the fallback store's metadata (uri pointing to fallback location)
+        assert store_metadata is not None
+        assert "uri" in store_metadata
+        assert "fallback" in store_metadata["uri"]
+        # Should include display from fallback store
+        assert "display" in store_metadata
+        assert "fallback" in store_metadata["display"]
+
+    # Test check_fallback=False - should return empty dict when feature not in primary
+    with primary_store:
+        store_metadata_no_fallback = primary_store.get_store_metadata(
+            TestFeature, check_fallback=False
+        )
+        assert store_metadata_no_fallback == {}
+
+
+def test_get_store_metadata_prefers_current_store(
+    tmp_path, graph: FeatureGraph
+) -> None:
+    """Test that get_store_metadata returns metadata from current store when feature exists there.
+
+    Even when a fallback store has the same feature, get_store_metadata should return
+    metadata from the current store (not the fallback).
+    """
+    from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+    from metaxy._testing.models import SampleFeatureSpec
+    from metaxy.metadata_store.delta import DeltaMetadataStore
+
+    class TestFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["get_store_metadata_prefer_current_test", "feature"]),
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    primary_path = tmp_path / "primary"
+    fallback_path = tmp_path / "fallback"
+
+    # Create stores with fallback chain
+    fallback_store = DeltaMetadataStore(root_path=fallback_path)
+    primary_store = DeltaMetadataStore(
+        root_path=primary_path, fallback_stores=[fallback_store]
+    )
+
+    metadata = pl.DataFrame(
+        {
+            "sample_uid": [1, 2, 3],
+            "metaxy_provenance_by_field": [
+                {"default": "h1"},
+                {"default": "h2"},
+                {"default": "h3"},
+            ],
+        }
+    )
+
+    # Write data to both stores
+    with fallback_store.open(mode="write"):
+        fallback_store.write_metadata(TestFeature, metadata)
+
+    with primary_store.open(mode="write"):
+        primary_store.write_metadata(TestFeature, metadata)
+
+    # get_store_metadata should return metadata from primary (current) store
+    with primary_store:
+        store_metadata = primary_store.get_store_metadata(TestFeature)
+
+        assert store_metadata is not None
+        assert "uri" in store_metadata
+        # Should be the primary store's path, not the fallback
+        assert "primary" in store_metadata["uri"]
+        assert "fallback" not in store_metadata["uri"]
