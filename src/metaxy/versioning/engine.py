@@ -12,6 +12,7 @@ from narwhals.typing import FrameT
 
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
@@ -226,12 +227,12 @@ class VersioningEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def build_struct_column(
+    def record_field_versions(
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
-        """Build a struct column from existing columns.
+        """Persist field-level versions using the backend's struct representation.
 
         Args:
             df: Narwhals DataFrame
@@ -239,10 +240,26 @@ class VersioningEngine(ABC):
             field_columns: Mapping from struct field names to column names in df
 
         Returns:
-            Narwhals DataFrame with new struct column added.
-            The source columns remain unchanged.
+            Narwhals DataFrame with the field versions attached using the backend's
+            struct or flattened representation. The source columns remain unchanged.
         """
         raise NotImplementedError()
+
+    def access_provenance_field(
+        self,
+        struct_column: str,
+        field_name: str,
+    ) -> nw.Expr:
+        """Access a field from a provenance struct column.
+
+        Args:
+            struct_column: Name of the struct column (e.g., "metaxy_provenance_by_field")
+            field_name: Name of the field to access (e.g., "field1")
+
+        Returns:
+            Narwhals expression to access the field value
+        """
+        return nw.col(struct_column).struct.field(field_name)
 
     @staticmethod
     @abstractmethod
@@ -330,9 +347,10 @@ class VersioningEngine(ABC):
             ).items():
                 # Read from data_version_by_field instead of provenance_by_field
                 # This enables user-defined versioning control
-                field_provenance[fq_key] = nw.col(
-                    self.get_renamed_data_version_by_field_col(fq_key.feature)
-                ).struct.field(parent_field_spec.key.to_struct_key())
+                field_provenance[fq_key] = self.access_provenance_field(
+                    self.get_renamed_data_version_by_field_col(fq_key.feature),
+                    parent_field_spec.key.to_struct_key(),
+                )
             res[field_spec.key] = field_provenance
         return res
 
@@ -404,8 +422,8 @@ class VersioningEngine(ABC):
                 df, concat_col, hash_col_name, hash_algo
             ).with_columns(nw.col(hash_col_name).str.slice(0, hash_length))
 
-        # Build provenance_by_field struct (BACKEND DOES THIS)
-        df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)
+        # Build provenance_by_field representation (BACKEND DOES THIS)
+        df = self.record_field_versions(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)
 
         # Compute sample-level provenance hash
         # Step 1: Concatenate all field hashes with separator
@@ -445,7 +463,6 @@ class VersioningEngine(ABC):
         # Add data_version columns (default to provenance values)
         from metaxy.models.constants import (
             METAXY_DATA_VERSION,
-            METAXY_DATA_VERSION_BY_FIELD,
         )
 
         df = df.with_columns(
@@ -524,7 +541,7 @@ class VersioningEngine(ABC):
             ).with_columns(nw.col(hash_col_name).str.slice(0, hash_length))
 
         # Build provenance_by_field struct
-        df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)
+        df = self.record_field_versions(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)
 
         # Compute sample-level provenance hash
         df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)
@@ -575,13 +592,13 @@ class VersioningEngine(ABC):
         hash_column: str = METAXY_PROVENANCE,
     ) -> FrameT:
         # Compute sample-level provenance from field-level provenance
-        # Get all field names from the struct (we need feature spec for this)
         field_names = sorted([f.key.to_struct_key() for f in self.plan.feature.fields])
 
         # Concatenate all field hashes with separator
-        sample_components = [
-            nw.col(struct_column).struct.field(field_name) for field_name in field_names
-        ]
+        sample_components = []
+        for field_name in field_names:
+            expr = self.access_provenance_field(struct_column, field_name)
+            sample_components.append(expr.fill_null(""))
         sample_concat = nw.concat_str(sample_components, separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))
 

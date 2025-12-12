@@ -11,7 +11,8 @@ The VersioningEngine is the core abstraction that:
 
 Backend-specific implementations:
 - PolarsVersioningEngine: Uses polars_hash plugin, may materialize lazy frames
-- IbisVersioningEngine: Base class for SQL backends, stays completely lazy
+- IbisVersioningEngine: Struct-based SQL backends that stay completely lazy
+- IbisFlatVersioningEngine: Flattened column variant for SQL backends without struct support
 - DuckDBVersioningEngine: DuckDB-specific hash functions (xxHash via hashfuncs extension)
 - ClickHouseVersioningEngine: ClickHouse-specific hash functions (native support)
 """

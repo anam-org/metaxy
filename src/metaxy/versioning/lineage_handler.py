@@ -167,8 +167,7 @@ class AggregationLineageHandler(LineageHandler):
             nw.lit("aggregated").alias("__aggregated_placeholder")
         )
 
-        # Build struct using engine's method
-        result = self.engine.build_struct_column(
+        result = self.engine.record_field_versions(
             hashed, METAXY_PROVENANCE_BY_FIELD, field_map
         )
 
