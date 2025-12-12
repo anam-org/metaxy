@@ -25,6 +25,22 @@ class FeatureStats(NamedTuple):
     data_version: dg.DataVersion
 
 
+def _is_all_partitions_subset(context: dg.InputContext) -> bool:
+    """Check if the input context represents all partitions (e.g., via AllPartitionMapping).
+
+    When AllPartitionMapping is used, the asset_partitions_subset will be an
+    AllPartitionsSubset. In this case, we should not add partition filters since
+    filtering by all partitions would be expensive and equivalent to no filter.
+    """
+    # Import here to avoid potential issues with private API
+    from dagster._core.definitions.partitions.subset.all import AllPartitionsSubset
+
+    # Access the private _asset_partitions_subset to check its type
+    # This is more efficient than iterating all partition keys
+    subset = context._asset_partitions_subset  # noqa: SLF001
+    return isinstance(subset, AllPartitionsSubset)
+
+
 def build_partition_filter_from_input_context(
     context: dg.InputContext,
 ) -> list[nw.Expr]:
@@ -36,6 +52,7 @@ def build_partition_filter_from_input_context(
     Handles:
     - `partition_by` metadata: filters by the specified column using partition key(s)
     - `metaxy/partition` metadata: additional static filters as {column: value} dict
+    - `AllPartitionMapping`: skips partition filters (loading all partitions anyway)
 
     Args:
         context: Dagster InputContext for loading upstream data.
@@ -56,12 +73,17 @@ def build_partition_filter_from_input_context(
     # Handle partition_by: filter by Dagster partition key(s)
     partition_col = upstream_metadata.get(DAGSTER_METAXY_PARTITION_KEY)
     if partition_col and context.has_asset_partitions:
-        # Get all partition keys for this input (handles AllPartitionMapping, etc.)
-        partition_keys = list(context.asset_partition_keys)
-        if len(partition_keys) == 1:
-            filters.append(nw.col(partition_col) == partition_keys[0])
-        elif len(partition_keys) > 1:
-            filters.append(nw.col(partition_col).is_in(partition_keys))
+        # Skip partition filter for AllPartitionMapping - it would include all partitions
+        # anyway, and enumerating them all is expensive
+        if _is_all_partitions_subset(context):
+            pass  # No filter needed - we want all partitions
+        else:
+            # Get partition keys for this input
+            partition_keys = list(context.asset_partition_keys)
+            if len(partition_keys) == 1:
+                filters.append(nw.col(partition_col) == partition_keys[0])
+            elif len(partition_keys) > 1:
+                filters.append(nw.col(partition_col).is_in(partition_keys))
 
     # Handle metaxy/partition: additional static filters
     metaxy_partition = upstream_metadata.get(DAGSTER_METAXY_PARTITION_METADATA_KEY)
