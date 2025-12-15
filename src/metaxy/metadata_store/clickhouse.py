@@ -316,25 +316,25 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         return self._transform_struct_to_map(df, ch_schema)
 
     def _transform_struct_to_map(self, df: Frame, ch_schema: "IbisSchema") -> Frame:
-        """Transform Polars Struct columns to Map-compatible format for ClickHouse.
+        """Transform Struct columns to Map-compatible format for ClickHouse.
 
         Only transforms known metaxy struct columns (metaxy_provenance_by_field,
         metaxy_data_version_by_field) when the ClickHouse table has Map columns.
 
-        Converts Polars Struct to List[Struct{key, value}] which Ibis/ClickHouse
+        For Polars: Converts Struct to List[Struct{key, value}] which Ibis/ClickHouse
         recognizes as array<struct<key, value>> and can insert into Map(K,V) columns.
 
+        For Ibis: Converts Struct to Map using ibis.map() function.
+
         Args:
-            df: Input DataFrame (may be Narwhals wrapping Polars)
+            df: Input DataFrame (may be Narwhals wrapping Polars or Ibis)
             ch_schema: ClickHouse table schema
 
         Returns:
             DataFrame with Struct columns converted to Map-compatible format
         """
         import ibis.expr.datatypes as dt
-        import polars as pl
 
-        from metaxy._utils import collect_to_polars
         from metaxy.models.constants import (
             METAXY_DATA_VERSION_BY_FIELD,
             METAXY_PROVENANCE_BY_FIELD,
@@ -356,9 +356,70 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         if not map_columns:
             return df
 
-        # Only transform if DataFrame is Polars-backed
-        if df.implementation != nw.Implementation.POLARS:
+        # Handle Ibis-backed DataFrames (keep lazy)
+        if df.implementation == nw.Implementation.IBIS:
+            return self._transform_ibis_struct_to_map(df, map_columns)
+
+        # All other backends: collect to Polars and transform
+        return self._transform_polars_struct_to_map(df, map_columns)
+
+    def _transform_ibis_struct_to_map(self, df: Frame, map_columns: set[str]) -> Frame:
+        """Transform Ibis Struct columns to Map format for ClickHouse.
+
+        Args:
+            df: Narwhals DataFrame backed by Ibis
+            map_columns: Set of column names that need to be converted to Map
+
+        Returns:
+            DataFrame with Struct columns converted to Map
+        """
+        from typing import cast as typing_cast
+
+        import ibis
+        import ibis.expr.datatypes as dt
+
+        ibis_table = typing_cast("ibis.Table", df.to_native())
+        schema = ibis_table.schema()
+
+        mutations: dict[str, ibis.Expr] = {}
+        for col_name in map_columns:
+            if col_name not in schema:
+                continue
+
+            col_dtype = schema[col_name]
+            if not isinstance(col_dtype, dt.Struct):
+                continue
+
+            # Get field names from the struct type
+            field_names = list(col_dtype.names)  # pyright: ignore[reportArgumentType]
+
+            # Build map from struct fields: Map(field_name -> field_value)
+            # ibis.map() takes two arrays: keys and values
+            keys = ibis.array([ibis.literal(name) for name in field_names])
+            values = ibis.array([ibis_table[col_name][name] for name in field_names])
+            mutations[col_name] = ibis.map(keys, values)
+
+        if not mutations:
             return df
+
+        result_table = ibis_table.mutate(**mutations)  # pyright: ignore[reportArgumentType]
+        return nw.from_native(result_table, eager_only=False)
+
+    def _transform_polars_struct_to_map(
+        self, df: Frame, map_columns: set[str]
+    ) -> Frame:
+        """Transform Polars Struct columns to Map-compatible format for ClickHouse.
+
+        Args:
+            df: Narwhals DataFrame backed by Polars
+            map_columns: Set of column names that need to be converted to Map
+
+        Returns:
+            DataFrame with Struct columns converted to List[Struct{key, value}]
+        """
+        import polars as pl
+
+        from metaxy._utils import collect_to_polars
 
         # Get native Polars DataFrame
         pl_df = collect_to_polars(df)
@@ -393,7 +454,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         pl_df = pl_df.with_columns(transformations)
 
-        return nw.from_native(pl_df, eager_only=False)
+        return nw.from_native(pl_df)
 
     @property
     def sqlalchemy_url(self) -> str:
