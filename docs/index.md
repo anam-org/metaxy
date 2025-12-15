@@ -45,7 +45,7 @@ Therefore, it becomes crucially important to correctly implement incremental pro
 
 1. or really any kind of data
 
-These workfloads typically aren't stale: they evolve all the time, with new data being shipped, bugfixes or algorithm changes introduced, and new features added to the pipeline. This means the pipeline has to be re-computed frequently, but at the same time it's important to avoid unnecessary recomputations for individual samples in the datasets.
+These workloads typically aren't stale: they evolve all the time, with new data being shipped, bugfixes or algorithm changes introduced, and new features added to the pipeline. This means the pipeline has to be re-computed frequently, but at the same time it's important to avoid unnecessary recomputations for individual samples in the datasets.
 
 Here are some of the cases where re-computing would be **undesirable**:
 
