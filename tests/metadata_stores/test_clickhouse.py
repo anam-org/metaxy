@@ -598,6 +598,123 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
         conn.drop_table(table_name)
 
 
+def test_clickhouse_map_column_write_from_ibis_struct(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test writing Ibis-backed DataFrame with Struct columns to Map columns.
+
+    This tests the scenario where metadata is computed using Ibis (e.g., from
+    a SQL query or join), resulting in a Narwhals DataFrame backed by Ibis
+    with Struct columns for metaxy_provenance_by_field.
+
+    The bug was that _transform_struct_to_map only handled Polars DataFrames,
+    so Ibis-backed DataFrames with Struct columns were passed through unchanged,
+    causing ClickHouse to fail with:
+        "CAST AS Map from tuple requires 2 elements"
+
+    The fix adds _transform_ibis_struct_to_map which uses ibis.map() to convert
+    Ibis Struct columns to Map columns.
+    """
+    import ibis
+    import narwhals as nw
+
+    from metaxy.models.constants import (
+        METAXY_DATA_VERSION_BY_FIELD,
+        METAXY_PROVENANCE_BY_FIELD,
+    )
+
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+    plan = test_graph.get_feature_plan(feature_key)
+
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with Map columns (the production schema)
+        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Create an Ibis memtable - simulating data from a SQL query
+        ibis_table = ibis.memtable(
+            {
+                "sample_uid": [1, 2, 3],
+                # Temporary columns that will be used to build the struct
+                "_hash_frames": ["hash1", "hash2", "hash3"],
+                "_hash_audio": ["hash_a1", "hash_a2", "hash_a3"],
+            }
+        )
+
+        # Wrap in Narwhals and use the actual versioning engine to build struct
+        nw_df = nw.from_native(ibis_table, eager_only=False)
+
+        # Use the store's versioning engine to build the struct column
+        # This is exactly how resolve_update builds metaxy_provenance_by_field
+        with store.create_versioning_engine(
+            plan, implementation=nw.Implementation.IBIS
+        ) as engine:
+            # Build struct using the engine's method (same as production code)
+            nw_df = engine.build_struct_column(
+                nw_df,
+                METAXY_PROVENANCE_BY_FIELD,
+                {"frames": "_hash_frames", "audio": "_hash_audio"},
+            )
+            nw_df = engine.build_struct_column(
+                nw_df,
+                METAXY_DATA_VERSION_BY_FIELD,
+                {"frames": "_hash_frames", "audio": "_hash_audio"},
+            )
+
+        # Drop temporary columns
+        nw_df = nw_df.drop("_hash_frames", "_hash_audio")
+
+        # Verify it's still Ibis-backed
+        assert nw_df.implementation == nw.Implementation.IBIS
+
+        # Write to the store - this should transform Ibis Struct -> Map
+        # Before the fix, this raised:
+        # "CAST AS Map from tuple requires 2 elements. Left type: Tuple(Nullable(String)), right type: Map(String, String)"
+        store.write_metadata(feature_cls, nw_df)
+
+        # Read back and verify
+        read_result = store.read_metadata_in_store(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
+
+        assert len(result) == 3
+        assert set(result["sample_uid"].to_list()) == {1, 2, 3}
+
+        # Map columns should be converted back to Struct (dict in Python)
+        provenance = result["metaxy_provenance_by_field"][0]
+        assert isinstance(provenance, dict), f"Expected dict, got {type(provenance)}"
+        assert "frames" in provenance
+        assert "audio" in provenance
+        assert provenance["frames"] == "hash1"
+        assert provenance["audio"] == "hash_a1"
+
+        # Clean up
+        conn.drop_table(table_name)
+
+
 def test_clickhouse_user_defined_map_column(
     clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
 ) -> None:
