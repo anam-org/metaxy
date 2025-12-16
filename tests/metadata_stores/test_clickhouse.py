@@ -305,7 +305,7 @@ def test_clickhouse_json_column_type(
             conn.drop_table(table_name)
 
         # Create table with native JSON columns (like SQLModel/Alembic would)
-        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
             f"""
             CREATE TABLE {table_name} (
                 sample_uid Int64,
@@ -327,7 +327,7 @@ def test_clickhouse_json_column_type(
         # UpstreamFeatureA has fields: frames, audio
         provenance_json = json.dumps({"frames": "hash1", "audio": "hash2"})
         version_json = json.dumps({"frames": "v1", "audio": "v1"})
-        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
             f"""
             INSERT INTO {table_name} (
                 sample_uid,
@@ -392,7 +392,7 @@ def test_clickhouse_map_column_type(
             conn.drop_table(table_name)
 
         # Create table with Map columns (alternative to JSON for key-value data)
-        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
             f"""
             CREATE TABLE {table_name} (
                 sample_uid Int64,
@@ -412,7 +412,7 @@ def test_clickhouse_map_column_type(
 
         # Insert data with Map values via SQL
         # UpstreamFeatureA has fields: frames, audio
-        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
             f"""
             INSERT INTO {table_name} (
                 sample_uid,
@@ -480,7 +480,7 @@ def test_clickhouse_map_column_empty_table_read(
             conn.drop_table(table_name)
 
         # Create EMPTY table with Map columns (like production ClickHouse schema)
-        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
             f"""
             CREATE TABLE {table_name} (
                 sample_uid Int64,
@@ -539,7 +539,7 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
             conn.drop_table(table_name)
 
         # Create table with Map columns (the production schema)
-        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
             f"""
             CREATE TABLE {table_name} (
                 sample_uid Int64,
@@ -636,7 +636,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
             conn.drop_table(table_name)
 
         # Create table with Map columns (the production schema)
-        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
             f"""
             CREATE TABLE {table_name} (
                 sample_uid Int64,
@@ -745,7 +745,7 @@ def test_clickhouse_user_defined_map_column(
             conn.drop_table(table_name)
 
         # Create table with both metaxy Map columns AND a user-defined Map column
-        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
             f"""
             CREATE TABLE {table_name} (
                 sample_uid Int64,
@@ -765,7 +765,7 @@ def test_clickhouse_user_defined_map_column(
         )
 
         # Insert data with user Map column
-        conn.raw_sql(  # pyright: ignore[reportAttributeAccessIssue]
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
             f"""
             INSERT INTO {table_name} (
                 sample_uid,

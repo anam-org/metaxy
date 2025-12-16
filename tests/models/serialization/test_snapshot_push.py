@@ -678,7 +678,7 @@ def test_feature_info_changes_trigger_repush():
             graph_v2 = FeatureGraph()
             with graph_v2.use():
 
-                class TestFeature2(  # type: ignore
+                class TestFeature2(
                     BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["test_feature"]),

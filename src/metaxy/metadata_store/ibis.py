@@ -411,7 +411,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             df_to_insert = collect_to_polars(df)  # Polars DataFrame
 
         try:
-            self.conn.insert(table_name, obj=df_to_insert)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+            self.conn.insert(table_name, obj=df_to_insert)  # ty: ignore[unresolved-attribute]
         except Exception as e:
             import ibis.common.exceptions
 
@@ -588,5 +588,5 @@ class IbisMetadataStore(MetadataStore, ABC):
         return {"table_name": self.get_table_name(resolved_key)}
 
     @classmethod
-    def config_model(cls) -> type[IbisMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def config_model(cls) -> type[IbisMetadataStoreConfig]:
         return IbisMetadataStoreConfig

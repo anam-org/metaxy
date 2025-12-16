@@ -149,11 +149,11 @@ class VersioningEngine(ABC):
         ]
 
         for feature_key, renamed_df in dfs.items():
-            cols = renamed_df.df.collect_schema().names()
+            cols = renamed_df.df.collect_schema().names()  # ty: ignore[invalid-argument-type]
             cols_to_drop = [col for col in columns_to_drop if col in cols]
             if cols_to_drop:
-                dfs[feature_key] = RenamedDataFrame(
-                    df=renamed_df.df.drop(*cols_to_drop),
+                dfs[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
+                    df=renamed_df.df.drop(*cols_to_drop),  # ty: ignore[invalid-argument-type]
                     id_columns=renamed_df.id_columns,
                 )
 
@@ -161,7 +161,7 @@ class VersioningEngine(ABC):
         if len(dfs) > 1:
             all_columns: dict[str, list[FeatureKey]] = {}
             for feature_key, renamed_df in dfs.items():
-                cols = renamed_df.df.collect_schema().names()
+                cols = renamed_df.df.collect_schema().names()  # ty: ignore[invalid-argument-type]
                 for col in cols:
                     if col not in all_columns:
                         all_columns[col] = []
@@ -199,7 +199,7 @@ class VersioningEngine(ABC):
                     f"Please add explicit renames in your FeatureDep to avoid column collisions."
                 )
 
-        return self.join(dfs)
+        return self.join(dfs)  # ty: ignore[invalid-argument-type]
 
     @abstractmethod
     def hash_string_column(
@@ -360,7 +360,7 @@ class VersioningEngine(ABC):
         hash_length = MetaxyConfig.get().hash_truncation_length or 64
 
         # Prepare upstream: filter, rename, select, join
-        df = self.prepare_upstream(upstream, filters=filters)
+        df = self.prepare_upstream(upstream, filters=filters)  # ty: ignore[invalid-argument-type]
 
         # Build concatenation columns for each field
         temp_concat_cols: dict[str, str] = {}  # field_key_str -> temp_col_name
@@ -453,7 +453,7 @@ class VersioningEngine(ABC):
             nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         )
 
-        return df
+        return df  # ty: ignore[invalid-return-type]
 
     def compute_provenance_columns(
         self,
@@ -511,7 +511,7 @@ class VersioningEngine(ABC):
                 components.append(parent_field_exprs[fq_field_key])
 
             concat_expr = nw.concat_str(components, separator="|")
-            df = df.with_columns(concat_expr.alias(temp_col_name))
+            df = df.with_columns(concat_expr.alias(temp_col_name))  # ty: ignore[invalid-argument-type]
 
         # Hash each concatenation column
         temp_hash_cols: dict[str, str] = {}
@@ -520,20 +520,23 @@ class VersioningEngine(ABC):
             temp_hash_cols[field_key_str] = hash_col_name
 
             df = self.hash_string_column(
-                df, concat_col, hash_col_name, hash_algo
+                df,  # ty: ignore[invalid-argument-type]
+                concat_col,
+                hash_col_name,
+                hash_algo,
             ).with_columns(nw.col(hash_col_name).str.slice(0, hash_length))
 
         # Build provenance_by_field struct
-        df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)
+        df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)  # ty: ignore[invalid-argument-type]
 
         # Compute sample-level provenance hash
-        df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)
+        df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)  # ty: ignore[invalid-assignment]
 
         # Drop temporary columns
         temp_columns_to_drop = list(temp_concat_cols.values()) + list(
             temp_hash_cols.values()
         )
-        df = df.drop(*temp_columns_to_drop)
+        df = df.drop(*temp_columns_to_drop)  # ty: ignore[invalid-argument-type]
 
         # Drop renamed upstream system columns
         current_columns = df.collect_schema().names()
@@ -583,11 +586,11 @@ class VersioningEngine(ABC):
             nw.col(struct_column).struct.field(field_name) for field_name in field_names
         ]
         sample_concat = nw.concat_str(sample_components, separator="|")
-        df = df.with_columns(sample_concat.alias("__sample_concat"))
+        df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
 
         # Hash the concatenation to produce final provenance hash
         return (
-            self.hash_string_column(
+            self.hash_string_column(  # ty: ignore[invalid-return-type]
                 df,
                 "__sample_concat",
                 hash_column,
@@ -638,23 +641,25 @@ class VersioningEngine(ABC):
             expected = sample
             input_df: FrameT | None = None  # Root features have no upstream input
             # Auto-compute metaxy_provenance if missing but metaxy_provenance_by_field exists
-            cols = expected.collect_schema().names()
+            cols = expected.collect_schema().names()  # ty: ignore[invalid-argument-type]
             if METAXY_PROVENANCE not in cols and METAXY_PROVENANCE_BY_FIELD in cols:
                 warnings.warn(
                     f"Auto-computing {METAXY_PROVENANCE} from {METAXY_PROVENANCE_BY_FIELD} because it is missing in samples DataFrame"
                 )
                 expected = self.hash_struct_version_column(
-                    expected, hash_algorithm=hash_algorithm
+                    expected,  # ty: ignore[invalid-argument-type]
+                    hash_algorithm=hash_algorithm,
                 )
 
             # Validate that root features provide both required provenance columns
             self._check_required_provenance_columns(
-                expected, "The `sample` DataFrame (must be provided to root features)"
+                expected,  # ty: ignore[invalid-argument-type]
+                "The `sample` DataFrame (must be provided to root features)",
             )
         else:
             # Normal case: compute provenance from upstream
             expected = self.load_upstream_with_provenance(
-                upstream,
+                upstream,  # ty: ignore[invalid-argument-type]
                 hash_algo=hash_algorithm,
                 filters=filters,
             )
@@ -669,13 +674,16 @@ class VersioningEngine(ABC):
         # Case 2 & 3: Compare expected with current metadata
         # Validate that current has metaxy_provenance column
         self._check_required_provenance_columns(
-            current, "The `current` DataFrame loaded from the metadata store"
+            current,  # ty: ignore[invalid-argument-type]
+            "The `current` DataFrame loaded from the metadata store",
         )
 
         # Handle different lineage relationships before comparison
         lineage_handler = create_lineage_handler(self.plan, self)
         expected, current, join_columns = lineage_handler.normalize_for_comparison(
-            expected, current, hash_algorithm
+            expected,  # ty: ignore[invalid-argument-type]
+            current,  # ty: ignore[invalid-argument-type]
+            hash_algorithm,
         )
 
         current = current.rename(
@@ -732,7 +740,7 @@ class VersioningEngine(ABC):
         return added, changed, removed, input_df
 
     def _check_required_provenance_columns(self, df: FrameT, message: str):
-        cols = df.collect_schema().names()
+        cols = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
 
         if METAXY_PROVENANCE_BY_FIELD not in cols:
             raise ValueError(

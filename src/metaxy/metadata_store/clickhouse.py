@@ -140,17 +140,17 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         # ClickHouse MD5 implementation
         @ibis.udf.scalar.builtin
-        def MD5(x: str) -> str:
+        def MD5(x: str) -> str:  # ty: ignore[invalid-return-type]
             """ClickHouse MD5() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def HEX(x: str) -> str:
+        def HEX(x: str) -> str:  # ty: ignore[invalid-return-type]
             """ClickHouse HEX() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def lower(x: str) -> str:
+        def lower(x: str) -> str:  # ty: ignore[invalid-return-type]
             """ClickHouse lower() function."""
             ...
 
@@ -163,17 +163,17 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         # ClickHouse xxHash functions
         @ibis.udf.scalar.builtin
-        def xxHash32(x: str) -> int:
+        def xxHash32(x: str) -> int:  # ty: ignore[invalid-return-type]
             """ClickHouse xxHash32() function - returns UInt32."""
             ...
 
         @ibis.udf.scalar.builtin
-        def xxHash64(x: str) -> int:
+        def xxHash64(x: str) -> int:  # ty: ignore[invalid-return-type]
             """ClickHouse xxHash64() function - returns UInt64."""
             ...
 
         @ibis.udf.scalar.builtin
-        def toString(x: int) -> str:
+        def toString(x: int) -> str:  # ty: ignore[invalid-return-type]
             """ClickHouse toString() function - converts integer to string."""
             ...
 
@@ -296,7 +296,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         # This returns empty string for missing keys instead of throwing KeyError
         # This is essential for empty tables/maps where keys don't exist yet
         map_col = table[col_name]
-        struct_dict = {name: map_col.get(name, "") for name in field_names}  # pyright: ignore[reportAttributeAccessIssue]
+        struct_dict = {name: map_col.get(name, "") for name in field_names}
 
         return ibis.struct(struct_dict)
 
@@ -391,7 +391,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
                 continue
 
             # Get field names from the struct type
-            field_names = list(col_dtype.names)  # pyright: ignore[reportArgumentType]
+            field_names = list(col_dtype.names)
 
             # Build map from struct fields: Map(field_name -> field_value)
             # ibis.map() takes two arrays: keys and values
@@ -402,7 +402,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         if not mutations:
             return df
 
-        result_table = ibis_table.mutate(**mutations)  # pyright: ignore[reportArgumentType]
+        result_table = ibis_table.mutate(**mutations)  # ty: ignore[invalid-argument-type]
         return nw.from_native(result_table, eager_only=False)
 
     def _transform_polars_struct_to_map(
@@ -516,5 +516,5 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         return url.render_as_string(hide_password=False)
 
     @classmethod
-    def config_model(cls) -> type[ClickHouseMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def config_model(cls) -> type[ClickHouseMetadataStoreConfig]:
         return ClickHouseMetadataStoreConfig

@@ -129,11 +129,11 @@ class TempFeatureModule:
                     c_parts.append("deps=SpecialFieldDep.ALL")
                 elif isinstance(deps_val, list) and deps_val:
                     # Field deps (list of FieldDep)
-                    cdeps: list[str] = []  # type: ignore[misc]
+                    cdeps: list[str] = []
                     for cd in deps_val:
                         fields_val = cd.get("fields")
                         if fields_val == "__METAXY_ALL_DEP__":
-                            cdeps.append(  # type: ignore[arg-type]
+                            cdeps.append(
                                 f"FieldDep(feature=FeatureKey({cd['feature']!r}), fields=SpecialFieldDep.ALL)"
                             )
                         else:
@@ -144,7 +144,7 @@ class TempFeatureModule:
                             )
                     c_parts.append(f"deps=[{', '.join(cdeps)}]")
 
-                field_reprs.append(f"FieldSpec({', '.join(c_parts)})")  # type: ignore[arg-type]
+                field_reprs.append(f"FieldSpec({', '.join(c_parts)})")
 
             parts.append(f"fields=[{', '.join(field_reprs)}]")
 
@@ -392,7 +392,7 @@ class ExternalMetaxyProject(MetaxyProject):
             # .parent -> repo root
             import metaxy
 
-            install_metaxy_from = Path(metaxy.__file__).parent.parent.parent
+            install_metaxy_from = Path(metaxy.__file__).parent.parent.parent  # ty: ignore[invalid-argument-type]
 
         # Set VIRTUAL_ENV to activate the venv
         venv_env = os.environ.copy()

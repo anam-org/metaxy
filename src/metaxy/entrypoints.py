@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from metaxy.models.feature import FeatureGraph
 
-from importlib.metadata import entry_points  # type: ignore[import-not-found]
+from importlib.metadata import entry_points
 
 # Default entry point group name for package-based discovery
 DEFAULT_ENTRY_POINT_GROUP = "metaxy.project"

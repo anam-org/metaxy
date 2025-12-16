@@ -264,7 +264,7 @@ def test_custom_tablename_raises_error():
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
             ):
-                __tablename__: str = "my_custom_table"  # pyright: ignore[reportIncompatibleVariableOverride]
+                __tablename__: str = "my_custom_table"
                 project = "test_project"
                 id: str = Field(primary_key=True)
                 value: str

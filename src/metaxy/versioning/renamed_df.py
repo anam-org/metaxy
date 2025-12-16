@@ -19,17 +19,17 @@ class RenamedDataFrame(Generic[FrameT]):
     def rename(self, mapping: Mapping[str, str]) -> Self:
         if mapping:
             # Convert Mapping to dict for narwhals rename
-            self.df = self.df.rename(dict(mapping))
+            self.df = self.df.rename(dict(mapping))  # ty: ignore[invalid-argument-type]
         self.id_columns = [mapping.get(col, col) for col in self.id_columns]
         return self
 
     def filter(self, filters: Sequence[nw.Expr] | None) -> Self:
         if filters:
-            self.df = self.df.filter(*filters)
+            self.df = self.df.filter(*filters)  # ty: ignore[invalid-argument-type]
         return self
 
     def select(self, columns: Sequence[str] | None) -> Self:
         if columns:
-            self.df = self.df.select(*columns)
+            self.df = self.df.select(*columns)  # ty: ignore[invalid-argument-type]
             self.id_columns = [col for col in self.id_columns if col in columns]
         return self

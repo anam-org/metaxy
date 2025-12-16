@@ -1,6 +1,6 @@
 """Test script to verify entry point detection."""
 
-from test_metaxy_project.features import (  # pyright: ignore[reportMissingImports]
+from test_metaxy_project.features import (  # ty: ignore[unresolved-import]
     TestFeature,
 )
 

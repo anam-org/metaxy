@@ -60,7 +60,7 @@ class FieldsMappingResolutionContext(BaseModel):
         return {field.key for field in self.upstream_feature.fields}
 
 
-class BaseFieldsMapping(BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
+class BaseFieldsMapping(BaseModel, ABC):
     """Base class for field mapping configurations.
 
     Field mappings define how a field automatically resolves its dependencies

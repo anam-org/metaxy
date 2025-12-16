@@ -6,7 +6,7 @@ ruff:
     uv run ruff format
 
 typecheck:
-    uv run basedpyright --level error
+    uv run ty check
 
 sync:
     uv sync --all-extras --all-groups

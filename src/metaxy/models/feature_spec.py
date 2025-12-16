@@ -27,11 +27,6 @@ from metaxy.utils.hashing import truncate_hash
 
 if TYPE_CHECKING:
     # yes, these are circular imports, the TYPE_CHECKING block hides them at runtime.
-    # neither pyright not basedpyright allow ignoring `reportImportCycles` because they think it's a bad practice
-    # and it would be very smart to force the user to restructure their project instead
-    # context: https://github.com/microsoft/pyright/issues/1825
-    # however, considering the recursive nature of graphs, and the syntactic sugar that we want to support,
-    # I decided to just put these errors into `.basedpyright/baseline.json` (after ensuring this is the only error produced by basedpyright)
     from metaxy.models.feature import BaseFeature
 
 
@@ -110,7 +105,7 @@ class FeatureDep(pydantic.BaseModel):
 
     if TYPE_CHECKING:
 
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             *,
             feature: str | Sequence[str] | FeatureKey | type[BaseFeature],
@@ -118,7 +113,7 @@ class FeatureDep(pydantic.BaseModel):
             rename: dict[str, str] | None = None,
             fields_mapping: FieldsMapping | None = None,
             filters: Sequence[str] | None = None,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
+        ) -> None: ...
 
     @cached_property
     def filters(self) -> tuple[nw.Expr, ...]:
@@ -234,7 +229,7 @@ class FeatureSpec(FrozenBaseModel):
         ) -> None: ...
 
         # Implementation signature
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             *,
             key: CoercibleToFeatureKey,
@@ -244,7 +239,7 @@ class FeatureSpec(FrozenBaseModel):
             lineage: LineageRelationship | None = None,
             metadata: dict[str, Any] | None = None,
             **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
+        ) -> None: ...
 
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:

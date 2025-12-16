@@ -76,7 +76,7 @@ class TestJoiner:
             )
             mapping[upstream_key_str] = provenance_col_name
 
-        return joined, mapping
+        return joined, mapping  # ty: ignore[invalid-return-type]
 
 
 def test_feature_spec_id_columns_list_only():

@@ -271,7 +271,7 @@ class TestFeatureKeyProperties:
         key = FeatureKey(parts)
 
         with pytest.raises(ValidationError, match="frozen"):
-            key.parts = tuple(["x", "y", "z"])  # pyright: ignore[reportAttributeAccessIssue]
+            key.parts = tuple(["x", "y", "z"])  # ty: ignore[invalid-assignment]
 
     @given(parts1=key_parts_list(), parts2=key_parts_list())
     def test_feature_key_ordering(self, parts1: list[str], parts2: list[str]):

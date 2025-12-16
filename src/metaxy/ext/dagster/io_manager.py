@@ -78,7 +78,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
     def metadata_store(
         self,
     ) -> mx.MetadataStore:  # this property mostly exists to fix the type annotation
-        return self.store  # pyright: ignore[reportReturnType]
+        return self.store  # ty: ignore[invalid-return-type]
 
     def _feature_key_from_context(
         self, context: dg.InputContext | dg.OutputContext
@@ -219,8 +219,8 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
                     key,
                     self.metadata_store,
                     context,
-                    partition_col=partition_col,  # pyright: ignore[reportArgumentType]
-                    metaxy_partition=metaxy_partition,  # pyright: ignore[reportArgumentType]
+                    partition_col=partition_col,
+                    metaxy_partition=metaxy_partition,
                 )
                 context.add_output_metadata(runtime_metadata)
 

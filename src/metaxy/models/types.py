@@ -54,7 +54,10 @@ class _Key(RootModel[tuple[str, ...]]):
              String format is split on "/" separator.
     """
 
-    model_config = ConfigDict(frozen=True, repr=False)  # pyright: ignore[reportCallIssue]  # Make immutable for hashability, use custom __repr__
+    model_config = ConfigDict(
+        frozen=True,
+        repr=False,  # ty: ignore[invalid-key]
+    )  # Make immutable for hashability, use custom __repr__
 
     root: tuple[str, ...]
 
@@ -69,7 +72,7 @@ class _Key(RootModel[tuple[str, ...]]):
         @overload
         def __init__(self, parts: Self) -> None: ...
 
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             parts: str | Sequence[str] | Self,
         ) -> None: ...
@@ -236,7 +239,7 @@ class _Key(RootModel[tuple[str, ...]]):
             return self.parts >= other.parts
         return NotImplemented
 
-    def __iter__(self) -> Iterator[str]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __iter__(self) -> Iterator[str]:  # ty: ignore[invalid-method-override]
         """Return iterator over parts."""
         return iter(self.parts)
 
@@ -301,7 +304,7 @@ class FeatureKey(_Key):
         @overload
         def __init__(self, parts: FeatureKey) -> None: ...
 
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             parts: str | Sequence[str] | FeatureKey,
         ) -> None: ...
@@ -357,7 +360,7 @@ class FieldKey(_Key):
         @overload
         def __init__(self, parts: FieldKey) -> None: ...
 
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             parts: str | Sequence[str] | FieldKey,
         ) -> None: ...

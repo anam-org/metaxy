@@ -34,7 +34,7 @@ class StepType(str, Enum):
     ASSERT_OUTPUT = "assert_output"
 
 
-class BaseStep(BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
+class BaseStep(BaseModel, ABC):
     """Base class for runbook steps.
 
     Each step represents an action in testing or documenting an example.

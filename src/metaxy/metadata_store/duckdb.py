@@ -315,17 +315,17 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
         # DuckDB MD5 implementation
         @ibis.udf.scalar.builtin
-        def MD5(x: str) -> str:
+        def MD5(x: str) -> str:  # ty: ignore[invalid-return-type]
             """DuckDB MD5() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def HEX(x: str) -> str:
+        def HEX(x: str) -> str:  # ty: ignore[invalid-return-type]
             """DuckDB HEX() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def LOWER(x: str) -> str:
+        def LOWER(x: str) -> str:  # ty: ignore[invalid-return-type]
             """DuckDB LOWER() function."""
             ...
 
@@ -351,12 +351,12 @@ class DuckDBMetadataStore(IbisMetadataStore):
             # The decorator tells Ibis to call them directly in SQL
             # NOTE: xxh32/xxh64 return integers in DuckDB, not strings
             @ibis.udf.scalar.builtin
-            def xxh32(x: str) -> int:
+            def xxh32(x: str) -> int:  # ty: ignore[invalid-return-type]
                 """DuckDB xxh32() hash function from hashfuncs extension."""
                 ...
 
             @ibis.udf.scalar.builtin
-            def xxh64(x: str) -> int:
+            def xxh64(x: str) -> int:  # ty: ignore[invalid-return-type]
                 """DuckDB xxh64() hash function from hashfuncs extension."""
                 ...
 
@@ -431,7 +431,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         if self._conn is None:
             raise RuntimeError("DuckDB connection is not open.")
 
-        candidate = self._conn.con  # pyright: ignore[reportAttributeAccessIssue]
+        candidate = self._conn.con  # ty: ignore[possibly-missing-attribute]
 
         if not isinstance(candidate, DuckDBPyConnection):
             raise TypeError(
@@ -442,5 +442,5 @@ class DuckDBMetadataStore(IbisMetadataStore):
         return candidate
 
     @classmethod
-    def config_model(cls) -> type[DuckDBMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def config_model(cls) -> type[DuckDBMetadataStoreConfig]:
         return DuckDBMetadataStoreConfig

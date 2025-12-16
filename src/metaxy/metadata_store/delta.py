@@ -369,5 +369,5 @@ class DeltaMetadataStore(MetadataStore):
         return {"uri": self._feature_uri(self._resolve_feature_key(feature_key))}
 
     @classmethod
-    def config_model(cls) -> type[DeltaMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def config_model(cls) -> type[DeltaMetadataStoreConfig]:
         return DeltaMetadataStoreConfig

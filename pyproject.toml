@@ -18,7 +18,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "cyclopts",
+  "cyclopts>=4.4.0",
   "narwhals>=2.9.0",
   "platformdirs>=4.5.0",
   "polars>=1.35.0",
@@ -94,7 +94,6 @@ dev = [
   "syrupy>=5.0.0",
   "ibis-framework[duckdb,clickhouse]>=11.0.0",
   "lancedb>=0.15.0",
-  "basedpyright>=1.32.1",
   "vulture>=2.14",
   "prek>=0.2.11",
   "pytest-env>=1.2.0",
@@ -105,6 +104,7 @@ dev = [
   "deltalake>=1.2.1",
   "mistune>=3.1.4",
   "dagster>=1.12.3",
+  "ty>=0.0.2",
 ]
 
 examples = [
@@ -160,7 +160,6 @@ members = [
 [tool.uv.sources]
 examples = { workspace = true }
 mkdocs-metaxy = { workspace = true }
-cyclopts = { git = "https://github.com/BrianPugh/cyclopts.git", branch = "mkdocs-plugin" }
 
 [tool.vulture]
 exclude = [
@@ -191,6 +190,20 @@ exclude_lines = [
 ]
 show_missing = true
 skip_covered = false
+
+[tool.ty.environment]
+python-version = "3.10"
+
+[tool.ty.src]
+include = [
+  "src",
+  "tests",
+  "examples",
+]
+exclude = [
+  ".venv",
+  "examples/example-dagster/src/example_dagster/definitions.py",
+]
 
 [tool.pyright]
 reportAny = "none"

@@ -293,7 +293,7 @@ def clickhouse_server(tmp_path_factory):
 
     process: subprocess.Popen[bytes] | None = None
     try:
-        process = subprocess.Popen(  # type: ignore[call-overload]
+        process = subprocess.Popen(  # ty: ignore[no-matching-overload]
             [
                 clickhouse_bin,
                 "server",
@@ -354,7 +354,7 @@ def clickhouse_server(tmp_path_factory):
 
     connection_string = f"clickhouse://localhost:{http_port}/default"
     try:
-        conn: Any = ibis.connect(connection_string)  # type: ignore[assignment]
+        conn: Any = ibis.connect(connection_string)
         conn.list_tables()
     except Exception as e:
         process.terminate()
@@ -389,15 +389,15 @@ def clickhouse_db(clickhouse_server):
 
     # Connect to default database to create test database
     default_conn_string = f"clickhouse://{host}:{port}/default"
-    conn: Any = ibis.connect(default_conn_string)  # type: ignore[assignment]
+    conn: Any = ibis.connect(default_conn_string)
 
-    conn.raw_sql(f"CREATE DATABASE {db_name}")  # type: ignore[attr-defined]
+    conn.raw_sql(f"CREATE DATABASE {db_name}")  # ty: ignore[unresolved-attribute]
     test_conn_string = f"clickhouse://{host}:{port}/{db_name}"
 
     yield test_conn_string
 
     # Cleanup: drop test database
     try:
-        conn.raw_sql(f"DROP DATABASE IF EXISTS {db_name}")  # type: ignore[attr-defined]
+        conn.raw_sql(f"DROP DATABASE IF EXISTS {db_name}")  # ty: ignore[unresolved-attribute]
     except Exception:
         pass  # Best effort cleanup

@@ -324,7 +324,7 @@ class MetadataStore(ABC):
             if isinstance(samples, (nw.DataFrame, nw.LazyFrame)):
                 samples_nw = samples
             else:
-                samples_nw = nw.from_native(samples)
+                samples_nw = nw.from_native(samples)  # ty: ignore[invalid-assignment]
 
         # Normalize filter keys to FeatureKey
         normalized_filters: dict[FeatureKey, list[nw.Expr]] = {}
@@ -617,7 +617,7 @@ class MetadataStore(ABC):
         implementation = self.native_implementation()
         if df.implementation != implementation:
             implementation = nw.Implementation.POLARS
-            df = switch_implementation_to_polars(df)
+            df = switch_implementation_to_polars(df)  # ty: ignore[no-matching-overload]
 
         with self.create_versioning_engine(
             plan=plan, implementation=implementation
@@ -628,7 +628,7 @@ class MetadataStore(ABC):
                 for dep in (plan.feature_deps or [])
             }
 
-            df_columns = set(df.collect_schema().names())
+            df_columns = set(df.collect_schema().names())  # ty: ignore[invalid-argument-type]
             missing_columns = [
                 f"{col} (from upstream feature {key.to_string()})"
                 for key, col in expected_columns.items()
@@ -645,7 +645,7 @@ class MetadataStore(ABC):
                     f"metaxy_data_version_by_field__<feature_key.table_name>."
                 )
 
-            return engine.compute_provenance_columns(df, hash_algo=self.hash_algorithm)
+            return engine.compute_provenance_columns(df, hash_algo=self.hash_algorithm)  # ty: ignore[invalid-argument-type]
 
     def read_metadata(
         self,
@@ -1093,7 +1093,7 @@ class MetadataStore(ABC):
             return cast(
                 Frame,
                 engine.hash_struct_version_column(
-                    df,  # pyright: ignore[reportArgumentType]
+                    df,  # ty: ignore[invalid-argument-type]
                     hash_algorithm=self.hash_algorithm,
                     struct_column=struct_column,
                     hash_column=hash_column,
@@ -1132,8 +1132,8 @@ class MetadataStore(ABC):
         mode = "write" if self.auto_create_tables else "read"
 
         # Open the store (open() manages _context_depth internally)
-        self._open_cm = self.open(mode)
-        self._open_cm.__enter__()
+        self._open_cm = self.open(mode)  # ty: ignore[invalid-assignment]
+        self._open_cm.__enter__()  # ty: ignore[possibly-missing-attribute]
 
         return self
 
@@ -1300,7 +1300,7 @@ class MetadataStore(ABC):
             return
 
         feature_cls = graph.features_by_key[feature_key]
-        feature_project = feature_cls.project  # type: ignore[attr-defined]
+        feature_project = feature_cls.project
 
         # Validate the project matches
         if feature_project != expected_project:
@@ -1385,7 +1385,7 @@ class MetadataStore(ABC):
                 and callable(feature.feature_version)
             ):
                 current_feature_version = feature.feature_version()
-                current_feature_spec_version = feature.feature_spec_version()
+                current_feature_spec_version = feature.feature_spec_version()  # ty: ignore[possibly-missing-attribute]
             else:
                 from metaxy import get_feature_by_key
 
@@ -1401,7 +1401,7 @@ class MetadataStore(ABC):
 
             df = df.with_columns(
                 [
-                    nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),
+                    nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),  # ty: ignore[invalid-argument-type]
                     nw.lit(current_snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
                     nw.lit(current_feature_spec_version).alias(
                         METAXY_FEATURE_SPEC_VERSION

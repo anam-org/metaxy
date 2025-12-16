@@ -41,7 +41,7 @@ def config_project_a(_clear_sqlmodel_metadata):
     config = MetaxyConfig(
         project="project_a",
         store="test_store",
-        stores={  # pyright: ignore[reportArgumentType]
+        stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
                 "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
@@ -93,7 +93,7 @@ def config_project_b(_clear_sqlmodel_metadata):
     config = MetaxyConfig(
         project="project_b",
         store="test_store",
-        stores={  # pyright: ignore[reportArgumentType]
+        stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
                 "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
@@ -125,7 +125,7 @@ def config_no_filter(_clear_sqlmodel_metadata):
     config = MetaxyConfig(
         project="project_a",
         store="test_store",
-        stores={  # pyright: ignore[reportArgumentType]
+        stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
                 "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
@@ -173,7 +173,7 @@ def test_get_metaxy_system_metadata():
     config = MetaxyConfig(
         project="test",
         store="test_store",
-        stores={  # pyright: ignore[reportArgumentType]
+        stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
                 "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
@@ -203,7 +203,7 @@ def test_feature_versions_table_columns_match_polars_schema():
     config = MetaxyConfig(
         project="test",
         store="test_store",
-        stores={  # pyright: ignore[reportArgumentType]
+        stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
                 "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
@@ -284,7 +284,7 @@ def test_get_store_sqlalchemy_url_default_store():
     config = MetaxyConfig(
         project="test",
         store="test_store",
-        stores={  # pyright: ignore[reportArgumentType]
+        stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
                 "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
                 "config": {"database": "test.db"},
@@ -302,7 +302,7 @@ def test_get_store_sqlalchemy_url_named_store():
     """Test getting sqlalchemy_url from named store."""
     config = MetaxyConfig(
         project="test",
-        stores={  # pyright: ignore[reportArgumentType]
+        stores={  # ty: ignore[invalid-argument-type]
             "store1": {
                 "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
                 "config": {"database": "store1.db"},
@@ -330,7 +330,7 @@ def test_get_store_sqlalchemy_url_error_no_property():
     """Test error when store doesn't support sqlalchemy_url."""
     config = MetaxyConfig(
         project="test",
-        stores={  # pyright: ignore[reportArgumentType]
+        stores={  # ty: ignore[invalid-argument-type]
             "memory_store": {
                 "type": "metaxy.metadata_store.memory.InMemoryMetadataStore",
                 "config": {},
@@ -339,7 +339,7 @@ def test_get_store_sqlalchemy_url_error_no_property():
     )
 
     with config.use():
-        store = config.get_store("memory_store", expected_type=IbisMetadataStore)  # type: ignore[arg-type]
+        store = config.get_store("memory_store", expected_type=IbisMetadataStore)
         with pytest.raises(
             AttributeError, match="does not have a `sqlalchemy_url` property"
         ):
@@ -362,7 +362,7 @@ class TestProtocolParameter:
         config = MetaxyConfig(
             project="test",
             store="test_store",
-            stores={  # pyright: ignore[reportArgumentType]
+            stores={  # ty: ignore[invalid-argument-type]
                 "test_store": {
                     "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
                     "config": {"database": "test.db"},
@@ -388,7 +388,7 @@ class TestProtocolParameter:
         config = MetaxyConfig(
             project="test",
             store="test_store",
-            stores={  # pyright: ignore[reportArgumentType]
+            stores={  # ty: ignore[invalid-argument-type]
                 "test_store": {
                     "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
                     "config": {"database": "mydb.db"},

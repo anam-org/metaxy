@@ -221,7 +221,7 @@ class metaxify:
 
     def __call__(self, asset: _T) -> _T:
         return self._transform(
-            asset,
+            asset,  # ty: ignore[invalid-argument-type]
             key=self.key,
             key_prefix=self.key_prefix,
             inject_metaxy_kind=self.inject_metaxy_kind,
@@ -245,7 +245,7 @@ class metaxify:
     ) -> _T:
         """Transform an AssetsDefinition or AssetSpec with Metaxy metadata."""
         if isinstance(asset, dg.AssetSpec):
-            return _metaxify_spec(
+            return _metaxify_spec(  # ty: ignore[invalid-return-type]
                 asset,
                 key=key,
                 key_prefix=key_prefix,
@@ -283,7 +283,7 @@ class metaxify:
                 keys_to_replace[orig_key] = new_spec.key
             transformed_specs.append(new_spec)
 
-        return _replace_specs_on_assets_definition(
+        return _replace_specs_on_assets_definition(  # ty: ignore[invalid-return-type]
             asset, transformed_specs, keys_to_replace
         )
 

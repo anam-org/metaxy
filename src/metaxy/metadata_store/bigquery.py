@@ -257,7 +257,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
         """
         try:
             from google.oauth2 import (
-                service_account,  # pyright: ignore[reportMissingImports]
+                service_account,
             )
         except ImportError as e:
             raise ImportError(
@@ -296,27 +296,27 @@ class BigQueryMetadataStore(IbisMetadataStore):
 
         # Use Ibis's builtin UDF decorator to wrap BigQuery's hash functions
         @ibis.udf.scalar.builtin
-        def MD5(x: str) -> str:
+        def MD5(x: str) -> str:  # ty: ignore[invalid-return-type]
             """BigQuery MD5() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def FARM_FINGERPRINT(x: str) -> str:
+        def FARM_FINGERPRINT(x: str) -> str:  # ty: ignore[invalid-return-type]
             """BigQuery FARM_FINGERPRINT() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def SHA256(x: str) -> str:
+        def SHA256(x: str) -> str:  # ty: ignore[invalid-return-type]
             """BigQuery SHA256() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def TO_HEX(x: str) -> str:
+        def TO_HEX(x: str) -> str:  # ty: ignore[invalid-return-type]
             """BigQuery TO_HEX() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def LOWER(x: str) -> str:
+        def LOWER(x: str) -> str:  # ty: ignore[invalid-return-type]
             """BigQuery LOWER() function."""
             ...
 
@@ -350,5 +350,5 @@ class BigQueryMetadataStore(IbisMetadataStore):
         return f"BigQueryMetadataStore(project={self.project_id}{dataset_info})"
 
     @classmethod
-    def config_model(cls) -> type[BigQueryMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def config_model(cls) -> type[BigQueryMetadataStoreConfig]:
         return BigQueryMetadataStoreConfig

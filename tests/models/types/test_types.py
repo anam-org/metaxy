@@ -80,12 +80,12 @@ class TestFeatureKey:
         assert_type(hash(key1), int)
         assert hash(key1) == hash(key2)
         # Can be used in sets and dicts
-        my_set = {key1, key2}  # pyright: ignore[reportUnhashable]
-        assert_type(my_set, set[FeatureKey])
-        assert my_set == {key1}  # pyright: ignore[reportUnhashable]
-        my_dict = {key1: 1, key2: 2}  # pyright: ignore[reportUnhashable]
-        assert_type(my_dict, dict[FeatureKey, int])
-        assert my_dict == {key1: 2}  # pyright: ignore[reportUnhashable]
+        my_set = {key1, key2}
+        assert_type(my_set, set[FeatureKey])  # ty: ignore[type-assertion-failure]
+        assert my_set == {key1}
+        my_dict = {key1: 1, key2: 2}
+        assert_type(my_dict, dict[FeatureKey, int])  # ty: ignore[type-assertion-failure]
+        assert my_dict == {key1: 2}
 
     def test_table_name_property(self):
         """Test table_name property."""
@@ -110,12 +110,12 @@ class TestFeatureKey:
     def test_validation_non_string_parts(self):
         """Test validation rejects non-string parts."""
         with pytest.raises(ValidationError, match="Input should be a valid string"):
-            FeatureKey([1, 2, 3])  # pyright: ignore[reportCallIssue,reportArgumentType]
+            FeatureKey([1, 2, 3])  # ty: ignore[no-matching-overload]
 
     def test_validation_multiple_args_rejected(self):
         """Test validation rejects multiple positional arguments."""
         with pytest.raises(TypeError, match="takes from 1 to 2 positional arguments"):
-            FeatureKey("a", "b", "c")  # pyright: ignore[reportCallIssue]
+            FeatureKey("a", "b", "c")  # ty: ignore[no-matching-overload]
 
     def test_empty_string_rejected(self):
         """Test that empty string is rejected as invalid."""
@@ -144,7 +144,7 @@ class TestFeatureKey:
         """Test that FeatureKey is immutable (frozen)."""
         key = FeatureKey("a/b/c")
         with pytest.raises(ValidationError, match="frozen"):
-            key.parts = ("x", "y", "z")  # pyright: ignore[reportAttributeAccessIssue]
+            key.parts = ("x", "y", "z")  # ty: ignore[invalid-assignment]
 
     def test_iteration(self):
         """Test iteration over parts."""
@@ -215,8 +215,8 @@ class TestFieldKey:
         key2 = FieldKey(["a", "b", "c"])
         assert hash(key1) == hash(key2)
         # Can be used in sets and dicts
-        assert {key1, key2} == {key1}  # pyright: ignore[reportUnhashable]
-        assert {key1: 1, key2: 2} == {key1: 2}  # pyright: ignore[reportUnhashable]
+        assert {key1, key2} == {key1}
+        assert {key1: 1, key2: 2} == {key1: 2}
 
     def test_repr(self):
         """Test __repr__ returns string representation."""
@@ -236,18 +236,18 @@ class TestFieldKey:
     def test_validation_non_string_parts(self):
         """Test validation rejects non-string parts."""
         with pytest.raises(ValidationError, match="Input should be a valid string"):
-            FieldKey([1, 2, 3])  # pyright: ignore[reportCallIssue,reportArgumentType]
+            FieldKey([1, 2, 3])  # ty: ignore[no-matching-overload]
 
     def test_validation_multiple_args_rejected(self):
         """Test validation rejects multiple positional arguments."""
         with pytest.raises(TypeError, match="takes from 1 to 2 positional arguments"):
-            FieldKey("a", "b", "c")  # pyright: ignore[reportCallIssue]
+            FieldKey("a", "b", "c")  # ty: ignore[no-matching-overload]
 
     def test_immutability(self):
         """Test that FieldKey is immutable (frozen)."""
         key = FieldKey("a/b/c")
         with pytest.raises(ValidationError, match="frozen"):
-            key.parts = ("x", "y", "z")  # pyright: ignore[reportAttributeAccessIssue]
+            key.parts = ("x", "y", "z")  # ty: ignore[invalid-assignment]
 
     def test_backward_compatibility_list_operations(self):
         """Test that FieldKey still works with list-like operations."""
@@ -540,7 +540,7 @@ class TestCoercibleToFeatureKey:
         class MyModel(BaseModel):
             key: ValidatedFeatureKey
 
-        model = MyModel(key="a/b/c")  # pyright: ignore[reportArgumentType]
+        model = MyModel(key="a/b/c")  # ty: ignore[invalid-argument-type]
         assert isinstance(model.key, FeatureKey)
         assert model.key.to_string() == "a/b/c"
 
@@ -553,7 +553,7 @@ class TestCoercibleToFeatureKey:
         class MyModel(BaseModel):
             key: ValidatedFeatureKey
 
-        model = MyModel(key=["a", "b", "c"])  # pyright: ignore[reportArgumentType]
+        model = MyModel(key=["a", "b", "c"])  # ty: ignore[invalid-argument-type]
         assert isinstance(model.key, FeatureKey)
         assert model.key.to_string() == "a/b/c"
 
@@ -582,7 +582,7 @@ class TestCoercibleToFeatureKey:
 
         class TestFeature(BaseFeature, spec=feature_spec): ...
 
-        model = MyModel(key=TestFeature)  # pyright: ignore[reportArgumentType]
+        model = MyModel(key=TestFeature)  # ty: ignore[invalid-argument-type]
         assert isinstance(model.key, FeatureKey)
         assert model.key == feature_key
 
@@ -661,7 +661,7 @@ class TestCoercibleToFieldKey:
         class MyModel(BaseModel):
             key: ValidatedFieldKey
 
-        model = MyModel(key="a/b/c")  # pyright: ignore[reportArgumentType]
+        model = MyModel(key="a/b/c")  # ty: ignore[invalid-argument-type]
         assert isinstance(model.key, FieldKey)
         assert model.key.to_string() == "a/b/c"
 
@@ -674,7 +674,7 @@ class TestCoercibleToFieldKey:
         class MyModel(BaseModel):
             key: ValidatedFieldKey
 
-        model = MyModel(key=["a", "b", "c"])  # pyright: ignore[reportArgumentType]
+        model = MyModel(key=["a", "b", "c"])  # ty: ignore[invalid-argument-type]
         assert isinstance(model.key, FieldKey)
         assert model.key.to_string() == "a/b/c"
 

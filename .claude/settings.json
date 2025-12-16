@@ -10,7 +10,7 @@
           },
           {
             "type": "command",
-            "command": "basedpyright --level error",
+            "command": "ty check",
             "timeout": 30
           },
           {

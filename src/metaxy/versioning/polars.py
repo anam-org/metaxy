@@ -24,11 +24,11 @@ class PolarsVersioningEngine(VersioningEngine):
 
     # Map HashAlgorithm enum to polars-hash functions
     _HASH_FUNCTION_MAP: dict[HashAlgorithm, Callable[[pl.Expr], pl.Expr]] = {
-        HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),  # pyright: ignore[reportAttributeAccessIssue]
-        HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),  # pyright: ignore[reportAttributeAccessIssue]
-        HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),  # pyright: ignore[reportAttributeAccessIssue]
-        HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),  # pyright: ignore[reportAttributeAccessIssue]
-        HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),  # pyright: ignore[reportAttributeAccessIssue]
+        HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),
+        HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),
+        HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),
+        HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),
+        HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),
     }
 
     @classmethod
@@ -63,7 +63,7 @@ class PolarsVersioningEngine(VersioningEngine):
         assert df.implementation == nw.Implementation.POLARS, (
             "Only Polars DataFrames are accepted"
         )
-        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
         # Apply hash
         hash_fn = self._HASH_FUNCTION_MAP[hash_algo]
@@ -95,7 +95,7 @@ class PolarsVersioningEngine(VersioningEngine):
         assert df.implementation == nw.Implementation.POLARS, (
             "Only Polars DataFrames are accepted"
         )
-        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
         # Build struct expression
         struct_expr = pl.struct(
@@ -134,7 +134,7 @@ class PolarsVersioningEngine(VersioningEngine):
         assert df.implementation == nw.Implementation.POLARS, (
             "Only Polars DataFrames are accepted"
         )
-        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
         # Group and aggregate: concatenate concat_column, take first for others
         grouped = df_pl.group_by(group_by_columns).agg(
@@ -179,7 +179,7 @@ class PolarsVersioningEngine(VersioningEngine):
                 f"Available columns: {df.columns}"
             )
 
-        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
         result = df_pl.group_by(group_columns).agg(
             pl.col("*").sort_by(timestamp_column).last()

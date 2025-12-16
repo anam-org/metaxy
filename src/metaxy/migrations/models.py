@@ -60,7 +60,7 @@ class OperationConfig(pydantic.BaseModel):
     features: list[str] = pydantic.Field(default_factory=list)
 
 
-class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
+class Migration(pydantic.BaseModel, ABC):
     """Abstract base class for all migrations.
 
     Subclasses must define:

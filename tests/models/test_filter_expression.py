@@ -329,7 +329,7 @@ def test_parse_deeply_nested_expressions(
 
 def test_feature_dep_filters_parsing(sample_lazy_frame: nw.LazyFrame[Any]) -> None:
     dep = FeatureDep(feature="upstream", filters=["age >= 25", "status = 'active'"])
-    assert dep.filters is not None  # Type guard for basedpyright
+    assert dep.filters is not None  # Type guard for type checker
     filtered_ids = (
         sample_lazy_frame.filter(*dep.filters).collect().to_native().sort("id")["id"]
     )

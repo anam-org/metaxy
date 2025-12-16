@@ -23,7 +23,7 @@ from typing_extensions import Self
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import (
-        MetadataStore,  # pyright: ignore[reportImportCycles]
+        MetadataStore,
     )
 
 T = TypeVar("T")
@@ -536,7 +536,7 @@ class MetaxyConfig(BaseSettings):
             # Customize sources to use custom TOML file
             original_method = cls.settings_customise_sources
 
-            @classmethod  # type: ignore[misc]
+            @classmethod
             def custom_sources(
                 cls_inner,
                 settings_cls,
@@ -549,9 +549,9 @@ class MetaxyConfig(BaseSettings):
                 return (init_settings, env_settings, toml_settings)
 
             # Temporarily replace method
-            cls.settings_customise_sources = custom_sources  # type: ignore[assignment]
+            cls.settings_customise_sources = custom_sources  # ty: ignore[invalid-assignment]
             config = cls()
-            cls.settings_customise_sources = original_method  # type: ignore[method-assign]
+            cls.settings_customise_sources = original_method  # ty: ignore[invalid-assignment]
             # Store the resolved config file path
             config._config_file = toml_path.resolve()
         else:

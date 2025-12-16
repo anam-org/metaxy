@@ -48,11 +48,11 @@ if TYPE_CHECKING:
 
 # Map HashAlgorithm enum to polars-hash functions
 _HASH_FUNCTION_MAP: dict[HashAlgorithm, Callable[[pl.Expr], pl.Expr]] = {
-    HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),  # pyright: ignore[reportAttributeAccessIssue]
-    HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),  # pyright: ignore[reportAttributeAccessIssue]
-    HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),  # pyright: ignore[reportAttributeAccessIssue]
-    HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),  # pyright: ignore[reportAttributeAccessIssue]
-    HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),  # pyright: ignore[reportAttributeAccessIssue]
+    HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),
+    HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),
+    HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),
+    HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),
+    HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),
 }
 
 
@@ -170,7 +170,7 @@ def calculate_provenance_by_field_polars(
         field_exprs[field_key_str] = hashed
 
     # Create provenance struct
-    provenance_expr = pl.struct(**field_exprs)  # type: ignore[call-overload]
+    provenance_expr = pl.struct(**field_exprs)
 
     return joined_upstream_df.with_columns(
         provenance_expr.alias(METAXY_PROVENANCE_BY_FIELD)
@@ -302,7 +302,7 @@ def feature_metadata_strategy(
     df = draw(df_strategy)
 
     # Add constant version columns
-    df = df.with_columns(
+    df = df.with_columns(  # ty: ignore[unresolved-attribute]
         pl.lit(feature_version).alias(METAXY_FEATURE_VERSION),
         pl.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
         pl.lit(feature_spec.feature_spec_version).alias(METAXY_FEATURE_SPEC_VERSION),
@@ -488,7 +488,7 @@ def upstream_metadata_strategy(
 
         # Use feature_metadata_strategy to generate metadata for this spec
         # Pass only the ID columns that this feature needs
-        upstream_id_df = id_columns_df.select(list(upstream_spec.id_columns))
+        upstream_id_df = id_columns_df.select(list(upstream_spec.id_columns))  # ty: ignore[unresolved-attribute]
 
         df = draw(
             feature_metadata_strategy(

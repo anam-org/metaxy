@@ -289,4 +289,4 @@ def upstream_metadata_multi_field() -> nw.LazyFrame[pl.LazyFrame]:
 )
 def hash_algorithm(request: pytest.FixtureRequest) -> HashAlgorithm:
     """Parametrize tests across all supported hash algorithms."""
-    return request.param  # type: ignore[no-any-return]
+    return request.param

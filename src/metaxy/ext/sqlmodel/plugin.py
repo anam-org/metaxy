@@ -50,7 +50,7 @@ class MetaxyTableInfo(BaseModel):
     feature_key: ValidatedFeatureKey
 
 
-class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[reportUnsafeMultipleInheritance]
+class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
     def __new__(
         cls,
         cls_name: str,
@@ -244,9 +244,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
                 namespace["__table_args__"] = {"info": metaxy_info}
 
 
-class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, reportUnsafeMultipleInheritance]
+class BaseSQLModelFeature(
     SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None
-):  # type: ignore[misc]
+):
     """Base class for `Metaxy` features that are also `SQLModel` tables.
 
     !!! example
@@ -283,7 +283,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
 
     # Override the frozen config from Feature's FrozenBaseModel
     # SQLModel instances need to be mutable for ORM operations
-    model_config = {"frozen": False}  # pyright: ignore[reportAssignmentType]
+    model_config = {"frozen": False}
 
     # Re-declare ClassVar attributes from BaseFeature for type checker visibility.
     # These are set by MetaxyMeta at class creation time but type checkers can't see them

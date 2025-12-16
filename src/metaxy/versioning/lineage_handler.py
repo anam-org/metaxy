@@ -104,7 +104,7 @@ class AggregationLineageHandler(LineageHandler):
         agg_columns = self.plan.input_id_columns
 
         # Aggregate expected provenance
-        expected_agg = self._aggregate_provenance(expected, agg_columns, hash_algorithm)
+        expected_agg = self._aggregate_provenance(expected, agg_columns, hash_algorithm)  # ty: ignore[invalid-argument-type]
 
         return expected_agg, current, agg_columns
 
@@ -132,7 +132,7 @@ class AggregationLineageHandler(LineageHandler):
         """
         # Sort by all id_columns for deterministic ordering within groups
         id_columns = list(self.feature_spec.id_columns)
-        expected_sorted = expected.sort(id_columns)
+        expected_sorted = expected.sort(id_columns)  # ty: ignore[invalid-argument-type]
 
         # Use engine's aggregate_with_string_concat method
         # This concatenates provenance strings and stores in a temporary column
@@ -175,7 +175,7 @@ class AggregationLineageHandler(LineageHandler):
         # Drop placeholder
         result = result.drop("__aggregated_placeholder")
 
-        return result
+        return result  # ty: ignore[invalid-return-type]
 
 
 class ExpansionLineageHandler(LineageHandler):
@@ -197,7 +197,7 @@ class ExpansionLineageHandler(LineageHandler):
 
         # Group current by parent columns and take any representative row
         current_grouped = (
-            current.with_columns(nw.lit(True).alias("_dummy"))
+            current.with_columns(nw.lit(True).alias("_dummy"))  # ty: ignore[invalid-argument-type]
             .filter(
                 nw.col("_dummy")
                 .is_first_distinct()

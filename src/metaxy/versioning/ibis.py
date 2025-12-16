@@ -91,7 +91,7 @@ class IbisVersioningEngine(VersioningEngine):
         hashed = hash_fn(ibis_table[source_column])
 
         # Add new column with the hash
-        result_table = ibis_table.mutate(**{target_column: hashed})  # pyright: ignore[reportArgumentType]
+        result_table = ibis_table.mutate(**{target_column: hashed})
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))

@@ -192,7 +192,7 @@ def get_partition_filter(
     return build_partition_filter(partition_col, context.partition_key)
 
 
-def compute_row_count(lazy_df: nw.LazyFrame) -> int:  # pyright: ignore[reportMissingTypeArgument]
+def compute_row_count(lazy_df: nw.LazyFrame) -> int:
     """Compute row count from a narwhals LazyFrame.
 
     Args:
@@ -201,10 +201,10 @@ def compute_row_count(lazy_df: nw.LazyFrame) -> int:  # pyright: ignore[reportMi
     Returns:
         The number of rows in the frame.
     """
-    return lazy_df.select(nw.len()).collect().item(0, 0)  # pyright: ignore[reportReturnType]
+    return lazy_df.select(nw.len()).collect().item(0, 0)
 
 
-def compute_stats_from_lazy_frame(lazy_df: nw.LazyFrame) -> FeatureStats:  # pyright: ignore[reportMissingTypeArgument]
+def compute_stats_from_lazy_frame(lazy_df: nw.LazyFrame) -> FeatureStats:
     """Compute statistics from a narwhals LazyFrame.
 
     Computes row count and data version from the frame.
@@ -272,7 +272,7 @@ def get_asset_key_for_metaxy_feature_spec(
     if isinstance(dagster_attrs, dict) and (
         custom_asset_key := dagster_attrs.get("asset_key")
     ):
-        return dg.AssetKey(custom_asset_key)  # pyright: ignore[reportArgumentType]
+        return dg.AssetKey(custom_asset_key)
 
     # Use the feature key as the asset key
     return dg.AssetKey(list(feature_spec.key.parts))
@@ -331,15 +331,15 @@ def generate_materialize_results(
             DAGSTER_METAXY_PARTITION_METADATA_KEY
         )
 
-        with store:
+        with store:  # ty: ignore[invalid-context-manager]
             try:
                 # Build runtime metadata (handles reading, filtering, and stats internally)
                 metadata, stats = build_runtime_feature_metadata(
                     key,
                     store,
                     context,
-                    partition_col=partition_col,  # pyright: ignore[reportArgumentType]
-                    metaxy_partition=metaxy_partition,  # pyright: ignore[reportArgumentType]
+                    partition_col=partition_col,
+                    metaxy_partition=metaxy_partition,
                 )
             except FeatureNotFoundError:
                 context.log.exception(
@@ -348,11 +348,11 @@ def generate_materialize_results(
                 continue
 
             # Get materialized-in-run count if materialization_id is set
-            if store.materialization_id is not None:
-                mat_df = store.read_metadata(
+            if store.materialization_id is not None:  # ty: ignore[possibly-missing-attribute]
+                mat_df = store.read_metadata(  # ty: ignore[possibly-missing-attribute]
                     key,
                     filters=[
-                        nw.col(METAXY_MATERIALIZATION_ID) == store.materialization_id
+                        nw.col(METAXY_MATERIALIZATION_ID) == store.materialization_id  # ty: ignore[possibly-missing-attribute]
                     ],
                 )
                 metadata["metaxy/materialized_in_run"] = (
@@ -499,14 +499,14 @@ def build_runtime_feature_metadata(
     # Combine both filter types for reading this asset's view of the data
     all_filters = dagster_partition_filters + metaxy_partition_filters
 
-    lazy_df = store.read_metadata(feature_key, filters=all_filters)
+    lazy_df = store.read_metadata(feature_key, filters=all_filters)  # ty: ignore[possibly-missing-attribute]
 
     try:
         # Compute stats from filtered data (includes data_version for callers)
         stats = compute_stats_from_lazy_frame(lazy_df)
 
         # Get store metadata
-        store_metadata = store.get_store_metadata(feature_key)
+        store_metadata = store.get_store_metadata(feature_key)  # ty: ignore[possibly-missing-attribute]
 
         # Build metadata dict with metaxy info and store info
         store_cls = store.__class__
@@ -515,8 +515,8 @@ def build_runtime_feature_metadata(
             "metaxy/info": build_feature_info_metadata(feature_key),
             "metaxy/store": {
                 "type": f"{store_cls.__module__}.{store_cls.__qualname__}",
-                "display": store.display(),
-                "versioning_engine": store._versioning_engine,
+                "display": store.display(),  # ty: ignore[possibly-missing-attribute]
+                "versioning_engine": store._versioning_engine,  # ty: ignore[possibly-missing-attribute]
                 **store_metadata,
             },
         }
@@ -525,7 +525,7 @@ def build_runtime_feature_metadata(
         # with only Dagster partition filters (not metaxy partition)
         if context.has_partition_key:
             # Read with only dagster partition filter for total count
-            full_lazy_df = store.read_metadata(
+            full_lazy_df = store.read_metadata(  # ty: ignore[possibly-missing-attribute]
                 feature_key, filters=metaxy_partition_filters
             )
             metadata["dagster/row_count"] = compute_row_count(full_lazy_df)
@@ -610,7 +610,7 @@ def generate_observe_results(
             DAGSTER_METAXY_PARTITION_METADATA_KEY
         )
 
-        with store:
+        with store:  # ty: ignore[invalid-context-manager]
             try:
                 # Build runtime metadata (handles reading, filtering, and stats internally)
                 # For observers with no metaxy_partition, this reads all data
@@ -618,8 +618,8 @@ def generate_observe_results(
                     key,
                     store,
                     context,
-                    partition_col=partition_col,  # pyright: ignore[reportArgumentType]
-                    metaxy_partition=metaxy_partition,  # pyright: ignore[reportArgumentType]
+                    partition_col=partition_col,
+                    metaxy_partition=metaxy_partition,
                 )
             except FeatureNotFoundError:
                 context.log.exception(

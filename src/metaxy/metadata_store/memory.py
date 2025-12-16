@@ -149,7 +149,7 @@ class InMemoryMetadataStore(MetadataStore):
                     # Add column with null values of the appropriate type
                     df_polars = df_polars.with_columns(
                         pl.lit(None).cast(col_dtype).alias(col_name)
-                    )  # type: ignore[arg-type,union-attr]
+                    )
 
             # Ensure column order matches by selecting columns in consistent order
             all_columns = sorted(set(existing_df.columns) | set(df_polars.columns))
@@ -288,5 +288,5 @@ class InMemoryMetadataStore(MetadataStore):
         return f"InMemoryMetadataStore(status={status})"
 
     @classmethod
-    def config_model(cls) -> type[InMemoryMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def config_model(cls) -> type[InMemoryMetadataStoreConfig]:
         return InMemoryMetadataStoreConfig

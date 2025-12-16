@@ -300,7 +300,7 @@ class TestMultiAssetPartitionObservation:
         obs = instance.fetch_observations(dg.AssetKey("asset_c"), limit=1)
         assert len(obs.records) == 1
 
-        metadata = obs.records[0].asset_observation.metadata  # pyright: ignore[reportOptionalMemberAccess]
+        metadata = obs.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
 
         # Asset C should see all 5 records (2 US + 3 EU)
         assert metadata["dagster/row_count"].value == 5
@@ -384,7 +384,7 @@ class TestCompleteScenario:
         # Verify Asset A metadata
         mat_a = instance.fetch_materializations(dg.AssetKey("asset_a"), limit=1)
         assert len(mat_a.records) == 1
-        metadata_a = mat_a.records[0].asset_materialization.metadata  # pyright: ignore[reportOptionalMemberAccess]
+        metadata_a = mat_a.records[0].asset_materialization.metadata  # ty: ignore[possibly-missing-attribute]
         assert metadata_a["dagster/row_count"].value == 2
         assert metadata_a["metaxy/materialized_in_run"].value == 2
 
@@ -395,7 +395,7 @@ class TestCompleteScenario:
         # Verify Asset B metadata
         mat_b = instance.fetch_materializations(dg.AssetKey("asset_b"), limit=1)
         assert len(mat_b.records) == 1
-        metadata_b = mat_b.records[0].asset_materialization.metadata  # pyright: ignore[reportOptionalMemberAccess]
+        metadata_b = mat_b.records[0].asset_materialization.metadata  # ty: ignore[possibly-missing-attribute]
         assert metadata_b["dagster/row_count"].value == 3
         assert metadata_b["metaxy/materialized_in_run"].value == 3
 
@@ -413,7 +413,7 @@ class TestCompleteScenario:
         # Verify Asset C observation sees all 5 records
         obs_c = instance.fetch_observations(dg.AssetKey("asset_c"), limit=1)
         assert len(obs_c.records) == 1
-        metadata_c = obs_c.records[0].asset_observation.metadata  # pyright: ignore[reportOptionalMemberAccess]
+        metadata_c = obs_c.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
         assert metadata_c["dagster/row_count"].value == 5
 
         # Verify the feature has all 5 records in the store
@@ -507,15 +507,11 @@ class TestMetaxyPartitionWithMultipleColumns:
         mat_eu = instance.fetch_materializations(dg.AssetKey("asset_eu_basic"), limit=1)
 
         assert (
-            mat_us.records[0]
-            .asset_materialization.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
-            .value
+            mat_us.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
             == 2
         )
         assert (
-            mat_eu.records[0]
-            .asset_materialization.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
-            .value
+            mat_eu.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
             == 3
         )
 
