@@ -12,7 +12,11 @@ from metaxy.models.field import (
     SpecialFieldDep,
 )
 from metaxy.models.fields_mapping import FieldsMappingResolutionContext
-from metaxy.models.lineage import ExpansionRelationship, LineageRelationshipType
+from metaxy.models.lineage import (
+    AggregationRelationship,
+    ExpansionRelationship,
+    LineageRelationshipType,
+)
 from metaxy.models.types import CoercibleToFieldKey, ValidatedFieldKeyAdapter
 
 # Rebuild the model now that FeatureSpec is available
@@ -261,27 +265,42 @@ class FeaturePlan(FrozenBaseModel):
 
         return list(cols)
 
-    @cached_property
-    def input_id_columns(self) -> list[str]:
-        """Columns that uniquely identify an input sample for progress calculation.
+    def get_input_id_columns_for_dep(self, feature_dep: FeatureDep) -> list[str]:
+        """Get the input ID columns for a specific dependency after lineage is applied.
 
-        The "input" is the joined upstream metadata after FeatureDep rules are applied.
-        The columns returned depend on the lineage relationship:
+        The returned columns represent the logical unit for this dependency based on
+        its lineage relationship:
 
-        - Identity (1:1): Same as upstream_id_columns (each input row is a unit)
+        - Identity (1:1): Same as upstream ID columns (after renames)
         - Aggregation (N:1): Aggregation columns (each group is a unit)
-        - Expansion (1:N): Parent columns from ExpansionRelationship.on (each parent is a unit)
+        - Expansion (1:N): Parent columns from ExpansionRelationship.on
+
+        Args:
+            feature_dep: The dependency to get input ID columns for.
 
         Returns:
-            List of column names that define a logical input unit.
+            List of column names that define a logical input unit for this dependency.
         """
-        relationship_type = self.feature.lineage.relationship.type
+        relationship = feature_dep.lineage.relationship
+        relationship_type = relationship.type
+
+        # Get upstream spec for this dependency
+        upstream_spec = self.parent_features_by_key.get(feature_dep.feature)
+        if upstream_spec is None:
+            return []
+
+        # Apply renames to upstream ID columns
+        renames = feature_dep.rename or {}
+        renamed_upstream_id_cols = [
+            renames.get(col, col) for col in upstream_spec.id_columns
+        ]
 
         if relationship_type == LineageRelationshipType.IDENTITY:
-            return self.upstream_id_columns
+            return renamed_upstream_id_cols
 
         elif relationship_type == LineageRelationshipType.AGGREGATION:
-            agg_result = self.feature.lineage.get_aggregation_columns(
+            assert isinstance(relationship, AggregationRelationship)
+            agg_result = relationship.get_aggregation_columns(
                 list(self.feature.id_columns)
             )
             assert agg_result is not None, (
@@ -290,8 +309,39 @@ class FeaturePlan(FrozenBaseModel):
             return list(agg_result)
 
         elif relationship_type == LineageRelationshipType.EXPANSION:
-            assert isinstance(self.feature.lineage.relationship, ExpansionRelationship)
-            return list(self.feature.lineage.relationship.on)
+            assert isinstance(relationship, ExpansionRelationship)
+            return list(relationship.on)
 
         else:
             raise ValueError(f"Unknown lineage relationship type: {relationship_type}")
+
+    @cached_property
+    def input_id_columns(self) -> list[str]:
+        """Columns that uniquely identify an input sample.
+
+        The "input" is the joined upstream metadata after FeatureDep rules and lineage
+        transformations are applied. For features with multiple dependencies, this is
+        the intersection of input ID columns from all dependencies.
+
+        Returns:
+            List of column names that define a logical input unit.
+        """
+        if not self.feature_deps:
+            return []
+
+        # Collect input ID columns from each dependency
+        all_input_cols: list[set[str]] = []
+        for feature_dep in self.feature_deps:
+            cols = self.get_input_id_columns_for_dep(feature_dep)
+            if cols:
+                all_input_cols.append(set(cols))
+
+        if not all_input_cols:
+            return []
+
+        # Return intersection of all input ID columns
+        result = all_input_cols[0]
+        for cols in all_input_cols[1:]:
+            result = result.intersection(cols)
+
+        return list(result)

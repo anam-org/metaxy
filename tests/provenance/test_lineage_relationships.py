@@ -53,7 +53,12 @@ def aggregation_features(graph: FeatureGraph) -> dict[str, type[SampleFeature]]:
         spec=SampleFeatureSpec(
             key=FeatureKey(["hourly_stats"]),
             id_columns=("sensor_id", "hour"),
-            deps=[FeatureDep(feature=FeatureKey(["sensor_readings"]))],
+            deps=[
+                FeatureDep(
+                    feature=FeatureKey(["sensor_readings"]),
+                    lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
+                )
+            ],
             fields=[
                 FieldSpec(
                     key=FieldKey(["avg_temp"]),
@@ -66,7 +71,6 @@ def aggregation_features(graph: FeatureGraph) -> dict[str, type[SampleFeature]]:
                     deps=SpecialFieldDep.ALL,
                 ),
             ],
-            lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
         ),
     ):
         pass
@@ -123,6 +127,13 @@ def sensor_readings_metadata() -> nw.LazyFrame[pl.LazyFrame]:
                     "reading_prov_4",
                     "reading_prov_5",
                 ],
+                "metaxy_data_version": [
+                    "reading_dv_1",
+                    "reading_dv_2",
+                    "reading_dv_3",
+                    "reading_dv_4",
+                    "reading_dv_5",
+                ],
             }
         ).lazy()
     )
@@ -160,7 +171,12 @@ def expansion_features(graph: FeatureGraph) -> dict[str, type[SampleFeature]]:
         spec=SampleFeatureSpec(
             key=FeatureKey(["video_frames"]),
             id_columns=("video_id", "frame_id"),
-            deps=[FeatureDep(feature=FeatureKey(["video"]))],
+            deps=[
+                FeatureDep(
+                    feature=FeatureKey(["video"]),
+                    lineage=LineageRelationship.expansion(on=["video_id"]),
+                )
+            ],
             fields=[
                 FieldSpec(
                     key=FieldKey(["frame_embedding"]),
@@ -168,7 +184,6 @@ def expansion_features(graph: FeatureGraph) -> dict[str, type[SampleFeature]]:
                     deps=SpecialFieldDep.ALL,
                 ),
             ],
-            lineage=LineageRelationship.expansion(on=["video_id"]),
         ),
     ):
         pass
@@ -195,6 +210,7 @@ def video_metadata() -> nw.LazyFrame[pl.LazyFrame]:
                     {"resolution": "res_hash_2", "fps": "fps_hash_2"},
                 ],
                 "metaxy_provenance": ["video_prov_1", "video_prov_2"],
+                "metaxy_data_version": ["video_prov_1", "video_prov_2"],
             }
         ).lazy()
     )
@@ -229,6 +245,13 @@ def video_frames_current() -> nw.LazyFrame[pl.LazyFrame]:
                     "frame_v2_0_prov",
                     "frame_v2_1_prov",
                 ],
+                "metaxy_data_version": [
+                    "frame_v1_0_prov",
+                    "frame_v1_1_prov",
+                    "frame_v1_2_prov",
+                    "frame_v2_0_prov",
+                    "frame_v2_1_prov",
+                ],
             }
         ).lazy()
     )
@@ -251,7 +274,10 @@ def test_identity_lineage_load_upstream(
     engine = PolarsVersioningEngine(plan)
 
     # Verify lineage is identity
-    assert plan.feature.lineage.relationship.type.value == "1:1"
+    # Identity lineage is the default for deps without explicit lineage
+    assert all(
+        dep.lineage.relationship.type.value == "1:1" for dep in plan.feature.deps
+    )
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
@@ -363,15 +389,15 @@ def test_aggregation_lineage_load_upstream(
 ) -> None:
     """Test N:1 aggregation lineage loads upstream correctly.
 
-    Note: load_upstream_with_provenance returns granular upstream data (all 5 readings).
-    The aggregation normalization only happens during comparison in resolve_increment_with_provenance.
+    With per-dependency lineage, aggregation is applied during upstream loading.
+    The result should be aggregated by (sensor_id, hour) - 2 groups.
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
     engine = PolarsVersioningEngine(plan)
 
-    # Verify lineage is aggregation
-    assert plan.feature.lineage.relationship.type.value == "N:1"
+    # Verify lineage is aggregation (N:1) on the dependency
+    assert plan.feature.deps[0].lineage.relationship.type.value == "N:1"
 
     upstream = {FeatureKey(["sensor_readings"]): sensor_readings_metadata}
 
@@ -383,27 +409,27 @@ def test_aggregation_lineage_load_upstream(
 
     result_df = result.collect()
 
-    # load_upstream_with_provenance returns ALL upstream rows (not aggregated yet)
-    assert len(result_df) == 5  # All 5 sensor readings
+    # With aggregation lineage, upstream is aggregated by (sensor_id, hour) during loading
+    assert len(result_df) == 2  # 2 groups: s1/hour10, s2/hour10
     assert set(result_df["sensor_id"].to_list()) == {"s1", "s2"}
 
-    # Provenance should be computed for each reading
+    # Provenance should be computed for each aggregated group
     assert "metaxy_provenance" in result_df.columns
     assert "metaxy_provenance_by_field" in result_df.columns
 
-    # Snapshot the aggregation upstream provenance
+    # Snapshot the aggregated upstream provenance
     result_polars = result_df.to_polars()
     provenance_data = sorted(
         [
             {
                 "sensor_id": result_polars["sensor_id"][i],
-                "reading_id": result_polars["reading_id"][i],
+                "hour": result_polars["hour"][i],
                 "field_provenance": result_polars["metaxy_provenance_by_field"][i],
                 "field_data_version": result_polars["metaxy_data_version_by_field"][i],
             }
             for i in range(len(result_polars))
         ],
-        key=lambda x: (x["sensor_id"], x["reading_id"]),
+        key=lambda x: x["sensor_id"],
     )
     assert provenance_data == snapshot
 
@@ -416,7 +442,8 @@ def test_aggregation_lineage_resolve_increment_no_current(
 ) -> None:
     """Test N:1 aggregation increment resolution with no current metadata.
 
-    When current is None, all upstream rows are returned as added (before aggregation).
+    When current is None, all aggregated groups are returned as added.
+    With per-dependency lineage, aggregation happens during loading.
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
@@ -436,24 +463,24 @@ def test_aggregation_lineage_resolve_increment_no_current(
 
     added = added_lazy.collect()
 
-    # When current is None, all upstream samples are added (not aggregated yet)
+    # When current is None, all aggregated groups are added
     assert changed_lazy is None
     assert removed_lazy is None
-    assert len(added) == 5  # All 5 sensor readings
+    assert len(added) == 2  # 2 aggregated groups
 
-    # Snapshot the added readings
+    # Snapshot the added groups
     added_polars = added.to_polars()
     added_data = sorted(
         [
             {
                 "sensor_id": added_polars["sensor_id"][i],
-                "reading_id": added_polars["reading_id"][i],
+                "hour": added_polars["hour"][i],
                 "field_provenance": added_polars["metaxy_provenance_by_field"][i],
                 "field_data_version": added_polars["metaxy_data_version_by_field"][i],
             }
             for i in range(len(added_polars))
         ],
-        key=lambda x: (x["sensor_id"], x["reading_id"]),
+        key=lambda x: x["sensor_id"],
     )
     assert added_data == snapshot
 
@@ -565,11 +592,12 @@ def test_aggregation_lineage_new_readings_trigger_change(
                     {"temperature": "temp_hash_2", "humidity": "hum_hash_2"},
                 ],
                 "metaxy_provenance": ["reading_prov_1", "reading_prov_2"],
+                "metaxy_data_version": ["reading_dv_1", "reading_dv_2"],
             }
         ).lazy()
     )
 
-    # First resolve: no current, so all readings are added
+    # First resolve: no current, so all aggregated groups are added
     added_v1_lazy, _, _, _ = engine.resolve_increment_with_provenance(
         current=None,
         upstream={FeatureKey(["sensor_readings"]): upstream_v1},
@@ -578,7 +606,7 @@ def test_aggregation_lineage_new_readings_trigger_change(
         sample=None,
     )
     added_v1 = added_v1_lazy.collect()
-    assert len(added_v1) == 2  # 2 initial readings
+    assert len(added_v1) == 1  # 1 aggregated group (s1, hour10)
 
     # Updated upstream: 3 readings for s1 in hour 10 (added r3)
     upstream_v2 = nw.from_native(
@@ -606,6 +634,11 @@ def test_aggregation_lineage_new_readings_trigger_change(
                     "reading_prov_1",
                     "reading_prov_2",
                     "reading_prov_3",  # New
+                ],
+                "metaxy_data_version": [
+                    "reading_dv_1",
+                    "reading_dv_2",
+                    "reading_dv_3",  # New
                 ],
             }
         ).lazy()
@@ -677,7 +710,8 @@ def test_expansion_lineage_load_upstream(
     engine = PolarsVersioningEngine(plan)
 
     # Verify lineage is expansion
-    assert plan.feature.lineage.relationship.type.value == "1:N"
+    # Verify lineage is expansion (1:N) on the dependency
+    assert plan.feature.deps[0].lineage.relationship.type.value == "1:N"
 
     upstream = {FeatureKey(["video"]): video_metadata}
 
@@ -800,6 +834,10 @@ def test_expansion_lineage_resolve_increment_video_changed(
                     "video_prov_1",  # Same as fixture
                     "video_prov_2_MODIFIED",  # Changed from fixture
                 ],
+                "metaxy_data_version": [
+                    "video_prov_1",  # Same as fixture
+                    "video_prov_2_MODIFIED",  # Changed from fixture
+                ],
             }
         ).lazy()
     )
@@ -864,6 +902,11 @@ def test_expansion_lineage_new_video_added(
                     "video_prov_2",
                     "video_prov_3",  # New
                 ],
+                "metaxy_data_version": [
+                    "video_prov_1",
+                    "video_prov_2",
+                    "video_prov_3",  # New
+                ],
             }
         ).lazy()
     )
@@ -918,6 +961,7 @@ def test_expansion_lineage_video_removed(
                     {"resolution": "res_hash_1", "fps": "fps_hash_1"},
                 ],
                 "metaxy_provenance": ["video_prov_1"],
+                "metaxy_data_version": ["video_prov_1"],
             }
         ).lazy()
     )
@@ -992,6 +1036,11 @@ def test_aggregation_lineage_upstream_data_version_change_triggers_update(
                     "reading_prov_2",
                     "reading_prov_3",
                 ],
+                "metaxy_data_version": [
+                    "reading_dv_v1_1",
+                    "reading_dv_v1_2",
+                    "reading_dv_v1_3",
+                ],
             }
         ).lazy()
     )
@@ -1047,6 +1096,11 @@ def test_aggregation_lineage_upstream_data_version_change_triggers_update(
                     "reading_prov_1",
                     "reading_prov_2",
                     "reading_prov_3",
+                ],
+                "metaxy_data_version": [
+                    "reading_dv_v2_1",  # Changed
+                    "reading_dv_v2_2",  # Changed
+                    "reading_dv_v2_3",  # Changed
                 ],
             }
         ).lazy()
@@ -1106,6 +1160,7 @@ def test_expansion_lineage_upstream_data_version_change_triggers_update(
                     {"resolution": "res_v1_2", "fps": "fps_v1_2"},
                 ],
                 "metaxy_provenance": ["video_prov_1", "video_prov_2"],
+                "metaxy_data_version": ["video_prov_1", "video_prov_2"],
             }
         ).lazy()
     )
@@ -1144,6 +1199,13 @@ def test_expansion_lineage_upstream_data_version_change_triggers_update(
                     "frame_v2_0_prov",
                     "frame_v2_1_prov",
                 ],
+                "metaxy_data_version": [
+                    "frame_v1_0_prov",
+                    "frame_v1_1_prov",
+                    "frame_v1_2_prov",
+                    "frame_v2_0_prov",
+                    "frame_v2_1_prov",
+                ],
             }
         ).lazy()
     )
@@ -1163,6 +1225,10 @@ def test_expansion_lineage_upstream_data_version_change_triggers_update(
                     {"resolution": "res_v2_2", "fps": "fps_v2_2"},  # Changed for v2
                 ],
                 "metaxy_provenance": ["video_prov_1", "video_prov_2"],
+                "metaxy_data_version": [
+                    "video_prov_1",
+                    "video_prov_2_changed",
+                ],  # v2 changed
             }
         ).lazy()
     )
@@ -1229,6 +1295,7 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
                     {"temperature": "temp_dv_base", "humidity": "hum_dv_base"},
                 ],
                 "metaxy_provenance": ["reading_prov_base", "reading_prov_base"],
+                "metaxy_data_version": ["reading_dv_base", "reading_dv_base"],
             }
         ).lazy()
     )
@@ -1279,6 +1346,7 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
                     {"temperature": "temp_dv_NEW", "humidity": "hum_dv_NEW"},  # Changed
                 ],
                 "metaxy_provenance": ["reading_prov_base", "reading_prov_base"],
+                "metaxy_data_version": ["reading_dv_NEW", "reading_dv_NEW"],  # Changed
             }
         ).lazy()
     )
@@ -1296,7 +1364,9 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
     assert len(changed) >= 1, "Changing only data_version should trigger change"
 
-    # Test 2: Only provenance changed
+    # Test 2: Only provenance_by_field changed (data_version_by_field same)
+    # Since provenance is computed from data_version_by_field (not provenance_by_field),
+    # changing only provenance_by_field should NOT trigger a change
     upstream_prov_changed = nw.from_native(
         pl.DataFrame(
             {
@@ -1319,6 +1389,7 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
                     {"temperature": "temp_dv_base", "humidity": "hum_dv_base"},  # Same
                 ],
                 "metaxy_provenance": ["reading_prov_base", "reading_prov_base"],
+                "metaxy_data_version": ["reading_dv_base", "reading_dv_base"],  # Same
             }
         ).lazy()
     )
@@ -1334,27 +1405,32 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
     )
 
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
-    assert len(changed) >= 1, "Changing only provenance should trigger change"
+    # Provenance is computed from data_version_by_field, so changing only provenance_by_field
+    # should NOT trigger a change (data_version_by_field is unchanged)
+    assert len(changed) == 0, (
+        "Changing only provenance_by_field should NOT trigger change"
+    )
 
 
 def test_expansion_lineage_data_version_vs_provenance_independent(
     expansion_features: dict[str, type[SampleFeature]],
     graph: FeatureGraph,
 ) -> None:
-    """Test 1:N expansion: data_version and provenance can change independently.
+    """Test 1:N expansion: data_version controls change detection, not provenance_by_field.
 
     Verify that:
     1. Changing only data_version (provenance same) → detected as changed
-    2. Changing only provenance (data_version same) → detected as changed
+    2. Changing only provenance_by_field (data_version same) → NOT detected as changed
 
-    This ensures that the expansion logic correctly handles both columns.
+    Provenance is computed from data_version_by_field, so changing only provenance_by_field
+    should NOT trigger a change.
     """
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
     engine = PolarsVersioningEngine(plan)
 
-    # Base upstream state
-    nw.from_native(
+    # Base upstream state - compute actual expected provenance from this
+    upstream_base = nw.from_native(
         pl.DataFrame(
             {
                 "video_id": ["v1"],
@@ -1365,25 +1441,39 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
                     {"resolution": "res_dv_base", "fps": "fps_dv_base"},
                 ],
                 "metaxy_provenance": ["video_prov_base"],
+                "metaxy_data_version": ["video_prov_base"],
             }
         ).lazy()
     )
 
-    # Current frames
+    # Get the actual expected provenance by computing it
+    expected_base = engine.load_upstream_with_provenance(
+        upstream={FeatureKey(["video"]): upstream_base},
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    ).collect()
+
+    # Current frames - use the SAME provenance as computed expected
+    # This ensures a baseline with no changes
     current_base = nw.from_native(
         pl.DataFrame(
             {
                 "video_id": ["v1", "v1"],
                 "frame_id": [0, 1],
                 "metaxy_provenance_by_field": [
-                    {"frame_embedding": "frame_v1_0_prov"},
-                    {"frame_embedding": "frame_v1_1_prov"},
+                    expected_base["metaxy_provenance_by_field"][0],
+                    expected_base["metaxy_provenance_by_field"][
+                        0
+                    ],  # Same for all frames
                 ],
                 "metaxy_data_version_by_field": [
-                    {"frame_embedding": "frame_v1_0_dv"},
-                    {"frame_embedding": "frame_v1_1_dv"},
+                    expected_base["metaxy_data_version_by_field"][0],
+                    expected_base["metaxy_data_version_by_field"][0],
                 ],
-                "metaxy_provenance": ["frame_v1_0_prov", "frame_v1_1_prov"],
+                "metaxy_provenance": [
+                    expected_base["metaxy_provenance"][0],
+                    expected_base["metaxy_provenance"][0],
+                ],
             }
         ).lazy()
     )
@@ -1400,6 +1490,7 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
                     {"resolution": "res_dv_NEW", "fps": "fps_dv_NEW"},  # Changed
                 ],
                 "metaxy_provenance": ["video_prov_base"],
+                "metaxy_data_version": ["video_prov_NEW"],  # Changed
             }
         ).lazy()
     )
@@ -1418,7 +1509,7 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
     assert len(changed) >= 1, "Changing only data_version should trigger change"
     assert "v1" in set(changed["video_id"].to_list())
 
-    # Test 2: Only provenance changed
+    # Test 2: Only provenance_by_field changed (data_version_by_field same)
     upstream_prov_changed = nw.from_native(
         pl.DataFrame(
             {
@@ -1427,9 +1518,10 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
                     {"resolution": "res_prov_NEW", "fps": "fps_prov_NEW"},  # Changed
                 ],
                 "metaxy_data_version_by_field": [
-                    {"resolution": "res_dv_base", "fps": "fps_dv_base"},  # Same
+                    {"resolution": "res_dv_base", "fps": "fps_dv_base"},  # Same as base
                 ],
                 "metaxy_provenance": ["video_prov_base"],
+                "metaxy_data_version": ["video_prov_base"],  # Same as base
             }
         ).lazy()
     )
@@ -1445,5 +1537,237 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
     )
 
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
-    assert len(changed) >= 1, "Changing only provenance should trigger change"
-    assert "v1" in set(changed["video_id"].to_list())
+    # Provenance is computed from data_version_by_field, so changing only provenance_by_field
+    # should NOT trigger a change (data_version_by_field is unchanged)
+    assert len(changed) == 0, (
+        "Changing only provenance_by_field should NOT trigger change"
+    )
+
+
+# ============================================================================
+# Tests for Mixed Lineage Relationships (per-dependency lineage)
+# ============================================================================
+
+
+@pytest.fixture
+def mixed_lineage_features(graph: FeatureGraph) -> dict[str, type[SampleFeature]]:
+    """Create features for testing mixed lineage relationships.
+
+    Scenario: Enriched sensor readings that aggregate raw readings and join with sensor info.
+    - SensorInfo: sensor_id (lookup table with 1:1 relationship)
+    - SensorReadings: sensor_id, timestamp, reading_id (fine-grained data)
+    - HourlyEnrichedStats: sensor_id, hour (aggregated readings + identity lookup of sensor info)
+
+    This tests the new per-dependency lineage where different deps can have different
+    lineage relationships:
+    - FeatureDep(SensorReadings, lineage=aggregation) → N:1
+    - FeatureDep(SensorInfo, lineage=identity) → 1:1
+    """
+
+    class SensorInfo(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["sensor_info"]),
+            id_columns=(
+                "sensor_id",
+                "hour",
+            ),  # Include hour so join works after aggregation
+            fields=[
+                FieldSpec(key=FieldKey(["location"]), code_version="1"),
+                FieldSpec(key=FieldKey(["sensor_type"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class SensorReadings(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["sensor_readings"]),
+            id_columns=("sensor_id", "timestamp", "reading_id"),
+            fields=[
+                FieldSpec(key=FieldKey(["temperature"]), code_version="1"),
+                FieldSpec(key=FieldKey(["humidity"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class HourlyEnrichedStats(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["hourly_enriched_stats"]),
+            id_columns=("sensor_id", "hour"),
+            deps=[
+                # Aggregation: many readings per hour → one hourly stat
+                FeatureDep(
+                    feature=FeatureKey(["sensor_readings"]),
+                    lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
+                ),
+                # Identity: one sensor info record per sensor
+                FeatureDep(
+                    feature=FeatureKey(["sensor_info"]),
+                    lineage=LineageRelationship.identity(),
+                ),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["avg_temp"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                ),
+                FieldSpec(
+                    key=FieldKey(["location_temp"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                ),
+            ],
+        ),
+    ):
+        pass
+
+    return {
+        "SensorInfo": SensorInfo,
+        "SensorReadings": SensorReadings,
+        "HourlyEnrichedStats": HourlyEnrichedStats,
+    }
+
+
+def test_mixed_lineage_input_id_columns(
+    mixed_lineage_features: dict[str, type[SampleFeature]],
+    graph: FeatureGraph,
+) -> None:
+    """Test that input_id_columns is correctly computed for mixed lineage.
+
+    With per-dep lineage:
+    - SensorReadings dep with aggregation(on=["sensor_id", "hour"]) → input cols: ["sensor_id", "hour"]
+    - SensorInfo dep with identity → input cols: ["sensor_id", "hour"] (its ID columns)
+
+    The intersection is ["sensor_id", "hour"].
+    """
+    feature = mixed_lineage_features["HourlyEnrichedStats"]
+    plan = graph.get_feature_plan(feature.spec().key)
+
+    # Verify mixed lineage configuration
+    deps = plan.feature.deps
+    assert len(deps) == 2
+
+    # First dep is aggregation
+    assert deps[0].lineage.relationship.type.value == "N:1"
+    # Second dep is identity
+    assert deps[1].lineage.relationship.type.value == "1:1"
+
+    # Check input_id_columns per dep
+    readings_dep_cols = plan.get_input_id_columns_for_dep(deps[0])
+    assert set(readings_dep_cols) == {"sensor_id", "hour"}
+
+    info_dep_cols = plan.get_input_id_columns_for_dep(deps[1])
+    assert set(info_dep_cols) == {"sensor_id", "hour"}
+
+    # Overall input_id_columns is intersection
+    assert set(plan.input_id_columns) == {"sensor_id", "hour"}
+
+
+def test_mixed_lineage_get_input_id_columns_per_dep(
+    mixed_lineage_features: dict[str, type[SampleFeature]],
+    graph: FeatureGraph,
+) -> None:
+    """Test that get_input_id_columns_for_dep works correctly for each dependency.
+
+    This tests the per-dependency input ID column calculation which is the core
+    of the new per-dep lineage feature.
+    """
+    feature = mixed_lineage_features["HourlyEnrichedStats"]
+    plan = graph.get_feature_plan(feature.spec().key)
+
+    # Get the two dependencies
+    readings_dep = plan.feature.deps[0]  # aggregation lineage
+    info_dep = plan.feature.deps[1]  # identity lineage
+
+    # For aggregation dep, input columns are the aggregation 'on' columns
+    readings_input_cols = plan.get_input_id_columns_for_dep(readings_dep)
+    assert set(readings_input_cols) == {"sensor_id", "hour"}, (
+        f"Expected aggregation to use 'on' columns, got {readings_input_cols}"
+    )
+
+    # For identity dep, input columns are the upstream ID columns (after renames)
+    info_input_cols = plan.get_input_id_columns_for_dep(info_dep)
+    assert set(info_input_cols) == {"sensor_id", "hour"}, (
+        f"Expected identity to use upstream ID columns, got {info_input_cols}"
+    )
+
+
+def test_mixed_lineage_different_relationship_types(graph: FeatureGraph) -> None:
+    """Test a feature that explicitly mixes aggregation and identity lineage.
+
+    This is a common pattern: aggregate detailed data while doing a 1:1 lookup
+    from a dimension table.
+    """
+
+    class DimensionTable(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["dimension"]),
+            id_columns=("dim_key",),
+            fields=[FieldSpec(key=FieldKey(["dim_value"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    class DetailedFacts(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["detailed_facts"]),
+            id_columns=("dim_key", "timestamp", "fact_id"),
+            fields=[FieldSpec(key=FieldKey(["fact_value"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    class AggregatedWithDimension(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["aggregated_with_dimension"]),
+            id_columns=("dim_key",),
+            deps=[
+                # Aggregate facts by dim_key
+                FeatureDep(
+                    feature=DetailedFacts,
+                    lineage=LineageRelationship.aggregation(on=["dim_key"]),
+                ),
+                # 1:1 join with dimension table
+                FeatureDep(
+                    feature=DimensionTable,
+                    lineage=LineageRelationship.identity(),
+                ),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["summary"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                )
+            ],
+        ),
+    ):
+        pass
+
+    plan = graph.get_feature_plan(AggregatedWithDimension.spec().key)
+
+    # Verify the per-dep lineage configuration
+    facts_dep = plan.feature.deps[0]
+    dim_dep = plan.feature.deps[1]
+
+    assert facts_dep.lineage.relationship.type.value == "N:1"
+    assert dim_dep.lineage.relationship.type.value == "1:1"
+
+    # Input columns for facts dep (after aggregation) should be ["dim_key"]
+    facts_input_cols = plan.get_input_id_columns_for_dep(facts_dep)
+    assert set(facts_input_cols) == {"dim_key"}
+
+    # Input columns for dim dep (identity) should be ["dim_key"]
+    dim_input_cols = plan.get_input_id_columns_for_dep(dim_dep)
+    assert set(dim_input_cols) == {"dim_key"}
+
+    # Overall input_id_columns is intersection
+    assert set(plan.input_id_columns) == {"dim_key"}

@@ -111,7 +111,7 @@ def build_column_lineage(
 
     Tracks column provenance by analyzing:
     - `FeatureDep.rename` mappings: renamed columns trace back to their upstream source
-    - `FeatureSpec.lineage`: ID column relationships between features
+    - `FeatureDep.lineage`: ID column relationships between features
     - Direct pass-through: columns with same name in both upstream and downstream
     - System columns: `metaxy_provenance_by_field` and `metaxy_provenance` have lineage
       from corresponding upstream columns
@@ -150,8 +150,8 @@ def build_column_lineage(
         if dep.rename:
             reverse_rename = {v: k for k, v in dep.rename.items()}
 
-        # Track columns based on lineage relationship
-        lineage = feature_spec.lineage
+        # Track columns based on lineage relationship (now per-dependency)
+        lineage = dep.lineage
 
         # Get ID column mappings based on lineage type
         id_column_mapping = _get_id_column_mapping(

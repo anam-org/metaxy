@@ -1,0 +1,241 @@
+# serializer version: 1
+# name: test_resolve_update_aggregation_expansion[clickhouse]
+  list([
+    dict({
+      'config_id': 'cfg1',
+      'metaxy_provenance_by_field': dict({
+        'combined_output': '166085379042611008',
+      }),
+    }),
+    dict({
+      'config_id': 'cfg2',
+      'metaxy_provenance_by_field': dict({
+        'combined_output': '1596443196378397474',
+      }),
+    }),
+  ])
+# ---
+# name: test_resolve_update_aggregation_expansion[delta]
+  list([
+    dict({
+      'config_id': 'cfg1',
+      'metaxy_provenance_by_field': dict({
+        'combined_output': '166085379042611008',
+      }),
+    }),
+    dict({
+      'config_id': 'cfg2',
+      'metaxy_provenance_by_field': dict({
+        'combined_output': '1596443196378397474',
+      }),
+    }),
+  ])
+# ---
+# name: test_resolve_update_aggregation_expansion[duckdb]
+  list([
+    dict({
+      'config_id': 'cfg1',
+      'metaxy_provenance_by_field': dict({
+        'combined_output': '166085379042611008',
+      }),
+    }),
+    dict({
+      'config_id': 'cfg2',
+      'metaxy_provenance_by_field': dict({
+        'combined_output': '1596443196378397474',
+      }),
+    }),
+  ])
+# ---
+# name: test_resolve_update_aggregation_expansion[inmemory]
+  list([
+    dict({
+      'config_id': 'cfg1',
+      'metaxy_provenance_by_field': dict({
+        'combined_output': '166085379042611008',
+      }),
+    }),
+    dict({
+      'config_id': 'cfg2',
+      'metaxy_provenance_by_field': dict({
+        'combined_output': '1596443196378397474',
+      }),
+    }),
+  ])
+# ---
+# name: test_resolve_update_aggregation_expansion[lancedb]
+  list([
+    dict({
+      'config_id': 'cfg1',
+      'metaxy_provenance_by_field': dict({
+        'combined_output': '166085379042611008',
+      }),
+    }),
+    dict({
+      'config_id': 'cfg2',
+      'metaxy_provenance_by_field': dict({
+        'combined_output': '1596443196378397474',
+      }),
+    }),
+  ])
+# ---
+# name: test_resolve_update_aggregation_plus_identity[clickhouse]
+  list([
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'enriched_stat': '337651684870894140',
+      }),
+      'sensor_id': 's1',
+    }),
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'enriched_stat': '3895896855731712008',
+      }),
+      'sensor_id': 's2',
+    }),
+  ])
+# ---
+# name: test_resolve_update_aggregation_plus_identity[delta]
+  list([
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'enriched_stat': '337651684870894140',
+      }),
+      'sensor_id': 's1',
+    }),
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'enriched_stat': '3895896855731712008',
+      }),
+      'sensor_id': 's2',
+    }),
+  ])
+# ---
+# name: test_resolve_update_aggregation_plus_identity[duckdb]
+  list([
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'enriched_stat': '337651684870894140',
+      }),
+      'sensor_id': 's1',
+    }),
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'enriched_stat': '3895896855731712008',
+      }),
+      'sensor_id': 's2',
+    }),
+  ])
+# ---
+# name: test_resolve_update_aggregation_plus_identity[inmemory]
+  list([
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'enriched_stat': '337651684870894140',
+      }),
+      'sensor_id': 's1',
+    }),
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'enriched_stat': '3895896855731712008',
+      }),
+      'sensor_id': 's2',
+    }),
+  ])
+# ---
+# name: test_resolve_update_aggregation_plus_identity[lancedb]
+  list([
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'enriched_stat': '337651684870894140',
+      }),
+      'sensor_id': 's1',
+    }),
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'enriched_stat': '3895896855731712008',
+      }),
+      'sensor_id': 's2',
+    }),
+  ])
+# ---
+# name: test_resolve_update_expansion_plus_identity[clickhouse]
+  list([
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'frame_feature': '14883228561513075662',
+      }),
+      'video_id': 'v1',
+    }),
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'frame_feature': '17390728442651033768',
+      }),
+      'video_id': 'v2',
+    }),
+  ])
+# ---
+# name: test_resolve_update_expansion_plus_identity[delta]
+  list([
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'frame_feature': '14883228561513075662',
+      }),
+      'video_id': 'v1',
+    }),
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'frame_feature': '17390728442651033768',
+      }),
+      'video_id': 'v2',
+    }),
+  ])
+# ---
+# name: test_resolve_update_expansion_plus_identity[duckdb]
+  list([
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'frame_feature': '14883228561513075662',
+      }),
+      'video_id': 'v1',
+    }),
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'frame_feature': '17390728442651033768',
+      }),
+      'video_id': 'v2',
+    }),
+  ])
+# ---
+# name: test_resolve_update_expansion_plus_identity[inmemory]
+  list([
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'frame_feature': '14883228561513075662',
+      }),
+      'video_id': 'v1',
+    }),
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'frame_feature': '17390728442651033768',
+      }),
+      'video_id': 'v2',
+    }),
+  ])
+# ---
+# name: test_resolve_update_expansion_plus_identity[lancedb]
+  list([
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'frame_feature': '14883228561513075662',
+      }),
+      'video_id': 'v1',
+    }),
+    dict({
+      'metaxy_provenance_by_field': dict({
+        'frame_feature': '17390728442651033768',
+      }),
+      'video_id': 'v2',
+    }),
+  ])
+# ---

@@ -8,22 +8,10 @@ import pytest
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
 from metaxy._testing.models import SampleFeatureSpec
+from metaxy._testing.pytest_helpers import add_metaxy_system_columns
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.polars import PolarsVersioningEngine
-
-
-# Helper function to add metaxy_provenance column to test data
-def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
-    """Add metaxy_provenance column (hash of provenance_by_field) to test data."""
-    # For tests, we just use a simple hash-like string based on the provenance_by_field
-    # In real usage, this would be calculated by the VersioningEngine
-    df = df.with_columns(
-        pl.col("metaxy_provenance_by_field")
-        .map_elements(lambda x: f"hash_{x['default']}", return_dtype=pl.String)
-        .alias("metaxy_provenance")
-    )
-    return df
 
 
 # Simple test joiner that uses VersioningEngine
@@ -51,10 +39,9 @@ class TestJoiner:
         # Convert string keys back to FeatureKey objects and ensure data is materialized
         upstream_by_key = {}
         for k, v in upstream_refs.items():
-            # Materialize the lazy frame and ensure it has metaxy_provenance
+            # Materialize the lazy frame and ensure it has all metaxy system columns
             df = v.collect().to_polars()
-            if "metaxy_provenance" not in df.columns:
-                df = add_metaxy_provenance(df)
+            df = add_metaxy_system_columns(df)
             upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
 
         # Prepare upstream (handles filtering, selecting, renaming, and joining)
