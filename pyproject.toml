@@ -1,6 +1,6 @@
 [project]
 name = "metaxy"
-version = "0.0.1.dev16"
+version = "0.0.1.dev17"
 description = "Pluggable versioned metadata management for incremental multi-modal pipelines."
 readme = "README.md"
 authors = [
@@ -203,6 +203,7 @@ include = [
 exclude = [
   ".venv",
   "examples/example-dagster/src/example_dagster/definitions.py",
+  "tests/models/test_extra_args_forbidden.py", # intentionally passes invalid args for runtime validation
 ]
 
 [tool.pyright]

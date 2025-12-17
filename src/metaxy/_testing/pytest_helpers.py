@@ -40,7 +40,7 @@ def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:
     """
     # Convert to narwhals if needed (works with both eager and lazy frames)
     df_nw = nw.from_native(df)
-    columns = df_nw.collect_schema().names()
+    columns = df_nw.collect_schema().names()  # ty: ignore[possibly-missing-attribute]
 
     columns_to_add: list[nw.Expr] = []
 
@@ -77,9 +77,9 @@ def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:
                 )
 
     if columns_to_add:
-        df_nw = df_nw.with_columns(columns_to_add)
+        df_nw = df_nw.with_columns(columns_to_add)  # ty: ignore[possibly-missing-attribute]
 
-    return df_nw.to_native()  # ty: ignore[return-value]
+    return df_nw.to_native()  # ty: ignore[possibly-missing-attribute]
 
 
 def add_metaxy_provenance_column(
