@@ -1778,9 +1778,10 @@ class MetadataStore(ABC):
         from_store: MetadataStore,
         features: list[CoercibleToFeatureKey] | None = None,
         *,
-        from_snapshot: str | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
-        incremental: bool = True,
+        global_filters: Sequence[nw.Expr] | None = None,
+        current_only: bool = False,
+        latest_only: bool = True,
     ) -> dict[str, int]:
         """Copy metadata from another store with fine-grained filtering.
 
@@ -1788,112 +1789,101 @@ class MetadataStore(ABC):
         Copies metadata for specified features, preserving the original snapshot_version.
 
         Args:
-            from_store: Source metadata store to copy from (must be opened)
+            from_store: Source metadata store to copy from (must be opened for reading)
             features: List of features to copy. Can be:
-                - None: copies all features from source store
+                - None: copies all features from active graph
                 - List of FeatureKey or Feature classes: copies specified features
-            from_snapshot: Snapshot version to filter source data by. If None, uses latest snapshot
-                from source store. Only rows with this snapshot_version will be copied.
-                The snapshot_version is preserved in the destination store.
             filters: Dict mapping feature keys (as strings) to sequences of Narwhals filter expressions.
                 These filters are applied when reading from the source store.
                 Example: {"feature/key": [nw.col("x") > 10], "other/feature": [...]}
-            incremental: If True (default), filter out rows that already exist in the destination
-                store by performing an anti-join on sample_uid for the same snapshot_version.
-
-                The implementation uses an anti-join: source LEFT ANTI JOIN destination ON sample_uid
-                filtered by snapshot_version.
-
-                Disabling incremental (incremental=False) may improve performance when:
-                - You know the destination is empty or has no overlap with source
-                - The destination store uses deduplication
-
-                When incremental=False, it's the user's responsibility to avoid duplicates or
-                configure deduplication at the storage layer.
+            global_filters: Sequence of Narwhals filter expressions applied to all features.
+                These filters are combined with any feature-specific filters from `filters`.
+                Example: [nw.col("sample_uid").is_in(["s1", "s2"])]
+            current_only: If True, only copy rows with the current feature_version (as defined
+                in the loaded feature graph). Defaults to False to copy all versions.
+            latest_only: If True (default), deduplicate samples within `id_columns` groups
+                by keeping only the latest row per group (ordered by `metaxy_created_at`).
 
         Returns:
             Dict with statistics: {"features_copied": int, "rows_copied": int}
 
         Raises:
-            ValueError: If from_store or self (destination) is not open
+            ValueError: If source or destination store is not open
             FeatureNotFoundError: If a specified feature doesn't exist in source store
 
         Examples:
             ```py
-            # Simple: copy all features from latest snapshot
-            stats = dest_store.copy_metadata(from_store=source_store)
+            # Copy all features
+            with source_store.open("read"), dest_store.open("write"):
+                stats = dest_store.copy_metadata(from_store=source_store)
             ```
 
             ```py
-            # Copy specific features from a specific snapshot
-            stats = dest_store.copy_metadata(
-                from_store=source_store,
-                features=[FeatureKey(["my_feature"])],
-                from_snapshot="abc123",
-            )
+            # Copy specific features
+            with source_store.open("read"), dest_store.open("write"):
+                stats = dest_store.copy_metadata(
+                    from_store=source_store,
+                    features=[FeatureKey(["my_feature"])],
+                )
             ```
 
             ```py
-            # Copy with filters
-            stats = dest_store.copy_metadata(
-                from_store=source_store,
-                filters={"my/feature": [nw.col("sample_uid").is_in(["s1", "s2"])]},
-            )
+            # Copy with global filters applied to all features
+            with source_store.open("read"), dest_store.open("write"):
+                stats = dest_store.copy_metadata(
+                    from_store=source_store,
+                    global_filters=[nw.col("sample_uid").is_in(["s1", "s2"])],
+                )
             ```
 
             ```py
-            # Copy specific features with filters
-            stats = dest_store.copy_metadata(
-                from_store=source_store,
-                features=[
-                    FeatureKey(["feature_a"]),
-                    FeatureKey(["feature_b"]),
-                ],
-                filters={
-                    "feature_a": [nw.col("field_a") > 10, nw.col("sample_uid").is_in(["s1", "s2"])],
-                    "feature_b": [nw.col("field_b") < 30],
-                },
-            )
+            # Copy specific features with per-feature filters
+            with source_store.open("read"), dest_store.open("write"):
+                stats = dest_store.copy_metadata(
+                    from_store=source_store,
+                    features=[
+                        FeatureKey(["feature_a"]),
+                        FeatureKey(["feature_b"]),
+                    ],
+                    filters={
+                        "feature_a": [nw.col("field_a") > 10],
+                        "feature_b": [nw.col("field_b") < 30],
+                    },
+                )
             ```
         """
         import logging
 
         logger = logging.getLogger(__name__)
 
-        # Validate destination store is open
+        # Validate both stores are open
         if not self._is_open:
             raise ValueError(
                 'Destination store must be opened with store.open("write") before use'
             )
-
-        # Auto-open source store if not already open
         if not from_store._is_open:
-            with from_store.open("read"):
-                return self._copy_metadata_impl(
-                    from_store=from_store,
-                    features=features,
-                    from_snapshot=from_snapshot,
-                    filters=filters,
-                    incremental=incremental,
-                    logger=logger,
-                )
-        else:
-            return self._copy_metadata_impl(
-                from_store=from_store,
-                features=features,
-                from_snapshot=from_snapshot,
-                filters=filters,
-                incremental=incremental,
-                logger=logger,
+            raise ValueError(
+                'Source store must be opened with store.open("read") before use'
             )
+
+        return self._copy_metadata_impl(
+            from_store=from_store,
+            features=features,
+            filters=filters,
+            global_filters=global_filters,
+            current_only=current_only,
+            latest_only=latest_only,
+            logger=logger,
+        )
 
     def _copy_metadata_impl(
         self,
         from_store: MetadataStore,
         features: list[CoercibleToFeatureKey] | None,
-        from_snapshot: str | None,
         filters: Mapping[str, Sequence[nw.Expr]] | None,
-        incremental: bool,
+        global_filters: Sequence[nw.Expr] | None,
+        current_only: bool,
+        latest_only: bool,
         logger,
     ) -> dict[str, int]:
         """Internal implementation of copy_metadata."""
@@ -1913,12 +1903,6 @@ class MetadataStore(ABC):
             features_to_copy = [self._resolve_feature_key(item) for item in features]
             logger.info(f"Copying {len(features_to_copy)} specified features")
 
-        # Log snapshot usage
-        if from_snapshot is not None:
-            logger.info(f"Filtering by snapshot: {from_snapshot}")
-        else:
-            logger.info("Copying all data (no snapshot filter)")
-
         # Copy metadata for each feature
         total_rows = 0
         features_copied = 0
@@ -1926,101 +1910,35 @@ class MetadataStore(ABC):
         with allow_feature_version_override():
             for feature_key in features_to_copy:
                 try:
-                    # Read metadata from source, filtering by from_snapshot
-                    # Use current_only=False to avoid filtering by feature_version
-                    source_lazy = from_store.read_metadata(
-                        feature_key,
-                        allow_fallback=False,
-                        current_only=False,
-                    )
+                    # Build combined filters for this feature
+                    feature_filters: list[nw.Expr] = []
 
-                    # Filter by from_snapshot if specified
-                    import narwhals as nw
+                    # Add global filters
+                    if global_filters:
+                        feature_filters.extend(global_filters)
 
-                    if from_snapshot is not None:
-                        source_filtered = source_lazy.filter(
-                            nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
-                        )
-                    else:
-                        source_filtered = source_lazy
-
-                    # Apply filters for this feature (if any)
+                    # Add feature-specific filters
                     if filters:
                         feature_key_str = feature_key.to_string()
                         if feature_key_str in filters:
-                            for filter_expr in filters[feature_key_str]:
-                                source_filtered = source_filtered.filter(filter_expr)
+                            feature_filters.extend(filters[feature_key_str])
 
-                    # Apply incremental filtering if enabled
-                    if incremental:
-                        try:
-                            # Read existing sample_uids from destination for the same snapshot
-                            # This is much cheaper than comparing metaxy_provenance_by_field structs
-                            dest_lazy = self.read_metadata(
-                                feature_key,
-                                allow_fallback=False,
-                                current_only=False,
-                            )
-                            # Filter destination to same snapshot_version (if specified)
-                            if from_snapshot is not None:
-                                dest_for_snapshot = dest_lazy.filter(
-                                    nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
-                                )
-                            else:
-                                dest_for_snapshot = dest_lazy
+                    # Read metadata from source with all filters applied
+                    source_lazy = from_store.read_metadata(
+                        feature_key,
+                        filters=feature_filters if feature_filters else None,
+                        allow_fallback=False,
+                        current_only=current_only,
+                        latest_only=latest_only,
+                    )
 
-                            # Materialize destination sample_uids to avoid cross-backend join issues
-                            # When copying between different stores (e.g., different DuckDB files),
-                            # Ibis can't join tables from different backends
-                            dest_sample_uids = (
-                                dest_for_snapshot.select("sample_uid")
-                                .collect()
-                                .to_polars()
-                            )
+                    # Collect to narwhals DataFrame to get row count
+                    source_df = source_lazy.collect()
+                    row_count = len(source_df)
 
-                            # Convert to Polars LazyFrame and wrap in Narwhals
-                            dest_sample_uids_lazy = nw.from_native(
-                                dest_sample_uids.lazy(), eager_only=False
-                            )
-
-                            # Collect source to Polars for anti-join
-                            source_df = source_filtered.collect().to_polars()
-                            source_lazy = nw.from_native(
-                                source_df.lazy(), eager_only=False
-                            )
-
-                            # Anti-join: keep only source rows with sample_uid not in destination
-                            source_filtered = source_lazy.join(
-                                dest_sample_uids_lazy,
-                                on="sample_uid",
-                                how="anti",
-                            )
-
-                            # Collect after filtering
-                            source_df = source_filtered.collect().to_polars()
-
-                            logger.info(
-                                f"Incremental: copying only new sample_uids for {feature_key.to_string()}"
-                            )
-                        except FeatureNotFoundError:
-                            # Feature doesn't exist in destination yet - copy all rows
-                            logger.debug(
-                                f"Feature {feature_key.to_string()} not in destination, copying all rows"
-                            )
-                            source_df = source_filtered.collect().to_polars()
-                        except Exception as e:
-                            # If incremental check fails, log warning but continue with full copy
-                            logger.warning(
-                                f"Incremental check failed for {feature_key.to_string()}: {e}. Copying all rows."
-                            )
-                            source_df = source_filtered.collect().to_polars()
-                    else:
-                        # Non-incremental: collect all filtered rows
-                        source_df = source_filtered.collect().to_polars()
-
-                    if source_df.height == 0:
+                    if row_count == 0:
                         logger.warning(
-                            f"No rows found for {feature_key.to_string()} with snapshot {from_snapshot}, skipping"
+                            f"No rows found for {feature_key.to_string()}, skipping"
                         )
                         continue
 
@@ -2028,9 +1946,9 @@ class MetadataStore(ABC):
                     self.write_metadata(feature_key, source_df)
 
                     features_copied += 1
-                    total_rows += source_df.height
+                    total_rows += row_count
                     logger.info(
-                        f"Copied {source_df.height} rows for {feature_key.to_string()}"
+                        f"Copied {row_count} rows for {feature_key.to_string()}"
                     )
 
                 except FeatureNotFoundError:

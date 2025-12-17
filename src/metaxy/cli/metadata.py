@@ -504,3 +504,125 @@ def drop(
             console.print(
                 f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped"
             )
+
+
+@app.command()
+def copy(
+    from_store: Annotated[
+        str,
+        cyclopts.Parameter(
+            name=["--from"],
+            help="Source store name to copy metadata from.",
+        ),
+    ],
+    to_store: Annotated[
+        str,
+        cyclopts.Parameter(
+            name=["--to"],
+            help="Destination store name to copy metadata to.",
+        ),
+    ],
+    *features: Annotated[
+        str,
+        cyclopts.Parameter(
+            help="One or more feature keys to copy, separated by whitespaces.",
+        ),
+    ],
+    filters: FilterArgs | None = None,
+    current_only: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--current-only"],
+            help="Only copy rows with the current feature_version (as defined in loaded feature graph).",
+        ),
+    ] = False,
+    latest_only: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--latest-only"],
+            help="Deduplicate samples by keeping only the latest row per id_columns group.",
+        ),
+    ] = True,
+) -> None:
+    """Copy metadata from one store to another.
+
+    Copies metadata for specified features from source to destination store.
+    By default, copies all versions (--no-current-only) and deduplicates by
+    keeping only the latest row per sample (--latest-only).
+
+    Examples:
+        $ metaxy metadata copy user_features --from prod --to dev
+        $ metaxy metadata copy feat1 feat2 --from prod --to dev
+        $ metaxy metadata copy feat1 --from prod --to dev --current-only
+        $ metaxy metadata copy feat1 --from prod --to dev --filter "sample_uid IN (1, 2)"
+    """
+    from pydantic import ValidationError
+    from rich.status import Status
+
+    from metaxy import coerce_to_feature_key
+    from metaxy.cli.context import AppContext
+    from metaxy.models.types import FeatureKey
+
+    filters = filters or []
+
+    # Require at least one feature
+    if not features:
+        data_console.print("[red]Error:[/red] At least one feature must be specified.")
+        raise SystemExit(1)
+
+    context = AppContext.get()
+
+    # Get source and destination stores
+    source_store = context.get_store(from_store)
+    dest_store = context.get_store(to_store)
+
+    # Parse and resolve feature keys
+    graph = context.graph
+    valid_keys: list[FeatureKey] = []
+    missing_keys: list[FeatureKey] = []
+
+    for raw_key in features:
+        try:
+            key = coerce_to_feature_key(raw_key)
+            if key in graph.features_by_key:
+                valid_keys.append(key)
+            else:
+                missing_keys.append(key)
+        except ValidationError as exc:
+            error_console.print(
+                f"[red]Error:[/red] Invalid feature key '{raw_key}': {exc}"
+            )
+            raise SystemExit(1)
+
+    # Handle missing features
+    if missing_keys:
+        formatted = ", ".join(k.to_string() for k in missing_keys)
+        data_console.print(
+            f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}"
+        )
+
+    # Handle no valid features
+    if not valid_keys:
+        data_console.print("[yellow]Warning:[/yellow] No valid features to copy.")
+        return
+
+    # Convert global filters list to the format expected by copy_metadata
+    global_filters = filters if filters else None
+
+    with Status(
+        f"Copying metadata for {len(valid_keys)} feature(s) from '{from_store}' to '{to_store}'...",
+        console=data_console,
+        spinner="dots",
+    ):
+        with source_store.open("read"), dest_store.open("write"):
+            stats = dest_store.copy_metadata(
+                from_store=source_store,
+                features=list(valid_keys),
+                global_filters=global_filters,
+                current_only=current_only,
+                latest_only=latest_only,
+            )
+
+    data_console.print(
+        f"[green]✓[/green] Copy complete: {stats['features_copied']} feature(s), {stats['rows_copied']} row(s) copied"
+    )
