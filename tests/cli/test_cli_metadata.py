@@ -1929,3 +1929,381 @@ root_path = "{prod_path}"
         assert feature["metadata_exists"] is False
         # Missing metadata takes precedence over root feature status
         assert feature["status"] == "missing"
+
+
+# ============================================================================
+# Tests for metadata copy command
+# ============================================================================
+
+
+def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject):
+    """Test that copy requires both --from and --to flags."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Missing --from
+        result = metaxy_project.run_cli(
+            "metadata",
+            "copy",
+            "video/files",
+            "--to",
+            "dev",
+            check=False,
+        )
+        assert result.returncode != 0
+
+        # Missing --to
+        result = metaxy_project.run_cli(
+            "metadata",
+            "copy",
+            "video/files",
+            "--from",
+            "dev",
+            check=False,
+        )
+        assert result.returncode != 0
+
+
+def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
+    """Test that copy requires at least one feature."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(
+            "metadata",
+            "copy",
+            "--from",
+            "dev",
+            "--to",
+            "dev",
+            check=False,
+        )
+
+        # Our custom validation requires at least one feature
+        assert result.returncode == 1
+        assert "At least one feature must be specified" in result.stdout
+
+
+def test_metadata_copy_single_feature(tmp_path: Path):
+    """Test copying metadata for a single feature between stores."""
+    # Create config with two stores
+    dev_path = tmp_path / "dev"
+    prod_path = tmp_path / "prod"
+
+    config_content = f'''project = "test"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{dev_path}"
+
+[stores.prod]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.prod.config]
+root_path = "{prod_path}"
+'''
+
+    project = TempMetaxyProject(tmp_path, config_content=config_content)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with project.with_features(features):
+        # Write metadata to dev store
+        _write_sample_metadata(project, "video/files", store_name="dev")
+
+        # Copy from dev to prod (positional args before keyword args)
+        result = project.run_cli(
+            "metadata",
+            "copy",
+            "video/files",
+            "--from",
+            "dev",
+            "--to",
+            "prod",
+        )
+
+        assert result.returncode == 0
+        assert "Copy complete" in result.stdout
+        assert "1 feature(s)" in result.stdout
+        assert "3 row(s)" in result.stdout
+
+
+def test_metadata_copy_multiple_features(tmp_path: Path):
+    """Test copying metadata for multiple features."""
+    dev_path = tmp_path / "dev"
+    prod_path = tmp_path / "prod"
+
+    config_content = f'''project = "test"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{dev_path}"
+
+[stores.prod]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.prod.config]
+root_path = "{prod_path}"
+'''
+
+    project = TempMetaxyProject(tmp_path, config_content=config_content)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class AudioFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with project.with_features(features):
+        # Write metadata to dev store
+        _write_sample_metadata(project, "video/files", store_name="dev")
+        _write_sample_metadata(project, "audio/files", store_name="dev")
+
+        # Copy multiple features from dev to prod using positional args
+        result = project.run_cli(
+            "metadata",
+            "copy",
+            "video/files",
+            "audio/files",
+            "--from",
+            "dev",
+            "--to",
+            "prod",
+        )
+
+        assert result.returncode == 0
+        assert "Copy complete" in result.stdout
+        assert "2 feature(s)" in result.stdout
+        assert "6 row(s)" in result.stdout  # 3 rows per feature
+
+
+def test_metadata_copy_with_filter(tmp_path: Path):
+    """Test copying metadata with filter applied."""
+    dev_path = tmp_path / "dev"
+    prod_path = tmp_path / "prod"
+
+    config_content = f'''project = "test"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{dev_path}"
+
+[stores.prod]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.prod.config]
+root_path = "{prod_path}"
+'''
+
+    project = TempMetaxyProject(tmp_path, config_content=config_content)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with project.with_features(features):
+        # Write metadata with more samples
+        _write_sample_metadata(
+            project, "video/files", store_name="dev", sample_uids=[1, 2, 3, 4, 5]
+        )
+
+        # Copy with filter - only sample_uid <= 2
+        result = project.run_cli(
+            "metadata",
+            "copy",
+            "video/files",
+            "--from",
+            "dev",
+            "--to",
+            "prod",
+            "--filter",
+            "sample_uid <= 2",
+        )
+
+        assert result.returncode == 0
+        assert "Copy complete" in result.stdout
+        assert "1 feature(s)" in result.stdout
+        assert "2 row(s)" in result.stdout  # Only 2 rows pass the filter
+
+
+def test_metadata_copy_missing_feature_warning(tmp_path: Path):
+    """Test that copy warns about missing features but continues."""
+    dev_path = tmp_path / "dev"
+    prod_path = tmp_path / "prod"
+
+    config_content = f'''project = "test"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{dev_path}"
+
+[stores.prod]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.prod.config]
+root_path = "{prod_path}"
+'''
+
+    project = TempMetaxyProject(tmp_path, config_content=config_content)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with project.with_features(features):
+        # Write metadata only for video/files
+        _write_sample_metadata(project, "video/files", store_name="dev")
+
+        # Try to copy including a non-existent feature
+        result = project.run_cli(
+            "metadata",
+            "copy",
+            "video/files",
+            "nonexistent/feature",
+            "--from",
+            "dev",
+            "--to",
+            "prod",
+        )
+
+        # Should succeed (copy what exists)
+        assert result.returncode == 0
+        assert "Copy complete" in result.stdout
+        assert "1 feature(s)" in result.stdout
+        # Should have warning about missing feature
+        assert "Warning" in result.stdout
+        assert "nonexistent/feature" in result.stdout
+
+
+def test_metadata_copy_no_features_to_copy(tmp_path: Path):
+    """Test that copy handles case when all specified features are missing."""
+    dev_path = tmp_path / "dev"
+    prod_path = tmp_path / "prod"
+
+    config_content = f'''project = "test"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{dev_path}"
+
+[stores.prod]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.prod.config]
+root_path = "{prod_path}"
+'''
+
+    project = TempMetaxyProject(tmp_path, config_content=config_content)
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with project.with_features(features):
+        # Try to copy a non-existent feature only
+        result = project.run_cli(
+            "metadata",
+            "copy",
+            "nonexistent/feature",
+            "--from",
+            "dev",
+            "--to",
+            "prod",
+        )
+
+        assert result.returncode == 0
+        assert "Warning" in result.stdout
+        assert "No valid features to copy" in result.stdout
