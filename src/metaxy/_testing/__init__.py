@@ -18,7 +18,10 @@ from metaxy._testing.metaxy_project import (
     assert_all_results_equal,
 )
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.pytest_helpers import add_metaxy_provenance_column
+from metaxy._testing.pytest_helpers import (
+    add_metaxy_provenance_column,
+    add_metaxy_system_columns,
+)
 from metaxy._testing.runbook import (
     ApplyPatchStep,
     AssertOutputStep,
@@ -49,6 +52,7 @@ __all__ = [
     "assert_all_results_equal",
     # Pytest helpers
     "add_metaxy_provenance_column",
+    "add_metaxy_system_columns",
     # Testing models
     "SampleFeatureSpec",
     "SampleFeature",

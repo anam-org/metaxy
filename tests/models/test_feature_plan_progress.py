@@ -222,9 +222,15 @@ class TestInputIdColumns:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["hourly_stats"]),
                 id_columns=["sensor_id", "hour"],
-                deps=[FeatureDep(feature=SensorReadings)],
+                deps=[
+                    FeatureDep(
+                        feature=SensorReadings,
+                        lineage=LineageRelationship.aggregation(
+                            on=["sensor_id", "hour"]
+                        ),
+                    )
+                ],
                 fields=[FieldSpec(key=FieldKey(["avg_temp"]), code_version="1")],
-                lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
             ),
         ):
             pass
@@ -253,9 +259,13 @@ class TestInputIdColumns:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video_frames"]),
                 id_columns=["video_id", "frame_id"],
-                deps=[FeatureDep(feature=Video)],
+                deps=[
+                    FeatureDep(
+                        feature=Video,
+                        lineage=LineageRelationship.expansion(on=["video_id"]),
+                    )
+                ],
                 fields=[FieldSpec(key=FieldKey(["embedding"]), code_version="1")],
-                lineage=LineageRelationship.expansion(on=["video_id"]),
             ),
         ):
             pass
@@ -265,7 +275,11 @@ class TestInputIdColumns:
         assert plan.input_id_columns == ["video_id"]
 
     def test_aggregation_with_multiple_upstreams(self, graph: FeatureGraph):
-        """Aggregation with multiple upstreams still uses aggregation columns."""
+        """Aggregation with multiple upstreams - each dep can have its own lineage.
+
+        With per-dep lineage, input_id_columns is the intersection of input columns
+        from all dependencies after their lineage transformations.
+        """
 
         class UpstreamA(
             BaseFeature,
@@ -281,7 +295,7 @@ class TestInputIdColumns:
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream_b"]),
-                id_columns=["sensor_id", "timestamp", "extra_id"],
+                id_columns=["sensor_id", "hour"],  # UpstreamB also has hour column
                 fields=[FieldSpec(key=FieldKey(["humidity"]), code_version="1")],
             ),
         ):
@@ -292,15 +306,26 @@ class TestInputIdColumns:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["aggregated"]),
                 id_columns=["sensor_id", "hour"],
-                deps=[FeatureDep(feature=UpstreamA), FeatureDep(feature=UpstreamB)],
+                deps=[
+                    FeatureDep(
+                        feature=UpstreamA,
+                        lineage=LineageRelationship.aggregation(
+                            on=["sensor_id", "hour"]
+                        ),
+                    ),
+                    # UpstreamB has identity lineage (default) - its input columns are its ID columns
+                    FeatureDep(feature=UpstreamB),
+                ],
                 fields=[FieldSpec(key=FieldKey(["stats"]), code_version="1")],
-                lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
             ),
         ):
             pass
 
         plan = graph.get_feature_plan(Aggregated.spec().key)
-        # Despite multiple upstreams, input_id_columns should be aggregation columns
+        # input_id_columns is intersection of:
+        # - UpstreamA after aggregation: ["sensor_id", "hour"]
+        # - UpstreamB with identity: ["sensor_id", "hour"]
+        # Intersection: ["sensor_id", "hour"]
         assert set(plan.input_id_columns) == {"sensor_id", "hour"}
 
     def test_expansion_with_renamed_upstream(self, graph: FeatureGraph):
@@ -325,10 +350,10 @@ class TestInputIdColumns:
                     FeatureDep(
                         feature=Video,
                         rename={"video_id": "vid_id"},
+                        lineage=LineageRelationship.expansion(on=["vid_id"]),
                     )
                 ],
                 fields=[FieldSpec(key=FieldKey(["embedding"]), code_version="1")],
-                lineage=LineageRelationship.expansion(on=["vid_id"]),
             ),
         ):
             pass
@@ -338,7 +363,12 @@ class TestInputIdColumns:
         assert plan.input_id_columns == ["vid_id"]
 
     def test_identity_with_multiple_upstreams_and_renames(self, graph: FeatureGraph):
-        """Identity lineage with multiple upstreams and various renames."""
+        """Identity lineage with multiple upstreams and various renames.
+
+        With per-dep lineage, input_id_columns is the intersection of input columns
+        from all dependencies. When deps have different ID columns, the intersection
+        is only the common columns.
+        """
 
         class UpstreamA(
             BaseFeature,
@@ -375,5 +405,8 @@ class TestInputIdColumns:
             pass
 
         plan = graph.get_feature_plan(Downstream.spec().key)
-        assert set(plan.input_id_columns) == {"sample_uid", "renamed_a", "renamed_b"}
-        assert plan.input_id_columns == plan.upstream_id_columns
+        # input_id_columns is the intersection of:
+        # - UpstreamA (identity): ["sample_uid", "renamed_a"] (after rename)
+        # - UpstreamB (identity): ["sample_uid", "renamed_b"] (after rename)
+        # Intersection: ["sample_uid"]
+        assert set(plan.input_id_columns) == {"sample_uid"}

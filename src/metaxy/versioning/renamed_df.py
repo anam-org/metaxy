@@ -18,8 +18,7 @@ class RenamedDataFrame(Generic[FrameT]):
 
     def rename(self, mapping: Mapping[str, str]) -> Self:
         if mapping:
-            # Convert Mapping to dict for narwhals rename
-            self.df = self.df.rename(dict(mapping))  # ty: ignore[invalid-argument-type]
+            self.df = self.df.rename(mapping)  # ty: ignore[invalid-argument-type]
         self.id_columns = [mapping.get(col, col) for col in self.id_columns]
         return self
 

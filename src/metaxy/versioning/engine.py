@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 import narwhals as nw
 from narwhals.typing import FrameT
@@ -18,16 +18,12 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
-from metaxy.models.lineage import LineageRelationshipType
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.utils.hashing import get_hash_truncation_length
 from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
 from metaxy.versioning.renamed_df import RenamedDataFrame
 from metaxy.versioning.types import HashAlgorithm
-
-if TYPE_CHECKING:
-    from metaxy.versioning.lineage_handler import LineageHandler
 
 
 class VersioningEngine(ABC):
@@ -75,17 +71,37 @@ class VersioningEngine(ABC):
 
     @cached_property
     def shared_id_columns(self) -> list[str]:
-        """Warning: order of columns is not guaranteed"""
-        cols = set()
-        for transformer in self.feature_transformers_by_key.values():
-            cols.update(transformer.renamed_id_columns)
+        """Get the shared ID columns for joining upstream features.
+
+        Returns the ID columns that are common across all upstream features
+        after lineage transformations are applied. Each upstream dependency's
+        effective ID columns depend on its lineage relationship type:
+
+        - Aggregation lineage uses the aggregation key columns.
+
+        - Identity lineage uses the upstream ID columns.
+
+        - Expansion lineage uses the parent ID columns specified in the relationship.
+
+        The result is the intersection of all effective ID columns across
+        upstream dependencies, which determines the join key.
+
+        Example:
+            An upstream with `aggregation(on=["group_id"])` contributes only
+            `["group_id"]`, while an upstream with identity lineage contributes
+            its ID columns. The shared columns are the intersection.
+        """
+        cols = self.plan.input_id_columns or list(self.plan.feature.id_columns)
 
         if not cols:
             raise ValueError(
-                f"No shared ID columns found for upstream features of feature {self.key}. Please ensure that there is at least one ID column shared across all upstream features. Consider tweaking the `rename` field on the `FeatureDep` objects of {self.key} feature spec, as ID columns are being renamed before this check."
+                f"No shared ID columns found for upstream features of feature {self.key}. "
+                f"Please ensure that there is at least one ID column shared across all upstream features. "
+                f"Consider tweaking the `rename` field on the `FeatureDep` objects of {self.key} feature spec, "
+                f"or check your lineage relationship configurations."
             )
 
-        return list(cols)
+        return cols
 
     def join(self, upstream: Mapping[FeatureKey, RenamedDataFrame[FrameT]]) -> FrameT:
         """Join the renamed upstream dataframes on the intersection of renamed id_columns of all feature specs."""
@@ -111,6 +127,7 @@ class VersioningEngine(ABC):
         self,
         upstream: Mapping[FeatureKey, FrameT],
         filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        hash_algorithm: HashAlgorithm | None = None,
     ) -> FrameT:
         """Prepare the upstream dataframes for the given feature.
 
@@ -122,12 +139,16 @@ class VersioningEngine(ABC):
 
            - selecting
 
-        based on [metaxy.models.feature_spec.FeatureDep][], and joining
+           - lineage transformation (per-dependency, applied independently based on
+             [LineageRelationship][metaxy.models.lineage.LineageRelationship])
+
+        based on [FeatureDep][metaxy.models.feature_spec.FeatureDep], and joining
             on the intersection of id_columns of all feature specs.
 
         Args:
             upstream: Dictionary of upstream dataframes keyed by FeatureKey
             filters: Optional additional runtime filters to apply (combined with FeatureDep.filters)
+            hash_algorithm: Hash algorithm for lineage transformations (required for aggregation lineage)
         """
         assert len(upstream) > 0, "No upstream dataframes provided"
 
@@ -137,6 +158,24 @@ class VersioningEngine(ABC):
             )
             for k, df in upstream.items()
         }
+
+        # Apply lineage transformations per-dependency (independently)
+        if hash_algorithm is not None:
+            from metaxy.versioning.lineage_handler import create_lineage_transformer
+
+            for feature_key, renamed_df in dfs.items():
+                dep = self.plan.feature.deps_by_key.get(feature_key)
+                if dep is not None:
+                    transformer = create_lineage_transformer(dep, self.plan, self)
+                    transformed_df = transformer.transform_upstream(
+                        renamed_df.df,  # ty: ignore[invalid-argument-type]
+                        hash_algorithm,
+                    )
+                    # Update ID columns based on lineage output
+                    dfs[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
+                        df=transformed_df,
+                        id_columns=transformer.output_id_columns,
+                    )
 
         # Drop system columns that aren't needed for provenance calculation
         # Keep only METAXY_PROVENANCE and METAXY_PROVENANCE_BY_FIELD
@@ -359,8 +398,8 @@ class VersioningEngine(ABC):
         # Read hash truncation length from global config
         hash_length = MetaxyConfig.get().hash_truncation_length or 64
 
-        # Prepare upstream: filter, rename, select, join
-        df = self.prepare_upstream(upstream, filters=filters)  # ty: ignore[invalid-argument-type]
+        # Prepare upstream: filter, rename, select, apply lineage transformations, join
+        df = self.prepare_upstream(upstream, filters=filters, hash_algorithm=hash_algo)  # ty: ignore[invalid-argument-type]
 
         # Build concatenation columns for each field
         temp_concat_cols: dict[str, str] = {}  # field_key_str -> temp_col_name
@@ -678,15 +717,22 @@ class VersioningEngine(ABC):
             "The `current` DataFrame loaded from the metadata store",
         )
 
-        # Handle different lineage relationships before comparison
-        lineage_handler = create_lineage_handler(self.plan, self)
-        expected, current, join_columns = lineage_handler.normalize_for_comparison(
-            expected,  # ty: ignore[invalid-argument-type]
-            current,  # ty: ignore[invalid-argument-type]
-            hash_algorithm,
-        )
+        # Join columns = what expected data has after lineage transformations
+        # For root features (no deps), fall back to feature's id_columns
+        join_columns = self.plan.input_id_columns or list(self.plan.feature.id_columns)
 
-        current = current.rename(
+        # Apply per-dependency lineage transformations to current data for comparison
+        # Each lineage type may need different handling (e.g., expansion collapses rows)
+        from metaxy.versioning.lineage_handler import create_lineage_transformer
+
+        for dep in self.plan.feature_deps or []:
+            lineage_transformer = create_lineage_transformer(dep, self.plan, self)
+            current = lineage_transformer.transform_current_for_comparison(
+                current,  # ty: ignore[invalid-argument-type]
+                join_columns,
+            )
+
+        current = current.rename(  # ty: ignore[invalid-argument-type]
             {
                 METAXY_PROVENANCE: f"__current_{METAXY_PROVENANCE}",
                 METAXY_PROVENANCE_BY_FIELD: f"__current_{METAXY_PROVENANCE_BY_FIELD}",
@@ -695,8 +741,8 @@ class VersioningEngine(ABC):
 
         added = cast(
             FrameT,
-            expected.join(
-                cast(FrameT, current.select(join_columns)),
+            expected.join(  # ty: ignore[invalid-argument-type]
+                cast(FrameT, current.select(join_columns)),  # ty: ignore[invalid-argument-type]
                 on=join_columns,
                 how="anti",
             ),
@@ -704,8 +750,8 @@ class VersioningEngine(ABC):
 
         changed = cast(
             FrameT,
-            expected.join(
-                cast(
+            expected.join(  # ty: ignore[invalid-argument-type]
+                cast(  # ty: ignore[invalid-argument-type]
                     FrameT,
                     current.select(*join_columns, f"__current_{METAXY_PROVENANCE}"),
                 ),
@@ -724,8 +770,8 @@ class VersioningEngine(ABC):
 
         removed = cast(
             FrameT,
-            current.join(
-                cast(FrameT, expected.select(join_columns)),
+            current.join(  # ty: ignore[invalid-argument-type]
+                cast(FrameT, expected.select(join_columns)),  # ty: ignore[invalid-argument-type]
                 on=join_columns,
                 how="anti",
             ).rename(
@@ -753,36 +799,3 @@ class VersioningEngine(ABC):
                 f"'{METAXY_PROVENANCE}' column. All metadata in the store must have both provenance columns. "
                 f"This column is automatically added by Metaxy when writing metadata."
             )
-
-
-def create_lineage_handler(
-    feature_plan: FeaturePlan,
-    engine: VersioningEngine,
-) -> LineageHandler:
-    """Factory function to create appropriate lineage handler.
-
-    Args:
-        feature_plan: The feature plan containing lineage information
-        engine: The provenance engine instance
-
-    Returns:
-        Appropriate LineageHandler instance based on lineage type
-    """
-    # Import handler classes at runtime to avoid circular import
-    from metaxy.versioning.lineage_handler import (
-        AggregationLineageHandler,
-        ExpansionLineageHandler,
-        IdentityLineageHandler,
-    )
-
-    lineage = feature_plan.feature.lineage
-    relationship_type = lineage.relationship.type
-
-    if relationship_type == LineageRelationshipType.IDENTITY:
-        return IdentityLineageHandler(feature_plan, engine)
-    elif relationship_type == LineageRelationshipType.AGGREGATION:
-        return AggregationLineageHandler(feature_plan, engine)
-    elif relationship_type == LineageRelationshipType.EXPANSION:
-        return ExpansionLineageHandler(feature_plan, engine)
-    else:
-        raise ValueError(f"Unknown lineage relationship type: {relationship_type}")

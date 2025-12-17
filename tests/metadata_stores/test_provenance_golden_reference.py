@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
+from datetime import datetime
 from typing import TYPE_CHECKING, TypeAlias
 
 import polars as pl
@@ -31,6 +32,8 @@ from metaxy import (
     FeatureDep,
     FeatureGraph,
     FeatureKey,
+    FieldSpec,
+    LineageRelationship,
 )
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.parametric import downstream_metadata_strategy
@@ -39,7 +42,9 @@ from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
 )
+from metaxy.models.field import SpecialFieldDep
 from metaxy.models.plan import FeaturePlan
+from metaxy.models.types import FieldKey
 
 if TYPE_CHECKING:
     pass
@@ -561,8 +566,6 @@ class KeepLatestTestDataCases:
     """Test data cases for keep_latest_by_group tests."""
 
     def case_polars(self):
-        from datetime import datetime
-
         import narwhals as nw
 
         from metaxy.versioning.polars import PolarsVersioningEngine
@@ -575,8 +578,6 @@ class KeepLatestTestDataCases:
         return (PolarsVersioningEngine, create_data_fn, base_time)
 
     def case_ibis(self, tmp_path):
-        from datetime import datetime
-
         import ibis
         import narwhals as nw
 
@@ -772,3 +773,737 @@ def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
         "Expected latest versions: v1=4K, v2=1080p"
     )
     assert result_sorted["fps"].to_list() == [60, 60], "Expected latest fps values"
+
+
+# ============= MIXED LINEAGE RESOLVE_UPDATE TESTS =============
+
+
+def test_resolve_update_aggregation_plus_identity(
+    any_store: MetadataStore,
+    graph: FeatureGraph,
+    snapshot,
+):
+    """Test resolve_update with mixed aggregation + identity dependencies.
+
+    Scenario:
+    - SensorReadings: N:1 aggregation to hourly stats
+    - SensorInfo: 1:1 identity join with sensor metadata
+
+    Both upstream features have the same ID columns (sensor_id) to allow joining.
+    The aggregation reduces multiple readings per sensor to one per sensor.
+
+    Expected: Downstream provenance combines aggregated readings provenance
+    and identity sensor info provenance.
+    """
+
+    class SensorInfo(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="sensor_info",
+            id_columns=("sensor_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["location"]), code_version="1"),
+            ],
+        ),
+    ):
+        sensor_id: str
+
+    class SensorReadings(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="sensor_readings",
+            id_columns=("sensor_id", "reading_id"),
+            fields=[
+                FieldSpec(key=FieldKey(["temperature"]), code_version="1"),
+            ],
+        ),
+    ):
+        sensor_id: str
+        reading_id: str
+
+    class AggregatedSensorStats(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="aggregated_sensor_stats",
+            id_columns=("sensor_id",),
+            deps=[
+                FeatureDep(
+                    feature=SensorReadings,
+                    lineage=LineageRelationship.aggregation(on=["sensor_id"]),
+                ),
+                FeatureDep(
+                    feature=SensorInfo,
+                    lineage=LineageRelationship.identity(),
+                ),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["enriched_stat"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                ),
+            ],
+        ),
+    ):
+        sensor_id: str
+
+    try:
+        with any_store:
+            # === INITIAL DATA ===
+            # Write sensor info (identity upstream)
+            sensor_info_df = pl.DataFrame(
+                {
+                    "sensor_id": ["s1", "s2"],
+                    "metaxy_provenance_by_field": [
+                        {"location": "loc_hash_1"},
+                        {"location": "loc_hash_2"},
+                    ],
+                }
+            )
+            any_store.write_metadata(SensorInfo, sensor_info_df)
+
+            # Write sensor readings (aggregation upstream) - multiple per sensor
+            readings_df = pl.DataFrame(
+                {
+                    "sensor_id": ["s1", "s1", "s1", "s2", "s2"],
+                    "reading_id": ["r1", "r2", "r3", "r4", "r5"],
+                    "metaxy_provenance_by_field": [
+                        {"temperature": "temp_hash_1"},
+                        {"temperature": "temp_hash_2"},
+                        {"temperature": "temp_hash_3"},
+                        {"temperature": "temp_hash_4"},
+                        {"temperature": "temp_hash_5"},
+                    ],
+                }
+            )
+            any_store.write_metadata(SensorReadings, readings_df)
+
+            # === FIRST RESOLVE UPDATE ===
+            increment = any_store.resolve_update(
+                AggregatedSensorStats,
+                target_version=AggregatedSensorStats.feature_version(),
+                snapshot_version=graph.snapshot_version,
+            )
+
+            added_df = increment.added.lazy().collect().to_polars()
+
+            # Check row count: aggregation reduces 5 readings to 2 (one per sensor)
+            assert len(added_df) == 2, (
+                f"Expected 2 rows (one per sensor), got {len(added_df)}"
+            )
+
+            # Check ID columns are correct
+            assert "sensor_id" in added_df.columns, "Missing sensor_id column"
+            assert set(added_df["sensor_id"].to_list()) == {"s1", "s2"}, (
+                "Unexpected sensor IDs"
+            )
+
+            # Check provenance columns exist
+            assert "metaxy_provenance" in added_df.columns, "Missing metaxy_provenance"
+            assert "metaxy_provenance_by_field" in added_df.columns, (
+                "Missing metaxy_provenance_by_field"
+            )
+
+            # Verify provenance_by_field has the expected structure
+            # It should contain a hash for "enriched_stat" field
+            for prov_by_field in added_df["metaxy_provenance_by_field"]:
+                assert "enriched_stat" in prov_by_field, (
+                    f"Expected 'enriched_stat' field in provenance_by_field, got: {prov_by_field}"
+                )
+
+            # Write downstream metadata so next resolve_update can detect changes
+            any_store.write_metadata(AggregatedSensorStats, added_df)
+
+            # === SECOND RESOLVE UPDATE (no changes) ===
+            increment_no_change = any_store.resolve_update(
+                AggregatedSensorStats,
+                target_version=AggregatedSensorStats.feature_version(),
+                snapshot_version=graph.snapshot_version,
+            )
+            added_no_change = increment_no_change.added.lazy().collect().to_polars()
+
+            # No changes expected - upstream hasn't changed
+            assert len(added_no_change) == 0, (
+                f"Expected 0 rows when nothing changed, got {len(added_no_change)}"
+            )
+
+            # Snapshot the state for regression testing
+            final_df = (
+                any_store.read_metadata(AggregatedSensorStats)
+                .lazy()
+                .collect()
+                .to_polars()
+            )
+            final_sorted = final_df.sort("sensor_id")
+            snapshot_data = [
+                {
+                    "sensor_id": final_sorted["sensor_id"][i],
+                    "metaxy_provenance_by_field": final_sorted[
+                        "metaxy_provenance_by_field"
+                    ][i],
+                }
+                for i in range(len(final_sorted))
+            ]
+            assert snapshot_data == snapshot
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(
+            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
+        )
+
+
+def test_resolve_update_expansion_plus_identity(
+    any_store: MetadataStore,
+    graph: FeatureGraph,
+    snapshot,
+):
+    """Test resolve_update with mixed expansion + identity dependencies.
+
+    Scenario:
+    - Video: 1:N expansion (one video → many frames)
+    - VideoMetadata: 1:1 identity join with video metadata
+
+    Both features have video_id as ID column. The expansion indicates that
+    downstream will have more rows than upstream Video, but change detection
+    happens at the parent (video_id) level.
+
+    Expected: Downstream provenance combines expansion parent provenance
+    and identity metadata provenance at the parent level.
+    """
+
+    class Video(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="video",
+            id_columns=("video_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["content"]), code_version="1"),
+            ],
+        ),
+    ):
+        video_id: str
+
+    class VideoMetadata(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="video_metadata",
+            id_columns=("video_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["category"]), code_version="1"),
+            ],
+        ),
+    ):
+        video_id: str
+
+    class EnrichedFrames(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="enriched_frames",
+            id_columns=("video_id", "frame_id"),  # Expanded: parent ID + frame ID
+            deps=[
+                FeatureDep(
+                    feature=Video,
+                    lineage=LineageRelationship.expansion(on=["video_id"]),
+                ),
+                FeatureDep(
+                    feature=VideoMetadata,
+                    lineage=LineageRelationship.identity(),
+                ),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["frame_feature"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                ),
+            ],
+        ),
+    ):
+        video_id: str
+        frame_id: str
+
+    try:
+        with any_store:
+            # === INITIAL DATA ===
+            # Write video (expansion upstream)
+            video_df = pl.DataFrame(
+                {
+                    "video_id": ["v1", "v2"],
+                    "metaxy_provenance_by_field": [
+                        {"content": "content_hash_1"},
+                        {"content": "content_hash_2"},
+                    ],
+                }
+            )
+            any_store.write_metadata(Video, video_df)
+
+            # Write video metadata (identity upstream)
+            metadata_df = pl.DataFrame(
+                {
+                    "video_id": ["v1", "v2"],
+                    "metaxy_provenance_by_field": [
+                        {"category": "cat_hash_1"},
+                        {"category": "cat_hash_2"},
+                    ],
+                }
+            )
+            any_store.write_metadata(VideoMetadata, metadata_df)
+
+            # === FIRST RESOLVE UPDATE ===
+            # resolve_update returns data at parent level (video_id) for change detection
+            increment = any_store.resolve_update(
+                EnrichedFrames,
+                target_version=EnrichedFrames.feature_version(),
+                snapshot_version=graph.snapshot_version,
+            )
+
+            added_df = increment.added.lazy().collect().to_polars()
+
+            # Check row count: resolve_update returns parent-level rows (one per video)
+            assert len(added_df) == 2, (
+                f"Expected 2 rows (one per video), got {len(added_df)}"
+            )
+
+            # Check parent ID column is correct
+            assert "video_id" in added_df.columns, "Missing video_id column"
+            assert set(added_df["video_id"].to_list()) == {"v1", "v2"}, (
+                "Unexpected video IDs"
+            )
+
+            # Check provenance columns exist
+            assert "metaxy_provenance" in added_df.columns, "Missing metaxy_provenance"
+            assert "metaxy_provenance_by_field" in added_df.columns, (
+                "Missing metaxy_provenance_by_field"
+            )
+
+            # Verify provenance_by_field has the expected structure
+            for prov_by_field in added_df["metaxy_provenance_by_field"]:
+                assert "frame_feature" in prov_by_field, (
+                    f"Expected 'frame_feature' field in provenance_by_field, got: {prov_by_field}"
+                )
+
+            # === EXPAND: User code creates multiple frames per video ===
+            # Each video expands to 3 frames, all sharing the same provenance
+            expanded_rows = []
+            for row in added_df.iter_rows(named=True):
+                video_id = row["video_id"]
+                provenance = row["metaxy_provenance"]
+                provenance_by_field = row["metaxy_provenance_by_field"]
+
+                # Create 3 frames per video
+                for frame_idx in range(3):
+                    expanded_rows.append(
+                        {
+                            "video_id": video_id,
+                            "frame_id": f"{video_id}_frame_{frame_idx}",
+                            "metaxy_provenance": provenance,
+                            "metaxy_provenance_by_field": provenance_by_field,
+                        }
+                    )
+
+            expanded_df = pl.DataFrame(expanded_rows)
+
+            # Write expanded downstream metadata
+            any_store.write_metadata(EnrichedFrames, expanded_df)
+
+            # Verify we wrote 6 rows (2 videos × 3 frames)
+            stored_df = (
+                any_store.read_metadata(EnrichedFrames).lazy().collect().to_polars()
+            )
+            assert len(stored_df) == 6, (
+                f"Expected 6 expanded rows, got {len(stored_df)}"
+            )
+
+            # === SECOND RESOLVE UPDATE (no changes) ===
+            increment_no_change = any_store.resolve_update(
+                EnrichedFrames,
+                target_version=EnrichedFrames.feature_version(),
+                snapshot_version=graph.snapshot_version,
+            )
+            added_no_change = increment_no_change.added.lazy().collect().to_polars()
+
+            # No changes expected - upstream hasn't changed
+            assert len(added_no_change) == 0, (
+                f"Expected 0 rows when nothing changed, got {len(added_no_change)}"
+            )
+
+            # Snapshot the state for regression testing (at parent level for determinism)
+            final_df = (
+                any_store.read_metadata(EnrichedFrames).lazy().collect().to_polars()
+            )
+            # Group by video_id to get unique provenance per video
+            final_grouped = (
+                final_df.group_by("video_id")
+                .agg(pl.col("metaxy_provenance_by_field").first())
+                .sort("video_id")
+            )
+            provenance_data = [
+                {
+                    "video_id": final_grouped["video_id"][i],
+                    "metaxy_provenance_by_field": final_grouped[
+                        "metaxy_provenance_by_field"
+                    ][i],
+                }
+                for i in range(len(final_grouped))
+            ]
+            assert provenance_data == snapshot
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(
+            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
+        )
+
+
+def test_resolve_update_aggregation_expansion(
+    any_store: MetadataStore,
+    graph: FeatureGraph,
+    snapshot,
+):
+    """Test resolve_update with aggregation + expansion dependencies.
+
+    Scenario with two upstream features sharing config_id:
+    - SensorReadings: N:1 aggregation by config_id (many readings → one per config)
+    - VideoSource: 1:N expansion by config_id (one video expands to many frames)
+
+    This tests aggregation and expansion lineage types together.
+
+    Expected: Downstream provenance combines aggregation and expansion provenances.
+    """
+
+    class SensorReadings(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="sensor_readings_v2",
+            id_columns=("config_id", "reading_id"),
+            fields=[
+                FieldSpec(key=FieldKey(["measurement"]), code_version="1"),
+            ],
+        ),
+    ):
+        config_id: str
+        reading_id: str
+
+    class VideoSource(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="video_source",
+            id_columns=("config_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["video_data"]), code_version="1"),
+            ],
+        ),
+    ):
+        config_id: str
+
+    class CombinedFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="combined_feature",
+            id_columns=("config_id", "output_id"),  # Expanded: parent ID + output ID
+            deps=[
+                FeatureDep(
+                    feature=SensorReadings,
+                    lineage=LineageRelationship.aggregation(on=["config_id"]),
+                ),
+                FeatureDep(
+                    feature=VideoSource,
+                    lineage=LineageRelationship.expansion(on=["config_id"]),
+                ),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["combined_output"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                ),
+            ],
+        ),
+    ):
+        config_id: str
+        output_id: str
+
+    try:
+        with any_store:
+            # === INITIAL DATA ===
+            # Write sensor readings (aggregation upstream) - multiple per config
+            readings_df = pl.DataFrame(
+                {
+                    "config_id": ["cfg1", "cfg1", "cfg1", "cfg2", "cfg2"],
+                    "reading_id": ["r1", "r2", "r3", "r4", "r5"],
+                    "metaxy_provenance_by_field": [
+                        {"measurement": "meas_hash_1"},
+                        {"measurement": "meas_hash_2"},
+                        {"measurement": "meas_hash_3"},
+                        {"measurement": "meas_hash_4"},
+                        {"measurement": "meas_hash_5"},
+                    ],
+                }
+            )
+            any_store.write_metadata(SensorReadings, readings_df)
+
+            # Write video source (expansion upstream)
+            video_df = pl.DataFrame(
+                {
+                    "config_id": ["cfg1", "cfg2"],
+                    "metaxy_provenance_by_field": [
+                        {"video_data": "video_hash_1"},
+                        {"video_data": "video_hash_2"},
+                    ],
+                }
+            )
+            any_store.write_metadata(VideoSource, video_df)
+
+            # === FIRST RESOLVE UPDATE ===
+            # resolve_update returns data at parent level (config_id) for change detection
+            increment = any_store.resolve_update(
+                CombinedFeature,
+                target_version=CombinedFeature.feature_version(),
+                snapshot_version=graph.snapshot_version,
+            )
+
+            added_df = increment.added.lazy().collect().to_polars()
+
+            # Check row count: resolve_update returns parent-level rows (one per config)
+            assert len(added_df) == 2, (
+                f"Expected 2 rows (one per config), got {len(added_df)}"
+            )
+
+            # Check parent ID column is correct
+            assert "config_id" in added_df.columns, "Missing config_id column"
+            assert set(added_df["config_id"].to_list()) == {"cfg1", "cfg2"}, (
+                "Unexpected config IDs"
+            )
+
+            # Check provenance columns exist
+            assert "metaxy_provenance" in added_df.columns, "Missing metaxy_provenance"
+            assert "metaxy_provenance_by_field" in added_df.columns, (
+                "Missing metaxy_provenance_by_field"
+            )
+
+            # Verify provenance_by_field has the expected structure
+            # It should contain a hash for "combined_output" field
+            for prov_by_field in added_df["metaxy_provenance_by_field"]:
+                assert "combined_output" in prov_by_field, (
+                    f"Expected 'combined_output' field in provenance_by_field, got: {prov_by_field}"
+                )
+
+            # === EXPAND: User code creates multiple outputs per config ===
+            # Each config expands to 2 outputs, all sharing the same provenance
+            expanded_rows = []
+            for row in added_df.iter_rows(named=True):
+                config_id = row["config_id"]
+                provenance = row["metaxy_provenance"]
+                provenance_by_field = row["metaxy_provenance_by_field"]
+
+                # Create 2 outputs per config
+                for output_idx in range(2):
+                    expanded_rows.append(
+                        {
+                            "config_id": config_id,
+                            "output_id": f"{config_id}_output_{output_idx}",
+                            "metaxy_provenance": provenance,
+                            "metaxy_provenance_by_field": provenance_by_field,
+                        }
+                    )
+
+            expanded_df = pl.DataFrame(expanded_rows)
+
+            # Write expanded downstream metadata
+            any_store.write_metadata(CombinedFeature, expanded_df)
+
+            # Verify we wrote 4 rows (2 configs × 2 outputs)
+            stored_df = (
+                any_store.read_metadata(CombinedFeature).lazy().collect().to_polars()
+            )
+            assert len(stored_df) == 4, (
+                f"Expected 4 expanded rows, got {len(stored_df)}"
+            )
+
+            # === SECOND RESOLVE UPDATE (no changes) ===
+            increment_no_change = any_store.resolve_update(
+                CombinedFeature,
+                target_version=CombinedFeature.feature_version(),
+                snapshot_version=graph.snapshot_version,
+            )
+            added_no_change = increment_no_change.added.lazy().collect().to_polars()
+
+            # No changes expected - upstream hasn't changed
+            assert len(added_no_change) == 0, (
+                f"Expected 0 rows when nothing changed, got {len(added_no_change)}"
+            )
+
+            # Snapshot the state for regression testing (at parent level for determinism)
+            final_df = (
+                any_store.read_metadata(CombinedFeature).lazy().collect().to_polars()
+            )
+            # Group by config_id to get unique provenance per config
+            final_grouped = (
+                final_df.group_by("config_id")
+                .agg(pl.col("metaxy_provenance_by_field").first())
+                .sort("config_id")
+            )
+            provenance_data = [
+                {
+                    "config_id": final_grouped["config_id"][i],
+                    "metaxy_provenance_by_field": final_grouped[
+                        "metaxy_provenance_by_field"
+                    ][i],
+                }
+                for i in range(len(final_grouped))
+            ]
+            assert provenance_data == snapshot
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(
+            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
+        )
+
+
+def test_expansion_changed_rows_not_duplicated(
+    any_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Regression test: expansion lineage should not duplicate changed rows.
+
+    When upstream changes for expansion lineage (1:N), resolve_update should return
+    one "changed" row per parent, not one per expanded child. Without proper deduplication,
+    the join produces N copies of each changed parent (one per child row).
+
+    This test verifies:
+    1. Initial resolve_update returns correct parent-level rows
+    2. After upstream changes, "changed" contains exactly one row per parent (not duplicated)
+    """
+
+    class Video(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="video_dedup_test",
+            id_columns=("video_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["content"]), code_version="1"),
+            ],
+        ),
+    ):
+        video_id: str
+
+    class VideoFrames(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="video_frames_dedup_test",
+            id_columns=("video_id", "frame_id"),
+            deps=[
+                FeatureDep(
+                    feature=Video,
+                    lineage=LineageRelationship.expansion(on=["video_id"]),
+                ),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["frame_data"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                ),
+            ],
+        ),
+    ):
+        video_id: str
+        frame_id: str
+
+    try:
+        with any_store:
+            # === INITIAL DATA ===
+            video_df = pl.DataFrame(
+                {
+                    "video_id": ["v1", "v2"],
+                    "metaxy_provenance_by_field": [
+                        {"content": "content_v1_original"},
+                        {"content": "content_v2_original"},
+                    ],
+                }
+            )
+            any_store.write_metadata(Video, video_df)
+
+            # First resolve_update - get parent-level rows
+            increment = any_store.resolve_update(
+                VideoFrames,
+                target_version=VideoFrames.feature_version(),
+                snapshot_version=graph.snapshot_version,
+            )
+            added_df = increment.added.lazy().collect().to_polars()
+            assert len(added_df) == 2, f"Expected 2 parent rows, got {len(added_df)}"
+
+            # Expand each video to 3 frames
+            expanded_rows = []
+            for row in added_df.iter_rows(named=True):
+                video_id = row["video_id"]
+                provenance = row["metaxy_provenance"]
+                provenance_by_field = row["metaxy_provenance_by_field"]
+                for frame_idx in range(3):
+                    expanded_rows.append(
+                        {
+                            "video_id": video_id,
+                            "frame_id": f"{video_id}_frame_{frame_idx}",
+                            "metaxy_provenance": provenance,
+                            "metaxy_provenance_by_field": provenance_by_field,
+                        }
+                    )
+
+            expanded_df = pl.DataFrame(expanded_rows)
+            any_store.write_metadata(VideoFrames, expanded_df)
+
+            # Verify 6 rows stored (2 videos × 3 frames)
+            stored_df = (
+                any_store.read_metadata(VideoFrames).lazy().collect().to_polars()
+            )
+            assert len(stored_df) == 6, (
+                f"Expected 6 expanded rows, got {len(stored_df)}"
+            )
+
+            # === CHANGE UPSTREAM ===
+            # Update video v1's content (change provenance)
+            updated_video_df = pl.DataFrame(
+                {
+                    "video_id": ["v1", "v2"],
+                    "metaxy_provenance_by_field": [
+                        {"content": "content_v1_CHANGED"},  # Changed!
+                        {"content": "content_v2_original"},  # Unchanged
+                    ],
+                }
+            )
+            any_store.write_metadata(Video, updated_video_df)
+
+            # Resolve update after upstream change
+            increment_after_change = any_store.resolve_update(
+                VideoFrames,
+                target_version=VideoFrames.feature_version(),
+                snapshot_version=graph.snapshot_version,
+            )
+
+            changed_df = increment_after_change.changed
+            assert changed_df is not None, "Expected changed to not be None"
+            changed_df = changed_df.lazy().collect().to_polars()
+
+            # CRITICAL: Should be exactly 1 changed row (v1), NOT 3 (one per frame)
+            # Without proper deduplication, this would return 3 rows
+            assert len(changed_df) == 1, (
+                f"Expected exactly 1 changed row (one per parent), got {len(changed_df)}. "
+                f"This indicates expansion deduplication is broken - getting duplicate rows per child."
+            )
+
+            # Verify it's v1 that changed
+            assert changed_df["video_id"].to_list() == ["v1"], (
+                f"Expected v1 to be changed, got {changed_df['video_id'].to_list()}"
+            )
+
+            # Verify added is empty (no new videos)
+            added_after_change = (
+                increment_after_change.added.lazy().collect().to_polars()
+            )
+            assert len(added_after_change) == 0, (
+                f"Expected 0 added rows, got {len(added_after_change)}"
+            )
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(
+            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
+        )

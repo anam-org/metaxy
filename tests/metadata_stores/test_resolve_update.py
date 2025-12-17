@@ -934,11 +934,15 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
         spec=SampleFeatureSpec(
             key=FeatureKey(["video_frames"]),
             id_columns=("video_id", "frame_id"),
-            deps=[FeatureDep(feature=Video)],
+            deps=[
+                FeatureDep(
+                    feature=Video,
+                    lineage=LineageRelationship.expansion(on=["video_id"]),
+                )
+            ],
             fields=[
                 FieldSpec(key=FieldKey(["embedding"]), code_version="1"),
             ],
-            lineage=LineageRelationship.expansion(on=["video_id"]),
         ),
     ):
         pass
@@ -1076,11 +1080,15 @@ def test_expansion_lineage_orphaned_when_upstream_removed(
         spec=SampleFeatureSpec(
             key=FeatureKey(["video_frames"]),
             id_columns=("video_id", "frame_id"),
-            deps=[FeatureDep(feature=Video)],
+            deps=[
+                FeatureDep(
+                    feature=Video,
+                    lineage=LineageRelationship.expansion(on=["video_id"]),
+                )
+            ],
             fields=[
                 FieldSpec(key=FieldKey(["embedding"]), code_version="1"),
             ],
-            lineage=LineageRelationship.expansion(on=["video_id"]),
         ),
     ):
         pass
@@ -1206,11 +1214,15 @@ def test_expansion_lineage_orphaned_with_duplicate_writes(
         spec=SampleFeatureSpec(
             key=FeatureKey(["video_frames"]),
             id_columns=("video_id", "frame_id"),
-            deps=[FeatureDep(feature=Video)],
+            deps=[
+                FeatureDep(
+                    feature=Video,
+                    lineage=LineageRelationship.expansion(on=["video_id"]),
+                )
+            ],
             fields=[
                 FieldSpec(key=FieldKey(["embedding"]), code_version="1"),
             ],
-            lineage=LineageRelationship.expansion(on=["video_id"]),
         ),
     ):
         pass

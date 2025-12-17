@@ -33,14 +33,14 @@ class TestExpansionRelationships:
             spec=SampleFeatureSpec(
                 key="video/frames",
                 id_columns=["video_id", "frame_id"],
-                lineage=LineageRelationship.expansion(
-                    on=["video_id"],  # Explicit parent ID
-                    id_generation_pattern="sequential",
-                ),
                 fields=[FieldSpec(key="frame_data", code_version="1")],
                 deps=[
                     FeatureDep(
                         feature="video/source",
+                        lineage=LineageRelationship.expansion(
+                            on=["video_id"],  # Explicit parent ID
+                            id_generation_pattern="sequential",
+                        ),
                         # No rename needed - video_id column is the same
                         # frame_id is generated, not mapped
                     )
@@ -49,8 +49,9 @@ class TestExpansionRelationships:
         ):
             pass
 
-        # Test lineage configuration
-        lineage = VideoFrames.spec().lineage
+        # Test lineage configuration (now on dep, not spec)
+        dep = VideoFrames.spec().deps[0]
+        lineage = dep.lineage
         assert lineage is not None
         aggregation_cols = lineage.get_aggregation_columns(["video_id", "frame_id"])
         assert aggregation_cols is None, (
@@ -119,11 +120,11 @@ class TestExpansionRelationships:
             spec=SampleFeatureSpec(
                 key="paragraphs",
                 id_columns=["article_id", "para_id"],
-                lineage=LineageRelationship.expansion(on=["article_id"]),
                 fields=[FieldSpec(key="para_text", code_version="1")],
                 deps=[
                     FeatureDep(
                         feature="article",
+                        lineage=LineageRelationship.expansion(on=["article_id"]),
                         # No rename needed - article_id column is the same
                     )
                 ],

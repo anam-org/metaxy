@@ -31,10 +31,10 @@ if TYPE_CHECKING:
 
 
 class FeatureDep(pydantic.BaseModel):
-    """Feature dependency specification with optional column selection and renaming.
+    """Feature dependency specification with optional column selection, renaming, and lineage.
 
     Attributes:
-        key: The feature key to depend on. Accepts string ("a/b/c"), list (["a", "b", "c"]),
+        feature: The feature key to depend on. Accepts string ("a/b/c"), list (["a", "b", "c"]),
             FeatureKey instance, or BaseFeature class.
         columns: Optional tuple of column names to select from upstream feature.
             - None (default): Keep all columns from upstream
@@ -49,17 +49,15 @@ class FeatureDep(pydantic.BaseModel):
             Narwhals expressions (accessible via the `filters` property). Filters are automatically
             applied by FeatureDepTransformer after renames during all FeatureDep operations (including
             resolve_update and version computation).
+        lineage: The lineage relationship between this upstream dependency and the downstream feature.
+            - `LineageRelationship.identity()` (default): 1:1 relationship, same cardinality
+            - `LineageRelationship.aggregation(on=...)`: N:1, multiple upstream rows aggregate to one downstream
+            - `LineageRelationship.expansion(on=...)`: 1:N, one upstream row expands to multiple downstream rows
 
-    Examples:
+    Example: Basic Usage
         ```py
-        # Keep all columns with default field mapping
+        # Keep all columns with default field mapping (1:1 lineage)
         FeatureDep(feature="upstream")
-
-        # Keep all columns with suffix matching
-        FeatureDep(feature="upstream", fields_mapping=FieldsMapping.default(match_suffix=True))
-
-        # Keep all columns with all fields mapping
-        FeatureDep(feature="upstream", fields_mapping=FieldsMapping.all())
 
         # Keep only specific columns
         FeatureDep(
@@ -73,18 +71,33 @@ class FeatureDep(pydantic.BaseModel):
             rename={"old_name": "new_name"}
         )
 
-        # Select and rename
-        FeatureDep(
-            feature="upstream/feature",
-            columns=("col1", "col2"),
-            rename={"col1": "upstream_col1"}
-        )
-
         # SQL filters
         FeatureDep(
             feature="upstream",
             filters=["age >= 25", "status = 'active'"]
         )
+        ```
+
+    Example: Lineage Relationships
+        ```py
+        # Aggregation: many sensor readings aggregate to one hourly stat
+        FeatureDep(
+            feature="sensor_readings",
+            lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"])
+        )
+
+        # Expansion: one video expands to many frames
+        FeatureDep(
+            feature="video",
+            lineage=LineageRelationship.expansion(on=["video_id"])
+        )
+
+        # Mixed lineage: aggregate from one parent, identity from another
+        # In FeatureSpec:
+        deps=[
+            FeatureDep(feature="readings", lineage=LineageRelationship.aggregation(on=["sensor_id"])),
+            FeatureDep(feature="sensor_info", lineage=LineageRelationship.identity()),
+        ]
         ```
     """
 
@@ -102,6 +115,10 @@ class FeatureDep(pydantic.BaseModel):
         validation_alias=pydantic.AliasChoices("filters", "sql_filters"),
         serialization_alias="filters",
     )
+    lineage: LineageRelationship = pydantic.Field(
+        default_factory=LineageRelationship.identity,
+        description="Lineage relationship between this upstream dependency and the downstream feature.",
+    )
 
     if TYPE_CHECKING:
 
@@ -113,6 +130,7 @@ class FeatureDep(pydantic.BaseModel):
             rename: dict[str, str] | None = None,
             fields_mapping: FieldsMapping | None = None,
             filters: Sequence[str] | None = None,
+            lineage: LineageRelationship | None = None,
         ) -> None: ...
 
     @cached_property
@@ -190,10 +208,6 @@ class FeatureSpec(FrozenBaseModel):
             )
         ],
     )
-    lineage: LineageRelationship = pydantic.Field(
-        default_factory=LineageRelationship.identity,
-        description="Lineage relationship of this feature.",
-    )
     metadata: dict[str, Any] = pydantic.Field(
         default_factory=dict,
         description="Metadata attached to this feature.",
@@ -209,7 +223,6 @@ class FeatureSpec(FrozenBaseModel):
             id_columns: IDColumns,
             deps: list[FeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
-            lineage: LineageRelationship | None = None,
             metadata: dict[str, Any] | None = None,
             **kwargs: Any,
         ) -> None: ...
@@ -223,7 +236,6 @@ class FeatureSpec(FrozenBaseModel):
             id_columns: IDColumns,
             deps: list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
-            lineage: LineageRelationship | None = None,
             metadata: dict[str, Any] | None = None,
             **kwargs: Any,
         ) -> None: ...
@@ -236,10 +248,14 @@ class FeatureSpec(FrozenBaseModel):
             id_columns: IDColumns,
             deps: list[FeatureDep] | list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
-            lineage: LineageRelationship | None = None,
             metadata: dict[str, Any] | None = None,
             **kwargs: Any,
         ) -> None: ...
+
+    @cached_property
+    def deps_by_key(self) -> Mapping[FeatureKey, FeatureDep]:
+        """Get dependencies indexed by their feature key."""
+        return {dep.feature: dep for dep in self.deps}
 
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:

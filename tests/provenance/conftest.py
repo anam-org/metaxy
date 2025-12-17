@@ -32,6 +32,7 @@ def upstream_video_metadata() -> nw.LazyFrame[pl.LazyFrame]:
                     {"frames": "video_frame_hash_2", "audio": "video_audio_hash_2"},
                     {"frames": "video_frame_hash_3", "audio": "video_audio_hash_3"},
                 ],
+                "metaxy_data_version": ["video_prov_1", "video_prov_2", "video_prov_3"],
             }
         ).lazy()
     )
@@ -55,6 +56,7 @@ def upstream_audio_metadata() -> nw.LazyFrame[pl.LazyFrame]:
                     {"waveform": "audio_waveform_hash_2"},
                     {"waveform": "audio_waveform_hash_3"},
                 ],
+                "metaxy_data_version": ["audio_prov_1", "audio_prov_2", "audio_prov_3"],
             }
         ).lazy()
     )
@@ -272,6 +274,7 @@ def upstream_metadata_multi_field() -> nw.LazyFrame[pl.LazyFrame]:
                         "text": "text_hash_2",
                     },
                 ],
+                "metaxy_data_version": ["multi_prov_1", "multi_prov_2"],
             }
         ).lazy()
     )

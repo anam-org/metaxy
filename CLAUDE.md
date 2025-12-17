@@ -40,3 +40,7 @@ uv run pytest    # Run tests (add -k "pattern" to filter)
 
 - **Architecture decisions or unfamiliar patterns**: See `docs/guide/` for concepts like feature graphs, migrations, and metadata stores
 - **Backend-specific issues** (DuckDB, ClickHouse, BigQuery): Check `docs/integrations/metadata-stores/` and corresponding test files in `tests/metadata_stores/`
+
+## Writing Docs
+
+Write in complete English sentences. Do not use (braces) excessively. Explain concepts clearly and concisely. First provide a generic explanation, then give a concrete example if necessary. Use `Material for Mkdocs` features: tooltips and admonitions to keep examples aside from the main flow.

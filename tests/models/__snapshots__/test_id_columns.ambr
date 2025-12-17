@@ -1,8 +1,8 @@
 # serializer version: 1
 # name: test_snapshot_stability_with_id_columns
   dict({
-    'composite': '929e1cf38c6d10dc450ff5ab3b80eab5a6bff2a7aa5e7ce1c36e7f384a6f31e6',
-    'default': '39ba10b74b46c6bade4510126446ee5fee921f835987d2adf082578f9cd7733d',
-    'single_custom': '06b9f0c2674a0b9cced73220eac446ccb51e1e4cc9f371ec83e53c8081ce7f1e',
+    'composite': '896911b846e4e0d75744dea0b885b3fd195a93c9be93d756c761869b6399bd4b',
+    'default': '301d3d85afabb2260d531c174f5f8f0b37f5465cb69099a95e7d43c55bdaa8cf',
+    'single_custom': 'a9226015f1dfe3548eb0dc018778b79ac2ab7d43a2946165b5f8c25047077722',
   })
 # ---

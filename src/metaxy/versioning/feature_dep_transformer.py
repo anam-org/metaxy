@@ -5,6 +5,7 @@ import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.constants import (
+    METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
@@ -30,11 +31,11 @@ class FeatureDepTransformer:
         self.plan = plan
         self.dep = dep
 
-        # allow adding more in the future
         self.metaxy_columns_to_load = [
             METAXY_PROVENANCE_BY_FIELD,
             METAXY_PROVENANCE,
             METAXY_DATA_VERSION_BY_FIELD,
+            METAXY_DATA_VERSION,
         ]
 
     @cached_property

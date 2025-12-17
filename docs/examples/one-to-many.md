@@ -46,8 +46,8 @@ Let's set the code version of `audio` to `"1"` in order to change it in the futu
 `VideoChunk` represents a piece of the upstream `Video` feature. Since each `Video` sample can be split into multiple chunks, we need to tell Metaxy how to map each chunk to its parent video.
 
 <!-- dprint-ignore-start -->
-```python title="src/example_one_to_many/features.py" hl_lines="8"
---8<-- "example-one-to-many/src/example_one_to_many/features.py:19:32"
+```python title="src/example_one_to_many/features.py" hl_lines="9"
+--8<-- "example-one-to-many/src/example_one_to_many/features.py:19:36"
 ```
 <!-- dprint-ignore-end -->
 
@@ -59,7 +59,7 @@ We do not specify custom versions on its fields. Metaxy will automatically assig
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_one_to_many/features.py" hl_lines="9-11"
---8<-- "example-one-to-many/src/example_one_to_many/features.py:33:52"
+--8<-- "example-one-to-many/src/example_one_to_many/features.py:38:55"
 ```
 <!-- dprint-ignore-end -->
 

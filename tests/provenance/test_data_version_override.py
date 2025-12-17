@@ -70,6 +70,7 @@ def test_basic_data_version_override(graph: FeatureGraph, snapshot) -> None:
                     {"value": "custom_version_1"},
                     {"value": "custom_version_2"},
                 ],
+                "metaxy_data_version": ["prov_1", "prov_2"],
             }
         ).lazy()
     )
@@ -187,6 +188,7 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
                     {"field_a": "a_version_1"},
                     {"field_a": "a_version_1"},  # Same version for both samples!
                 ],
+                "metaxy_data_version": ["a_sample_prov_1", "a_sample_prov_2"],
             }
         ).lazy()
     )
@@ -318,6 +320,7 @@ def test_selective_field_override(graph: FeatureGraph, snapshot) -> None:
                         "field2": "field2_prov_2",  # Defaults to provenance
                     },
                 ],
+                "metaxy_data_version": ["parent_prov_1", "parent_prov_2"],
             }
         ).lazy()
     )
@@ -405,6 +408,7 @@ def test_default_behavior_no_override(graph: FeatureGraph, snapshot) -> None:
                     {"value": "hash_1"},  # Same as provenance
                     {"value": "hash_2"},  # Same as provenance
                 ],
+                "metaxy_data_version": ["prov_1", "prov_2"],
             }
         ).lazy()
     )
@@ -503,6 +507,7 @@ def test_multiple_upstreams_with_overrides(graph: FeatureGraph, snapshot) -> Non
                     {"field_p1": "p1_custom"},  # Same custom version
                     {"field_p1": "p1_custom"},  # Same custom version
                 ],
+                "metaxy_data_version": ["p1_sample_1", "p1_sample_2"],
             }
         ).lazy()
     )
@@ -522,6 +527,7 @@ def test_multiple_upstreams_with_overrides(graph: FeatureGraph, snapshot) -> Non
                     {"field_p2": "p2_prov_1"},  # Same as provenance
                     {"field_p2": "p2_prov_2"},  # Same as provenance
                 ],
+                "metaxy_data_version": ["p2_sample_1", "p2_sample_2"],
             }
         ).lazy()
     )
@@ -618,6 +624,7 @@ def test_data_version_propagation_with_renames(graph: FeatureGraph, snapshot) ->
                     {"original_name": "custom_v1"},
                     {"original_name": "custom_v2"},
                 ],
+                "metaxy_data_version": ["sample_prov_1", "sample_prov_2"],
             }
         ).lazy()
     )
@@ -721,6 +728,7 @@ def test_data_version_cleanup_in_result(graph: FeatureGraph, snapshot) -> None:
                     {"value": "version_1"},
                     {"value": "version_2"},
                 ],
+                "metaxy_data_version": ["sample_prov_1", "sample_prov_2"],
             }
         ).lazy()
     )

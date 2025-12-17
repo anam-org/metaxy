@@ -51,7 +51,7 @@ class metaxify:
             Field types are converted to strings, and field descriptions are used as column descriptions.
         inject_column_lineage: Whether to inject column-level lineage into the asset metadata under
             `dagster/column_lineage`. Uses Pydantic model fields to track
-            column provenance via `FeatureDep.rename`, `FeatureSpec.lineage`, and direct pass-through.
+            column provenance via `FeatureDep.rename`, `FeatureDep.lineage`, and direct pass-through.
 
     !!! tip
         Multiple Dagster assets can contribute to the same Metaxy feature.

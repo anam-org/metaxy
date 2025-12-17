@@ -273,9 +273,15 @@ class TestCalculateInputProgress:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["hourly_stats"]),
                 id_columns=["sensor_id", "hour"],
-                deps=[FeatureDep(feature=SensorReadings)],
+                deps=[
+                    FeatureDep(
+                        feature=SensorReadings,
+                        lineage=LineageRelationship.aggregation(
+                            on=["sensor_id", "hour"]
+                        ),
+                    )
+                ],
                 fields=[FieldSpec(key=FieldKey(["avg_temp"]), code_version="1")],
-                lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
             ),
         ):
             pass
@@ -340,9 +346,13 @@ class TestCalculateInputProgress:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video_frames"]),
                 id_columns=["video_id", "frame_id"],
-                deps=[FeatureDep(feature=Video)],
+                deps=[
+                    FeatureDep(
+                        feature=Video,
+                        lineage=LineageRelationship.expansion(on=["video_id"]),
+                    )
+                ],
                 fields=[FieldSpec(key=FieldKey(["embedding"]), code_version="1")],
-                lineage=LineageRelationship.expansion(on=["video_id"]),
             ),
         ):
             pass
