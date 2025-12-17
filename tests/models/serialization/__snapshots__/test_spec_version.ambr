@@ -17,6 +17,7 @@
   dict({
     'feature_class_path': 'test_spec_version.SnapshotFeature',
     'feature_schema': dict({
+      'additionalProperties': False,
       'properties': dict({
         'metaxy_created_at': dict({
           'anyOf': list([
@@ -145,7 +146,7 @@
     }),
     'metaxy_feature_spec_version': '26736b45eeb37186ef6678426b85f3265cdba9eb5b782a8f41496123d5649cd4',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
-    'metaxy_full_definition_version': '84593fad7dec1c5ec248e52ed847cfd6bfcd1aebff785a7fe7b1c178e43ad2b5',
+    'metaxy_full_definition_version': '9a61cb119a3953cfc47a366ea0abc789635c20f89ff5a866437186085d5cd665',
     'project': 'test',
   })
 # ---

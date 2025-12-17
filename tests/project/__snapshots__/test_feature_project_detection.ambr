@@ -11,7 +11,7 @@
 # name: test_feature_project_persists_across_graph_operations
   dict({
     'project': 'persist_project',
-    'tracking_version': 'e591ca00',
+    'tracking_version': '752d17a3',
   })
 # ---
 # name: test_multiple_features_same_project

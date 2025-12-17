@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import TYPE_CHECKING, Annotated, Any, Literal, overload
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from pydantic import BaseModel, BeforeValidator, TypeAdapter
 from pydantic import Field as PydanticField
@@ -59,6 +59,8 @@ def _validate_field_dep_fields(
 
 
 class FieldDep(BaseModel):
+    model_config = {"extra": "forbid"}
+
     feature: Annotated[FeatureKey, BeforeValidator(_validate_field_dep_feature)]
     fields: Annotated[
         list[FieldKey] | Literal[SpecialFieldDep.ALL],
@@ -67,59 +69,9 @@ class FieldDep(BaseModel):
 
     if TYPE_CHECKING:
 
-        @overload
-        @overload
         def __init__(
             self,
-            feature: str,
-            **kwargs: Any,
-        ) -> None:
-            """Initialize from string feature key."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            feature: Sequence[str],
-            **kwargs: Any,
-        ) -> None:
-            """Initialize from sequence of parts."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            feature: FeatureKey,
-            **kwargs: Any,
-        ) -> None:
-            """Initialize from FeatureKey instance."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            feature: "FeatureSpec",
-            **kwargs: Any,
-        ) -> None:
-            """Initialize from FeatureSpec instance."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            feature: type["BaseFeature"],
-            **kwargs: Any,
-        ) -> None:
-            """Initialize from BaseFeature class."""
-            ...
-
-        # Final signature combining all overloads
-        def __init__(
-            self,
+            *,
             feature: str
             | Sequence[str]
             | FeatureKey
@@ -127,7 +79,6 @@ class FieldDep(BaseModel):
             | type["BaseFeature"],
             fields: list[CoercibleToFieldKey]
             | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
-            **kwargs: Any,
         ) -> None: ...
 
 
@@ -159,6 +110,8 @@ def _validate_field_spec_key(value: Any) -> FieldKey:
 
 
 class FieldSpec(BaseModel):
+    model_config = {"extra": "forbid"}
+
     key: Annotated[FieldKey, BeforeValidator(_validate_field_spec_key)] = PydanticField(
         default_factory=lambda: FieldKey(["default"])
     )
@@ -185,72 +138,13 @@ class FieldSpec(BaseModel):
 
     if TYPE_CHECKING:
 
-        @overload
-        def __init__(self, key: CoercibleToFieldKey, **kwargs) -> None:
-            """Initialize from key and no other arguments."""
-            ...
-
-        @overload
         def __init__(
             self,
-            key: str,
-            code_version: str,
-            deps: SpecialFieldDep | list[FieldDep] | None = None,
-        ) -> None:
-            """Initialize from string key."""
-            ...
-
-        @overload
-        def __init__(
-            self,
-            key: Sequence[str],
-            code_version: str,
-            deps: SpecialFieldDep | list[FieldDep] | None = None,
-        ) -> None:
-            """Initialize from sequence of parts."""
-            ...
-
-        @overload
-        def __init__(
-            self,
-            key: FieldKey,
-            code_version: str,
-            deps: SpecialFieldDep | list[FieldDep] | None = None,
-        ) -> None:
-            """Initialize from FieldKey instance."""
-            ...
-
-        # Final signature combining all overloads
-        def __init__(
-            self,
-            key: CoercibleToFieldKey,
+            *,
+            key: CoercibleToFieldKey | None = None,
             code_version: str = DEFAULT_CODE_VERSION,
             deps: SpecialFieldDep | list[FieldDep] | None = None,
-            **kwargs: Any,
         ) -> None: ...
-
-    # Runtime __init__ to handle positional arguments
-    def __init__(
-        self,
-        key: CoercibleToFieldKey,
-        code_version: str = DEFAULT_CODE_VERSION,
-        deps: SpecialFieldDep | list[FieldDep] | None = None,
-        *args,
-        **kwargs: Any,
-    ) -> None:
-        validated_key = FieldKeyAdapter.validate_python(key)
-
-        # Handle None deps - use empty list as default
-        if deps is None:
-            deps = []
-
-        super().__init__(
-            key=validated_key,
-            code_version=code_version,
-            deps=deps,
-            *args,
-            **kwargs,
-        )
 
 
 # Type adapter for validating FieldSpec with string coercion support

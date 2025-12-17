@@ -74,6 +74,8 @@ class Migration(pydantic.BaseModel, ABC):
     - parent: ID of parent migration ("initial" for first migration)
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid")
+
     # Use AliasChoices to accept both "id" (from generated YAML) and "migration_id" (from tests/manual YAML)
     migration_id: str = PydanticField(
         validation_alias=AliasChoices("id", "migration_id"), serialization_alias="id"
@@ -470,6 +472,8 @@ class FullGraphMigration(Migration):
 class MigrationStatusInfo(pydantic.BaseModel):
     """Status information for a migration computed from events and YAML definition."""
 
+    model_config = pydantic.ConfigDict(extra="forbid")
+
     migration_id: str
     status: Any  # MigrationStatus enum
     expected_features: list[str]  # All features from YAML
@@ -490,6 +494,8 @@ class MigrationStatusInfo(pydantic.BaseModel):
 
 class MigrationResult(pydantic.BaseModel):
     """Result of executing a migration."""
+
+    model_config = pydantic.ConfigDict(extra="forbid")
 
     migration_id: str
     status: str  # "completed", "failed", "skipped"

@@ -15,7 +15,7 @@
           },
           {
             "type": "prompt",
-            "prompt": "Evaluate whether Claude should stop working. If there are any linter errors left, fix them.",
+            "prompt": "Evaluate whether Claude should stop working. If there are any linter errors left, fix them first.",
             "timeout": 30
           }
         ]

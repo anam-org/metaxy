@@ -957,7 +957,7 @@ class MetaxyMeta(ModelMetaclass):
         if "model_config" not in namespace:
             from pydantic import ConfigDict
 
-            namespace["model_config"] = ConfigDict(frozen=True)
+            namespace["model_config"] = ConfigDict(frozen=True, extra="forbid")
 
         new_cls = super().__new__(cls, cls_name, bases, namespace, **kwargs)
 

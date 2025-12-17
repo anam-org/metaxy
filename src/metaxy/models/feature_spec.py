@@ -101,6 +101,8 @@ class FeatureDep(pydantic.BaseModel):
         ```
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid")
+
     feature: ValidatedFeatureKey
     columns: tuple[str, ...] | None = (
         None  # None = all columns, () = only system columns
@@ -224,7 +226,6 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[FeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
-            **kwargs: Any,
         ) -> None: ...
 
         # Overload for flexible case: list of coercible types
@@ -237,7 +238,6 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
-            **kwargs: Any,
         ) -> None: ...
 
         # Implementation signature
@@ -249,7 +249,6 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[FeatureDep] | list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
-            **kwargs: Any,
         ) -> None: ...
 
     @cached_property

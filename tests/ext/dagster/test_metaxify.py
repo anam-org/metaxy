@@ -1823,8 +1823,12 @@ class TestMetaxifyColumnLineage:
             key=["test", "agg_downstream"],
             id_columns=["user_id"],  # Aggregated to user level
             fields=["total"],
-            deps=[mx.FeatureDep(feature=UpstreamFeature)],
-            lineage=mx.LineageRelationship.aggregation(on=["user_id"]),
+            deps=[
+                mx.FeatureDep(
+                    feature=UpstreamFeature,
+                    lineage=mx.LineageRelationship.aggregation(on=["user_id"]),
+                )
+            ],
         )
 
         class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
@@ -1866,8 +1870,12 @@ class TestMetaxifyColumnLineage:
             key=["test", "exp_downstream"],
             id_columns=["doc_id", "chunk_id"],  # Expanded with chunk_id
             fields=["chunk_text"],
-            deps=[mx.FeatureDep(feature=UpstreamFeature)],
-            lineage=mx.LineageRelationship.expansion(on=["doc_id"]),
+            deps=[
+                mx.FeatureDep(
+                    feature=UpstreamFeature,
+                    lineage=mx.LineageRelationship.expansion(on=["doc_id"]),
+                )
+            ],
         )
 
         class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
