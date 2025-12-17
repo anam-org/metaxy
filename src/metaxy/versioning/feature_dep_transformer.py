@@ -97,6 +97,10 @@ class FeatureDepTransformer:
         return self.rename_upstream_metaxy_column(METAXY_DATA_VERSION_BY_FIELD)
 
     @cached_property
+    def renamed_data_version_col(self) -> str:
+        return self.rename_upstream_metaxy_column(METAXY_DATA_VERSION)
+
+    @cached_property
     def renamed_metaxy_cols(self) -> list[str]:
         return list(
             map(self.rename_upstream_metaxy_column, self.metaxy_columns_to_load)

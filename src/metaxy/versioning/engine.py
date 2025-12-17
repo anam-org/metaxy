@@ -468,6 +468,7 @@ class VersioningEngine(ABC):
         for transformer in self.feature_transformers_by_key.values():
             renamed_prov_col = transformer.renamed_provenance_col
             renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
+            renamed_data_version_col = transformer.renamed_data_version_col
             renamed_data_version_by_field_col = (
                 transformer.renamed_data_version_by_field_col
             )
@@ -475,6 +476,8 @@ class VersioningEngine(ABC):
                 columns_to_drop.append(renamed_prov_col)
             if renamed_prov_by_field_col in current_columns:
                 columns_to_drop.append(renamed_prov_by_field_col)
+            if renamed_data_version_col in current_columns:
+                columns_to_drop.append(renamed_data_version_col)
             if renamed_data_version_by_field_col in current_columns:
                 columns_to_drop.append(renamed_data_version_by_field_col)
 
