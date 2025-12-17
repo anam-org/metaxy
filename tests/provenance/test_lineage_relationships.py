@@ -1697,6 +1697,182 @@ def test_mixed_lineage_get_input_id_columns_per_dep(
     )
 
 
+# ============================================================================
+# Tests for Column Cleanup (no leaked internal columns)
+# ============================================================================
+
+
+def test_load_upstream_does_not_leak_renamed_data_version_column(
+    aggregation_features: dict[str, type[SampleFeature]],
+    sensor_readings_metadata: nw.LazyFrame[pl.LazyFrame],
+    graph: FeatureGraph,
+) -> None:
+    """Test that load_upstream_with_provenance doesn't leak renamed internal columns.
+
+    The AggregationLineageTransformer creates a renamed data_version column like
+    `metaxy_data_version__sensor_readings` during aggregation. This column should
+    be cleaned up and not appear in the final output.
+
+    Regression test for a bug where renamed_data_version_col was not dropped.
+    """
+    feature = aggregation_features["HourlyStats"]
+    plan = graph.get_feature_plan(feature.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    upstream = {FeatureKey(["sensor_readings"]): sensor_readings_metadata}
+
+    result = engine.load_upstream_with_provenance(
+        upstream=upstream,
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    )
+
+    result_df = result.collect()
+    columns = result_df.columns
+
+    # Check that no internal renamed columns are leaked
+    # These patterns should NOT appear in output:
+    # - metaxy_data_version__<feature_key>
+    # - metaxy_provenance__<feature_key>
+    # - metaxy_provenance_by_field__<feature_key>
+    # - metaxy_data_version_by_field__<feature_key>
+    leaked_columns = [
+        col for col in columns if col.startswith("metaxy_") and "__" in col
+    ]
+    assert leaked_columns == [], (
+        f"Internal renamed columns leaked to output: {leaked_columns}"
+    )
+
+
+def test_load_upstream_does_not_leak_columns_identity_lineage(
+    simple_features: dict[str, type[SampleFeature]],
+    upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
+    graph: FeatureGraph,
+) -> None:
+    """Test that identity lineage also cleans up renamed columns properly."""
+    feature = simple_features["ProcessedVideo"]
+    plan = graph.get_feature_plan(feature.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    upstream = {FeatureKey(["video"]): upstream_video_metadata}
+
+    result = engine.load_upstream_with_provenance(
+        upstream=upstream,
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    )
+
+    result_df = result.collect()
+    columns = result_df.columns
+
+    leaked_columns = [
+        col for col in columns if col.startswith("metaxy_") and "__" in col
+    ]
+    assert leaked_columns == [], (
+        f"Internal renamed columns leaked to output: {leaked_columns}"
+    )
+
+
+def test_load_upstream_does_not_leak_columns_expansion_lineage(
+    expansion_features: dict[str, type[SampleFeature]],
+    video_metadata: nw.LazyFrame[pl.LazyFrame],
+    graph: FeatureGraph,
+) -> None:
+    """Test that expansion lineage also cleans up renamed columns properly."""
+    feature = expansion_features["VideoFrames"]
+    plan = graph.get_feature_plan(feature.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    upstream = {FeatureKey(["video"]): video_metadata}
+
+    result = engine.load_upstream_with_provenance(
+        upstream=upstream,
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    )
+
+    result_df = result.collect()
+    columns = result_df.columns
+
+    leaked_columns = [
+        col for col in columns if col.startswith("metaxy_") and "__" in col
+    ]
+    assert leaked_columns == [], (
+        f"Internal renamed columns leaked to output: {leaked_columns}"
+    )
+
+
+def test_load_upstream_does_not_leak_columns_mixed_lineage(
+    mixed_lineage_features: dict[str, type[SampleFeature]],
+    graph: FeatureGraph,
+) -> None:
+    """Test that mixed lineage (aggregation + identity) cleans up renamed columns."""
+    feature = mixed_lineage_features["HourlyEnrichedStats"]
+    plan = graph.get_feature_plan(feature.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Create mock upstream data for both dependencies
+    sensor_readings = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1"],
+                "timestamp": ["2024-01-01T10:15:00", "2024-01-01T10:30:00"],
+                "reading_id": ["r1", "r2"],
+                "hour": ["2024-01-01T10", "2024-01-01T10"],
+                "metaxy_provenance_by_field": [
+                    {"temperature": "temp_hash_1", "humidity": "hum_hash_1"},
+                    {"temperature": "temp_hash_2", "humidity": "hum_hash_2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_hash_1", "humidity": "hum_hash_1"},
+                    {"temperature": "temp_hash_2", "humidity": "hum_hash_2"},
+                ],
+                "metaxy_provenance": ["reading_prov_1", "reading_prov_2"],
+                "metaxy_data_version": ["reading_dv_1", "reading_dv_2"],
+            }
+        ).lazy()
+    )
+
+    sensor_info = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1"],
+                "hour": ["2024-01-01T10"],
+                "metaxy_provenance_by_field": [
+                    {"location": "loc_hash", "sensor_type": "type_hash"}
+                ],
+                "metaxy_data_version_by_field": [
+                    {"location": "loc_hash", "sensor_type": "type_hash"}
+                ],
+                "metaxy_provenance": ["info_prov"],
+                "metaxy_data_version": ["info_dv"],
+            }
+        ).lazy()
+    )
+
+    upstream = {
+        FeatureKey(["sensor_readings"]): sensor_readings,
+        FeatureKey(["sensor_info"]): sensor_info,
+    }
+
+    result = engine.load_upstream_with_provenance(
+        upstream=upstream,
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    )
+
+    result_df = result.collect()
+    columns = result_df.columns
+
+    # Should not have any renamed internal columns from either dependency
+    leaked_columns = [
+        col for col in columns if col.startswith("metaxy_") and "__" in col
+    ]
+    assert leaked_columns == [], (
+        f"Internal renamed columns leaked to output: {leaked_columns}"
+    )
+
+
 def test_mixed_lineage_different_relationship_types(graph: FeatureGraph) -> None:
     """Test a feature that explicitly mixes aggregation and identity lineage.
 
