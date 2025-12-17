@@ -196,14 +196,11 @@ class ExpansionLineageHandler(LineageHandler):
         parent_columns = self.plan.input_id_columns
 
         # Group current by parent columns and take any representative row
-        current_grouped = (
-            current.with_columns(nw.lit(True).alias("_dummy"))  # ty: ignore[invalid-argument-type]
-            .filter(
-                nw.col("_dummy")
-                .is_first_distinct()
-                .over(*parent_columns, order_by="_dummy")
-            )
-            .drop("_dummy")
+        # Use any_value() to select an arbitrary value for non-key columns
+        current_cols = current.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        non_key_cols = [c for c in current_cols if c not in parent_columns]
+        current_grouped = current.group_by(*parent_columns).agg(  # ty: ignore[invalid-argument-type]
+            *[nw.col(c).any_value() for c in non_key_cols]
         )
 
         return expected, current_grouped, parent_columns
