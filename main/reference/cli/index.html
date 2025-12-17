@@ -3999,6 +3999,8 @@
 <p class="admonition-title">Warning</p>
 <p>Some CLI commands are experimental (read: half-baked)</p>
 </div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="go">metaxy COMMAND</span>
+</span></code></pre></div>
 <p>Metaxy CLI.</p>
 <p>Auto-discovers configuration (<code>metaxy.toml</code> or <code>pyproject.toml</code>) in current or parent directories.
 Feature definitions are collected via <a href="https://anam-org.github.io/metaxy/main/learn/feature-discovery/">feature discovery</a>.
@@ -4036,31 +4038,42 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 </ul>
 </li>
 </ul>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="go">metaxy COMMAND</span>
-</span></code></pre></div>
 <p><strong>Commands</strong>:</p>
 <ul>
-<li><code>graph</code>: Manage feature graphs</li>
-<li><code>graph-diff</code>: Compare and visualize graph snapshots</li>
-<li><code>list</code>: List Metaxy entities</li>
-<li><code>metadata</code>: Manage Metaxy metadata</li>
-<li><code>migrations</code>: Metadata migration commands</li>
-<li><code>shell</code>: Start interactive shell.</li>
+<li><a href="#metaxy-graph"><code>graph</code></a>: Manage feature graphs</li>
+<li><a href="#metaxy-graph-diff"><code>graph-diff</code></a>: Compare and visualize graph snapshots</li>
+<li><a href="#metaxy-list"><code>list</code></a>: List Metaxy entities</li>
+<li><a href="#metaxy-metadata"><code>metadata</code></a>: Manage Metaxy metadata</li>
+<li><a href="#metaxy-migrations"><code>migrations</code></a>: Metadata migration commands</li>
+<li><a href="#metaxy-shell"><code>shell</code></a>: Start interactive shell.</li>
 </ul>
-<p><strong>Arguments</strong>:</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: --no-all-projects]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-shell">metaxy shell<a class="headerlink" href="#metaxy-shell" title="Permanent link">&para;</a></h2>
-<p>Start interactive shell.</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="go">metaxy shell</span>
 </span></code></pre></div>
+<p>Start interactive shell.</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+</ul>
 <h2 id="metaxy-migrations">metaxy migrations<a class="headerlink" href="#metaxy-migrations" title="Permanent link">&para;</a></h2>
 <p>Metadata migration commands</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+</ul>
 <h3 id="metaxy-migrations-generate">metaxy migrations generate<a class="headerlink" href="#metaxy-migrations-generate" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="go">metaxy migrations generate --op LIST[STR] [OPTIONS]</span>
+</span></code></pre></div>
 <p>Generate migration from detected feature changes.</p>
 <p>Two migration types are supported:</p>
 <ul>
@@ -4074,61 +4087,59 @@ Supports loading environment variables from a <code>.env</code> file in the curr
   Each operation will have a 'features' list with all feature keys.</p>
 </li>
 </ul>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="go">metaxy migrations generate --op LIST[STR] [OPTIONS]</span>
-</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--name</code>: Migration name (creates {timestamp}_{name} ID)</li>
 <li><code>--store</code>: Store name (defaults to default)</li>
 <li><code>--from-snapshot</code>: Compare from this historical snapshot version (defaults to latest)</li>
-<li><code>--OP</code>: Operation class path to use (can be repeated). Example: metaxy.migrations.ops.DataVersionReconciliation  <strong>[required]</strong></li>
+<li><code>--op, --empty-op</code>: Operation class path to use (can be repeated). Example: metaxy.migrations.ops.DataVersionReconciliation  <strong>[required]</strong></li>
 <li><code>--type</code>: Migration type: 'diff' (compare different graph snapshots) or 'full' (operates on a single graph snapshot)  <em>[choices: diff, full]</em>  <em>[default: diff]</em></li>
 </ul>
 <h3 id="metaxy-migrations-apply">metaxy migrations apply<a class="headerlink" href="#metaxy-migrations-apply" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">metaxy migrations apply [OPTIONS] [ARGS]</span>
+</span></code></pre></div>
 <p>Apply migration(s) from YAML files.</p>
 <p>Reads migration definitions from .metaxy/migrations/ directory (git).
 Follows parent chain to ensure correct order.
 Tracks execution state in database (events).</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">metaxy migrations apply [OPTIONS] [ARGS]</span>
-</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>MIGRATION-ID, --migration-id</code>: Migration ID to apply (applies all unapplied if not specified)</li>
 <li><code>STORE, --store</code>: Metadata store to use.</li>
-<li><code>--dry-run, --no-dry-run</code>: Preview changes without executing  <em>[default: --no-dry-run]</em></li>
-<li><code>--rerun, --no-rerun</code>: Re-run all steps, including already completed ones  <em>[default: --no-rerun]</em></li>
+<li><code>--dry-run, --no-dry-run</code>: Preview changes without executing  <em>[default: False]</em></li>
+<li><code>--rerun, --no-rerun</code>: Re-run all steps, including already completed ones  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-migrations-status">metaxy migrations status<a class="headerlink" href="#metaxy-migrations-status" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="go">metaxy migrations status</span>
+</span></code></pre></div>
 <p>Show migrations and execution status.</p>
 <p>Reads migration definitions from YAML files (git).
 Shows execution status from database events.
 Displays the parent chain in order.</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="go">metaxy migrations status</span>
-</span></code></pre></div>
 <h3 id="metaxy-migrations-list">metaxy migrations list<a class="headerlink" href="#metaxy-migrations-list" title="Permanent link">&para;</a></h3>
-<p>List all migrations in chain order as defined in code.</p>
-<p>Displays a simple table showing migration ID, creation time, and operations.</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">metaxy migrations list</span>
 </span></code></pre></div>
+<p>List all migrations in chain order as defined in code.</p>
+<p>Displays a simple table showing migration ID, creation time, and operations.</p>
 <h3 id="metaxy-migrations-explain">metaxy migrations explain<a class="headerlink" href="#metaxy-migrations-explain" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="go">metaxy migrations explain [ARGS]</span>
+</span></code></pre></div>
 <p>Show detailed diff for a migration.</p>
 <p>Reads migration from YAML file.
 Computes and displays the GraphDiff between the two snapshots on-demand.</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="go">metaxy migrations explain [ARGS]</span>
-</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>MIGRATION-ID, --migration-id</code>: Migration ID to explain (explains latest if not specified)</li>
 </ul>
 <h3 id="metaxy-migrations-describe">metaxy migrations describe<a class="headerlink" href="#metaxy-migrations-describe" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">metaxy migrations describe [ARGS]</span>
+</span></code></pre></div>
 <p>Show verbose description of migration(s).</p>
 <p>Displays detailed information about what the migration will do:
 - Migration metadata (ID, parent, snapshots, created timestamp)
 - Operations to execute
 - Affected features with row counts
 - Execution status if already run</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">metaxy migrations describe [ARGS]</span>
-</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>MIGRATION-IDS, --migration-ids, --empty-migration-ids</code>: Migration IDs to describe (default: all migrations in order)  <em>[default: []]</em></li>
@@ -4136,28 +4147,36 @@ Computes and displays the GraphDiff between the two snapshots on-demand.</p>
 </ul>
 <h2 id="metaxy-graph">metaxy graph<a class="headerlink" href="#metaxy-graph" title="Permanent link">&para;</a></h2>
 <p>Manage feature graphs</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+</ul>
 <h3 id="metaxy-graph-push">metaxy graph push<a class="headerlink" href="#metaxy-graph-push" title="Permanent link">&para;</a></h3>
-<p>Serialize all Metaxy features to the metadata store.</p>
-<p>This is intended to be invoked in a CD pipeline <strong>before</strong> running Metaxy code in production.</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="go">metaxy graph push [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
+<p>Serialize all Metaxy features to the metadata store.</p>
+<p>This is intended to be invoked in a CD pipeline <strong>before</strong> running Metaxy code in production.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
-<li><code>-t, --tags</code>: Arbitrary key-value pairs to attach to the pushed snapshot. Example: <code>--tags.git_commit abc123def</code>.</li>
+<li><code>--tags, -t</code>: Arbitrary key-value pairs to attach to the pushed snapshot. Example: <code>--tags.git_commit abc123def</code>.</li>
 </ul>
 <h3 id="metaxy-graph-history">metaxy graph history<a class="headerlink" href="#metaxy-graph-history" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="go">metaxy graph history [ARGS]</span>
+</span></code></pre></div>
 <p>Show history of recorded graph snapshots.</p>
 <p>Displays all recorded graph snapshots from the metadata store,
 showing snapshot versions, when they were recorded, and feature counts.</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="go">metaxy graph history [ARGS]</span>
-</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
 <li><code>LIMIT, --limit</code>: Limit number of snapshots to show (defaults to all)</li>
 </ul>
 <h3 id="metaxy-graph-describe">metaxy graph describe<a class="headerlink" href="#metaxy-graph-describe" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="go">metaxy graph describe [ARGS]</span>
+</span></code></pre></div>
 <p>Describe a graph snapshot.</p>
 <p>Shows detailed information about a graph snapshot including:
 - Feature count (optionally filtered by project)
@@ -4165,14 +4184,14 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 - Root features (features with no dependencies)
 - Leaf features (features with no dependents)
 - Project breakdown (if multi-project)</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="go">metaxy graph describe [ARGS]</span>
-</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>SNAPSHOT, --snapshot</code>: Snapshot version to describe (defaults to current graph from code)</li>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
 </ul>
 <h3 id="metaxy-graph-render">metaxy graph render<a class="headerlink" href="#metaxy-graph-render" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">metaxy graph render [OPTIONS] [ARGS]</span>
+</span></code></pre></div>
 <p>Render feature graph visualization.</p>
 <p>Visualize the feature graph in different formats:
 - terminal: Terminal rendering with two types:
@@ -4180,33 +4199,39 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
   - cards: Panel/card-based view with dependency edges
 - mermaid: Mermaid flowchart markup
 - graphviz: Graphviz DOT format</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">metaxy graph render [OPTIONS] [ARGS]</span>
-</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>-f, --format</code>: Output format: terminal, mermaid, or graphviz  <em>[default: terminal]</em></li>
-<li><code>-t, --type</code>: Terminal rendering type: graph or cards (only for --format terminal)  <em>[choices: graph, cards]</em>  <em>[default: graph]</em></li>
-<li><code>-o, --output</code>: Output file path (default: stdout)</li>
+<li><code>--format, -f</code>: Output format: terminal, mermaid, or graphviz  <em>[default: terminal]</em></li>
+<li><code>--type, -t</code>: Terminal rendering type: graph or cards (only for --format terminal)  <em>[choices: graph, cards]</em>  <em>[default: graph]</em></li>
+<li><code>--output, -o</code>: Output file path (default: stdout)</li>
 <li><code>--snapshot</code>: Snapshot version to render (default: current graph from code)</li>
 <li><code>--store</code>: Metadata store to use (for loading historical snapshots)</li>
-<li><code>--minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: --no-minimal]</em></li>
-<li><code>--verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: --no-verbose]</em></li>
-<li><code>--show-fields, --no-show-fields</code>: Show field-level details within features  <em>[default: --show-fields]</em></li>
-<li><code>--show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: --show-feature-versions]</em></li>
-<li><code>--show-field-versions, --no-show-field-versions</code>: Show field version hashes (requires --show-fields)  <em>[default: --show-field-versions]</em></li>
-<li><code>--show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: --no-show-code-versions]</em></li>
-<li><code>--show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: --show-snapshot-version]</em></li>
+<li><code>--minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: False]</em></li>
+<li><code>--verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: False]</em></li>
+<li><code>--show-fields, --no-show-fields</code>: Show field-level details within features  <em>[default: True]</em></li>
+<li><code>--show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: True]</em></li>
+<li><code>--show-field-versions, --no-show-field-versions</code>: Show field version hashes (requires --show-fields)  <em>[default: True]</em></li>
+<li><code>--show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: False]</em></li>
+<li><code>--show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: True]</em></li>
 <li><code>--hash-length</code>: Number of characters to show for version hashes (0 for full)  <em>[default: 8]</em></li>
 <li><code>--direction</code>: Graph layout direction: TB (top-bottom) or LR (left-right)  <em>[default: TB]</em></li>
 <li><code>--feature</code>: Focus on a specific feature (e.g., 'video/files' or 'video__files')</li>
 <li><code>--up</code>: Number of dependency levels to render upstream (default: all)</li>
 <li><code>--down</code>: Number of dependency levels to render downstream (default: all)</li>
 <li><code>--project</code>: Filter nodes by project (show only features from this project)</li>
-<li><code>--show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: --show-projects]</em></li>
+<li><code>--show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: True]</em></li>
 </ul>
 <h2 id="metaxy-graph-diff">metaxy graph-diff<a class="headerlink" href="#metaxy-graph-diff" title="Permanent link">&para;</a></h2>
 <p>Compare and visualize graph snapshots</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+</ul>
 <h3 id="metaxy-graph-diff-render">metaxy graph-diff render<a class="headerlink" href="#metaxy-graph-diff-render" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy graph-diff render [OPTIONS] FROM-SNAPSHOT [ARGS]</span>
+</span></code></pre></div>
 <p>Render merged graph visualization comparing two snapshots.</p>
 <p>Shows all features color-coded by status (added/removed/changed/unchanged).
 Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
@@ -4218,71 +4243,81 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 - cards: Panel/card-based view
 - mermaid: Mermaid flowchart diagram
 - graphviz: Graphviz DOT format</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy graph-diff render [OPTIONS] FROM-SNAPSHOT [ARGS]</span>
-</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>FROM-SNAPSHOT</code>: First snapshot to compare (can be "latest", "current", or snapshot hash)  <strong>[required]</strong></li>
+<li><code>FROM-SNAPSHOT, --from-snapshot</code>: First snapshot to compare (can be "latest", "current", or snapshot hash)  <strong>[required]</strong></li>
 <li><code>TO-SNAPSHOT, --to-snapshot</code>: Second snapshot to compare (can be "latest", "current", or snapshot hash)  <em>[default: current]</em></li>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
-<li><code>-f, --format</code>: Output format: terminal, cards, mermaid, graphviz, json, or yaml  <em>[choices: terminal, cards, mermaid, graphviz, json, yaml]</em>  <em>[default: terminal]</em></li>
-<li><code>-o, --output</code>: Output file path (default: stdout)</li>
-<li><code>--minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: --no-minimal]</em></li>
-<li><code>--verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: --no-verbose]</em></li>
-<li><code>--show-fields, --no-show-fields</code>: Show field-level details within features  <em>[default: --show-fields]</em></li>
-<li><code>--show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: --show-feature-versions]</em></li>
-<li><code>--show-field-versions, --no-show-field-versions</code>: Show field version hashes (requires --show-fields)  <em>[default: --show-field-versions]</em></li>
-<li><code>--show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: --no-show-code-versions]</em></li>
-<li><code>--show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: --show-snapshot-version]</em></li>
+<li><code>--format, -f</code>: Output format: terminal, cards, mermaid, graphviz, json, or yaml  <em>[choices: terminal, cards, mermaid, graphviz, json, yaml]</em>  <em>[default: terminal]</em></li>
+<li><code>--output, -o</code>: Output file path (default: stdout)</li>
+<li><code>--minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: False]</em></li>
+<li><code>--verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: False]</em></li>
+<li><code>--show-fields, --no-show-fields</code>: Show field-level details within features  <em>[default: True]</em></li>
+<li><code>--show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: True]</em></li>
+<li><code>--show-field-versions, --no-show-field-versions</code>: Show field version hashes (requires --show-fields)  <em>[default: True]</em></li>
+<li><code>--show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: False]</em></li>
+<li><code>--show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: True]</em></li>
 <li><code>--hash-length</code>: Number of characters to show for version hashes (0 for full)  <em>[default: 8]</em></li>
 <li><code>--direction</code>: Graph layout direction: TB (top-bottom) or LR (left-right)  <em>[default: TB]</em></li>
 <li><code>--feature</code>: Focus on a specific feature (e.g., 'video/files' or 'video__files')</li>
 <li><code>--up</code>: Number of dependency levels to render upstream (default: all)</li>
 <li><code>--down</code>: Number of dependency levels to render downstream (default: all)</li>
 <li><code>--project</code>: Filter nodes by project (show only features from this project)</li>
-<li><code>--show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: --show-projects]</em></li>
+<li><code>--show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: True]</em></li>
 </ul>
 <h2 id="metaxy-list">metaxy list<a class="headerlink" href="#metaxy-list" title="Permanent link">&para;</a></h2>
 <p>List Metaxy entities</p>
-<h3 id="metaxy-list-features">metaxy list features<a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h3>
-<p>List Metaxy features in the current project.</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy list features [OPTIONS]</span>
-</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>-v, --verbose, --no-verbose</code>: Show detailed information including field dependencies and versions.  <em>[default: --no-verbose]</em></li>
-<li><code>-f, --format</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+</ul>
+<h3 id="metaxy-list-features">metaxy list features<a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy list features [OPTIONS]</span>
+</span></code></pre></div>
+<p>List Metaxy features in the current project.</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>--verbose, --no-verbose, -v</code>: Show detailed information including field dependencies and versions.  <em>[default: False]</em></li>
+<li><code>--format, -f</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h2 id="metaxy-metadata">metaxy metadata<a class="headerlink" href="#metaxy-metadata" title="Permanent link">&para;</a></h2>
 <p>Manage Metaxy metadata</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+</ul>
 <h3 id="metaxy-metadata-status">metaxy metadata status<a class="headerlink" href="#metaxy-metadata-status" title="Permanent link">&para;</a></h3>
-<p>Check metadata completeness and freshness for specified features.</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy metadata status [OPTIONS]</span>
 </span></code></pre></div>
+<p>Check metadata completeness and freshness for specified features.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--feature, --empty-feature</code>: Feature key (e.g., 'my_feature' or 'namespace/feature'). Can be repeated.</li>
-<li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: --no-all-features]</em></li>
+<li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
 <li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://anam-org.github.io/metaxy/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
 <li><code>--snapshot-id</code>: Check metadata against a specific snapshot version.</li>
-<li><code>--assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: --no-assert-in-sync]</em></li>
-<li><code>--verbose, --no-verbose</code>: Whether to display sample slices of dataframes.  <em>[default: --no-verbose]</em></li>
-<li><code>--progress, --no-progress</code>: Display progress percentage showing how many input units have been processed at least once. Stale samples are counted as processed.  <em>[default: --no-progress]</em></li>
-<li><code>--allow-fallback-stores, --no-allow-fallback-stores</code>: Whether to read metadata from fallback stores.  <em>[default: --allow-fallback-stores]</em></li>
+<li><code>--assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: False]</em></li>
+<li><code>--verbose, --no-verbose</code>: Whether to display sample slices of dataframes.  <em>[default: False]</em></li>
+<li><code>--progress, --no-progress</code>: Display progress percentage showing how many input units have been processed at least once. Stale samples are counted as processed.  <em>[default: False]</em></li>
+<li><code>--allow-fallback-stores, --no-allow-fallback-stores</code>: Whether to read metadata from fallback stores.  <em>[default: True]</em></li>
 <li><code>--format</code>:   <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h3 id="metaxy-metadata-drop">metaxy metadata drop<a class="headerlink" href="#metaxy-metadata-drop" title="Permanent link">&para;</a></h3>
-<p>Drop metadata from a store.</p>
-<p>Removes metadata for specified features. This is destructive and requires --confirm.</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="go">metaxy metadata drop [OPTIONS]</span>
 </span></code></pre></div>
+<p>Drop metadata from a store.</p>
+<p>Removes metadata for specified features. This is destructive and requires --confirm.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--feature, --empty-feature</code>: Feature key (e.g., 'my_feature' or 'namespace/feature'). Can be repeated.</li>
-<li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: --no-all-features]</em></li>
+<li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 <li><code>--store</code>: Store name to drop metadata from (defaults to configured default store).</li>
-<li><code>--confirm, --no-confirm</code>: Confirm the drop operation (required to prevent accidental deletion).  <em>[default: --no-confirm]</em></li>
+<li><code>--confirm, --no-confirm</code>: Confirm the drop operation (required to prevent accidental deletion).  <em>[default: False]</em></li>
 <li><code>--format</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 
