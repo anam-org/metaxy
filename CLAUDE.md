@@ -81,8 +81,8 @@ uv run ruff format .
 ### Type Checking
 
 ```bash
-# Run pyrefly type checker
-uv run basedpyright --level error
+# Run ty type checker
+uv run ty check
 ```
 
 ## Docs

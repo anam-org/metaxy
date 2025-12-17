@@ -235,4 +235,4 @@ class TestObserveMetaxyAsset:
 
         # Check custom metadata is present (sorted because order isn't guaranteed)
         assert "custom/ids" in observation.metadata
-        assert sorted(observation.metadata["custom/ids"].value) == ["1", "2"]  # pyright: ignore[reportArgumentType]
+        assert sorted(observation.metadata["custom/ids"].value) == ["1", "2"]

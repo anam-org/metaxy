@@ -91,7 +91,7 @@ def test_duplicate_field_keys_in_feature_class_definition():
     """Test that duplicate field keys are caught when defining a Feature class."""
     with pytest.raises(ValueError, match="Duplicate field key found"):
 
-        class _TestFeature(  # pyright: ignore[reportUnusedClass]
+        class _TestFeature(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key="test/duplicate_fields",
@@ -130,7 +130,7 @@ def test_feature_spec_requires_id_columns():
     with pytest.raises(ValidationError, match="id_columns"):
         FeatureSpec(
             key="test/feature"
-        )  # Missing id_columns  # pyright: ignore[reportCallIssue]
+        )  # Missing id_columns  # ty: ignore[no-matching-overload]
 
     # This should work
     spec = FeatureSpec(key="test/feature", id_columns=["sample_uid"])

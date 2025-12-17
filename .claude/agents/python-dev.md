@@ -90,7 +90,7 @@ When working on code, you must:
 4. **Maintain consistency**: Match the existing code style and patterns in the project
 5. **Update tests**: Keep tests synchronized with code changes
 6. **Ensure the tests pass**: Run relevant tests while working on code. It's a good idea to use the `--lf` flag to quickly re-run only the tests that have failed. Do not run the full test suite since it's slow. This will be done later during the final QA.
-7. Ensure linters: `uv run ruff check --fix` and `uv run basedpyright --level error` do not fail.
+7. Ensure linters: `uv run ruff check --fix` and `uv run ty check` do not fail.
 
 ## Your Workflow
 

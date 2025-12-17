@@ -47,7 +47,7 @@ def describe_graph(
         filtered_features = {
             key: cls
             for key, cls in graph.features_by_key.items()
-            if cls.project == project  # type: ignore[attr-defined]
+            if cls.project == project
         }
     else:
         filtered_features = graph.features_by_key
@@ -113,7 +113,7 @@ def describe_graph(
     # Calculate project breakdown
     projects: dict[str, int] = {}
     for cls in graph.features_by_key.values():
-        project_name = cls.project  # type: ignore[attr-defined]
+        project_name = cls.project
         projects[project_name] = projects.get(project_name, 0) + 1
 
     # Build result
@@ -207,7 +207,7 @@ def get_feature_dependencies(
 
             return {
                 "key": key.to_string(),
-                "project": cls.project,  # type: ignore[attr-defined]
+                "project": cls.project,
                 "dependencies": deps,
             }
 
@@ -302,7 +302,7 @@ def get_feature_dependents(
             cls = graph.features_by_key.get(key)
             return {
                 "key": key.to_string(),
-                "project": cls.project if cls else None,  # type: ignore[attr-defined]
+                "project": cls.project if cls else None,
                 "dependents": dependents,
             }
 

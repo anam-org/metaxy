@@ -16,11 +16,6 @@ from metaxy.models.types import (
 
 if TYPE_CHECKING:
     # yes, these are circular imports, the TYPE_CHECKING block hides them at runtime.
-    # neither pyright not basedpyright allow ignoring `reportImportCycles` because they think it's a bad practice
-    # and it would be very smart to force the user to restructure their project instead
-    # context: https://github.com/microsoft/pyright/issues/1825
-    # however, considering the recursive nature of graphs, and the syntactic sugar that we want to support,
-    # I decided to just put these errors into `.basedpyright/baseline.json` (after ensuring this is the only error produced by basedpyright)
     from metaxy.models.feature import BaseFeature
     from metaxy.models.feature_spec import FeatureSpec
 
@@ -123,7 +118,7 @@ class FieldDep(BaseModel):
             ...
 
         # Final signature combining all overloads
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             feature: str
             | Sequence[str]
@@ -133,7 +128,7 @@ class FieldDep(BaseModel):
             fields: list[CoercibleToFieldKey]
             | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
             **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
+        ) -> None: ...
 
 
 def _validate_field_spec_from_string(value: Any) -> Any:
@@ -226,7 +221,7 @@ class FieldSpec(BaseModel):
             ...
 
         # Final signature combining all overloads
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             key: CoercibleToFieldKey,
             code_version: str = DEFAULT_CODE_VERSION,

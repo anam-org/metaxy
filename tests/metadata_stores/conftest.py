@@ -113,7 +113,7 @@ def persistent_store(
 ) -> MetadataStore:
     """Parametrized persistent store (InMemory + DuckDB)."""
     store_type, config = store_config
-    return store_type(**config)  # type: ignore[abstract]
+    return store_type(**config)
 
 
 # ============= FIXTURES FOR NON-HASH TESTS =============

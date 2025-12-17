@@ -25,7 +25,7 @@ class LineageRelationshipType(str, Enum):
     EXPANSION = "1:N"
 
 
-class BaseLineageRelationship(BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
+class BaseLineageRelationship(BaseModel, ABC):
     """Base class for lineage relationship configurations.
 
     Lineage relationships define the cardinality and transformation pattern

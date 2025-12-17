@@ -679,11 +679,11 @@ class TestMultiAssetIntegration:
 
         # Verify row counts
         assert (
-            mat_a.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            mat_a.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
             == 3
         )
         assert (
-            mat_b.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            mat_b.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
             == 2
         )
 
@@ -727,7 +727,7 @@ class TestMultiAssetIntegration:
         run2_id = mat.records[0].run_id
         assert run2_id != run1_id
 
-        metadata = mat.records[0].asset_materialization.metadata  # pyright: ignore[reportOptionalMemberAccess]
+        metadata = mat.records[0].asset_materialization.metadata  # ty: ignore[possibly-missing-attribute]
         # Total row count is 3
         assert metadata["dagster/row_count"].value == 3
         # metaxy/materialized_in_run should be present since the store has materialization_id
@@ -783,10 +783,10 @@ class TestMultiObservableSourceAssetIntegration:
 
         # Verify row counts
         assert (
-            obs_a.records[0].asset_observation.metadata["dagster/row_count"].value == 4  # pyright: ignore[reportOptionalMemberAccess]
+            obs_a.records[0].asset_observation.metadata["dagster/row_count"].value == 4  # ty: ignore[possibly-missing-attribute]
         )
         assert (
-            obs_b.records[0].asset_observation.metadata["dagster/row_count"].value == 2  # pyright: ignore[reportOptionalMemberAccess]
+            obs_b.records[0].asset_observation.metadata["dagster/row_count"].value == 2  # ty: ignore[possibly-missing-attribute]
         )
 
 
@@ -958,27 +958,23 @@ class TestPartitionedMultiAssetIntegration:
         assert len(mat_y.records) == 1
         # Total: X=4 rows, Y=6 rows
         assert (
-            mat_x.records[0]
-            .asset_materialization.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
-            .value
+            mat_x.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
             == 4
         )
         assert (
-            mat_y.records[0]
-            .asset_materialization.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
-            .value
+            mat_y.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
             == 6
         )
         # Partition 2024-01-01: X=3 rows, Y=2 rows
         assert (
-            mat_x.records[0]
-            .asset_materialization.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            mat_x.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_materialization.metadata["dagster/partition_row_count"]
             .value
             == 3
         )
         assert (
-            mat_y.records[0]
-            .asset_materialization.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            mat_y.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_materialization.metadata["dagster/partition_row_count"]
             .value
             == 2
         )
@@ -998,27 +994,23 @@ class TestPartitionedMultiAssetIntegration:
 
         # Total: X=4 rows, Y=6 rows (same as before)
         assert (
-            mat_x.records[0]
-            .asset_materialization.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
-            .value
+            mat_x.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
             == 4
         )
         assert (
-            mat_y.records[0]
-            .asset_materialization.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
-            .value
+            mat_y.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
             == 6
         )
         # Partition 2024-01-02: X=1 row, Y=4 rows
         assert (
-            mat_x.records[0]
-            .asset_materialization.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            mat_x.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_materialization.metadata["dagster/partition_row_count"]
             .value
             == 1
         )
         assert (
-            mat_y.records[0]
-            .asset_materialization.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            mat_y.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_materialization.metadata["dagster/partition_row_count"]
             .value
             == 4
         )
@@ -1116,27 +1108,21 @@ class TestPartitionedMultiAssetIntegration:
         assert len(obs_y.records) == 1
         # Total: X=7 rows, Y=4 rows
         assert (
-            obs_x.records[0]
-            .asset_observation.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
-            .value
-            == 7
+            obs_x.records[0].asset_observation.metadata["dagster/row_count"].value == 7  # ty: ignore[possibly-missing-attribute]
         )
         assert (
-            obs_y.records[0]
-            .asset_observation.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
-            .value
-            == 4
+            obs_y.records[0].asset_observation.metadata["dagster/row_count"].value == 4  # ty: ignore[possibly-missing-attribute]
         )
         # Partition 2024-01-01: X=5 rows, Y=1 row
         assert (
-            obs_x.records[0]
-            .asset_observation.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            obs_x.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_observation.metadata["dagster/partition_row_count"]
             .value
             == 5
         )
         assert (
-            obs_y.records[0]
-            .asset_observation.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            obs_y.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_observation.metadata["dagster/partition_row_count"]
             .value
             == 1
         )
@@ -1153,27 +1139,21 @@ class TestPartitionedMultiAssetIntegration:
 
         # Total: X=7 rows, Y=4 rows (same as before)
         assert (
-            obs_x.records[0]
-            .asset_observation.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
-            .value
-            == 7
+            obs_x.records[0].asset_observation.metadata["dagster/row_count"].value == 7  # ty: ignore[possibly-missing-attribute]
         )
         assert (
-            obs_y.records[0]
-            .asset_observation.metadata["dagster/row_count"]  # pyright: ignore[reportOptionalMemberAccess]
-            .value
-            == 4
+            obs_y.records[0].asset_observation.metadata["dagster/row_count"].value == 4  # ty: ignore[possibly-missing-attribute]
         )
         # Partition 2024-01-02: X=2 rows, Y=3 rows
         assert (
-            obs_x.records[0]
-            .asset_observation.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            obs_x.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_observation.metadata["dagster/partition_row_count"]
             .value
             == 2
         )
         assert (
-            obs_y.records[0]
-            .asset_observation.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            obs_y.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_observation.metadata["dagster/partition_row_count"]
             .value
             == 3
         )

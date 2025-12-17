@@ -54,9 +54,9 @@ You have zero tolerance for meaningless tests. For every test:
 - Report any violations with clear explanations
 - Suggest fixes for common issues
 
-**Type Checking with basedpyright:**
+**Type Checking with ty:**
 
-- Run `uv run basedpyright` (or the project's configured type checker)
+- Run `uv run ty check` (or the project's configured type checker)
 - Identify type errors and inconsistencies
 - Verify that type hints are present and accurate
 - Check for proper use of generics and type variables
@@ -133,7 +133,7 @@ Based on CLAUDE.md context:
 
 4. **Run Quality Checks:**
    - Execute ruff linting and formatting checks
-   - Run type checker (basedpyright or configured alternative)
+   - Run type checker (ty or configured alternative)
    - Report all violations clearly
 
 5. **Execute Tests:**

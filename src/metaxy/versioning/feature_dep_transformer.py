@@ -69,7 +69,8 @@ class FeatureDepTransformer:
 
         return (
             RenamedDataFrame(
-                df=df, id_columns=list(self.upstream_feature_spec.id_columns)
+                df=df,  # ty: ignore[invalid-argument-type]
+                id_columns=list(self.upstream_feature_spec.id_columns),
             )
             .rename(self.renames)
             .filter(combined_filters if combined_filters else None)

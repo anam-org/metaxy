@@ -297,7 +297,7 @@ class TestMetaxyIOManagerLoadInput:
                 metadata={"metaxy/feature": "features/downstream"},
                 io_manager_key="metaxy_io_manager",
             )
-            def downstream_asset(upstream_asset: nw.LazyFrame):  # pyright: ignore[reportMissingTypeArgument]
+            def downstream_asset(upstream_asset: nw.LazyFrame):
                 # This receives data loaded via IO manager from fallback store
                 data = upstream_asset.collect()
                 captured_data["rows"] = len(data)
@@ -333,12 +333,12 @@ class TestMetaxyIOManagerLoadInput:
 
             # Check the input metadata shows the fallback store
             loaded_input_data = loaded_input_events[0].event_specific_data
-            input_metadata = loaded_input_data.metadata  # pyright: ignore
+            input_metadata = loaded_input_data.metadata
             assert "metaxy/store" in input_metadata
             # The store display should reference the fallback path
             store_display = input_metadata["metaxy/store"].value
-            assert "fallback" in store_display  # pyright: ignore
-            assert "primary" not in store_display  # pyright: ignore
+            assert "fallback" in store_display
+            assert "primary" not in store_display
 
             # Also verify dagster/uri points to fallback
             assert "dagster/uri" in input_metadata
@@ -610,7 +610,7 @@ class TestMetaxyIOManagerPartitions:
         )
         def downstream_partitioned(
             context: dg.AssetExecutionContext,
-            upstream_partitioned: nw.LazyFrame,  # pyright: ignore[reportMissingTypeArgument]
+            upstream_partitioned: nw.LazyFrame,
         ):
             # This receives data loaded via IO manager's load_input method
             # It should be filtered to the current partition
@@ -721,7 +721,7 @@ class TestMetaxyIOManagerPartitions:
             },
         )
         def downstream_unpartitioned(
-            upstream_partitioned: nw.LazyFrame,  # pyright: ignore[reportMissingTypeArgument]
+            upstream_partitioned: nw.LazyFrame,
         ):
             # This receives data loaded via IO manager's load_input method
             # Since downstream is unpartitioned, it should get ALL data
@@ -830,7 +830,7 @@ class TestMetaxyIOManagerPartitions:
         )
         def downstream_partitioned(
             context: dg.AssetExecutionContext,
-            upstream_unpartitioned: nw.LazyFrame,  # pyright: ignore[reportMissingTypeArgument]
+            upstream_unpartitioned: nw.LazyFrame,
         ):
             # This receives data loaded via IO manager's load_input method
             # Upstream has no partition_by, so we should get all upstream data
@@ -949,7 +949,7 @@ class TestMetaxyIOManagerPartitions:
         )
         def downstream_quarterly(
             context: dg.AssetExecutionContext,
-            upstream_monthly: nw.LazyFrame,  # pyright: ignore[reportMissingTypeArgument]
+            upstream_monthly: nw.LazyFrame,
         ):
             # This receives data loaded via IO manager's load_input method
             # Should only get data from 2024-01 and 2024-02 due to SpecificPartitionsMapping
@@ -1195,19 +1195,19 @@ class TestMultipleAssetsPerFeature:
             )
 
         # Both assets use the same feature key as asset key
-        assert dg.AssetKey(["features", "shared"]) in producer_one.keys
-        assert dg.AssetKey(["features", "shared"]) in producer_two.keys
+        assert dg.AssetKey(["features", "shared"]) in producer_one.keys  # ty: ignore[unresolved-attribute]
+        assert dg.AssetKey(["features", "shared"]) in producer_two.keys  # ty: ignore[unresolved-attribute]
 
         # Materialize both assets
         result1 = dg.materialize(
-            [producer_one],
+            [producer_one],  # ty: ignore[invalid-argument-type]
             resources=resources,
             instance=instance,
         )
         assert result1.success
 
         result2 = dg.materialize(
-            [producer_two],
+            [producer_two],  # ty: ignore[invalid-argument-type]
             resources=resources,
             instance=instance,
         )

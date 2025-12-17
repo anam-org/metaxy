@@ -33,7 +33,7 @@
           git
           clickhouse
           graphviz
-          nodejs_22  # so basedpyright runs against it
+          nodejs_22
           (mermaid-ascii.packages.${system}.default or null)
         ];
 

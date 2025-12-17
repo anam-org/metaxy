@@ -303,7 +303,7 @@ def get_feature_metadata_status(
     is_root_feature = not plan.deps
 
     # Get row count for this feature version
-    id_columns = feature_cls.spec().id_columns  # type: ignore[attr-defined]
+    id_columns = feature_cls.spec().id_columns
     id_columns_seq = tuple(id_columns) if id_columns is not None else None
 
     # Get store metadata (table_name, uri, etc.)

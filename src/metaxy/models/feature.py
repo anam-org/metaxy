@@ -692,17 +692,17 @@ class FeatureGraph:
 
         for feature_key, feature_cls in self.features_by_key.items():
             feature_key_str = feature_key.to_string()
-            feature_spec_dict = feature_cls.spec().model_dump(mode="json")  # type: ignore[attr-defined]
-            feature_schema_dict = feature_cls.model_json_schema()  # type: ignore[attr-defined]
-            feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
-            feature_spec_version = feature_cls.spec().feature_spec_version  # type: ignore[attr-defined]
-            full_definition_version = feature_cls.full_definition_version()  # type: ignore[attr-defined]
-            project = feature_cls.project  # type: ignore[attr-defined]
+            feature_spec_dict = feature_cls.spec().model_dump(mode="json")
+            feature_schema_dict = feature_cls.model_json_schema()
+            feature_version = feature_cls.feature_version()
+            feature_spec_version = feature_cls.spec().feature_spec_version
+            full_definition_version = feature_cls.full_definition_version()
+            project = feature_cls.project
 
             # Get class import path (module.ClassName)
             class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
 
-            snapshot[feature_key_str] = {  # pyright: ignore
+            snapshot[feature_key_str] = {  # ty: ignore[invalid-assignment]
                 "feature_spec": feature_spec_dict,
                 "feature_schema": feature_schema_dict,
                 FEATURE_VERSION_COL: feature_version,
@@ -952,7 +952,7 @@ class MetaxyMeta(ModelMetaclass):
         *,
         spec: FeatureSpec | None = None,
         **kwargs,
-    ) -> type[Self]:  # pyright: ignore[reportGeneralTypeIssues]
+    ) -> type[Self]:
         # Inject frozen config if not already specified in namespace
         if "model_config" not in namespace:
             from pydantic import ConfigDict
@@ -964,12 +964,12 @@ class MetaxyMeta(ModelMetaclass):
         if spec:
             # Get graph from context at class definition time
             active_graph = FeatureGraph.get_active()
-            new_cls.graph = active_graph  # type: ignore[attr-defined]
-            new_cls._spec = spec  # type: ignore[attr-defined]
+            new_cls.graph = active_graph
+            new_cls._spec = spec
 
             # Determine project for this feature using intelligent detection
             project = cls._detect_project(new_cls)
-            new_cls.project = project  # type: ignore[attr-defined]
+            new_cls.project = project
 
             active_graph.add_feature(new_cls)
         else:
@@ -1101,7 +1101,7 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
         return self
 
     @classmethod
-    def spec(cls) -> FeatureSpec:  # type: ignore[override]
+    def spec(cls) -> FeatureSpec:
         return cls._spec
 
     @classmethod

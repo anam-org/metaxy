@@ -75,7 +75,7 @@ def observable_metaxy_asset(
         # Merge user metadata with metaxy/feature
         user_metadata = observable_kwargs.pop("metadata", None) or {}
         spec = dg.AssetSpec(
-            key=observable_kwargs.pop("key", None) or fn.__name__,
+            key=observable_kwargs.pop("key", None) or fn.__name__,  # ty: ignore[unresolved-attribute]
             group_name=observable_kwargs.pop("group_name", None),
             tags=observable_kwargs.pop("tags", None),
             metadata={
@@ -97,9 +97,7 @@ def observable_metaxy_asset(
             metaxy_partition = enriched.metadata.get(
                 DAGSTER_METAXY_PARTITION_METADATA_KEY
             )
-            filters = build_metaxy_partition_filter(
-                metaxy_partition  # pyright: ignore[reportArgumentType]
-            )
+            filters = build_metaxy_partition_filter(metaxy_partition)
 
             with store:
                 lazy_df = store.read_metadata(feature_key, filters=filters)

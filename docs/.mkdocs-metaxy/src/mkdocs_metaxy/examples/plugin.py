@@ -71,7 +71,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
             )
 
         # Store resolved path for use by hooks
-        self._examples_dir = examples_dir  # pyright: ignore[reportUninitializedInstanceVariable]
+        self._examples_dir = examples_dir
 
         # Initialize loader and renderer
         self.loader = RunbookLoader(examples_dir)

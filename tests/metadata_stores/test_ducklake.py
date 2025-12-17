@@ -71,7 +71,7 @@ class _StubConnection(_PreviewConnection):
         self._cursor = _StubCursor()
 
     def cursor(self) -> _StubCursor:
-        return self._cursor
+        return self._cursor  # ty: ignore[invalid-return-type]
 
 
 def test_ducklake_attachment_sequence() -> None:

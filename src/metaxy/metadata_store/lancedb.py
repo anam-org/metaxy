@@ -241,14 +241,14 @@ class LanceDBMetadataStore(MetadataStore):
             True if table exists, False otherwise
         """
         try:
-            self.conn.open_table(table_name)  # type: ignore[attr-defined]
+            self.conn.open_table(table_name)
             return True
         except (ValueError, FileNotFoundError):
             # LanceDB raises ValueError when table doesn't exist
             return False
 
     def _get_table(self, table_name: str):
-        return self.conn.open_table(table_name)  # type: ignore[attr-defined]
+        return self.conn.open_table(table_name)
 
     # ===== MetadataStore abstract methods =====
 
@@ -293,9 +293,9 @@ class LanceDBMetadataStore(MetadataStore):
 
         if self._table_exists(table_name):
             table = self._get_table(table_name)
-            table.add(df_polars)  # type: ignore[attr-defined]
+            table.add(df_polars)
         else:
-            self.conn.create_table(table_name, data=df_polars)  # type: ignore[attr-defined]
+            self.conn.create_table(table_name, data=df_polars)
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop Lance table for feature.
@@ -308,7 +308,7 @@ class LanceDBMetadataStore(MetadataStore):
         """
         table_name = self._table_name(feature_key)
         if self._table_exists(table_name):
-            self.conn.drop_table(table_name)  # type: ignore[attr-defined]
+            self.conn.drop_table(table_name)
 
     def read_metadata_in_store(
         self,
@@ -360,5 +360,5 @@ class LanceDBMetadataStore(MetadataStore):
         return f"LanceDBMetadataStore(path={path})"
 
     @classmethod
-    def config_model(cls) -> type[LanceDBMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def config_model(cls) -> type[LanceDBMetadataStoreConfig]:
         return LanceDBMetadataStoreConfig

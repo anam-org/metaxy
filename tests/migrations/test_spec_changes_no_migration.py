@@ -135,11 +135,9 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     v2_feature_version = SimpleV2.feature_version()
     v2_feature_spec_version = SimpleV2.feature_spec_version()
 
+    assert v1_feature_version != v2_feature_version  # Changed!
     assert (
-        v1_feature_version != v2_feature_version
-    )  # Changed!  # type: ignore[possibly-unbound]
-    assert (
-        v1_feature_spec_version != v2_feature_spec_version  # type: ignore[possibly-unbound]
+        v1_feature_spec_version != v2_feature_spec_version
     )  # Also changed (includes code_version)
 
     # Test migration detection

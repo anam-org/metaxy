@@ -294,8 +294,8 @@ def test_operation_config_roundtrip():
     original = OperationConfig(
         type="metaxy.migrations.ops.DataVersionReconciliation",
         features=["feature/a", "feature/b"],
-        custom_field="value",  # pyright: ignore[reportCallIssue]  # Extra field, allowed with extra="allow"
-        batch_size=100,  # pyright: ignore[reportCallIssue]  # Extra field
+        custom_field="value",  # Extra field, allowed with extra="allow"  # ty: ignore[unknown-argument]
+        batch_size=100,  # Extra field  # ty: ignore[unknown-argument]
     )
 
     # Serialize to dict
@@ -351,7 +351,9 @@ def test_operation_with_basesettings_env_vars():
         assert op.api_key == "secret123"
 
         # Can also instantiate with only env vars (no config dict)
-        op_from_env = TestOperation()  # pyright: ignore[reportCallIssue]  # Testing env var behavior
+        op_from_env = (
+            TestOperation()  # ty: ignore[missing-argument]
+        )  # Testing env var behavior
 
         assert op_from_env.database_url == "postgresql://localhost:5432/test"
         assert op_from_env.api_key == "secret123"

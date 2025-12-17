@@ -105,7 +105,7 @@ This is the Metaxy project - a feature metadata management system. Key testing p
 
 - Add type hints to test functions and fixtures
 - Use `from __future__ import annotations` for forward references
-- Ensure tests pass type checking with basedpyright
+- Ensure tests pass type checking with ty
 
 ### Documentation
 

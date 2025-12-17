@@ -82,7 +82,7 @@ def create_store_for_fallback(
         return DuckDBMetadataStore(
             db_path,
             hash_algorithm=hash_algorithm,
-            extensions=extensions,  # pyright: ignore[reportArgumentType]
+            extensions=extensions,
             versioning_engine=versioning_engine,
             fallback_stores=fallback_stores,
         )
@@ -197,7 +197,7 @@ def test_fallback_store_warning_issued(
         # Create primary store with native component support and fallback configured
         primary_store = create_store_for_fallback(
             primary_store_type,
-            versioning_engine=versioning_engine,  # pyright: ignore
+            versioning_engine=versioning_engine,  # ty: ignore[invalid-argument-type]
             hash_algorithm=hash_algorithm,
             params=store_params,
             suffix=f"primary_{versioning_engine}",
