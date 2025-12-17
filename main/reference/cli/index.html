@@ -3601,6 +3601,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#metaxy-metadata-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy metadata copy
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3904,6 +3915,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#metaxy-metadata-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy metadata copy
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4035,6 +4057,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><a href="#metaxy-metadata"><code>metadata</code></a><ul>
 <li><a href="#metaxy-metadata-status"><code>status</code></a></li>
 <li><a href="#metaxy-metadata-drop"><code>drop</code></a></li>
+<li><a href="#metaxy-metadata-copy"><code>copy</code></a></li>
 </ul>
 </li>
 </ul>
@@ -4319,6 +4342,25 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--store</code>: Store name to drop metadata from (defaults to configured default store).</li>
 <li><code>--confirm, --no-confirm</code>: Confirm the drop operation (required to prevent accidental deletion).  <em>[default: False]</em></li>
 <li><code>--format</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
+</ul>
+<h3 id="metaxy-metadata-copy">metaxy metadata copy<a class="headerlink" href="#metaxy-metadata-copy" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="go">metaxy metadata copy [OPTIONS] FROM TO [ARGS...]</span>
+</span></code></pre></div>
+<p>Copy metadata from one store to another.</p>
+<p>Copies metadata for specified features from source to destination store.
+By default, copies all versions (--no-current-only) and deduplicates by
+keeping only the latest row per sample (--latest-only).</p>
+<p><strong>Arguments</strong>:</p>
+<ul>
+<li><code>FEATURES</code>: One or more feature keys to copy, separated by whitespaces.</li>
+</ul>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>FROM, --from</code>: Source store name to copy metadata from.  <strong>[required]</strong></li>
+<li><code>TO, --to</code>: Destination store name to copy metadata to.  <strong>[required]</strong></li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://anam-org.github.io/metaxy/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
+<li><code>--current-only, --no-current-only</code>: Only copy rows with the current feature_version (as defined in loaded feature graph).  <em>[default: False]</em></li>
+<li><code>--latest-only, --no-latest-only</code>: Deduplicate samples by keeping only the latest row per id_columns group.  <em>[default: True]</em></li>
 </ul>
 
 
