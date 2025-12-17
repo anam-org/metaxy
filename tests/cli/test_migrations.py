@@ -365,3 +365,135 @@ def test_generated_migration_is_valid(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("migrations", "status")
         assert result.returncode == 0
         assert "validation error" not in result.stderr.lower()
+
+
+def test_migrations_apply_rerun_displays_reprocessing_message(
+    metaxy_project: TempMetaxyProject,
+):
+    """Test that --rerun flag shows 'Reprocessing all N feature(s)' message.
+
+    Regression test for bug where --rerun incorrectly displayed database completion
+    state instead of indicating all features will be reprocessed from YAML.
+    """
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Generate a full migration
+        result = metaxy_project.run_cli(
+            "migrations",
+            "generate",
+            "--op",
+            "metaxy.migrations.ops.DataVersionReconciliation",
+            "--type",
+            "full",
+        )
+        assert result.returncode == 0
+
+        # Apply with --rerun and --dry-run to see the message without executing
+        result = metaxy_project.run_cli(
+            "migrations", "apply", "--rerun", "--dry-run", check=False
+        )
+
+        # Should show RERUN MODE banner
+        assert "RERUN MODE" in result.stderr
+        # Should show "Reprocessing all N feature(s)" message (not "already completed")
+        assert "Reprocessing all" in result.stderr
+        assert "feature(s)" in result.stderr
+        # Should NOT show "already completed" message when in rerun mode
+        assert "already completed)" not in result.stderr
+
+
+def test_migrations_status_uses_yaml_as_source_of_truth(
+    metaxy_project: TempMetaxyProject,
+):
+    """Test that migration status uses YAML features as source of truth.
+
+    Regression test for bug where status displayed historical completed features
+    from database even when they were removed from the YAML file.
+
+    Scenario: YAML originally had 3 features, 2 were executed. Then YAML is
+    modified to only have 1 feature. Status should show 0/1 completed (not 2/1).
+    """
+    from datetime import datetime, timezone
+
+    import yaml
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class FeatureA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "feature_a"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class FeatureB(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "feature_b"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Create migrations directory
+        migrations_dir = metaxy_project.project_dir / ".metaxy" / "migrations"
+        migrations_dir.mkdir(parents=True, exist_ok=True)
+
+        # Write a FullGraphMigration YAML with both features
+        migration_yaml = {
+            "migration_type": "metaxy.migrations.models.FullGraphMigration",
+            "migration_id": "test_yaml_source_of_truth",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "parent": "initial",
+            "snapshot_version": "a" * 64,
+            "ops": [
+                {
+                    "type": "metaxy.migrations.ops.DataVersionReconciliation",
+                    "features": ["test/feature_a", "test/feature_b"],
+                }
+            ],
+        }
+
+        yaml_path = migrations_dir / "test_yaml_truth.yaml"
+        with open(yaml_path, "w") as f:
+            yaml.dump(migration_yaml, f)
+
+        # Check initial status - should show 0/2 completed
+        result = metaxy_project.run_cli("migrations", "status")
+        assert result.returncode == 0
+        assert "0/2 completed" in result.stderr
+
+        # Now modify YAML to only have feature_a (remove feature_b)
+        migration_yaml["ops"] = [
+            {
+                "type": "metaxy.migrations.ops.DataVersionReconciliation",
+                "features": ["test/feature_a"],
+            }
+        ]
+        with open(yaml_path, "w") as f:
+            yaml.dump(migration_yaml, f)
+
+        # Check status again - should show 0/1 completed (YAML is source of truth)
+        result = metaxy_project.run_cli("migrations", "status")
+        assert result.returncode == 0
+        assert "0/1 completed" in result.stderr
+        # Should NOT show 0/2 (the old value)
+        assert "0/2" not in result.stderr

@@ -139,17 +139,29 @@ class Migration(pydantic.BaseModel, ABC):
 
         storage = SystemTableStorage(store)
 
-        # Get expected features from YAML
+        # Get expected features from YAML (source of truth)
         expected_features = self.get_affected_features(store, project)
+        expected_set = set(expected_features)
 
         # Get actual status from database
         summary = storage.get_migration_summary(
             self.migration_id, project, expected_features
         )
 
+        # Filter completed/failed features to only include those in current YAML
+        # This handles the case where YAML was modified to remove features
+        completed_features = [
+            fk for fk in summary["completed_features"] if fk in expected_set
+        ]
+        failed_features = {
+            fk: msg
+            for fk, msg in summary["failed_features"].items()
+            if fk in expected_set
+        }
+
         # Compute pending features
-        completed_set = set(summary["completed_features"])
-        failed_set = set(summary["failed_features"].keys())
+        completed_set = set(completed_features)
+        failed_set = set(failed_features.keys())
         pending_features = [
             fk
             for fk in expected_features
@@ -160,8 +172,8 @@ class Migration(pydantic.BaseModel, ABC):
             migration_id=self.migration_id,
             status=summary["status"],
             expected_features=expected_features,
-            completed_features=summary["completed_features"],
-            failed_features=summary["failed_features"],
+            completed_features=completed_features,
+            failed_features=failed_features,
             pending_features=pending_features,
         )
 

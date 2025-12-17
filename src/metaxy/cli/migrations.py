@@ -314,7 +314,12 @@ def apply(
             status_info = migration.get_status_info(metadata_store, project)
 
             app.console.print(f"[bold]Applying: {migration.migration_id}[/bold]")
-            if status_info.features_remaining > 0:
+            if rerun:
+                # In rerun mode, all features from YAML will be reprocessed
+                app.console.print(
+                    f"  Reprocessing all {status_info.features_total} feature(s)"
+                )
+            elif status_info.features_remaining > 0:
                 app.console.print(
                     f"  Processing {status_info.features_remaining} feature(s) "
                     f"({len(status_info.completed_features)} already completed)"
