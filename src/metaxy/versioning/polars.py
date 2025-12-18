@@ -173,10 +173,12 @@ class PolarsVersioningEngine(VersioningEngine):
         )
 
         # Check if timestamp_column exists
-        if timestamp_column not in df.columns:
+        # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
+        columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        if timestamp_column not in columns:
             raise ValueError(
                 f"Timestamp column '{timestamp_column}' not found in DataFrame. "
-                f"Available columns: {df.columns}"
+                f"Available columns: {columns}"
             )
 
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
