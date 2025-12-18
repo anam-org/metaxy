@@ -388,7 +388,8 @@ class MetadataStore(ABC):
 
             # For root features, add data_version columns if they don't exist
             # (root features have no computation, so data_version equals provenance)
-            if METAXY_DATA_VERSION_BY_FIELD not in samples_nw.columns:
+            # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
+            if METAXY_DATA_VERSION_BY_FIELD not in samples_nw.collect_schema().names():
                 samples_nw = samples_nw.with_columns(
                     nw.col(METAXY_PROVENANCE_BY_FIELD).alias(
                         METAXY_DATA_VERSION_BY_FIELD
@@ -841,7 +842,8 @@ class MetadataStore(ABC):
             self.write_metadata_to_store(feature_key, df_nw)
             return
 
-        if METAXY_PROVENANCE_BY_FIELD not in df_nw.columns:
+        # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
+        if METAXY_PROVENANCE_BY_FIELD not in df_nw.collect_schema().names():
             from metaxy.metadata_store.exceptions import MetadataSchemaError
 
             raise MetadataSchemaError(
@@ -1351,10 +1353,13 @@ class MetadataStore(ABC):
         """
         feature_key = self._resolve_feature_key(feature)
 
+        # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
+        columns = df.collect_schema().names()
+
         # Check if version columns already exist in DataFrame
-        has_feature_version = METAXY_FEATURE_VERSION in df.columns
-        has_snapshot_version = METAXY_SNAPSHOT_VERSION in df.columns
-        has_feature_spec_version = METAXY_FEATURE_SPEC_VERSION in df.columns
+        has_feature_version = METAXY_FEATURE_VERSION in columns
+        has_snapshot_version = METAXY_SNAPSHOT_VERSION in columns
+        has_feature_spec_version = METAXY_FEATURE_SPEC_VERSION in columns
 
         # In suppression mode (migrations), use existing values as-is
         if (
@@ -1416,12 +1421,15 @@ class MetadataStore(ABC):
             METAXY_DATA_VERSION_BY_FIELD,
         )
 
-        if METAXY_PROVENANCE_BY_FIELD not in df.columns:
+        # Re-fetch columns since df may have been modified above
+        columns = df.collect_schema().names()
+
+        if METAXY_PROVENANCE_BY_FIELD not in columns:
             raise ValueError(
                 f"Metadata is missing a required column `{METAXY_PROVENANCE_BY_FIELD}`. It should have been created by a prior `MetadataStore.resolve_update` call. Did you drop it on the way?"
             )
 
-        if METAXY_PROVENANCE not in df.columns:
+        if METAXY_PROVENANCE not in columns:
             plan = self._resolve_feature_plan(feature_key)
 
             # Only warn for non-root features (features with dependencies).
@@ -1441,7 +1449,10 @@ class MetadataStore(ABC):
                 hash_column=METAXY_PROVENANCE,
             )
 
-        if METAXY_CREATED_AT not in df.columns:
+        # Re-fetch columns since df may have been modified
+        columns = df.collect_schema().names()
+
+        if METAXY_CREATED_AT not in columns:
             from datetime import datetime, timezone
 
             df = df.with_columns(
@@ -1458,13 +1469,15 @@ class MetadataStore(ABC):
         )
 
         # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)
+        # Re-fetch columns since df may have been modified
+        columns = df.collect_schema().names()
 
-        if METAXY_DATA_VERSION_BY_FIELD not in df.columns:
+        if METAXY_DATA_VERSION_BY_FIELD not in columns:
             df = df.with_columns(
                 nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD)
             )
             df = df.with_columns(nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION))
-        elif METAXY_DATA_VERSION not in df.columns:
+        elif METAXY_DATA_VERSION not in columns:
             df = self.hash_struct_version_column(
                 plan=self._resolve_feature_plan(feature_key),
                 df=df,

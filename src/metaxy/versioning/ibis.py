@@ -223,10 +223,12 @@ class IbisVersioningEngine(VersioningEngine):
         )
 
         # Check if timestamp_column exists
-        if timestamp_column not in df.columns:
+        # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
+        columns = df.collect_schema().names()
+        if timestamp_column not in columns:
             raise ValueError(
                 f"Timestamp column '{timestamp_column}' not found in DataFrame. "
-                f"Available columns: {df.columns}"
+                f"Available columns: {columns}"
             )
 
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
