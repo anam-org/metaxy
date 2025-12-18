@@ -104,7 +104,7 @@ dev = [
   "deltalake>=1.2.1",
   "mistune>=3.1.4",
   "dagster>=1.12.3",
-  "ty>=0.0.2",
+  "ty>=0.0.3",
 ]
 
 examples = [
