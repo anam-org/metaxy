@@ -168,8 +168,12 @@ class FeatureDepTransformer:
             return None
         else:
             # Apply renames to the selected columns since selection happens after renaming
+            # Filter out columns already in renamed_id_columns to avoid duplicates
+            id_cols_set = set(self.renamed_id_columns)
             renamed_selected_cols = [
-                self.renames.get(col, col) for col in self.dep.columns
+                self.renames.get(col, col)
+                for col in self.dep.columns
+                if self.renames.get(col, col) not in id_cols_set
             ]
 
             # Auto-include lineage 'on' columns (after rename) if not already selected
@@ -179,7 +183,7 @@ class FeatureDepTransformer:
                 self.renames.get(col, col)
                 for col in lineage_on_cols
                 if self.renames.get(col, col) not in renamed_selected_cols
-                and self.renames.get(col, col) not in self.renamed_id_columns
+                and self.renames.get(col, col) not in id_cols_set
             ]
 
             return [
