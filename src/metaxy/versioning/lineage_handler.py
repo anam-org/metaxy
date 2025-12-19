@@ -163,8 +163,17 @@ class AggregationLineageTransformer(LineageTransformer):
                 f"Available columns: {df_columns}"
             )
 
+        # Determine which upstream ID columns to exclude from aggregation output.
+        # If user explicitly requested an ID column in columns=, keep it (with first() value).
+        # Otherwise, exclude it since it's only needed for sorting.
+        user_requested_cols = set(
+            transformer.renames.get(col, col) for col in (self.dep.columns or [])
+        )
+        id_cols_to_exclude = [
+            col for col in renamed_id_columns if col not in user_requested_cols
+        ]
+
         # Aggregate by concatenating data_version values and hashing
-        # Exclude upstream ID columns - they're only needed for sorting, not for output
         grouped = self.engine.aggregate_with_string_concat(
             df=df_sorted,
             group_by_columns=agg_columns,
@@ -174,7 +183,7 @@ class AggregationLineageTransformer(LineageTransformer):
                 renamed_prov_by_field_col,
                 renamed_data_version_by_field_col,
                 renamed_prov_col,
-                *renamed_id_columns,
+                *id_cols_to_exclude,
             ],
         )
 

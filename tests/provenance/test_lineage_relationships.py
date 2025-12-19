@@ -2408,6 +2408,97 @@ def test_two_deps_with_same_upstream_id_column_and_aggregation(
     assert result_df["chunk_id"].to_list() == ["c1"]
 
 
+def test_aggregation_keeps_upstream_id_column_when_explicitly_requested(
+    graph: FeatureGraph,
+) -> None:
+    """Test that upstream ID columns are kept when explicitly included in columns=.
+
+    The user may want to carry the upstream ID column through aggregation for use
+    in their downstream feature (e.g., to build a nested array of IDs per group).
+
+    When director_notes_id is explicitly in columns=, it should be available after
+    aggregation (with first() value per group), not dropped.
+    """
+
+    class DirectorNotesTexts(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["director_notes_texts"]),
+            id_columns=("director_notes_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["chunk_id"]), code_version="1"),
+                FieldSpec(key=FieldKey(["text_path"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class AggregatedByChunk(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["aggregated_by_chunk"]),
+            id_columns=("chunk_id",),
+            deps=[
+                FeatureDep(
+                    feature=DirectorNotesTexts,
+                    # User explicitly includes director_notes_id - they want it in output
+                    columns=("director_notes_id", "text_path"),
+                    lineage=LineageRelationship.aggregation(on=["chunk_id"]),
+                ),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["aggregated"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                )
+            ],
+        ),
+    ):
+        pass
+
+    plan = graph.get_feature_plan(AggregatedByChunk.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    upstream_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "director_notes_id": ["dn1", "dn2", "dn3"],
+                "chunk_id": ["c1", "c1", "c2"],
+                "text_path": ["/path/1", "/path/2", "/path/3"],
+                "metaxy_provenance_by_field": [
+                    {"chunk_id": "h1", "text_path": "h2"},
+                    {"chunk_id": "h3", "text_path": "h4"},
+                    {"chunk_id": "h5", "text_path": "h6"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"chunk_id": "h1", "text_path": "h2"},
+                    {"chunk_id": "h3", "text_path": "h4"},
+                    {"chunk_id": "h5", "text_path": "h6"},
+                ],
+                "metaxy_provenance": ["prov_1", "prov_2", "prov_3"],
+                "metaxy_data_version": ["dv_1", "dv_2", "dv_3"],
+            }
+        ).lazy()
+    )
+
+    upstream = {FeatureKey(["director_notes_texts"]): upstream_data}
+
+    result = engine.load_upstream_with_provenance(
+        upstream=upstream,
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    )
+
+    result_df = result.collect()
+
+    # Should have 2 rows (one per chunk_id)
+    assert len(result_df) == 2
+
+    # director_notes_id should be present since user explicitly requested it
+    assert "director_notes_id" in result_df.columns
+
+
 def test_expansion_columns_auto_included_when_columns_specified(
     graph: FeatureGraph,
 ) -> None:
