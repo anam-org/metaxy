@@ -1947,3 +1947,691 @@ def test_mixed_lineage_different_relationship_types(graph: FeatureGraph) -> None
 
     # Overall input_id_columns is intersection
     assert set(plan.input_id_columns) == {"dim_key"}
+
+
+# ============================================================================
+# Tests for aggregation column auto-inclusion when columns= is specified
+# ============================================================================
+
+
+def test_aggregation_columns_auto_included_when_columns_specified(
+    graph: FeatureGraph,
+) -> None:
+    """Test that aggregation 'on' columns are automatically included when columns= is specified.
+
+    This reproduces a bug where specifying columns= on a FeatureDep with aggregation lineage
+    would cause the aggregation column to be missing, leading to:
+    - "unable to find column" error during aggregation
+
+    The scenario:
+    - Feature A has id_columns=["id_a"] and fields including "group_col"
+    - Feature B depends on A with:
+      - columns=("field_x", "field_y") - explicit column selection NOT including group_col
+      - lineage=aggregation(on=["group_col"])
+
+    Expected behavior: group_col should be auto-included since it's needed for aggregation.
+    """
+
+    class UpstreamDetail(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["upstream_detail"]),
+            id_columns=("detail_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["group_col"]), code_version="1"),
+                FieldSpec(key=FieldKey(["field_x"]), code_version="1"),
+                FieldSpec(key=FieldKey(["field_y"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class AggregatedFeature(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["aggregated_feature"]),
+            id_columns=("group_col",),
+            deps=[
+                FeatureDep(
+                    feature=UpstreamDetail,
+                    # BUG: columns= doesn't include group_col, but aggregation needs it
+                    columns=("field_x", "field_y"),
+                    lineage=LineageRelationship.aggregation(on=["group_col"]),
+                )
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["aggregated_value"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                )
+            ],
+        ),
+    ):
+        pass
+
+    plan = graph.get_feature_plan(AggregatedFeature.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Create upstream data
+    upstream_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "detail_id": ["d1", "d2", "d3"],
+                "group_col": ["g1", "g1", "g2"],  # d1, d2 -> g1; d3 -> g2
+                "field_x": ["x1", "x2", "x3"],
+                "field_y": ["y1", "y2", "y3"],
+                "metaxy_provenance_by_field": [
+                    {"group_col": "gc_h1", "field_x": "fx_h1", "field_y": "fy_h1"},
+                    {"group_col": "gc_h2", "field_x": "fx_h2", "field_y": "fy_h2"},
+                    {"group_col": "gc_h3", "field_x": "fx_h3", "field_y": "fy_h3"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"group_col": "gc_h1", "field_x": "fx_h1", "field_y": "fy_h1"},
+                    {"group_col": "gc_h2", "field_x": "fx_h2", "field_y": "fy_h2"},
+                    {"group_col": "gc_h3", "field_x": "fx_h3", "field_y": "fy_h3"},
+                ],
+                "metaxy_provenance": ["prov_1", "prov_2", "prov_3"],
+                "metaxy_data_version": ["dv_1", "dv_2", "dv_3"],
+            }
+        ).lazy()
+    )
+
+    upstream = {FeatureKey(["upstream_detail"]): upstream_data}
+
+    # This should NOT raise "unable to find column 'group_col'"
+    # The aggregation column should be auto-included
+    result = engine.load_upstream_with_provenance(
+        upstream=upstream,
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    )
+
+    result_df = result.collect()
+
+    # Should have 2 groups (g1, g2) after aggregation
+    assert len(result_df) == 2
+    assert set(result_df["group_col"].to_list()) == {"g1", "g2"}
+
+
+def test_two_deps_with_aggregation_on_same_column_with_explicit_columns(
+    graph: FeatureGraph,
+) -> None:
+    """Test two deps aggregating on the same column where neither specifies the agg column in columns=.
+
+    The aggregation 'on' columns should be automatically included from the lineage relationship -
+    there's no need to specify them twice in both `columns=` and `lineage=aggregation(on=...)`.
+
+    This test verifies:
+    - chunk_id is auto-included for both deps from lineage.aggregation(on=["chunk_id"])
+    - chunk_id is recognized as a shared join column (not a collision)
+    - The aggregation works correctly with the auto-included column
+    """
+
+    class NotesTexts(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["notes_texts"]),
+            id_columns=("notes_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["chunk_id"]), code_version="1"),
+                FieldSpec(key=FieldKey(["notes_type"]), code_version="1"),
+                FieldSpec(key=FieldKey(["text_path"]), code_version="1"),
+                FieldSpec(key=FieldKey(["text_size"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class NotesEncodings(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["notes_encodings"]),
+            id_columns=("encoding_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["chunk_id"]), code_version="1"),
+                FieldSpec(key=FieldKey(["encoding_path"]), code_version="1"),
+                FieldSpec(key=FieldKey(["encoding_size"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class AggregatedByChunk(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["aggregated_by_chunk"]),
+            id_columns=("chunk_id",),
+            deps=[
+                # First dep: chunk_id NOT in columns - auto-included from lineage
+                FeatureDep(
+                    feature=NotesEncodings,
+                    columns=("encoding_path", "encoding_size"),
+                    rename={
+                        "encoding_path": "encodings_path",
+                        "encoding_size": "encodings_size",
+                    },
+                    lineage=LineageRelationship.aggregation(on=["chunk_id"]),
+                ),
+                # Second dep: chunk_id NOT in columns - auto-included from lineage
+                FeatureDep(
+                    feature=NotesTexts,
+                    columns=("notes_type", "text_path", "text_size"),
+                    rename={"text_path": "texts_path", "text_size": "texts_size"},
+                    lineage=LineageRelationship.aggregation(on=["chunk_id"]),
+                ),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["aggregated"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                )
+            ],
+        ),
+    ):
+        pass
+
+    plan = graph.get_feature_plan(AggregatedByChunk.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Create upstream data for NotesEncodings
+    encodings_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "encoding_id": ["e1", "e2"],
+                "chunk_id": ["c1", "c1"],
+                "encoding_path": ["/path/e1", "/path/e2"],
+                "encoding_size": [100, 200],
+                "metaxy_provenance_by_field": [
+                    {"chunk_id": "h1", "encoding_path": "h2", "encoding_size": "h3"},
+                    {"chunk_id": "h4", "encoding_path": "h5", "encoding_size": "h6"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"chunk_id": "h1", "encoding_path": "h2", "encoding_size": "h3"},
+                    {"chunk_id": "h4", "encoding_path": "h5", "encoding_size": "h6"},
+                ],
+                "metaxy_provenance": ["enc_prov_1", "enc_prov_2"],
+                "metaxy_data_version": ["enc_dv_1", "enc_dv_2"],
+            }
+        ).lazy()
+    )
+
+    # Create upstream data for NotesTexts
+    texts_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "notes_id": ["n1", "n2", "n3"],
+                "chunk_id": ["c1", "c1", "c1"],
+                "notes_type": ["imperative", "descriptive", "keywords"],
+                "text_path": ["/path/n1", "/path/n2", "/path/n3"],
+                "text_size": [10, 20, 30],
+                "metaxy_provenance_by_field": [
+                    {
+                        "chunk_id": "h1",
+                        "notes_type": "h2",
+                        "text_path": "h3",
+                        "text_size": "h4",
+                    },
+                    {
+                        "chunk_id": "h5",
+                        "notes_type": "h6",
+                        "text_path": "h7",
+                        "text_size": "h8",
+                    },
+                    {
+                        "chunk_id": "h9",
+                        "notes_type": "h10",
+                        "text_path": "h11",
+                        "text_size": "h12",
+                    },
+                ],
+                "metaxy_data_version_by_field": [
+                    {
+                        "chunk_id": "h1",
+                        "notes_type": "h2",
+                        "text_path": "h3",
+                        "text_size": "h4",
+                    },
+                    {
+                        "chunk_id": "h5",
+                        "notes_type": "h6",
+                        "text_path": "h7",
+                        "text_size": "h8",
+                    },
+                    {
+                        "chunk_id": "h9",
+                        "notes_type": "h10",
+                        "text_path": "h11",
+                        "text_size": "h12",
+                    },
+                ],
+                "metaxy_provenance": ["txt_prov_1", "txt_prov_2", "txt_prov_3"],
+                "metaxy_data_version": ["txt_dv_1", "txt_dv_2", "txt_dv_3"],
+            }
+        ).lazy()
+    )
+
+    upstream = {
+        FeatureKey(["notes_encodings"]): encodings_data,
+        FeatureKey(["notes_texts"]): texts_data,
+    }
+
+    # This should NOT raise:
+    # - "unable to find column 'chunk_id'" (if chunk_id not auto-included)
+    # - "ambiguous columns" (if chunk_id included but treated as collision)
+    result = engine.load_upstream_with_provenance(
+        upstream=upstream,
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    )
+
+    result_df = result.collect()
+
+    # Should have 1 row after aggregation (all data belongs to chunk_id="c1")
+    assert len(result_df) == 1
+    assert result_df["chunk_id"].to_list() == ["c1"]
+
+
+def test_two_deps_with_same_upstream_id_column_and_aggregation(
+    graph: FeatureGraph,
+) -> None:
+    """Test two deps from features with the SAME upstream ID column, aggregating on a different column.
+
+    This reproduces a real bug where:
+    - DirectorNotesTexts has id_columns=("director_notes_id",) and chunk_id as a field
+    - DirectorNotesEncodings has id_columns=("director_notes_id",) and chunk_id as a field
+    - Both aggregate on chunk_id
+
+    The upstream ID column (director_notes_id) is auto-included for both deps, causing
+    "ambiguous columns" error because it's repeated but not recognized as a shared column.
+
+    Expected: The upstream ID columns should be allowed to repeat since they come from
+    the same logical source (both deps have the same upstream ID column structure).
+    """
+
+    class DirectorNotesTexts(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["director_notes_texts"]),
+            id_columns=("director_notes_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["chunk_id"]), code_version="1"),
+                FieldSpec(key=FieldKey(["director_notes_type"]), code_version="1"),
+                FieldSpec(key=FieldKey(["path"]), code_version="1"),
+                FieldSpec(key=FieldKey(["size"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class DirectorNotesEncodings(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["director_notes_encodings"]),
+            id_columns=("director_notes_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["chunk_id"]), code_version="1"),
+                FieldSpec(key=FieldKey(["path"]), code_version="1"),
+                FieldSpec(key=FieldKey(["size"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class DirectorNotesAggregatedByChunk(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["director_notes_aggregated"]),
+            id_columns=("chunk_id",),
+            deps=[
+                FeatureDep(
+                    feature=DirectorNotesEncodings,
+                    columns=("path", "size", "chunk_id"),
+                    rename={"path": "encodings_path", "size": "encodings_size"},
+                    lineage=LineageRelationship.aggregation(on=["chunk_id"]),
+                ),
+                FeatureDep(
+                    feature=DirectorNotesTexts,
+                    columns=("director_notes_type", "path", "size"),
+                    rename={"path": "text_path", "size": "text_size"},
+                    lineage=LineageRelationship.aggregation(on=["chunk_id"]),
+                ),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["aggregated"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                )
+            ],
+        ),
+    ):
+        pass
+
+    plan = graph.get_feature_plan(DirectorNotesAggregatedByChunk.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Create upstream data for DirectorNotesEncodings
+    encodings_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "director_notes_id": ["dn1", "dn2"],
+                "chunk_id": ["c1", "c1"],
+                "path": ["/path/e1", "/path/e2"],
+                "size": [100, 200],
+                "metaxy_provenance_by_field": [
+                    {"chunk_id": "h1", "path": "h2", "size": "h3"},
+                    {"chunk_id": "h4", "path": "h5", "size": "h6"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"chunk_id": "h1", "path": "h2", "size": "h3"},
+                    {"chunk_id": "h4", "path": "h5", "size": "h6"},
+                ],
+                "metaxy_provenance": ["enc_prov_1", "enc_prov_2"],
+                "metaxy_data_version": ["enc_dv_1", "enc_dv_2"],
+            }
+        ).lazy()
+    )
+
+    # Create upstream data for DirectorNotesTexts
+    texts_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "director_notes_id": ["dn1", "dn2", "dn3"],
+                "chunk_id": ["c1", "c1", "c1"],
+                "director_notes_type": ["imperative", "descriptive", "keywords"],
+                "path": ["/path/t1", "/path/t2", "/path/t3"],
+                "size": [10, 20, 30],
+                "metaxy_provenance_by_field": [
+                    {
+                        "chunk_id": "h1",
+                        "director_notes_type": "h2",
+                        "path": "h3",
+                        "size": "h4",
+                    },
+                    {
+                        "chunk_id": "h5",
+                        "director_notes_type": "h6",
+                        "path": "h7",
+                        "size": "h8",
+                    },
+                    {
+                        "chunk_id": "h9",
+                        "director_notes_type": "h10",
+                        "path": "h11",
+                        "size": "h12",
+                    },
+                ],
+                "metaxy_data_version_by_field": [
+                    {
+                        "chunk_id": "h1",
+                        "director_notes_type": "h2",
+                        "path": "h3",
+                        "size": "h4",
+                    },
+                    {
+                        "chunk_id": "h5",
+                        "director_notes_type": "h6",
+                        "path": "h7",
+                        "size": "h8",
+                    },
+                    {
+                        "chunk_id": "h9",
+                        "director_notes_type": "h10",
+                        "path": "h11",
+                        "size": "h12",
+                    },
+                ],
+                "metaxy_provenance": ["txt_prov_1", "txt_prov_2", "txt_prov_3"],
+                "metaxy_data_version": ["txt_dv_1", "txt_dv_2", "txt_dv_3"],
+            }
+        ).lazy()
+    )
+
+    upstream = {
+        FeatureKey(["director_notes_encodings"]): encodings_data,
+        FeatureKey(["director_notes_texts"]): texts_data,
+    }
+
+    # This should NOT raise "ambiguous columns" for director_notes_id
+    result = engine.load_upstream_with_provenance(
+        upstream=upstream,
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    )
+
+    result_df = result.collect()
+
+    # Should have 1 row after aggregation (all data belongs to chunk_id="c1")
+    assert len(result_df) == 1
+    assert result_df["chunk_id"].to_list() == ["c1"]
+
+
+def test_expansion_columns_auto_included_when_columns_specified(
+    graph: FeatureGraph,
+) -> None:
+    """Test that expansion 'on' columns are automatically included when columns= is specified.
+
+    This mirrors test_aggregation_columns_auto_included_when_columns_specified but for expansion.
+
+    The scenario:
+    - Feature A (Video) has id_columns=["video_id"] and fields including metadata
+    - Feature B (VideoFrames) depends on A with:
+      - columns=("resolution",) - explicit column selection NOT including video_id
+      - lineage=expansion(on=["video_id"])
+
+    Expected behavior: video_id should be auto-included since it's needed for expansion.
+    """
+
+    class VideoSource(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["video_source"]),
+            id_columns=("video_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["resolution"]), code_version="1"),
+                FieldSpec(key=FieldKey(["fps"]), code_version="1"),
+                FieldSpec(key=FieldKey(["duration"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class ExpandedFrames(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["expanded_frames"]),
+            id_columns=("video_id", "frame_id"),
+            deps=[
+                FeatureDep(
+                    feature=VideoSource,
+                    # BUG: columns= doesn't include video_id, but expansion needs it
+                    columns=("resolution", "fps"),
+                    lineage=LineageRelationship.expansion(on=["video_id"]),
+                )
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["frame_embedding"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                )
+            ],
+        ),
+    ):
+        pass
+
+    plan = graph.get_feature_plan(ExpandedFrames.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Create upstream data
+    upstream_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "resolution": ["1080p", "4k"],
+                "fps": [30, 60],
+                "duration": [120, 300],
+                "metaxy_provenance_by_field": [
+                    {"resolution": "res_h1", "fps": "fps_h1", "duration": "dur_h1"},
+                    {"resolution": "res_h2", "fps": "fps_h2", "duration": "dur_h2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"resolution": "res_h1", "fps": "fps_h1", "duration": "dur_h1"},
+                    {"resolution": "res_h2", "fps": "fps_h2", "duration": "dur_h2"},
+                ],
+                "metaxy_provenance": ["prov_1", "prov_2"],
+                "metaxy_data_version": ["dv_1", "dv_2"],
+            }
+        ).lazy()
+    )
+
+    upstream = {FeatureKey(["video_source"]): upstream_data}
+
+    # This should NOT raise "unable to find column 'video_id'"
+    # The expansion column should be auto-included
+    result = engine.load_upstream_with_provenance(
+        upstream=upstream,
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    )
+
+    result_df = result.collect()
+
+    # Should have 2 videos (expansion doesn't change row count during loading)
+    assert len(result_df) == 2
+    assert set(result_df["video_id"].to_list()) == {"v1", "v2"}
+
+
+def test_two_deps_with_expansion_on_same_column_with_explicit_columns(
+    graph: FeatureGraph,
+) -> None:
+    """Test two deps with expansion on the same column where columns= doesn't include the expansion column.
+
+    This mirrors test_two_deps_with_aggregation_on_same_column_with_explicit_columns but for expansion.
+
+    Expected: video_id should be auto-included for expansion AND recognized as a shared
+    join column (not a collision).
+    """
+
+    class VideoMetadata(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["video_metadata"]),
+            id_columns=("video_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["resolution"]), code_version="1"),
+                FieldSpec(key=FieldKey(["codec"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class AudioMetadata(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["audio_metadata"]),
+            id_columns=("video_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["sample_rate"]), code_version="1"),
+                FieldSpec(key=FieldKey(["channels"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class ExpandedMediaFrames(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["expanded_media_frames"]),
+            id_columns=("video_id", "frame_id"),
+            deps=[
+                # First dep: MISSING video_id in columns
+                FeatureDep(
+                    feature=VideoMetadata,
+                    columns=("resolution",),
+                    lineage=LineageRelationship.expansion(on=["video_id"]),
+                ),
+                # Second dep: ALSO MISSING video_id in columns
+                FeatureDep(
+                    feature=AudioMetadata,
+                    columns=("sample_rate",),
+                    lineage=LineageRelationship.expansion(on=["video_id"]),
+                ),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["frame_data"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                )
+            ],
+        ),
+    ):
+        pass
+
+    plan = graph.get_feature_plan(ExpandedMediaFrames.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Create upstream data for VideoMetadata
+    video_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "resolution": ["1080p", "4k"],
+                "codec": ["h264", "h265"],
+                "metaxy_provenance_by_field": [
+                    {"resolution": "res_h1", "codec": "codec_h1"},
+                    {"resolution": "res_h2", "codec": "codec_h2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"resolution": "res_h1", "codec": "codec_h1"},
+                    {"resolution": "res_h2", "codec": "codec_h2"},
+                ],
+                "metaxy_provenance": ["video_prov_1", "video_prov_2"],
+                "metaxy_data_version": ["video_dv_1", "video_dv_2"],
+            }
+        ).lazy()
+    )
+
+    # Create upstream data for AudioMetadata
+    audio_data = nw.from_native(
+        pl.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "sample_rate": [48000, 44100],
+                "channels": [2, 6],
+                "metaxy_provenance_by_field": [
+                    {"sample_rate": "sr_h1", "channels": "ch_h1"},
+                    {"sample_rate": "sr_h2", "channels": "ch_h2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"sample_rate": "sr_h1", "channels": "ch_h1"},
+                    {"sample_rate": "sr_h2", "channels": "ch_h2"},
+                ],
+                "metaxy_provenance": ["audio_prov_1", "audio_prov_2"],
+                "metaxy_data_version": ["audio_dv_1", "audio_dv_2"],
+            }
+        ).lazy()
+    )
+
+    upstream = {
+        FeatureKey(["video_metadata"]): video_data,
+        FeatureKey(["audio_metadata"]): audio_data,
+    }
+
+    # This should NOT raise:
+    # - "unable to find column 'video_id'" (if video_id not auto-included)
+    # - "ambiguous columns" (if video_id included but treated as collision)
+    result = engine.load_upstream_with_provenance(
+        upstream=upstream,
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    )
+
+    result_df = result.collect()
+
+    # Should have 2 rows (one per video, expansion doesn't change row count during loading)
+    assert len(result_df) == 2
+    assert set(result_df["video_id"].to_list()) == {"v1", "v2"}
