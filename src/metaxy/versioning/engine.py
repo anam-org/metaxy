@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from collections import Counter
 from collections.abc import Mapping, Sequence
 from functools import cached_property
 from typing import Literal, cast
@@ -43,37 +42,15 @@ class VersioningEngine(ABC):
 
     @cached_property
     def feature_transformers_by_key(self) -> dict[FeatureKey, FeatureDepTransformer]:
-        transformers = {
+        """Build transformers for each upstream dependency.
+
+        Column collision validation happens at feature definition time in
+        FeatureGraph._validate_no_duplicate_columns(), not here.
+        """
+        return {
             dep.feature: FeatureDepTransformer(dep=dep, plan=self.plan)
             for dep in (self.plan.feature_deps or [])
         }
-        # make sure only ID columns are repeated across transformers
-
-        column_counter = Counter()
-        all_id_columns = set()
-        for transformer in transformers.values():
-            renamed_cols = transformer.renamed_columns
-            if renamed_cols is not None:
-                column_counter.update(renamed_cols)
-            # Allow both upstream ID columns and output ID columns to repeat
-            # - renamed_id_columns: upstream ID columns (needed for sorting in aggregation)
-            # - get_input_id_columns_for_dep: output ID columns after lineage (e.g., aggregation 'on' columns)
-            all_id_columns.update(transformer.renamed_id_columns)
-            all_id_columns.update(
-                self.plan.get_input_id_columns_for_dep(transformer.dep)
-            )
-
-        repeated_columns = []
-        for col, count in column_counter.items():
-            if count > 1 and col not in all_id_columns:
-                repeated_columns.append(col)
-
-        if repeated_columns:
-            raise RuntimeError(
-                f"Identified ambiguous columns while resolving upstream column selection for feature {self.key}. Repeated columns: {repeated_columns}. Only ID columns ({all_id_columns}) are allowed to be repeated. Please tweak the `rename` field on the `FeatureDep` objects of {self.key} feature spec."
-            )
-
-        return transformers
 
     @cached_property
     def shared_id_columns(self) -> list[str]:
@@ -244,20 +221,23 @@ class VersioningEngine(ABC):
 
         # Apply lineage transformations per-dependency (independently)
         if hash_algorithm is not None:
-            from metaxy.versioning.lineage_handler import create_lineage_transformer
+            from metaxy.versioning.lineage_handler import create_lineage_handler
 
             for feature_key, renamed_df in dfs.items():
                 dep = self.plan.feature.deps_by_key.get(feature_key)
                 if dep is not None:
-                    transformer = create_lineage_transformer(dep, self.plan, self)
-                    transformed_df = transformer.transform_upstream(
+                    dep_transformer = self.feature_transformers_by_key[feature_key]
+                    handler = create_lineage_handler(
+                        dep, self.plan, self, dep_transformer
+                    )
+                    transformed_df = handler.transform_upstream(
                         renamed_df.df,  # ty: ignore[invalid-argument-type]
                         hash_algorithm,
                     )
                     # Update ID columns based on lineage output
                     dfs[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
                         df=transformed_df,
-                        id_columns=transformer.output_id_columns,
+                        id_columns=tuple(handler.output_id_columns),
                     )
 
         # Drop system columns that aren't needed for provenance calculation
@@ -316,7 +296,7 @@ class VersioningEngine(ABC):
 
             if colliding_columns:
                 raise ValueError(
-                    f"Found additional shared columns across upstream features for feature {self.plan.feature}: {colliding_columns}. "
+                    f"Found column collisions {colliding_columns} across upstream features for feature {self.plan.feature.key}: "
                     f"Only ID columns {list(id_cols)} and required system columns {list(allowed_system_columns)} should be shared. "
                     f"Please add explicit renames in your FeatureDep to avoid column collisions."
                 )
@@ -366,33 +346,34 @@ class VersioningEngine(ABC):
         """
         raise NotImplementedError()
 
-    @staticmethod
     @abstractmethod
-    def aggregate_with_string_concat(
+    def concat_strings_over_groups(
+        self,
         df: FrameT,
+        source_column: str,
+        target_column: str,
         group_by_columns: list[str],
-        concat_column: str,
-        concat_separator: str,
-        exclude_columns: list[str],
+        order_by_columns: list[str],
+        separator: str = "|",
     ) -> FrameT:
-        """Aggregate DataFrame by grouping and concatenating strings.
+        """Concatenate string values within groups using window functions.
 
-        Used for N:1 aggregation lineage where multiple upstream rows
-        are aggregated into one downstream row. The concat_column strings
-        are concatenated with a separator, and other columns take their
-        first value within each group.
+        Used for aggregation lineage to combine upstream data_version values
+        within each downstream ID group. All rows in the same group receive
+        the same concatenated result.
 
         Args:
-            df: Narwhals DataFrame to aggregate
-            group_by_columns: Columns to group by
-            concat_column: Column containing strings to concatenate within groups
-            concat_separator: Separator to use when concatenating strings
-            exclude_columns: Columns to exclude from aggregation (typically system columns
-                that will be recalculated after aggregation)
+            df: Narwhals DataFrame
+            source_column: Column containing string values to concatenate
+            target_column: Name for the new column with concatenated result
+            group_by_columns: Columns defining the groups (downstream ID columns)
+            order_by_columns: Columns to order by within each group for deterministic results
+            separator: Separator between concatenated values
 
         Returns:
-            Narwhals DataFrame with one row per group, with concat_column containing
-            concatenated strings and other columns taking their first value.
+            Narwhals DataFrame with new target_column added containing the
+            concatenated string for each group. All rows in the same group
+            have identical values in target_column.
         """
         raise NotImplementedError()
 
@@ -478,16 +459,23 @@ class VersioningEngine(ABC):
         hash_algo: HashAlgorithm,
         filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
     ) -> FrameT:
-        """Compute the provenance of the given feature.
+        """Compute the provenance of the given feature from upstream data.
+
+        This method:
+        1. Prepares upstream data (filter, rename, select, lineage transform, join)
+        2. Computes metaxy_provenance_by_field and metaxy_provenance
+
+        For aggregation lineage, upstream metaxy columns are pre-aggregated field-by-field
+        during the lineage transformation step. All rows in the same aggregation group
+        have identical metaxy values, so downstream provenance computation just reads them.
 
         Args:
-            key: Feature key to compute provenance for
             upstream: Dictionary of upstream dataframes
             hash_algo: Hash algorithm to use
-            filters: Optional additional runtime filters to apply to upstream data (combined with FeatureDep.filters)
+            filters: Optional additional runtime filters to apply to upstream data
 
         Returns:
-            DataFrame with metaxy_provenance_by_field and metaxy_provenance columns added
+            DataFrame with metaxy_provenance_by_field and metaxy_provenance columns added.
 
         Note:
             Hash truncation length is read from MetaxyConfig.get().hash_truncation_length
@@ -495,14 +483,14 @@ class VersioningEngine(ABC):
         # Read hash truncation length from global config
         hash_length = MetaxyConfig.get().hash_truncation_length or 64
 
-        # Prepare upstream: filter, rename, select, apply lineage transformations, join
+        # Prepare upstream: filter, rename, select, lineage transform, join
         df = self.prepare_upstream(upstream, filters=filters, hash_algorithm=hash_algo)  # ty: ignore[invalid-argument-type]
 
         # Build concatenation columns for each field
         temp_concat_cols: dict[str, str] = {}  # field_key_str -> temp_col_name
         field_key_strs: dict[FieldKey, str] = {}  # field_key -> field_key_str
 
-        # Get field provenance expressions
+        # Get field provenance expressions (these read from upstream data_version_by_field)
         field_provenance_exprs = self.get_field_provenance_exprs()
 
         for field_spec in self.plan.feature.fields:
@@ -518,11 +506,10 @@ class VersioningEngine(ABC):
             ]
 
             # Add upstream provenance values in deterministic order
+            # For aggregation lineage, values are already pre-aggregated by transform_upstream
             parent_field_exprs = field_provenance_exprs.get(field_spec.key, {})
             for fq_field_key in sorted(parent_field_exprs.keys()):
-                # Add label
                 components.append(nw.lit(fq_field_key.to_string()))
-                # Add the expression that selects the upstream provenance
                 components.append(parent_field_exprs[fq_field_key])
 
             # Concatenate all components
@@ -544,11 +531,9 @@ class VersioningEngine(ABC):
         df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)
 
         # Compute sample-level provenance hash
-        # Step 1: Concatenate all field hashes with separator
         df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)
 
-        # Drop all temporary columns (BASE CLASS CLEANUP)
-        # Drop temporary concat columns and hash columns
+        # Drop all temporary columns
         temp_columns_to_drop = list(temp_concat_cols.values()) + list(
             temp_hash_cols.values()
         )
@@ -582,6 +567,7 @@ class VersioningEngine(ABC):
             df = df.drop(*columns_to_drop)
 
         # Add data_version columns (default to provenance values)
+        # Users can override these if needed
         from metaxy.models.constants import (
             METAXY_DATA_VERSION,
             METAXY_DATA_VERSION_BY_FIELD,
@@ -715,14 +701,26 @@ class VersioningEngine(ABC):
         hash_algorithm: HashAlgorithm,
         struct_column: str = METAXY_PROVENANCE_BY_FIELD,
         hash_column: str = METAXY_PROVENANCE,
+        field_names: list[str] | None = None,
     ) -> FrameT:
-        # Compute sample-level provenance from field-level provenance
-        # Get all field names from the struct (we need feature spec for this)
-        field_names = sorted([f.key.to_struct_key() for f in self.plan.feature.fields])
+        """Compute sample-level provenance by hashing all field versions together.
+
+        Args:
+            df: DataFrame containing the struct column
+            hash_algorithm: Hash algorithm to use
+            struct_column: Name of the struct column containing per-field versions
+            hash_column: Name for the output hash column
+            field_names: Field names in the struct. If None, uses self.plan.feature.fields.
+        """
+        if field_names is None:
+            field_names = sorted(
+                [f.key.to_struct_key() for f in self.plan.feature.fields]
+            )
 
         # Concatenate all field hashes with separator
         sample_components = [
-            nw.col(struct_column).struct.field(field_name) for field_name in field_names
+            nw.col(struct_column).struct.field(field_name)
+            for field_name in sorted(field_names)
         ]
         sample_concat = nw.concat_str(sample_components, separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
@@ -821,13 +819,16 @@ class VersioningEngine(ABC):
         # For root features (no deps), fall back to feature's id_columns
         join_columns = self.plan.input_id_columns or list(self.plan.feature.id_columns)
 
-        # Apply per-dependency lineage transformations to current data for comparison
+        # Apply per-dependency lineage handling to current data for comparison
         # Each lineage type may need different handling (e.g., expansion collapses rows)
-        from metaxy.versioning.lineage_handler import create_lineage_transformer
+        from metaxy.versioning.lineage_handler import create_lineage_handler
 
         for dep in self.plan.feature_deps or []:
-            lineage_transformer = create_lineage_transformer(dep, self.plan, self)
-            current = lineage_transformer.transform_current_for_comparison(
+            dep_transformer = self.feature_transformers_by_key[dep.feature]
+            lineage_handler = create_lineage_handler(
+                dep, self.plan, self, dep_transformer
+            )
+            current = lineage_handler.transform_current_for_comparison(
                 current,  # ty: ignore[invalid-argument-type]
                 join_columns,
             )

@@ -111,43 +111,38 @@ class PolarsVersioningEngine(VersioningEngine):
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(df_pl))
 
-    @staticmethod
-    def aggregate_with_string_concat(
+    def concat_strings_over_groups(
+        self,
         df: FrameT,
+        source_column: str,
+        target_column: str,
         group_by_columns: list[str],
-        concat_column: str,
-        concat_separator: str,
-        exclude_columns: list[str],
+        order_by_columns: list[str],
+        separator: str = "|",
     ) -> FrameT:
-        """Aggregate DataFrame by grouping and concatenating strings.
+        """Concatenate string values within groups using Polars window functions.
 
-        Args:
-            df: Narwhals DataFrame backed by Polars
-            group_by_columns: Columns to group by
-            concat_column: Column containing strings to concatenate within groups
-            concat_separator: Separator to use when concatenating strings
-            exclude_columns: Columns to exclude from aggregation
-
-        Returns:
-            Narwhals DataFrame with one row per group.
+        Uses sort_by + str.join over window to concatenate values in deterministic order.
+        All rows in the same group receive identical concatenated values.
         """
         assert df.implementation == nw.Implementation.POLARS, (
             "Only Polars DataFrames are accepted"
         )
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
-        # Group and aggregate: concatenate concat_column, take first for others
-        grouped = df_pl.group_by(group_by_columns).agg(
-            [
-                pl.col(concat_column).str.join(concat_separator),
-                pl.exclude(
-                    group_by_columns + [concat_column] + exclude_columns
-                ).first(),
-            ]
+        # Use sort_by within the window to ensure deterministic ordering
+        # then join all values with the separator
+        # Fall back to group_by columns for ordering if no explicit order_by columns
+        effective_order_by = order_by_columns if order_by_columns else group_by_columns
+        concat_expr = (
+            pl.col(source_column)
+            .sort_by(*effective_order_by)
+            .str.join(separator)
+            .over(group_by_columns)
         )
+        df_pl = df_pl.with_columns(concat_expr.alias(target_column))
 
-        # Convert back to Narwhals
-        return cast(FrameT, nw.from_native(grouped))
+        return cast(FrameT, nw.from_native(df_pl))
 
     @staticmethod
     def keep_latest_by_group(

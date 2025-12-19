@@ -355,3 +355,18 @@ class FeaturePlan(FrozenBaseModel):
     def required_deps(self) -> list[FeatureDep]:
         """Dependencies that are required (use inner join)."""
         return [dep for dep in (self.feature_deps or []) if not dep.optional]
+
+    @pydantic.model_validator(mode="after")
+    def _validate(self) -> "FeaturePlan":
+        """Validate the column configuration of this plan.
+
+        Checks for issues that would cause runtime errors:
+        - Columns renamed to system column names
+        - Columns renamed to upstream ID column names
+        - Duplicate rename targets within a single dependency
+        - Duplicate column names across dependencies (except allowed ID columns)
+        """
+        from metaxy.versioning.validation import validate_column_configuration
+
+        validate_column_configuration(self)
+        return self

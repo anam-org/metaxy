@@ -11,6 +11,7 @@ dependencies = [
   "example-ducklake",
   "example-one-to-many",
   "example-dagster",
+  "example-aggregation",
 ]
 
 [tool.uv.sources]
@@ -22,3 +23,4 @@ example-migration = { workspace = true }
 example-ducklake = { workspace = true }
 example-one-to-many = { workspace = true }
 example-dagster = { workspace = true }
+example-aggregation = { workspace = true }

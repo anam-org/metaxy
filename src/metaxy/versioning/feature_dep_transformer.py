@@ -88,7 +88,7 @@ class FeatureDepTransformer:
         return (
             RenamedDataFrame(
                 df=df,  # ty: ignore[invalid-argument-type]
-                id_columns=list(self.upstream_feature_spec.id_columns),
+                id_columns=tuple(self.upstream_feature_spec.id_columns),
             )
             .rename(self.renames)
             .filter(combined_filters if combined_filters else None)
@@ -140,19 +140,36 @@ class FeatureDepTransformer:
 
     @cached_property
     def renamed_id_columns(self) -> list[str]:
+        """All upstream ID columns after rename (regardless of column selection)."""
         return [
             self.renames.get(col, col) for col in self.upstream_feature_spec.id_columns
         ]
 
     @cached_property
+    def selected_id_columns(self) -> list[str]:
+        """Upstream ID columns that are actually selected (after column filtering).
+
+        When columns= is specified, only ID columns that are explicitly requested
+        or required for lineage/joins are included. When columns= is None, all
+        upstream ID columns are selected.
+        """
+        if self.renamed_columns is None:
+            # No column filtering, all ID columns are present
+            return self.renamed_id_columns
+
+        # Return only ID columns that are in the selected columns
+        selected_set = set(self.renamed_columns)
+        return [col for col in self.renamed_id_columns if col in selected_set]
+
+    @cached_property
     def _lineage_on_columns(self) -> list[str]:
-        """Get the 'on' columns from lineage relationship if applicable.
+        """Get the 'on' columns from lineage relationship (before rename).
 
         For aggregation and expansion lineage, these columns are required for
         the lineage transformation and must be included in the selected columns.
 
         Returns:
-            List of column names from lineage.on, or empty list if not applicable.
+            List of original column names from lineage.on, or empty list if not applicable.
         """
         from metaxy.models.lineage import AggregationRelationship, ExpansionRelationship
 
@@ -162,49 +179,95 @@ class FeatureDepTransformer:
         return []
 
     @cached_property
-    def renamed_columns(
-        self,
-    ) -> list[str] | None:
-        """Get columns to select from an upstream feature.
+    def _join_required_id_columns(self) -> list[str]:
+        """Get upstream ID columns required for joining (before rename).
 
-        There include both original and metaxy-injected columns, all already renamed.
-        Users are expected to use renamed column names in their columns specification.
-
-        For aggregation and expansion lineage, the 'on' columns are automatically
-        included even if not explicitly specified in columns=, since they are required
-        for the lineage transformation.
+        For identity lineage: all upstream ID columns are needed for the join.
+        For aggregation/expansion: only the `on=` columns are needed (already in _lineage_on_columns).
 
         Returns:
-            List of column names to select, or None to select all columns
+            List of original column names that must be included for joins to work.
         """
+        from metaxy.models.lineage import AggregationRelationship, ExpansionRelationship
 
-        # If no specific columns requested (None), return None to keep all columns
-        # If empty tuple, return only ID columns and system columns
+        relationship = self.dep.lineage.relationship
+        # For aggregation/expansion, the on= columns are the join keys (handled by _lineage_on_columns)
+        if isinstance(relationship, (AggregationRelationship, ExpansionRelationship)):
+            return []
+        # For identity lineage, all upstream ID columns are needed
+        return list(self.upstream_feature_spec.id_columns)
+
+    def _apply_rename(self, column: str) -> str:
+        """Apply rename mapping to a single column name."""
+        return self.renames.get(column, column)
+
+    @cached_property
+    def _user_requested_columns(self) -> list[str]:
+        """Get user-requested columns (after rename).
+
+        Returns columns explicitly specified in FeatureDep.columns, with renames applied.
+        """
+        if self.dep.columns is None:
+            return []
+
+        return [self._apply_rename(col) for col in self.dep.columns]
+
+    @cached_property
+    def _lineage_required_columns(self) -> list[str]:
+        """Get lineage-required columns (after rename) not already selected.
+
+        Returns lineage 'on' columns that aren't already in user-requested columns.
+        These are auto-included for aggregation/expansion lineage.
+        """
+        already_selected = set(self._user_requested_columns)
+        return [
+            self._apply_rename(col)
+            for col in self._lineage_on_columns
+            if self._apply_rename(col) not in already_selected
+        ]
+
+    @cached_property
+    def _join_required_columns(self) -> list[str]:
+        """Get join-required ID columns (after rename) not already selected.
+
+        For identity lineage, this includes all upstream ID columns.
+        For aggregation/expansion, this is empty (handled by _lineage_required_columns).
+        """
+        already_selected = set(self._user_requested_columns) | set(
+            self._lineage_required_columns
+        )
+        return [
+            self._apply_rename(col)
+            for col in self._join_required_id_columns
+            if self._apply_rename(col) not in already_selected
+        ]
+
+    @cached_property
+    def renamed_columns(self) -> list[str] | None:
+        """Get columns to select from an upstream feature.
+
+        When `columns=` is specified in FeatureDep, this returns only:
+        - User-requested columns (explicit selection)
+        - Lineage-required columns (for aggregation/expansion `on=` keys)
+        - Join-required columns (upstream ID columns for identity lineage)
+        - Metaxy system columns
+
+        When `columns=` is None (select all), returns None to indicate no filtering.
+
+        For identity lineage, upstream ID columns are always included (needed for joins).
+        For aggregation/expansion lineage, only the `on=` columns are auto-included,
+        not other upstream ID columns. This allows column selection to avoid collisions
+        when multiple upstreams share column names that aren't part of the join key.
+
+        Returns:
+            List of column names to select, or None to select all columns.
+        """
         if self.dep.columns is None:
             return None
-        else:
-            # Apply renames to the selected columns since selection happens after renaming
-            # Filter out columns already in renamed_id_columns to avoid duplicates
-            id_cols_set = set(self.renamed_id_columns)
-            renamed_selected_cols = [
-                self.renames.get(col, col)
-                for col in self.dep.columns
-                if self.renames.get(col, col) not in id_cols_set
-            ]
 
-            # Auto-include lineage 'on' columns (after rename) if not already selected
-            # These are required for aggregation/expansion transformations
-            lineage_on_cols = self._lineage_on_columns
-            renamed_lineage_on_cols = [
-                self.renames.get(col, col)
-                for col in lineage_on_cols
-                if self.renames.get(col, col) not in renamed_selected_cols
-                and self.renames.get(col, col) not in id_cols_set
-            ]
-
-            return [
-                *self.renamed_id_columns,
-                *renamed_selected_cols,
-                *renamed_lineage_on_cols,
-                *self.renamed_metaxy_cols,
-            ]
+        return [
+            *self._user_requested_columns,
+            *self._lineage_required_columns,
+            *self._join_required_columns,
+            *self.renamed_metaxy_cols,
+        ]

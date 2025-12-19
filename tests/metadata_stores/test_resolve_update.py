@@ -42,6 +42,7 @@ from metaxy.metadata_store import (
     MetadataStore,
 )
 from metaxy.models.plan import FeaturePlan
+from metaxy.versioning.types import Increment
 
 if TYPE_CHECKING:
     pass
@@ -1810,45 +1811,66 @@ class OptionalDependencyCases:
         return graph, upstream_features, child_plan
 
 
-def _write_upstream_metadata(
-    store: MetadataStore,
-    graph: FeatureGraph,
+def _compute_golden_increment_for_optional_deps(
+    child_plan: FeaturePlan,
     upstream_data: Mapping[str, pl.DataFrame],
-) -> None:
-    for feature_key_str, upstream_df in upstream_data.items():
-        feat_key = FeatureKey([feature_key_str])
-        feat_class = graph.features_by_key[feat_key]
-        store.write_metadata(feat_class, upstream_df)
+    hash_algorithm,
+) -> Increment:
+    """Compute golden increment using PolarsVersioningEngine for optional dependency tests.
 
+    This is the reference implementation - store implementations should produce
+    the same result.
+    """
+    import narwhals as nw
 
-def _expected_sample_uids(
-    feature_plan: FeaturePlan, upstream_data: Mapping[str, pl.DataFrame]
-) -> set[int]:
-    if feature_plan.required_deps:
-        required_uids: set[int] | None = None
-        for dep in feature_plan.required_deps:
-            dep_key = dep.feature.to_string()
-            dep_uids = set(upstream_data[dep_key]["sample_uid"].to_list())
-            required_uids = (
-                dep_uids if required_uids is None else required_uids & dep_uids
-            )
-        return required_uids or set()
+    from metaxy.versioning.polars import PolarsVersioningEngine
 
-    optional_uids: set[int] = set()
-    for dep in feature_plan.optional_deps:
-        dep_key = dep.feature.to_string()
-        optional_uids |= set(upstream_data[dep_key]["sample_uid"].to_list())
-    return optional_uids
+    engine = PolarsVersioningEngine(plan=child_plan)
+
+    # Convert upstream data to Narwhals LazyFrames with FeatureKey keys
+    upstream_nw = {
+        FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
+    }
+
+    # Compute increment with provenance (no current downstream for first run)
+    added, changed, removed, _ = engine.resolve_increment_with_provenance(
+        current=None,
+        upstream=upstream_nw,
+        hash_algorithm=hash_algorithm,
+        filters={},
+        sample=None,
+    )
+
+    # Collect lazy frames and convert to Increment
+    added_collected = added.collect()
+    changed_collected = (
+        changed.collect() if changed is not None else added_collected.head(0)
+    )
+    removed_collected = (
+        removed.collect() if removed is not None else added_collected.head(0)
+    )
+
+    return Increment(
+        added=added_collected,
+        changed=changed_collected,
+        removed=removed_collected,
+    )
 
 
 @parametrize_with_cases("feature_plan_config", cases=OptionalDependencyCases)
 def test_resolve_update_optional_dependencies(
     graph: FeatureGraph,
-    default_store: MetadataStore,
+    any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ) -> None:
-    """Test resolve_update optional dependency join behavior using shared fixtures."""
-    store = default_store
+    """Test resolve_update optional dependency join behavior against golden Polars implementation.
+
+    Uses the PolarsVersioningEngine as the reference implementation and verifies that
+    the store's resolve_update produces the same result.
+    """
+    from metaxy.models.constants import METAXY_CREATED_AT
+
+    store = any_store
     graph, upstream_features, child_plan = feature_plan_config
     child_key = child_plan.feature.key
     ChildFeature = graph.features_by_key[child_key]
@@ -1870,14 +1892,977 @@ def test_resolve_update_optional_dependencies(
             max_rows=8,
         ).example()
 
+    try:
+        with store, graph.use():
+            # Write upstream data to store
+            for feature_key_str, upstream_df in upstream_data.items():
+                feat_key = FeatureKey([feature_key_str])
+                feat_class = graph.features_by_key[feat_key]
+                store.write_metadata(feat_class, upstream_df)
+
+            # Get store's result
+            increment = store.resolve_update(ChildFeature, lazy=False)
+
+            # Compute golden increment using PolarsVersioningEngine
+            golden_increment = _compute_golden_increment_for_optional_deps(
+                child_plan, upstream_data, store.hash_algorithm
+            )
+
+            # Compare added frames (excluding timestamp which varies)
+            actual_added = increment.added.lazy().collect().to_polars()
+            golden_added = golden_increment.added.lazy().collect().to_polars()
+
+            # Get common columns for comparison
+            common_columns = [
+                col
+                for col in actual_added.columns
+                if col in golden_added.columns and col != METAXY_CREATED_AT
+            ]
+
+            # Sort by all comparable columns for deterministic comparison
+            actual_sorted = actual_added.sort(common_columns).select(common_columns)
+            golden_sorted = golden_added.sort(common_columns).select(common_columns)
+
+            pl_testing.assert_frame_equal(
+                actual_sorted,
+                golden_sorted,
+                check_row_order=True,
+                check_column_order=False,
+            )
+
+            # Verify provenance columns are present
+            assert "metaxy_provenance" in actual_added.columns
+            assert "metaxy_provenance_by_field" in actual_added.columns
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
+
+
+def test_optional_dependency_null_handling_and_provenance_stability(
+    any_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test that optional dependencies produce NULLs for missing rows and provenance is stable.
+
+    This test verifies critical properties of optional dependencies:
+
+    1. **NULL handling**: When a sample exists in required parent but not in optional parent,
+       the downstream should still include that sample with NULL values for optional fields.
+
+    2. **Provenance stability for missing optional deps**: When an optional dependency's
+       field version changes, downstream samples that have NULL for that optional dep
+       should NOT have their provenance changed (since they don't depend on it).
+
+    3. **Provenance changes for present optional deps**: When an optional dependency's
+       field version changes, downstream samples that DO have values from the optional
+       dep SHOULD have their provenance changed.
+
+    Scenario:
+    - RequiredParent: samples [s1, s2, s3] with field 'req_value'
+    - OptionalParent: samples [s1, s3] only (s2 is missing) with field 'opt_value'
+    - Child: depends on both, with 'computed' field depending on ALL upstream fields
+
+    After initial resolve:
+    - s1, s3: have both req_value and opt_value
+    - s2: has req_value but NULL for opt_value
+
+    When OptionalParent's opt_value version changes:
+    - s1, s3: provenance SHOULD change (they have actual optional dep values)
+    - s2: provenance should NOT change (optional dep is NULL, so not dependent)
+    """
+    import polars as pl
+
+    from metaxy.models.field import FieldSpec, SpecialFieldDep
+    from metaxy.models.types import FieldKey
+
+    class RequiredParent(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="required_parent_null_test",
+            fields=[FieldSpec(key=FieldKey(["req_value"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    class OptionalParent(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="optional_parent_null_test",
+            fields=[FieldSpec(key=FieldKey(["opt_value"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    class ChildFeature(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="child_null_test",
+            deps=[
+                FeatureDep(feature=RequiredParent, optional=False),
+                FeatureDep(feature=OptionalParent, optional=True),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["computed"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,  # Depends on ALL upstream fields
+                ),
+            ],
+        ),
+    ):
+        pass
+
+    try:
+        with any_store:
+            # === INITIAL DATA ===
+            # Required parent has samples s1, s2, s3
+            required_df = pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2", "s3"],
+                    "metaxy_provenance_by_field": [
+                        {"req_value": "req_s1_v1"},
+                        {"req_value": "req_s2_v1"},
+                        {"req_value": "req_s3_v1"},
+                    ],
+                    "metaxy_data_version_by_field": [
+                        {"req_value": "req_s1_v1"},
+                        {"req_value": "req_s2_v1"},
+                        {"req_value": "req_s3_v1"},
+                    ],
+                }
+            )
+            any_store.write_metadata(RequiredParent, required_df)
+
+            # Optional parent has only s1 and s3 (s2 is MISSING)
+            optional_df = pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s3"],
+                    "metaxy_provenance_by_field": [
+                        {"opt_value": "opt_s1_v1"},
+                        {"opt_value": "opt_s3_v1"},
+                    ],
+                    "metaxy_data_version_by_field": [
+                        {"opt_value": "opt_s1_v1"},
+                        {"opt_value": "opt_s3_v1"},
+                    ],
+                }
+            )
+            any_store.write_metadata(OptionalParent, optional_df)
+
+            # Initial resolve
+            increment_v1 = any_store.resolve_update(ChildFeature)
+            initial_downstream = increment_v1.added.lazy().collect().to_polars()
+
+            # === VERIFY NULL HANDLING ===
+            # Should have all 3 samples (left join keeps s2 even though optional parent is missing)
+            assert len(initial_downstream) == 3, (
+                f"Expected 3 samples (s1, s2, s3) from left join, got {len(initial_downstream)}"
+            )
+
+            # Sort for consistent comparison
+            initial_downstream = initial_downstream.sort("sample_uid")
+            sample_uids = initial_downstream["sample_uid"].to_list()
+            assert sample_uids == ["s1", "s2", "s3"], (
+                f"Expected samples ['s1', 's2', 's3'], got {sample_uids}"
+            )
+
+            # Store initial provenance for comparison
+            initial_provenance = {
+                row["sample_uid"]: row["metaxy_provenance_by_field"]
+                for row in initial_downstream.iter_rows(named=True)
+            }
+
+            # Write initial downstream
+            any_store.write_metadata(ChildFeature, initial_downstream)
+
+            # === UPDATE OPTIONAL PARENT (version change) ===
+            # Only change the optional parent's provenance (simulates code_version bump)
+            optional_df_v2 = pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s3"],
+                    "metaxy_provenance_by_field": [
+                        {"opt_value": "opt_s1_v2"},  # Changed!
+                        {"opt_value": "opt_s3_v2"},  # Changed!
+                    ],
+                    "metaxy_data_version_by_field": [
+                        {"opt_value": "opt_s1_v2"},
+                        {"opt_value": "opt_s3_v2"},
+                    ],
+                }
+            )
+            any_store.write_metadata(OptionalParent, optional_df_v2)
+
+            # Resolve after optional parent change
+            increment_v2 = any_store.resolve_update(ChildFeature)
+
+            # === VERIFY PROVENANCE STABILITY FOR MISSING OPTIONAL DEP ===
+            changed_df = increment_v2.changed
+            assert changed_df is not None, "Expected changed to not be None"
+            changed_downstream = changed_df.lazy().collect().to_polars()
+
+            # s1 and s3 should be in changed (they had actual optional dep values)
+            changed_uids = set(changed_downstream["sample_uid"].to_list())
+
+            # s2 should NOT be in changed - its optional dep was NULL, so it doesn't
+            # depend on the optional parent's field version
+            assert "s2" not in changed_uids, (
+                "s2 should NOT be in changed because its optional dep is NULL. "
+                "Changing the optional parent's version should not affect samples "
+                "where the optional dep is missing."
+            )
+
+            # s1 and s3 SHOULD be in changed (they have actual optional dep values)
+            assert "s1" in changed_uids, (
+                "s1 should be in changed because it has actual optional dep values"
+            )
+            assert "s3" in changed_uids, (
+                "s3 should be in changed because it has actual optional dep values"
+            )
+
+            # === VERIFY PROVENANCE ACTUALLY CHANGED FOR s1, s3 ===
+            changed_provenance = {
+                row["sample_uid"]: row["metaxy_provenance_by_field"]
+                for row in changed_downstream.iter_rows(named=True)
+            }
+
+            # s1's computed field provenance should have changed
+            assert (
+                changed_provenance["s1"]["computed"]
+                != initial_provenance["s1"]["computed"]
+            ), "s1's computed field provenance should change when optional dep changes"
+
+            # s3's computed field provenance should have changed
+            assert (
+                changed_provenance["s3"]["computed"]
+                != initial_provenance["s3"]["computed"]
+            ), "s3's computed field provenance should change when optional dep changes"
+
+            # Added should be empty (no new samples)
+            added_df = increment_v2.added.lazy().collect().to_polars()
+            assert len(added_df) == 0, f"Expected 0 added rows, got {len(added_df)}"
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(
+            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
+        )
+
+
+def test_all_optional_deps_outer_join_behavior(
+    any_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test that all-optional dependencies use full outer join.
+
+    When ALL dependencies are optional (no required deps), the engine should use
+    full outer join to include samples that exist in ANY parent, even if they
+    don't exist in all parents.
+
+    Scenario:
+    - OptionalA: samples [s1, s2]
+    - OptionalB: samples [s2, s3]
+    - Child (all optional deps): should include [s1, s2, s3]
+      - s1: has OptionalA data, NULL for OptionalB
+      - s2: has both
+      - s3: NULL for OptionalA, has OptionalB data
+    """
+    import polars as pl
+
+    from metaxy.models.field import FieldSpec, SpecialFieldDep
+    from metaxy.models.types import FieldKey
+
+    class OptionalA(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="optional_a_outer_test",
+            fields=[FieldSpec(key=FieldKey(["value_a"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    class OptionalB(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="optional_b_outer_test",
+            fields=[FieldSpec(key=FieldKey(["value_b"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    class ChildFeature(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="child_outer_test",
+            deps=[
+                FeatureDep(feature=OptionalA, optional=True),  # ALL optional
+                FeatureDep(feature=OptionalB, optional=True),  # ALL optional
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["result"]),
+                    code_version="1",
+                    deps=SpecialFieldDep.ALL,
+                ),
+            ],
+        ),
+    ):
+        pass
+
+    try:
+        with any_store:
+            # OptionalA has s1, s2
+            optional_a_df = pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2"],
+                    "metaxy_provenance_by_field": [
+                        {"value_a": "a_s1"},
+                        {"value_a": "a_s2"},
+                    ],
+                    "metaxy_data_version_by_field": [
+                        {"value_a": "a_s1"},
+                        {"value_a": "a_s2"},
+                    ],
+                }
+            )
+            any_store.write_metadata(OptionalA, optional_a_df)
+
+            # OptionalB has s2, s3
+            optional_b_df = pl.DataFrame(
+                {
+                    "sample_uid": ["s2", "s3"],
+                    "metaxy_provenance_by_field": [
+                        {"value_b": "b_s2"},
+                        {"value_b": "b_s3"},
+                    ],
+                    "metaxy_data_version_by_field": [
+                        {"value_b": "b_s2"},
+                        {"value_b": "b_s3"},
+                    ],
+                }
+            )
+            any_store.write_metadata(OptionalB, optional_b_df)
+
+            # Resolve
+            increment = any_store.resolve_update(ChildFeature)
+            downstream = increment.added.lazy().collect().to_polars()
+
+            # === VERIFY FULL OUTER JOIN BEHAVIOR ===
+            # Should have all 3 samples from the union of both parents
+            assert len(downstream) == 3, (
+                f"Expected 3 samples from full outer join, got {len(downstream)}. "
+                f"All-optional deps should use full outer join to include samples "
+                f"from any parent."
+            )
+
+            downstream = downstream.sort("sample_uid")
+            sample_uids = downstream["sample_uid"].to_list()
+            assert sample_uids == ["s1", "s2", "s3"], (
+                f"Expected samples ['s1', 's2', 's3'] from full outer join, got {sample_uids}"
+            )
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(
+            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
+        )
+
+
+# ============= TEST: AGGREGATION LINEAGE FIELD-LEVEL ISOLATION =============
+
+
+def test_aggregation_lineage_field_level_provenance_isolation(
+    any_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test that field-level dependencies are preserved through aggregation lineage.
+
+    This tests a critical property of aggregation: changing an upstream field
+    should only affect downstream fields that depend on it, not unrelated fields.
+
+    Scenario:
+    - Upstream: SensorReadings with temperature and humidity fields
+    - Downstream: HourlyStats with avg_temp (depends on temperature) and
+      avg_humidity (depends on humidity)
+    - When temperature upstream changes, only avg_temp downstream should change
+    """
+    import polars as pl
+
+    from metaxy.models.field import FieldDep, FieldSpec
+    from metaxy.models.lineage import LineageRelationship
+    from metaxy.models.types import FieldKey
+
+    class SensorReadings(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="sensor_readings_store_test",
+            id_columns=("sensor_id", "reading_id"),
+            fields=[
+                FieldSpec(key=FieldKey(["temperature"]), code_version="1"),
+                FieldSpec(key=FieldKey(["humidity"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class HourlyStats(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="hourly_stats_store_test",
+            id_columns=("sensor_id",),
+            deps=[
+                FeatureDep(
+                    feature=SensorReadings,
+                    lineage=LineageRelationship.aggregation(on=["sensor_id"]),
+                )
+            ],
+            fields=[
+                # avg_temp depends ONLY on temperature
+                FieldSpec(
+                    key=FieldKey(["avg_temp"]),
+                    code_version="1",
+                    deps=[
+                        FieldDep(
+                            feature=FeatureKey(["sensor_readings_store_test"]),
+                            fields=[FieldKey(["temperature"])],
+                        )
+                    ],
+                ),
+                # avg_humidity depends ONLY on humidity
+                FieldSpec(
+                    key=FieldKey(["avg_humidity"]),
+                    code_version="1",
+                    deps=[
+                        FieldDep(
+                            feature=FeatureKey(["sensor_readings_store_test"]),
+                            fields=[FieldKey(["humidity"])],
+                        )
+                    ],
+                ),
+            ],
+        ),
+    ):
+        pass
+
+    try:
+        with any_store:
+            # Initial upstream data - using minimal required columns
+            # write_metadata fills in missing metaxy columns
+            upstream_v1 = pl.DataFrame(
+                {
+                    "sensor_id": ["s1", "s1"],
+                    "reading_id": ["r1", "r2"],
+                    "metaxy_provenance_by_field": [
+                        {"temperature": "temp_v1_r1", "humidity": "hum_v1_r1"},
+                        {"temperature": "temp_v1_r2", "humidity": "hum_v1_r2"},
+                    ],
+                    "metaxy_data_version_by_field": [
+                        {"temperature": "temp_v1_r1", "humidity": "hum_v1_r1"},
+                        {"temperature": "temp_v1_r2", "humidity": "hum_v1_r2"},
+                    ],
+                }
+            )
+            any_store.write_metadata(SensorReadings, upstream_v1)
+
+            # Initial resolve - creates downstream
+            increment_v1 = any_store.resolve_update(HourlyStats)
+            initial_downstream = increment_v1.added.lazy().collect().to_polars()
+            any_store.write_metadata(HourlyStats, initial_downstream)
+
+            # Get initial provenance
+            initial_prov_by_field = initial_downstream["metaxy_provenance_by_field"][0]
+            initial_avg_temp = initial_prov_by_field["avg_temp"]
+            initial_avg_humidity = initial_prov_by_field["avg_humidity"]
+
+            # Update upstream - ONLY temperature changes
+            upstream_v2 = pl.DataFrame(
+                {
+                    "sensor_id": ["s1", "s1"],
+                    "reading_id": ["r1", "r2"],
+                    "metaxy_provenance_by_field": [
+                        # Only temperature field version changed
+                        {"temperature": "temp_v2_r1", "humidity": "hum_v1_r1"},
+                        {"temperature": "temp_v2_r2", "humidity": "hum_v1_r2"},
+                    ],
+                    "metaxy_data_version_by_field": [
+                        {"temperature": "temp_v2_r1", "humidity": "hum_v1_r1"},
+                        {"temperature": "temp_v2_r2", "humidity": "hum_v1_r2"},
+                    ],
+                }
+            )
+            any_store.write_metadata(SensorReadings, upstream_v2)
+
+            # Resolve after upstream change
+            increment_v2 = any_store.resolve_update(HourlyStats)
+
+            # Should have changed (not added, since sensor_id exists)
+            # With aggregation lineage using window functions, we get N rows per
+            # aggregation group (one per upstream reading), all with identical provenance.
+            # Here sensor s1 has 2 readings (r1, r2), so we expect 2 changed rows.
+            changed_df = increment_v2.changed
+            assert changed_df is not None, "Expected changed to not be None"
+            changed_downstream = changed_df.lazy().collect().to_polars()
+            assert len(changed_downstream) == 2, (
+                "Expected 2 changed rows (one per reading in aggregation group)"
+            )
+
+            # All rows in the aggregation group have identical provenance
+            # Pick the first row to check the provenance values
+            updated_prov_by_field = changed_downstream["metaxy_provenance_by_field"][0]
+            updated_avg_temp = updated_prov_by_field["avg_temp"]
+            updated_avg_humidity = updated_prov_by_field["avg_humidity"]
+
+            # Verify all rows in the group have the same provenance (window function behavior)
+            for i in range(len(changed_downstream)):
+                row_prov = changed_downstream["metaxy_provenance_by_field"][i]
+                assert row_prov["avg_temp"] == updated_avg_temp, (
+                    f"Row {i} should have same avg_temp provenance as row 0"
+                )
+                assert row_prov["avg_humidity"] == updated_avg_humidity, (
+                    f"Row {i} should have same avg_humidity provenance as row 0"
+                )
+
+            # CRITICAL: avg_temp should change (temperature upstream changed)
+            assert updated_avg_temp != initial_avg_temp, (
+                "avg_temp provenance should change when upstream temperature changes"
+            )
+
+            # CRITICAL: avg_humidity should NOT change (humidity upstream unchanged)
+            assert updated_avg_humidity == initial_avg_humidity, (
+                "avg_humidity provenance should NOT change when only temperature changes"
+            )
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(
+            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
+        )
+
+
+def test_aggregation_lineage_field_level_provenance_definition_change(
+    any_store: MetadataStore,
+):
+    """Test field-level provenance isolation when upstream field definition changes.
+
+    When upstream field code_version changes, the upstream data would be recomputed
+    with new data_version_by_field. This test verifies that only dependent downstream
+    fields are affected.
+
+    Uses separate FeatureGraphs to simulate definition changes.
+    """
+    import polars as pl
+
+    from metaxy.models.field import FieldDep, FieldSpec
+    from metaxy.models.lineage import LineageRelationship
+    from metaxy.models.types import FieldKey
+
+    # Variables to hold v1 results for comparison with v2
+    v1_avg_temp = None
+    v1_avg_humidity = None
+
+    # === Version 1: Initial definitions ===
+    with FeatureGraph().use():
+
+        class SensorReadingsV1(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key="sensor_readings_defn_store",
+                id_columns=("sensor_id", "reading_id"),
+                fields=[
+                    FieldSpec(key=FieldKey(["temperature"]), code_version="1"),
+                    FieldSpec(key=FieldKey(["humidity"]), code_version="1"),
+                ],
+            ),
+        ):
+            pass
+
+        class HourlyStatsV1(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key="hourly_stats_defn_store",
+                id_columns=("sensor_id",),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["sensor_readings_defn_store"]),
+                        lineage=LineageRelationship.aggregation(on=["sensor_id"]),
+                    )
+                ],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["avg_temp"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["sensor_readings_defn_store"]),
+                                fields=[FieldKey(["temperature"])],
+                            )
+                        ],
+                    ),
+                    FieldSpec(
+                        key=FieldKey(["avg_humidity"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["sensor_readings_defn_store"]),
+                                fields=[FieldKey(["humidity"])],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+        ):
+            pass
+
+        # V1 upstream data - inside context!
+        upstream_v1 = pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1"],
+                "reading_id": ["r1", "r2"],
+                "metaxy_provenance_by_field": [
+                    {"temperature": "temp_cv1_r1", "humidity": "hum_cv1_r1"},
+                    {"temperature": "temp_cv1_r2", "humidity": "hum_cv1_r2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_cv1_r1", "humidity": "hum_cv1_r1"},
+                    {"temperature": "temp_cv1_r2", "humidity": "hum_cv1_r2"},
+                ],
+            }
+        )
+
+        try:
+            with any_store:  # Store ops inside FeatureGraph context!
+                any_store.write_metadata(SensorReadingsV1, upstream_v1)
+
+                increment_v1 = any_store.resolve_update(HourlyStatsV1)
+
+                result_v1 = increment_v1.added.lazy().collect().to_polars()
+                v1_prov_by_field = result_v1["metaxy_provenance_by_field"][0]
+                v1_avg_temp = v1_prov_by_field["avg_temp"]
+                v1_avg_humidity = v1_prov_by_field["avg_humidity"]
+
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
+            )
+
+    # === Version 2: Temperature code_version changes to "2" ===
+    with FeatureGraph().use():
+
+        class SensorReadingsV2(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key="sensor_readings_defn_store",
+                id_columns=("sensor_id", "reading_id"),
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["temperature"]), code_version="2"
+                    ),  # Changed!
+                    FieldSpec(
+                        key=FieldKey(["humidity"]), code_version="1"
+                    ),  # Unchanged
+                ],
+            ),
+        ):
+            pass
+
+        class HourlyStatsV2(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key="hourly_stats_defn_store",
+                id_columns=("sensor_id",),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["sensor_readings_defn_store"]),
+                        lineage=LineageRelationship.aggregation(on=["sensor_id"]),
+                    )
+                ],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["avg_temp"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["sensor_readings_defn_store"]),
+                                fields=[FieldKey(["temperature"])],
+                            )
+                        ],
+                    ),
+                    FieldSpec(
+                        key=FieldKey(["avg_humidity"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["sensor_readings_defn_store"]),
+                                fields=[FieldKey(["humidity"])],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+        ):
+            pass
+
+        # V2 upstream data - inside context!
+        # Temperature data_version changed (simulates recompute after code_version bump)
+        upstream_v2 = pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1"],
+                "reading_id": ["r1", "r2"],
+                "metaxy_provenance_by_field": [
+                    {
+                        "temperature": "temp_cv2_r1",
+                        "humidity": "hum_cv1_r1",
+                    },  # temp changed
+                    {
+                        "temperature": "temp_cv2_r2",
+                        "humidity": "hum_cv1_r2",
+                    },  # temp changed
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_cv2_r1", "humidity": "hum_cv1_r1"},
+                    {"temperature": "temp_cv2_r2", "humidity": "hum_cv1_r2"},
+                ],
+            }
+        )
+
+        try:
+            with any_store:  # Store ops inside FeatureGraph context!
+                any_store.write_metadata(SensorReadingsV2, upstream_v2)
+
+                increment_v2 = any_store.resolve_update(HourlyStatsV2)
+
+                result_v2 = increment_v2.added.lazy().collect().to_polars()
+                v2_prov_by_field = result_v2["metaxy_provenance_by_field"][0]
+                v2_avg_temp = v2_prov_by_field["avg_temp"]
+                v2_avg_humidity = v2_prov_by_field["avg_humidity"]
+
+                # CRITICAL: avg_temp should change (temperature upstream data changed)
+                assert v2_avg_temp != v1_avg_temp, (
+                    "avg_temp provenance should change when upstream temperature "
+                    "data_version changes (due to code_version bump)"
+                )
+
+                # CRITICAL: avg_humidity should NOT change (humidity unchanged)
+                assert v2_avg_humidity == v1_avg_humidity, (
+                    "avg_humidity provenance should NOT change when only temperature changes"
+                )
+
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
+            )
+
+
+def test_aggregation_lineage_preserves_user_columns(
+    default_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test that aggregation lineage preserves user-specified columns in FeatureDep.columns.
+
+    Regression test for a bug where columns specified in FeatureDep.columns were dropped
+    during aggregation because aggregate_strings only kept group_by and aggregated columns.
+
+    Scenario:
+    - DirectorNotesTexts has columns like 'dataset', 'director_notes_type', 'path', 'size'
+    - DirectorNotesAggregatedByChunk aggregates by chunk_id with columns=("...", "dataset")
+    - After aggregation, 'dataset' column should still be present in the result
+
+    Bug symptoms:
+    - User filters by global_filters=[nw.col("dataset") == "some_value"]
+    - resolve_update works but 'dataset' column is missing from result
+    - User code fails with ColumnNotFoundError when trying to access 'dataset'
+    """
+    import polars as pl
+
+    from metaxy import FieldKey, FieldSpec
+    from metaxy.models.lineage import LineageRelationship
+
+    class DirectorNotesTexts(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["director_notes_texts_test"]),
+            id_columns=("director_notes_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["text"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class DirectorNotesAggregated(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["director_notes_aggregated_test"]),
+            id_columns=("chunk_id",),
+            deps=[
+                FeatureDep(
+                    feature=DirectorNotesTexts,
+                    # User explicitly requests dataset and director_notes_type columns
+                    columns=(
+                        "dataset",
+                        "director_notes_type",
+                        "path",
+                        "size",
+                        "chunk_id",
+                    ),
+                    rename={"path": "text_path", "size": "text_size"},
+                    lineage=LineageRelationship.aggregation(on=["chunk_id"]),
+                ),
+            ],
+            fields=[
+                FieldSpec(key=FieldKey(["aggregated"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    store = default_store
+
     with store, graph.use():
-        _write_upstream_metadata(store, graph, upstream_data)
-        increment = store.resolve_update(ChildFeature, lazy=False)
+        # Write upstream data - multiple notes per chunk
+        upstream_df = pl.DataFrame(
+            {
+                "director_notes_id": ["note1", "note2", "note3", "note4"],
+                "dataset": ["dataset_a", "dataset_a", "dataset_b", "dataset_b"],
+                "director_notes_type": [
+                    "descriptive",
+                    "imperative",
+                    "descriptive",
+                    "imperative",
+                ],
+                "path": ["/path/1.txt", "/path/2.txt", "/path/3.txt", "/path/4.txt"],
+                "size": [100, 200, 300, 400],
+                "chunk_id": ["chunk_1", "chunk_1", "chunk_2", "chunk_2"],
+                "metaxy_provenance_by_field": [
+                    {"text": "hash1"},
+                    {"text": "hash2"},
+                    {"text": "hash3"},
+                    {"text": "hash4"},
+                ],
+            }
+        )
+        store.write_metadata(DirectorNotesTexts, upstream_df)
 
-        added = increment.added.lazy().collect().to_polars()
-        sample_uids = set(added["sample_uid"].to_list())
-        expected_uids = _expected_sample_uids(child_plan, upstream_data)
+        # Call resolve_update - should work and include 'dataset' column
+        increment = store.resolve_update(DirectorNotesAggregated, lazy=False)
 
-        assert sample_uids == expected_uids
-        assert "metaxy_provenance" in added.columns
-        assert "metaxy_provenance_by_field" in added.columns
+        assert len(increment.added) > 0, "Expected added rows from resolve_update"
+
+        added_df = increment.added.lazy().collect().to_polars()
+
+        # CRITICAL: 'dataset' should be present in the result
+        # This was the bug - aggregate_strings dropped all non-aggregated columns
+        assert "dataset" in added_df.columns, (
+            f"Expected 'dataset' column in aggregation result. "
+            f"Got columns: {added_df.columns}. "
+            f"This indicates that FeatureDep.columns are not being preserved through aggregation lineage."
+        )
+
+        # Also verify other requested columns are present
+        expected_columns = {
+            "chunk_id",
+            "dataset",
+            "director_notes_type",
+            "text_path",
+            "text_size",
+        }
+        actual_columns = set(added_df.columns)
+        missing_columns = expected_columns - actual_columns
+        assert not missing_columns, (
+            f"Missing columns in aggregation result: {missing_columns}. "
+            f"Got columns: {actual_columns}"
+        )
+
+
+def test_aggregation_lineage_preserves_columns_with_global_filter(
+    default_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test that global_filters work with aggregation lineage when filtering on user columns.
+
+    This reproduces the exact bug scenario:
+    - User has aggregation lineage feature with columns=(..., "dataset")
+    - User calls resolve_update with global_filters=[nw.col("dataset") == "some_value"]
+    - Filter should work AND 'dataset' column should be in the result
+
+    The bug was: filter worked but 'dataset' was dropped during aggregation, causing
+    ColumnNotFoundError when user code tried to access it in the result.
+    """
+    import narwhals as nw
+    import polars as pl
+
+    from metaxy import FieldKey, FieldSpec
+    from metaxy.models.lineage import LineageRelationship
+
+    class UpstreamWithDataset(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["upstream_with_dataset_test"]),
+            id_columns=("item_id",),
+            fields=[
+                FieldSpec(key=FieldKey(["value"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    class AggregatedByGroup(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["aggregated_by_group_test"]),
+            id_columns=("group_id",),
+            deps=[
+                FeatureDep(
+                    feature=UpstreamWithDataset,
+                    # Explicitly request 'dataset' column
+                    columns=("dataset", "group_id"),
+                    lineage=LineageRelationship.aggregation(on=["group_id"]),
+                ),
+            ],
+            fields=[
+                FieldSpec(key=FieldKey(["result"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    store = default_store
+
+    with store, graph.use():
+        # Write upstream data with different datasets
+        upstream_df = pl.DataFrame(
+            {
+                "item_id": ["i1", "i2", "i3", "i4", "i5", "i6"],
+                "dataset": ["ds_a", "ds_a", "ds_a", "ds_b", "ds_b", "ds_b"],
+                "group_id": ["g1", "g1", "g2", "g1", "g2", "g2"],
+                "metaxy_provenance_by_field": [
+                    {"value": f"hash{i}"} for i in range(1, 7)
+                ],
+            }
+        )
+        store.write_metadata(UpstreamWithDataset, upstream_df)
+
+        # Call resolve_update with global_filters filtering by dataset
+        increment = store.resolve_update(
+            AggregatedByGroup,
+            global_filters=[nw.col("dataset") == "ds_a"],
+            lazy=False,
+        )
+
+        assert len(increment.added) > 0, "Expected added rows from resolve_update"
+
+        added_df = increment.added.lazy().collect().to_polars()
+
+        # CRITICAL: 'dataset' should be in the result
+        assert "dataset" in added_df.columns, (
+            f"Expected 'dataset' column in result after global_filters. "
+            f"Got columns: {added_df.columns}. "
+            f"global_filters should not cause columns to be dropped."
+        )
+
+        # Verify only ds_a rows were included (filter worked)
+        datasets = added_df["dataset"].unique().to_list()
+        assert datasets == ["ds_a"], (
+            f"Expected only 'ds_a' dataset after filtering. Got: {datasets}"
+        )
+
+        # Verify correct groups were returned
+        groups = set(added_df["group_id"].to_list())
+        # ds_a has items in g1 (i1, i2) and g2 (i3), so both groups should be present
+        assert groups == {"g1", "g2"}, f"Expected groups {{'g1', 'g2'}}, got {groups}"

@@ -1,0 +1,15 @@
+--- a/pipeline.py
++++ b/pipeline.py
+@@ -45,6 +45,13 @@
+             "path": "audio/s2_recording2.wav",
+             "metaxy_provenance_by_field": {"default": "a4_v1"},
+         },
++        {
++            "audio_id": "a5",
++            "speaker_id": "s1",
++            "duration_seconds": 25.0,
++            "path": "audio/s1_recording3.wav",
++            "metaxy_provenance_by_field": {"default": "a5_v1"},
++        },
+     ]
+ )

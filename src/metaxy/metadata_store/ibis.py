@@ -119,6 +119,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         backend: str | None = None,
         connection_params: dict[str, Any] | None = None,
         table_prefix: str | None = None,
+        versioning_engine_cls: type[IbisVersioningEngine] | None = None,
         **kwargs: Any,
     ):
         """
@@ -168,7 +169,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         super().__init__(
             **kwargs,
             versioning_engine=versioning_engine,
-            versioning_engine_cls=IbisVersioningEngine,
+            versioning_engine_cls=versioning_engine_cls or IbisVersioningEngine,
         )
 
     def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
@@ -228,8 +229,8 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Create hash functions for Ibis expressions
         hash_functions = self._create_hash_functions()
 
-        # Create engine (only accepts plan and hash_functions)
-        engine = IbisVersioningEngine(
+        # Create engine using the configured class (allows subclass override)
+        engine = self.versioning_engine_cls(
             plan=plan,
             hash_functions=hash_functions,
         )

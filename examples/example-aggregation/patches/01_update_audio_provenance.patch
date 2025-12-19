@@ -1,0 +1,11 @@
+--- a/pipeline.py
++++ b/pipeline.py
+@@ -22,7 +22,7 @@ AUDIO_SAMPLES = pl.DataFrame(
+             "speaker_id": "s1",
+             "duration_seconds": 30.5,
+             "path": "audio/s1_recording1.wav",
+-            "metaxy_provenance_by_field": {"default": "a1_v1"},
++            "metaxy_provenance_by_field": {"default": "a1_v2"},
+         },
+         {
+             "audio_id": "a2",

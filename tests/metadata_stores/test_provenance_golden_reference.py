@@ -26,6 +26,7 @@ import pytest
 import pytest_cases
 from hypothesis.errors import NonInteractiveExampleWarning
 from pytest_cases import parametrize_with_cases
+from syrupy.assertion import SnapshotAssertion
 
 from metaxy import (
     BaseFeature,
@@ -45,6 +46,7 @@ from metaxy.metadata_store import (
 from metaxy.models.field import SpecialFieldDep
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FieldKey
+from metaxy.versioning.types import HashAlgorithm, Increment
 
 if TYPE_CHECKING:
     pass
@@ -53,11 +55,19 @@ FeaturePlanOutput: TypeAlias = tuple[
     FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan
 ]
 
+# A sequence of plans to test in order (for definition change scenarios)
+FeaturePlanSequence: TypeAlias = list[FeaturePlanOutput]
+
 
 class FeaturePlanCases:
-    """Test cases for different feature plan configurations."""
+    """Test cases for different feature plan configurations.
 
-    def case_single_upstream(self, graph: FeatureGraph) -> FeaturePlanOutput:
+    Each case returns a list of FeaturePlanOutput tuples. Most cases return a single
+    plan, but cases testing definition changes (e.g., code_version bumps) return
+    multiple plans that should be tested sequentially.
+    """
+
+    def case_single_upstream(self, graph: FeatureGraph) -> FeaturePlanSequence:
         """Simple parent->child feature plan with single upstream."""
 
         class ParentFeature(
@@ -86,9 +96,9 @@ class FeaturePlanCases:
             ParentFeature.spec().key: ParentFeature,
         }
 
-        return graph, upstream_features, child_plan
+        return [(graph, upstream_features, child_plan)]
 
-    def case_two_upstreams(self, graph: FeatureGraph) -> FeaturePlanOutput:
+    def case_two_upstreams(self, graph: FeatureGraph) -> FeaturePlanSequence:
         """Feature plan with two upstream dependencies."""
 
         class Parent1Feature(
@@ -130,9 +140,273 @@ class FeaturePlanCases:
             Parent2Feature.spec().key: Parent2Feature,
         }
 
-        return graph, upstream_features, child_plan
+        return [(graph, upstream_features, child_plan)]
 
-    def case_optional_dependency(self, graph: FeatureGraph) -> FeaturePlanOutput:
+    def case_aggregation_plus_identity(
+        self, graph: FeatureGraph
+    ) -> FeaturePlanSequence:
+        """Feature plan with aggregation + identity dependencies.
+
+        Scenario:
+        - SensorReadings: N:1 aggregation to aggregate by sensor_id
+        - SensorInfo: 1:1 identity join with sensor metadata
+        """
+
+        class SensorInfo(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="sensor_info",
+                id_columns=("sensor_id",),
+                fields=[FieldSpec(key=FieldKey(["location"]), code_version="1")],
+            ),
+        ):
+            sensor_id: str
+
+        class SensorReadings(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="sensor_readings",
+                id_columns=("sensor_id", "reading_id"),
+                fields=[FieldSpec(key=FieldKey(["temperature"]), code_version="1")],
+            ),
+        ):
+            sensor_id: str
+            reading_id: str
+
+        class AggregatedSensorStats(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="aggregated_sensor_stats",
+                id_columns=("sensor_id",),
+                deps=[
+                    FeatureDep(
+                        feature=SensorReadings,
+                        lineage=LineageRelationship.aggregation(on=["sensor_id"]),
+                    ),
+                    FeatureDep(
+                        feature=SensorInfo,
+                        lineage=LineageRelationship.identity(),
+                    ),
+                ],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["enriched_stat"]),
+                        code_version="1",
+                        deps=SpecialFieldDep.ALL,
+                    ),
+                ],
+            ),
+        ):
+            sensor_id: str
+
+        child_plan = graph.get_feature_plan(AggregatedSensorStats.spec().key)
+
+        upstream_features = {
+            SensorInfo.spec().key: SensorInfo,
+            SensorReadings.spec().key: SensorReadings,
+        }
+
+        return [(graph, upstream_features, child_plan)]
+
+    def case_expansion_plus_identity(self, graph: FeatureGraph) -> FeaturePlanSequence:
+        """Feature plan with expansion + identity dependencies.
+
+        Scenario:
+        - Video: 1:N expansion (one video → many frames)
+        - VideoMetadata: 1:1 identity join with video metadata
+        """
+
+        class Video(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="video",
+                id_columns=("video_id",),
+                fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
+            ),
+        ):
+            video_id: str
+
+        class VideoMetadata(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="video_metadata",
+                id_columns=("video_id",),
+                fields=[FieldSpec(key=FieldKey(["category"]), code_version="1")],
+            ),
+        ):
+            video_id: str
+
+        class EnrichedFrames(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="enriched_frames",
+                id_columns=("video_id",),  # At parent level for golden reference
+                deps=[
+                    FeatureDep(
+                        feature=Video,
+                        lineage=LineageRelationship.expansion(on=["video_id"]),
+                    ),
+                    FeatureDep(
+                        feature=VideoMetadata,
+                        lineage=LineageRelationship.identity(),
+                    ),
+                ],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["frame_feature"]),
+                        code_version="1",
+                        deps=SpecialFieldDep.ALL,
+                    ),
+                ],
+            ),
+        ):
+            video_id: str
+
+        child_plan = graph.get_feature_plan(EnrichedFrames.spec().key)
+
+        upstream_features = {
+            Video.spec().key: Video,
+            VideoMetadata.spec().key: VideoMetadata,
+        }
+
+        return [(graph, upstream_features, child_plan)]
+
+    def case_aggregation_plus_expansion(
+        self, graph: FeatureGraph
+    ) -> FeaturePlanSequence:
+        """Feature plan with aggregation + expansion dependencies.
+
+        Scenario:
+        - SensorReadings: N:1 aggregation by config_id
+        - VideoSource: 1:N expansion by config_id
+        """
+
+        class SensorReadings(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="sensor_readings_v2",
+                id_columns=("config_id", "reading_id"),
+                fields=[FieldSpec(key=FieldKey(["measurement"]), code_version="1")],
+            ),
+        ):
+            config_id: str
+            reading_id: str
+
+        class VideoSource(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="video_source",
+                id_columns=("config_id",),
+                fields=[FieldSpec(key=FieldKey(["video_data"]), code_version="1")],
+            ),
+        ):
+            config_id: str
+
+        class CombinedFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="combined_feature",
+                id_columns=("config_id",),  # At parent level for golden reference
+                deps=[
+                    FeatureDep(
+                        feature=SensorReadings,
+                        lineage=LineageRelationship.aggregation(on=["config_id"]),
+                    ),
+                    FeatureDep(
+                        feature=VideoSource,
+                        lineage=LineageRelationship.expansion(on=["config_id"]),
+                    ),
+                ],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["combined_output"]),
+                        code_version="1",
+                        deps=SpecialFieldDep.ALL,
+                    ),
+                ],
+            ),
+        ):
+            config_id: str
+
+        child_plan = graph.get_feature_plan(CombinedFeature.spec().key)
+
+        upstream_features = {
+            SensorReadings.spec().key: SensorReadings,
+            VideoSource.spec().key: VideoSource,
+        }
+
+        return [(graph, upstream_features, child_plan)]
+
+    def case_upstream_field_definition_change(self) -> FeaturePlanSequence:
+        """Test upstream field definition change (code_version bump).
+
+        This case returns TWO plans to test sequentially:
+        1. V1: Parent feature with field code_version="1"
+        2. V2: Same parent feature with field code_version="2"
+
+        The store accumulates data - V2 upstream data is written on top of V1,
+        and keep_latest_by_group should pick the newer V2 data.
+        """
+        # === V1: Initial definition ===
+        graph_v1 = FeatureGraph()
+        with graph_v1.use():
+
+            class ParentV1(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="parent_defn_change",
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                ),
+            ):
+                sample_uid: str
+
+            class ChildV1(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="child_defn_change",
+                    deps=[FeatureDep(feature=ParentV1)],
+                    fields=[FieldSpec(key=FieldKey(["computed"]), code_version="1")],
+                ),
+            ):
+                pass
+
+            child_plan_v1 = graph_v1.get_feature_plan(ChildV1.spec().key)
+            upstream_features_v1 = {ParentV1.spec().key: ParentV1}
+
+        # === V2: Field definition changes (code_version bump) ===
+        graph_v2 = FeatureGraph()
+        with graph_v2.use():
+
+            class ParentV2(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="parent_defn_change",
+                    fields=[
+                        FieldSpec(key=FieldKey(["value"]), code_version="2")
+                    ],  # Changed!
+                ),
+            ):
+                sample_uid: str
+
+            class ChildV2(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="child_defn_change",
+                    deps=[FeatureDep(feature=ParentV2)],
+                    fields=[FieldSpec(key=FieldKey(["computed"]), code_version="1")],
+                ),
+            ):
+                pass
+
+            child_plan_v2 = graph_v2.get_feature_plan(ChildV2.spec().key)
+            upstream_features_v2 = {ParentV2.spec().key: ParentV2}
+
+        return [
+            (graph_v1, upstream_features_v1, child_plan_v1),
+            (graph_v2, upstream_features_v2, child_plan_v2),
+        ]
+
+    def case_optional_dependency(self, graph: FeatureGraph) -> FeaturePlanSequence:
         """Feature plan with optional dependency (tests left join behavior and NULL handling)."""
 
         class RequiredParent(
@@ -174,18 +448,39 @@ class FeaturePlanCases:
             OptionalParent.spec().key: OptionalParent,
         }
 
-        return graph, upstream_features, child_plan
+        return [(graph, upstream_features, child_plan)]
 
 
 # Removed: TruncationCases and metaxy_config fixture
 # Hash truncation is now tested in test_hash_algorithms.py
 
 
-def setup_store_with_data(
-    empty_store: MetadataStore,
+def generate_plan_data(
+    store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
-) -> tuple[MetadataStore, FeaturePlanOutput, pl.DataFrame]:
-    # Unpack feature plan configuration
+    base_upstream_data: dict[str, pl.DataFrame] | None = None,
+) -> tuple[dict[str, pl.DataFrame], pl.DataFrame]:
+    """Generate upstream data and golden downstream for a single plan.
+
+    Args:
+        store: The metadata store (used for hash algorithm)
+        feature_plan_config: The feature plan configuration
+        base_upstream_data: Optional base upstream data to transform. If provided,
+            the upstream data will be derived from this (same IDs, updated provenance)
+            rather than generating new random data. This is useful for multi-plan
+            sequences where we need consistent IDs across iterations.
+
+    Returns:
+        Tuple of (upstream_data dict, golden_downstream DataFrame)
+    """
+    import narwhals as nw
+
+    from metaxy.models.constants import (
+        METAXY_CREATED_AT,
+        METAXY_FEATURE_VERSION,
+    )
+    from metaxy.versioning.polars import PolarsVersioningEngine
+
     graph, upstream_features, child_feature_plan = feature_plan_config
 
     # Get the child feature from the graph
@@ -200,29 +495,99 @@ def setup_store_with_data(
         feature_versions[feature_key.to_string()] = upstream_feature.feature_version()
     feature_versions[child_key.to_string()] = child_version
 
-    # Generate test data using the golden strategy
-    # Note: Using .example() in test infrastructure is appropriate for generating
-    # deterministic test data with pytest-cases parametrization. We suppress the
-    # NonInteractiveExampleWarning since this is not interactive exploration.
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
-        example_data = downstream_metadata_strategy(
-            child_feature_plan,
-            feature_versions=feature_versions,
-            snapshot_version=graph.snapshot_version,
-            hash_algorithm=empty_store.hash_algorithm,
-            min_rows=5,
-            max_rows=20,
-        ).example()
+    if base_upstream_data is None:
+        # Generate fresh test data using the golden strategy
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
+            example_data = downstream_metadata_strategy(
+                child_feature_plan,
+                feature_versions=feature_versions,
+                snapshot_version=graph.snapshot_version,
+                hash_algorithm=store.hash_algorithm,
+                min_rows=5,
+                max_rows=20,
+            ).example()
+        return example_data
+    else:
+        # Transform base upstream data for this plan's feature versions
+        # Update provenance columns to reflect new feature versions
+        from datetime import datetime, timedelta, timezone
 
-    upstream_data, golden_downstream = example_data
+        upstream_data: dict[str, pl.DataFrame] = {}
 
-    # Write upstream metadata to store
+        for feature_key, upstream_feature in upstream_features.items():
+            key_str = feature_key.to_string()
+            if key_str not in base_upstream_data:
+                raise ValueError(f"Base upstream data missing for {key_str}")
+
+            base_df = base_upstream_data[key_str]
+            new_feature_version = upstream_feature.feature_version()
+
+            # Update metaxy columns to reflect new feature version
+            # The provenance will change because feature_version changes
+            updated_df = base_df.with_columns(
+                pl.lit(new_feature_version).alias(METAXY_FEATURE_VERSION),
+                # Update timestamp to be newer so keep_latest_by_group picks this version
+                (pl.col(METAXY_CREATED_AT) + timedelta(hours=1)).alias(
+                    METAXY_CREATED_AT
+                ),
+            )
+
+            upstream_data[key_str] = updated_df
+
+        # Calculate golden downstream using PolarsVersioningEngine
+        engine = PolarsVersioningEngine(plan=child_feature_plan)
+        upstream_dict = {
+            FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
+        }
+
+        downstream_nw = engine.load_upstream_with_provenance(
+            upstream=upstream_dict,
+            hash_algo=store.hash_algorithm,
+            filters=None,
+        ).collect()
+
+        # Add downstream feature version and snapshot version
+        downstream_df = downstream_nw.with_columns(
+            nw.lit(child_version).alias(METAXY_FEATURE_VERSION),
+            nw.lit(graph.snapshot_version).alias("metaxy_snapshot_version"),
+            nw.lit(child_feature_plan.feature.feature_spec_version).alias(
+                "metaxy_feature_spec_version"
+            ),
+            nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+        )
+
+        return upstream_data, downstream_df.to_native()
+
+
+def write_upstream_to_store(
+    store: MetadataStore,
+    feature_plan_config: FeaturePlanOutput,
+    upstream_data: dict[str, pl.DataFrame],
+) -> None:
+    """Write upstream data to store for a single plan."""
+    graph, upstream_features, _ = feature_plan_config
+
+    for feature_key, upstream_feature in upstream_features.items():
+        upstream_df = upstream_data[feature_key.to_string()]
+        store.write_metadata(upstream_feature, upstream_df)
+
+
+def setup_store_with_data(
+    empty_store: MetadataStore,
+    feature_plan_config: FeaturePlanOutput,
+) -> tuple[MetadataStore, FeaturePlanOutput, pl.DataFrame]:
+    """Legacy helper for single-plan setup. Wraps the new helpers."""
+    graph, upstream_features, child_feature_plan = feature_plan_config
+    upstream_data, golden_downstream = generate_plan_data(
+        empty_store, feature_plan_config
+    )
+
     try:
         with empty_store:
-            for feature_key, upstream_feature in upstream_features.items():
-                upstream_df = upstream_data[feature_key.to_string()]
-                empty_store.write_metadata(upstream_feature, upstream_df)
+            # Use graph.use() to make it the current graph (needed for write_metadata)
+            with graph.use():
+                write_upstream_to_store(empty_store, feature_plan_config, upstream_data)
     except HashAlgorithmNotSupportedError:
         pytest.skip(
             f"Hash algorithm {empty_store.hash_algorithm} not supported by {empty_store}"
@@ -236,80 +601,311 @@ def setup_store_with_data(
 # Hash algorithm × store combinations are tested in test_hash_algorithms.py
 
 
-@parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
-def test_store_resolve_update_matches_golden_provenance(
-    any_store: MetadataStore,
-    feature_plan_config: FeaturePlanOutput,
-):
-    """Test metadata store provenance calculation matches golden reference."""
-    empty_store = any_store
-    # Setup store with upstream data and get golden reference
-    store, (graph, upstream_features, child_feature_plan), golden_downstream = (
-        setup_store_with_data(
-            empty_store,
-            feature_plan_config,
+def assert_increment_matches_golden(
+    actual: Increment,
+    golden: Increment,
+    id_columns: list[str],
+) -> None:
+    """Assert that actual increment matches golden increment.
+
+    Compares all parts of the increment: added, changed, and removed.
+    All Increment fields are required (not Optional), so we compare them directly.
+    """
+    from metaxy.models.constants import METAXY_CREATED_AT
+
+    def compare_frames(
+        actual_df: pl.DataFrame,
+        golden_df: pl.DataFrame,
+        frame_name: str,
+    ) -> None:
+        """Compare two DataFrames, excluding timestamp columns."""
+        # Sort by all comparable columns to ensure deterministic ordering
+        # (id_columns alone may not be unique for aggregation lineage)
+        sort_columns = [
+            col
+            for col in actual_df.columns
+            if col in golden_df.columns and col != METAXY_CREATED_AT
+        ]
+        actual_sorted = actual_df.sort(sort_columns)
+        golden_sorted = golden_df.sort(sort_columns)
+
+        # Select only common columns, excluding timestamps
+        common_columns = [
+            col
+            for col in actual_sorted.columns
+            if col in golden_sorted.columns and col != METAXY_CREATED_AT
+        ]
+        actual_selected = actual_sorted.select(common_columns)
+        golden_selected = golden_sorted.select(common_columns)
+
+        pl_testing.assert_frame_equal(
+            actual_selected,
+            golden_selected,
+            check_row_order=True,
+            check_column_order=False,
         )
+
+    # Compare added
+    actual_added = actual.added.lazy().collect().to_polars()
+    golden_added = golden.added.lazy().collect().to_polars()
+    compare_frames(actual_added, golden_added, "added")
+
+    # Compare changed
+    actual_changed = actual.changed.lazy().collect().to_polars()
+    golden_changed = golden.changed.lazy().collect().to_polars()
+    compare_frames(actual_changed, golden_changed, "changed")
+
+    # Compare removed
+    actual_removed = actual.removed.lazy().collect().to_polars()
+    golden_removed = golden.removed.lazy().collect().to_polars()
+    compare_frames(actual_removed, golden_removed, "removed")
+
+
+def assert_resolve_update_matches_golden(
+    store: MetadataStore,
+    feature_plan_config: FeaturePlanOutput,
+    golden_increment: Increment,
+    snapshot: SnapshotAssertion | None = None,
+    snapshot_suffix: str = "",
+) -> None:
+    """Assert that resolve_update result matches golden increment for a single plan.
+
+    Args:
+        store: The metadata store to test
+        feature_plan_config: Feature plan configuration tuple
+        golden_increment: The expected increment from golden reference
+        snapshot: Optional syrupy snapshot fixture for recording provenance values
+        snapshot_suffix: Optional suffix for snapshot names (e.g., iteration number)
+    """
+    from metaxy.models.constants import (
+        METAXY_DATA_VERSION,
+        METAXY_DATA_VERSION_BY_FIELD,
+        METAXY_PROVENANCE,
+        METAXY_PROVENANCE_BY_FIELD,
     )
+
+    graph, upstream_features, child_feature_plan = feature_plan_config
 
     # Get the child feature from the graph
     child_key = child_feature_plan.feature.key
     ChildFeature = graph.features_by_key[child_key]
-
-    # Get child version
     child_version = ChildFeature.feature_version()
 
-    # Call resolve_update to compute provenance
-    with store:
-        try:
-            increment = store.resolve_update(
-                ChildFeature,
-                target_version=child_version,
-                snapshot_version=graph.snapshot_version,
-            )
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
-            )
+    # Call resolve_update to compute provenance (uses default/native engine)
+    # Use graph.use() to make it the current graph (needed for resolve_update)
+    with graph.use():
+        actual_increment = store.resolve_update(
+            ChildFeature,
+            target_version=child_version,
+            snapshot_version=graph.snapshot_version,
+        )
 
-        added_df = increment.added.lazy().collect().to_polars()
-        # Get ID columns from the feature plan
-        id_columns = list(child_feature_plan.feature.id_columns)
-        # Sort both DataFrames by ID columns for comparison
-        added_sorted = added_df.sort(id_columns)
-        golden_sorted = golden_downstream.sort(id_columns)
+    id_columns = list(child_feature_plan.feature.id_columns)
+    assert_increment_matches_golden(actual_increment, golden_increment, id_columns)
 
-        # Select only the columns that exist in both (resolve_update may not return all metadata columns)
-        # Exclude metaxy_created_at since it's a timestamp that differs between generation times
-        from metaxy.models.constants import METAXY_CREATED_AT
+    # Additional safeguard: also verify with polars engine explicitly
+    # This ensures both native and polars engines produce the same result
+    with graph.use():
+        polars_increment = store.resolve_update(
+            ChildFeature,
+            target_version=child_version,
+            snapshot_version=graph.snapshot_version,
+            versioning_engine="polars",
+        )
+    assert_increment_matches_golden(polars_increment, golden_increment, id_columns)
 
-        common_columns = [
-            col
-            for col in added_sorted.columns
-            if col in golden_sorted.columns and col != METAXY_CREATED_AT
+    # Record snapshot of provenance values for regression testing
+    if snapshot is not None:
+        # Extract provenance-related columns from golden increment
+        provenance_cols = [
+            METAXY_DATA_VERSION,
+            METAXY_DATA_VERSION_BY_FIELD,
+            METAXY_PROVENANCE,
+            METAXY_PROVENANCE_BY_FIELD,
         ]
-        added_selected = added_sorted.select(common_columns)
-        golden_selected = golden_sorted.select(common_columns)
 
-        # Use Polars testing utility to compare DataFrames
-        # This will check all columns including the provenance_by_field struct
-        pl_testing.assert_frame_equal(
-            added_selected,
-            golden_selected,
-            check_row_order=True,
-            check_column_order=False,
+        added_df = golden_increment.added.lazy().collect().to_polars()
+
+        # Select ID columns and provenance columns that exist
+        available_cols = [
+            c for c in id_columns + provenance_cols if c in added_df.columns
+        ]
+        if available_cols:
+            # Sort by all columns for deterministic output
+            provenance_df = added_df.select(available_cols).sort(available_cols)
+
+            # Convert to a serializable format for snapshot
+            # Use list of dicts for readable snapshot
+            snapshot_data = provenance_df.to_dicts()
+
+            snapshot_name = f"provenance{snapshot_suffix}"
+            assert snapshot_data == snapshot(name=snapshot_name)
+
+
+def compute_golden_increment(
+    child_feature_plan: FeaturePlan,
+    upstream_data: dict[str, pl.DataFrame],
+    current_downstream: pl.DataFrame | None,
+    hash_algorithm: HashAlgorithm,
+) -> Increment:
+    """Compute golden increment using PolarsVersioningEngine.
+
+    This is the reference implementation - all store implementations should
+    produce the same result.
+
+    Args:
+        child_feature_plan: The feature plan for the downstream feature
+        upstream_data: Dict mapping upstream feature key strings to DataFrames
+        current_downstream: Existing downstream data (None if first iteration)
+        hash_algorithm: Hash algorithm to use
+
+    Returns:
+        Golden Increment computed by PolarsVersioningEngine
+    """
+    import narwhals as nw
+
+    from metaxy.versioning.polars import PolarsVersioningEngine
+
+    engine = PolarsVersioningEngine(plan=child_feature_plan)
+
+    # Convert upstream data to Narwhals LazyFrames with FeatureKey keys
+    upstream_nw = {
+        FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
+    }
+
+    # Convert current downstream to Narwhals if present
+    current_nw = (
+        nw.from_native(current_downstream.lazy())
+        if current_downstream is not None
+        else None
+    )
+
+    # Use the engine to compute the increment
+    added, changed, removed, _ = engine.resolve_increment_with_provenance(
+        current=current_nw,
+        upstream=upstream_nw,
+        hash_algorithm=hash_algorithm,
+        filters={},
+        sample=None,
+    )
+
+    # Collect lazy frames and convert to Increment
+    # When changed/removed are None (first increment), create empty DataFrames with same schema
+    added_collected = added.collect()
+    if changed is not None:
+        changed_collected = changed.collect()
+    else:
+        # Create empty DataFrame with same schema as added
+        changed_collected = added_collected.head(0)
+    if removed is not None:
+        removed_collected = removed.collect()
+    else:
+        # Create empty DataFrame with same schema as added
+        removed_collected = added_collected.head(0)
+
+    return Increment(
+        added=added_collected,
+        changed=changed_collected,
+        removed=removed_collected,
+    )
+
+
+@parametrize_with_cases("feature_plan_sequence", cases=FeaturePlanCases)
+def test_store_resolve_update_matches_golden_provenance(
+    any_store: MetadataStore,
+    feature_plan_sequence: FeaturePlanSequence,
+):
+    """Test metadata store provenance calculation matches golden reference.
+
+    The golden reference is computed using PolarsVersioningEngine.resolve_increment_with_provenance.
+    All store implementations should produce the same result.
+
+    For multi-plan sequences (e.g., definition changes), iterates through each plan
+    without clearing the store between iterations - simulating real-world usage where
+    new data is written on top of existing data.
+    """
+    try:
+        with any_store:
+            # Track current downstream data for golden increment calculation
+            # Key: feature_version -> downstream DataFrame
+            # This mirrors what the store does: filter by feature_version
+            current_downstream_by_version: dict[str, pl.DataFrame] = {}
+            # Track base upstream data for multi-plan sequences (to keep same IDs)
+            base_upstream_data: dict[str, pl.DataFrame] | None = None
+
+            for i, plan_config in enumerate(feature_plan_sequence):
+                graph, upstream_features, child_feature_plan = plan_config
+                child_key = child_feature_plan.feature.key
+                ChildFeature = graph.features_by_key[child_key]
+                child_version = ChildFeature.feature_version()
+
+                # Generate upstream data for this plan
+                # For first plan, generate fresh data; for subsequent plans, derive from base
+                if i == 0:
+                    upstream_data, _ = generate_plan_data(any_store, plan_config)
+                    # Store as base for subsequent plans
+                    base_upstream_data = upstream_data
+                else:
+                    # Use base upstream data to ensure same IDs
+                    upstream_data, _ = generate_plan_data(
+                        any_store, plan_config, base_upstream_data=base_upstream_data
+                    )
+
+                # Get current downstream for THIS feature version (like the store does)
+                current_downstream = current_downstream_by_version.get(child_version)
+
+                # Compute golden increment using PolarsVersioningEngine
+                golden_increment = compute_golden_increment(
+                    child_feature_plan,
+                    upstream_data,
+                    current_downstream,
+                    any_store.hash_algorithm,
+                )
+
+                # Write upstream data to store (accumulates)
+                with graph.use():
+                    write_upstream_to_store(any_store, plan_config, upstream_data)
+
+                # Assert store's resolve_update matches golden increment
+                assert_resolve_update_matches_golden(
+                    any_store, plan_config, golden_increment
+                )
+
+                # Update current downstream for this feature version
+                # Use the golden added/changed to build current state
+                added_df = golden_increment.added.lazy().collect().to_polars()
+                if golden_increment.changed is not None:
+                    changed_df = golden_increment.changed.lazy().collect().to_polars()
+                    new_downstream = pl.concat([added_df, changed_df])
+                else:
+                    new_downstream = added_df
+                current_downstream_by_version[child_version] = new_downstream
+
+                # Also write downstream to store so store can detect changes in next iteration
+                with graph.use():
+                    any_store.write_metadata(ChildFeature, new_downstream)
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(
+            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
         )
 
 
 # ============= TEST: DEDUPLICATION WITH DUPLICATES =============
 
 
-@parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
+@parametrize_with_cases("feature_plan_sequence", cases=FeaturePlanCases)
 def test_golden_reference_with_duplicate_timestamps(
     any_store: MetadataStore,
-    feature_plan_config: FeaturePlanOutput,
+    feature_plan_sequence: FeaturePlanSequence,
 ):
-    """Test deduplication logic correctly filters older versions before computing provenance."""
+    """Test deduplication logic correctly filters older versions before computing provenance.
+
+    Uses only the first plan from the sequence (deduplication testing doesn't need
+    multi-plan sequences).
+    """
     empty_store = any_store
+    feature_plan_config = feature_plan_sequence[0]  # Use first plan only
     # Setup store with upstream data and get golden reference
     store, (graph, upstream_features, child_feature_plan), golden_downstream = (
         setup_store_with_data(
@@ -323,7 +919,7 @@ def test_golden_reference_with_duplicate_timestamps(
     ChildFeature = graph.features_by_key[child_key]
     child_version = ChildFeature.feature_version()
 
-    with store:
+    with store, graph.use():
         try:
             from datetime import timedelta
 
@@ -348,10 +944,11 @@ def test_golden_reference_with_duplicate_timestamps(
 
                 # Modify a field value to ensure different provenance
                 # This tests that older version is NOT used
+                upstream_id_cols = set(upstream_feature.spec().id_columns)
                 user_fields = [
                     col
                     for col in older_df.columns
-                    if not col.startswith("metaxy_") and col != "sample_uid"
+                    if not col.startswith("metaxy_") and col not in upstream_id_cols
                 ]
                 if user_fields:
                     field = user_fields[0]
@@ -383,19 +980,18 @@ def test_golden_reference_with_duplicate_timestamps(
 
         added_df = increment.added.lazy().collect().to_polars()
 
-        # Get ID columns from the feature plan
-        id_columns = list(child_feature_plan.feature.id_columns)
-
-        # Sort both DataFrames by ID columns for comparison
-        added_sorted = added_df.sort(id_columns)
-        golden_sorted = golden_downstream.sort(id_columns)
-
         # Exclude metaxy_created_at since it's a timestamp
         common_columns = [
             col
-            for col in added_sorted.columns
-            if col in golden_sorted.columns and col != METAXY_CREATED_AT
+            for col in added_df.columns
+            if col in golden_downstream.columns and col != METAXY_CREATED_AT
         ]
+
+        # Sort both DataFrames by all comparable columns for deterministic comparison
+        # (id_columns alone may not be unique for aggregation lineage)
+        added_sorted = added_df.sort(common_columns)
+        golden_sorted = golden_downstream.sort(common_columns)
+
         added_selected = added_sorted.select(common_columns)
         golden_selected = golden_sorted.select(common_columns)
 
@@ -513,13 +1109,18 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
         )
 
 
-@parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
+@parametrize_with_cases("feature_plan_sequence", cases=FeaturePlanCases)
 def test_golden_reference_partial_duplicates(
     any_store: MetadataStore,
-    feature_plan_config: FeaturePlanOutput,
+    feature_plan_sequence: FeaturePlanSequence,
 ):
-    """Test golden reference with only some upstream samples having duplicates."""
+    """Test golden reference with only some upstream samples having duplicates.
+
+    Uses only the first plan from the sequence (deduplication testing doesn't need
+    multi-plan sequences).
+    """
     empty_store = any_store
+    feature_plan_config = feature_plan_sequence[0]  # Use first plan only
     # Setup store with upstream data
     store, (graph, upstream_features, child_feature_plan), golden_downstream = (
         setup_store_with_data(
@@ -533,7 +1134,7 @@ def test_golden_reference_partial_duplicates(
     child_version = ChildFeature.feature_version()
 
     try:
-        with store:
+        with store, graph.use():
             from datetime import timedelta
 
             import polars as pl
@@ -576,18 +1177,19 @@ def test_golden_reference_partial_duplicates(
             )
 
             added_df = increment.added.lazy().collect().to_polars()
-            id_columns = list(child_feature_plan.feature.id_columns)
-
-            # Sort both for comparison
-            added_sorted = added_df.sort(id_columns)
-            golden_sorted = golden_downstream.sort(id_columns)
 
             # Exclude timestamp
             common_columns = [
                 col
-                for col in added_sorted.columns
-                if col in golden_sorted.columns and col != METAXY_CREATED_AT
+                for col in added_df.columns
+                if col in golden_downstream.columns and col != METAXY_CREATED_AT
             ]
+
+            # Sort both by all comparable columns for deterministic comparison
+            # (id_columns alone may not be unique for aggregation lineage)
+            added_sorted = added_df.sort(common_columns)
+            golden_sorted = golden_downstream.sort(common_columns)
+
             added_selected = added_sorted.select(common_columns)
             golden_selected = golden_sorted.select(common_columns)
 
@@ -819,588 +1421,7 @@ def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
     assert result_sorted["fps"].to_list() == [60, 60], "Expected latest fps values"
 
 
-# ============= MIXED LINEAGE RESOLVE_UPDATE TESTS =============
-
-
-def test_resolve_update_aggregation_plus_identity(
-    any_store: MetadataStore,
-    graph: FeatureGraph,
-    snapshot,
-):
-    """Test resolve_update with mixed aggregation + identity dependencies.
-
-    Scenario:
-    - SensorReadings: N:1 aggregation to hourly stats
-    - SensorInfo: 1:1 identity join with sensor metadata
-
-    Both upstream features have the same ID columns (sensor_id) to allow joining.
-    The aggregation reduces multiple readings per sensor to one per sensor.
-
-    Expected: Downstream provenance combines aggregated readings provenance
-    and identity sensor info provenance.
-    """
-
-    class SensorInfo(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="sensor_info",
-            id_columns=("sensor_id",),
-            fields=[
-                FieldSpec(key=FieldKey(["location"]), code_version="1"),
-            ],
-        ),
-    ):
-        sensor_id: str
-
-    class SensorReadings(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="sensor_readings",
-            id_columns=("sensor_id", "reading_id"),
-            fields=[
-                FieldSpec(key=FieldKey(["temperature"]), code_version="1"),
-            ],
-        ),
-    ):
-        sensor_id: str
-        reading_id: str
-
-    class AggregatedSensorStats(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="aggregated_sensor_stats",
-            id_columns=("sensor_id",),
-            deps=[
-                FeatureDep(
-                    feature=SensorReadings,
-                    lineage=LineageRelationship.aggregation(on=["sensor_id"]),
-                ),
-                FeatureDep(
-                    feature=SensorInfo,
-                    lineage=LineageRelationship.identity(),
-                ),
-            ],
-            fields=[
-                FieldSpec(
-                    key=FieldKey(["enriched_stat"]),
-                    code_version="1",
-                    deps=SpecialFieldDep.ALL,
-                ),
-            ],
-        ),
-    ):
-        sensor_id: str
-
-    try:
-        with any_store:
-            # === INITIAL DATA ===
-            # Write sensor info (identity upstream)
-            sensor_info_df = pl.DataFrame(
-                {
-                    "sensor_id": ["s1", "s2"],
-                    "metaxy_provenance_by_field": [
-                        {"location": "loc_hash_1"},
-                        {"location": "loc_hash_2"},
-                    ],
-                }
-            )
-            any_store.write_metadata(SensorInfo, sensor_info_df)
-
-            # Write sensor readings (aggregation upstream) - multiple per sensor
-            readings_df = pl.DataFrame(
-                {
-                    "sensor_id": ["s1", "s1", "s1", "s2", "s2"],
-                    "reading_id": ["r1", "r2", "r3", "r4", "r5"],
-                    "metaxy_provenance_by_field": [
-                        {"temperature": "temp_hash_1"},
-                        {"temperature": "temp_hash_2"},
-                        {"temperature": "temp_hash_3"},
-                        {"temperature": "temp_hash_4"},
-                        {"temperature": "temp_hash_5"},
-                    ],
-                }
-            )
-            any_store.write_metadata(SensorReadings, readings_df)
-
-            # === FIRST RESOLVE UPDATE ===
-            increment = any_store.resolve_update(
-                AggregatedSensorStats,
-                target_version=AggregatedSensorStats.feature_version(),
-                snapshot_version=graph.snapshot_version,
-            )
-
-            added_df = increment.added.lazy().collect().to_polars()
-
-            # Check row count: aggregation reduces 5 readings to 2 (one per sensor)
-            assert len(added_df) == 2, (
-                f"Expected 2 rows (one per sensor), got {len(added_df)}"
-            )
-
-            # Check ID columns are correct
-            assert "sensor_id" in added_df.columns, "Missing sensor_id column"
-            assert set(added_df["sensor_id"].to_list()) == {"s1", "s2"}, (
-                "Unexpected sensor IDs"
-            )
-
-            # Check provenance columns exist
-            assert "metaxy_provenance" in added_df.columns, "Missing metaxy_provenance"
-            assert "metaxy_provenance_by_field" in added_df.columns, (
-                "Missing metaxy_provenance_by_field"
-            )
-
-            # Verify provenance_by_field has the expected structure
-            # It should contain a hash for "enriched_stat" field
-            for prov_by_field in added_df["metaxy_provenance_by_field"]:
-                assert "enriched_stat" in prov_by_field, (
-                    f"Expected 'enriched_stat' field in provenance_by_field, got: {prov_by_field}"
-                )
-
-            # Write downstream metadata so next resolve_update can detect changes
-            any_store.write_metadata(AggregatedSensorStats, added_df)
-
-            # === SECOND RESOLVE UPDATE (no changes) ===
-            increment_no_change = any_store.resolve_update(
-                AggregatedSensorStats,
-                target_version=AggregatedSensorStats.feature_version(),
-                snapshot_version=graph.snapshot_version,
-            )
-            added_no_change = increment_no_change.added.lazy().collect().to_polars()
-
-            # No changes expected - upstream hasn't changed
-            assert len(added_no_change) == 0, (
-                f"Expected 0 rows when nothing changed, got {len(added_no_change)}"
-            )
-
-            # Snapshot the state for regression testing
-            final_df = (
-                any_store.read_metadata(AggregatedSensorStats)
-                .lazy()
-                .collect()
-                .to_polars()
-            )
-            final_sorted = final_df.sort("sensor_id")
-            snapshot_data = [
-                {
-                    "sensor_id": final_sorted["sensor_id"][i],
-                    "metaxy_provenance_by_field": final_sorted[
-                        "metaxy_provenance_by_field"
-                    ][i],
-                }
-                for i in range(len(final_sorted))
-            ]
-            assert snapshot_data == snapshot
-
-    except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
-        )
-
-
-def test_resolve_update_expansion_plus_identity(
-    any_store: MetadataStore,
-    graph: FeatureGraph,
-    snapshot,
-):
-    """Test resolve_update with mixed expansion + identity dependencies.
-
-    Scenario:
-    - Video: 1:N expansion (one video → many frames)
-    - VideoMetadata: 1:1 identity join with video metadata
-
-    Both features have video_id as ID column. The expansion indicates that
-    downstream will have more rows than upstream Video, but change detection
-    happens at the parent (video_id) level.
-
-    Expected: Downstream provenance combines expansion parent provenance
-    and identity metadata provenance at the parent level.
-    """
-
-    class Video(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="video",
-            id_columns=("video_id",),
-            fields=[
-                FieldSpec(key=FieldKey(["content"]), code_version="1"),
-            ],
-        ),
-    ):
-        video_id: str
-
-    class VideoMetadata(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="video_metadata",
-            id_columns=("video_id",),
-            fields=[
-                FieldSpec(key=FieldKey(["category"]), code_version="1"),
-            ],
-        ),
-    ):
-        video_id: str
-
-    class EnrichedFrames(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="enriched_frames",
-            id_columns=("video_id", "frame_id"),  # Expanded: parent ID + frame ID
-            deps=[
-                FeatureDep(
-                    feature=Video,
-                    lineage=LineageRelationship.expansion(on=["video_id"]),
-                ),
-                FeatureDep(
-                    feature=VideoMetadata,
-                    lineage=LineageRelationship.identity(),
-                ),
-            ],
-            fields=[
-                FieldSpec(
-                    key=FieldKey(["frame_feature"]),
-                    code_version="1",
-                    deps=SpecialFieldDep.ALL,
-                ),
-            ],
-        ),
-    ):
-        video_id: str
-        frame_id: str
-
-    try:
-        with any_store:
-            # === INITIAL DATA ===
-            # Write video (expansion upstream)
-            video_df = pl.DataFrame(
-                {
-                    "video_id": ["v1", "v2"],
-                    "metaxy_provenance_by_field": [
-                        {"content": "content_hash_1"},
-                        {"content": "content_hash_2"},
-                    ],
-                }
-            )
-            any_store.write_metadata(Video, video_df)
-
-            # Write video metadata (identity upstream)
-            metadata_df = pl.DataFrame(
-                {
-                    "video_id": ["v1", "v2"],
-                    "metaxy_provenance_by_field": [
-                        {"category": "cat_hash_1"},
-                        {"category": "cat_hash_2"},
-                    ],
-                }
-            )
-            any_store.write_metadata(VideoMetadata, metadata_df)
-
-            # === FIRST RESOLVE UPDATE ===
-            # resolve_update returns data at parent level (video_id) for change detection
-            increment = any_store.resolve_update(
-                EnrichedFrames,
-                target_version=EnrichedFrames.feature_version(),
-                snapshot_version=graph.snapshot_version,
-            )
-
-            added_df = increment.added.lazy().collect().to_polars()
-
-            # Check row count: resolve_update returns parent-level rows (one per video)
-            assert len(added_df) == 2, (
-                f"Expected 2 rows (one per video), got {len(added_df)}"
-            )
-
-            # Check parent ID column is correct
-            assert "video_id" in added_df.columns, "Missing video_id column"
-            assert set(added_df["video_id"].to_list()) == {"v1", "v2"}, (
-                "Unexpected video IDs"
-            )
-
-            # Check provenance columns exist
-            assert "metaxy_provenance" in added_df.columns, "Missing metaxy_provenance"
-            assert "metaxy_provenance_by_field" in added_df.columns, (
-                "Missing metaxy_provenance_by_field"
-            )
-
-            # Verify provenance_by_field has the expected structure
-            for prov_by_field in added_df["metaxy_provenance_by_field"]:
-                assert "frame_feature" in prov_by_field, (
-                    f"Expected 'frame_feature' field in provenance_by_field, got: {prov_by_field}"
-                )
-
-            # === EXPAND: User code creates multiple frames per video ===
-            # Each video expands to 3 frames, all sharing the same provenance
-            expanded_rows = []
-            for row in added_df.iter_rows(named=True):
-                video_id = row["video_id"]
-                provenance = row["metaxy_provenance"]
-                provenance_by_field = row["metaxy_provenance_by_field"]
-
-                # Create 3 frames per video
-                for frame_idx in range(3):
-                    expanded_rows.append(
-                        {
-                            "video_id": video_id,
-                            "frame_id": f"{video_id}_frame_{frame_idx}",
-                            "metaxy_provenance": provenance,
-                            "metaxy_provenance_by_field": provenance_by_field,
-                        }
-                    )
-
-            expanded_df = pl.DataFrame(expanded_rows)
-
-            # Write expanded downstream metadata
-            any_store.write_metadata(EnrichedFrames, expanded_df)
-
-            # Verify we wrote 6 rows (2 videos × 3 frames)
-            stored_df = (
-                any_store.read_metadata(EnrichedFrames).lazy().collect().to_polars()
-            )
-            assert len(stored_df) == 6, (
-                f"Expected 6 expanded rows, got {len(stored_df)}"
-            )
-
-            # === SECOND RESOLVE UPDATE (no changes) ===
-            increment_no_change = any_store.resolve_update(
-                EnrichedFrames,
-                target_version=EnrichedFrames.feature_version(),
-                snapshot_version=graph.snapshot_version,
-            )
-            added_no_change = increment_no_change.added.lazy().collect().to_polars()
-
-            # No changes expected - upstream hasn't changed
-            assert len(added_no_change) == 0, (
-                f"Expected 0 rows when nothing changed, got {len(added_no_change)}"
-            )
-
-            # Snapshot the state for regression testing (at parent level for determinism)
-            final_df = (
-                any_store.read_metadata(EnrichedFrames).lazy().collect().to_polars()
-            )
-            # Group by video_id to get unique provenance per video
-            final_grouped = (
-                final_df.group_by("video_id")
-                .agg(pl.col("metaxy_provenance_by_field").first())
-                .sort("video_id")
-            )
-            provenance_data = [
-                {
-                    "video_id": final_grouped["video_id"][i],
-                    "metaxy_provenance_by_field": final_grouped[
-                        "metaxy_provenance_by_field"
-                    ][i],
-                }
-                for i in range(len(final_grouped))
-            ]
-            assert provenance_data == snapshot
-
-    except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
-        )
-
-
-def test_resolve_update_aggregation_expansion(
-    any_store: MetadataStore,
-    graph: FeatureGraph,
-    snapshot,
-):
-    """Test resolve_update with aggregation + expansion dependencies.
-
-    Scenario with two upstream features sharing config_id:
-    - SensorReadings: N:1 aggregation by config_id (many readings → one per config)
-    - VideoSource: 1:N expansion by config_id (one video expands to many frames)
-
-    This tests aggregation and expansion lineage types together.
-
-    Expected: Downstream provenance combines aggregation and expansion provenances.
-    """
-
-    class SensorReadings(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="sensor_readings_v2",
-            id_columns=("config_id", "reading_id"),
-            fields=[
-                FieldSpec(key=FieldKey(["measurement"]), code_version="1"),
-            ],
-        ),
-    ):
-        config_id: str
-        reading_id: str
-
-    class VideoSource(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="video_source",
-            id_columns=("config_id",),
-            fields=[
-                FieldSpec(key=FieldKey(["video_data"]), code_version="1"),
-            ],
-        ),
-    ):
-        config_id: str
-
-    class CombinedFeature(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="combined_feature",
-            id_columns=("config_id", "output_id"),  # Expanded: parent ID + output ID
-            deps=[
-                FeatureDep(
-                    feature=SensorReadings,
-                    lineage=LineageRelationship.aggregation(on=["config_id"]),
-                ),
-                FeatureDep(
-                    feature=VideoSource,
-                    lineage=LineageRelationship.expansion(on=["config_id"]),
-                ),
-            ],
-            fields=[
-                FieldSpec(
-                    key=FieldKey(["combined_output"]),
-                    code_version="1",
-                    deps=SpecialFieldDep.ALL,
-                ),
-            ],
-        ),
-    ):
-        config_id: str
-        output_id: str
-
-    try:
-        with any_store:
-            # === INITIAL DATA ===
-            # Write sensor readings (aggregation upstream) - multiple per config
-            readings_df = pl.DataFrame(
-                {
-                    "config_id": ["cfg1", "cfg1", "cfg1", "cfg2", "cfg2"],
-                    "reading_id": ["r1", "r2", "r3", "r4", "r5"],
-                    "metaxy_provenance_by_field": [
-                        {"measurement": "meas_hash_1"},
-                        {"measurement": "meas_hash_2"},
-                        {"measurement": "meas_hash_3"},
-                        {"measurement": "meas_hash_4"},
-                        {"measurement": "meas_hash_5"},
-                    ],
-                }
-            )
-            any_store.write_metadata(SensorReadings, readings_df)
-
-            # Write video source (expansion upstream)
-            video_df = pl.DataFrame(
-                {
-                    "config_id": ["cfg1", "cfg2"],
-                    "metaxy_provenance_by_field": [
-                        {"video_data": "video_hash_1"},
-                        {"video_data": "video_hash_2"},
-                    ],
-                }
-            )
-            any_store.write_metadata(VideoSource, video_df)
-
-            # === FIRST RESOLVE UPDATE ===
-            # resolve_update returns data at parent level (config_id) for change detection
-            increment = any_store.resolve_update(
-                CombinedFeature,
-                target_version=CombinedFeature.feature_version(),
-                snapshot_version=graph.snapshot_version,
-            )
-
-            added_df = increment.added.lazy().collect().to_polars()
-
-            # Check row count: resolve_update returns parent-level rows (one per config)
-            assert len(added_df) == 2, (
-                f"Expected 2 rows (one per config), got {len(added_df)}"
-            )
-
-            # Check parent ID column is correct
-            assert "config_id" in added_df.columns, "Missing config_id column"
-            assert set(added_df["config_id"].to_list()) == {"cfg1", "cfg2"}, (
-                "Unexpected config IDs"
-            )
-
-            # Check provenance columns exist
-            assert "metaxy_provenance" in added_df.columns, "Missing metaxy_provenance"
-            assert "metaxy_provenance_by_field" in added_df.columns, (
-                "Missing metaxy_provenance_by_field"
-            )
-
-            # Verify provenance_by_field has the expected structure
-            # It should contain a hash for "combined_output" field
-            for prov_by_field in added_df["metaxy_provenance_by_field"]:
-                assert "combined_output" in prov_by_field, (
-                    f"Expected 'combined_output' field in provenance_by_field, got: {prov_by_field}"
-                )
-
-            # === EXPAND: User code creates multiple outputs per config ===
-            # Each config expands to 2 outputs, all sharing the same provenance
-            expanded_rows = []
-            for row in added_df.iter_rows(named=True):
-                config_id = row["config_id"]
-                provenance = row["metaxy_provenance"]
-                provenance_by_field = row["metaxy_provenance_by_field"]
-
-                # Create 2 outputs per config
-                for output_idx in range(2):
-                    expanded_rows.append(
-                        {
-                            "config_id": config_id,
-                            "output_id": f"{config_id}_output_{output_idx}",
-                            "metaxy_provenance": provenance,
-                            "metaxy_provenance_by_field": provenance_by_field,
-                        }
-                    )
-
-            expanded_df = pl.DataFrame(expanded_rows)
-
-            # Write expanded downstream metadata
-            any_store.write_metadata(CombinedFeature, expanded_df)
-
-            # Verify we wrote 4 rows (2 configs × 2 outputs)
-            stored_df = (
-                any_store.read_metadata(CombinedFeature).lazy().collect().to_polars()
-            )
-            assert len(stored_df) == 4, (
-                f"Expected 4 expanded rows, got {len(stored_df)}"
-            )
-
-            # === SECOND RESOLVE UPDATE (no changes) ===
-            increment_no_change = any_store.resolve_update(
-                CombinedFeature,
-                target_version=CombinedFeature.feature_version(),
-                snapshot_version=graph.snapshot_version,
-            )
-            added_no_change = increment_no_change.added.lazy().collect().to_polars()
-
-            # No changes expected - upstream hasn't changed
-            assert len(added_no_change) == 0, (
-                f"Expected 0 rows when nothing changed, got {len(added_no_change)}"
-            )
-
-            # Snapshot the state for regression testing (at parent level for determinism)
-            final_df = (
-                any_store.read_metadata(CombinedFeature).lazy().collect().to_polars()
-            )
-            # Group by config_id to get unique provenance per config
-            final_grouped = (
-                final_df.group_by("config_id")
-                .agg(pl.col("metaxy_provenance_by_field").first())
-                .sort("config_id")
-            )
-            provenance_data = [
-                {
-                    "config_id": final_grouped["config_id"][i],
-                    "metaxy_provenance_by_field": final_grouped[
-                        "metaxy_provenance_by_field"
-                    ][i],
-                }
-                for i in range(len(final_grouped))
-            ]
-            assert provenance_data == snapshot
-
-    except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
-        )
+# ============= REGRESSION TESTS =============
 
 
 def test_expansion_changed_rows_not_duplicated(
@@ -1551,3 +1572,277 @@ def test_expansion_changed_rows_not_duplicated(
         pytest.skip(
             f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
         )
+
+
+# ============= SNAPSHOT TESTS FOR PROVENANCE VALUES =============
+
+
+@pytest.mark.parametrize(
+    "lineage_case",
+    ["identity", "aggregation", "expansion"],
+    ids=["identity", "aggregation", "expansion"],
+)
+def test_provenance_snapshot(
+    lineage_case: str,
+    snapshot: SnapshotAssertion,
+):
+    """Snapshot test for provenance computation with deterministic data.
+
+    Records the exact provenance values computed for each lineage type,
+    enabling regression detection when the versioning engine changes.
+
+    Uses fixed input data and InMemoryMetadataStore with xxhash64 for determinism.
+    """
+    from datetime import datetime
+
+    import narwhals as nw
+
+    from metaxy._testing.models import SampleFeatureSpec
+    from metaxy.models.constants import (
+        METAXY_CREATED_AT,
+        METAXY_DATA_VERSION,
+        METAXY_DATA_VERSION_BY_FIELD,
+        METAXY_FEATURE_VERSION,
+        METAXY_PROVENANCE,
+        METAXY_PROVENANCE_BY_FIELD,
+        METAXY_SNAPSHOT_VERSION,
+    )
+    from metaxy.versioning.polars import PolarsVersioningEngine
+    from metaxy.versioning.types import HashAlgorithm
+
+    graph = FeatureGraph()
+
+    # Fixed timestamp for deterministic output
+    fixed_timestamp = datetime(2024, 6, 15, 12, 0, 0)
+
+    with graph.use():
+        if lineage_case == "identity":
+            # Simple identity lineage: Parent -> Child
+            class ParentFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="parent",
+                    id_columns=("id",),
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                ),
+            ):
+                id: str
+
+            class ChildFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="child",
+                    id_columns=("id",),
+                    deps=[
+                        FeatureDep(
+                            feature=ParentFeature,
+                            lineage=LineageRelationship.identity(),
+                        ),
+                    ],
+                    fields=[
+                        FieldSpec(
+                            key=FieldKey(["derived"]),
+                            code_version="1",
+                            deps=SpecialFieldDep.ALL,
+                        ),
+                    ],
+                ),
+            ):
+                id: str
+
+            # Fixed upstream data
+            parent_data = pl.DataFrame(
+                {
+                    "id": ["p1", "p2", "p3"],
+                    METAXY_DATA_VERSION: ["dv_p1", "dv_p2", "dv_p3"],
+                    METAXY_DATA_VERSION_BY_FIELD: [
+                        {"value": "fv_p1"},
+                        {"value": "fv_p2"},
+                        {"value": "fv_p3"},
+                    ],
+                    METAXY_PROVENANCE: ["prov_p1", "prov_p2", "prov_p3"],
+                    METAXY_PROVENANCE_BY_FIELD: [
+                        {"value": "prov_p1"},
+                        {"value": "prov_p2"},
+                        {"value": "prov_p3"},
+                    ],
+                    METAXY_FEATURE_VERSION: ["v1", "v1", "v1"],
+                    METAXY_SNAPSHOT_VERSION: ["snap1", "snap1", "snap1"],
+                    METAXY_CREATED_AT: [fixed_timestamp] * 3,
+                }
+            )
+
+            upstream_data = {"parent": parent_data}
+            child_plan = graph.get_feature_plan(ChildFeature.spec().key)
+
+        elif lineage_case == "aggregation":
+            # Aggregation lineage: Multiple readings per sensor -> one aggregated row
+            class SensorReadings(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="sensor_readings",
+                    id_columns=("sensor_id", "reading_id"),
+                    fields=[FieldSpec(key=FieldKey(["temperature"]), code_version="1")],
+                ),
+            ):
+                sensor_id: str
+                reading_id: str
+
+            class AggregatedStats(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="aggregated_stats",
+                    id_columns=("sensor_id",),
+                    deps=[
+                        FeatureDep(
+                            feature=SensorReadings,
+                            lineage=LineageRelationship.aggregation(on=["sensor_id"]),
+                        ),
+                    ],
+                    fields=[
+                        FieldSpec(
+                            key=FieldKey(["avg_temp"]),
+                            code_version="1",
+                            deps=SpecialFieldDep.ALL,
+                        ),
+                    ],
+                ),
+            ):
+                sensor_id: str
+
+            # Fixed upstream data: 2 sensors with 2-3 readings each
+            readings_data = pl.DataFrame(
+                {
+                    "sensor_id": ["s1", "s1", "s2", "s2", "s2"],
+                    "reading_id": ["r1", "r2", "r3", "r4", "r5"],
+                    METAXY_DATA_VERSION: ["dv_r1", "dv_r2", "dv_r3", "dv_r4", "dv_r5"],
+                    METAXY_DATA_VERSION_BY_FIELD: [
+                        {"temperature": "fv_r1"},
+                        {"temperature": "fv_r2"},
+                        {"temperature": "fv_r3"},
+                        {"temperature": "fv_r4"},
+                        {"temperature": "fv_r5"},
+                    ],
+                    METAXY_PROVENANCE: [
+                        "prov_r1",
+                        "prov_r2",
+                        "prov_r3",
+                        "prov_r4",
+                        "prov_r5",
+                    ],
+                    METAXY_PROVENANCE_BY_FIELD: [
+                        {"temperature": "prov_r1"},
+                        {"temperature": "prov_r2"},
+                        {"temperature": "prov_r3"},
+                        {"temperature": "prov_r4"},
+                        {"temperature": "prov_r5"},
+                    ],
+                    METAXY_FEATURE_VERSION: ["v1"] * 5,
+                    METAXY_SNAPSHOT_VERSION: ["snap1"] * 5,
+                    METAXY_CREATED_AT: [fixed_timestamp] * 5,
+                }
+            )
+
+            upstream_data = {"sensor_readings": readings_data}
+            child_plan = graph.get_feature_plan(AggregatedStats.spec().key)
+
+        elif lineage_case == "expansion":
+            # Expansion lineage: One video -> multiple frames
+            class Video(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="video",
+                    id_columns=("video_id",),
+                    fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
+                ),
+            ):
+                video_id: str
+
+            class VideoFrames(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="video_frames",
+                    id_columns=("video_id",),  # At parent level for golden reference
+                    deps=[
+                        FeatureDep(
+                            feature=Video,
+                            lineage=LineageRelationship.expansion(on=["video_id"]),
+                        ),
+                    ],
+                    fields=[
+                        FieldSpec(
+                            key=FieldKey(["frames"]),
+                            code_version="1",
+                            deps=SpecialFieldDep.ALL,
+                        ),
+                    ],
+                ),
+            ):
+                video_id: str
+
+            # Fixed upstream data
+            video_data = pl.DataFrame(
+                {
+                    "video_id": ["v1", "v2"],
+                    METAXY_DATA_VERSION: ["dv_v1", "dv_v2"],
+                    METAXY_DATA_VERSION_BY_FIELD: [
+                        {"content": "fv_v1"},
+                        {"content": "fv_v2"},
+                    ],
+                    METAXY_PROVENANCE: ["prov_v1", "prov_v2"],
+                    METAXY_PROVENANCE_BY_FIELD: [
+                        {"content": "prov_v1"},
+                        {"content": "prov_v2"},
+                    ],
+                    METAXY_FEATURE_VERSION: ["v1", "v1"],
+                    METAXY_SNAPSHOT_VERSION: ["snap1", "snap1"],
+                    METAXY_CREATED_AT: [fixed_timestamp] * 2,
+                }
+            )
+
+            upstream_data = {"video": video_data}
+            child_plan = graph.get_feature_plan(VideoFrames.spec().key)
+
+        else:
+            raise ValueError(f"Unknown lineage case: {lineage_case}")
+
+        # Use PolarsVersioningEngine directly for deterministic computation
+        engine = PolarsVersioningEngine(plan=child_plan)
+
+        # Convert upstream data to Narwhals LazyFrames
+        upstream_nw = {
+            FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
+        }
+
+        # Compute provenance
+        added, changed, removed, _ = engine.resolve_increment_with_provenance(
+            current=None,
+            upstream=upstream_nw,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            filters={},
+            sample=None,
+        )
+
+        # Collect results
+        added_df = added.collect()
+
+        # Extract provenance columns for snapshot
+        provenance_cols = [
+            METAXY_DATA_VERSION,
+            METAXY_DATA_VERSION_BY_FIELD,
+            METAXY_PROVENANCE,
+            METAXY_PROVENANCE_BY_FIELD,
+        ]
+        id_columns = list(child_plan.feature.id_columns)
+        available_cols = [
+            c for c in id_columns + provenance_cols if c in added_df.columns
+        ]
+
+        # Sort for deterministic output and convert to dicts
+        result_df = added_df.select(available_cols).sort(available_cols)
+        # Convert to native Polars for to_dicts()
+        result_pl = result_df.to_native()
+        snapshot_data = result_pl.to_dicts()
+
+        # Assert against snapshot
+        assert snapshot_data == snapshot

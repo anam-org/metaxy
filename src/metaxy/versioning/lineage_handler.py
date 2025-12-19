@@ -1,16 +1,28 @@
-"""Lineage transformation handlers for per-dependency provenance calculation.
+"""Lineage handlers for different lineage relationship types.
 
 Each dependency can have its own lineage relationship (identity, aggregation, expansion).
-Lineage transformations are applied independently per-dependency before joining.
+This module provides handlers that know how to:
+- Determine output ID columns for each lineage type
+- Transform upstream data for lineage-specific handling (aggregation only)
+- Transform current metadata for comparison (expansion only)
 
-This module provides:
-- LineageTransformer: Per-dependency transformation applied during upstream loading
-- Comparison helpers for handling expansion relationships during diff resolution
+IMPORTANT: Metaxy does NOT transform user data. Users perform actual data
+transformations (aggregation, expansion) in their feature computation code.
+Metaxy only tracks versioning/provenance metadata.
+
+Lineage types and when they matter:
+- Identity (1:1): No special handling. Upstream provenance flows directly.
+- Aggregation (N:1): Upstream metaxy columns are aggregated field-by-field using
+  window functions. All rows in the same aggregation group get identical values.
+  The user performs actual data aggregation; Metaxy just pre-computes the aggregated
+  provenance so the user can pick any_value() for metaxy columns.
+- Expansion (1:N): Handled during comparison. Current metadata is collapsed to
+  parent level since all children inherit the same parent provenance.
 """
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import TYPE_CHECKING
 
 import narwhals as nw
@@ -23,14 +35,16 @@ if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureDep
     from metaxy.models.plan import FeaturePlan
     from metaxy.versioning.engine import VersioningEngine
+    from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
     from metaxy.versioning.types import HashAlgorithm
 
 
-class LineageTransformer(ABC):
-    """Base class for per-dependency lineage transformations.
+class LineageHandler(ABC):
+    """Base class for lineage relationship handlers.
 
-    Each transformer handles a specific lineage relationship type and is applied
-    independently to its dependency's data before joining with other dependencies.
+    Each handler knows how to handle a specific lineage relationship type.
+    Handlers transform upstream metaxy columns as needed for the lineage type
+    and provide utilities for the versioning engine to compute provenance correctly.
     """
 
     def __init__(
@@ -38,19 +52,21 @@ class LineageTransformer(ABC):
         feature_dep: FeatureDep,
         plan: FeaturePlan,
         engine: VersioningEngine,
+        dep_transformer: FeatureDepTransformer,
     ):
-        """Initialize transformer for a specific dependency.
+        """Initialize handler for a specific dependency.
 
         Args:
-            feature_dep: The dependency this transformer handles
+            feature_dep: The dependency this handler handles
             plan: The feature plan for the downstream feature
             engine: The versioning engine instance
+            dep_transformer: The FeatureDepTransformer that handles column naming
         """
         self.dep = feature_dep
         self.plan = plan
         self.engine = engine
+        self.dep_transformer = dep_transformer
 
-    @abstractmethod
     def transform_upstream(
         self,
         df: FrameT,
@@ -59,6 +75,7 @@ class LineageTransformer(ABC):
         """Transform upstream data according to lineage relationship.
 
         Applied per-dependency before joining with other dependencies.
+        By default, returns the data unchanged.
 
         Args:
             df: Upstream DataFrame (already filtered, renamed, selected)
@@ -67,7 +84,7 @@ class LineageTransformer(ABC):
         Returns:
             Transformed DataFrame
         """
-        pass
+        return df
 
     def transform_current_for_comparison(
         self,
@@ -97,145 +114,174 @@ class LineageTransformer(ABC):
         """
         return self.plan.get_input_id_columns_for_dep(self.dep)
 
+    @property
+    def requires_aggregation(self) -> bool:
+        """Whether this lineage type requires aggregating upstream values."""
+        return False
 
-class IdentityLineageTransformer(LineageTransformer):
-    """Transformer for 1:1 identity lineage.
 
-    No transformation needed - each upstream row maps to exactly one downstream row.
+class IdentityLineageHandler(LineageHandler):
+    """Handler for 1:1 identity lineage.
+
+    Each upstream row maps to exactly one downstream row.
+    No special handling needed.
     """
+
+    pass
+
+
+class AggregationLineageHandler(LineageHandler):
+    """Handler for N:1 aggregation lineage.
+
+    Multiple upstream rows map to one downstream row.
+    When computing downstream provenance, upstream values within each
+    downstream ID group must be aggregated (concat+hash).
+
+    The user performs actual data aggregation in their feature computation code.
+    Metaxy pre-aggregates the provenance/data_version columns field-by-field using
+    window functions so all rows in the same group have identical metaxy values.
+    The user can then use any_value() or first() when doing their aggregation.
+    """
+
+    @property
+    def requires_aggregation(self) -> bool:
+        """Aggregation lineage requires aggregating upstream values."""
+        return True
 
     def transform_upstream(
         self,
         df: FrameT,
         hash_algorithm: HashAlgorithm,
     ) -> FrameT:
-        """Identity transformation - return unchanged."""
-        return df
+        """Aggregate upstream metaxy columns field-by-field using window functions.
 
+        For each field in metaxy_data_version_by_field and metaxy_provenance_by_field:
+        1. Extract the field value from the struct to a temp column
+        2. Use engine.concat_strings_over_groups to aggregate within groups
+        3. Hash the concatenated values
+        4. All rows in the group get the same hashed value
 
-class AggregationLineageTransformer(LineageTransformer):
-    """Transformer for N:1 aggregation lineage.
+        Then rebuild the struct columns and compute sample-level versions.
 
-    Multiple upstream rows aggregate to one downstream row.
-    We group by aggregation columns and combine provenance values.
-    """
-
-    def transform_upstream(
-        self,
-        df: FrameT,
-        hash_algorithm: HashAlgorithm,
-    ) -> FrameT:
-        """Aggregate upstream data by grouping columns.
-
-        Groups by the aggregation columns specified in the lineage relationship,
-        concatenates data_version values deterministically, and hashes the result.
-
-        For aggregation, we only care about upstream `metaxy_data_version` (which is
-        what downstream provenance computation reads from). The upstream provenance
-        column is not used - data_version is either equal to it or customized by user.
+        IMPORTANT: This does NOT reduce rows. All original rows are preserved.
+        The user performs actual row aggregation in their code.
         """
-        from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
-
         agg_columns = self.output_id_columns
         upstream_spec = self.plan.parent_features_by_key[self.dep.feature]
+        transformer = self.dep_transformer
 
-        transformer = FeatureDepTransformer(dep=self.dep, plan=self.plan)
-        renamed_data_version_col = transformer.rename_upstream_metaxy_column(
-            "metaxy_data_version"
-        )
+        # Get renamed column names
+        renamed_data_version_col = transformer.renamed_data_version_col
         renamed_data_version_by_field_col = (
             transformer.renamed_data_version_by_field_col
         )
-        # We still need to handle provenance columns for the output
         renamed_prov_col = transformer.renamed_provenance_col
         renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
+        selected_id_columns = transformer.selected_id_columns
 
-        # Sort by ALL upstream ID columns for deterministic ordering within each group
-        # Using just agg_columns would only sort by the group key, not within each group
-        renamed_id_columns = transformer.renamed_id_columns
-        df_sorted = df.sort(renamed_id_columns)  # ty: ignore[invalid-argument-type]
+        # Get field names from upstream feature spec
+        upstream_field_names = [f.key.to_struct_key() for f in upstream_spec.fields]
 
-        # Verify data_version column exists
-        df_columns = df_sorted.collect_schema().names()  # ty: ignore[invalid-argument-type]
-        if renamed_data_version_col not in df_columns:
-            raise ValueError(
-                f"Column '{renamed_data_version_col}' not found in upstream data. "
-                f"Available columns: {df_columns}"
+        # Step 1: Extract each field value from struct to a temp column
+        extracted_cols: dict[str, str] = {}  # field_name -> extracted_col_name
+        for field_name in upstream_field_names:
+            extracted_col = f"__extract_{field_name}"
+            extracted_cols[field_name] = extracted_col
+
+            extract_expr = (
+                nw.col(renamed_data_version_by_field_col)
+                .struct.field(field_name)
+                .cast(nw.String)
+            )
+            df = df.with_columns(extract_expr.alias(extracted_col))  # ty: ignore[invalid-argument-type]
+
+        # Step 2: Use engine method to aggregate within groups (window function)
+        aggregated_cols: dict[str, str] = {}  # field_name -> aggregated_col_name
+        for field_name, extracted_col in extracted_cols.items():
+            aggregated_col = f"__agg_{field_name}"
+            aggregated_cols[field_name] = aggregated_col
+
+            df = self.engine.concat_strings_over_groups(
+                df,  # ty: ignore[invalid-argument-type]
+                source_column=extracted_col,
+                target_column=aggregated_col,
+                group_by_columns=agg_columns,
+                order_by_columns=selected_id_columns,
+                separator="|",
             )
 
-        # Determine which upstream ID columns to exclude from aggregation output.
-        # If user explicitly requested an ID column in columns=, keep it (with first() value).
-        # Otherwise, exclude it since it's only needed for sorting.
-        user_requested_cols = set(
-            transformer.renames.get(col, col) for col in (self.dep.columns or [])
+        # Step 3: Hash each aggregated field
+        hash_length = get_hash_truncation_length()
+        hashed_field_cols: dict[str, str] = {}  # field_name -> hashed_col_name
+
+        for field_name, aggregated_col in aggregated_cols.items():
+            hash_col = f"__hash_{field_name}"
+            hashed_field_cols[field_name] = hash_col
+
+            df = self.engine.hash_string_column(
+                df,  # ty: ignore[invalid-argument-type]
+                aggregated_col,
+                hash_col,
+                hash_algorithm,
+            )
+            df = df.with_columns(nw.col(hash_col).str.slice(0, hash_length))  # ty: ignore[invalid-argument-type]
+
+        # Drop the original struct columns and temp columns, then rebuild structs
+        df = df.drop(  # ty: ignore[invalid-argument-type]
+            renamed_data_version_by_field_col,
+            renamed_prov_by_field_col,
+            renamed_data_version_col,
+            renamed_prov_col,
+            *extracted_cols.values(),
+            *aggregated_cols.values(),
         )
-        id_cols_to_exclude = [
-            col for col in renamed_id_columns if col not in user_requested_cols
+
+        # Build new struct columns from hashed fields
+        df = self.engine.build_struct_column(  # ty: ignore[invalid-assignment]
+            df, renamed_data_version_by_field_col, hashed_field_cols
+        )
+        df = self.engine.build_struct_column(  # ty: ignore[invalid-assignment]
+            df,  # ty: ignore[invalid-argument-type]
+            renamed_prov_by_field_col,
+            hashed_field_cols,
+        )
+
+        # Compute sample-level data_version and provenance by hashing all fields together
+        # Concatenate all field hashes with separator, then hash
+        field_exprs = [
+            nw.col(renamed_data_version_by_field_col).struct.field(field_name)
+            for field_name in sorted(upstream_field_names)
         ]
+        sample_concat = nw.concat_str(field_exprs, separator="|")
+        df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
 
-        # Aggregate by concatenating data_version values and hashing
-        grouped = self.engine.aggregate_with_string_concat(
-            df=df_sorted,
-            group_by_columns=agg_columns,
-            concat_column=renamed_data_version_col,
-            concat_separator="|",
-            exclude_columns=[
-                renamed_prov_by_field_col,
-                renamed_data_version_by_field_col,
-                renamed_prov_col,
-                *id_cols_to_exclude,
-            ],
+        df = self.engine.hash_string_column(  # ty: ignore[invalid-assignment]
+            df,
+            "__sample_concat",
+            renamed_data_version_col,
+            hash_algorithm,  # ty: ignore[invalid-argument-type]
+        )
+        df = df.with_columns(  # ty: ignore[invalid-argument-type]
+            nw.col(renamed_data_version_col).str.slice(0, hash_length),
+            nw.col(renamed_data_version_col).alias(renamed_prov_col),
         )
 
-        # Hash the concatenated values
-        hashed = self.engine.hash_string_column(
-            grouped, renamed_data_version_col, "__hashed_agg", hash_algorithm
-        )
-        hashed = hashed.with_columns(
-            nw.col("__hashed_agg").str.slice(0, get_hash_truncation_length())
-        )
+        # Drop temp columns
+        df = df.drop("__sample_concat", *hashed_field_cols.values())  # ty: ignore[invalid-argument-type]
 
-        # The aggregated hash becomes both provenance and data_version
-        hashed = hashed.drop(renamed_data_version_col).with_columns(
-            nw.col("__hashed_agg").alias(renamed_prov_col),
-            nw.col("__hashed_agg").alias(renamed_data_version_col),
-        )
-        hashed = hashed.drop("__hashed_agg")
-
-        # Build struct columns with the aggregated hash for each field
-        upstream_field_names = [f.key.to_struct_key() for f in upstream_spec.fields]
-        field_map = {name: renamed_data_version_col for name in upstream_field_names}
-
-        result = self.engine.build_struct_column(
-            hashed, renamed_data_version_by_field_col, field_map
-        )
-        # Also set provenance_by_field to the same values
-        result = self.engine.build_struct_column(
-            result, renamed_prov_by_field_col, field_map
-        )
-
-        return result  # ty: ignore[invalid-return-type]
+        return df  # ty: ignore[invalid-return-type]
 
 
-class ExpansionLineageTransformer(LineageTransformer):
-    """Transformer for 1:N expansion lineage.
+class ExpansionLineageHandler(LineageHandler):
+    """Handler for 1:N expansion lineage.
 
     One upstream row expands to many downstream rows.
-    No transformation during loading - all expanded rows inherit parent provenance.
+    All expanded rows inherit their parent's provenance.
     The expansion itself happens in user code; Metaxy just tracks lineage.
+
+    During comparison, current metadata is collapsed to parent level
+    since all children from the same parent have the same provenance.
     """
-
-    def transform_upstream(
-        self,
-        df: FrameT,
-        hash_algorithm: HashAlgorithm,
-    ) -> FrameT:
-        """Expansion transformation - return unchanged.
-
-        The expansion happens in user compute code, not here.
-        Downstream rows inherit their parent's provenance.
-        """
-        return df
 
     def transform_current_for_comparison(
         self,
@@ -262,28 +308,30 @@ class ExpansionLineageTransformer(LineageTransformer):
         )
 
 
-def create_lineage_transformer(
+def create_lineage_handler(
     feature_dep: FeatureDep,
     plan: FeaturePlan,
     engine: VersioningEngine,
-) -> LineageTransformer:
-    """Factory function to create appropriate lineage transformer for a dependency.
+    dep_transformer: FeatureDepTransformer,
+) -> LineageHandler:
+    """Factory function to create appropriate lineage handler for a dependency.
 
     Args:
-        feature_dep: The dependency to create a transformer for
+        feature_dep: The dependency to create a handler for
         plan: The feature plan for the downstream feature
         engine: The versioning engine instance
+        dep_transformer: The FeatureDepTransformer for column naming
 
     Returns:
-        Appropriate LineageTransformer instance based on lineage type
+        Appropriate LineageHandler instance based on lineage type
     """
     relationship_type = feature_dep.lineage.relationship.type
 
     if relationship_type == LineageRelationshipType.IDENTITY:
-        return IdentityLineageTransformer(feature_dep, plan, engine)
+        return IdentityLineageHandler(feature_dep, plan, engine, dep_transformer)
     elif relationship_type == LineageRelationshipType.AGGREGATION:
-        return AggregationLineageTransformer(feature_dep, plan, engine)
+        return AggregationLineageHandler(feature_dep, plan, engine, dep_transformer)
     elif relationship_type == LineageRelationshipType.EXPANSION:
-        return ExpansionLineageTransformer(feature_dep, plan, engine)
+        return ExpansionLineageHandler(feature_dep, plan, engine, dep_transformer)
     else:
         raise ValueError(f"Unknown lineage relationship type: {relationship_type}")

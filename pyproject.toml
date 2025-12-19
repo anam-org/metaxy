@@ -1,6 +1,6 @@
 [project]
 name = "metaxy"
-version = "0.0.1.dev17"
+version = "0.0.1.dev18"
 description = "Pluggable versioned metadata management for incremental multi-modal pipelines."
 readme = "README.md"
 authors = [
@@ -104,7 +104,7 @@ dev = [
   "deltalake>=1.2.1",
   "mistune>=3.1.4",
   "dagster>=1.12.3",
-  "ty>=0.0.3",
+  "ty>=0.0.4",
 ]
 
 examples = [

@@ -136,60 +136,46 @@ class IbisVersioningEngine(VersioningEngine):
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))
 
-    @staticmethod
-    def aggregate_with_string_concat(
+    def concat_strings_over_groups(
+        self,
         df: FrameT,
+        source_column: str,
+        target_column: str,
         group_by_columns: list[str],
-        concat_column: str,
-        concat_separator: str,
-        exclude_columns: list[str],
+        order_by_columns: list[str],
+        separator: str = "|",
     ) -> FrameT:
-        """Aggregate DataFrame by grouping and concatenating strings.
+        """Concatenate string values within groups using Ibis window functions.
 
-        Args:
-            df: Narwhals DataFrame backed by Ibis
-            group_by_columns: Columns to group by
-            concat_column: Column containing strings to concatenate within groups
-            concat_separator: Separator to use when concatenating strings
-            exclude_columns: Columns to exclude from aggregation
-
-        Returns:
-            Narwhals DataFrame with one row per group.
+        Uses group_concat with ordering to concatenate values in deterministic order.
+        All rows in the same group receive identical concatenated values.
         """
-        # Import ibis lazily
         import ibis
         import ibis.expr.types
 
-        # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
-        # Build aggregation expressions
-        agg_exprs = {}
-
-        # Concatenate the concat_column with separator
-        agg_exprs[concat_column] = ibis_table[concat_column].group_concat(
-            concat_separator
+        # Create window spec with ordering for deterministic results
+        # Fall back to group_by columns for ordering if no explicit order_by columns
+        effective_order_by = order_by_columns if order_by_columns else group_by_columns
+        window = ibis.window(
+            group_by=group_by_columns,
+            order_by=[ibis_table[col] for col in effective_order_by],
         )
 
-        # Take first value for all other columns (except group_by and exclude)
-        all_columns = set(ibis_table.columns)
-        columns_to_aggregate = (
-            all_columns - set(group_by_columns) - {concat_column} - set(exclude_columns)
+        # Use group_concat over window to concatenate values
+        concat_expr = (
+            ibis_table[source_column]
+            .cast("string")
+            .group_concat(sep=separator)
+            .over(window)
         )
+        ibis_table = ibis_table.mutate(**{target_column: concat_expr})
 
-        for col in columns_to_aggregate:
-            agg_exprs[col] = ibis_table[
-                col
-            ].arbitrary()  # Take any value (like first())
-
-        # Perform groupby and aggregate
-        result_table = ibis_table.group_by(group_by_columns).aggregate(**agg_exprs)
-
-        # Convert back to Narwhals
-        return cast(FrameT, nw.from_native(result_table))
+        return cast(FrameT, nw.from_native(ibis_table))
 
     @staticmethod
     def keep_latest_by_group(

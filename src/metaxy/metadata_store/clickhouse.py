@@ -18,6 +18,7 @@ from metaxy.metadata_store.ibis import (
     IbisMetadataStoreConfig,
 )
 from metaxy.models.types import FeatureKey
+from metaxy.versioning.clickhouse import ClickHouseVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -112,12 +113,13 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         # Cache for ClickHouse table schemas (cleared on close)
         self._ch_schema_cache: dict[str, IbisSchema] = {}
 
-        # Initialize Ibis store with ClickHouse backend
+        # Initialize Ibis store with ClickHouse backend and engine
         super().__init__(
             connection_string=connection_string,
             backend="clickhouse" if connection_string is None else None,
             connection_params=connection_params,
             fallback_stores=fallback_stores,
+            versioning_engine_cls=ClickHouseVersioningEngine,
             **kwargs,
         )
 
