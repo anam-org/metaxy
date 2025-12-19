@@ -55,7 +55,13 @@ class VersioningEngine(ABC):
             renamed_cols = transformer.renamed_columns
             if renamed_cols is not None:
                 column_counter.update(renamed_cols)
+            # Allow both upstream ID columns and output ID columns to repeat
+            # - renamed_id_columns: upstream ID columns (needed for sorting in aggregation)
+            # - get_input_id_columns_for_dep: output ID columns after lineage (e.g., aggregation 'on' columns)
             all_id_columns.update(transformer.renamed_id_columns)
+            all_id_columns.update(
+                self.plan.get_input_id_columns_for_dep(transformer.dep)
+            )
 
         repeated_columns = []
         for col, count in column_counter.items():

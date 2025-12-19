@@ -164,6 +164,7 @@ class AggregationLineageTransformer(LineageTransformer):
             )
 
         # Aggregate by concatenating data_version values and hashing
+        # Exclude upstream ID columns - they're only needed for sorting, not for output
         grouped = self.engine.aggregate_with_string_concat(
             df=df_sorted,
             group_by_columns=agg_columns,
@@ -173,6 +174,7 @@ class AggregationLineageTransformer(LineageTransformer):
                 renamed_prov_by_field_col,
                 renamed_data_version_by_field_col,
                 renamed_prov_col,
+                *renamed_id_columns,
             ],
         )
 

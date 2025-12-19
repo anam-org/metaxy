@@ -129,6 +129,23 @@ class FeatureDepTransformer:
         ]
 
     @cached_property
+    def _lineage_on_columns(self) -> list[str]:
+        """Get the 'on' columns from lineage relationship if applicable.
+
+        For aggregation and expansion lineage, these columns are required for
+        the lineage transformation and must be included in the selected columns.
+
+        Returns:
+            List of column names from lineage.on, or empty list if not applicable.
+        """
+        from metaxy.models.lineage import AggregationRelationship, ExpansionRelationship
+
+        relationship = self.dep.lineage.relationship
+        if isinstance(relationship, (AggregationRelationship, ExpansionRelationship)):
+            return list(relationship.on) if relationship.on else []
+        return []
+
+    @cached_property
     def renamed_columns(
         self,
     ) -> list[str] | None:
@@ -136,6 +153,10 @@ class FeatureDepTransformer:
 
         There include both original and metaxy-injected columns, all already renamed.
         Users are expected to use renamed column names in their columns specification.
+
+        For aggregation and expansion lineage, the 'on' columns are automatically
+        included even if not explicitly specified in columns=, since they are required
+        for the lineage transformation.
 
         Returns:
             List of column names to select, or None to select all columns
@@ -150,8 +171,20 @@ class FeatureDepTransformer:
             renamed_selected_cols = [
                 self.renames.get(col, col) for col in self.dep.columns
             ]
+
+            # Auto-include lineage 'on' columns (after rename) if not already selected
+            # These are required for aggregation/expansion transformations
+            lineage_on_cols = self._lineage_on_columns
+            renamed_lineage_on_cols = [
+                self.renames.get(col, col)
+                for col in lineage_on_cols
+                if self.renames.get(col, col) not in renamed_selected_cols
+                and self.renames.get(col, col) not in self.renamed_id_columns
+            ]
+
             return [
                 *self.renamed_id_columns,
                 *renamed_selected_cols,
+                *renamed_lineage_on_cols,
                 *self.renamed_metaxy_cols,
             ]
