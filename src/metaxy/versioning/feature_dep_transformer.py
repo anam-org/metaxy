@@ -5,6 +5,7 @@ import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.constants import (
+    _COLUMNS_TO_DROP_BEFORE_JOIN,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE,
@@ -46,6 +47,11 @@ class FeatureDepTransformer:
     def upstream_feature_spec(self) -> FeatureSpec:
         return self.plan.parent_features_by_key[self.dep.feature]
 
+    @cached_property
+    def is_optional(self) -> bool:
+        """Whether this dependency uses left join (optional) or inner join (required)."""
+        return self.dep.optional
+
     def transform(
         self, df: FrameT, filters: Sequence[nw.Expr] | None = None
     ) -> RenamedDataFrame[FrameT]:
@@ -67,6 +73,17 @@ class FeatureDepTransformer:
             combined_filters.extend(self.dep.filters)
         if filters:
             combined_filters.extend(filters)
+
+        # Drop columns that should not be carried through joins
+        # (e.g., metaxy_created_at, metaxy_materialization_id, metaxy_feature_version)
+        # These are recalculated for the downstream feature and would cause column name
+        # conflicts when joining 3+ upstream features
+        existing_columns = set(df.collect_schema().names())  # ty: ignore[invalid-argument-type]
+        columns_to_drop = [
+            col for col in _COLUMNS_TO_DROP_BEFORE_JOIN if col in existing_columns
+        ]
+        if columns_to_drop:
+            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
 
         return (
             RenamedDataFrame(
@@ -113,7 +130,6 @@ class FeatureDepTransformer:
         Returns:
             Dictionary of column renames
         """
-        # TODO: potentially include more system columns here?
         return {
             **(self.dep.rename or {}),
             **{

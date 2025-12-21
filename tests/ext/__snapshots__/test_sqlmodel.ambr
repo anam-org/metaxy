@@ -45,7 +45,7 @@
         'metaxy_data_version_by_field': dict({
           'total_duration': 'hash_t1',
         }),
-        'metaxy_feature_spec_version': 'f9916be8e8a24ec5eb9169d2a9954c09a217f9be3e2af3c97085967b0f6c6dc6',
+        'metaxy_feature_spec_version': '19bae74d9e75c21c098f5754885a3fbc15d42369cda9837e4c5320539fe8c665',
         'metaxy_feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
         'metaxy_materialization_id': None,
         'metaxy_provenance': '4f1374067ee99f99709938ce590ce47d',
@@ -63,7 +63,7 @@
         'metaxy_data_version_by_field': dict({
           'total_duration': 'hash_t2',
         }),
-        'metaxy_feature_spec_version': 'f9916be8e8a24ec5eb9169d2a9954c09a217f9be3e2af3c97085967b0f6c6dc6',
+        'metaxy_feature_spec_version': '19bae74d9e75c21c098f5754885a3fbc15d42369cda9837e4c5320539fe8c665',
         'metaxy_feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
         'metaxy_materialization_id': None,
         'metaxy_provenance': 'ad796a86cd69c7946641bdd1acde5070',
@@ -81,7 +81,7 @@
         'metaxy_data_version_by_field': dict({
           'total_duration': 'hash_t3',
         }),
-        'metaxy_feature_spec_version': 'f9916be8e8a24ec5eb9169d2a9954c09a217f9be3e2af3c97085967b0f6c6dc6',
+        'metaxy_feature_spec_version': '19bae74d9e75c21c098f5754885a3fbc15d42369cda9837e4c5320539fe8c665',
         'metaxy_feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
         'metaxy_materialization_id': None,
         'metaxy_provenance': 'f886b7b4fe5b659a67ab5bdad8cb77ba',
@@ -99,7 +99,7 @@
         'metaxy_data_version_by_field': dict({
           'total_duration': 'hash_t4',
         }),
-        'metaxy_feature_spec_version': 'f9916be8e8a24ec5eb9169d2a9954c09a217f9be3e2af3c97085967b0f6c6dc6',
+        'metaxy_feature_spec_version': '19bae74d9e75c21c098f5754885a3fbc15d42369cda9837e4c5320539fe8c665',
         'metaxy_feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
         'metaxy_materialization_id': None,
         'metaxy_provenance': 'e25f0d6b84ca988fe908fcbf91f458b8',

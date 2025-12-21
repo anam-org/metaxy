@@ -3,7 +3,7 @@
   'a1324dfb386fb264f3dd53c841672277c34177558418f20a0aa8ee007e73c06b'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  'e20ff69e6f94723c601c90dfbf8ce40e4f8d3d4bba14c1524555bc4803bccd94'
+  '7758641505115c2ea87c4d136c4dacbb183db886aa9290c633bf2c90babe85a9'
 # ---
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
@@ -151,8 +151,8 @@
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  '5009240b6297be73901edc92a41ba7fe4dffe81e7985c99609cbd8d54d27d130'
+  '45f321c88cda17c6af8c8a8a431e8faca5f4cd0dff9ac7f74adc76131a8abb72'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  '34faac552d7b1fb2237d99334ce4a905f6bde260d70ec389cb8cd5fe462d7c5b'
+  'dac7f36d487dd0e1243482b57fb91892eedf1ee2e49eb7ef7b8d35138df8bc76'
 # ---

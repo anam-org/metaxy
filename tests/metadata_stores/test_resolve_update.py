@@ -20,6 +20,7 @@ import warnings
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
+import polars as pl
 import polars.testing as pl_testing
 import pytest
 from hypothesis.errors import NonInteractiveExampleWarning
@@ -164,6 +165,48 @@ class FeatureGraphCases:
         upstream_features = {RootFeature.spec().key: RootFeature}
 
         return graph, upstream_features, leaf_plan
+
+    def case_optional_dependency(self, graph: FeatureGraph) -> FeaturePlanOutput:
+        """Feature with optional dependency (tests left join behavior)."""
+
+        class RequiredParent(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="required_parent",
+                fields=["req_field"],
+            ),
+        ):
+            sample_uid: str
+
+        class OptionalParent(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="optional_parent",
+                fields=["opt_field"],
+            ),
+        ):
+            sample_uid: str
+
+        class ChildFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key="child",
+                deps=[
+                    FeatureDep(feature=RequiredParent, optional=False),
+                    FeatureDep(feature=OptionalParent, optional=True),
+                ],
+                fields=["result"],
+            ),
+        ):
+            pass
+
+        child_plan = graph.get_feature_plan(ChildFeature.spec().key)
+        upstream_features = {
+            RequiredParent.spec().key: RequiredParent,
+            OptionalParent.spec().key: OptionalParent,
+        }
+
+        return graph, upstream_features, child_plan
 
 
 class RootFeatureCases:
@@ -1713,3 +1756,128 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
                 f"Expected 0 added (all 20 local upstream chunks are in downstream), "
                 f"but got {added_count}."
             )
+
+
+# ============= OPTIONAL DEPENDENCY TESTS =============
+
+
+class OptionalDependencyCases:
+    """Feature graph configurations specific to optional dependency behavior."""
+
+    def case_required_plus_optional(self, graph: FeatureGraph) -> FeaturePlanOutput:
+        """Required + optional dependency (left join behavior)."""
+        return FeatureGraphCases().case_optional_dependency(graph)
+
+    def case_all_optional(self, graph: FeatureGraph) -> FeaturePlanOutput:
+        """All optional dependencies (full outer join behavior)."""
+
+        class OptionalA(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key="optional_a",
+                fields=["data_a"],
+            ),
+        ):
+            pass
+
+        class OptionalB(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key="optional_b",
+                fields=["data_b"],
+            ),
+        ):
+            pass
+
+        class ChildFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key="child",
+                deps=[
+                    FeatureDep(feature=OptionalA, optional=True),
+                    FeatureDep(feature=OptionalB, optional=True),
+                ],
+                fields=["result"],
+            ),
+        ):
+            pass
+
+        child_plan = graph.get_feature_plan(ChildFeature.spec().key)
+        upstream_features = {
+            OptionalA.spec().key: OptionalA,
+            OptionalB.spec().key: OptionalB,
+        }
+        return graph, upstream_features, child_plan
+
+
+def _write_upstream_metadata(
+    store: MetadataStore,
+    graph: FeatureGraph,
+    upstream_data: Mapping[str, pl.DataFrame],
+) -> None:
+    for feature_key_str, upstream_df in upstream_data.items():
+        feat_key = FeatureKey([feature_key_str])
+        feat_class = graph.features_by_key[feat_key]
+        store.write_metadata(feat_class, upstream_df)
+
+
+def _expected_sample_uids(
+    feature_plan: FeaturePlan, upstream_data: Mapping[str, pl.DataFrame]
+) -> set[int]:
+    if feature_plan.required_deps:
+        required_uids: set[int] | None = None
+        for dep in feature_plan.required_deps:
+            dep_key = dep.feature.to_string()
+            dep_uids = set(upstream_data[dep_key]["sample_uid"].to_list())
+            required_uids = (
+                dep_uids if required_uids is None else required_uids & dep_uids
+            )
+        return required_uids or set()
+
+    optional_uids: set[int] = set()
+    for dep in feature_plan.optional_deps:
+        dep_key = dep.feature.to_string()
+        optional_uids |= set(upstream_data[dep_key]["sample_uid"].to_list())
+    return optional_uids
+
+
+@parametrize_with_cases("feature_plan_config", cases=OptionalDependencyCases)
+def test_resolve_update_optional_dependencies(
+    graph: FeatureGraph,
+    default_store: MetadataStore,
+    feature_plan_config: FeaturePlanOutput,
+) -> None:
+    """Test resolve_update optional dependency join behavior using shared fixtures."""
+    store = default_store
+    graph, upstream_features, child_plan = feature_plan_config
+    child_key = child_plan.feature.key
+    ChildFeature = graph.features_by_key[child_key]
+
+    feature_versions = {
+        feat_key.to_string(): feat_class.feature_version()
+        for feat_key, feat_class in upstream_features.items()
+    }
+    feature_versions[child_key.to_string()] = ChildFeature.feature_version()
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
+        upstream_data, _ = downstream_metadata_strategy(
+            child_plan,
+            feature_versions=feature_versions,
+            snapshot_version=graph.snapshot_version,
+            hash_algorithm=store.hash_algorithm,
+            min_rows=4,
+            max_rows=8,
+        ).example()
+
+    with store, graph.use():
+        _write_upstream_metadata(store, graph, upstream_data)
+        increment = store.resolve_update(ChildFeature, lazy=False)
+
+        added = increment.added.lazy().collect().to_polars()
+        sample_uids = set(added["sample_uid"].to_list())
+        expected_uids = _expected_sample_uids(child_plan, upstream_data)
+
+        assert sample_uids == expected_uids
+        assert "metaxy_provenance" in added.columns
+        assert "metaxy_provenance_by_field" in added.columns

@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import cast
+from typing import Literal, cast
 
 import narwhals as nw
 from narwhals.typing import FrameT
@@ -110,23 +110,100 @@ class VersioningEngine(ABC):
         return cols
 
     def join(self, upstream: Mapping[FeatureKey, RenamedDataFrame[FrameT]]) -> FrameT:
-        """Join the renamed upstream dataframes on the intersection of renamed id_columns of all feature specs."""
+        """Join the renamed upstream dataframes respecting optional/required dependencies.
+
+        Join order:
+        1. First, join all required dependencies with inner join
+        2. Then, join all optional dependencies with left join
+        3. If ALL dependencies are optional, use outer joins instead
+
+        Args:
+            upstream: Dictionary of upstream dataframes keyed by FeatureKey
+
+        Returns:
+            Joined dataframe with columns from all upstream features
+        """
         assert len(upstream) > 0, "No upstream dataframes provided"
 
-        key, renamed_df = next(iter(upstream.items()))
+        # If no feature_deps, fall back to original behavior (all inner joins)
+        if not self.plan.feature_deps:
+            key, renamed_df = next(iter(upstream.items()))
+            df = renamed_df.df
+            for next_key, renamed_df in upstream.items():
+                if key == next_key:
+                    continue
+                df = cast(
+                    FrameT,
+                    df.join(renamed_df.df, on=self.shared_id_columns, how="inner"),
+                )
+            return df
 
-        df = renamed_df.df
+        # Use cached properties for required and optional dependencies
+        required_deps = self.plan.required_deps
+        optional_deps = self.plan.optional_deps
 
-        for next_key, renamed_df in upstream.items():
-            if key == next_key:
+        # Check if all dependencies are optional
+        all_optional = len(required_deps) == 0
+
+        df: FrameT | None = None
+
+        # First, join all required dependencies with inner join
+        for dep in required_deps:
+            if dep.feature not in upstream:
                 continue
-            # we do not need to provide a _suffix here
-            # because the columns are already renamed
-            # it's on the user to specify correct renames for colliding columns
-            df = cast(
-                FrameT, df.join(renamed_df.df, on=self.shared_id_columns, how="inner")
-            )
 
+            renamed_df = upstream[dep.feature]
+
+            if df is None:
+                df = renamed_df.df
+            else:
+                df = cast(
+                    FrameT,
+                    df.join(renamed_df.df, on=self.shared_id_columns, how="inner"),
+                )
+
+        # Then, join all optional dependencies
+        # Use outer join if all deps are optional, left join otherwise
+        optional_join_type: Literal["left", "full"] = "full" if all_optional else "left"
+
+        for dep in optional_deps:
+            if dep.feature not in upstream:
+                continue
+
+            renamed_df = upstream[dep.feature]
+
+            if df is None:
+                # First dependency when all are optional - becomes the base
+                df = renamed_df.df
+            else:
+                df = cast(
+                    FrameT,
+                    df.join(  # ty: ignore[invalid-argument-type]
+                        renamed_df.df,  # ty: ignore[invalid-argument-type]
+                        on=self.shared_id_columns,
+                        how=optional_join_type,
+                    ),
+                )
+
+                # For full outer join, coalesce the ID columns
+                # (narwhals creates _right suffix columns for keys). TODO(#577): revisit
+                # join key handling and validation for duplicate columns across deps.
+                if optional_join_type == "full":
+                    for id_col in self.shared_id_columns:
+                        right_col = f"{id_col}_right"
+                        # Check if the right column exists (ty ignore for generic type)
+                        col_names = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+                        if right_col in col_names:
+                            df = cast(
+                                FrameT,
+                                df.with_columns(  # ty: ignore[invalid-argument-type]
+                                    nw.coalesce(
+                                        nw.col(id_col), nw.col(right_col)
+                                    ).alias(id_col)
+                                ).drop(right_col),
+                            )
+
+        assert df is not None, "No dataframes were joined"
         return df
 
     def prepare_upstream(
@@ -361,6 +438,10 @@ class VersioningEngine(ABC):
 
         Resolves field-level dependencies. Only actual parent fields are considered.
 
+        For optional dependencies that may have NULL values (due to left joins), the expression
+        handles NULLs by using an empty string sentinel in the provenance concatenation.
+        This ensures deterministic provenance even when optional upstream data is missing.
+
         Note:
             This reads from upstream `metaxy_data_version_by_field` instead of `metaxy_provenance_by_field`,
             enabling users to control version propagation by overriding data_version values.
@@ -375,9 +456,19 @@ class VersioningEngine(ABC):
             ).items():
                 # Read from data_version_by_field instead of provenance_by_field
                 # This enables user-defined versioning control
-                field_provenance[fq_key] = nw.col(
+                base_expr = nw.col(
                     self.get_renamed_data_version_by_field_col(fq_key.feature)
                 ).struct.field(parent_field_spec.key.to_struct_key())
+
+                # Check if this is from an optional dependency
+                transformer = self.feature_transformers_by_key.get(fq_key.feature)
+                if transformer and transformer.is_optional:
+                    # Handle NULL values from optional dependencies
+                    # Use fill_null to replace NULL with empty string for deterministic provenance
+                    field_provenance[fq_key] = base_expr.fill_null("")
+                else:
+                    field_provenance[fq_key] = base_expr
+
             res[field_spec.key] = field_provenance
         return res
 
