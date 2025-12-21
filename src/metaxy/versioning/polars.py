@@ -18,8 +18,8 @@ from metaxy.versioning.types import HashAlgorithm
 class PolarsVersioningEngine(VersioningEngine):
     """Provenance engine using Polars and polars_hash plugin.
 
-    Only implements hash_string_column and build_struct_column.
-    All logic lives in the base class.
+    !!! info
+        This implementation never leaves the lazy world.
     """
 
     # Map HashAlgorithm enum to polars-hash functions
@@ -41,6 +41,7 @@ class PolarsVersioningEngine(VersioningEngine):
         source_column: str,
         target_column: str,
         hash_algo: HashAlgorithm,
+        truncate_length: int | None = None,
     ) -> FrameT:
         """Hash a string column using polars_hash.
 
@@ -49,6 +50,7 @@ class PolarsVersioningEngine(VersioningEngine):
             source_column: Name of string column to hash
             target_column: Name for the new column containing the hash
             hash_algo: Hash algorithm to use
+            truncate_length: Optional length to truncate hash to. If None, no truncation.
 
         Returns:
             Narwhals DataFrame with new hashed column added, backed by Polars.
@@ -68,6 +70,10 @@ class PolarsVersioningEngine(VersioningEngine):
         # Apply hash
         hash_fn = self._HASH_FUNCTION_MAP[hash_algo]
         hashed = hash_fn(polars_hash.col(source_column)).cast(pl.Utf8)
+
+        # Apply truncation if specified
+        if truncate_length is not None:
+            hashed = hashed.str.slice(0, truncate_length)
 
         # Add new column with the hash
         df_pl = df_pl.with_columns(hashed.alias(target_column))

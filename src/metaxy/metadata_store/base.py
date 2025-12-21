@@ -101,7 +101,6 @@ class MetadataStoreConfig(BaseSettings):
     )
 
 
-VersioningEngineT = TypeVar("VersioningEngineT", bound=VersioningEngine)
 VersioningEngineOptions = Literal["auto", "native", "polars"]
 
 # Mapping of system columns to their expected Narwhals dtypes
@@ -155,10 +154,12 @@ class MetadataStore(ABC):
     # Set to False for stores where table creation is not applicable (e.g., InMemoryMetadataStore)
     _should_warn_auto_create_tables: bool = True
 
+    # Subclasses must define the versioning engine class to use
+    versioning_engine_cls: type[VersioningEngine]
+
     def __init__(
         self,
         *,
-        versioning_engine_cls: type[VersioningEngineT],
         hash_algorithm: HashAlgorithm | None = None,
         versioning_engine: VersioningEngineOptions = "auto",
         fallback_stores: list[MetadataStore] | None = None,
@@ -209,7 +210,6 @@ class MetadataStore(ABC):
         self._open_cm: AbstractContextManager[Self] | None = (
             None  # Track the open() context manager
         )
-        self.versioning_engine_cls = versioning_engine_cls
 
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
@@ -1018,7 +1018,7 @@ class MetadataStore(ABC):
     @contextmanager
     def _create_versioning_engine(
         self, plan: FeaturePlan
-    ) -> Iterator[VersioningEngineT]:
+    ) -> Iterator[VersioningEngine]:
         """Create provenance engine for this store as a context manager.
 
         Args:

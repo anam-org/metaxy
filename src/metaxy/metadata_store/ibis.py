@@ -111,6 +111,8 @@ class IbisMetadataStore(MetadataStore, ABC):
         ```
     """
 
+    versioning_engine_cls = IbisVersioningEngine
+
     def __init__(
         self,
         versioning_engine: VersioningEngineOptions = "auto",
@@ -119,7 +121,6 @@ class IbisMetadataStore(MetadataStore, ABC):
         backend: str | None = None,
         connection_params: dict[str, Any] | None = None,
         table_prefix: str | None = None,
-        versioning_engine_cls: type[IbisVersioningEngine] | None = None,
         **kwargs: Any,
     ):
         """
@@ -169,7 +170,6 @@ class IbisMetadataStore(MetadataStore, ABC):
         super().__init__(
             **kwargs,
             versioning_engine=versioning_engine,
-            versioning_engine_cls=versioning_engine_cls or IbisVersioningEngine,
         )
 
     def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:

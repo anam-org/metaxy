@@ -22,11 +22,9 @@ class IbisHashFn(Protocol):
 class IbisVersioningEngine(VersioningEngine):
     """Provenance engine using Ibis for SQL databases.
 
-    Only implements hash_string_column and build_struct_column.
-    All logic lives in the base class.
-
-    CRITICAL: This implementation NEVER leaves the lazy world.
-    All operations stay as Ibis expressions that compile to SQL.
+    !!!info
+        This implementation never leaves the lazy world.
+        All operations stay as Ibis expressions and eventually get compiled to SQL.
     """
 
     def __init__(
@@ -55,6 +53,7 @@ class IbisVersioningEngine(VersioningEngine):
         source_column: str,
         target_column: str,
         hash_algo: HashAlgorithm,
+        truncate_length: int | None = None,
     ) -> FrameT:
         """Hash a string column using Ibis hash functions.
 
@@ -63,6 +62,7 @@ class IbisVersioningEngine(VersioningEngine):
             source_column: Name of string column to hash
             target_column: Name for the new column containing the hash
             hash_algo: Hash algorithm to use
+            truncate_length: Optional length to truncate hash to. If None, no truncation.
 
         Returns:
             Narwhals DataFrame with new hashed column added, backed by Ibis.
@@ -89,6 +89,10 @@ class IbisVersioningEngine(VersioningEngine):
         # Apply hash to source column
         # Hash functions are responsible for returning strings
         hashed = hash_fn(ibis_table[source_column])
+
+        # Apply truncation if specified
+        if truncate_length is not None:
+            hashed = hashed[0:truncate_length]
 
         # Add new column with the hash
         result_table = ibis_table.mutate(**{target_column: hashed})

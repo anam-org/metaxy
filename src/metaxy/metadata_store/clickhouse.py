@@ -61,6 +61,8 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         ```
     """
 
+    versioning_engine_cls = ClickHouseVersioningEngine
+
     def __init__(
         self,
         connection_string: str | None = None,
@@ -113,13 +115,12 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         # Cache for ClickHouse table schemas (cleared on close)
         self._ch_schema_cache: dict[str, IbisSchema] = {}
 
-        # Initialize Ibis store with ClickHouse backend and engine
+        # Initialize Ibis store with ClickHouse backend
         super().__init__(
             connection_string=connection_string,
             backend="clickhouse" if connection_string is None else None,
             connection_params=connection_params,
             fallback_stores=fallback_stores,
-            versioning_engine_cls=ClickHouseVersioningEngine,
             **kwargs,
         )
 
