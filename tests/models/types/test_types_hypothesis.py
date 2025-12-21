@@ -251,19 +251,25 @@ class TestFeatureKeyProperties:
     @settings(max_examples=100)
     def test_feature_key_serialization_roundtrip(self, parts: list[str]):
         """Test JSON serialization roundtrip."""
+        from pydantic import BaseModel
+
         key = FeatureKey(parts)
 
         # Serialize - keys now serialize as strings for JSON dict key compatibility
-        json_data = key.model_dump()
-        assert isinstance(json_data, str)
-        assert json_data == "/".join(parts)
+        class Container(BaseModel):
+            key: FeatureKey
+
+        container = Container(key=key)
+        json_data = container.model_dump()
+        assert isinstance(json_data["key"], str)
+        assert json_data["key"] == "/".join(parts)
 
         # JSON string roundtrip
         json_str = json.dumps(json_data)
         restored_data = json.loads(json_str)
-        restored_key = FeatureKey(restored_data)
+        restored_container = Container(**restored_data)
 
-        assert restored_key == key
+        assert restored_container.key == key
 
     @given(parts=key_parts_list())
     def test_feature_key_immutability(self, parts: list[str]):
@@ -339,19 +345,25 @@ class TestFieldKeyProperties:
     @settings(max_examples=100)
     def test_field_key_serialization_roundtrip(self, parts: list[str]):
         """Test JSON serialization roundtrip."""
+        from pydantic import BaseModel
+
         key = FieldKey(parts)
 
         # Serialize - keys now serialize as strings for JSON dict key compatibility
-        json_data = key.model_dump()
-        assert isinstance(json_data, str)
-        assert json_data == "/".join(parts)
+        class Container(BaseModel):
+            key: FieldKey
+
+        container = Container(key=key)
+        json_data = container.model_dump()
+        assert isinstance(json_data["key"], str)
+        assert json_data["key"] == "/".join(parts)
 
         # JSON string roundtrip
         json_str = json.dumps(json_data)
         restored_data = json.loads(json_str)
-        restored_key = FieldKey(restored_data)
+        restored_container = Container(**restored_data)
 
-        assert restored_key == key
+        assert restored_container.key == key
 
 
 # ============================================================================
