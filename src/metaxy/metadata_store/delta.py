@@ -77,6 +77,7 @@ class DeltaMetadataStore(MetadataStore):
     """
 
     _should_warn_auto_create_tables = False
+    versioning_engine_cls = PolarsVersioningEngine
 
     def __init__(
         self,
@@ -133,7 +134,6 @@ class DeltaMetadataStore(MetadataStore):
 
         super().__init__(
             fallback_stores=fallback_stores,
-            versioning_engine_cls=PolarsVersioningEngine,
             versioning_engine="polars",
             **kwargs,
         )

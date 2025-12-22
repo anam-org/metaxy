@@ -62,6 +62,7 @@ class InMemoryMetadataStore(MetadataStore):
     # Disable auto_create_tables warning for in-memory store
     # (table creation concept doesn't apply to memory storage)
     _should_warn_auto_create_tables: bool = False
+    versioning_engine_cls = PolarsVersioningEngine
 
     def __init__(self, **kwargs: Any):
         """
@@ -72,7 +73,7 @@ class InMemoryMetadataStore(MetadataStore):
         """
         # Use tuple as key (hashable) instead of string to avoid parsing issues
         self._storage: dict[tuple[str, ...], pl.DataFrame] = {}
-        super().__init__(**kwargs, versioning_engine_cls=PolarsVersioningEngine)
+        super().__init__(**kwargs)
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for in-memory store."""

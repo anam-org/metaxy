@@ -743,7 +743,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
     }
 
     # Should raise error about colliding columns
-    with pytest.raises(ValueError, match="additional shared columns"):
+    with pytest.raises(ValueError, match="column collisions"):
         engine.prepare_upstream(
             upstream=upstream,
             filters={},

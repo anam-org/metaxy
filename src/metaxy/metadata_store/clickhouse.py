@@ -18,6 +18,7 @@ from metaxy.metadata_store.ibis import (
     IbisMetadataStoreConfig,
 )
 from metaxy.models.types import FeatureKey
+from metaxy.versioning.clickhouse import ClickHouseVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -59,6 +60,8 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         )
         ```
     """
+
+    versioning_engine_cls = ClickHouseVersioningEngine
 
     def __init__(
         self,

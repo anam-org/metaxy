@@ -76,6 +76,8 @@ test-and-submit:
 
 init-example name:
     uv init --lib --name {{name}} examples/{{name}}
+    uv add --project examples ./examples/{{name}}
+    uv add --project ./examples/{{name}} . --editable
 
 version-bump:
     uv version --bump dev

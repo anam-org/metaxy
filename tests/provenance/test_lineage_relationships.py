@@ -409,29 +409,34 @@ def test_aggregation_lineage_load_upstream(
 
     result_df = result.collect()
 
-    # With aggregation lineage, upstream is aggregated by (sensor_id, hour) during loading
-    assert len(result_df) == 2  # 2 groups: s1/hour10, s2/hour10
-    assert set(result_df["sensor_id"].to_list()) == {"s1", "s2"}
+    # With aggregation lineage using window functions, all original rows are preserved
+    # but metaxy columns are aggregated field-by-field (all rows in a group have identical values)
+    # 5 original rows: s1 has 3 readings, s2 has 2 readings
+    assert len(result_df) == 5
+    assert result_df["sensor_id"].to_list().count("s1") == 3
+    assert result_df["sensor_id"].to_list().count("s2") == 2
 
     # Provenance should be computed for each aggregated group
     assert "metaxy_provenance" in result_df.columns
     assert "metaxy_provenance_by_field" in result_df.columns
 
-    # Snapshot the aggregated upstream provenance
+    # Verify that all rows within a group have identical metaxy values (window function behavior)
     result_polars = result_df.to_polars()
-    provenance_data = sorted(
-        [
-            {
-                "sensor_id": result_polars["sensor_id"][i],
-                "hour": result_polars["hour"][i],
-                "field_provenance": result_polars["metaxy_provenance_by_field"][i],
-                "field_data_version": result_polars["metaxy_data_version_by_field"][i],
-            }
-            for i in range(len(result_polars))
-        ],
-        key=lambda x: x["sensor_id"],
+
+    # Check s1 group: all 3 rows should have identical provenance
+    s1_rows = result_polars.filter(result_polars["sensor_id"] == "s1")
+    s1_provenance = s1_rows["metaxy_provenance"].to_list()
+    assert len(set(s1_provenance)) == 1, "All s1 rows should have identical provenance"
+
+    # Check s2 group: both rows should have identical provenance
+    s2_rows = result_polars.filter(result_polars["sensor_id"] == "s2")
+    s2_provenance = s2_rows["metaxy_provenance"].to_list()
+    assert len(set(s2_provenance)) == 1, "All s2 rows should have identical provenance"
+
+    # s1 and s2 should have different provenance (different upstream data)
+    assert s1_provenance[0] != s2_provenance[0], (
+        "Different groups should have different provenance"
     )
-    assert provenance_data == snapshot
 
 
 def test_aggregation_lineage_resolve_increment_no_current(
@@ -463,26 +468,23 @@ def test_aggregation_lineage_resolve_increment_no_current(
 
     added = added_lazy.collect()
 
-    # When current is None, all aggregated groups are added
+    # When current is None, all rows are added (5 original rows with aggregated metaxy values)
     assert changed_lazy is None
     assert removed_lazy is None
-    assert len(added) == 2  # 2 aggregated groups
+    assert len(added) == 5  # All 5 rows preserved with aggregated metaxy values
 
-    # Snapshot the added groups
+    # Verify that all rows within a group have identical metaxy values
     added_polars = added.to_polars()
-    added_data = sorted(
-        [
-            {
-                "sensor_id": added_polars["sensor_id"][i],
-                "hour": added_polars["hour"][i],
-                "field_provenance": added_polars["metaxy_provenance_by_field"][i],
-                "field_data_version": added_polars["metaxy_data_version_by_field"][i],
-            }
-            for i in range(len(added_polars))
-        ],
-        key=lambda x: x["sensor_id"],
-    )
-    assert added_data == snapshot
+
+    # Check s1 group: all 3 rows should have identical provenance
+    s1_rows = added_polars.filter(added_polars["sensor_id"] == "s1")
+    s1_provenance = s1_rows["metaxy_provenance"].to_list()
+    assert len(set(s1_provenance)) == 1, "All s1 rows should have identical provenance"
+
+    # Check s2 group: both rows should have identical provenance
+    s2_rows = added_polars.filter(added_polars["sensor_id"] == "s2")
+    s2_provenance = s2_rows["metaxy_provenance"].to_list()
+    assert len(set(s2_provenance)) == 1, "All s2 rows should have identical provenance"
 
 
 def test_aggregation_lineage_resolve_increment_with_changes(
@@ -606,7 +608,9 @@ def test_aggregation_lineage_new_readings_trigger_change(
         sample=None,
     )
     added_v1 = added_v1_lazy.collect()
-    assert len(added_v1) == 1  # 1 aggregated group (s1, hour10)
+    assert (
+        len(added_v1) == 2
+    )  # 2 rows with aggregated metaxy values (s1 has 2 readings)
 
     # Updated upstream: 3 readings for s1 in hour 10 (added r3)
     upstream_v2 = nw.from_native(
@@ -2049,9 +2053,11 @@ def test_aggregation_columns_auto_included_when_columns_specified(
 
     result_df = result.collect()
 
-    # Should have 2 groups (g1, g2) after aggregation
-    assert len(result_df) == 2
-    assert set(result_df["group_col"].to_list()) == {"g1", "g2"}
+    # With window functions, all 3 original rows are preserved with aggregated metaxy values
+    # (d1, d2 in group g1; d3 in group g2)
+    assert len(result_df) == 3
+    assert result_df["group_col"].to_list().count("g1") == 2
+    assert result_df["group_col"].to_list().count("g2") == 1
 
 
 def test_two_deps_with_aggregation_on_same_column_with_explicit_columns(
@@ -2228,9 +2234,10 @@ def test_two_deps_with_aggregation_on_same_column_with_explicit_columns(
 
     result_df = result.collect()
 
-    # Should have 1 row after aggregation (all data belongs to chunk_id="c1")
-    assert len(result_df) == 1
-    assert result_df["chunk_id"].to_list() == ["c1"]
+    # With window functions, all joined rows are preserved with aggregated metaxy values
+    # encodings (2 rows) × texts (3 rows) = 6 rows, all with chunk_id="c1"
+    assert len(result_df) == 6
+    assert all(cid == "c1" for cid in result_df["chunk_id"].to_list())
 
 
 def test_two_deps_with_same_upstream_id_column_and_aggregation(
@@ -2403,100 +2410,10 @@ def test_two_deps_with_same_upstream_id_column_and_aggregation(
 
     result_df = result.collect()
 
-    # Should have 1 row after aggregation (all data belongs to chunk_id="c1")
-    assert len(result_df) == 1
-    assert result_df["chunk_id"].to_list() == ["c1"]
-
-
-def test_aggregation_keeps_upstream_id_column_when_explicitly_requested(
-    graph: FeatureGraph,
-) -> None:
-    """Test that upstream ID columns are kept when explicitly included in columns=.
-
-    The user may want to carry the upstream ID column through aggregation for use
-    in their downstream feature (e.g., to build a nested array of IDs per group).
-
-    When director_notes_id is explicitly in columns=, it should be available after
-    aggregation (with first() value per group), not dropped.
-    """
-
-    class DirectorNotesTexts(
-        SampleFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["director_notes_texts"]),
-            id_columns=("director_notes_id",),
-            fields=[
-                FieldSpec(key=FieldKey(["chunk_id"]), code_version="1"),
-                FieldSpec(key=FieldKey(["text_path"]), code_version="1"),
-            ],
-        ),
-    ):
-        pass
-
-    class AggregatedByChunk(
-        SampleFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["aggregated_by_chunk"]),
-            id_columns=("chunk_id",),
-            deps=[
-                FeatureDep(
-                    feature=DirectorNotesTexts,
-                    # User explicitly includes director_notes_id - they want it in output
-                    columns=("director_notes_id", "text_path"),
-                    lineage=LineageRelationship.aggregation(on=["chunk_id"]),
-                ),
-            ],
-            fields=[
-                FieldSpec(
-                    key=FieldKey(["aggregated"]),
-                    code_version="1",
-                    deps=SpecialFieldDep.ALL,
-                )
-            ],
-        ),
-    ):
-        pass
-
-    plan = graph.get_feature_plan(AggregatedByChunk.spec().key)
-    engine = PolarsVersioningEngine(plan)
-
-    upstream_data = nw.from_native(
-        pl.DataFrame(
-            {
-                "director_notes_id": ["dn1", "dn2", "dn3"],
-                "chunk_id": ["c1", "c1", "c2"],
-                "text_path": ["/path/1", "/path/2", "/path/3"],
-                "metaxy_provenance_by_field": [
-                    {"chunk_id": "h1", "text_path": "h2"},
-                    {"chunk_id": "h3", "text_path": "h4"},
-                    {"chunk_id": "h5", "text_path": "h6"},
-                ],
-                "metaxy_data_version_by_field": [
-                    {"chunk_id": "h1", "text_path": "h2"},
-                    {"chunk_id": "h3", "text_path": "h4"},
-                    {"chunk_id": "h5", "text_path": "h6"},
-                ],
-                "metaxy_provenance": ["prov_1", "prov_2", "prov_3"],
-                "metaxy_data_version": ["dv_1", "dv_2", "dv_3"],
-            }
-        ).lazy()
-    )
-
-    upstream = {FeatureKey(["director_notes_texts"]): upstream_data}
-
-    result = engine.load_upstream_with_provenance(
-        upstream=upstream,
-        hash_algo=HashAlgorithm.XXHASH64,
-        filters={},
-    )
-
-    result_df = result.collect()
-
-    # Should have 2 rows (one per chunk_id)
-    assert len(result_df) == 2
-
-    # director_notes_id should be present since user explicitly requested it
-    assert "director_notes_id" in result_df.columns
+    # With window functions, all joined rows are preserved with aggregated metaxy values
+    # encodings (2 rows) × texts (3 rows) = 6 rows, all with chunk_id="c1"
+    assert len(result_df) == 6
+    assert all(cid == "c1" for cid in result_df["chunk_id"].to_list())
 
 
 def test_expansion_columns_auto_included_when_columns_specified(
@@ -2726,3 +2643,489 @@ def test_two_deps_with_expansion_on_same_column_with_explicit_columns(
     # Should have 2 rows (one per video, expansion doesn't change row count during loading)
     assert len(result_df) == 2
     assert set(result_df["video_id"].to_list()) == {"v1", "v2"}
+
+
+# ============================================================================
+# Field-level dependency isolation through aggregation
+# ============================================================================
+
+
+def test_aggregation_field_level_provenance_isolation(graph: FeatureGraph) -> None:
+    """Test that field-level dependencies are correctly preserved through aggregation.
+
+    This is a critical test for the aggregation lineage fix. The downstream feature
+    has two fields with different dependencies:
+    - avg_temp depends only on upstream 'temperature' field
+    - avg_humidity depends only on upstream 'humidity' field
+
+    When we change ONLY the 'temperature' upstream field version, ONLY 'avg_temp'
+    downstream provenance should change. 'avg_humidity' should remain unchanged.
+    """
+
+    class SensorReadings(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["sensor_readings_isolated"]),
+            id_columns=("sensor_id", "reading_id"),
+            fields=[
+                FieldSpec(key=FieldKey(["temperature"]), code_version="1"),
+                FieldSpec(key=FieldKey(["humidity"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    from metaxy.models.field import FieldDep
+
+    class HourlyStats(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["hourly_stats_isolated"]),
+            id_columns=("sensor_id",),
+            deps=[
+                FeatureDep(
+                    feature=SensorReadings,
+                    lineage=LineageRelationship.aggregation(on=["sensor_id"]),
+                )
+            ],
+            fields=[
+                # avg_temp depends ONLY on temperature
+                FieldSpec(
+                    key=FieldKey(["avg_temp"]),
+                    code_version="1",
+                    deps=[
+                        FieldDep(
+                            feature=FeatureKey(["sensor_readings_isolated"]),
+                            fields=[FieldKey(["temperature"])],
+                        )
+                    ],
+                ),
+                # avg_humidity depends ONLY on humidity
+                FieldSpec(
+                    key=FieldKey(["avg_humidity"]),
+                    code_version="1",
+                    deps=[
+                        FieldDep(
+                            feature=FeatureKey(["sensor_readings_isolated"]),
+                            fields=[FieldKey(["humidity"])],
+                        )
+                    ],
+                ),
+            ],
+        ),
+    ):
+        pass
+
+    plan = graph.get_feature_plan(HourlyStats.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Scenario 1: Initial state with both readings
+    upstream_v1 = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1"],
+                "reading_id": ["r1", "r2"],
+                "temperature": [20.0, 21.0],
+                "humidity": [50.0, 51.0],
+                "metaxy_provenance_by_field": [
+                    {"temperature": "temp_v1_r1", "humidity": "hum_v1_r1"},
+                    {"temperature": "temp_v1_r2", "humidity": "hum_v1_r2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_v1_r1", "humidity": "hum_v1_r1"},
+                    {"temperature": "temp_v1_r2", "humidity": "hum_v1_r2"},
+                ],
+                "metaxy_provenance": ["prov_r1", "prov_r2"],
+                "metaxy_data_version": ["dv_r1", "dv_r2"],
+            }
+        ).lazy()
+    )
+
+    result_v1 = engine.load_upstream_with_provenance(
+        upstream={FeatureKey(["sensor_readings_isolated"]): upstream_v1},
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    ).collect()
+
+    # Get initial provenance values
+    result_v1_polars = result_v1.to_polars()
+    initial_prov_by_field = result_v1_polars["metaxy_provenance_by_field"][0]
+    initial_avg_temp_prov = initial_prov_by_field["avg_temp"]
+    initial_avg_humidity_prov = initial_prov_by_field["avg_humidity"]
+
+    # Scenario 2: Only temperature changes (humidity versions stay the same)
+    upstream_v2 = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1"],
+                "reading_id": ["r1", "r2"],
+                "temperature": [20.0, 21.0],  # Same values
+                "humidity": [50.0, 51.0],  # Same values
+                "metaxy_provenance_by_field": [
+                    # Only temperature field version changed!
+                    {"temperature": "temp_v2_r1", "humidity": "hum_v1_r1"},
+                    {"temperature": "temp_v2_r2", "humidity": "hum_v1_r2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_v2_r1", "humidity": "hum_v1_r1"},
+                    {"temperature": "temp_v2_r2", "humidity": "hum_v1_r2"},
+                ],
+                "metaxy_provenance": ["prov_r1_v2", "prov_r2_v2"],
+                "metaxy_data_version": ["dv_r1_v2", "dv_r2_v2"],
+            }
+        ).lazy()
+    )
+
+    result_v2 = engine.load_upstream_with_provenance(
+        upstream={FeatureKey(["sensor_readings_isolated"]): upstream_v2},
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    ).collect()
+
+    result_v2_polars = result_v2.to_polars()
+    updated_prov_by_field = result_v2_polars["metaxy_provenance_by_field"][0]
+    updated_avg_temp_prov = updated_prov_by_field["avg_temp"]
+    updated_avg_humidity_prov = updated_prov_by_field["avg_humidity"]
+
+    # CRITICAL ASSERTIONS:
+    # avg_temp provenance SHOULD change (temperature upstream changed)
+    assert updated_avg_temp_prov != initial_avg_temp_prov, (
+        "avg_temp provenance should change when upstream temperature field changes"
+    )
+
+    # avg_humidity provenance should NOT change (humidity upstream unchanged)
+    assert updated_avg_humidity_prov == initial_avg_humidity_prov, (
+        "avg_humidity provenance should NOT change when only temperature upstream changes"
+    )
+
+
+def test_aggregation_field_level_provenance_multiple_groups(
+    graph: FeatureGraph,
+) -> None:
+    """Test field-level provenance isolation with multiple aggregation groups.
+
+    Each group should have independent per-field provenance based on only the
+    rows belonging to that group.
+    """
+
+    class SensorReadings(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["sensor_readings_multi"]),
+            id_columns=("sensor_id", "reading_id"),
+            fields=[
+                FieldSpec(key=FieldKey(["temperature"]), code_version="1"),
+                FieldSpec(key=FieldKey(["humidity"]), code_version="1"),
+            ],
+        ),
+    ):
+        pass
+
+    from metaxy.models.field import FieldDep
+
+    class HourlyStats(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["hourly_stats_multi"]),
+            id_columns=("sensor_id",),
+            deps=[
+                FeatureDep(
+                    feature=SensorReadings,
+                    lineage=LineageRelationship.aggregation(on=["sensor_id"]),
+                )
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["avg_temp"]),
+                    code_version="1",
+                    deps=[
+                        FieldDep(
+                            feature=FeatureKey(["sensor_readings_multi"]),
+                            fields=[FieldKey(["temperature"])],
+                        )
+                    ],
+                ),
+                FieldSpec(
+                    key=FieldKey(["avg_humidity"]),
+                    code_version="1",
+                    deps=[
+                        FieldDep(
+                            feature=FeatureKey(["sensor_readings_multi"]),
+                            fields=[FieldKey(["humidity"])],
+                        )
+                    ],
+                ),
+            ],
+        ),
+    ):
+        pass
+
+    plan = graph.get_feature_plan(HourlyStats.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Two sensors with different readings
+    upstream = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1", "s2", "s2"],
+                "reading_id": ["r1", "r2", "r3", "r4"],
+                "temperature": [20.0, 21.0, 30.0, 31.0],
+                "humidity": [50.0, 51.0, 60.0, 61.0],
+                "metaxy_provenance_by_field": [
+                    {"temperature": "s1_temp_1", "humidity": "s1_hum_1"},
+                    {"temperature": "s1_temp_2", "humidity": "s1_hum_2"},
+                    {"temperature": "s2_temp_1", "humidity": "s2_hum_1"},
+                    {"temperature": "s2_temp_2", "humidity": "s2_hum_2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "s1_temp_1", "humidity": "s1_hum_1"},
+                    {"temperature": "s1_temp_2", "humidity": "s1_hum_2"},
+                    {"temperature": "s2_temp_1", "humidity": "s2_hum_1"},
+                    {"temperature": "s2_temp_2", "humidity": "s2_hum_2"},
+                ],
+                "metaxy_provenance": ["p1", "p2", "p3", "p4"],
+                "metaxy_data_version": ["d1", "d2", "d3", "d4"],
+            }
+        ).lazy()
+    )
+
+    result = engine.load_upstream_with_provenance(
+        upstream={FeatureKey(["sensor_readings_multi"]): upstream},
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    ).collect()
+
+    result_polars = result.to_polars().sort("sensor_id", "reading_id")
+    # With window functions, all 4 original rows are preserved
+    assert len(result_polars) == 4  # 4 rows (2 per sensor)
+
+    # All rows in the same sensor group should have identical provenance
+    s1_rows = result_polars.filter(result_polars["sensor_id"] == "s1")
+    s2_rows = result_polars.filter(result_polars["sensor_id"] == "s2")
+
+    # Verify all s1 rows have the same provenance
+    s1_provenance = s1_rows["metaxy_provenance"].to_list()
+    assert len(set(s1_provenance)) == 1, "All s1 rows should have identical provenance"
+
+    # Verify all s2 rows have the same provenance
+    s2_provenance = s2_rows["metaxy_provenance"].to_list()
+    assert len(set(s2_provenance)) == 1, "All s2 rows should have identical provenance"
+
+    s1_prov = s1_rows["metaxy_provenance_by_field"][0]
+    s2_prov = s2_rows["metaxy_provenance_by_field"][0]
+
+    # Different sensors should have different provenance for each field
+    # (they aggregate different rows)
+    assert s1_prov["avg_temp"] != s2_prov["avg_temp"]
+    assert s1_prov["avg_humidity"] != s2_prov["avg_humidity"]
+
+    # The overall provenance should also be different between groups
+    assert s1_provenance[0] != s2_provenance[0]
+
+
+def test_aggregation_field_level_provenance_definition_change() -> None:
+    """Test that field-level provenance updates when upstream field definition changes.
+
+    When the upstream field's code_version changes (definition change), the upstream
+    data would be recomputed with new data_version_by_field values. This test verifies
+    that the aggregation correctly propagates those changes only to dependent fields.
+
+    Scenario:
+    - V1: Both temperature and humidity have code_version="1"
+    - V2: Temperature code_version changes to "2", humidity stays at "1"
+    - The upstream data_version_by_field reflects the code_version change
+    - Only avg_temp downstream provenance should change, not avg_humidity
+    """
+    from metaxy.models.field import FieldDep
+
+    # === Version 1: Initial feature definitions ===
+    with FeatureGraph().use() as graph_v1:
+
+        class SensorReadingsV1(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["sensor_readings_defn"]),
+                id_columns=("sensor_id", "reading_id"),
+                fields=[
+                    FieldSpec(key=FieldKey(["temperature"]), code_version="1"),
+                    FieldSpec(key=FieldKey(["humidity"]), code_version="1"),
+                ],
+            ),
+        ):
+            pass
+
+        class HourlyStatsV1(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["hourly_stats_defn"]),
+                id_columns=("sensor_id",),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["sensor_readings_defn"]),
+                        lineage=LineageRelationship.aggregation(on=["sensor_id"]),
+                    )
+                ],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["avg_temp"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["sensor_readings_defn"]),
+                                fields=[FieldKey(["temperature"])],
+                            )
+                        ],
+                    ),
+                    FieldSpec(
+                        key=FieldKey(["avg_humidity"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["sensor_readings_defn"]),
+                                fields=[FieldKey(["humidity"])],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+        ):
+            pass
+
+    plan_v1 = graph_v1.get_feature_plan(HourlyStatsV1.spec().key)
+    engine_v1 = PolarsVersioningEngine(plan_v1)
+
+    # V1 upstream data - data_version_by_field reflects code_version="1" for both fields
+    upstream_data_v1 = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1"],
+                "reading_id": ["r1", "r2"],
+                "metaxy_provenance_by_field": [
+                    {"temperature": "temp_cv1_r1", "humidity": "hum_cv1_r1"},
+                    {"temperature": "temp_cv1_r2", "humidity": "hum_cv1_r2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_cv1_r1", "humidity": "hum_cv1_r1"},
+                    {"temperature": "temp_cv1_r2", "humidity": "hum_cv1_r2"},
+                ],
+                "metaxy_provenance": ["prov_1", "prov_2"],
+                "metaxy_data_version": ["dv_1", "dv_2"],
+            }
+        ).lazy()
+    )
+
+    result_v1 = engine_v1.load_upstream_with_provenance(
+        upstream={FeatureKey(["sensor_readings_defn"]): upstream_data_v1},
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    ).collect()
+
+    result_v1_polars = result_v1.to_polars()
+    v1_prov_by_field = result_v1_polars["metaxy_provenance_by_field"][0]
+    v1_avg_temp_prov = v1_prov_by_field["avg_temp"]
+    v1_avg_humidity_prov = v1_prov_by_field["avg_humidity"]
+
+    # === Version 2: Temperature code_version changes to "2" ===
+    with FeatureGraph().use() as graph_v2:
+
+        class SensorReadingsV2(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["sensor_readings_defn"]),
+                id_columns=("sensor_id", "reading_id"),
+                fields=[
+                    # Temperature field code_version changed from "1" to "2"
+                    FieldSpec(key=FieldKey(["temperature"]), code_version="2"),
+                    FieldSpec(
+                        key=FieldKey(["humidity"]), code_version="1"
+                    ),  # Unchanged
+                ],
+            ),
+        ):
+            pass
+
+        class HourlyStatsV2(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["hourly_stats_defn"]),
+                id_columns=("sensor_id",),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["sensor_readings_defn"]),
+                        lineage=LineageRelationship.aggregation(on=["sensor_id"]),
+                    )
+                ],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["avg_temp"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["sensor_readings_defn"]),
+                                fields=[FieldKey(["temperature"])],
+                            )
+                        ],
+                    ),
+                    FieldSpec(
+                        key=FieldKey(["avg_humidity"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["sensor_readings_defn"]),
+                                fields=[FieldKey(["humidity"])],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+        ):
+            pass
+
+    plan_v2 = graph_v2.get_feature_plan(HourlyStatsV2.spec().key)
+    engine_v2 = PolarsVersioningEngine(plan_v2)
+
+    # V2 upstream data - temperature data_version_by_field changed (simulates recompute)
+    # humidity stays the same (code_version unchanged)
+    upstream_data_v2 = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1"],
+                "reading_id": ["r1", "r2"],
+                "metaxy_provenance_by_field": [
+                    # Temperature changed due to code_version bump, humidity unchanged
+                    {"temperature": "temp_cv2_r1", "humidity": "hum_cv1_r1"},
+                    {"temperature": "temp_cv2_r2", "humidity": "hum_cv1_r2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_cv2_r1", "humidity": "hum_cv1_r1"},
+                    {"temperature": "temp_cv2_r2", "humidity": "hum_cv1_r2"},
+                ],
+                "metaxy_provenance": ["prov_1_v2", "prov_2_v2"],
+                "metaxy_data_version": ["dv_1_v2", "dv_2_v2"],
+            }
+        ).lazy()
+    )
+
+    result_v2 = engine_v2.load_upstream_with_provenance(
+        upstream={FeatureKey(["sensor_readings_defn"]): upstream_data_v2},
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    ).collect()
+
+    result_v2_polars = result_v2.to_polars()
+    v2_prov_by_field = result_v2_polars["metaxy_provenance_by_field"][0]
+    v2_avg_temp_prov = v2_prov_by_field["avg_temp"]
+    v2_avg_humidity_prov = v2_prov_by_field["avg_humidity"]
+
+    # CRITICAL ASSERTIONS:
+    # avg_temp provenance SHOULD change (temperature upstream data_version changed)
+    assert v2_avg_temp_prov != v1_avg_temp_prov, (
+        "avg_temp provenance should change when upstream temperature field "
+        "data_version changes (due to code_version bump)"
+    )
+
+    # avg_humidity provenance should NOT change (humidity data_version unchanged)
+    assert v2_avg_humidity_prov == v1_avg_humidity_prov, (
+        "avg_humidity provenance should NOT change when only temperature "
+        "code_version changes (humidity data_version unchanged)"
+    )

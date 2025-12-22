@@ -1,36 +1,34 @@
-"""Lineage transformation handlers for per-dependency provenance calculation.
-
-Each dependency can have its own lineage relationship (identity, aggregation, expansion).
-Lineage transformations are applied independently per-dependency before joining.
-
-This module provides:
-- LineageTransformer: Per-dependency transformation applied during upstream loading
-- Comparison helpers for handling expansion relationships during diff resolution
-"""
+"""Lineage handlers for different lineage relationship types."""
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import TYPE_CHECKING
 
 import narwhals as nw
 from narwhals.typing import FrameT
 
-from metaxy.models.lineage import LineageRelationshipType
-from metaxy.utils.hashing import get_hash_truncation_length
+from metaxy.models.lineage import (
+    AggregationRelationship,
+    ExpansionRelationship,
+    LineageRelationshipType,
+)
 
 if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureDep
     from metaxy.models.plan import FeaturePlan
     from metaxy.versioning.engine import VersioningEngine
+    from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
     from metaxy.versioning.types import HashAlgorithm
 
 
-class LineageTransformer(ABC):
-    """Base class for per-dependency lineage transformations.
+class LineageHandler(ABC):
+    """Base class for handling different lineage relationship types.
 
-    Each transformer handles a specific lineage relationship type and is applied
-    independently to its dependency's data before joining with other dependencies.
+    Lineage handlers transform upstream data according to the relationship type
+    (identity, aggregation, expansion) between the upstream and downstream features.
+    Each handler implements transform methods for both upstream preparation and
+    current data comparison during increment resolution.
     """
 
     def __init__(
@@ -38,223 +36,142 @@ class LineageTransformer(ABC):
         feature_dep: FeatureDep,
         plan: FeaturePlan,
         engine: VersioningEngine,
+        dep_transformer: FeatureDepTransformer,
     ):
-        """Initialize transformer for a specific dependency.
-
-        Args:
-            feature_dep: The dependency this transformer handles
-            plan: The feature plan for the downstream feature
-            engine: The versioning engine instance
-        """
         self.dep = feature_dep
         self.plan = plan
         self.engine = engine
+        self.dep_transformer = dep_transformer
 
-    @abstractmethod
     def transform_upstream(
         self,
         df: FrameT,
         hash_algorithm: HashAlgorithm,
     ) -> FrameT:
-        """Transform upstream data according to lineage relationship.
+        """Transform upstream data according to the lineage relationship.
 
-        Applied per-dependency before joining with other dependencies.
+        Called during upstream preparation to apply lineage-specific transformations
+        such as aggregating provenance values for N:1 relationships.
 
         Args:
-            df: Upstream DataFrame (already filtered, renamed, selected)
-            hash_algorithm: Hash algorithm for any provenance computation
+            df: Upstream DataFrame after filtering, renaming, and selection.
+            hash_algorithm: Hash algorithm for any hashing operations.
 
         Returns:
-            Transformed DataFrame
+            Transformed DataFrame (default implementation returns input unchanged).
         """
-        pass
+        return df
 
     def transform_current_for_comparison(
         self,
         current: FrameT,
         join_columns: list[str],
     ) -> FrameT:
-        """Transform current (downstream) data for comparison with expected.
+        """Transform current stored data for comparison with expected provenance.
 
-        Override in subclasses that need special handling during diff resolution.
-        By default, returns the data unchanged.
+        Called during increment resolution to prepare current metadata for comparison.
+        For example, expansion lineage collapses child rows back to parent level.
 
         Args:
-            current: Current downstream metadata from the store
-            join_columns: Columns used for joining expected and current
+            current: Current metadata DataFrame from the store.
+            join_columns: Columns used for joining expected and current data.
 
         Returns:
-            Transformed DataFrame suitable for comparison
+            Transformed DataFrame (default implementation returns input unchanged).
         """
         return current
 
     @property
     def output_id_columns(self) -> list[str]:
-        """ID columns after lineage transformation.
+        """ID columns after lineage transformation."""
+        return list(self.dep_transformer.id_column_tracker.output)
 
-        For identity and expansion: same as upstream (after rename)
-        For aggregation: the aggregation columns
+    @property
+    def requires_aggregation(self) -> bool:
+        """Whether this lineage type requires aggregating upstream values."""
+        return False
+
+    def get_required_columns(self) -> set[str]:
+        """Return additional columns required by this lineage relationship.
+
+        These are columns needed for lineage operations (e.g., aggregation 'on'
+        columns) that must be included even if not explicitly selected.
+
+        Returns:
+            Set of column names (before rename) required by this lineage type.
         """
-        return self.plan.get_input_id_columns_for_dep(self.dep)
+        return set()
 
 
-class IdentityLineageTransformer(LineageTransformer):
-    """Transformer for 1:1 identity lineage.
+class IdentityLineageHandler(LineageHandler):
+    """Handler for 1:1 identity lineage. No special handling needed."""
 
-    No transformation needed - each upstream row maps to exactly one downstream row.
+    pass
+
+
+class AggregationLineageHandler(LineageHandler):
+    """Handler for N:1 aggregation lineage.
+
+    Pre-aggregates provenance columns field-by-field so all rows in the same
+    group have identical metaxy values. Does NOT reduce rows.
     """
+
+    @property
+    def requires_aggregation(self) -> bool:
+        return True
+
+    def get_required_columns(self) -> set[str]:
+        """Return aggregation 'on' columns."""
+        relationship = self.dep.lineage.relationship
+        if isinstance(relationship, AggregationRelationship) and relationship.on:
+            return set(relationship.on)
+        return set()
 
     def transform_upstream(
         self,
         df: FrameT,
         hash_algorithm: HashAlgorithm,
     ) -> FrameT:
-        """Identity transformation - return unchanged."""
-        return df
-
-
-class AggregationLineageTransformer(LineageTransformer):
-    """Transformer for N:1 aggregation lineage.
-
-    Multiple upstream rows aggregate to one downstream row.
-    We group by aggregation columns and combine provenance values.
-    """
-
-    def transform_upstream(
-        self,
-        df: FrameT,
-        hash_algorithm: HashAlgorithm,
-    ) -> FrameT:
-        """Aggregate upstream data by grouping columns.
-
-        Groups by the aggregation columns specified in the lineage relationship,
-        concatenates data_version values deterministically, and hashes the result.
-
-        For aggregation, we only care about upstream `metaxy_data_version` (which is
-        what downstream provenance computation reads from). The upstream provenance
-        column is not used - data_version is either equal to it or customized by user.
-        """
-        from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
-
-        agg_columns = self.output_id_columns
+        """Aggregate upstream metaxy columns field-by-field using window functions."""
         upstream_spec = self.plan.parent_features_by_key[self.dep.feature]
+        transformer = self.dep_transformer
 
-        transformer = FeatureDepTransformer(dep=self.dep, plan=self.plan)
-        renamed_data_version_col = transformer.rename_upstream_metaxy_column(
-            "metaxy_data_version"
-        )
-        renamed_data_version_by_field_col = (
-            transformer.renamed_data_version_by_field_col
-        )
-        # We still need to handle provenance columns for the output
-        renamed_prov_col = transformer.renamed_provenance_col
-        renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
-
-        # Sort by ALL upstream ID columns for deterministic ordering within each group
-        # Using just agg_columns would only sort by the group key, not within each group
-        renamed_id_columns = transformer.renamed_id_columns
-        df_sorted = df.sort(renamed_id_columns)  # ty: ignore[invalid-argument-type]
-
-        # Verify data_version column exists
-        df_columns = df_sorted.collect_schema().names()  # ty: ignore[invalid-argument-type]
-        if renamed_data_version_col not in df_columns:
-            raise ValueError(
-                f"Column '{renamed_data_version_col}' not found in upstream data. "
-                f"Available columns: {df_columns}"
-            )
-
-        # Determine which upstream ID columns to exclude from aggregation output.
-        # If user explicitly requested an ID column in columns=, keep it (with first() value).
-        # Otherwise, exclude it since it's only needed for sorting.
-        user_requested_cols = set(
-            transformer.renames.get(col, col) for col in (self.dep.columns or [])
-        )
-        id_cols_to_exclude = [
-            col for col in renamed_id_columns if col not in user_requested_cols
-        ]
-
-        # Aggregate by concatenating data_version values and hashing
-        grouped = self.engine.aggregate_with_string_concat(
-            df=df_sorted,
-            group_by_columns=agg_columns,
-            concat_column=renamed_data_version_col,
-            concat_separator="|",
-            exclude_columns=[
-                renamed_prov_by_field_col,
-                renamed_data_version_by_field_col,
-                renamed_prov_col,
-                *id_cols_to_exclude,
-            ],
-        )
-
-        # Hash the concatenated values
-        hashed = self.engine.hash_string_column(
-            grouped, renamed_data_version_col, "__hashed_agg", hash_algorithm
-        )
-        hashed = hashed.with_columns(
-            nw.col("__hashed_agg").str.slice(0, get_hash_truncation_length())
-        )
-
-        # The aggregated hash becomes both provenance and data_version
-        hashed = hashed.drop(renamed_data_version_col).with_columns(
-            nw.col("__hashed_agg").alias(renamed_prov_col),
-            nw.col("__hashed_agg").alias(renamed_data_version_col),
-        )
-        hashed = hashed.drop("__hashed_agg")
-
-        # Build struct columns with the aggregated hash for each field
+        # Get field names from upstream feature spec
         upstream_field_names = [f.key.to_struct_key() for f in upstream_spec.fields]
-        field_map = {name: renamed_data_version_col for name in upstream_field_names}
 
-        result = self.engine.build_struct_column(
-            hashed, renamed_data_version_by_field_col, field_map
+        return self.engine.aggregate_metadata_columns(
+            df,  # ty: ignore[invalid-argument-type]
+            group_columns=self.output_id_columns,
+            order_by_columns=transformer.selected_id_columns,
+            upstream_field_names=upstream_field_names,
+            renamed_data_version_col=transformer.renamed_data_version_col,
+            renamed_data_version_by_field_col=transformer.renamed_data_version_by_field_col,
+            renamed_prov_col=transformer.renamed_provenance_col,
+            renamed_prov_by_field_col=transformer.renamed_provenance_by_field_col,
+            hash_algorithm=hash_algorithm,
         )
-        # Also set provenance_by_field to the same values
-        result = self.engine.build_struct_column(
-            result, renamed_prov_by_field_col, field_map
-        )
-
-        return result  # ty: ignore[invalid-return-type]
 
 
-class ExpansionLineageTransformer(LineageTransformer):
-    """Transformer for 1:N expansion lineage.
+class ExpansionLineageHandler(LineageHandler):
+    """Handler for 1:N expansion lineage.
 
-    One upstream row expands to many downstream rows.
-    No transformation during loading - all expanded rows inherit parent provenance.
-    The expansion itself happens in user code; Metaxy just tracks lineage.
+    During comparison, collapses current metadata to parent level since all
+    children from the same parent have the same provenance.
     """
 
-    def transform_upstream(
-        self,
-        df: FrameT,
-        hash_algorithm: HashAlgorithm,
-    ) -> FrameT:
-        """Expansion transformation - return unchanged.
-
-        The expansion happens in user compute code, not here.
-        Downstream rows inherit their parent's provenance.
-        """
-        return df
+    def get_required_columns(self) -> set[str]:
+        """Return expansion 'on' columns."""
+        relationship = self.dep.lineage.relationship
+        if isinstance(relationship, ExpansionRelationship) and relationship.on:
+            return set(relationship.on)
+        return set()
 
     def transform_current_for_comparison(
         self,
         current: FrameT,
         join_columns: list[str],
     ) -> FrameT:
-        """Collapse expanded rows to parent level for comparison.
-
-        For expansion lineage, current has multiple rows per parent (one per child).
-        Since all children from the same parent have the same provenance,
-        collapse to one row per parent by picking any representative row.
-
-        Args:
-            current: Current downstream metadata with expanded rows
-            join_columns: Parent ID columns to group by
-
-        Returns:
-            DataFrame with one row per parent
-        """
+        """Collapse expanded rows to parent level for comparison."""
         current_cols = current.collect_schema().names()  # ty: ignore[invalid-argument-type]
         non_key_cols = [c for c in current_cols if c not in join_columns]
         return current.group_by(*join_columns).agg(  # ty: ignore[invalid-argument-type]
@@ -262,28 +179,29 @@ class ExpansionLineageTransformer(LineageTransformer):
         )
 
 
-def create_lineage_transformer(
+def create_lineage_handler(
     feature_dep: FeatureDep,
     plan: FeaturePlan,
     engine: VersioningEngine,
-) -> LineageTransformer:
-    """Factory function to create appropriate lineage transformer for a dependency.
-
-    Args:
-        feature_dep: The dependency to create a transformer for
-        plan: The feature plan for the downstream feature
-        engine: The versioning engine instance
-
-    Returns:
-        Appropriate LineageTransformer instance based on lineage type
-    """
+    dep_transformer: FeatureDepTransformer,
+) -> LineageHandler:
+    """Create appropriate lineage handler for a dependency based on its lineage type."""
     relationship_type = feature_dep.lineage.relationship.type
 
     if relationship_type == LineageRelationshipType.IDENTITY:
-        return IdentityLineageTransformer(feature_dep, plan, engine)
+        return IdentityLineageHandler(feature_dep, plan, engine, dep_transformer)
     elif relationship_type == LineageRelationshipType.AGGREGATION:
-        return AggregationLineageTransformer(feature_dep, plan, engine)
+        return AggregationLineageHandler(feature_dep, plan, engine, dep_transformer)
     elif relationship_type == LineageRelationshipType.EXPANSION:
-        return ExpansionLineageTransformer(feature_dep, plan, engine)
+        return ExpansionLineageHandler(feature_dep, plan, engine, dep_transformer)
     else:
         raise ValueError(f"Unknown lineage relationship type: {relationship_type}")
+
+
+def get_lineage_required_columns(feature_dep: FeatureDep) -> set[str]:
+    """Get 'on' columns required by lineage relationship. Empty set for identity lineage."""
+    relationship = feature_dep.lineage.relationship
+    if isinstance(relationship, (AggregationRelationship, ExpansionRelationship)):
+        if relationship.on:
+            return set(relationship.on)
+    return set()

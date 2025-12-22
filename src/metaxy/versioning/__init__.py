@@ -20,6 +20,7 @@ from metaxy.versioning.engine import (
     RenamedDataFrame,
     VersioningEngine,
 )
+from metaxy.versioning.feature_dep_transformer import IdColumnTracker
 from metaxy.versioning.types import (
     HashAlgorithm,
     Increment,
@@ -31,6 +32,7 @@ from metaxy.versioning.types import (
 __all__ = [
     "VersioningEngine",
     "RenamedDataFrame",
+    "IdColumnTracker",
     "HashAlgorithm",
     "Increment",
     "LazyIncrement",

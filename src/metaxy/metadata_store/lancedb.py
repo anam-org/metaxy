@@ -95,6 +95,7 @@ class LanceDBMetadataStore(MetadataStore):
     """
 
     _should_warn_auto_create_tables = False
+    versioning_engine_cls = PolarsVersioningEngine
 
     def __init__(
         self,
@@ -141,7 +142,6 @@ class LanceDBMetadataStore(MetadataStore):
         super().__init__(
             fallback_stores=fallback_stores,
             auto_create_tables=True,
-            versioning_engine_cls=PolarsVersioningEngine,
             **kwargs,
         )
 
