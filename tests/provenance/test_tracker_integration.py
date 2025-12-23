@@ -90,6 +90,7 @@ def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
     prepared = engine.prepare_upstream(
         upstream=upstream,
         filters={},
+        hash_algorithm=HashAlgorithm.XXHASH64,
     )
 
     prepared_df = prepared.collect()
@@ -198,6 +199,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
     prepared = engine.prepare_upstream(
         upstream=upstream,
         filters={},
+        hash_algorithm=HashAlgorithm.XXHASH64,
     )
 
     prepared_df = prepared.collect()
@@ -322,6 +324,7 @@ def test_multi_upstream_join_on_common_id_columns(
     prepared = engine.prepare_upstream(
         upstream=upstream,
         filters={},
+        hash_algorithm=HashAlgorithm.XXHASH64,
     )
 
     prepared_df = prepared.collect()
@@ -450,6 +453,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
     prepared = engine.prepare_upstream(
         upstream=upstream,
         filters=filters,
+        hash_algorithm=HashAlgorithm.XXHASH64,
     )
 
     prepared_df = cast(pl.LazyFrame, prepared.to_native()).collect()
@@ -747,6 +751,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
         engine.prepare_upstream(
             upstream=upstream,
             filters={},
+            hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
 

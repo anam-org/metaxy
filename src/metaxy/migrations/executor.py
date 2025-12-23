@@ -105,7 +105,22 @@ class MigrationExecutor:
         # Import here to avoid circular dependency
         from metaxy.migrations.models import DiffMigration, FullGraphMigration
 
-        # Delegate to migration's execute method (which uses this executor internally)
+        # Check if migration has overridden execute() method (custom logic)
+        # If so, call it directly to allow pre/post processing
+        migration_class = type(migration)
+        if isinstance(migration, (DiffMigration, FullGraphMigration)):
+            # Check if execute() is overridden in the migration's class
+            # (not inherited from DiffMigration or FullGraphMigration)
+            base_class = (
+                DiffMigration
+                if isinstance(migration, DiffMigration)
+                else FullGraphMigration
+            )
+            if migration_class.execute is not base_class.execute:
+                # Custom execute() implementation - call it
+                return migration.execute(store, project, dry_run=dry_run)
+
+        # Delegate to migration-specific executor methods
         if isinstance(migration, DiffMigration):
             return self._execute_diff_migration(
                 migration, store, project, dry_run=dry_run, rerun=rerun

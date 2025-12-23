@@ -17,6 +17,7 @@ from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 
 # Simple test joiner
@@ -52,7 +53,9 @@ class TestJoiner:
             df = add_metaxy_system_columns(df)
             upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
 
-        joined = engine.prepare_upstream(upstream_by_key, filters=None)
+        joined = engine.prepare_upstream(
+            upstream_by_key, filters=None, hash_algorithm=HashAlgorithm.XXHASH64
+        )
 
         mapping = {}
         for upstream_key_str in upstream_refs.keys():
