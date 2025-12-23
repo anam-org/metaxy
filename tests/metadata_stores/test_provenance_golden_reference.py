@@ -15,6 +15,7 @@ not to test every possible combination of hash algorithm × store × truncation.
 
 from __future__ import annotations
 
+import json
 import warnings
 from collections.abc import Mapping
 from datetime import datetime
@@ -451,8 +452,32 @@ class FeaturePlanCases:
         return [(graph, upstream_features, child_plan)]
 
 
+def _ensure_struct_column(df: pl.DataFrame, column_name: str) -> pl.DataFrame:
+    """Ensure the specified column is a Struct; decode JSON strings if necessary."""
+    dtype = df.schema[column_name]
+    if isinstance(dtype, pl.Struct):
+        return df
+
+    converted = df[column_name].map_elements(
+        lambda v: v if isinstance(v, dict) else json.loads(v)
+    )
+    return df.with_columns(converted.alias(column_name))
+
+
 # Removed: TruncationCases and metaxy_config fixture
 # Hash truncation is now tested in test_hash_algorithms.py
+
+
+def _ensure_struct_column(df: pl.DataFrame, column_name: str) -> pl.DataFrame:
+    """Ensure the specified column is a Struct; decode JSON strings if necessary."""
+    dtype = df.schema[column_name]
+    if isinstance(dtype, pl.Struct):
+        return df
+
+    converted = df[column_name].map_elements(
+        lambda v: v if isinstance(v, dict) else json.loads(v)
+    )
+    return df.with_columns(converted.alias(column_name))
 
 
 def generate_plan_data(
@@ -925,13 +950,19 @@ def test_golden_reference_with_duplicate_timestamps(
 
             import polars as pl
 
-            from metaxy.models.constants import METAXY_CREATED_AT
+            from metaxy.models.constants import (
+                METAXY_CREATED_AT,
+                METAXY_PROVENANCE_BY_FIELD,
+            )
 
             # Add older duplicates to upstream metadata
             for feature_key, upstream_feature in upstream_features.items():
                 # Read existing upstream data
                 existing_df = (
                     store.read_metadata(upstream_feature).lazy().collect().to_polars()
+                )
+                existing_df = _ensure_struct_column(
+                    existing_df, METAXY_PROVENANCE_BY_FIELD
                 )
 
                 # Create older duplicates (same IDs, older timestamps)
@@ -1059,7 +1090,9 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
 
             import polars as pl
 
-            from metaxy.models.constants import METAXY_CREATED_AT
+            from metaxy.models.constants import (
+                METAXY_CREATED_AT,
+            )
 
             # Create duplicates with SAME timestamp for ALL samples
             same_timestamp = datetime.now()
@@ -1139,12 +1172,18 @@ def test_golden_reference_partial_duplicates(
 
             import polars as pl
 
-            from metaxy.models.constants import METAXY_CREATED_AT
+            from metaxy.models.constants import (
+                METAXY_CREATED_AT,
+                METAXY_PROVENANCE_BY_FIELD,
+            )
 
             # Add older duplicates for only HALF of the samples in each upstream
             for feature_key, upstream_feature in upstream_features.items():
                 existing_df = (
                     store.read_metadata(upstream_feature).lazy().collect().to_polars()
+                )
+                existing_df = _ensure_struct_column(
+                    existing_df, METAXY_PROVENANCE_BY_FIELD
                 )
 
                 # Get half of samples

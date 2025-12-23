@@ -6,7 +6,6 @@ import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.constants import (
-    _COLUMNS_TO_DROP_BEFORE_JOIN,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE,
@@ -127,32 +126,76 @@ class FeatureDepTransformer:
         if filters:
             combined_filters.extend(filters)
 
-        # Drop columns that should not be carried through joins
-        # (e.g., metaxy_created_at, metaxy_materialization_id, metaxy_feature_version)
-        # These are recalculated for the downstream feature and would cause column name
-        # conflicts when joining 3+ upstream features
-        existing_columns = set(df.collect_schema().names())  # ty: ignore[invalid-argument-type]
-        columns_to_drop = [
-            col for col in _COLUMNS_TO_DROP_BEFORE_JOIN if col in existing_columns
-        ]
-        if columns_to_drop:
-            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
+        # Add dynamic renames for flattened provenance/data_version columns to avoid collisions
+        from metaxy.models.constants import (
+            METAXY_DATA_VERSION_BY_FIELD,
+            METAXY_PROVENANCE_BY_FIELD,
+        )
 
-        # Apply rename
-        renamed_df = df.rename(self.renames) if self.renames else df  # ty: ignore[invalid-argument-type]
+        suffix = self.upstream_feature_key.to_column_suffix()
+        struct_key = self.upstream_feature_key.to_struct_key()
+        prov_struct = f"{METAXY_PROVENANCE_BY_FIELD}{suffix}"
+        data_struct = f"{METAXY_DATA_VERSION_BY_FIELD}{suffix}"
+        dynamic_renames: dict[str, str] = {}
+        for col in df.collect_schema().names():  # ty: ignore[invalid-argument-type]
+            # Already suffixed columns can stay as-is
+            if col == prov_struct or col == data_struct:
+                continue
+            if col == METAXY_PROVENANCE_BY_FIELD or col == METAXY_DATA_VERSION_BY_FIELD:
+                # Base renames already cover struct columns
+                continue
+            if col.startswith(f"{prov_struct}__") or col.startswith(f"{data_struct}__"):
+                continue
 
-        # Apply filter
-        if combined_filters:
-            renamed_df = renamed_df.filter(*combined_filters)  # ty: ignore[invalid-argument-type]
+            if col == METAXY_PROVENANCE_BY_FIELD:
+                dynamic_renames[col] = prov_struct
+            elif col == METAXY_DATA_VERSION_BY_FIELD:
+                dynamic_renames[col] = data_struct
+            elif col.startswith(f"{METAXY_PROVENANCE_BY_FIELD}__"):
+                remainder = col.split("__", 1)[1]
+                if remainder == struct_key:
+                    dynamic_renames[col] = prov_struct
+                else:
+                    cleaned = (
+                        remainder.split("__", 1)[1]
+                        if remainder.startswith(f"{struct_key}__")
+                        else remainder
+                    )
+                    dynamic_renames[col] = f"{prov_struct}__{cleaned}"
+            elif col.startswith(f"{METAXY_DATA_VERSION_BY_FIELD}__"):
+                remainder = col.split("__", 1)[1]
+                if remainder == struct_key:
+                    dynamic_renames[col] = data_struct
+                else:
+                    cleaned = (
+                        remainder.split("__", 1)[1]
+                        if remainder.startswith(f"{struct_key}__")
+                        else remainder
+                    )
+                    dynamic_renames[col] = f"{data_struct}__{cleaned}"
 
-        # Apply select
-        if self.renamed_columns:
-            renamed_df = renamed_df.select(*self.renamed_columns)  # ty: ignore[invalid-argument-type]
+        renames = {**self.renames, **dynamic_renames}
 
-        # Create RenamedDataFrame with the complete ID column tracker
-        return RenamedDataFrame(
-            df=renamed_df,  # ty: ignore[invalid-argument-type]
-            id_column_tracker=self.id_column_tracker,
+        renamed_df = df.rename(renames) if renames else df  # ty: ignore[invalid-argument-type]
+        select_cols = (
+            [*self.renamed_columns, *dynamic_renames.values()]
+            if self.renamed_columns is not None
+            else None
+        )
+
+        id_tracker = IdColumnTracker.from_upstream_spec(
+            upstream_id_columns=self.upstream_feature_spec.id_columns,
+            renames=renames,
+            selected_columns=self.renamed_columns,
+        )
+
+        return (
+            RenamedDataFrame(
+                df=renamed_df,  # ty: ignore[invalid-argument-type]
+                id_column_tracker=id_tracker,
+            )
+            .filter(combined_filters if combined_filters else None)
+            .select(select_cols)
         )
 
     def rename_upstream_metaxy_column(self, column_name: str) -> str:
