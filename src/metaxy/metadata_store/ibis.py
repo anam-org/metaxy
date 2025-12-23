@@ -453,6 +453,114 @@ class IbisMetadataStore(MetadataStore, ABC):
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filter_expr: nw.Expr,
+    ) -> None:
+        """Backend-specific hard delete implementation for SQL databases.
+
+        Translates Narwhals filter expression to Ibis and executes DELETE in database.
+
+        Args:
+            feature_key: Feature to delete from
+            filter_expr: Narwhals expression to filter records
+        """
+        table_name = self.get_table_name(feature_key)
+
+        # Check if table exists
+        if table_name not in self.conn.list_tables():
+            return
+
+        # Get Ibis table reference
+        table = self.conn.table(table_name)
+
+        # Apply backend-specific transformations (e.g., cast JSON columns for ClickHouse)
+        table = self.transform_after_read(table, feature_key)
+
+        # Wrap Ibis table with Narwhals to apply filter
+        native_frame = nw.from_native(table, eager_only=False)
+        nw_lazy: nw.LazyFrame[Any] = cast(nw.LazyFrame[Any], cast(object, native_frame))
+
+        # Apply filter to get matching rows
+        filtered = nw_lazy.filter(filter_expr)
+
+        # Extract the underlying Ibis table expression with filter applied
+        ibis_filtered = filtered.to_native()
+
+        # Construct DELETE SQL from compiled SELECT
+        # Get WHERE clause by compiling the filtered table to SQL
+        select_sql = str(ibis_filtered.compile())
+
+        # Execute DELETE using backend's SQL execution method
+        raw_conn = self._get_raw_connection()
+        if raw_conn is not None:
+            # Extract WHERE clause from SELECT statement using simple regex
+            # Format: SELECT ... FROM table WHERE condition
+            import re
+
+            # Try multiple patterns to match WHERE clause
+            where_match = re.search(
+                r"\bWHERE\b\s+(.+?)(?:\s*(?:ORDER\s+BY|LIMIT|GROUP\s+BY|;|$))",
+                select_sql,
+                re.IGNORECASE | re.DOTALL,
+            )
+
+            if not where_match:
+                # Try simpler pattern - just capture everything after WHERE
+                where_match = re.search(
+                    r"\bWHERE\b\s+(.+)",
+                    select_sql,
+                    re.IGNORECASE | re.DOTALL,
+                )
+
+            if where_match:
+                where_clause = where_match.group(1).strip()
+                # Only remove trailing semicolons (be careful not to remove closing parens from functions)
+                where_clause = where_clause.rstrip(";").strip()
+
+                # Remove table aliases (e.g., "t0"."column" -> "column")
+                # Match quoted table alias followed by dot and column name
+                where_clause = re.sub(r'"(\w+)"\."(\w+)"', r'"\2"', where_clause)
+
+                delete_stmt = f"DELETE FROM {table_name} WHERE {where_clause}"
+
+                # Log for debugging
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.debug(f"Executing DELETE: {delete_stmt}")
+
+                raw_conn.execute(delete_stmt)
+            else:
+                # No WHERE clause - would delete all rows, which is dangerous
+                # Let's print the SQL for debugging
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to extract WHERE clause from SQL: {select_sql}")
+                raise NotImplementedError(
+                    f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}"
+                )
+        else:
+            raise NotImplementedError(
+                f"Hard delete not yet implemented for {self.__class__.__name__}. "
+                f"Override _get_raw_connection() to provide raw SQL execution capability."
+            )
+
+    def _get_raw_connection(self) -> Any | None:
+        """Get raw database connection from Ibis backend.
+
+        Override in subclasses to provide access to underlying connection
+        for executing raw SQL (e.g., DELETE statements).
+
+        Returns:
+            Raw connection object, or None if not available
+        """
+        # Default: no raw connection available
+        # Subclasses like DuckDBMetadataStore can override
+        return None
+
     def read_metadata_in_store(
         self,
         feature: CoercibleToFeatureKey,
