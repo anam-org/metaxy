@@ -401,13 +401,14 @@ class ExternalMetaxyProject(MetaxyProject):
         venv_env.pop("PYTHONHOME", None)
 
         # Use uv pip to install packages into the venv
+        all_extras = "ibis,duckdb"
         result = subprocess.run(
             [
                 "uv",
                 "pip",
                 "install",
                 "-e",
-                str(install_metaxy_from),
+                f"{install_metaxy_from}[{all_extras}]",
             ],
             env=venv_env,
             capture_output=True,
