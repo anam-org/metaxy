@@ -320,9 +320,88 @@ class DeltaMetadataStore(MetadataStore):
         feature_key: FeatureKey,
         filter_expr: nw.Expr,
     ) -> None:
-        """Hard delete not yet supported for Delta backend."""
+        """Hard delete rows from Delta table using native DELETE operation."""
+        from deltalake import DeltaTable
+
+        table_uri = self._feature_uri(feature_key)
+
+        if not self._table_exists(table_uri):
+            return
+
+        # Load Delta table
+        delta_table = DeltaTable(table_uri, storage_options=self.storage_options)
+
+        # Convert Narwhals filter expression to SQL predicate string
+        predicate = self._narwhals_expr_to_sql(filter_expr)
+
+        # Use Delta's native DELETE operation
+        delta_table.delete(predicate=predicate)
+
+    def _narwhals_expr_to_sql(self, expr: nw.Expr) -> str:
+        """Convert Narwhals expression to SQL predicate string.
+
+        This is a simplified converter for common cases.
+        For complex expressions, may need enhancement.
+        """
+        # Get the expression as a string and convert to SQL format
+        expr_str = str(expr)
+        import re
+
+        # Pattern: col(name).__eq__(value)
+        # Handles both string and datetime values
+        eq_match = re.search(r"col\((['\"]?)(\w+)\1\)\.__eq__\((.+?)\)$", expr_str)
+        if eq_match:
+            col_name = eq_match.group(2)
+            value_str = eq_match.group(3)
+
+            # Check if value is a datetime (format: YYYY-MM-DD HH:MM:SS+TZ)
+            if re.match(r"\d{4}-\d{2}-\d{2}", value_str):
+                # Parse datetime value and format for SQL
+                return f"{col_name} = CAST('{value_str}' AS TIMESTAMP)"
+            else:
+                # String value
+                value = value_str.strip("'\"")
+                return f"{col_name} = '{value}'"
+
+        # Pattern: col(name).__ne__(value)
+        ne_match = re.search(r"col\((['\"]?)(\w+)\1\)\.__ne__\((.+?)\)$", expr_str)
+        if ne_match:
+            col_name = ne_match.group(2)
+            value = ne_match.group(3).strip("'\"")
+            return f"{col_name} != '{value}'"
+
+        # Pattern: col(name).__gt__(value)
+        gt_match = re.search(r"col\((['\"]?)(\w+)\1\)\.__gt__\((.+?)\)$", expr_str)
+        if gt_match:
+            col_name = gt_match.group(2)
+            value = gt_match.group(3)
+            return f"{col_name} > {value}"
+
+        # Pattern: col(name).__lt__(value)
+        lt_match = re.search(r"col\((['\"]?)(\w+)\1\)\.__lt__\((.+?)\)$", expr_str)
+        if lt_match:
+            col_name = lt_match.group(2)
+            value = lt_match.group(3)
+            return f"{col_name} < {value}"
+
+        # Pattern: col(name).__ge__(value)
+        ge_match = re.search(r"col\((['\"]?)(\w+)\1\)\.__ge__\((.+?)\)$", expr_str)
+        if ge_match:
+            col_name = ge_match.group(2)
+            value = ge_match.group(3)
+            return f"{col_name} >= {value}"
+
+        # Pattern: col(name).__le__(value)
+        le_match = re.search(r"col\((['\"]?)(\w+)\1\)\.__le__\((.+?)\)$", expr_str)
+        if le_match:
+            col_name = le_match.group(2)
+            value = le_match.group(3)
+            return f"{col_name} <= {value}"
+
+        # If we can't parse it, raise an error
         raise NotImplementedError(
-            f"{self.__class__.__name__} does not yet implement hard delete"
+            f"Cannot convert Narwhals expression to SQL predicate: {expr_str}. "
+            f"DeltaMetadataStore hard delete requires simple comparison expressions."
         )
 
     def read_metadata_in_store(
