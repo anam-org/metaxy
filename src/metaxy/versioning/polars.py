@@ -82,12 +82,12 @@ class PolarsVersioningEngine(VersioningEngine):
         return cast(FrameT, nw.from_native(df_pl))
 
     @staticmethod
-    def build_struct_column(
+    def record_field_versions(
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
-        """Build a struct column from existing columns.
+        """Persist field-level versions using a struct column.
 
         Args:
             df: Narwhals DataFrame backed by Polars
@@ -95,8 +95,7 @@ class PolarsVersioningEngine(VersioningEngine):
             field_columns: Mapping from struct field names to column names
 
         Returns:
-            Narwhals DataFrame with new struct column added, backed by Polars.
-            The source columns remain unchanged.
+            Narwhals DataFrame with the struct column added.
         """
         assert df.implementation == nw.Implementation.POLARS, (
             "Only Polars DataFrames are accepted"
