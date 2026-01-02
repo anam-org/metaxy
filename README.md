@@ -11,7 +11,9 @@
   <a href="https://github.com/anam-org/metaxy/actions/workflows/QA.yml"><img src="https://github.com/anam-org/metaxy/actions/workflows/QA.yml/badge.svg" alt="CI"></a>
   <a href="https://docs.astral.sh/ruff/"><img src="https://img.shields.io/badge/linting-ruff-4644ad" alt="Ruff"></a>
   <a href="https://docs.basedpyright.com"><img src="https://img.shields.io/badge/basedpyright-checked-4644ad" alt="basedpyright - checked"></a>
-  <a href="https://prek.j178.dev"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/docs/assets/badge-v0.json" alt="prek"></a>
+  <a href="https://github.com/j178/prek">
+    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/docs/assets/badge-v0.json" alt="prek">
+  </a>
 </p>
 
 Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks feature versions, (partial) data dependencies, and lineage across complex computation graphs.
