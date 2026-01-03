@@ -232,18 +232,9 @@ class DeltaMetadataStore(MetadataStore):
 
         Works for both local and remote (object store) paths.
         """
-        # for weird reasons deltalake.DeltaTable.is_deltatable() sometimes hangs in multi-threading settings
-        # but a deltalake.DeltaTable can be constructed just fine
-        # so we are relying on DeltaTableNotFoundError to check for existence
-        from deltalake.exceptions import TableNotFoundError as DeltaTableNotFoundError
-
-        try:
-            _ = deltalake.DeltaTable(
-                table_uri, storage_options=self.storage_options, without_files=True
-            )
-        except DeltaTableNotFoundError:
-            return False
-        return True
+        return deltalake.DeltaTable.is_deltatable(
+            table_uri, storage_options=self.storage_options
+        )
 
     # ===== Storage operations =====
 
