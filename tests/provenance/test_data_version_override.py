@@ -636,6 +636,7 @@ def test_data_version_propagation_with_renames(graph: FeatureGraph, snapshot) ->
     prepared = engine.prepare_upstream(
         upstream={FeatureKey(["parent"]): parent_df},
         filters={},
+        hash_algorithm=HashAlgorithm.XXHASH64,
     )
     prepared_df = prepared.collect()
 
