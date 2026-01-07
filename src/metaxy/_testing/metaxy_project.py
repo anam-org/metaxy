@@ -538,6 +538,81 @@ class ExternalMetaxyProject(MetaxyProject):
         # Convert project name to valid Python package name (replace hyphens with underscores)
         return project_name.replace("-", "_")
 
+    def run_command(
+        self,
+        command: str,
+        env: dict[str, str] | None = None,
+        capture_output: bool = True,
+        timeout: float | None = None,
+        check: bool = False,
+    ) -> subprocess.CompletedProcess[str]:
+        """Run an arbitrary shell command in the project context.
+
+        Handles:
+        - PYTHONPATH setup to include project directory
+        - PATH setup to prefer current Python executable's directory
+
+        Args:
+            command: Shell command to execute.
+            env: Optional dict of additional environment variables.
+            capture_output: Whether to capture stdout/stderr (default: True).
+            timeout: Optional timeout in seconds.
+            check: If True, raises CalledProcessError on non-zero exit (default: False).
+
+        Returns:
+            subprocess.CompletedProcess: Result of the command.
+
+        Example:
+            ```py
+            result = project.run_command("python -m example.pipeline")
+            print(result.stdout)
+            ```
+        """
+        # Start with current environment
+        cmd_env = os.environ.copy()
+
+        # Add project directory to PYTHONPATH so modules can be imported
+        pythonpath = str(self.project_dir)
+        if "PYTHONPATH" in cmd_env:
+            pythonpath = f"{pythonpath}{os.pathsep}{cmd_env['PYTHONPATH']}"
+        cmd_env["PYTHONPATH"] = pythonpath
+
+        # Prepend Python executable's directory to PATH so "python" resolves correctly
+        python_dir = str(Path(sys.executable).parent)
+        current_path = cmd_env.get("PATH", "")
+        cmd_env["PATH"] = (
+            f"{python_dir}{os.pathsep}{current_path}" if current_path else python_dir
+        )
+
+        # Apply additional env overrides
+        if env:
+            cmd_env.update(env)
+
+        # Run command
+        return subprocess.run(
+            command,
+            shell=True,
+            cwd=str(self.project_dir),
+            capture_output=capture_output,
+            text=True,
+            env=cmd_env,
+            timeout=timeout,
+            check=check,
+        )
+
+    def push_graph(
+        self, env: dict[str, str] | None = None
+    ) -> subprocess.CompletedProcess[str]:
+        """Push the current graph snapshot.
+
+        Args:
+            env: Optional dict of additional environment variables.
+
+        Returns:
+            subprocess.CompletedProcess: Result of the push command.
+        """
+        return self.run_cli("graph", "push", env=env)
+
 
 class TempMetaxyProject(MetaxyProject):
     """Helper for creating temporary Metaxy projects.
