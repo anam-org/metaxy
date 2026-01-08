@@ -1389,7 +1389,7 @@ class MetadataStore(ABC):
                 and hasattr(feature, "feature_version")
                 and callable(feature.feature_version)
             ):
-                current_feature_version = feature.feature_version()
+                current_feature_version = feature.feature_version()  # ty: ignore[call-top-callable]
                 current_feature_spec_version = feature.feature_spec_version()  # ty: ignore[possibly-missing-attribute]
             else:
                 from metaxy import get_feature_by_key
