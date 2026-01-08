@@ -813,3 +813,249 @@ def test_clickhouse_user_defined_map_column(
 
         # Clean up
         conn.drop_table(table_name)
+
+
+def test_clickhouse_auto_cast_struct_for_map_true(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test auto_cast_struct_for_map=True converts user Struct columns to Map on write.
+
+    When auto_cast_struct_for_map=True (default), DataFrame Struct columns are
+    automatically converted to Map format when the corresponding ClickHouse column
+    is Map type. This allows users to write Polars Struct data directly to Map columns.
+    """
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+
+    # auto_cast_struct_for_map=True is the default
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with user Map column
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                user_tags Map(String, String),
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Create DataFrame with user Struct column (user_tags)
+        samples = pl.DataFrame(
+            {
+                "sample_uid": [1, 2],
+                "user_tags": [
+                    {"env": "prod", "team": "ml"},
+                    {"env": "staging", "team": "data"},
+                ],
+                "metaxy_provenance_by_field": [
+                    {"frames": "hash1", "audio": "hash2"},
+                    {"frames": "hash3", "audio": "hash4"},
+                ],
+            }
+        )
+
+        # Write should succeed - user Struct is auto-converted to Map
+        store.write_metadata(feature_cls, samples)
+
+        # Read back and verify data was written
+        read_result = store.read_metadata_in_store(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
+
+        assert len(result) == 2
+        assert set(result["sample_uid"].to_list()) == {1, 2}
+
+        # Verify user_tags Map data is readable (as List[Struct{key,value}] in Polars)
+        user_tags = result["user_tags"][0]
+        assert isinstance(user_tags, pl.Series), (
+            f"Expected pl.Series, got {type(user_tags)}"
+        )
+        # Convert to dict for easier assertion
+        tags_dict = {row["key"]: row["value"] for row in user_tags.to_list()}
+        assert tags_dict["env"] == "prod"
+        assert tags_dict["team"] == "ml"
+
+        # Clean up
+        conn.drop_table(table_name)
+
+
+def test_clickhouse_auto_cast_struct_for_map_false(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test auto_cast_struct_for_map=False does NOT convert user Struct columns.
+
+    When auto_cast_struct_for_map=False, only metaxy system columns are converted.
+    User Struct columns are not converted, which will cause ClickHouse insert to fail
+    when the target column is Map type (ClickHouse can't insert Struct into Map).
+    """
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+
+    with ClickHouseMetadataStore(
+        clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=False
+    ) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with user Map column
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                user_tags Map(String, String),
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Create DataFrame with user Struct column
+        samples = pl.DataFrame(
+            {
+                "sample_uid": [1],
+                "user_tags": [{"env": "prod", "team": "ml"}],
+                "metaxy_provenance_by_field": [{"frames": "hash1", "audio": "hash2"}],
+            }
+        )
+
+        # Write should FAIL because user Struct won't be converted to Map
+        # ClickHouse will reject the insert with a type mismatch error
+        with pytest.raises(Exception):  # Ibis/ClickHouse error on type mismatch
+            store.write_metadata(feature_cls, samples)
+
+        # Clean up
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+
+def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test auto_cast_struct_for_map=True works with Ibis-backed DataFrames.
+
+    This test verifies that user-defined Struct columns in Ibis DataFrames
+    are correctly converted to Map format when writing to ClickHouse Map columns.
+    """
+    import ibis
+    import narwhals as nw
+
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with user Map column
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                user_tags Map(String, String),
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Create an Ibis memtable with columns to build structs from
+        ibis_table = ibis.memtable(
+            {
+                "sample_uid": [1, 2],
+                "_tag_env": ["prod", "staging"],
+                "_tag_team": ["ml", "data"],
+                "_prov_frames": ["hash1", "hash2"],
+                "_prov_audio": ["hash_a1", "hash_a2"],
+            }
+        )
+
+        # Build struct columns using ibis.struct()
+        ibis_table = ibis_table.mutate(
+            user_tags=ibis.struct(
+                {"env": ibis_table["_tag_env"], "team": ibis_table["_tag_team"]}
+            ),
+            metaxy_provenance_by_field=ibis.struct(
+                {
+                    "frames": ibis_table["_prov_frames"],
+                    "audio": ibis_table["_prov_audio"],
+                }
+            ),
+        )
+        ibis_table = ibis_table.drop(
+            "_tag_env", "_tag_team", "_prov_frames", "_prov_audio"
+        )
+
+        # Wrap in Narwhals
+        nw_df = nw.from_native(ibis_table, eager_only=False)
+
+        # Verify it's Ibis-backed
+        assert nw_df.implementation == nw.Implementation.IBIS
+
+        # Write should succeed - both user and metaxy Struct columns are converted to Map
+        store.write_metadata(feature_cls, nw_df)
+
+        # Read back and verify
+        read_result = store.read_metadata_in_store(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
+
+        assert len(result) == 2
+        assert set(result["sample_uid"].to_list()) == {1, 2}
+
+        # Verify user_tags Map data is readable
+        user_tags = result["user_tags"][0]
+        assert isinstance(user_tags, pl.Series), (
+            f"Expected pl.Series, got {type(user_tags)}"
+        )
+        tags_dict = {row["key"]: row["value"] for row in user_tags.to_list()}
+        assert tags_dict["env"] == "prod"
+        assert tags_dict["team"] == "ml"
+
+        # Verify metaxy columns still work
+        provenance = result["metaxy_provenance_by_field"][0]
+        assert isinstance(provenance, dict), f"Expected dict, got {type(provenance)}"
+        assert provenance["frames"] == "hash1"
+
+        # Clean up
+        conn.drop_table(table_name)
