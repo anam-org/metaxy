@@ -37,8 +37,8 @@ def test_pipeline(tmp_path, snapshot):
     # Override specific values for the test using proper Pydantic environment variables
     base_env.update(
         {
-            # Override the database path for the dev store
-            "METAXY_STORES__DEV__CONFIG__DATABASE": str(test_db),
+            # Override the root path for the dev store (DeltaMetadataStore uses root_path)
+            "METAXY_STORES__DEV__CONFIG__ROOT_PATH": str(test_db),
             # Override the migrations directory
             "METAXY_MIGRATIONS_DIR": str(test_migrations_dir),
             # Ensure HOME is set for DuckDB extension installation

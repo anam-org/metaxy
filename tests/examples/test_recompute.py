@@ -18,10 +18,10 @@ def test_recompute_runbook(tmp_path):
     example_dir = Path("examples/example-recompute")
     test_db = tmp_path / "example_recompute.db"
 
-    # Run the runbook with a temporary test database
+    # Run the runbook with a temporary test directory
     with RunbookRunner.runner_for_project(
         example_dir=example_dir,
-        env_overrides={"METAXY_STORES__DEV__CONFIG__DATABASE": str(test_db)},
+        env_overrides={"METAXY_STORES__DEV__CONFIG__ROOT_PATH": str(test_db)},
     ) as runner:
         runner.run()
 

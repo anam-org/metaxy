@@ -74,7 +74,7 @@
             }
           }
         },
-        "timestamp": "2026-01-08T13:30:46.037249",
+        "timestamp": "2026-01-08T14:51:05.013401",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -83,8 +83,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 4 new audio recordings\nFound 2 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\n  Computing embedding for speaker s2 from 2 audio recordings\nWriting embeddings for 2 speakers\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmpvl6d54pr/example-aggregation/pipeline.py:58: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n/tmp/nix-shell.D1X7TE/tmpvl6d54pr/example-aggregation/pipeline.py:119: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'audio'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmpvl6d54pr/example-aggregation/pipeline.py:119: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'speaker__embedding'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
-        "timestamp": "2026-01-08T13:30:47.533962",
+        "stderr": "",
+        "timestamp": "2026-01-08T14:51:05.529197",
         "scenario_name": "Initial pipeline run",
         "step_name": "run_pipeline"
       },
@@ -93,8 +93,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmpvl6d54pr/example-aggregation/pipeline.py:58: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
-        "timestamp": "2026-01-08T13:30:49.019692",
+        "stderr": "",
+        "timestamp": "2026-01-08T14:51:06.034486",
         "scenario_name": "Idempotent rerun",
         "step_name": null
       },
@@ -168,7 +168,7 @@
             }
           }
         },
-        "timestamp": "2026-01-08T13:30:50.264546",
+        "timestamp": "2026-01-08T14:51:06.630626",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -311,7 +311,7 @@
             }
           }
         },
-        "timestamp": "2026-01-08T13:30:50.270010",
+        "timestamp": "2026-01-08T14:51:06.634907",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -320,8 +320,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 1 changed audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\nWriting embeddings for 1 speakers\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmpvl6d54pr/example-aggregation/pipeline.py:58: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
-        "timestamp": "2026-01-08T13:30:51.814232",
+        "stderr": "",
+        "timestamp": "2026-01-08T14:51:07.162308",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -395,7 +395,7 @@
             }
           }
         },
-        "timestamp": "2026-01-08T13:30:53.083238",
+        "timestamp": "2026-01-08T14:51:07.761984",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -538,7 +538,7 @@
             }
           }
         },
-        "timestamp": "2026-01-08T13:30:53.087519",
+        "timestamp": "2026-01-08T14:51:07.766245",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -547,8 +547,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 1 new audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 3 audio recordings\nWriting embeddings for 1 speakers\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmpvl6d54pr/example-aggregation/pipeline.py:65: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
-        "timestamp": "2026-01-08T13:30:54.621399",
+        "stderr": "",
+        "timestamp": "2026-01-08T14:51:08.296224",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -557,8 +557,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmpvl6d54pr/example-aggregation/pipeline.py:65: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
-        "timestamp": "2026-01-08T13:30:56.075191",
+        "stderr": "",
+        "timestamp": "2026-01-08T14:51:08.800694",
         "scenario_name": "Final idempotent check",
         "step_name": null
       }
