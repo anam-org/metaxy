@@ -5,6 +5,7 @@ It takes care of some ClickHouse-specific logic such as `nw.Struct` type convers
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
+from pydantic import Field
 
 if TYPE_CHECKING:
     import ibis
@@ -38,7 +39,10 @@ class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
         ```
     """
 
-    pass  # All fields inherited from IbisMetadataStoreConfig
+    auto_cast_struct_for_map: bool = Field(
+        default=True,
+        description="Auto-convert DataFrame Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted.",
+    )
 
 
 class ClickHouseMetadataStore(IbisMetadataStore):
@@ -69,6 +73,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         *,
         connection_params: dict[str, Any] | None = None,
         fallback_stores: list["MetadataStore"] | None = None,
+        auto_cast_struct_for_map: bool = True,
         **kwargs: Any,
     ):
         """
@@ -100,6 +105,8 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
             fallback_stores: Ordered list of read-only fallback stores.
 
+            auto_cast_struct_for_map: whether to auto-convert DataFrame user-defined Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted.
+
             **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]`
 
         Raises:
@@ -114,6 +121,9 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         # Cache for ClickHouse table schemas (cleared on close)
         self._ch_schema_cache: dict[str, IbisSchema] = {}
+
+        # Store auto_cast_struct_for_map setting
+        self.auto_cast_struct_for_map = auto_cast_struct_for_map
 
         # Initialize Ibis store with ClickHouse backend
         super().__init__(
@@ -321,8 +331,11 @@ class ClickHouseMetadataStore(IbisMetadataStore):
     def _transform_struct_to_map(self, df: Frame, ch_schema: "IbisSchema") -> Frame:
         """Transform Struct columns to Map-compatible format for ClickHouse.
 
-        Only transforms known metaxy struct columns (metaxy_provenance_by_field,
-        metaxy_data_version_by_field) when the ClickHouse table has Map columns.
+        When `auto_cast_struct_for_map=True` (default), transforms ALL DataFrame Struct
+        columns to Map format when the corresponding ClickHouse column is Map type.
+
+        When `auto_cast_struct_for_map=False`, only transforms metaxy system columns
+        (metaxy_provenance_by_field, metaxy_data_version_by_field).
 
         For Polars: Converts Struct to List[Struct{key, value}] which Ibis/ClickHouse
         recognizes as array<struct<key, value>> and can insert into Map(K,V) columns.
@@ -343,18 +356,25 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             METAXY_PROVENANCE_BY_FIELD,
         )
 
-        # Only handle known metaxy struct columns
+        # Known metaxy struct columns (always transformed when auto_cast is False)
         metaxy_struct_columns = {
             METAXY_PROVENANCE_BY_FIELD,
             METAXY_DATA_VERSION_BY_FIELD,
         }
 
-        # Find Map columns in ClickHouse schema that are metaxy struct columns
-        map_columns = {
-            name
-            for name, dtype in ch_schema.items()
-            if isinstance(dtype, dt.Map) and name in metaxy_struct_columns
-        }
+        # Find Map columns in ClickHouse schema
+        if self.auto_cast_struct_for_map:
+            # Transform ALL Struct columns that have corresponding Map columns in CH
+            map_columns = {
+                name for name, dtype in ch_schema.items() if isinstance(dtype, dt.Map)
+            }
+        else:
+            # Only transform metaxy system columns
+            map_columns = {
+                name
+                for name, dtype in ch_schema.items()
+                if isinstance(dtype, dt.Map) and name in metaxy_struct_columns
+            }
 
         if not map_columns:
             return df
