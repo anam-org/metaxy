@@ -16,10 +16,18 @@
 
 Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks lineage and versioning across complex computational graphs for multi-modal datasets.
 
-| **Subject**  | **Description**                                                                                                                                                                                                          |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Data**     | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform.                                                           |
-| **Metadata** | Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes. |
+Metaxy manages **metadata** while **data** typically lives elsewhere:
+
+```
+┌─────────────────────────────────┐          ┌─────────────────────────┐
+│      Metadata (Metaxy)          │          │   Data (e.g., S3)       │
+├──────┬──────────┬──────┬────────┤          │                         │
+│  ID  │   path   │ size │version │          │  📦 s3://my-bucket/     │
+├──────┼──────────┼──────┼────────┤          │                         │
+│ img1 │ s3://... │ 2.1M │a3fdsf  │ ────────>│    ├─ img1.jpg          │
+│ img2 │ s3://... │ 1.8M │b7e123  │ ────────>│    ├─ img2.jpg          │
+└──────┴──────────┴──────┴────────┘          └─────────────────────────┘
+```
 
 The feature that makes Metaxy stand out is the ability to track **partial data dependencies** that are so common in multi-modal pipelines and skip downstream updates when they are not needed.
 
