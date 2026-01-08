@@ -1,7 +1,7 @@
 [project]
-name = "example-recompute"
+name = "example-basic"
 version = "0.1.0"
-description = "Add your description here"
+description = "Basic Metaxy example demonstrating incremental recomputation"
 readme = "README.md"
 authors = [
   { name = "danielgafni", email = "danielgafni16@gmail.com" },

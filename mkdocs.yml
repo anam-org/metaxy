@@ -247,6 +247,7 @@ nav:
         - API: integrations/plugins/sqlalchemy/api.md
   - Examples:
     - examples/index.md
+    - Basic: examples/basic.md
     - Aggregation: examples/aggregation.md
     - Expansion: examples/expansion.md
   - Reference:

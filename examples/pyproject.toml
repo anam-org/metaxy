@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "example-recompute",
+  "example-basic",
   "example-overview",
   "example-migration",
   "example-ducklake",
@@ -18,7 +18,7 @@ dependencies = [
 metaxy = { workspace = true }
 
 example-overview = { workspace = true }
-example-recompute = { workspace = true }
+example-basic = { workspace = true }
 example-migration = { workspace = true }
 example-ducklake = { workspace = true }
 example-one-to-many = { workspace = true }
