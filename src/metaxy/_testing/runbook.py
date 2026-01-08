@@ -15,7 +15,6 @@ import tempfile
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from contextlib import ExitStack, contextmanager
-from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -29,34 +28,61 @@ from pydantic import Field as PydanticField
 # ============================================================================
 
 
-@dataclass(frozen=True)
-class GraphPushed:
+class GraphPushed(BaseModel):
     """Event recorded when a graph snapshot is pushed."""
 
+    model_config = ConfigDict(frozen=True)
+
+    type: Literal["graph_pushed"] = "graph_pushed"
     snapshot_version: str
     timestamp: datetime
     scenario_name: str | None = None
+    step_name: str | None = None
 
 
-@dataclass(frozen=True)
-class PatchApplied:
+class PatchApplied(BaseModel):
     """Event recorded when a patch is applied."""
 
+    model_config = ConfigDict(frozen=True)
+
+    type: Literal["patch_applied"] = "patch_applied"
     patch_path: str
     before_snapshot: str | None
     after_snapshot: str | None
     timestamp: datetime
     scenario_name: str | None = None
+    step_name: str | None = None
 
 
-RunbookEvent = GraphPushed | PatchApplied
+class CommandExecuted(BaseModel):
+    """Event recorded when a command is executed."""
+
+    model_config = ConfigDict(frozen=True)
+
+    type: Literal["command_executed"] = "command_executed"
+    command: str
+    returncode: int
+    stdout: str
+    stderr: str
+    timestamp: datetime
+    scenario_name: str | None = None
+    step_name: str | None = None
 
 
-@dataclass(frozen=True)
-class RunbookExecutionState:
+RunbookEvent = GraphPushed | PatchApplied | CommandExecuted
+
+
+class RunbookExecutionState(BaseModel):
     """Captured state from a runbook execution."""
 
-    events: list[RunbookEvent]
+    model_config = ConfigDict(frozen=True)
+
+    events: list[
+        Annotated[
+            GraphPushed | PatchApplied | CommandExecuted,
+            PydanticField(discriminator="type"),
+        ]
+    ]
 
     @property
     def patch_snapshots(self) -> dict[str, tuple[str | None, str | None]]:
@@ -74,6 +100,25 @@ class RunbookExecutionState:
             if isinstance(event, GraphPushed):
                 return event.snapshot_version
         return None
+
+
+class SavedRunbookResult(BaseModel):
+    """Complete saved result from a runbook execution.
+
+    This is the top-level model for .example.result.json files.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    runbook_name: str
+    package_name: str
+    description: str | None = None
+    execution_state: RunbookExecutionState
+
+    @classmethod
+    def from_json_file(cls, path: Path) -> SavedRunbookResult:
+        """Load saved result from a JSON file."""
+        return cls.model_validate_json(path.read_text())
 
 
 # ============================================================================
@@ -94,6 +139,7 @@ class BaseStep(BaseModel, ABC):
 
     model_config = ConfigDict(frozen=True)
 
+    name: str | None = None
     description: str | None = None
 
     @abstractmethod
@@ -194,6 +240,20 @@ class Runbook(BaseModel):
             data = self.model_dump(mode="json")
             yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
 
+    def save_execution_state(self, path: Path) -> None:
+        """Save raw execution state to JSON file."""
+        if self._execution_state is None:
+            raise RuntimeError("No execution state available. Run the runbook first.")
+
+        result = SavedRunbookResult(
+            runbook_name=self.name,
+            package_name=self.package_name,
+            description=self.description,
+            execution_state=self._execution_state,
+        )
+
+        path.write_text(result.model_dump_json(indent=2))
+
 
 # ============================================================================
 # Runbook Runner
@@ -226,6 +286,7 @@ class RunbookRunner:
         self._last_pushed_snapshot: str | None = None
         self._events: list[RunbookEvent] = []
         self._current_scenario: str | None = None
+        self._current_step_name: str | None = None
         self._patch_stack = ExitStack()
 
         from metaxy._testing.metaxy_project import ExternalMetaxyProject
@@ -280,6 +341,7 @@ class RunbookRunner:
                 GraphPushed(
                     timestamp=datetime.now(),
                     scenario_name=self._current_scenario,
+                    step_name=self._current_step_name,
                     snapshot_version=snapshot_version,
                 )
             )
@@ -313,6 +375,19 @@ class RunbookRunner:
             stderr=result.stderr if capture_output else "",
         )
 
+        # Record the CommandExecuted event
+        self._events.append(
+            CommandExecuted(
+                timestamp=datetime.now(),
+                scenario_name=self._current_scenario,
+                step_name=self._current_step_name,
+                command=command,
+                returncode=self.last_result.returncode,
+                stdout=self.last_result.stdout,
+                stderr=self.last_result.stderr,
+            )
+        )
+
         return self.last_result
 
     @contextmanager
@@ -322,17 +397,6 @@ class RunbookRunner:
         """Apply a patch file as a context manager.
 
         The patch is reverted when exiting the context.
-
-        Args:
-            patch_path: Path to patch file relative to example directory.
-            push_graph: Whether to push graph snapshot after applying.
-
-        Yields:
-            None
-
-        Example:
-            with runner.apply_patch("patches/01_update.patch"):
-                runner.run_command("python pipeline.py")
         """
         patch_path_abs = self.example_dir / patch_path
 
@@ -364,6 +428,7 @@ class RunbookRunner:
             PatchApplied(
                 timestamp=datetime.now(),
                 scenario_name=self._current_scenario,
+                step_name=self._current_step_name,
                 patch_path=patch_path,
                 before_snapshot=before_snapshot,
                 after_snapshot=after_snapshot,
@@ -382,6 +447,8 @@ class RunbookRunner:
 
     def _run_step(self, step: BaseStep) -> None:
         """Execute a single step."""
+        self._current_step_name = step.name
+
         if isinstance(step, RunCommandStep):
             self.run_command(
                 step.command,
