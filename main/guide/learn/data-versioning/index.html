@@ -2721,6 +2721,8 @@
       
         
       
+        
+      
     
     
     
@@ -2780,14 +2782,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/one-to-many/" class="md-nav__link">
+      <a href="../../../examples/aggregation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    One To Many
+    Aggregation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/expansion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Expansion
   
 
     
@@ -3912,19 +3942,16 @@ and field names matching upstream fields automatically create field-level depend
 title: Feature Graph
 ---
 flowchart TB
-    %% Snapshot version: 8468950d
+    %% Snapshot version: none
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-        example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;small&gt;&lt;font color="#666"&gt;Project: example-overview&lt;/font&gt;&lt;/small&gt;&lt;br/&gt;bc9ca835&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- 
-audio (22742381)&lt;br/&gt;- frames (794116a9)&lt;/div&gt;"]
-        example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;small&gt;&lt;font color="#666"&gt;Project: example-overview&lt;/font&gt;&lt;/small&gt;&lt;br/&gt;3ac04df8&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- audio
-(76c8bdc9)&lt;br/&gt;- frames (abc79017)&lt;/div&gt;"]
-        example_face_detection["&lt;div style="text-align:left"&gt;&lt;b&gt;example/face_detection&lt;/b&gt;&lt;br/&gt;&lt;small&gt;&lt;font color="#666"&gt;Project: example-overview&lt;/font&gt;&lt;/small&gt;&lt;br/&gt;1ac83b07&lt;br/&gt;&lt;font 
-color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (2d75f0bd)&lt;/div&gt;"]
-        example_stt["&lt;div style="text-align:left"&gt;&lt;b&gt;example/stt&lt;/b&gt;&lt;br/&gt;&lt;small&gt;&lt;font color="#666"&gt;Project: example-overview&lt;/font&gt;&lt;/small&gt;&lt;br/&gt;c83a754a&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- 
-transcription (ac412b3c)&lt;/div&gt;"]
-        example_video --&gt; example_crop
-        example_crop --&gt; example_face_detection
-        example_video --&gt; example_stt</code></pre>
+    example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;bc9ca835&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- audio (22742381)&lt;br/&gt;- frames (794116a9)&lt;/div&gt;"]
+    example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;3ac04df8&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- audio (76c8bdc9)&lt;br/&gt;- frames (abc79017)&lt;/div&gt;"]
+    example_face_detection["&lt;div style="text-align:left"&gt;&lt;b&gt;example/face_detection&lt;/b&gt;&lt;br/&gt;1ac83b07&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (2d75f0bd)&lt;/div&gt;"]
+    example_stt["&lt;div style="text-align:left"&gt;&lt;b&gt;example/stt&lt;/b&gt;&lt;br/&gt;c83a754a&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- transcription (ac412b3c)&lt;/div&gt;"]
+    example_video --&gt; example_crop
+    example_crop --&gt; example_face_detection
+    example_video --&gt; example_stt
+</code></pre>
 <h2 id="tracking-definitions-changes">Tracking Definitions Changes<a class="headerlink" href="#tracking-definitions-changes" title="Permanent link">&para;</a></h2>
 <p class="annotate">Imagine the <code>audio</code> field of the <code>Video</code> feature changes (1):</p>
 <ol>
