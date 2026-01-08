@@ -22,7 +22,7 @@ def test_list_features_basic(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("list", "features")
+        result = metaxy_project.run_cli(["list", "features"])
 
         assert result.returncode == 0
         # Check for project grouping and table output
@@ -50,7 +50,7 @@ def test_list_features_json_format(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("list", "features", "--format", "json")
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -106,7 +106,7 @@ def test_list_features_multiple_features(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("list", "features", "--format", "json")
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -170,7 +170,7 @@ def test_list_features_with_dependencies(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli("list", "features", "--format", "json")
+            result = metaxy_project.run_cli(["list", "features", "--format", "json"])
 
             assert result.returncode == 0
             data = json.loads(result.stdout)
@@ -242,7 +242,7 @@ def test_list_features_verbose_mode(metaxy_project: TempMetaxyProject):
         with metaxy_project.with_features(dependent_features):
             # Test verbose with JSON format
             result = metaxy_project.run_cli(
-                "list", "features", "--verbose", "--format", "json"
+                ["list", "features", "--verbose", "--format", "json"]
             )
 
             assert result.returncode == 0
@@ -314,7 +314,7 @@ def test_list_features_verbose_plain_output(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli("list", "features", "--verbose")
+            result = metaxy_project.run_cli(["list", "features", "--verbose"])
 
             assert result.returncode == 0
             # Check for main table
@@ -341,7 +341,7 @@ def test_list_features_empty_project(metaxy_project: TempMetaxyProject):
         pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("list", "features")
+        result = metaxy_project.run_cli(["list", "features"])
 
         assert result.returncode == 0
         assert "No features found" in result.stdout
@@ -355,7 +355,7 @@ def test_list_features_empty_project_json(metaxy_project: TempMetaxyProject):
         pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("list", "features", "--format", "json")
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -397,7 +397,7 @@ def test_list_features_shows_root_and_dependent_icons(
 
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli("list", "features")
+            result = metaxy_project.run_cli(["list", "features"])
 
             assert result.returncode == 0
             # Check both features are listed
@@ -426,13 +426,13 @@ def test_list_features_short_flag(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Test -f json
-        result = metaxy_project.run_cli("list", "features", "-f", "json")
+        result = metaxy_project.run_cli(["list", "features", "-f", "json"])
         assert result.returncode == 0
         data = json.loads(result.stdout)
         assert data["feature_count"] == 1
 
         # Test -v
-        result = metaxy_project.run_cli("list", "features", "-v")
+        result = metaxy_project.run_cli(["list", "features", "-v"])
         assert result.returncode == 0
         assert "Dependencies" in result.stdout  # Verbose column
 
@@ -455,7 +455,7 @@ def test_list_features_json_includes_version(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Get JSON output to see full version
-        result_json = metaxy_project.run_cli("list", "features", "--format", "json")
+        result_json = metaxy_project.run_cli(["list", "features", "--format", "json"])
         data = json.loads(result_json.stdout)
         full_version = data["features"][0]["version"]
 
@@ -516,7 +516,7 @@ def test_list_features_verbose_auto_field_mapping(metaxy_project: TempMetaxyProj
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
             result = metaxy_project.run_cli(
-                "list", "features", "--verbose", "--format", "json"
+                ["list", "features", "--verbose", "--format", "json"]
             )
 
             assert result.returncode == 0
@@ -557,7 +557,7 @@ def test_list_features_multiple_fields(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("list", "features", "--format", "json")
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -588,7 +588,7 @@ def test_list_features_long_names_not_truncated(metaxy_project: TempMetaxyProjec
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("list", "features")
+        result = metaxy_project.run_cli(["list", "features"])
 
         assert result.returncode == 0
         # Full feature key should be present (not truncated with ...)

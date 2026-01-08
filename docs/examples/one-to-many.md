@@ -1,5 +1,7 @@
 # One-to-Many Expansion
 
+## Overview
+
 ::: metaxy-example source-link
 example: one-to-many
 :::
@@ -120,12 +122,14 @@ Nothing needs recomputation - the system correctly detects no changes.
 
 Now let's bump the code version on the `audio` field of `Video` feature:
 
-::: metaxy-example patch
+::: metaxy-example patch-with-diff
 example: one-to-many
 path: patches/01_update_video_code_version.patch
+scenario: "Code change - audio field only"
+step: "update_audio_version"
 :::
 
-This represents updating the audio processing algorithm, and therefore the audio data.
+This represents updating the audio processing algorithm, and therefore the audio data, while frame data is kept the same.
 
 ### Step 4: Observe Field-Level Tracking
 

@@ -58,8 +58,13 @@ class MermaidRenderer(BaseRenderer):
                         if source_node:
                             links.append(Link(origin=source_node, end=target_node))
 
-        # Create flowchart
-        title = "Feature Graph"
+        # Create flowchart with appropriate title
+        if self.config.title:
+            title = self.config.title
+        elif self._is_diff_mode(filtered_graph):
+            title = "Feature Graph Changes"
+        else:
+            title = "Feature Graph"
 
         chart = FlowChart(
             title=title,
@@ -196,6 +201,11 @@ class MermaidRenderer(BaseRenderer):
     def _build_feature_label_with_fields(self, node: GraphNode) -> str:
         """Build label for feature node with fields displayed inside.
 
+        Uses colored version diffs for changed items following the reference style:
+        - Changed versions: <font color="red">old</font> → <font color="green">new</font>
+        - Changed field names highlighted in orange
+        - No [~] badges
+
         Args:
             node: GraphNode
 
@@ -214,29 +224,15 @@ class MermaidRenderer(BaseRenderer):
                 f'<small><font color="#666">Project: {node.project}</font></small>'
             )
 
-        # Add status badge for diff mode
-        if node.status != NodeStatus.NORMAL:
-            badge = self._get_status_badge_html(node.status)
-            lines.append(badge)
-
-        # Feature version info
+        # Feature version info with colored diffs
         if self.config.show_feature_versions or self.config.show_code_versions:
-            version_parts = []
-
-            if self.config.show_feature_versions:
-                if node.status == NodeStatus.CHANGED and node.old_version is not None:
-                    # Show version transition
-                    old_v = self._format_hash(node.old_version)
-                    new_v = self._format_hash(node.version)
-                    version_parts.append(f"v: {old_v} → {new_v}")
-                else:
-                    version = self._format_hash(node.version)
-                    version_parts.append(f"v: {version}")
-
-            if self.config.show_code_versions and node.code_version is not None:
-                version_parts.append(f"cv: {node.code_version}")
-
-            lines.append(f"<small>({', '.join(version_parts)})</small>")
+            version_line = self._build_version_line(
+                node.version,
+                node.old_version if node.status == NodeStatus.CHANGED else None,
+                node.code_version if self.config.show_code_versions else None,
+            )
+            if version_line:
+                lines.append(version_line)
 
         # Fields (if configured)
         if self.config.show_fields and node.fields:
@@ -250,8 +246,50 @@ class MermaidRenderer(BaseRenderer):
         content = "<br/>".join(lines)
         return f'<div style="text-align:left">{content}</div>'
 
+    def _build_version_line(
+        self,
+        version: str | None,
+        old_version: str | None,
+        code_version: str | None,
+    ) -> str:
+        """Build version display line with colored diffs.
+
+        Args:
+            version: Current version hash
+            old_version: Previous version hash (for diffs)
+            code_version: Code version string
+
+        Returns:
+            Formatted version line
+        """
+        parts = []
+
+        if self.config.show_feature_versions and version:
+            if old_version is not None:
+                # Show colored version transition: red → green
+                old_v = self._format_hash(old_version)
+                new_v = self._format_hash(version)
+                parts.append(
+                    f'<font color="{self.theme.old_version_color}">{old_v}</font> → '
+                    f'<font color="{self.theme.new_version_color}">{new_v}</font>'
+                )
+            else:
+                parts.append(self._format_hash(version))
+
+        if code_version is not None:
+            parts.append(f"cv: {code_version}")
+
+        if not parts:
+            return ""
+
+        return ", ".join(parts)
+
     def _build_field_line(self, field_node) -> str:
         """Build single line for field display.
+
+        Uses colored diffs for changed fields:
+        - Changed field name in orange
+        - Version transition: red → green
 
         Args:
             field_node: FieldNode
@@ -259,12 +297,25 @@ class MermaidRenderer(BaseRenderer):
         Returns:
             Formatted field line
         """
-        parts = [f"• {self._format_field_key(field_node.key)}"]
+        field_name = self._format_field_key(field_node.key)
 
-        # Add status badge
-        if field_node.status != NodeStatus.NORMAL:
-            badge = self._get_status_badge_text(field_node.status)
-            parts[0] = f"{parts[0]} {badge}"
+        # Highlight changed field names in orange
+        if field_node.status == NodeStatus.CHANGED:
+            field_display = (
+                f'<font color="{self.theme.changed_color}">{field_name}</font>'
+            )
+        elif field_node.status == NodeStatus.ADDED:
+            field_display = (
+                f'<font color="{self.theme.added_color}">{field_name}</font>'
+            )
+        elif field_node.status == NodeStatus.REMOVED:
+            field_display = (
+                f'<font color="{self.theme.removed_color}">{field_name}</font>'
+            )
+        else:
+            field_display = field_name
+
+        parts = [f"- {field_display}"]
 
         if self.config.show_field_versions or self.config.show_code_versions:
             version_parts = []
@@ -274,53 +325,21 @@ class MermaidRenderer(BaseRenderer):
                     field_node.status == NodeStatus.CHANGED
                     and field_node.old_version is not None
                 ):
-                    # Show version transition
+                    # Show colored version transition
                     old_v = self._format_hash(field_node.old_version)
                     new_v = self._format_hash(field_node.version)
-                    version_parts.append(f"v: {old_v} → {new_v}")
+                    version_parts.append(
+                        f'<font color="{self.theme.old_version_color}">{old_v}</font> → '
+                        f'<font color="{self.theme.new_version_color}">{new_v}</font>'
+                    )
                 else:
                     version = self._format_hash(field_node.version)
-                    version_parts.append(f"v: {version}")
+                    version_parts.append(version)
 
             if self.config.show_code_versions and field_node.code_version is not None:
                 version_parts.append(f"cv: {field_node.code_version}")
 
-            parts.append(f"<small>({', '.join(version_parts)})</small>")
+            if version_parts:
+                parts.append(f"({', '.join(version_parts)})")
 
         return " ".join(parts)
-
-    def _get_status_badge_html(self, status: NodeStatus) -> str:
-        """Get HTML status badge.
-
-        Args:
-            status: Node status
-
-        Returns:
-            HTML badge string
-        """
-        if status == NodeStatus.ADDED:
-            return '<small><font color="green">[+]</font></small>'
-        elif status == NodeStatus.REMOVED:
-            return '<small><font color="red">[-]</font></small>'
-        elif status == NodeStatus.CHANGED:
-            return '<small><font color="orange">[~]</font></small>'
-        else:
-            return ""
-
-    def _get_status_badge_text(self, status: NodeStatus) -> str:
-        """Get text-only status badge.
-
-        Args:
-            status: Node status
-
-        Returns:
-            Text badge string
-        """
-        if status == NodeStatus.ADDED:
-            return "[+]"
-        elif status == NodeStatus.REMOVED:
-            return "[-]"
-        elif status == NodeStatus.CHANGED:
-            return "[~]"
-        else:
-            return ""

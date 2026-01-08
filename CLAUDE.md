@@ -36,6 +36,8 @@ uv run pytest    # Run tests (add -k "pattern" to filter)
 
 **Snapshot tests**: If tests fail due to snapshot mismatches after intentional changes, update with `uv run pytest --snapshot-update path/to/test.py`.
 
+**Error handling**: Fail fast with clean errors. Do not catch exceptions to handle them gracefully. Let errors propagate with clear messages. Avoid try/except blocks unless re-raising with additional context.
+
 ## When to Consult Docs
 
 - **Architecture decisions or unfamiliar patterns**: See `docs/guide/` for concepts like feature graphs, migrations, and metadata stores

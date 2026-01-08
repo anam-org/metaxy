@@ -20,6 +20,44 @@ from metaxy.versioning.types import HashAlgorithm
 
 DEFAULT_ID_COLUMNS = ["sample_uid"]
 
+
+@contextmanager
+def env_override(overrides: dict[str, str | None]):
+    """Context manager to temporarily override environment variables.
+
+    Args:
+        overrides: Dict mapping env var names to values. None values will unset the var.
+
+    Yields:
+        None
+
+    Example:
+        ```py
+        with env_override({"FOO": "bar", "BAZ": None}):
+            # FOO is set to "bar", BAZ is unset
+            do_something()
+        # Original values restored
+        ```
+    """
+    old_values = {}
+    for key in overrides:
+        old_values[key] = os.environ.get(key)
+
+    try:
+        for key, value in overrides.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        yield
+    finally:
+        for key, old_value in old_values.items():
+            if old_value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = old_value
+
+
 __all__ = [
     "TempFeatureModule",
     "assert_all_results_equal",
@@ -28,6 +66,7 @@ __all__ = [
     "ExternalMetaxyProject",
     "TempMetaxyProject",  # Backward compatibility alias
     "DEFAULT_ID_COLUMNS",
+    "env_override",
 ]
 
 
@@ -257,12 +296,17 @@ class MetaxyProject:
         self.project_dir = Path(project_dir)
 
     def run_cli(
-        self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs
+        self,
+        args: list[str],
+        *,
+        check: bool = True,
+        env: dict[str, str] | None = None,
+        **kwargs,
     ):
         """Run CLI command with proper environment setup.
 
         Args:
-            *args: CLI command arguments (e.g., "graph", "push")
+            args: CLI command arguments (e.g., ["graph", "push"])
             check: If True (default), raises CalledProcessError on non-zero exit
             env: Optional dict of additional environment variables
             **kwargs: Additional arguments to pass to subprocess.run()
@@ -275,7 +319,7 @@ class MetaxyProject:
 
         Example:
             ```py
-            result = project.run_cli("graph", "history", "--limit", "5")
+            result = project.run_cli(["graph", "history", "--limit", "5"])
             print(result.stdout)
             ```
         """
@@ -311,7 +355,7 @@ class MetaxyProject:
             )
         except subprocess.CalledProcessError as e:
             # Re-raise with stderr output for better debugging
-            error_msg = f"CLI command failed: {' '.join(args)}\n"
+            error_msg = f"CLI command failed: {' '.join(str(a) for a in args)}\n"
             error_msg += f"Exit code: {e.returncode}\n"
             if e.stdout:
                 error_msg += f"STDOUT:\n{e.stdout}\n"
@@ -341,7 +385,7 @@ class ExternalMetaxyProject(MetaxyProject):
     Example:
         ```py
         project = ExternalMetaxyProject(Path("examples/example-migration"))
-        result = project.run_cli("graph", "push", env={"STAGE": "1"})
+        result = project.run_cli(["graph", "push"], env={"STAGE": "1"})
         assert result.returncode == 0
         print(project.package_name)  # "example_migration"
         ```
@@ -623,7 +667,72 @@ class ExternalMetaxyProject(MetaxyProject):
         Returns:
             subprocess.CompletedProcess: Result of the push command.
         """
-        return self.run_cli("graph", "push", env=env)
+        return self.run_cli(["graph", "push"], env=env)
+
+    @property
+    def graph(self) -> FeatureGraph:
+        """Load the feature graph from entrypoints.
+
+        Forces a fresh reload of all entrypoint modules to capture any source changes.
+
+        Returns:
+            FeatureGraph with all features loaded from entrypoints.
+        """
+        # Build paths to add to sys.path
+        paths_to_add: list[str] = []
+        src_dir = self.project_dir / "src"
+        if src_dir.is_dir():
+            paths_to_add.append(str(src_dir))
+        paths_to_add.append(str(self.project_dir))
+
+        # Track which paths we actually add (weren't already there)
+        added_paths: list[str] = []
+        for path in paths_to_add:
+            if path not in sys.path:
+                sys.path.insert(0, path)
+                added_paths.append(path)
+
+        try:
+            graph = FeatureGraph()
+            with graph.use():
+                for entrypoint in self.config.entrypoints:
+                    # Force reload to pick up any source file changes
+                    # First, invalidate any cached modules in the package hierarchy
+                    self._invalidate_module_cache(entrypoint)
+                    importlib.import_module(entrypoint)
+            return graph
+        finally:
+            # Clean up sys.path
+            for path in added_paths:
+                if path in sys.path:
+                    sys.path.remove(path)
+
+    def _invalidate_module_cache(self, entrypoint: str) -> None:
+        """Remove entrypoint and its parent/sibling modules from sys.modules.
+
+        This ensures importlib.import_module() loads fresh code from disk
+        rather than returning cached modules with stale code.
+        """
+        # Remove the entrypoint itself and any parent packages
+        parts = entrypoint.split(".")
+        modules_to_remove = []
+        for i in range(len(parts)):
+            module_name = ".".join(parts[: i + 1])
+            if module_name in sys.modules:
+                modules_to_remove.append(module_name)
+
+        # Get the package root (first component)
+        package_root = parts[0]
+
+        # Remove ALL modules in the package hierarchy
+        # This ensures sibling modules (like example_overview.features) are also invalidated
+        for mod_name in list(sys.modules.keys()):
+            if mod_name == package_root or mod_name.startswith(package_root + "."):
+                if mod_name not in modules_to_remove:
+                    modules_to_remove.append(mod_name)
+
+        for mod_name in modules_to_remove:
+            del sys.modules[mod_name]
 
 
 class TempMetaxyProject(MetaxyProject):
@@ -718,7 +827,7 @@ database = "{staging_db_path}"
 
             with project.with_features(my_features) as module:
                 print(module)  # "features_0"
-                result = project.run_cli("graph", "push")
+                result = project.run_cli(["graph", "push"])
             ```
         """
 
@@ -762,15 +871,20 @@ database = "{staging_db_path}"
         return _context()
 
     def run_cli(
-        self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs
-    ):
+        self,
+        args: list[str],
+        *,
+        check: bool = True,
+        env: dict[str, str] | None = None,
+        **kwargs,
+    ) -> subprocess.CompletedProcess[str]:
         """Run CLI command with current feature modules loaded.
 
         Automatically sets METAXY_ENTRYPOINT_0, METAXY_ENTRYPOINT_1, etc.
         based on active with_features() context managers.
 
         Args:
-            *args: CLI command arguments (e.g., "graph", "push")
+            args: CLI command arguments (e.g., ["graph", "push"])
             check: If True (default), raises CalledProcessError on non-zero exit
             env: Optional dict of additional environment variables
             **kwargs: Additional arguments to pass to subprocess.run()
@@ -783,7 +897,7 @@ database = "{staging_db_path}"
 
         Example:
             ```py
-            result = project.run_cli("graph", "history", "--limit", "5")
+            result = project.run_cli(["graph", "history", "--limit", "5"])
             print(result.stdout)
             ```
         """
@@ -818,7 +932,7 @@ database = "{staging_db_path}"
             )
         except subprocess.CalledProcessError as e:
             # Re-raise with stderr output for better debugging
-            error_msg = f"CLI command failed: {' '.join(args)}\n"
+            error_msg = f"CLI command failed: {' '.join(str(a) for a in args)}\n"
             error_msg += f"Exit code: {e.returncode}\n"
             if e.stdout:
                 error_msg += f"STDOUT:\n{e.stdout}\n"

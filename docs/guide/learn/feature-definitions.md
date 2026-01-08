@@ -6,7 +6,13 @@ It has been inspired by [Dagster](https://dagster.io/)'s Software-Defined Assets
 !!! abstract
 
     Features represent tabular **metadata**, typically containing references to external multi-modal **data** such as files, images, or videos.
-    But it can be just pure **metadata** as well.
+
+    | **Subject** | **Description** |
+    |---------|-------------|
+    | **Data** | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform. |
+    | **Metadata** | Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes. |
+
+    As an edge case, Metaxy features may also be pure **metadata** without references to external **data**.
 
 I will highlight **data** and **metadata** with bold so it really stands out.
 

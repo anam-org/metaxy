@@ -30,7 +30,7 @@ def test_cli_loads_dotenv_file(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("list", "features", "--format", "json")
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -67,10 +67,7 @@ def test_cli_env_vars_override_dotenv(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         # Pass env var explicitly - should override .env
         result = metaxy_project.run_cli(
-            "list",
-            "features",
-            "--format",
-            "json",
+            ["list", "features", "--format", "json"],
             env={"METAXY_TEST_VAR": "from_explicit_env"},
         )
 
@@ -103,7 +100,7 @@ def test_cli_works_without_dotenv_file(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("list", "features", "--format", "json")
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
 
         assert result.returncode == 0
         data = json.loads(result.stdout)

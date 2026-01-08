@@ -60,8 +60,7 @@ def test_pipeline(tmp_path, snapshot):
 
     # Step 1: metaxy graph push with STAGE=1
     result = project.run_cli(
-        "graph",
-        "push",
+        ["graph", "push"],
         env={**base_env, "STAGE": "1"},
     )
     assert result.returncode == 0, f"Push v1 failed: {result.stderr}"
@@ -92,8 +91,7 @@ def test_pipeline(tmp_path, snapshot):
 
     # Step 3: Push STAGE=2 snapshot (simulates CD after code deployment)
     result = project.run_cli(
-        "graph",
-        "push",
+        ["graph", "push"],
         env={**base_env, "STAGE": "2"},
     )
     assert result.returncode == 0, f"Push v2 failed: {result.stderr}"
@@ -133,8 +131,7 @@ def test_pipeline(tmp_path, snapshot):
 
     # Step 5: Apply migration (use STAGE=2 env)
     result = project.run_cli(
-        "migrations",
-        "apply",
+        ["migrations", "apply"],
         env={**base_env, "STAGE": "2"},
     )
     assert result.returncode == 0, (

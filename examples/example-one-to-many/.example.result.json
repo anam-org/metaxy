@@ -7,7 +7,7 @@
       {
         "type": "graph_pushed",
         "snapshot_version": "39a7f29e64ae839c4711dbc8bc55c4dd35daf0cd33663934d4ef7049e02b2512",
-        "timestamp": "2026-01-08T08:53:49.761781",
+        "timestamp": "2026-01-08T12:16:44.269462",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -16,8 +16,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}, 'metaxy_provenance': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}, 'metaxy_provenance': '727b940f16e01d887661376f5b172591', 'metaxy_data_version': '727b940f16e01d887661376f5b172591', 'metaxy_data_version_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}, 'metaxy_provenance': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}}\nWriting 3 chunks for video 3\nFound 11 video chunks and 0 video chunks that need face recognition\nWriting face recognition results for 11 chunks\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmp33w1_h7a/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n/tmp/nix-shell.D1X7TE/tmp33w1_h7a/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__raw'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmp33w1_h7a/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__chunk'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmp33w1_h7a/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__faces'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
-        "timestamp": "2026-01-08T08:53:51.471858",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmpfc3et4d4/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n/tmp/nix-shell.D1X7TE/tmpfc3et4d4/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__raw'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmpfc3et4d4/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__chunk'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmpfc3et4d4/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__faces'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
+        "timestamp": "2026-01-08T12:16:45.942469",
         "scenario_name": "Initial pipeline run",
         "step_name": "initial_run"
       },
@@ -26,15 +26,15 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 0 videos and 0 videos that need chunking\nFound 0 video chunks and 0 video chunks that need face recognition\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmp33w1_h7a/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
-        "timestamp": "2026-01-08T08:53:53.075119",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmpfc3et4d4/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
+        "timestamp": "2026-01-08T12:16:47.576698",
         "scenario_name": "Idempotent rerun",
         "step_name": "idempotent_run"
       },
       {
         "type": "graph_pushed",
         "snapshot_version": "9f349eecf490e4d105c15621be4f048ea7e163ac97298d695948cffb9e31ce83",
-        "timestamp": "2026-01-08T08:53:54.359931",
+        "timestamp": "2026-01-08T12:16:48.871452",
         "scenario_name": "Code change - audio field only",
         "step_name": "update_audio_version"
       },
@@ -43,7 +43,259 @@
         "patch_path": "patches/01_update_video_code_version.patch",
         "before_snapshot": "39a7f29e64ae839c4711dbc8bc55c4dd35daf0cd33663934d4ef7049e02b2512",
         "after_snapshot": "9f349eecf490e4d105c15621be4f048ea7e163ac97298d695948cffb9e31ce83",
-        "timestamp": "2026-01-08T08:53:54.359952",
+        "before_graph": {
+          "video/raw": {
+            "metaxy_feature_version": "697d0098c9ae72d28c4dbb0ab30d1f0bc19c4f1c65e2b53a587a2f762d6ec897",
+            "fields": {
+              "audio": "7132721c121d323cea63a14fe75588f682c6def20aa566798bc4d39a09ba6829",
+              "frames": "3f6f401c024073a7265874099af43b0f5a99387953e321b8337223ed99fa238b"
+            },
+            "feature_spec": {
+              "key": "video/raw",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "1",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "video/chunk": {
+            "metaxy_feature_version": "24b73621ecb11268cfdeeef9075686ea798ab742ed318e907afc51846d6fc335",
+            "fields": {
+              "audio": "d6a26940ce9ddec3b1668b1e9fbaa8079348d88f8e75a0b414dc23b2acdf62f2",
+              "frames": "b3595d64c823748e77d7dd84817b551e585ad41eed4104f0a03561698095a004"
+            },
+            "feature_spec": {
+              "key": "video/chunk",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/raw",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:N",
+                      "on": [
+                        "video_id"
+                      ],
+                      "id_generation_pattern": null
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "video/faces": {
+            "metaxy_feature_version": "ffa26c202034caf7b09c99e7c674aad22dbb321e766eb160505c72009c178c69",
+            "fields": {
+              "faces": "ffffa4c911ed0808a4ce160ebee45f5621db42cfedfcd66546b495ca902b8109"
+            },
+            "feature_spec": {
+              "key": "video/faces",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/chunk",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "specific",
+                      "mapping": {
+                        "faces": [
+                          [
+                            "frames"
+                          ]
+                        ]
+                      }
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "after_graph": {
+          "video/raw": {
+            "metaxy_feature_version": "e467986af8f5566e1a4597e541851e8ff759552d8d993883effe3f09a17ed9ac",
+            "fields": {
+              "audio": "f8e35296ab91bb55e8086317ef2d3be6763c77680390f85111e16213e11cb784",
+              "frames": "3f6f401c024073a7265874099af43b0f5a99387953e321b8337223ed99fa238b"
+            },
+            "feature_spec": {
+              "key": "video/raw",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "2",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "video/chunk": {
+            "metaxy_feature_version": "850c45aafe6e5f8c3c86b43140d0acdda7c09b183e3be03fa181affa149f1245",
+            "fields": {
+              "audio": "0295dd3807b0fb3c9cebe4839a8a458b704383552303239e730be079a789c3ed",
+              "frames": "b3595d64c823748e77d7dd84817b551e585ad41eed4104f0a03561698095a004"
+            },
+            "feature_spec": {
+              "key": "video/chunk",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/raw",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:N",
+                      "on": [
+                        "video_id"
+                      ],
+                      "id_generation_pattern": null
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "video/faces": {
+            "metaxy_feature_version": "ffa26c202034caf7b09c99e7c674aad22dbb321e766eb160505c72009c178c69",
+            "fields": {
+              "faces": "ffffa4c911ed0808a4ce160ebee45f5621db42cfedfcd66546b495ca902b8109"
+            },
+            "feature_spec": {
+              "key": "video/faces",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/chunk",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "specific",
+                      "mapping": {
+                        "faces": [
+                          [
+                            "frames"
+                          ]
+                        ]
+                      }
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "timestamp": "2026-01-08T12:16:48.871473",
         "scenario_name": "Code change - audio field only",
         "step_name": "update_audio_version"
       },
@@ -52,8 +304,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}, 'metaxy_provenance': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}, 'metaxy_provenance': '727b940f16e01d887661376f5b172591', 'metaxy_data_version': '727b940f16e01d887661376f5b172591', 'metaxy_data_version_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}, 'metaxy_provenance': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}}\nWriting 3 chunks for video 3\nFound 0 video chunks and 0 video chunks that need face recognition\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmp33w1_h7a/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
-        "timestamp": "2026-01-08T08:53:56.098915",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmpfc3et4d4/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
+        "timestamp": "2026-01-08T12:16:50.600164",
         "scenario_name": "Code change - audio field only",
         "step_name": "recompute_after_audio_change"
       },
@@ -62,8 +314,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 0 videos and 0 videos that need chunking\nFound 0 video chunks and 0 video chunks that need face recognition\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmp33w1_h7a/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
-        "timestamp": "2026-01-08T08:53:57.690462",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmpfc3et4d4/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
+        "timestamp": "2026-01-08T12:16:52.239547",
         "scenario_name": "Final idempotent check",
         "step_name": "final_idempotent_check"
       }

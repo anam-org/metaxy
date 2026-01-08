@@ -1,5 +1,7 @@
 """Test field version computation in load_snapshot_data()."""
 
+from syrupy.assertion import SnapshotAssertion
+
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.graph.diff.differ import GraphDiffer
 from metaxy.metadata_store.memory import InMemoryMetadataStore
@@ -10,14 +12,16 @@ from metaxy.models.plan import FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
 
 
-def test_load_snapshot_data_computes_proper_field_versions(graph: FeatureGraph):
-    """Test that field versions can be computed separately (when graph reconstruction works).
+def test_load_snapshot_data_computes_proper_field_versions(
+    graph: FeatureGraph, snapshot: SnapshotAssertion
+):
+    """Test that field versions are computed correctly from specs.
 
-    Note: This test validates the field version computation logic, even though
-    features defined in test functions fall back to using feature_version since
-    they can't be imported. The important validation is that:
+    This test validates the field version computation logic. Features defined
+    in test functions use standalone spec loading since they can't be imported.
+    The important validation is that:
     1. Fields are tracked separately in the snapshot data
-    2. The fallback mechanism works when graph reconstruction fails
+    2. Field versions are computed correctly from specs
     """
     differ = GraphDiffer()
 
@@ -35,7 +39,6 @@ def test_load_snapshot_data_computes_proper_field_versions(graph: FeatureGraph):
         pass
 
     # Compute expected field versions from the active graph
-    # (these would be different if we could reconstruct the graph)
     parent_field1_version = graph.get_field_version(
         FQFieldKey(feature=FeatureKey(["parent"]), field=FieldKey(["field1"]))
     )
@@ -65,16 +68,15 @@ def test_load_snapshot_data_computes_proper_field_versions(graph: FeatureGraph):
         assert "field1" in parent_data["fields"]
         assert "field2" in parent_data["fields"]
 
-        # In fallback mode, fields use feature_version
-        # (This is acceptable behavior when features can't be imported)
-        assert parent_data["fields"]["field1"] == parent_data["metaxy_feature_version"]
-        assert parent_data["fields"]["field2"] == parent_data["metaxy_feature_version"]
+        # Verify field versions are computed correctly (captured via snapshot)
+        assert parent_data["fields"] == snapshot(name="field_versions")
+        assert parent_data["metaxy_feature_version"] == snapshot(name="feature_version")
 
 
 def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
-    graph: FeatureGraph,
+    graph: FeatureGraph, snapshot: SnapshotAssertion
 ):
-    """Test fallback behavior when feature classes cannot be imported."""
+    """Test field version computation when feature classes cannot be imported."""
     differ = GraphDiffer()
 
     # Create a feature defined in test scope (will not be importable)
@@ -101,18 +103,16 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
         # Load snapshot data - should load standalone specs
         snapshot_data = differ.load_snapshot_data(store, snapshot_version)
 
-        # Verify data was loaded (even with fallback)
+        # Verify data was loaded
         assert "test/feature" in snapshot_data
         feature_data = snapshot_data["test/feature"]
         assert "metaxy_feature_version" in feature_data
         assert "fields" in feature_data
 
-        # In fallback mode, all fields get the same version (feature_version)
-        assert (
-            feature_data["fields"]["field1"] == feature_data["metaxy_feature_version"]
-        )
-        assert (
-            feature_data["fields"]["field2"] == feature_data["metaxy_feature_version"]
+        # Verify field versions are computed correctly (captured via snapshot)
+        assert feature_data["fields"] == snapshot(name="field_versions")
+        assert feature_data["metaxy_feature_version"] == snapshot(
+            name="feature_version"
         )
 
 

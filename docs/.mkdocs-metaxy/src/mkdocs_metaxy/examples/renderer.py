@@ -9,6 +9,7 @@ This module provides rendering utilities for:
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from metaxy._testing import CommandExecuted, GraphPushed, PatchApplied
@@ -239,38 +240,54 @@ class ExampleRenderer:
         return "\n".join(md_parts)
 
     def render_graph_diff(
-        self, from_snapshot: str, to_snapshot: str, example_name: str
+        self,
+        from_snapshot: str,
+        to_snapshot: str,
+        example_name: str,
+        example_dir: Path,
     ) -> str | None:
-        """Render a graph diff as Mermaid diagram.
+        """Render a graph diff as Mermaid diagram using the CLI.
 
         Args:
             from_snapshot: Before snapshot version hash.
             to_snapshot: After snapshot version hash.
             example_name: Name of the example for context.
+            example_dir: Path to the example directory.
 
         Returns:
             Mermaid diagram string or None if rendering fails.
         """
+        import os
+        import subprocess
+        import sys
+
         try:
-            # We need access to the example's config to get the store
-            # For now, we'll generate a placeholder
-            # In a real implementation, we'd need to:
-            # 1. Load the example's config
-            # 2. Get the metadata store
-            # 3. Use GraphDiffer to generate the diff
-            # 4. Use MermaidRenderer to render it
+            # Run metaxy graph-diff render command from the example directory
+            metaxy_path = os.path.join(os.path.dirname(sys.executable), "metaxy")
 
-            # Placeholder that shows the concept
-            return f"""```mermaid
-%%{{init: {{'flowchart': {{'htmlLabels': true, 'curve': 'basis'}}, 'themeVariables': {{'fontSize': '14px'}}}}}}%%
-flowchart TD
-    %% Graph diff from {from_snapshot[:8]} to {to_snapshot[:8]}
-    placeholder[Graph diff visualization would appear here]
-    note[This requires metadata store access to render]
-```"""
+            result = subprocess.run(
+                [
+                    metaxy_path,
+                    "graph-diff",
+                    "render",
+                    "--format",
+                    "mermaid",
+                    from_snapshot,
+                    to_snapshot,
+                ],
+                capture_output=True,
+                text=True,
+                cwd=example_dir,
+            )
 
-        except Exception:
-            return None
+            if result.returncode != 0:
+                return f"```\nError rendering graph diff: {result.stderr}\n```"
+
+            # Wrap the mermaid output in a code block
+            return f"```mermaid\n{result.stdout}\n```"
+
+        except Exception as e:
+            return f"```\nError rendering graph diff: {e}\n```"
 
     def render_command_output(
         self, event: CommandExecuted, show_command: bool = True
@@ -308,11 +325,14 @@ flowchart TD
 
         return "\n".join(md_parts)
 
-    def render_patch_applied(self, event: PatchApplied) -> str:
+    def render_patch_applied(
+        self, event: PatchApplied, graph_diff_md: str | None = None
+    ) -> str:
         """Render patch application event as markdown.
 
         Args:
             event: PatchApplied event from execution state.
+            graph_diff_md: Optional pre-rendered graph diff markdown.
 
         Returns:
             Markdown string describing the patch application.
@@ -329,6 +349,11 @@ flowchart TD
                 f"Graph snapshot changed: `{before_short}...` → `{after_short}...`"
             )
             md_parts.append("")
+
+            # Include graph diff if provided
+            if graph_diff_md:
+                md_parts.append(graph_diff_md)
+                md_parts.append("")
 
         return "\n".join(md_parts)
 

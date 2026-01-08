@@ -18,7 +18,7 @@ from contextlib import ExitStack, contextmanager
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 from pydantic import Field as PydanticField
@@ -49,6 +49,8 @@ class PatchApplied(BaseModel):
     patch_path: str
     before_snapshot: str | None
     after_snapshot: str | None
+    before_graph: dict[str, Any]  # Serialized graph before patch
+    after_graph: dict[str, Any]  # Serialized graph after patch
     timestamp: datetime
     scenario_name: str | None = None
     step_name: str | None = None
@@ -349,6 +351,31 @@ class RunbookRunner:
 
         return None
 
+    def _get_current_graph(self) -> dict[str, dict]:
+        """Get serialized graph from current entrypoints.
+
+        Returns:
+            Snapshot data dict in format expected by GraphDiffer.diff:
+            {feature_key_str -> {metaxy_feature_version, fields, feature_spec}}
+        """
+        graph = self.project.graph
+        snapshot_data: dict[str, dict] = {}
+
+        for feature_key, spec in graph.all_specs_by_key.items():
+            feature_key_str = feature_key.to_string()
+            feature_version = graph.get_feature_version(feature_key)
+
+            # Get field versions
+            field_versions = graph.get_feature_version_by_field(feature_key)
+
+            snapshot_data[feature_key_str] = {
+                "metaxy_feature_version": feature_version,
+                "fields": field_versions,
+                "feature_spec": spec.model_dump(mode="json"),
+            }
+
+        return snapshot_data
+
     def run_command(
         self,
         command: str,
@@ -407,6 +434,9 @@ class RunbookRunner:
 
         before_snapshot = self._last_pushed_snapshot
 
+        # Capture graph BEFORE applying patch
+        before_graph = self._get_current_graph()
+
         # Apply the patch
         result = subprocess.run(
             ["patch", "-p1", "-i", patch_path, "--no-backup-if-mismatch"],
@@ -417,6 +447,9 @@ class RunbookRunner:
 
         if result.returncode != 0:
             raise RuntimeError(f"Failed to apply patch {patch_path}:\n{result.stderr}")
+
+        # Capture graph AFTER applying patch
+        after_graph = self._get_current_graph()
 
         after_snapshot = None
         if push_graph:
@@ -432,6 +465,8 @@ class RunbookRunner:
                 patch_path=patch_path,
                 before_snapshot=before_snapshot,
                 after_snapshot=after_snapshot,
+                before_graph=before_graph,
+                after_graph=after_graph,
             )
         )
 
