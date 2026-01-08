@@ -32,18 +32,20 @@ Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages an
 | **Data** | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform. |
 | **Metadata** | Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes. |
 
-Metaxy manages **metadata** while your **data** lives elsewhere:
+Metaxy manages **metadata** while **data** typically (1) lives elsewhere:
+{ .annotate }
+
+1. Unless you are a [LanceDB](https://lancedb.com/) fan, in which case [we got you covered](./integrations/metadata-stores/databases/lancedb/index.md)
 
 ```
-┌────────────────────────────----─┐          ┌─────────────────────────┐
+┌─────────────────────────────────┐          ┌─────────────────────────┐
 │      Metadata (Metaxy)          │          │   Data (e.g., S3)       │
-├──────┬──────────┬──────┬───----─┤          │                         │
+├──────┬──────────┬──────┬────────┤          │                         │
 │  ID  │   path   │ size │version │          │  📦 s3://my-bucket/     │
-├──────┼──────────┼──────┼──────--┤          │                         │
+├──────┼──────────┼──────┼────────┤          │                         │
 │ img1 │ s3://... │ 2.1M │a3fdsf  │ ────────>│    ├─ img1.jpg          │
 │ img2 │ s3://... │ 1.8M │b7e123  │ ────────>│    ├─ img2.jpg          │
-└──────┴──────────┴──────┴───----─┘          └─────────────────────────┘
-
+└──────┴──────────┴──────┴────────┘          └─────────────────────────┘
 ```
 
 Metaxy is [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data or [metadata storage](guide/learn/metadata-stores.md). Metaxy has no strict infrastructure requirements, and can scale to handle large amounts of **big metadata**.
