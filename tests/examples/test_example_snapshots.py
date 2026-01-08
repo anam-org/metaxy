@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+import tomli as tomllib
 
 
 def discover_examples() -> list[Path]:
@@ -14,19 +15,38 @@ def discover_examples() -> list[Path]:
     return sorted(examples)
 
 
+def get_store_config_override(example_dir: Path, tmp_path: Path) -> dict[str, str]:
+    """Determine the appropriate env override based on the metadata store type."""
+    metaxy_toml = example_dir / "metaxy.toml"
+    if not metaxy_toml.exists():
+        return {}
+
+    config = tomllib.loads(metaxy_toml.read_text())
+    store_type = config.get("stores", {}).get("dev", {}).get("type", "")
+
+    if "DuckDBMetadataStore" in store_type:
+        test_db = tmp_path / f"{example_dir.name}.db"
+        return {"METAXY_STORES__DEV__CONFIG__DATABASE": str(test_db)}
+    elif "DeltaMetadataStore" in store_type:
+        test_storage = tmp_path / example_dir.name
+        return {"METAXY_STORES__DEV__CONFIG__ROOT_PATH": str(test_storage)}
+
+    return {}
+
+
 @pytest.mark.parametrize("example_dir", discover_examples(), ids=lambda p: p.name)
 def test_example_snapshot(example_dir: Path, tmp_path: Path, example_snapshot):
     """Execute runbook, save raw results, and verify snapshot matches."""
     from metaxy._testing.runbook import RunbookRunner
 
-    # Setup test database
-    test_db = tmp_path / f"{example_dir.name}.db"
+    # Get store-specific env overrides
+    store_overrides = get_store_config_override(example_dir, tmp_path)
 
     # Run the runbook with deterministic random seed
     with RunbookRunner.runner_for_project(
         example_dir=example_dir,
         env_overrides={
-            "METAXY_STORES__DEV__CONFIG__DATABASE": str(test_db),
+            **store_overrides,
             "RANDOM_SEED": "42",
         },
     ) as runner:

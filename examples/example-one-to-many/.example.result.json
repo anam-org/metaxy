@@ -133,7 +133,7 @@
             }
           }
         },
-        "timestamp": "2026-01-08T13:30:57.450498",
+        "timestamp": "2026-01-08T14:51:09.428603",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -141,9 +141,9 @@
         "type": "command_executed",
         "command": "python pipeline.py",
         "returncode": 0,
-        "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}, 'metaxy_provenance': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}, 'metaxy_provenance': '727b940f16e01d887661376f5b172591', 'metaxy_data_version': '727b940f16e01d887661376f5b172591', 'metaxy_data_version_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}, 'metaxy_provenance': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}}\nWriting 3 chunks for video 3\nFound 11 video chunks and 0 video chunks that need face recognition\nWriting face recognition results for 11 chunks\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmp68qt_9mj/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n/tmp/nix-shell.D1X7TE/tmp68qt_9mj/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__raw'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmp68qt_9mj/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__chunk'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmp68qt_9mj/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__faces'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
-        "timestamp": "2026-01-08T13:30:59.136381",
+        "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field': {'audio': '10007492227595392733', 'frames': '1682032196927456402'}, 'metaxy_provenance': '14031906856465570355', 'metaxy_data_version': '14031906856465570355', 'metaxy_data_version_by_field': {'audio': '10007492227595392733', 'frames': '1682032196927456402'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field': {'audio': '8611533712039505678', 'frames': '4503549827648480202'}, 'metaxy_provenance': '15731451084455769151', 'metaxy_data_version': '15731451084455769151', 'metaxy_data_version_by_field': {'audio': '8611533712039505678', 'frames': '4503549827648480202'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field': {'audio': '8658167618920339467', 'frames': '9434429132720637104'}, 'metaxy_provenance': '18281230295442923206', 'metaxy_data_version': '18281230295442923206', 'metaxy_data_version_by_field': {'audio': '8658167618920339467', 'frames': '9434429132720637104'}}\nWriting 3 chunks for video 3\nFound 11 video chunks and 0 video chunks that need face recognition\nWriting face recognition results for 11 chunks\n",
+        "stderr": "",
+        "timestamp": "2026-01-08T14:51:09.994713",
         "scenario_name": "Initial pipeline run",
         "step_name": "initial_run"
       },
@@ -152,8 +152,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 0 videos and 0 videos that need chunking\nFound 0 video chunks and 0 video chunks that need face recognition\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmp68qt_9mj/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
-        "timestamp": "2026-01-08T13:31:00.737261",
+        "stderr": "",
+        "timestamp": "2026-01-08T14:51:10.518442",
         "scenario_name": "Idempotent rerun",
         "step_name": "idempotent_run"
       },
@@ -286,7 +286,7 @@
             }
           }
         },
-        "timestamp": "2026-01-08T13:31:02.046792",
+        "timestamp": "2026-01-08T14:51:11.137652",
         "scenario_name": "Code change - audio field only",
         "step_name": "update_audio_version"
       },
@@ -547,7 +547,7 @@
             }
           }
         },
-        "timestamp": "2026-01-08T13:31:02.053619",
+        "timestamp": "2026-01-08T14:51:11.144445",
         "scenario_name": "Code change - audio field only",
         "step_name": "update_audio_version"
       },
@@ -555,9 +555,9 @@
         "type": "command_executed",
         "command": "python pipeline.py",
         "returncode": 0,
-        "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}, 'metaxy_provenance': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}, 'metaxy_provenance': '727b940f16e01d887661376f5b172591', 'metaxy_data_version': '727b940f16e01d887661376f5b172591', 'metaxy_data_version_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}, 'metaxy_provenance': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}}\nWriting 3 chunks for video 3\nFound 0 video chunks and 0 video chunks that need face recognition\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmp68qt_9mj/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
-        "timestamp": "2026-01-08T13:31:03.803307",
+        "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field': {'audio': '10007492227595392733', 'frames': '1682032196927456402'}, 'metaxy_provenance': '14031906856465570355', 'metaxy_data_version': '14031906856465570355', 'metaxy_data_version_by_field': {'audio': '10007492227595392733', 'frames': '1682032196927456402'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field': {'audio': '8611533712039505678', 'frames': '4503549827648480202'}, 'metaxy_provenance': '15731451084455769151', 'metaxy_data_version': '15731451084455769151', 'metaxy_data_version_by_field': {'audio': '8611533712039505678', 'frames': '4503549827648480202'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field': {'audio': '8658167618920339467', 'frames': '9434429132720637104'}, 'metaxy_provenance': '18281230295442923206', 'metaxy_data_version': '18281230295442923206', 'metaxy_data_version_by_field': {'audio': '8658167618920339467', 'frames': '9434429132720637104'}}\nWriting 3 chunks for video 3\nFound 0 video chunks and 0 video chunks that need face recognition\n",
+        "stderr": "",
+        "timestamp": "2026-01-08T14:51:11.719061",
         "scenario_name": "Code change - audio field only",
         "step_name": "recompute_after_audio_change"
       },
@@ -566,8 +566,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 0 videos and 0 videos that need chunking\nFound 0 video chunks and 0 video chunks that need face recognition\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmp68qt_9mj/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
-        "timestamp": "2026-01-08T13:31:05.458400",
+        "stderr": "",
+        "timestamp": "2026-01-08T14:51:12.244181",
         "scenario_name": "Final idempotent check",
         "step_name": "final_idempotent_check"
       }

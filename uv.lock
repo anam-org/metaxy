@@ -1159,11 +1159,11 @@ name = "example-aggregation"
 version = "0.1.0"
 source = { editable = "examples/example-aggregation" }
 dependencies = [
-    { name = "metaxy" },
+    { name = "metaxy", extra = ["delta"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "metaxy", editable = "." }]
+requires-dist = [{ name = "metaxy", extras = ["delta"], editable = "." }]
 
 [[package]]
 name = "example-dagster"
@@ -1173,7 +1173,7 @@ dependencies = [
     { name = "dagster" },
     { name = "dagster-dg-cli" },
     { name = "dagster-webserver" },
-    { name = "metaxy", extra = ["duckdb"] },
+    { name = "metaxy", extra = ["delta"] },
 ]
 
 [package.metadata]
@@ -1181,7 +1181,7 @@ requires-dist = [
     { name = "dagster", specifier = ">=1.12.3" },
     { name = "dagster-dg-cli", specifier = ">=1.12.3" },
     { name = "dagster-webserver" },
-    { name = "metaxy", extras = ["duckdb"] },
+    { name = "metaxy", extras = ["delta"] },
 ]
 
 [[package]]
@@ -1200,50 +1200,44 @@ name = "example-migration"
 version = "0.1.0"
 source = { editable = "examples/example-migration" }
 dependencies = [
-    { name = "metaxy", extra = ["duckdb"] },
+    { name = "metaxy", extra = ["delta"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
+requires-dist = [{ name = "metaxy", extras = ["delta"] }]
 
 [[package]]
 name = "example-one-to-many"
 version = "0.1.0"
 source = { editable = "examples/example-one-to-many" }
 dependencies = [
-    { name = "duckdb" },
-    { name = "ibis-framework", extra = ["duckdb"] },
-    { name = "metaxy" },
+    { name = "metaxy", extra = ["delta"] },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "duckdb" },
-    { name = "ibis-framework", extras = ["duckdb"] },
-    { name = "metaxy", editable = "." },
-]
+requires-dist = [{ name = "metaxy", extras = ["delta"], editable = "." }]
 
 [[package]]
 name = "example-overview"
 version = "0.1.0"
 source = { editable = "examples/example-overview" }
 dependencies = [
-    { name = "metaxy", extra = ["duckdb"] },
+    { name = "metaxy", extra = ["delta"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
+requires-dist = [{ name = "metaxy", extras = ["delta"] }]
 
 [[package]]
 name = "example-recompute"
 version = "0.1.0"
 source = { editable = "examples/example-recompute" }
 dependencies = [
-    { name = "metaxy", extra = ["duckdb"] },
+    { name = "metaxy", extra = ["delta"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
+requires-dist = [{ name = "metaxy", extras = ["delta"] }]
 
 [[package]]
 name = "examples"
