@@ -1724,6 +1724,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#auto_cast_struct_for_map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        auto_cast_struct_for_map
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3645,6 +3656,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#auto_cast_struct_for_map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        auto_cast_struct_for_map
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3970,6 +3992,28 @@
 </div>
 <div class="tabbed-block">
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__AUTO_CREATE_TABLES</span><span class="o">=</span>...
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<hr />
+<h2 id="auto_cast_struct_for_map"><code>auto_cast_struct_for_map</code><a class="headerlink" href="#auto_cast_struct_for_map" title="Permanent link">&para;</a></h2>
+<p>Auto-convert DataFrame Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted.</p>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>True</code></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:3"><input checked="checked" id="auto_cast_struct_for_map-metaxytoml" name="__tabbed_8" type="radio" /><input id="auto_cast_struct_for_map-pyprojecttoml" name="__tabbed_8" type="radio" /><input id="auto_cast_struct_for_map-environment-variable" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="auto_cast_struct_for_map-metaxytoml">metaxy.toml</label><label for="auto_cast_struct_for_map-pyprojecttoml">pyproject.toml</label><label for="auto_cast_struct_for_map-environment-variable">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="n">auto_cast_struct_for_map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="n">auto_cast_struct_for_map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__AUTO_CAST_STRUCT_FOR_MAP</span><span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 </div>
 </div>
