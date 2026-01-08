@@ -282,8 +282,14 @@ class MetaxyProject:
         # Start with current environment
         cmd_env = os.environ.copy()
 
-        # Add project directory to PYTHONPATH so modules can be imported
-        pythonpath = str(self.project_dir)
+        # Add project directory (and src/ subdirectory if it exists) to PYTHONPATH
+        # so modules can be imported. These are prepended to take precedence.
+        paths_to_add = [str(self.project_dir)]
+        src_dir = self.project_dir / "src"
+        if src_dir.is_dir():
+            paths_to_add.insert(0, str(src_dir))
+
+        pythonpath = os.pathsep.join(paths_to_add)
         if "PYTHONPATH" in cmd_env:
             pythonpath = f"{pythonpath}{os.pathsep}{cmd_env['PYTHONPATH']}"
         cmd_env["PYTHONPATH"] = pythonpath
@@ -571,8 +577,14 @@ class ExternalMetaxyProject(MetaxyProject):
         # Start with current environment
         cmd_env = os.environ.copy()
 
-        # Add project directory to PYTHONPATH so modules can be imported
-        pythonpath = str(self.project_dir)
+        # Add project directory (and src/ subdirectory if it exists) to PYTHONPATH
+        # so modules can be imported. These are prepended to take precedence.
+        paths_to_add = [str(self.project_dir)]
+        src_dir = self.project_dir / "src"
+        if src_dir.is_dir():
+            paths_to_add.insert(0, str(src_dir))
+
+        pythonpath = os.pathsep.join(paths_to_add)
         if "PYTHONPATH" in cmd_env:
             pythonpath = f"{pythonpath}{os.pathsep}{cmd_env['PYTHONPATH']}"
         cmd_env["PYTHONPATH"] = pythonpath

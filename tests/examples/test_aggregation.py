@@ -22,6 +22,6 @@ def test_aggregation_runbook(tmp_path):
     # Run the runbook with a temporary test database
     with RunbookRunner.runner_for_project(
         example_dir=example_dir,
-        override_db_path=test_db,
+        env_overrides={"METAXY_STORES__DEV__CONFIG__DATABASE": str(test_db)},
     ) as runner:
         runner.run()

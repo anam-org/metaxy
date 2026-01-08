@@ -9,14 +9,12 @@ This module provides:
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
+import tempfile
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from contextlib import contextmanager
-
-# ============================================================================
-# Runbook Execution State Models
-# ============================================================================
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -25,6 +23,10 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 from pydantic import Field as PydanticField
+
+# ============================================================================
+# Runbook Execution State Models
+# ============================================================================
 
 
 @dataclass(frozen=True)
@@ -47,38 +49,27 @@ class PatchApplied:
     scenario_name: str | None = None
 
 
-# Type alias for all event types
 RunbookEvent = GraphPushed | PatchApplied
 
 
 @dataclass(frozen=True)
 class RunbookExecutionState:
-    """Captured state from a runbook execution.
-
-    This preserves all events that occurred during the runbook run,
-    allowing for later analysis, documentation generation, etc.
-    """
+    """Captured state from a runbook execution."""
 
     events: list[RunbookEvent]
 
-    def get_patch_snapshots(self) -> dict[str, tuple[str | None, str | None]]:
-        """Extract patch snapshots from the event stream.
-
-        Returns:
-            Dictionary mapping patch paths to (before, after) snapshot tuples.
-        """
+    @property
+    def patch_snapshots(self) -> dict[str, tuple[str | None, str | None]]:
+        """Extract patch snapshots from the event stream."""
         result = {}
         for event in self.events:
             if isinstance(event, PatchApplied):
                 result[event.patch_path] = (event.before_snapshot, event.after_snapshot)
         return result
 
-    def get_latest_snapshot(self) -> str | None:
-        """Get the most recent snapshot version.
-
-        Returns:
-            Latest snapshot version or None if no snapshots.
-        """
+    @property
+    def latest_snapshot(self) -> str | None:
+        """Get the most recent snapshot version."""
         for event in reversed(self.events):
             if isinstance(event, GraphPushed):
                 return event.snapshot_version
@@ -99,245 +90,97 @@ class StepType(str, Enum):
 
 
 class BaseStep(BaseModel, ABC):
-    """Base class for runbook steps.
-
-    Each step represents an action in testing or documenting an example.
-    """
+    """Base class for runbook steps."""
 
     model_config = ConfigDict(frozen=True)
 
     description: str | None = None
-    """Optional human-readable description of this step."""
 
     @abstractmethod
     def step_type(self) -> StepType:
-        """Return the step type for this step."""
         raise NotImplementedError
 
 
 class RunCommandStep(BaseStep):
-    """Run a command or Python module.
-
-    This step executes a shell command or Python module and optionally captures
-    the output for later assertions.
-
-    Examples:
-        >>> # Run a Python module
-        >>> RunCommandStep(
-        ...     type="run_command",
-        ...     command="python -m example_recompute.setup_data",
-        ... )
-
-        >>> # Run metaxy CLI
-        >>> RunCommandStep(
-        ...     type="run_command",
-        ...     command="metaxy list features",
-        ...     capture_output=True,
-        ... )
-    """
+    """Run a command or Python module."""
 
     type: Literal[StepType.RUN_COMMAND] = StepType.RUN_COMMAND
     command: str
-    """The command to execute (e.g., 'python -m module_name' or 'metaxy list features')."""
-
     env: dict[str, str] | None = None
-    """Environment variables to set for this command."""
-
     capture_output: bool = False
-    """Whether to capture stdout/stderr for assertions."""
-
     timeout: float = 30.0
-    """Timeout in seconds for the command."""
 
     def step_type(self) -> StepType:
         return StepType.RUN_COMMAND
 
 
 class ApplyPatchStep(BaseStep):
-    """Apply a git patch file to modify example code.
-
-    This step applies a patch to transition between code versions, demonstrating
-    code evolution. Patches are applied temporarily during test execution.
-
-    The patch_path is relative to the example directory (where .example.yaml lives).
-
-    Examples:
-        >>> # Apply a patch to update algorithm
-        >>> ApplyPatchStep(
-        ...     type="apply_patch",
-        ...     patch_path="patches/01_update_algorithm.patch",
-        ...     description="Update parent feature embedding algorithm to v2",
-        ... )
-
-        >>> # Apply a patch without pushing graph snapshot
-        >>> ApplyPatchStep(
-        ...     type="apply_patch",
-        ...     patch_path="patches/02_refactor_only.patch",
-        ...     push_graph=False,  # Don't push graph for refactoring-only changes
-        ... )
-    """
+    """Apply a git patch file to modify example code."""
 
     type: Literal[StepType.APPLY_PATCH] = StepType.APPLY_PATCH
     patch_path: str
-    """Path to patch file relative to example directory."""
-
     push_graph: bool = True
-    """Whether to push graph snapshot after applying this patch (default: True)."""
 
     def step_type(self) -> StepType:
         return StepType.APPLY_PATCH
 
 
 class AssertOutputStep(BaseStep):
-    """Assert on the output of the previous command.
-
-    This step validates that the previous RunCommandStep produced the expected
-    output. Supports substring matching and regex patterns.
-
-    Examples:
-        >>> # Assert specific strings appear in output
-        >>> AssertOutputStep(
-        ...     type="assert_output",
-        ...     contains=["Pipeline STAGE=1", "✅ Stage 1 pipeline complete!"],
-        ... )
-
-        >>> # Assert returncode is 0
-        >>> AssertOutputStep(
-        ...     type="assert_output",
-        ...     returncode=0,
-        ... )
-    """
+    """Assert on the output of the previous command."""
 
     type: Literal[StepType.ASSERT_OUTPUT] = StepType.ASSERT_OUTPUT
     contains: list[str] | None = None
-    """List of substrings that must appear in stdout."""
-
     not_contains: list[str] | None = None
-    """List of substrings that must NOT appear in stdout."""
-
     matches_regex: str | None = None
-    """Regex pattern that stdout must match."""
-
     returncode: int | None = None
-    """Expected return code (default: 0 if not specified)."""
 
     def step_type(self) -> StepType:
         return StepType.ASSERT_OUTPUT
 
 
 class Scenario(BaseModel):
-    """A scenario represents a sequence of steps to test an example.
-
-    Scenarios are the main unit of testing. Each scenario has a name and a list
-    of steps that are executed in order.
-
-    Examples:
-        >>> Scenario(
-        ...     name="Initial run",
-        ...     description="First pipeline run with initial feature definitions",
-        ...     steps=[
-        ...         RunCommandStep(command="python -m example.setup_data"),
-        ...         RunCommandStep(command="python -m example.pipeline", capture_output=True),
-        ...         AssertOutputStep(contains=["Pipeline complete!"]),
-        ...     ],
-        ... )
-    """
+    """A scenario represents a sequence of steps to test an example."""
 
     model_config = ConfigDict(frozen=True)
 
     name: str
-    """Name of this scenario (e.g., 'Initial run', 'Idempotent rerun')."""
-
     description: str | None = None
-    """Optional human-readable description of what this scenario tests."""
-
     steps: list[
         Annotated[
             RunCommandStep | ApplyPatchStep | AssertOutputStep,
             PydanticField(discriminator="type"),
         ]
     ]
-    """Ordered list of steps to execute in this scenario."""
 
 
 class Runbook(BaseModel):
-    """Top-level runbook model for an example.
-
-    A runbook defines how to test and document an example. It contains metadata
-    about the example and one or more scenarios that test different aspects.
-
-    The runbook file should be named `.example.yaml` and placed in the example
-    directory alongside metaxy.toml.
-
-    Examples:
-        >>> Runbook(
-        ...     name="Recompute Example",
-        ...     description="Demonstrates automatic recomputation",
-        ...     package_name="example_recompute",
-        ...     scenarios=[...],
-        ... )
-    """
+    """Top-level runbook model for an example."""
 
     model_config = ConfigDict(frozen=True)
 
     name: str
-    """Human-readable name of the example."""
-
     description: str | None = None
-    """Description of what this example demonstrates."""
-
     package_name: str
-    """Python package name (e.g., 'example_recompute')."""
-
     scenarios: list[Scenario]
-    """List of test scenarios for this example."""
-
     auto_push_graph: bool = True
-    """Whether to automatically push graph snapshots after initial load and patches.
 
-    Set to False to skip automatic graph pushes (e.g., when no metadata store is configured).
-    """
-
-    # Private attribute to store execution state
     _execution_state: RunbookExecutionState | None = PrivateAttr(default=None)
-    """Captured state from runbook execution."""
 
     def set_execution_state(self, state: RunbookExecutionState) -> None:
-        """Set the execution state.
-
-        Args:
-            state: The captured execution state.
-        """
         self._execution_state = state
 
-    def get_execution_state(self) -> RunbookExecutionState | None:
-        """Get the execution state.
-
-        Returns:
-            The execution state or None if not yet executed.
-        """
+    @property
+    def execution_state(self) -> RunbookExecutionState | None:
         return self._execution_state
 
-    def get_patch_snapshots(self) -> dict[str, tuple[str | None, str | None]]:
-        """Get patch snapshots from execution state.
-
-        Returns:
-            Dictionary mapping patch paths to (before, after) snapshot tuples.
-        """
+    @property
+    def patch_snapshots(self) -> dict[str, tuple[str | None, str | None]]:
         if self._execution_state is None:
             return {}
-        return self._execution_state.get_patch_snapshots()
+        return self._execution_state.patch_snapshots
 
     @classmethod
     def from_yaml_file(cls, path: Path) -> Runbook:
-        """Load a runbook from a YAML file.
-
-        Args:
-            path: Path to the .example.yaml file.
-
-        Returns:
-            Parsed Runbook instance.
-        """
         import yaml
 
         with open(path) as f:
@@ -345,15 +188,9 @@ class Runbook(BaseModel):
         return cls.model_validate(data)
 
     def to_yaml_file(self, path: Path) -> None:
-        """Save this runbook to a YAML file.
-
-        Args:
-            path: Path where the .example.yaml file should be written.
-        """
         import yaml
 
         with open(path, "w") as f:
-            # Use model_dump with mode='json' to get JSON-serializable data
             data = self.model_dump(mode="json")
             yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
 
@@ -373,233 +210,203 @@ class CommandResult:
 
 
 class RunbookRunner:
-    """Runner for executing example runbooks.
-
-    This class handles:
-    - Loading runbooks from YAML
-    - Setting up test environments
-    - Executing commands
-    - Applying/reverting patches
-    - Validating assertions
-    """
+    """Runner for executing example runbooks."""
 
     def __init__(
         self,
         runbook: Runbook,
         example_dir: Path,
-        override_db_path: Path | None = None,
         env_overrides: dict[str, str] | None = None,
     ):
-        """Initialize the runbook runner.
-
-        Args:
-            runbook: The runbook to execute.
-            example_dir: Directory containing the example code and .example.yaml.
-            override_db_path: Optional path to database (for METAXY_STORES__DEV__CONFIG__DATABASE).
-            env_overrides: Additional environment variable overrides.
-        """
         self.runbook = runbook
         self.example_dir = example_dir
-        self.override_db_path = override_db_path
         self.env_overrides = env_overrides or {}
         self.last_result: CommandResult | None = None
-        self.applied_patches: list[str] = []
         self._initial_graph_pushed = False
         self._last_pushed_snapshot: str | None = None
         self._events: list[RunbookEvent] = []
         self._current_scenario: str | None = None
+        self._patch_stack = ExitStack()
 
-        # Import ExternalMetaxyProject
         from metaxy._testing.metaxy_project import ExternalMetaxyProject
 
-        # Create ExternalMetaxyProject for this example
         self.project = ExternalMetaxyProject(example_dir, require_config=True)
 
-    def get_base_env(self) -> dict[str, str]:
-        """Get base environment with test-specific overrides.
+    def get_latest_snapshot_version(self) -> str | None:
+        """Get the latest snapshot version from the metadata store."""
+        import os
 
-        Returns:
-            Environment dict with test database and other overrides.
-        """
-        env = {}
+        from metaxy.config import MetaxyConfig
+        from metaxy.metadata_store.system.storage import SystemTableStorage
 
-        # Override database path if provided
-        if self.override_db_path:
-            env["METAXY_STORES__DEV__CONFIG__DATABASE"] = str(self.override_db_path)
+        old_env = {k: os.environ.get(k) for k in self.env_overrides}
 
-        # Apply additional overrides
-        env.update(self.env_overrides)
+        try:
+            os.environ.update(self.env_overrides)
+            config = MetaxyConfig.load(self.project.project_dir / "metaxy.toml")
+            store = config.get_store()
+        finally:
+            for k, v in old_env.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
 
-        return env
+        with store:
+            storage = SystemTableStorage(store)
+            snapshots_df = storage.read_graph_snapshots()
+
+            if snapshots_df.height == 0:
+                return None
+
+            return snapshots_df["metaxy_snapshot_version"][0]
 
     def push_graph_snapshot(self) -> str | None:
-        """Push the current graph snapshot using metaxy graph push.
-
-        This is called automatically after the initial load and after each patch,
-        unless disabled via auto_push_graph=False in the runbook.
-
-        Returns:
-            The snapshot version hash from the push, or None if push was skipped.
-        """
-        # Skip if auto push is disabled
+        """Push the current graph snapshot using metaxy graph push."""
         if not self.runbook.auto_push_graph:
             return None
 
-        env = self.get_base_env()
+        result = self.project.push_graph(env=self.env_overrides)
 
-        # Use ExternalMetaxyProject to push graph
-        result = self.project.push_graph(env=env)
-
-        # Check if push succeeded
         if result.returncode != 0:
             raise RuntimeError(
                 f"Failed to push graph snapshot:\nstdout: {result.stdout}\nstderr: {result.stderr}"
             )
 
-        # Extract snapshot version from output
-        # The snapshot hash is printed on its own line after "✓ Recorded feature graph"
-        import re
+        snapshot_version = result.stdout.strip()
 
-        lines = result.stdout.strip().split("\n")
-        for i, line in enumerate(lines):
-            if "Recorded feature graph" in line and i + 1 < len(lines):
-                # Next line should be the snapshot hash
-                next_line = lines[i + 1].strip()
-                # Check if it looks like a hash (64 hex characters)
-                if re.match(r"^[a-f0-9]{64}$", next_line):
-                    # Record event
-                    self._events.append(
-                        GraphPushed(
-                            timestamp=datetime.now(),
-                            scenario_name=self._current_scenario,
-                            snapshot_version=next_line,
-                        )
-                    )
-                    return next_line
+        if snapshot_version:
+            self._events.append(
+                GraphPushed(
+                    timestamp=datetime.now(),
+                    scenario_name=self._current_scenario,
+                    snapshot_version=snapshot_version,
+                )
+            )
+            return snapshot_version
+
         return None
 
     def run_command(
         self,
-        step: RunCommandStep,
-        scenario_name: str,
+        command: str,
+        *,
+        env: dict[str, str] | None = None,
+        capture_output: bool = True,
+        timeout: float = 30.0,
     ) -> CommandResult:
-        """Execute a command step.
+        """Execute a command."""
+        merged_env = self.env_overrides.copy()
+        if env:
+            merged_env.update(env)
 
-        Args:
-            step: The RunCommandStep to execute.
-            scenario_name: Name of the current scenario (for logging).
-
-        Returns:
-            CommandResult with returncode and output.
-        """
-        env = self.get_base_env()
-
-        # Apply step-specific environment variables
-        if step.env:
-            env.update(step.env)
-
-        # Delegate to project's run_command (handles PYTHONPATH, python executable)
         result = self.project.run_command(
-            step.command,
-            env=env,
-            capture_output=step.capture_output,
-            timeout=step.timeout,
+            command,
+            env=merged_env,
+            capture_output=capture_output,
+            timeout=timeout,
         )
 
-        # Store for assertions
         self.last_result = CommandResult(
             returncode=result.returncode,
-            stdout=result.stdout if step.capture_output else "",
-            stderr=result.stderr if step.capture_output else "",
+            stdout=result.stdout if capture_output else "",
+            stderr=result.stderr if capture_output else "",
         )
 
         return self.last_result
 
-    def apply_patch(self, step: ApplyPatchStep, scenario_name: str) -> None:
-        """Apply a patch file.
+    @contextmanager
+    def apply_patch(
+        self, patch_path: str, *, push_graph: bool = True
+    ) -> Iterator[None]:
+        """Apply a patch file as a context manager.
+
+        The patch is reverted when exiting the context.
 
         Args:
-            step: The ApplyPatchStep to execute.
-            scenario_name: Name of the current scenario (for logging).
+            patch_path: Path to patch file relative to example directory.
+            push_graph: Whether to push graph snapshot after applying.
 
-        Raises:
-            RuntimeError: If patch application fails.
+        Yields:
+            None
+
+        Example:
+            with runner.apply_patch("patches/01_update.patch"):
+                runner.run_command("python pipeline.py")
         """
-        patch_path_abs = self.example_dir / step.patch_path
+        patch_path_abs = self.example_dir / patch_path
 
         if not patch_path_abs.exists():
             raise FileNotFoundError(
-                f"Patch file not found: {patch_path_abs} (resolved from {step.patch_path})"
+                f"Patch file not found: {patch_path_abs} (resolved from {patch_path})"
             )
 
-        # Get snapshot before applying patch
         before_snapshot = self._last_pushed_snapshot
 
-        # Apply the patch using patch command (works without git)
-        # -p1: strip one level from paths (a/ and b/ prefixes)
-        # -i: specify input file
-        # --no-backup-if-mismatch: don't create .orig backup files
+        # Apply the patch
         result = subprocess.run(
-            ["patch", "-p1", "-i", step.patch_path, "--no-backup-if-mismatch"],
+            ["patch", "-p1", "-i", patch_path, "--no-backup-if-mismatch"],
             capture_output=True,
             text=True,
             cwd=self.example_dir,
         )
 
         if result.returncode != 0:
-            raise RuntimeError(
-                f"Failed to apply patch {step.patch_path}:\n{result.stderr}"
-            )
+            raise RuntimeError(f"Failed to apply patch {patch_path}:\n{result.stderr}")
 
-        # Track applied patches for cleanup (use relative path)
-        self.applied_patches.append(step.patch_path)
-
-        # Push graph snapshot after applying patch if requested
         after_snapshot = None
-        if step.push_graph:
+        if push_graph:
             after_snapshot = self.push_graph_snapshot()
             if after_snapshot:
                 self._last_pushed_snapshot = after_snapshot
 
-        # Record the PatchApplied event
         self._events.append(
             PatchApplied(
                 timestamp=datetime.now(),
                 scenario_name=self._current_scenario,
-                patch_path=step.patch_path,
+                patch_path=patch_path,
                 before_snapshot=before_snapshot,
                 after_snapshot=after_snapshot,
             )
         )
 
-    def revert_patches(self) -> None:
-        """Revert all applied patches in reverse order."""
-        for patch_path in reversed(self.applied_patches):
-            # Use patch -R to reverse the patch
+        try:
+            yield
+        finally:
+            # Revert the patch
             subprocess.run(
                 ["patch", "-R", "-p1", "-i", patch_path, "--no-backup-if-mismatch"],
                 capture_output=True,
                 cwd=self.example_dir,
             )
-        self.applied_patches.clear()
 
-    def assert_output(self, step: AssertOutputStep, scenario_name: str) -> None:
-        """Validate assertions on the last command result.
+    def _run_step(self, step: BaseStep) -> None:
+        """Execute a single step."""
+        if isinstance(step, RunCommandStep):
+            self.run_command(
+                step.command,
+                env=step.env,
+                capture_output=step.capture_output,
+                timeout=step.timeout,
+            )
+        elif isinstance(step, ApplyPatchStep):
+            # For runbook execution, patches stack (don't revert until run completes)
+            self._patch_stack.enter_context(
+                self.apply_patch(step.patch_path, push_graph=step.push_graph)
+            )
+        elif isinstance(step, AssertOutputStep):
+            self._assert_output(step)
+        else:
+            raise ValueError(f"Unknown step type: {type(step)}")
 
-        Args:
-            step: The AssertOutputStep to execute.
-            scenario_name: Name of the current scenario (for logging).
-
-        Raises:
-            AssertionError: If any assertion fails.
-        """
+    def _assert_output(self, step: AssertOutputStep) -> None:
+        """Validate assertions on the last command result."""
         if self.last_result is None:
             raise RuntimeError(
                 "No command result available for assertion. "
                 "AssertOutputStep must follow a RunCommandStep with capture_output=True."
             )
 
-        # Check return code
         expected_returncode = step.returncode if step.returncode is not None else 0
         assert self.last_result.returncode == expected_returncode, (
             f"Expected returncode {expected_returncode}, "
@@ -607,7 +414,6 @@ class RunbookRunner:
             f"stderr: {self.last_result.stderr}"
         )
 
-        # Check contains assertions
         if step.contains:
             for substring in step.contains:
                 assert substring in self.last_result.stdout, (
@@ -615,7 +421,6 @@ class RunbookRunner:
                     f"stdout: {self.last_result.stdout}"
                 )
 
-        # Check not_contains assertions
         if step.not_contains:
             for substring in step.not_contains:
                 assert substring not in self.last_result.stdout, (
@@ -623,7 +428,6 @@ class RunbookRunner:
                     f"stdout: {self.last_result.stdout}"
                 )
 
-        # Check regex match
         if step.matches_regex:
             assert re.search(step.matches_regex, self.last_result.stdout), (
                 f"Regex pattern not matched: {step.matches_regex!r}\n"
@@ -631,15 +435,9 @@ class RunbookRunner:
             )
 
     def run_scenario(self, scenario: Scenario) -> None:
-        """Execute a single scenario.
-
-        Args:
-            scenario: The scenario to execute.
-        """
-        # Set current scenario for event tracking
+        """Execute a single scenario."""
         self._current_scenario = scenario.name
 
-        # Push initial graph snapshot before the first scenario
         if not self._initial_graph_pushed:
             initial_snapshot = self.push_graph_snapshot()
             if initial_snapshot:
@@ -647,52 +445,29 @@ class RunbookRunner:
             self._initial_graph_pushed = True
 
         for step in scenario.steps:
-            if isinstance(step, RunCommandStep):
-                self.run_command(step, scenario.name)
-            elif isinstance(step, ApplyPatchStep):
-                self.apply_patch(step, scenario.name)
-            elif isinstance(step, AssertOutputStep):
-                self.assert_output(step, scenario.name)
-            else:
-                raise ValueError(f"Unknown step type: {type(step)}")
+            self._run_step(step)
 
     def run(self) -> None:
         """Execute all scenarios in the runbook."""
-        try:
+        with self._patch_stack:
             for scenario in self.runbook.scenarios:
                 self.run_scenario(scenario)
 
-            # Set the execution state on the runbook
             state = RunbookExecutionState(events=self._events.copy())
             self.runbook.set_execution_state(state)
-        finally:
-            # Always revert patches on completion or error
-            if self.applied_patches:
-                self.revert_patches()
 
     @classmethod
     def from_yaml_file(
         cls,
         yaml_path: Path,
-        override_db_path: Path | None = None,
         env_overrides: dict[str, str] | None = None,
     ) -> RunbookRunner:
-        """Create a runner from a YAML runbook file.
-
-        Args:
-            yaml_path: Path to the .example.yaml file.
-            override_db_path: Optional path to test database.
-            env_overrides: Additional environment variable overrides.
-
-        Returns:
-            Configured RunbookRunner instance.
-        """
+        """Create a runner from a YAML runbook file."""
         runbook = Runbook.from_yaml_file(yaml_path)
         example_dir = yaml_path.parent
         return cls(
             runbook=runbook,
             example_dir=example_dir,
-            override_db_path=override_db_path,
             env_overrides=env_overrides,
         )
 
@@ -701,31 +476,39 @@ class RunbookRunner:
     def runner_for_project(
         cls,
         example_dir: Path,
-        override_db_path: Path | None = None,
         env_overrides: dict[str, str] | None = None,
+        work_dir: Path | None = None,
     ) -> Iterator[RunbookRunner]:
         """Context manager for running an example runbook in tests.
 
-        This handles cleanup even if the runbook execution fails.
-
-        Args:
-            example_dir: Directory containing .example.yaml.
-            override_db_path: Optional path to test database.
-            env_overrides: Additional environment variable overrides.
-
-        Yields:
-            RunbookRunner instance ready to execute.
+        Copies the example to a temporary work directory so patches don't
+        modify the original source code.
         """
-        yaml_path = example_dir / ".example.yaml"
-        runner = cls.from_yaml_file(
-            yaml_path=yaml_path,
-            override_db_path=override_db_path,
-            env_overrides=env_overrides,
-        )
+        temp_dir_obj = None
+        if work_dir is None:
+            temp_dir_obj = tempfile.TemporaryDirectory()
+            work_dir = Path(temp_dir_obj.name) / example_dir.name
 
         try:
+
+            def ignore_patterns(directory, files):
+                return [
+                    f
+                    for f in files
+                    if f in ("__pycache__", ".venv") or f.endswith(".pyc")
+                ]
+
+            shutil.copytree(
+                example_dir, work_dir, dirs_exist_ok=True, ignore=ignore_patterns
+            )
+
+            yaml_path = work_dir / ".example.yaml"
+            runner = cls.from_yaml_file(
+                yaml_path=yaml_path,
+                env_overrides=env_overrides,
+            )
+
             yield runner
         finally:
-            # Ensure patches are reverted
-            if runner.applied_patches:
-                runner.revert_patches()
+            if temp_dir_obj is not None:
+                temp_dir_obj.cleanup()
