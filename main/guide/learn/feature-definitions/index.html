@@ -3713,7 +3713,10 @@ It's a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model.</p>
 <div class="admonition abstract">
 <p class="admonition-title">Abstract</p>
 <p>Features must have unique (across all projects) <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt;" href="../../../reference/api/types/#metaxy.FeatureKey"><code>FeatureKey</code></a> associated with them.</p>
-<p>Users must provide one or more ID columns to <code>FeatureSpec</code>, telling Metaxy how to uniquely identify feature samples.</p>
+<p class="annotate">Users must provide one or more ID columns (1) to <code>FeatureSpec</code>, telling Metaxy how to uniquely identify feature samples.</p>
+<ol>
+<li>ID columns are <em>almost</em> a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).</li>
+</ol>
 </div>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseFeature</span><span class="p">,</span> <span class="n">FeatureSpec</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
