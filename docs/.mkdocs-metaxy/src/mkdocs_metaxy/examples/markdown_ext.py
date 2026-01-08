@@ -26,7 +26,6 @@ This module provides a markdown preprocessor that handles directives like:
         example: recompute
         scenario: "Initial pipeline run"
         step: "run_pipeline"
-        event_type: command
     :::
 """
 
@@ -348,7 +347,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
 
         Args:
             example_name: Name of the example.
-            params: Directive parameters (scenario, step, event_type, etc.).
+            params: Directive parameters (scenario, step, etc.).
 
         Returns:
             Markdown string with execution output.
@@ -378,18 +377,6 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         if step_name:
             events = [e for e in events if e.step_name == step_name]
 
-        # Filter by event type if specified
-        event_type = params.get("event_type")
-        if event_type:
-            if event_type == "command":
-                events = [e for e in events if isinstance(e, CommandExecuted)]
-            elif event_type == "patch":
-                events = [e for e in events if isinstance(e, PatchApplied)]
-            elif event_type == "graph_push":
-                events = [e for e in events if isinstance(e, GraphPushed)]
-            else:
-                raise ValueError(f"Unknown event_type: {event_type}")
-
         # Render all matching events
         md_parts = []
         for event in events:
@@ -406,7 +393,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         if not md_parts:
             return self.renderer.render_error(
                 "No events matched the specified criteria",
-                details=f"scenario={scenario_name}, step={step_name}, event_type={event_type}",
+                details=f"scenario={scenario_name}, step={step_name}",
             )
 
         return "\n".join(md_parts)
