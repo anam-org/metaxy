@@ -3566,8 +3566,35 @@
 </div>
 <hr />
 <p>Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks <strong>metadata</strong>: sample <a href="guide/learn/data-versioning/">versions</a>, dependencies, and data lineage across complex computational graphs.</p>
-<p>It's <a href="#about-metaxy">agnostic</a> to orchestration frameworks, compute engines, data or <a href="guide/learn/metadata-stores/">metadata storage</a>. Metaxy has no strict infrastructure requirements.</p>
-<p>Metaxy can scale to handle large amounts of <strong>big metadata</strong>.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Subject</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data</strong></td>
+<td>The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform.</td>
+</tr>
+<tr>
+<td><strong>Metadata</strong></td>
+<td>Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes.</td>
+</tr>
+</tbody>
+</table>
+<p>Metaxy manages <strong>metadata</strong> while your <strong>data</strong> lives elsewhere:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="err">┌────────────────────────────</span><span class="o">----</span><span class="err">─┐</span>          <span class="err">┌─────────────────────────┐</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="err">│</span>      <span class="n">Metadata</span> <span class="p">(</span><span class="n">Metaxy</span><span class="p">)</span>          <span class="err">│</span>          <span class="err">│</span>   <span class="n">Data</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="p">,</span> <span class="n">S3</span><span class="p">)</span>       <span class="err">│</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="err">├──────┬──────────┬──────┬───</span><span class="o">----</span><span class="err">─┤</span>          <span class="err">│</span>                         <span class="err">│</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="err">│</span>  <span class="n">ID</span>  <span class="err">│</span>   <span class="n">path</span>   <span class="err">│</span> <span class="n">size</span> <span class="err">│</span><span class="n">version</span> <span class="err">│</span>          <span class="err">│</span>  <span class="err">📦</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span>     <span class="err">│</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="err">├──────┼──────────┼──────┼──────</span><span class="o">--</span><span class="err">┤</span>          <span class="err">│</span>                         <span class="err">│</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="err">│</span> <span class="n">img1</span> <span class="err">│</span> <span class="n">s3</span><span class="p">:</span><span class="o">//...</span> <span class="err">│</span> <span class="mf">2.1</span><span class="n">M</span> <span class="err">│</span><span class="n">a3fdsf</span>  <span class="err">│</span> <span class="err">────────</span><span class="o">&gt;</span><span class="err">│</span>    <span class="err">├─</span> <span class="n">img1</span><span class="o">.</span><span class="n">jpg</span>          <span class="err">│</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="err">│</span> <span class="n">img2</span> <span class="err">│</span> <span class="n">s3</span><span class="p">:</span><span class="o">//...</span> <span class="err">│</span> <span class="mf">1.8</span><span class="n">M</span> <span class="err">│</span><span class="n">b7e123</span>  <span class="err">│</span> <span class="err">────────</span><span class="o">&gt;</span><span class="err">│</span>    <span class="err">├─</span> <span class="n">img2</span><span class="o">.</span><span class="n">jpg</span>          <span class="err">│</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="err">└──────┴──────────┴──────┴───</span><span class="o">----</span><span class="err">─┘</span>          <span class="err">└─────────────────────────┘</span>
+</span></code></pre></div>
+<p>Metaxy is <a href="#about-metaxy">agnostic</a> to orchestration frameworks, compute engines, data or <a href="guide/learn/metadata-stores/">metadata storage</a>. Metaxy has no strict infrastructure requirements, and can scale to handle large amounts of <strong>big metadata</strong>.</p>
 <p class="annotate">All of this is possible thanks to (1) <a href="https://narwhals-dev.github.io/narwhals/">Narwhals</a>, <a href="https://ibis-project.org/">Ibis</a>, and a few clever tricks.</p>
 <ol>
 <li>we really do stand on the shoulders of giants</li>

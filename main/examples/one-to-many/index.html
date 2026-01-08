@@ -2674,6 +2674,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3550,6 +3561,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3751,6 +3773,7 @@
 
 
 <h1 id="one-to-many-expansion">One-to-Many Expansion<a class="headerlink" href="#one-to-many-expansion" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p><a class="md-button" href="https://github.com/anam-org/metaxy/tree/main/examples/example-one-to-many" target="_blank"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0c4.42 0 8 3.58 8 8a8.01 8.01 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27s-1.36.09-2 .27c-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8"/></svg></span> View Example Source on GitHub</a></p>
 <p>This example demonstrates how to implement <code>1:N</code> transformations with Metaxy.
 In such relationships a single parent sample can map into multiple child samples.</p>
@@ -4001,8 +4024,9 @@ flowchart TB
 <p>Nothing needs recomputation - the system correctly detects no changes.</p>
 <h3 id="step-3-change-audio-code-version">Step 3: Change Audio Code Version<a class="headerlink" href="#step-3-change-audio-code-version" title="Permanent link">&para;</a></h3>
 <p>Now let's bump the code version on the <code>audio</code> field of <code>Video</code> feature:</p>
-<details class="example" open="open">
-<summary><code>patches/01_update_video_code_version.patch</code></summary>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="step-3-change-audio-code-version-patch" name="__tabbed_1" type="radio" /><input id="step-3-change-audio-code-version-feature-graph-changes" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="step-3-change-audio-code-version-patch">Patch</label><label for="step-3-change-audio-code-version-feature-graph-changes">Feature Graph Changes</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
 <div class="language-diff highlight"><span class="filename">patches/01_update_video_code_version.patch</span><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="gd">--- a/src/example_one_to_many/features.py</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="gi">+++ b/src/example_one_to_many/features.py</span>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a><a href="#__codelineno-8-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="gu">@@ -9,6 +9,6 @@ class Video(</span>
@@ -4014,8 +4038,28 @@ flowchart TB
 </span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9"></a><a href="#__codelineno-8-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w"> </span>        ],
 </span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10"></a><a href="#__codelineno-8-10"><span class="linenos" data-linenos="10 "></span></a><span class="w"> </span>    ),
 </span></code></pre></div>
-</details>
-<p>This represents updating the audio processing algorithm, and therefore the audio data.</p>
+</div>
+<div class="tabbed-block">
+<pre class="mermaid"><code>---
+title: Feature Graph Changes
+---
+flowchart TB
+    %% Snapshot version: none
+    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
+    video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;697d0098&lt;/font&gt; → &lt;font color="#00FF00"&gt;e467986a&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;7132721c&lt;/font&gt; → &lt;font color="#00FF00"&gt;f8e35296&lt;/font&gt;)&lt;br/&gt;- frames (3f6f401c)&lt;/div&gt;"]
+    video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;24b73621&lt;/font&gt; → &lt;font color="#00FF00"&gt;850c45aa&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;d6a26940&lt;/font&gt; → &lt;font color="#00FF00"&gt;0295dd38&lt;/font&gt;)&lt;br/&gt;- frames (b3595d64)&lt;/div&gt;"]
+    video_faces["&lt;div style="text-align:left"&gt;&lt;b&gt;video/faces&lt;/b&gt;&lt;br/&gt;ffa26c20&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (ffffa4c9)&lt;/div&gt;"]
+    video_raw --&gt; video_chunk
+    video_chunk --&gt; video_faces
+
+
+    style video_chunk stroke:#FFAA00,stroke-width:2px
+    style video_faces stroke:#808080
+    style video_raw stroke:#FFAA00,stroke-width:2px</code></pre>
+</div>
+</div>
+</div>
+<p>This represents updating the audio processing algorithm, and therefore the audio data, while frame data is kept the same.</p>
 <h3 id="step-4-observe-field-level-tracking">Step 4: Observe Field-Level Tracking<a class="headerlink" href="#step-4-observe-field-level-tracking" title="Permanent link">&para;</a></h3>
 <p>Run the pipeline again after the code change:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python<span class="w"> </span>pipeline.py

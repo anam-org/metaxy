@@ -3611,8 +3611,26 @@
 It has been inspired by <a href="https://dagster.io/">Dagster</a>'s Software-Defined Assets and <a href="https://nixos.org/">Nix</a>.</p>
 <div class="admonition abstract">
 <p class="admonition-title">Abstract</p>
-<p>Features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.
-But it can be just pure <strong>metadata</strong> as well.</p>
+<p>Features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Subject</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data</strong></td>
+<td>The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform.</td>
+</tr>
+<tr>
+<td><strong>Metadata</strong></td>
+<td>Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes.</td>
+</tr>
+</tbody>
+</table>
+<p>As an edge case, Metaxy features may also be pure <strong>metadata</strong> without references to external <strong>data</strong>.</p>
 </div>
 <p>I will highlight <strong>data</strong> and <strong>metadata</strong> with bold so it really stands out.</p>
 <p>Metaxy is responsible for providing correct <strong>metadata</strong> to users.</p>
