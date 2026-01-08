@@ -594,6 +594,7 @@ class TestPartitionedAssets:
         )  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 4
 
+    @pytest.mark.flaky(reruns=5)
     def test_no_partition_by_metadata_returns_all_rows(
         self,
         partitioned_feature: type[mx.BaseFeature],

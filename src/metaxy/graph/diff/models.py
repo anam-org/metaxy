@@ -330,6 +330,69 @@ class GraphData(FrozenBaseModel):
         )
 
     @classmethod
+    def from_snapshot(cls, snapshot_data: dict[str, Any]) -> "GraphData":
+        """Convert snapshot data to GraphData for rendering.
+
+        Args:
+            snapshot_data: Snapshot data in format {feature_key_str -> {metaxy_feature_version, fields, feature_spec}}
+
+        Returns:
+            GraphData with all nodes and edges
+        """
+        nodes: dict[str, GraphNode] = {}
+        edges: list[EdgeData] = []
+
+        # Convert each feature to a GraphNode
+        for feature_key_str, feature_data in snapshot_data.items():
+            feature_key = FeatureKey(feature_key_str.split("/"))
+            feature_version = feature_data.get("metaxy_feature_version")
+            fields_dict = feature_data.get("fields", {})
+            feature_spec = feature_data.get("feature_spec", {})
+
+            # Convert fields
+            field_nodes: list[FieldNode] = []
+            for field_key_str, field_version in fields_dict.items():
+                field_key = FieldKey(field_key_str.split("/"))
+                field_node = FieldNode(
+                    key=field_key,
+                    version=field_version,
+                    status=NodeStatus.NORMAL,
+                )
+                field_nodes.append(field_node)
+
+            # Extract dependencies from feature_spec
+            dependencies: list[FeatureKey] = []
+            deps_list = feature_spec.get("deps", [])
+            for dep in deps_list:
+                dep_feature = dep.get("feature")
+                if dep_feature:
+                    dependencies.append(FeatureKey(dep_feature.split("/")))
+
+            # Get project from metadata if available
+            metadata = feature_spec.get("metadata", {})
+            project = metadata.get("project")
+
+            # Create node
+            node = GraphNode(
+                key=feature_key,
+                version=feature_version,
+                fields=field_nodes,
+                dependencies=dependencies,
+                status=NodeStatus.NORMAL,
+                project=project,
+            )
+            nodes[feature_key_str] = node
+
+            # Create edges
+            for dep_key in dependencies:
+                edges.append(EdgeData(from_key=dep_key, to_key=feature_key))
+
+        return cls(
+            nodes=nodes,
+            edges=edges,
+        )
+
+    @classmethod
     def from_merged_diff(cls, merged_data: dict[str, Any]) -> "GraphData":
         """Convert merged diff data to GraphData.
 

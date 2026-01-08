@@ -314,14 +314,7 @@ class ExampleRenderer:
             md_parts.append("```")
             md_parts.append("")
 
-        # Show stderr if present (as a warning admonition)
-        if event.stderr:
-            md_parts.append('!!! warning "Warnings/Errors"')
-            md_parts.append("    ```")
-            for line in event.stderr.rstrip().split("\n"):
-                md_parts.append(f"    {line}")
-            md_parts.append("    ```")
-            md_parts.append("")
+        # Skip stderr - warnings/errors are noisy in documentation
 
         return "\n".join(md_parts)
 
@@ -342,7 +335,12 @@ class ExampleRenderer:
         md_parts.append(f"**Applied patch:** `{event.patch_path}`")
         md_parts.append("")
 
-        if event.before_snapshot and event.after_snapshot:
+        # Only show snapshot changes if they actually differ
+        if (
+            event.before_snapshot
+            and event.after_snapshot
+            and event.before_snapshot != event.after_snapshot
+        ):
             before_short = event.before_snapshot[:8]
             after_short = event.after_snapshot[:8]
             md_parts.append(

@@ -35,6 +35,7 @@ class GraphPushed(BaseModel):
 
     type: Literal["graph_pushed"] = "graph_pushed"
     snapshot_version: str
+    graph: dict[str, Any]  # Serialized graph data for rendering
     timestamp: datetime
     scenario_name: str | None = None
     step_name: str | None = None
@@ -345,6 +346,7 @@ class RunbookRunner:
                     scenario_name=self._current_scenario,
                     step_name=self._current_step_name,
                     snapshot_version=snapshot_version,
+                    graph=self._get_current_graph(),
                 )
             )
             return snapshot_version
