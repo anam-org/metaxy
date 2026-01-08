@@ -38,7 +38,10 @@ It's a [Pydantic](https://docs.pydantic.dev/latest/) model.
 
     Features must have unique (across all projects) [`FeatureKey`][metaxy.FeatureKey] associated with them.
 
-    Users must provide one or more ID columns to `FeatureSpec`, telling Metaxy how to uniquely identify feature samples.
+    Users must provide one or more ID columns (1) to `FeatureSpec`, telling Metaxy how to uniquely identify feature samples.
+    { .annotate }
+
+    1. ID columns are *almost* a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).
 
 ```py
 from metaxy import BaseFeature, FeatureSpec
