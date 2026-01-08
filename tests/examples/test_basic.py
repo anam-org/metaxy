@@ -1,4 +1,4 @@
-"""Test the recompute example using the runbook system."""
+"""Test the basic example using the runbook system."""
 
 from pathlib import Path
 
@@ -6,8 +6,8 @@ from metaxy._testing import RunbookRunner
 from metaxy._testing.runbook import GraphPushed, PatchApplied
 
 
-def test_recompute_runbook(tmp_path):
-    """Test recompute example using the .example.yaml runbook.
+def test_basic_runbook(tmp_path):
+    """Test basic example using the .example.yaml runbook.
 
     This test demonstrates the new runbook system:
     - Loads .example.yaml from the example directory
@@ -15,8 +15,8 @@ def test_recompute_runbook(tmp_path):
     - Automatically applies and reverts patches
     - Handles assertions on command output
     """
-    example_dir = Path("examples/example-recompute")
-    test_db = tmp_path / "example_recompute.db"
+    example_dir = Path("examples/example-basic")
+    test_db = tmp_path / "example_basic"
 
     # Run the runbook with a temporary test directory
     with RunbookRunner.runner_for_project(

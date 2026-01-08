@@ -41,7 +41,7 @@ Display a link to the example source code on GitHub:
 
 ```markdown
 ::: metaxy-example source-link
-example: recompute
+example: basic
 :::
 ```
 
@@ -57,27 +57,27 @@ Examples:
 # As a button (default)
 
 ::: metaxy-example source-link
-example: recompute
+example: basic
 :::
 
 # As an inline link
 
 ::: metaxy-example source-link
-example: recompute
+example: basic
 button: false
 :::
 
 # With custom text
 
 ::: metaxy-example source-link
-example: recompute
+example: basic
 text: "Browse Example Code"
 :::
 
 # Alternative directive name
 
 ::: metaxy-example github
-example: recompute
+example: basic
 :::
 ```
 
@@ -87,7 +87,7 @@ Show the scenarios from a runbook:
 
 ```markdown
 ::: metaxy-example scenarios
-example: recompute
+example: basic
 :::
 ```
 
@@ -103,14 +103,14 @@ Show a Python source file with syntax highlighting and collapsible wrapper:
 
 ```markdown
 ::: metaxy-example file
-example: recompute
-path: src/example_recompute/features.py
+example: basic
+path: src/example_basic/features.py
 :::
 ```
 
 Parameters:
 
-- `example` (required): Example name (e.g., "recompute" for "example-recompute")
+- `example` (required): Example name (e.g., "basic" for "example-basic")
 - `path` (required): File path relative to example directory
 - `linenos` (optional): Show line numbers (default: true)
 - `patches` (optional): List of patches to apply before displaying
@@ -121,8 +121,8 @@ Show how a file looks after applying patches:
 
 ```markdown
 ::: metaxy-example file
-example: recompute
-path: src/example_recompute/features.py
+example: basic
+path: src/example_basic/features.py
 patches: ["patches/01_update_parent_algorithm.patch"]
 :::
 ```
@@ -140,7 +140,7 @@ Show the diff patch itself:
 
 ```markdown
 ::: metaxy-example patch
-example: recompute
+example: basic
 path: patches/01_update_parent_algorithm.patch
 :::
 ```

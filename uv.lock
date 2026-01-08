@@ -12,12 +12,12 @@ resolution-markers = [
 [manifest]
 members = [
     "example-aggregation",
+    "example-basic",
     "example-dagster",
     "example-ducklake",
     "example-migration",
     "example-one-to-many",
     "example-overview",
-    "example-recompute",
     "examples",
     "metaxy",
     "mkdocs-metaxy",
@@ -1166,6 +1166,17 @@ dependencies = [
 requires-dist = [{ name = "metaxy", extras = ["delta"], editable = "." }]
 
 [[package]]
+name = "example-basic"
+version = "0.1.0"
+source = { editable = "examples/example-basic" }
+dependencies = [
+    { name = "metaxy", extra = ["delta"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "metaxy", extras = ["delta"] }]
+
+[[package]]
 name = "example-dagster"
 version = "0.1.0"
 source = { editable = "examples/example-dagster" }
@@ -1229,39 +1240,28 @@ dependencies = [
 requires-dist = [{ name = "metaxy", extras = ["delta"] }]
 
 [[package]]
-name = "example-recompute"
-version = "0.1.0"
-source = { editable = "examples/example-recompute" }
-dependencies = [
-    { name = "metaxy", extra = ["delta"] },
-]
-
-[package.metadata]
-requires-dist = [{ name = "metaxy", extras = ["delta"] }]
-
-[[package]]
 name = "examples"
 version = "0.1.0"
 source = { editable = "examples" }
 dependencies = [
     { name = "example-aggregation" },
+    { name = "example-basic" },
     { name = "example-dagster" },
     { name = "example-ducklake" },
     { name = "example-migration" },
     { name = "example-one-to-many" },
     { name = "example-overview" },
-    { name = "example-recompute" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "example-aggregation", editable = "examples/example-aggregation" },
+    { name = "example-basic", editable = "examples/example-basic" },
     { name = "example-dagster", editable = "examples/example-dagster" },
     { name = "example-ducklake", editable = "examples/example-ducklake" },
     { name = "example-migration", editable = "examples/example-migration" },
     { name = "example-one-to-many", editable = "examples/example-one-to-many" },
     { name = "example-overview", editable = "examples/example-overview" },
-    { name = "example-recompute", editable = "examples/example-recompute" },
 ]
 
 [[package]]

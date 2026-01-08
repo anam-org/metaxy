@@ -585,6 +585,340 @@
     ]),
   })
 # ---
+# name: test_example_snapshot[example-basic]
+  dict({
+    'events': list([
+      dict({
+        'graph': dict({
+          'examples/child': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'columns': None,
+                  'feature': 'examples/parent',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'fields': list([
+                dict({
+                  'code_version': '__metaxy_initial__',
+                  'deps': list([
+                  ]),
+                  'key': 'predictions',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'examples/child',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'predictions': '15e27d1ca8fad19456fd20b59e5904e79181fe6957e7b2e035bd94c6f2aa0643',
+            }),
+            'metaxy_feature_version': '467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939',
+          }),
+          'examples/parent': dict({
+            'feature_spec': dict({
+              'deps': list([
+              ]),
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'embeddings',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'examples/parent',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'embeddings': '05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459',
+            }),
+            'metaxy_feature_version': '0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8',
+          }),
+        }),
+        'scenario_name': 'Setup upstream data',
+        'snapshot_version': '0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3',
+        'step_name': None,
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'command': 'python -m example_basic.setup_data',
+        'returncode': 0,
+        'scenario_name': 'Setup upstream data',
+        'step_name': 'setup_data',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python -m example_basic.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Initial pipeline run',
+        'step_name': 'initial_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python -m example_basic.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Idempotent rerun',
+        'step_name': 'idempotent_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'graph': dict({
+          'examples/child': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'columns': None,
+                  'feature': 'examples/parent',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'fields': list([
+                dict({
+                  'code_version': '__metaxy_initial__',
+                  'deps': list([
+                  ]),
+                  'key': 'predictions',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'examples/child',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'predictions': '391c5ef3b7b701ddf980431430cb1ed3b8b932c71b659cd53447a5a4a8e8888b',
+            }),
+            'metaxy_feature_version': '415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43',
+          }),
+          'examples/parent': dict({
+            'feature_spec': dict({
+              'deps': list([
+              ]),
+              'fields': list([
+                dict({
+                  'code_version': '2',
+                  'deps': list([
+                  ]),
+                  'key': 'embeddings',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'examples/parent',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'embeddings': '3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add',
+            }),
+            'metaxy_feature_version': 'a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737',
+          }),
+        }),
+        'scenario_name': 'Code evolution',
+        'snapshot_version': '1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c',
+        'step_name': 'update_parent_version',
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'after_graph': dict({
+          'examples/child': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'columns': None,
+                  'feature': 'examples/parent',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'fields': list([
+                dict({
+                  'code_version': '__metaxy_initial__',
+                  'deps': list([
+                  ]),
+                  'key': 'predictions',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'examples/child',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'predictions': '391c5ef3b7b701ddf980431430cb1ed3b8b932c71b659cd53447a5a4a8e8888b',
+            }),
+            'metaxy_feature_version': '415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43',
+          }),
+          'examples/parent': dict({
+            'feature_spec': dict({
+              'deps': list([
+              ]),
+              'fields': list([
+                dict({
+                  'code_version': '2',
+                  'deps': list([
+                  ]),
+                  'key': 'embeddings',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'examples/parent',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'embeddings': '3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add',
+            }),
+            'metaxy_feature_version': 'a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737',
+          }),
+        }),
+        'after_snapshot': '1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c',
+        'before_graph': dict({
+          'examples/child': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'columns': None,
+                  'feature': 'examples/parent',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'fields': list([
+                dict({
+                  'code_version': '__metaxy_initial__',
+                  'deps': list([
+                  ]),
+                  'key': 'predictions',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'examples/child',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'predictions': '15e27d1ca8fad19456fd20b59e5904e79181fe6957e7b2e035bd94c6f2aa0643',
+            }),
+            'metaxy_feature_version': '467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939',
+          }),
+          'examples/parent': dict({
+            'feature_spec': dict({
+              'deps': list([
+              ]),
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'embeddings',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'examples/parent',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'embeddings': '05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459',
+            }),
+            'metaxy_feature_version': '0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8',
+          }),
+        }),
+        'before_snapshot': '0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3',
+        'patch_path': 'patches/01_update_parent_algorithm.patch',
+        'scenario_name': 'Code evolution',
+        'step_name': 'update_parent_version',
+        'type': 'patch_applied',
+      }),
+      dict({
+        'command': 'python -m example_basic.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Code evolution',
+        'step_name': 'recompute_after_change',
+        'type': 'command_executed',
+      }),
+    ]),
+  })
+# ---
 # name: test_example_snapshot[example-one-to-many]
   dict({
     'events': list([
@@ -2009,364 +2343,6 @@
         'returncode': 0,
         'scenario_name': 'Code change - audio field',
         'step_name': 'render_diff',
-        'type': 'command_executed',
-      }),
-    ]),
-  })
-# ---
-# name: test_example_snapshot[example-recompute]
-  dict({
-    'events': list([
-      dict({
-        'graph': dict({
-          'examples/child': dict({
-            'feature_spec': dict({
-              'deps': list([
-                dict({
-                  'columns': None,
-                  'feature': 'examples/parent',
-                  'fields_mapping': dict({
-                    'mapping': dict({
-                      'exclude_fields': list([
-                      ]),
-                      'match_suffix': False,
-                      'type': 'default',
-                    }),
-                  }),
-                  'lineage': dict({
-                    'relationship': dict({
-                      'type': '1:1',
-                    }),
-                  }),
-                  'optional': False,
-                  'rename': None,
-                  'sql_filters': None,
-                }),
-              ]),
-              'fields': list([
-                dict({
-                  'code_version': '1',
-                  'deps': list([
-                    dict({
-                      'feature': 'examples/parent',
-                      'fields': list([
-                        'embeddings',
-                      ]),
-                    }),
-                  ]),
-                  'key': 'predictions',
-                }),
-              ]),
-              'id_columns': list([
-                'sample_uid',
-              ]),
-              'key': 'examples/child',
-              'metadata': dict({
-              }),
-            }),
-            'fields': dict({
-              'predictions': '1905d9e85ceb58b0361e863c7fbfbf5843582f8ed135ea5ce6c24ee2c68c6bb4',
-            }),
-            'metaxy_feature_version': '440ffb028aaa5cb21b155c4ef21debd81f283f99aa91ef58cbe541d71164b44f',
-          }),
-          'examples/parent': dict({
-            'feature_spec': dict({
-              'deps': list([
-              ]),
-              'fields': list([
-                dict({
-                  'code_version': '1',
-                  'deps': list([
-                  ]),
-                  'key': 'embeddings',
-                }),
-              ]),
-              'id_columns': list([
-                'sample_uid',
-              ]),
-              'key': 'examples/parent',
-              'metadata': dict({
-              }),
-            }),
-            'fields': dict({
-              'embeddings': '05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459',
-            }),
-            'metaxy_feature_version': '0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8',
-          }),
-        }),
-        'scenario_name': 'Setup upstream data',
-        'snapshot_version': 'd49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82',
-        'step_name': None,
-        'type': 'graph_pushed',
-      }),
-      dict({
-        'command': 'python -m example_recompute.setup_data',
-        'returncode': 0,
-        'scenario_name': 'Setup upstream data',
-        'step_name': 'setup_data',
-        'type': 'command_executed',
-      }),
-      dict({
-        'command': 'python -m example_recompute.pipeline',
-        'returncode': 0,
-        'scenario_name': 'Initial pipeline run',
-        'step_name': 'initial_run',
-        'type': 'command_executed',
-      }),
-      dict({
-        'command': 'python -m example_recompute.pipeline',
-        'returncode': 0,
-        'scenario_name': 'Idempotent rerun',
-        'step_name': 'idempotent_run',
-        'type': 'command_executed',
-      }),
-      dict({
-        'graph': dict({
-          'examples/child': dict({
-            'feature_spec': dict({
-              'deps': list([
-                dict({
-                  'columns': None,
-                  'feature': 'examples/parent',
-                  'fields_mapping': dict({
-                    'mapping': dict({
-                      'exclude_fields': list([
-                      ]),
-                      'match_suffix': False,
-                      'type': 'default',
-                    }),
-                  }),
-                  'lineage': dict({
-                    'relationship': dict({
-                      'type': '1:1',
-                    }),
-                  }),
-                  'optional': False,
-                  'rename': None,
-                  'sql_filters': None,
-                }),
-              ]),
-              'fields': list([
-                dict({
-                  'code_version': '1',
-                  'deps': list([
-                    dict({
-                      'feature': 'examples/parent',
-                      'fields': list([
-                        'embeddings',
-                      ]),
-                    }),
-                  ]),
-                  'key': 'predictions',
-                }),
-              ]),
-              'id_columns': list([
-                'sample_uid',
-              ]),
-              'key': 'examples/child',
-              'metadata': dict({
-              }),
-            }),
-            'fields': dict({
-              'predictions': 'bcb950543ea50ba3e19aef4846cbc3d36725e2548040c4327219eb2e75e6d997',
-            }),
-            'metaxy_feature_version': '7251e21c32d2d8e35a8ba389a8ce1b597663f206dee0ff55e542a3af1f1665cd',
-          }),
-          'examples/parent': dict({
-            'feature_spec': dict({
-              'deps': list([
-              ]),
-              'fields': list([
-                dict({
-                  'code_version': '2',
-                  'deps': list([
-                  ]),
-                  'key': 'embeddings',
-                }),
-              ]),
-              'id_columns': list([
-                'sample_uid',
-              ]),
-              'key': 'examples/parent',
-              'metadata': dict({
-              }),
-            }),
-            'fields': dict({
-              'embeddings': '3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add',
-            }),
-            'metaxy_feature_version': 'a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737',
-          }),
-        }),
-        'scenario_name': 'Code evolution',
-        'snapshot_version': '31195f21044a744b4ea70c1ffe6432182e989ede74ed92a8c99e8cd269f14477',
-        'step_name': 'update_parent_version',
-        'type': 'graph_pushed',
-      }),
-      dict({
-        'after_graph': dict({
-          'examples/child': dict({
-            'feature_spec': dict({
-              'deps': list([
-                dict({
-                  'columns': None,
-                  'feature': 'examples/parent',
-                  'fields_mapping': dict({
-                    'mapping': dict({
-                      'exclude_fields': list([
-                      ]),
-                      'match_suffix': False,
-                      'type': 'default',
-                    }),
-                  }),
-                  'lineage': dict({
-                    'relationship': dict({
-                      'type': '1:1',
-                    }),
-                  }),
-                  'optional': False,
-                  'rename': None,
-                  'sql_filters': None,
-                }),
-              ]),
-              'fields': list([
-                dict({
-                  'code_version': '1',
-                  'deps': list([
-                    dict({
-                      'feature': 'examples/parent',
-                      'fields': list([
-                        'embeddings',
-                      ]),
-                    }),
-                  ]),
-                  'key': 'predictions',
-                }),
-              ]),
-              'id_columns': list([
-                'sample_uid',
-              ]),
-              'key': 'examples/child',
-              'metadata': dict({
-              }),
-            }),
-            'fields': dict({
-              'predictions': 'bcb950543ea50ba3e19aef4846cbc3d36725e2548040c4327219eb2e75e6d997',
-            }),
-            'metaxy_feature_version': '7251e21c32d2d8e35a8ba389a8ce1b597663f206dee0ff55e542a3af1f1665cd',
-          }),
-          'examples/parent': dict({
-            'feature_spec': dict({
-              'deps': list([
-              ]),
-              'fields': list([
-                dict({
-                  'code_version': '2',
-                  'deps': list([
-                  ]),
-                  'key': 'embeddings',
-                }),
-              ]),
-              'id_columns': list([
-                'sample_uid',
-              ]),
-              'key': 'examples/parent',
-              'metadata': dict({
-              }),
-            }),
-            'fields': dict({
-              'embeddings': '3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add',
-            }),
-            'metaxy_feature_version': 'a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737',
-          }),
-        }),
-        'after_snapshot': '31195f21044a744b4ea70c1ffe6432182e989ede74ed92a8c99e8cd269f14477',
-        'before_graph': dict({
-          'examples/child': dict({
-            'feature_spec': dict({
-              'deps': list([
-                dict({
-                  'columns': None,
-                  'feature': 'examples/parent',
-                  'fields_mapping': dict({
-                    'mapping': dict({
-                      'exclude_fields': list([
-                      ]),
-                      'match_suffix': False,
-                      'type': 'default',
-                    }),
-                  }),
-                  'lineage': dict({
-                    'relationship': dict({
-                      'type': '1:1',
-                    }),
-                  }),
-                  'optional': False,
-                  'rename': None,
-                  'sql_filters': None,
-                }),
-              ]),
-              'fields': list([
-                dict({
-                  'code_version': '1',
-                  'deps': list([
-                    dict({
-                      'feature': 'examples/parent',
-                      'fields': list([
-                        'embeddings',
-                      ]),
-                    }),
-                  ]),
-                  'key': 'predictions',
-                }),
-              ]),
-              'id_columns': list([
-                'sample_uid',
-              ]),
-              'key': 'examples/child',
-              'metadata': dict({
-              }),
-            }),
-            'fields': dict({
-              'predictions': '1905d9e85ceb58b0361e863c7fbfbf5843582f8ed135ea5ce6c24ee2c68c6bb4',
-            }),
-            'metaxy_feature_version': '440ffb028aaa5cb21b155c4ef21debd81f283f99aa91ef58cbe541d71164b44f',
-          }),
-          'examples/parent': dict({
-            'feature_spec': dict({
-              'deps': list([
-              ]),
-              'fields': list([
-                dict({
-                  'code_version': '1',
-                  'deps': list([
-                  ]),
-                  'key': 'embeddings',
-                }),
-              ]),
-              'id_columns': list([
-                'sample_uid',
-              ]),
-              'key': 'examples/parent',
-              'metadata': dict({
-              }),
-            }),
-            'fields': dict({
-              'embeddings': '05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459',
-            }),
-            'metaxy_feature_version': '0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8',
-          }),
-        }),
-        'before_snapshot': 'd49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82',
-        'patch_path': 'patches/01_update_parent_algorithm.patch',
-        'scenario_name': 'Code evolution',
-        'step_name': 'update_parent_version',
-        'type': 'patch_applied',
-      }),
-      dict({
-        'command': 'python -m example_recompute.pipeline',
-        'returncode': 0,
-        'scenario_name': 'Code evolution',
-        'step_name': 'recompute_after_change',
         'type': 'command_executed',
       }),
     ]),

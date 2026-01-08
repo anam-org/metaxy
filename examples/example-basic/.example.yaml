@@ -1,6 +1,6 @@
-name: "Recompute Example"
+name: "Basic Example"
 description: "Demonstrates automatic recomputation when upstream dependencies change"
-package_name: "example_recompute"
+package_name: "example_basic"
 
 scenarios:
   - name: "Setup upstream data"
@@ -8,7 +8,7 @@ scenarios:
     steps:
       - name: "setup_data"
         type: "run_command"
-        command: "python -m example_recompute.setup_data"
+        command: "python -m example_basic.setup_data"
         description: "Generate raw data samples"
         capture_output: false
         timeout: 10.0
@@ -18,7 +18,7 @@ scenarios:
     steps:
       - name: "initial_run"
         type: "run_command"
-        command: "python -m example_recompute.pipeline"
+        command: "python -m example_basic.pipeline"
         description: "Run pipeline with initial feature definitions"
         capture_output: true
         timeout: 30.0
@@ -35,7 +35,7 @@ scenarios:
     steps:
       - name: "idempotent_run"
         type: "run_command"
-        command: "python -m example_recompute.pipeline"
+        command: "python -m example_basic.pipeline"
         description: "Rerun pipeline without any code changes"
         capture_output: true
         timeout: 30.0
@@ -56,7 +56,7 @@ scenarios:
 
       - name: "recompute_after_change"
         type: "run_command"
-        command: "python -m example_recompute.pipeline"
+        command: "python -m example_basic.pipeline"
         description: "Run pipeline with updated parent feature"
         capture_output: true
         timeout: 30.0
