@@ -1059,3 +1059,255 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
 
         # Clean up
         conn.drop_table(table_name)
+
+
+def test_clickhouse_auto_cast_struct_for_map_non_string_values(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test auto_cast_struct_for_map with non-string Map value types.
+
+    This test verifies that when a ClickHouse table has Map(String, Int64) columns,
+    Struct fields are correctly cast to Int64 before insertion.
+    """
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with Map(String, Int64) column for counts
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                field_counts Map(String, Int64),
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Create DataFrame with Struct column containing integers
+        samples = pl.DataFrame(
+            {
+                "sample_uid": [1, 2],
+                "field_counts": [
+                    {"frames_count": 10, "audio_count": 5},
+                    {"frames_count": 20, "audio_count": 8},
+                ],
+                "metaxy_provenance_by_field": [
+                    {"frames": "hash1", "audio": "hash2"},
+                    {"frames": "hash3", "audio": "hash4"},
+                ],
+            }
+        )
+
+        # Write should succeed - Struct int values are cast to Int64 for Map(String, Int64)
+        store.write_metadata(feature_cls, samples)
+
+        # Read back and verify
+        read_result = store.read_metadata_in_store(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
+
+        assert len(result) == 2
+
+        # Verify field_counts Map data has correct integer values
+        field_counts = result["field_counts"][0]
+        assert isinstance(field_counts, pl.Series), (
+            f"Expected pl.Series, got {type(field_counts)}"
+        )
+        counts_dict = {row["key"]: row["value"] for row in field_counts.to_list()}
+        assert counts_dict["frames_count"] == 10
+        assert counts_dict["audio_count"] == 5
+
+        # Clean up
+        conn.drop_table(table_name)
+
+
+def test_clickhouse_auto_cast_struct_for_map_empty_struct(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test auto_cast_struct_for_map handles empty structs gracefully.
+
+    Empty structs (struct[0] with no fields) should be skipped during
+    transformation since they can't be converted to a Map.
+    """
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with Map column for empty struct
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                empty_metadata Map(String, String),
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Create DataFrame with empty Struct column (struct[0])
+        # This simulates the preview_summary: <struct[0]> {}, {} case
+        empty_struct_schema = pl.Struct([])  # Empty struct with no fields
+        samples = pl.DataFrame(
+            {
+                "sample_uid": [1, 2],
+                "empty_metadata": pl.Series([{}, {}]).cast(empty_struct_schema),
+                "metaxy_provenance_by_field": [
+                    {"frames": "hash1", "audio": "hash2"},
+                    {"frames": "hash3", "audio": "hash4"},
+                ],
+            }
+        )
+
+        # Verify the empty struct has no fields
+        assert isinstance(samples.schema["empty_metadata"], pl.Struct)
+        assert len(samples.schema["empty_metadata"].fields) == 0
+
+        # Write should succeed - empty struct is skipped, other structs converted
+        store.write_metadata(feature_cls, samples)
+
+        # Read back and verify data was written
+        read_result = store.read_metadata_in_store(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
+
+        assert len(result) == 2
+        assert set(result["sample_uid"].to_list()) == {1, 2}
+
+        # Clean up
+        conn.drop_table(table_name)
+
+
+def test_clickhouse_auto_cast_struct_for_map_null_values(
+    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+) -> None:
+    """Test that Struct columns with NULL values are handled correctly.
+
+    When a Polars Struct has fields with NULL values (e.g., `{'a': 1, 'b': None}`),
+    and the target ClickHouse column is Map(String, Int64) (non-nullable values),
+    the NULL entries should be filtered out since ClickHouse Maps don't support
+    NULL values unless explicitly declared as Nullable.
+
+    This tests the fix for the error:
+    "Cannot convert NULL value to non-Nullable type: while converting source
+    column selected_frame_indices to destination column selected_frame_indices"
+    """
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key
+
+    with ClickHouseMetadataStore(
+        clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=True
+    ) as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with Map(String, Int64) column - non-nullable values
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                selected_frame_indices Map(String, Int64),
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_snapshot_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_materialization_id String,
+                metaxy_feature_spec_version String
+            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Create DataFrame with Struct column containing NULL values
+        # This simulates: selected_frame_indices: {'eyes_open_true': 38, 'eyes_open_false': None}
+        samples = pl.DataFrame(
+            {
+                "sample_uid": [1, 2],
+                "selected_frame_indices": [
+                    {
+                        "eyes_open_true": 38,
+                        "eyes_open_false": None,
+                        "head_pitch_min": 5,
+                    },
+                    {
+                        "eyes_open_true": None,
+                        "eyes_open_false": 67,
+                        "head_pitch_min": None,
+                    },
+                ],
+                "metaxy_provenance_by_field": [
+                    {"frames": "hash1", "audio": "hash2"},
+                    {"frames": "hash3", "audio": "hash4"},
+                ],
+            }
+        )
+
+        # Verify the struct has nullable int fields
+        struct_type = samples.schema["selected_frame_indices"]
+        assert isinstance(struct_type, pl.Struct)
+
+        # Write should succeed - NULL values are filtered out
+        store.write_metadata(feature_cls, samples)
+
+        # Read back and verify data was written
+        read_result = store.read_metadata_in_store(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
+
+        assert len(result) == 2
+        assert set(result["sample_uid"].to_list()) == {1, 2}
+
+        # Verify the Map data - NULL entries should be filtered out
+        # Row 1: {'eyes_open_true': 38, 'head_pitch_min': 5} (eyes_open_false filtered)
+        # Row 2: {'eyes_open_false': 67} (eyes_open_true and head_pitch_min filtered)
+        row1 = result.filter(pl.col("sample_uid") == 1)["selected_frame_indices"][0]
+        row2 = result.filter(pl.col("sample_uid") == 2)["selected_frame_indices"][0]
+
+        # Convert list of {key, value} structs to dict for easier checking
+        row1_dict = {item["key"]: item["value"] for item in row1}
+        row2_dict = {item["key"]: item["value"] for item in row2}
+
+        assert row1_dict == {"eyes_open_true": 38, "head_pitch_min": 5}
+        assert row2_dict == {"eyes_open_false": 67}
+
+        # Clean up
+        conn.drop_table(table_name)
