@@ -459,7 +459,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         Returns:
             Markdown string with execution output.
         """
-        from metaxy._testing import CommandExecuted, GraphPushed, PatchApplied
+        from metaxy._testing import CommandExecuted
 
         if self.loader is None or self.renderer is None:
             return ""
@@ -478,7 +478,8 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         if step_name:
             events = [e for e in events if e.step_name == step_name]
 
-        # Render all matching events
+        # Render only command output events
+        # Use graph/graph-diff/patch/patch-with-diff directives for other content
         md_parts = []
         for event in events:
             if isinstance(event, CommandExecuted):
@@ -486,18 +487,6 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                 md_parts.append(
                     self.renderer.render_command_output(event, show_command)
                 )
-            elif isinstance(event, PatchApplied):
-                # Render graph diff from saved graph snapshots
-                graph_diff_md = None
-                if event.before_graph and event.after_graph:
-                    graph_diff_md = self._render_graph_diff_from_snapshots(
-                        event.before_graph, event.after_graph
-                    )
-                md_parts.append(
-                    self.renderer.render_patch_applied(event, graph_diff_md)
-                )
-            elif isinstance(event, GraphPushed):
-                md_parts.append(self.renderer.render_graph_pushed(event))
 
         if not md_parts:
             raise ValueError(
@@ -508,13 +497,14 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         return "\n".join(md_parts)
 
     def _render_graph_diff_from_snapshots(
-        self, before_graph: dict, after_graph: dict
+        self, before_graph: dict, after_graph: dict, direction: str = "TB"
     ) -> str:
         """Render graph diff as mermaid from saved graph snapshots.
 
         Args:
             before_graph: Serialized graph before patch.
             after_graph: Serialized graph after patch.
+            direction: Graph layout direction ("TB" for top-bottom, "LR" for left-right).
 
         Returns:
             Markdown string with mermaid code block.
@@ -522,6 +512,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         from metaxy.graph import MermaidRenderer
         from metaxy.graph.diff import GraphDiffer
         from metaxy.graph.diff.models import GraphData
+        from metaxy.graph.diff.rendering.base import RenderConfig
 
         # Compute diff using snapshot data format
         differ = GraphDiffer()
@@ -531,23 +522,26 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         merged_data = differ.create_merged_graph_data(before_graph, after_graph, diff)
         graph_data = GraphData.from_merged_diff(merged_data)
 
+        # Create config with direction
+        config = RenderConfig(direction=direction)
+
         # Render as mermaid
-        renderer = MermaidRenderer(graph_data=graph_data)
+        renderer = MermaidRenderer(graph_data=graph_data, config=config)
         mermaid = renderer.render()
 
         return f"```mermaid\n{mermaid}\n```"
 
     def _render_graph(self, example_name: str, params: dict[str, Any]) -> str:
-        """Render feature graph from command output as mermaid diagram.
+        """Render feature graph from GraphPushed event as mermaid diagram.
 
         Args:
             example_name: Name of the example.
-            params: Directive parameters (scenario, step).
+            params: Directive parameters (scenario, step, direction).
 
         Returns:
             Mermaid diagram markdown string.
         """
-        from metaxy._testing import CommandExecuted
+        from metaxy._testing import GraphPushed
 
         if self.loader is None:
             return ""
@@ -556,30 +550,64 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         scenario_name = params.get("scenario")
         step_name = params.get("step")
+        direction = params.get("direction", "TB")
 
-        # Find the matching command output
+        # Find the matching GraphPushed event
         for event in result.execution_state.events:
-            if not isinstance(event, CommandExecuted):
+            if not isinstance(event, GraphPushed):
                 continue
             if scenario_name and event.scenario_name != scenario_name:
                 continue
             if step_name and event.step_name != step_name:
                 continue
 
-            # Found matching event - return stdout wrapped in mermaid fence
-            if event.stdout:
-                return f"```mermaid\n{event.stdout.strip()}\n```"
+            # Found matching event - render graph from stored data
+            if not event.graph:
+                raise ValueError(
+                    "GraphPushed event is missing graph data. "
+                    "Re-run the example tests to regenerate the execution result."
+                )
+
+            return self._render_graph_from_snapshot(event.graph, direction=direction)
 
         raise ValueError(
-            f"No CommandExecuted event found for scenario={scenario_name}, step={step_name}"
+            f"No GraphPushed event found for scenario={scenario_name}, step={step_name}"
         )
+
+    def _render_graph_from_snapshot(
+        self, graph_data: dict, direction: str = "TB"
+    ) -> str:
+        """Render graph as mermaid from saved graph snapshot.
+
+        Args:
+            graph_data: Serialized graph data.
+            direction: Graph layout direction ("TB" for top-bottom, "LR" for left-right).
+
+        Returns:
+            Markdown string with mermaid code block.
+        """
+        from metaxy.graph import MermaidRenderer
+        from metaxy.graph.diff.models import GraphData
+        from metaxy.graph.diff.rendering.base import RenderConfig
+
+        # Create graph data for rendering (no diff, just the graph)
+        gd = GraphData.from_snapshot(graph_data)
+
+        # Create config with direction
+        config = RenderConfig(direction=direction)
+
+        # Render as mermaid
+        renderer = MermaidRenderer(graph_data=gd, config=config)
+        mermaid = renderer.render()
+
+        return f"```mermaid\n{mermaid}\n```"
 
     def _render_graph_diff(self, example_name: str, params: dict[str, Any]) -> str:
         """Render graph diff from PatchApplied event as mermaid diagram.
 
         Args:
             example_name: Name of the example.
-            params: Directive parameters (scenario, step).
+            params: Directive parameters (scenario, step, direction).
 
         Returns:
             Mermaid diagram markdown string.
@@ -593,6 +621,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         scenario_name = params.get("scenario")
         step_name = params.get("step")
+        direction = params.get("direction", "TB")
 
         # Find the matching PatchApplied event
         for event in result.execution_state.events:
@@ -611,7 +640,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                 )
 
             return self._render_graph_diff_from_snapshots(
-                event.before_graph, event.after_graph
+                event.before_graph, event.after_graph, direction=direction
             )
 
         raise ValueError(

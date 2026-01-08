@@ -151,7 +151,6 @@ Running `metaxy graph render --format mermaid` produces this graph:
 ::: metaxy-example graph
 example: overview
 scenario: "Initial feature graph"
-step: "render_graph"
 :::
 
 ## Tracking Definitions Changes

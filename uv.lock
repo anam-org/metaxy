@@ -2524,6 +2524,7 @@ dev = [
     { name = "pytest-cases" },
     { name = "pytest-cov" },
     { name = "pytest-env" },
+    { name = "pytest-rerunfailures" },
     { name = "ruff" },
     { name = "syrupy" },
     { name = "ty" },
@@ -2602,6 +2603,7 @@ dev = [
     { name = "pytest-cases", specifier = ">=3.9.1" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-env", specifier = ">=1.2.0" },
+    { name = "pytest-rerunfailures", specifier = ">=15.0" },
     { name = "ruff", specifier = ">=0.13.1" },
     { name = "syrupy", specifier = ">=5.0.0" },
     { name = "ty", specifier = ">=0.0.4" },
@@ -4265,6 +4267,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/13/12/9c87d0ca45d5992473208bcef2828169fa7d39b8d7fc6e3401f5c08b8bf7/pytest_env-1.2.0.tar.gz", hash = "sha256:475e2ebe8626cee01f491f304a74b12137742397d6c784ea4bc258f069232b80", size = 8973, upload-time = "2025-10-09T19:15:47.42Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/27/98/822b924a4a3eb58aacba84444c7439fce32680592f394de26af9c76e2569/pytest_env-1.2.0-py3-none-any.whl", hash = "sha256:d7e5b7198f9b83c795377c09feefa45d56083834e60d04767efd64819fc9da00", size = 6251, upload-time = "2025-10-09T19:15:46.077Z" },
+]
+
+[[package]]
+name = "pytest-rerunfailures"
+version = "16.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/de/04/71e9520551fc8fe2cf5c1a1842e4e600265b0815f2016b7c27ec85688682/pytest_rerunfailures-16.1.tar.gz", hash = "sha256:c38b266db8a808953ebd71ac25c381cb1981a78ff9340a14bcb9f1b9bff1899e", size = 30889, upload-time = "2025-10-10T07:06:01.238Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/77/54/60eabb34445e3db3d3d874dc1dfa72751bfec3265bd611cb13c8b290adea/pytest_rerunfailures-16.1-py3-none-any.whl", hash = "sha256:5d11b12c0ca9a1665b5054052fcc1084f8deadd9328962745ef6b04e26382e86", size = 14093, upload-time = "2025-10-10T07:06:00.019Z" },
 ]
 
 [[package]]
