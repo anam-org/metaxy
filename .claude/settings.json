@@ -15,8 +15,8 @@
           },
           {
             "type": "prompt",
-            "prompt": "Evaluate whether Claude should stop working. If there are any linter errors left, fix them first.",
-            "timeout": 30
+            "prompt": "STOP GATE: Review the ruff and ty check output above. If ANY errors were reported, you MUST fix them NOW before stopping. Do not respond to the user until all checks pass. If checks passed, you may proceed.",
+            "timeout": 60
           }
         ]
       }
