@@ -54,6 +54,11 @@
               pkgs.clickhouse
               pkgs.graphviz
               python
+              pkgs.arrow-cpp
+              pkgs.zstd
+              pkgs.snappy
+              pkgs.lz4
+              pkgs.brotli
             ] ++ lib.optionals isLinux [
               pkgs.gcc-unwrapped.lib
               pkgs.glibc
@@ -69,6 +74,7 @@
         "python3.11" = mkPythonShell pkgs.python311;
         "python3.12" = mkPythonShell pkgs.python312;
         "python3.13" = mkPythonShell pkgs.python313;
+        "python3.14" = mkPythonShell pkgs.python314;
       });
   };
 }
