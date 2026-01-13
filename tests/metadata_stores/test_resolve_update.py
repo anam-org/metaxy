@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import narwhals as nw
@@ -33,6 +34,7 @@ from metaxy import (
     FeatureGraph,
     FeatureKey,
 )
+from metaxy._testing.duckdb_json_compat_store import DuckDBJsonCompatStore
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.parametric import (
     downstream_metadata_strategy,
@@ -42,6 +44,7 @@ from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
 )
+from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.types import Increment
 
@@ -305,6 +308,44 @@ def test_resolve_update_root_feature_with_samples(
             samples_sorted["metaxy_provenance_by_field"],
             check_names=False,
         )
+
+
+def test_polars_fallback_reconstructs_structs_for_json_compat_samples(
+    tmp_path: Path,
+    graph: FeatureGraph,
+) -> None:
+    class JsonCompatRoot(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key="json_compat_root",
+            fields=["value"],
+        ),
+    ):
+        pass
+
+    store = DuckDBJsonCompatStore(database=str(tmp_path / "json_compat.duckdb"))
+    samples = pl.DataFrame(
+        {
+            "sample_uid": [1, 2],
+            "metaxy_provenance_by_field__value": ["hash_1", "hash_2"],
+        }
+    )
+
+    with store, graph.use():
+        increment = store.resolve_update(
+            JsonCompatRoot,
+            samples=samples,
+            versioning_engine="polars",
+        )
+
+    added_df = increment.added.to_native()
+    assert isinstance(added_df, pl.DataFrame)
+    assert isinstance(added_df.schema[METAXY_PROVENANCE_BY_FIELD], pl.Struct)
+    pl_testing.assert_series_equal(
+        added_df[METAXY_PROVENANCE_BY_FIELD].struct.field("value"),
+        samples["metaxy_provenance_by_field__value"],
+        check_names=False,
+    )
 
 
 # ============= TEST: DOWNSTREAM FEATURES (WITH UPSTREAM) =============

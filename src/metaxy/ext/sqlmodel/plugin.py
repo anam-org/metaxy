@@ -343,7 +343,7 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
     metaxy_created_at: AwareDatetime | None = Field(
         default=None,
         description="Timestamp when the metadata row was created (UTC)",
-        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
+        sa_type=DateTime(timezone=True),  # ty: ignore[invalid-argument-type]
         sa_column_kwargs={
             "name": METAXY_CREATED_AT,
         },
@@ -362,7 +362,7 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
     metaxy_deleted_at: AwareDatetime | None = Field(
         default=None,
         description="Soft delete timestamp (UTC); null means active row",
-        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
+        sa_type=DateTime(timezone=True),  # ty: ignore[invalid-argument-type]
         sa_column_kwargs={
             "name": METAXY_DELETED_AT,
         },

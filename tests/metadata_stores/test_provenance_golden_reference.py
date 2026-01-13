@@ -1215,7 +1215,7 @@ def test_keep_latest_by_group(keep_latest_test_data):
     result_nw = engine_class.keep_latest_by_group(
         nw_df,
         group_columns=["sample_uid"],
-        timestamp_columns=["timestamp"],
+        timestamp_column="timestamp",
     )
 
     # Convert result to Polars for assertion
@@ -1282,7 +1282,7 @@ def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
     result_nw = engine_class.keep_latest_by_group(
         nw_df,
         group_columns=["sensor_id", "hour", "reading_id"],
-        timestamp_columns=["timestamp"],
+        timestamp_column="timestamp",
     )
 
     # Convert result to Polars for assertion
@@ -1327,7 +1327,7 @@ def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
     result_nw = engine_class.keep_latest_by_group(
         nw_df,
         group_columns=["video_id"],
-        timestamp_columns=["timestamp"],
+        timestamp_column="timestamp",
     )
 
     # Convert result to Polars for assertion

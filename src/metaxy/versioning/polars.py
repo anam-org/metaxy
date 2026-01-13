@@ -8,7 +8,6 @@ import polars as pl
 import polars_hash  # noqa: F401  # Registers .nchash and .chash namespaces
 from narwhals.typing import FrameT
 
-from metaxy.utils.constants import TEMP_TABLE_NAME
 from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.struct_adapter import StructFieldAccessor
 from metaxy.versioning.types import HashAlgorithm
@@ -138,28 +137,42 @@ class PolarsVersioningEngine(StructFieldAccessor, VersioningEngine):
     def keep_latest_by_group(
         df: FrameT,
         group_columns: list[str],
-        timestamp_columns: list[str],
+        timestamp_column: nw.Expr | str,
     ) -> FrameT:
-        """Keep only the latest row per group based on timestamp columns.
+        """Keep only the latest row per group based on a timestamp column.
 
         Args:
             df: Narwhals DataFrame/LazyFrame backed by Polars
             group_columns: Columns to group by (typically ID columns)
-            timestamp_columns: Column names to coalesce for ordering (uses first non-null value)
+            timestamp_column: Expression or column name to use for determining "latest"
 
         Returns:
             Narwhals DataFrame/LazyFrame with only the latest row per group
         """
         assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
 
+        # Convert string column name to expression if needed
+        if isinstance(timestamp_column, str):
+            timestamp_expr = nw.col(timestamp_column)
+        else:
+            timestamp_expr = timestamp_column
+
+        # Create a temporary ordering column for the expression
+        # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
+        columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        temp_column = "__metaxy_ordering_timestamp"
+        suffix = 0
+        while temp_column in columns:
+            suffix += 1
+            temp_column = f"__metaxy_ordering_timestamp_{suffix}"
+        df = df.with_columns(  # ty: ignore[invalid-argument-type]
+            timestamp_expr.alias(temp_column)
+        )
+
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
-        # Create a temporary column for ordering using coalesce
-        ordering_expr = pl.coalesce([pl.col(col) for col in timestamp_columns])
-        df_pl = df_pl.with_columns(ordering_expr.alias(TEMP_TABLE_NAME))
-
-        result = df_pl.group_by(group_columns).agg(pl.col("*").sort_by(TEMP_TABLE_NAME).last())
-        result = result.drop(TEMP_TABLE_NAME)
+        result = df_pl.group_by(group_columns).agg(pl.col("*").sort_by(temp_column).last())
+        result = result.drop(temp_column)
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result))

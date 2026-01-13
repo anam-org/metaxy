@@ -69,18 +69,32 @@ class MockFlatEngine(FlatVersioningEngine):
     def keep_latest_by_group(
         df: nw.DataFrame[Any] | nw.LazyFrame[Any],
         group_columns: list[str],
-        timestamp_columns: list[str],
+        timestamp_column: nw.Expr | str,
     ) -> nw.DataFrame[Any] | nw.LazyFrame[Any]:
         """Simple mock keep_latest using native Polars."""
         import polars as pl
+
+        # Convert string column name to expression if needed
+        if isinstance(timestamp_column, str):
+            timestamp_expr = nw.col(timestamp_column)
+        else:
+            timestamp_expr = timestamp_column
+
+        # Find a unique temporary column name
+        columns = df.collect_schema().names()
+        temp_column = "__metaxy_ordering_timestamp"
+        suffix = 0
+        while temp_column in columns:
+            suffix += 1
+            temp_column = f"__metaxy_ordering_timestamp_{suffix}"
+        df = df.with_columns(timestamp_expr.alias(temp_column))
 
         native_df = df.to_native()
         if isinstance(native_df, pl.LazyFrame):
             native_df = native_df.collect()
 
-        # Use first non-null timestamp column (coalesce behavior)
-        timestamp_column = timestamp_columns[0]
-        result = native_df.sort(timestamp_column).group_by(group_columns).last()
+        result = native_df.sort(temp_column).group_by(group_columns).last()
+        result = result.drop(temp_column)
         return nw.from_native(result, eager_only=True)
 
 

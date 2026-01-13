@@ -53,7 +53,7 @@ class FieldAccessor(ABC):
         Returns:
             DataFrame with field versions persisted.
         """
-        raise NotImplementedError()
+        ...
 
     @abstractmethod
     def access_provenance_field(
@@ -70,7 +70,7 @@ class FieldAccessor(ABC):
         Returns:
             Narwhals expression to access the field value.
         """
-        raise NotImplementedError()
+        ...
 
 
 class VersioningEngine(FieldAccessor):
@@ -261,7 +261,7 @@ class VersioningEngine(FieldAccessor):
         Returns:
             DataFrame with the new hashed column added.
         """
-        raise NotImplementedError()
+        ...
 
     # Note: record_field_versions and access_provenance_field are inherited from FieldAccessor
 
@@ -291,26 +291,26 @@ class VersioningEngine(FieldAccessor):
         Returns:
             DataFrame with the new concatenated column added.
         """
-        raise NotImplementedError()
+        ...
 
     @staticmethod
     @abstractmethod
     def keep_latest_by_group(
         df: FrameT,
         group_columns: list[str],
-        timestamp_columns: list[str],
+        timestamp_column: nw.Expr | str,
     ) -> FrameT:
-        """Keep only the latest row per group based on timestamp columns.
+        """Keep only the latest row per group based on a timestamp column.
 
         Args:
             df: Input DataFrame.
             group_columns: Columns defining the groups.
-            timestamp_columns: Column names to coalesce for ordering (uses first non-null value).
+            timestamp_column: Expression or column name for ordering.
 
         Returns:
             DataFrame with only the latest row per group.
         """
-        raise NotImplementedError()
+        ...
 
     def aggregate_metadata_columns(
         self,
@@ -351,7 +351,7 @@ class VersioningEngine(FieldAccessor):
             extracted_col = f"__extract_{field_name}"
             extracted_cols[field_name] = extracted_col
 
-            extract_expr = nw.col(renamed_data_version_by_field_col).struct.field(field_name).cast(nw.String)
+            extract_expr = self.access_provenance_field(renamed_data_version_by_field_col, field_name).cast(nw.String)
             df = df.with_columns(extract_expr.alias(extracted_col))  # ty: ignore[invalid-argument-type]
 
         # Step 2: Use window function to aggregate within groups
@@ -442,8 +442,10 @@ class VersioningEngine(FieldAccessor):
         Creates Narwhals expressions that read from the renamed data_version_by_field
         struct columns of upstream features. These expressions are used to build the
         provenance hash for each field in the current feature.
+
         Returns:
             Nested dictionary mapping each field key to its parent field expressions.
+
         Note:
             This reads from upstream `metaxy_data_version_by_field` instead of
             `metaxy_provenance_by_field`, enabling users to control version
@@ -562,12 +564,20 @@ class VersioningEngine(FieldAccessor):
             df = df.drop(*columns_to_drop)
 
         # Add data_version columns (default to provenance values)
-        df = df.with_columns(  # ty: ignore[invalid-argument-type]
+        df = self._add_data_version_columns_from_provenance(df)  # ty: ignore[invalid-assignment]
+
+        return df
+
+    def _add_data_version_columns_from_provenance(self, df: FrameT) -> FrameT:
+        """Add data_version columns by aliasing provenance columns.
+
+        This method can be overridden by subclasses (e.g., flat engines) to handle
+        different column representations.
+        """
+        return df.with_columns(  # ty: ignore[invalid-argument-type,invalid-return-type]
             nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
             nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         )
-
-        return df
 
     def load_upstream_with_provenance(
         self,

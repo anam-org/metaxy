@@ -4,7 +4,7 @@ from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import parse_qsl, quote, urlparse, urlunparse
 
 import narwhals as nw
 from narwhals.typing import Frame, FrameT

@@ -78,16 +78,16 @@ class FeatureDepTransformer:
     relationships that change the granularity (aggregation, expansion).
     """
 
+    METAXY_COLUMNS_TO_LOAD = (
+        METAXY_PROVENANCE_BY_FIELD,
+        METAXY_PROVENANCE,
+        METAXY_DATA_VERSION_BY_FIELD,
+        METAXY_DATA_VERSION,
+    )
+
     def __init__(self, dep: FeatureDep, plan: FeaturePlan):
         self.plan = plan
         self.dep = dep
-
-        self.metaxy_columns_to_load = [
-            METAXY_PROVENANCE_BY_FIELD,
-            METAXY_PROVENANCE,
-            METAXY_DATA_VERSION_BY_FIELD,
-            METAXY_DATA_VERSION,
-        ]
 
     @cached_property
     def upstream_feature_key(self) -> FeatureKey:
@@ -151,10 +151,9 @@ class FeatureDepTransformer:
         """Apply FeatureDep transformations to an upstream DataFrame.
 
         Transforms the upstream DataFrame by:
-        1. Dropping columns that shouldn't be carried through joins
-        2. Applying column renames (user-specified and metaxy system columns)
-        3. Filtering with combined static and runtime filters
-        4. Selecting specified columns plus required ID and metaxy columns
+        1. Applying column renames (user-specified, metaxy system columns, and flattened columns)
+        2. Filtering with combined static and runtime filters
+        3. Selecting specified columns plus required ID and metaxy columns
 
         Args:
             df: Raw upstream DataFrame.
@@ -163,6 +162,7 @@ class FeatureDepTransformer:
         Returns:
             RenamedDataFrame containing the transformed data and ID column tracker.
         """
+        # Combine static and runtime filters
         combined_filters: list[nw.Expr] = []
         if self.dep.filters is not None:
             combined_filters.extend(self.dep.filters)
@@ -180,6 +180,7 @@ class FeatureDepTransformer:
         # Determine columns to select (include flattened columns if selecting)
         select_cols = [*self.renamed_columns, *flattened_renames.values()] if self.renamed_columns is not None else None
 
+        # Track ID columns through transformation
         id_tracker = IdColumnTracker.from_upstream_spec(
             upstream_id_columns=self.upstream_feature_spec.id_columns,
             renames=renames,
@@ -217,14 +218,14 @@ class FeatureDepTransformer:
 
     @cached_property
     def renamed_metaxy_cols(self) -> list[str]:
-        return list(map(self.rename_upstream_metaxy_column, self.metaxy_columns_to_load))
+        return list(map(self.rename_upstream_metaxy_column, self.METAXY_COLUMNS_TO_LOAD))
 
     @cached_property
     def renames(self) -> dict[str, str]:
         """Column rename mapping including user renames and metaxy column renames."""
         return {
             **(self.dep.rename or {}),
-            **{col: self.rename_upstream_metaxy_column(col) for col in self.metaxy_columns_to_load},
+            **{col: self.rename_upstream_metaxy_column(col) for col in self.METAXY_COLUMNS_TO_LOAD},
         }
 
     @cached_property

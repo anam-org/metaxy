@@ -39,13 +39,21 @@ class DuckDBJsonCompatStore(IbisJsonCompatStore):
         return {HashAlgorithm.MD5: md5_hash}
 
     def _get_json_unpack_exprs(self, json_column: str, field_names: list[str]) -> dict[str, Any]:
+        """Build expressions to unpack JSON column into flattened columns.
+
+        Uses ibis._ as a deferred table reference - a placeholder for "whatever
+        table this expression gets applied to later". This lets us build reusable
+        query fragments independent of the actual table.
+
+        See: https://ibis-project.org/reference/expression-generic#ibis._
+        """
+
         @ibis.udf.scalar.builtin
         def json_extract_string(_json: str, _path: str) -> str: ...  # ty: ignore[invalid-return-type]
 
-        table = ibis._
         return {
             f"{json_column}__{field_name}": json_extract_string(
-                table[json_column].cast("string"),
+                ibis._[json_column].cast("string"),
                 ibis.literal(f"$.{field_name}"),
             )
             for field_name in field_names
@@ -56,12 +64,15 @@ class DuckDBJsonCompatStore(IbisJsonCompatStore):
         struct_name: str,
         field_columns: Mapping[str, str],
     ) -> Any:
-        table = ibis._
+        """Build expression to pack flattened columns into a JSON column.
+
+        Uses ibis._ as a deferred table reference for building reusable expressions.
+        """
 
         @ibis.udf.scalar.builtin(output_type=dt.string)
         def to_json(_input) -> str: ...  # ty: ignore[invalid-return-type]
 
         keys_expr = ibis.array([ibis.literal(name).cast("string") for name in sorted(field_columns)])
-        values_expr = ibis.array([table[col_name].cast("string") for _, col_name in sorted(field_columns.items())])
+        values_expr = ibis.array([ibis._[col_name].cast("string") for _, col_name in sorted(field_columns.items())])
         map_expr = ibis.map(keys_expr, values_expr)
         return to_json(map_expr)

@@ -8,7 +8,6 @@ from ibis import Expr as IbisExpr
 from narwhals.typing import FrameT
 
 from metaxy.models.plan import FeaturePlan
-from metaxy.utils.constants import TEMP_TABLE_NAME
 from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.struct_adapter import StructFieldAccessor
 from metaxy.versioning.types import HashAlgorithm
@@ -118,9 +117,9 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
     def keep_latest_by_group(
         df: FrameT,
         group_columns: list[str],
-        timestamp_columns: list[str],
+        timestamp_column: nw.Expr | str,
     ) -> FrameT:
-        """Keep only the latest row per group based on timestamp columns.
+        """Keep only the latest row per group based on a timestamp column.
 
         Uses argmax aggregation to get the value from each column where the
         timestamp is maximum. This is simpler and more semantically clear than
@@ -129,33 +128,46 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
         Args:
             df: Narwhals DataFrame/LazyFrame backed by Ibis
             group_columns: Columns to group by (typically ID columns)
-            timestamp_columns: Column names to coalesce for ordering (uses first non-null value)
+            timestamp_column: Expression or column name to use for determining "latest"
 
         Returns:
             Narwhals DataFrame/LazyFrame with only the latest row per group
         """
-        # Import ibis lazily
-        import ibis
         import ibis.expr.types
 
-        # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
+
+        # Convert string column name to expression if needed
+        if isinstance(timestamp_column, str):
+            timestamp_expr = nw.col(timestamp_column)
+        else:
+            timestamp_expr = timestamp_column
+
+        # Create a temporary column for ordering expression
+        columns = df.collect_schema().names()
+        base_name = "__metaxy_ordering_timestamp"
+        temp_column = base_name
+        suffix = 0
+        while temp_column in columns:
+            suffix += 1
+            temp_column = f"{base_name}_{suffix}"
+        df = df.with_columns(  # ty: ignore[invalid-argument-type]
+            timestamp_expr.alias(temp_column)
+        )
 
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
-        # Create a temporary column for ordering using coalesce
-        ordering_expr = ibis.coalesce(*[ibis_table[col] for col in timestamp_columns])
-        ibis_table = ibis_table.mutate(**{TEMP_TABLE_NAME: ordering_expr})
-
         # Use argmax aggregation: for each column, get the value where timestamp is maximum
+        # This directly expresses "get the row with the latest timestamp per group"
         all_columns = set(ibis_table.columns)
-        non_group_columns = all_columns - set(group_columns) - {TEMP_TABLE_NAME}
+        non_group_columns = all_columns - set(group_columns) - {temp_column}
 
         # Build aggregation dict: for each non-group column, use argmax(timestamp)
-        agg_exprs = {col: ibis_table[col].argmax(ibis_table[TEMP_TABLE_NAME]) for col in non_group_columns}
+        agg_exprs = {col: ibis_table[col].argmax(ibis_table[temp_column]) for col in non_group_columns}
 
+        # Perform groupby and aggregate
         result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)
-        # Note: TEMP_TABLE_NAME is not in result_table because we excluded it from aggregation
+        # Note: temp_column is not in result_table because we excluded it from aggregation
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))

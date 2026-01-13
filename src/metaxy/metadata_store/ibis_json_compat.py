@@ -20,20 +20,18 @@ Key differences from IbisMetadataStore:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Literal, cast, overload
 
 import narwhals as nw
+import polars as pl
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import VersioningEngineOptions
 from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.json_struct_serializer import JsonStructSerializerMixin
-from metaxy.models.constants import (
-    METAXY_DATA_VERSION_BY_FIELD,
-    METAXY_PROVENANCE_BY_FIELD,
-)
+from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import BaseFeature
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
@@ -61,11 +59,13 @@ class _PostProcessingLazyIncrement(LazyIncrement):
         added: nw.LazyFrame[Any],
         changed: nw.LazyFrame[Any],
         removed: nw.LazyFrame[Any],
-        post_process_fn: Callable[[nw.DataFrame[Any]], nw.DataFrame[Any]],
+        store: IbisJsonCompatStore,
+        plan: FeaturePlan,
         input: nw.LazyFrame[Any] | None = None,
     ) -> None:
         super().__init__(added=added, changed=changed, removed=removed, input=input)
-        self._post_process_fn = post_process_fn
+        self._store = store
+        self._plan = plan
 
     def collect(self, **kwargs: Any) -> Increment:
         """Collect lazy frames and apply post-processing."""
@@ -73,9 +73,15 @@ class _PostProcessingLazyIncrement(LazyIncrement):
 
         # Apply post-processing to rebuild struct columns from flattened columns
         return Increment(
-            added=self._post_process_fn(nw.from_native(collect_to_polars(base_result.added))),
-            changed=self._post_process_fn(nw.from_native(collect_to_polars(base_result.changed))),
-            removed=self._post_process_fn(nw.from_native(collect_to_polars(base_result.removed))),
+            added=self._store._post_process_polars_frame(
+                nw.from_native(collect_to_polars(base_result.added)), plan=self._plan
+            ),
+            changed=self._store._post_process_polars_frame(
+                nw.from_native(collect_to_polars(base_result.changed)), plan=self._plan
+            ),
+            removed=self._store._post_process_polars_frame(
+                nw.from_native(collect_to_polars(base_result.removed)), plan=self._plan
+            ),
         )
 
 
@@ -122,7 +128,21 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         Forces dict-based versioning engine for struct-free operations.
 
         Args:
-            **kwargs: Passed to IbisMetadataStore.__init__
+            versioning_engine: Which versioning engine to use.
+                - "auto": Prefer the store's native engine, fall back to Polars if needed
+                - "native": Always use the store's native engine, raise `VersioningEngineMismatchError`
+                    if provided dataframes are incompatible
+                - "polars": Always use the Polars engine
+            connection_string: Ibis connection string (e.g., "clickhouse://host:9000/db")
+                If provided, backend and connection_params are ignored.
+            backend: Ibis backend name (e.g., "clickhouse", "postgres", "duckdb")
+                Used with connection_params for more control.
+            connection_params: Backend-specific connection parameters
+                e.g., {"host": "localhost", "port": 9000, "database": "default"}
+            table_prefix: Optional prefix applied to all feature and system table names.
+                Useful for logically separating environments (e.g., "prod_"). Must form a valid SQL
+                identifier when combined with the generated table name.
+            **kwargs: Passed to MetadataStore.__init__ (e.g., fallback_stores, hash_algorithm)
         """
         super().__init__(
             versioning_engine=versioning_engine,
@@ -150,80 +170,77 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             plan=plan,
             hash_functions=hash_functions,
         )
-        try:
-            yield cast("IbisVersioningEngine", engine)
-        finally:
-            pass
+        yield cast("IbisVersioningEngine", engine)
 
     @overload
-    def _post_process_resolve_update_result(self, result: Increment, *, lazy: Literal[False]) -> Increment: ...
+    def _post_process_resolve_update_result(
+        self, result: Increment, plan: FeaturePlan, *, lazy: Literal[False]
+    ) -> Increment: ...
 
     @overload
-    def _post_process_resolve_update_result(self, result: LazyIncrement, *, lazy: Literal[True]) -> LazyIncrement: ...
+    def _post_process_resolve_update_result(
+        self, result: LazyIncrement, plan: FeaturePlan, *, lazy: Literal[True]
+    ) -> LazyIncrement: ...
 
     def _post_process_resolve_update_result(
-        self, result: Increment | LazyIncrement, *, lazy: bool
+        self, result: Increment | LazyIncrement, plan: FeaturePlan, *, lazy: bool
     ) -> Increment | LazyIncrement:
         """Materialize structs from flattened columns for returned results.
 
         This converts Ibis results to Polars (eager) so we can rebuild struct
         columns from flattened provenance/data_version fields for user-facing
         results and test comparisons.
-
-        This method expects `_current_feature_plan` to be set by `resolve_update`.
         """
-        plan = getattr(self, "_current_feature_plan", None)
-        field_names = self._get_field_names(plan, include_dependencies=False) if plan is not None else None
-        if field_names is None:
-            raise RuntimeError("Missing feature plan for struct reconstruction in Polars post-processing.")
         if lazy:
             # For lazy results, return a custom LazyIncrement that will
             # call _post_process_polars_frame when collected.
             # We don't call _ensure_struct_from_flattened here because
             # Ibis structs become JSON strings when collected to Polars.
-            def ensure(
-                frame: nw.LazyFrame[Any] | nw.DataFrame[Any],
-            ) -> nw.LazyFrame[Any]:
-                return self._ensure_ibis_lazy_frame(frame)
-
             return _PostProcessingLazyIncrement(
-                added=ensure(result.added),
-                changed=ensure(result.changed),
-                removed=ensure(result.removed),
-                post_process_fn=lambda df: self._post_process_polars_frame(df, field_names=field_names),
+                added=self._ensure_ibis_lazy_frame(result.added),
+                changed=self._ensure_ibis_lazy_frame(result.changed),
+                removed=self._ensure_ibis_lazy_frame(result.removed),
+                store=self,
+                plan=plan,
             )
 
-        frames = {}
-        for name in ["added", "changed", "removed"]:
-            frame = getattr(result, name)
+        return self._post_process_increment_frames(cast("Increment", result), plan=plan)
+
+    def _post_process_increment_frames(
+        self,
+        result: Increment,
+        *,
+        plan: FeaturePlan,
+    ) -> Increment:
+        def process_frame(frame: nw.DataFrame[Any] | nw.LazyFrame[Any]) -> nw.DataFrame[Any]:
+            """Convert to Polars and post-process frame."""
             if frame.implementation != nw.Implementation.POLARS:
                 polars_df = collect_to_polars(frame)
                 frame = nw.from_native(polars_df)
             if isinstance(frame, nw.LazyFrame):
                 frame = frame.collect()
-            frame = self._post_process_polars_frame(frame, field_names=field_names)
-            frames[name] = frame
+            return self._post_process_polars_frame(frame, plan=plan)
 
-        eager_result = Increment(
-            added=frames["added"],
-            changed=frames["changed"],
-            removed=frames["removed"],
+        return Increment(
+            added=process_frame(result.added),
+            changed=process_frame(result.changed),
+            removed=process_frame(result.removed),
         )
-        return eager_result
 
     def _post_process_polars_frame(
         self,
         frame: nw.DataFrame[Any],
         *,
-        field_names: list[str] | None = None,
+        plan: FeaturePlan | None = None,
     ) -> nw.DataFrame[Any]:
         """Rebuild struct columns from flattened provenance fields in Polars.
 
         Expects a Polars-backed DataFrame and returns an eager result.
-        Internal-only: call via `_normalize_engine_inputs` so `_current_feature_plan`
-        is set.
+
+        Args:
+            frame: Polars-backed DataFrame to post-process
+            plan: Feature plan for determining field names for struct reconstruction
         """
-        import polars as pl
 
         if frame.implementation != nw.Implementation.POLARS:
             raise RuntimeError(
@@ -239,21 +256,10 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         if isinstance(native, pl.LazyFrame):
             native = native.collect()
 
-        if field_names is None:
-            plan = getattr(self, "_current_feature_plan", None)
-            field_names = self._get_field_names(plan, include_dependencies=False) if plan is not None else None
-        if field_names is None:
+        if plan is None:
             raise RuntimeError("Missing feature plan for struct reconstruction in Polars post-processing.")
-        native = self._restore_struct_polars(
-            native,
-            METAXY_PROVENANCE_BY_FIELD,
-            field_names=field_names,
-        )
-        native = self._restore_struct_polars(
-            native,
-            METAXY_DATA_VERSION_BY_FIELD,
-            field_names=field_names,
-        )
+
+        native = self._restore_struct_columns_polars(native, plan=plan)
 
         schema = native.schema
         datetime_cols = [col for col, dtype in schema.items() if isinstance(dtype, pl.Datetime)]
@@ -299,15 +305,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         *,
         feature: type[BaseFeature],
         df: nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
-        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
-        lazy: bool,
+        filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,  # noqa: ARG002
+        lazy: bool,  # noqa: ARG002
     ) -> nw.DataFrame[Any] | nw.LazyFrame[Any] | None:
         """Flatten provenance structs in user-provided samples before resolving."""
         if df is None:
             return None
-        _ = (filters, lazy)
-
-        import polars as pl
 
         plan = self._resolve_feature_plan(feature)
         field_names = self._get_field_names(plan, include_dependencies=False)
@@ -328,22 +331,16 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         samples_native = df.to_native() if df.implementation == nw.Implementation.POLARS else collect_to_polars(df)
         if not isinstance(samples_native, (pl.DataFrame, pl.LazyFrame)):
             return df
-        if has_flattened:
-            # Ensure struct exists so downstream hashing/aliasing can target it.
-            samples_native = self._restore_struct_polars(
-                samples_native,
-                METAXY_PROVENANCE_BY_FIELD,
-                field_names=field_names,
-            )
-            polars_frame = samples_native if isinstance(samples_native, pl.LazyFrame) else samples_native.lazy()
-            polars_frame = nw.from_native(polars_frame, eager_only=False)
-            return self._ensure_ibis_lazy_frame(polars_frame)
-        if METAXY_PROVENANCE_BY_FIELD in columns:
-            samples_native = self._restore_struct_polars(
-                samples_native,
-                METAXY_PROVENANCE_BY_FIELD,
-                field_names=field_names,
-            )
+
+        # Restore struct from flattened columns or existing struct column
+        samples_native = self._restore_struct_polars(
+            samples_native,
+            METAXY_PROVENANCE_BY_FIELD,
+            field_names=field_names,
+        )
+
+        # If struct column exists, expand to flattened columns for downstream processing
+        if not has_flattened and METAXY_PROVENANCE_BY_FIELD in columns:
             exprs = [
                 pl.col(METAXY_PROVENANCE_BY_FIELD).struct.field(field_name).alias(flattened)
                 for field_name, flattened in flattened_columns.items()
@@ -352,9 +349,9 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
             if exprs:
                 samples_native = samples_native.with_columns(exprs)
 
+        # Convert to Ibis LazyFrame
         polars_frame = samples_native if isinstance(samples_native, pl.LazyFrame) else samples_native.lazy()
-        polars_frame = nw.from_native(polars_frame, eager_only=False)
-        return self._ensure_ibis_lazy_frame(polars_frame)
+        return self._ensure_ibis_lazy_frame(nw.from_native(polars_frame, eager_only=False))
 
     @abstractmethod
     def _get_json_unpack_exprs(
@@ -486,6 +483,65 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         lazy_frame = self._unpack_json_columns(lazy_frame, feature_plan)
 
         return lazy_frame
+
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr] | None,
+        *,
+        current_only: bool,
+    ) -> None:
+        """Hard delete implementation for JSON compat stores.
+
+        Overrides parent to use base table (without JSON unpacking) for WHERE clause
+        extraction, since JSON unpacking creates complex SQL that can't be parsed.
+
+        Args:
+            feature_key: Feature to delete from
+            filters: Narwhals expressions to filter records
+            current_only: Not used here - version filtering handled by base class
+        """
+        import ibis.expr.types
+
+        from metaxy.metadata_store.exceptions import TableNotFoundError
+        from metaxy.metadata_store.utils import (
+            _extract_where_expression,
+            _strip_table_qualifiers,
+        )
+
+        table_name = self.get_table_name(feature_key)
+        filter_list = list(filters or [])
+
+        # Handle empty filters - truncate entire table
+        if not filter_list:
+            if table_name not in self.conn.list_tables():
+                raise TableNotFoundError(f"Table '{table_name}' does not exist for feature {feature_key.to_string()}.")
+            self.conn.truncate_table(table_name)  # ty: ignore[unresolved-attribute]
+            return
+
+        # Read from parent's parent (IbisMetadataStore) to avoid JSON unpacking
+        # This gives us a simpler SQL for WHERE clause extraction
+        filtered = IbisMetadataStore.read_metadata_in_store(self, feature_key, filters=filter_list)
+        if filtered is None:
+            from metaxy.metadata_store.exceptions import FeatureNotFoundError
+
+            raise FeatureNotFoundError(f"Feature {feature_key.to_string()} not found in store")
+
+        # Extract WHERE clause from compiled SELECT statement
+        ibis_filtered = cast(ibis.expr.types.Table, filtered.to_native())
+        select_sql = str(ibis_filtered.compile())
+
+        dialect = self._sql_dialect
+        predicate = _extract_where_expression(select_sql, dialect=dialect)
+        if predicate is None:
+            raise ValueError(f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}")
+
+        # Generate and execute DELETE statement
+        predicate = predicate.transform(_strip_table_qualifiers())
+        where_clause = predicate.sql(dialect=dialect) if dialect else predicate.sql()
+
+        delete_stmt = f"DELETE FROM {table_name} WHERE {where_clause}"
+        self.conn.raw_sql(delete_stmt)  # ty: ignore[unresolved-attribute]
 
     def write_metadata_to_store(
         self,

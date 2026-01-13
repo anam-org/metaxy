@@ -247,8 +247,8 @@ class MetadataStore(ABC):
     ) -> _EngineInputs[nw.DataFrame[Any]] | _EngineInputs[nw.LazyFrame[Any]]:
         """Normalize inputs for the versioning engine.
 
-        Requires the feature plan so Polars post-processing can rebuild struct
-        columns without data-driven schema inference.
+        Uses the provided plan for Polars post-processing to rebuild struct columns
+        without data-driven schema inference.
         """
         if use_polars_engine:
             from metaxy._utils import collect_to_polars
@@ -525,7 +525,7 @@ class MetadataStore(ABC):
         # Use allow_fallback=False since we only want metadata from THIS store
         # to determine what needs to be updated locally
         try:
-            current_metadata: nw.LazyFrame[Any] | None = self.read_metadata(
+            current_metadata: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = self.read_metadata(
                 feature_key,
                 filters=current_feature_filters if current_feature_filters else None,
                 allow_fallback=False,
@@ -688,14 +688,14 @@ class MetadataStore(ABC):
                         removed=cast(nw.LazyFrame[Any], removed),
                         input=cast(nw.LazyFrame[Any] | None, input_df),
                     )
-                return self._post_process_resolve_update_result(result, lazy=True)
+                return self._post_process_resolve_update_result(result, plan, lazy=True)
 
             result = Increment(
                 added=added.collect() if isinstance(added, nw.LazyFrame) else added,
                 changed=changed.collect() if isinstance(changed, nw.LazyFrame) else changed,
                 removed=removed.collect() if isinstance(removed, nw.LazyFrame) else removed,
             )
-            return self._post_process_resolve_update_result(result, lazy=False)
+            return self._post_process_resolve_update_result(result, plan, lazy=False)
 
     @overload
     def _preprocess_samples_for_resolve_update(
@@ -742,13 +742,17 @@ class MetadataStore(ABC):
         return df
 
     @overload
-    def _post_process_resolve_update_result(self, result: Increment, *, lazy: Literal[False]) -> Increment: ...
+    def _post_process_resolve_update_result(
+        self, result: Increment, plan: FeaturePlan, *, lazy: Literal[False]
+    ) -> Increment: ...
 
     @overload
-    def _post_process_resolve_update_result(self, result: LazyIncrement, *, lazy: Literal[True]) -> LazyIncrement: ...
+    def _post_process_resolve_update_result(
+        self, result: LazyIncrement, plan: FeaturePlan, *, lazy: Literal[True]
+    ) -> LazyIncrement: ...
 
     def _post_process_resolve_update_result(
-        self, result: Increment | LazyIncrement, *, lazy: bool
+        self, result: Increment | LazyIncrement, plan: FeaturePlan, *, lazy: bool
     ) -> Increment | LazyIncrement:
         """Post-process resolve_update result before returning to caller.
 
@@ -757,6 +761,7 @@ class MetadataStore(ABC):
 
         Args:
             result: The Increment or LazyIncrement to post-process
+            plan: The feature plan being processed
             lazy: Whether result is a LazyIncrement (True) or Increment (False)
 
         Returns:
@@ -979,10 +984,15 @@ class MetadataStore(ABC):
                 id_cols = list(self._resolve_feature_plan(feature_key).feature.id_columns)
                 # Treat soft-deletes like hard deletes by ordering on the
                 # most recent lifecycle timestamp.
+                ordering_expr = (
+                    nw.when(nw.col(METAXY_DELETED_AT).is_null())
+                    .then(nw.col(METAXY_CREATED_AT))
+                    .otherwise(nw.col(METAXY_DELETED_AT))
+                )
                 lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
                     df=lazy_frame,
                     group_columns=id_cols,
-                    timestamp_columns=[METAXY_DELETED_AT, METAXY_CREATED_AT],
+                    timestamp_column=ordering_expr,
                 )
 
             if filter_deleted:
@@ -1713,7 +1723,8 @@ class MetadataStore(ABC):
 
         # Derive data_version from data_version_by_field (or provenance_by_field fallback)
         if METAXY_DATA_VERSION_BY_FIELD not in columns:
-            if not use_flattened_struct_columns and METAXY_PROVENANCE_BY_FIELD in columns:
+            if METAXY_PROVENANCE_BY_FIELD in columns:
+                # For all engines, alias provenance_by_field to data_version_by_field
                 df = df.with_columns(nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD))
 
         if METAXY_DATA_VERSION not in columns:
