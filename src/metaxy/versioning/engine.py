@@ -342,11 +342,10 @@ class VersioningEngine(ABC):
             extracted_col = f"__extract_{field_name}"
             extracted_cols[field_name] = extracted_col
 
-            extract_expr = (
-                nw.col(renamed_data_version_by_field_col)
-                .struct.field(field_name)
-                .cast(nw.String)
-            )
+            extract_expr = self.access_provenance_field(
+                renamed_data_version_by_field_col,
+                field_name,
+            ).cast(nw.String)
             df = df.with_columns(extract_expr.alias(extracted_col))  # ty: ignore[invalid-argument-type]
 
         # Step 2: Use window function to aggregate within groups
@@ -565,12 +564,20 @@ class VersioningEngine(ABC):
             df = df.drop(*columns_to_drop)
 
         # Add data_version columns (default to provenance values)
-        df = df.with_columns(  # ty: ignore[invalid-argument-type]
+        df = self._add_data_version_columns_from_provenance(df)  # ty: ignore[invalid-assignment]
+
+        return df
+
+    def _add_data_version_columns_from_provenance(self, df: FrameT) -> FrameT:
+        """Add data_version columns by aliasing provenance columns.
+
+        This method can be overridden by subclasses (e.g., flat engines) to handle
+        different column representations.
+        """
+        return df.with_columns(  # ty: ignore[invalid-argument-type,invalid-return-type]
             nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
             nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         )
-
-        return df
 
     def load_upstream_with_provenance(
         self,

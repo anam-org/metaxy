@@ -25,6 +25,12 @@ from abc import ABC
 import narwhals as nw
 from narwhals.typing import FrameT
 
+from metaxy.models.constants import (
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_PROVENANCE,
+    METAXY_PROVENANCE_BY_FIELD,
+)
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.ibis import BaseIbisVersioningEngine, IbisHashFn
@@ -62,6 +68,34 @@ class FlatVersioningMixin:
             struct_column, field_name
         )
         return nw.col(flattened_name)
+
+    def _add_data_version_columns_from_provenance(self, df: FrameT) -> FrameT:
+        """Add data_version columns by aliasing provenance columns for flat engines.
+
+        For flat engines, provenance_by_field is stored as flattened columns like:
+          metaxy_provenance_by_field__feature__field
+
+        We need to create corresponding data_version_by_field columns:
+          metaxy_data_version_by_field__feature__field
+        """
+        # First, add the sample-level data_version column
+        df = df.with_columns(  # ty: ignore[invalid-argument-type]
+            nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+        )
+
+        # For flattened columns, create corresponding data_version_by_field columns
+        current_columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        prov_prefix = f"{METAXY_PROVENANCE_BY_FIELD}__"
+        data_prefix = f"{METAXY_DATA_VERSION_BY_FIELD}__"
+
+        for col in current_columns:
+            if col.startswith(prov_prefix):
+                field_name = col.split("__", 1)[1]
+                target_col = f"{data_prefix}{field_name}"
+                if target_col not in current_columns:
+                    df = df.with_columns(nw.col(col).alias(target_col))  # ty: ignore[invalid-argument-type]
+
+        return df  # ty: ignore[invalid-return-type]
 
 
 class FlatVersioningEngine(FlatVersioningMixin, VersioningEngine, ABC):

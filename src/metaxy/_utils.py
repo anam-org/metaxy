@@ -8,6 +8,16 @@ from narwhals.typing import DataFrameT, Frame, FrameT, LazyFrameT
 def collect_to_polars(frame: Frame) -> pl.DataFrame:
     """Helper to convert a Narwhals frame into an eager Polars DataFrame."""
 
+    if (
+        isinstance(frame, nw.DataFrame)
+        and frame.implementation == nw.Implementation.POLARS
+    ):
+        return frame.to_native()
+    if (
+        isinstance(frame, nw.LazyFrame)
+        and frame.implementation == nw.Implementation.POLARS
+    ):
+        return frame.to_native().collect()
     return frame.lazy().collect().to_polars()
 
 

@@ -174,6 +174,7 @@ class MetadataStore(ABC):
 
     # Subclasses must define the versioning engine class to use
     versioning_engine_cls: type[VersioningEngine]
+    _current_feature_plan: FeaturePlan | None = None
 
     def __init__(
         self,
@@ -535,12 +536,16 @@ class MetadataStore(ABC):
         # Use allow_fallback=False since we only want metadata from THIS store
         # to determine what needs to be updated locally
         try:
-            current_metadata: nw.LazyFrame[Any] | None = self.read_metadata(
-                feature_key,
-                filters=current_feature_filters if current_feature_filters else None,
-                allow_fallback=False,
-                current_only=True,  # filters by current feature_version
-                latest_only=True,  # deduplicates by id_columns, keeping latest
+            current_metadata: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = (
+                self.read_metadata(
+                    feature_key,
+                    filters=current_feature_filters
+                    if current_feature_filters
+                    else None,
+                    allow_fallback=False,
+                    current_only=True,  # filters by current feature_version
+                    latest_only=True,  # deduplicates by id_columns, keeping latest
+                )
             )
         except FeatureNotFoundError:
             current_metadata = None
