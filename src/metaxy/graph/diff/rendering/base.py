@@ -90,6 +90,13 @@ class RenderConfig:
         metadata={"help": "Show project names in feature nodes"},
     )
 
+    title: str | None = field(
+        default=None,
+        metadata={
+            "help": "Custom title for the graph. Defaults to 'Feature Graph' or 'Feature Graph Changes' for diffs."
+        },
+    )
+
     def get_feature_key(self) -> FeatureKey | None:
         """Parse feature string into FeatureKey.
 

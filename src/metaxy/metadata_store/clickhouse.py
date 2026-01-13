@@ -5,6 +5,7 @@ It takes care of some ClickHouse-specific logic such as `nw.Struct` type convers
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
+from pydantic import Field
 
 if TYPE_CHECKING:
     import ibis
@@ -38,7 +39,10 @@ class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
         ```
     """
 
-    pass  # All fields inherited from IbisMetadataStoreConfig
+    auto_cast_struct_for_map: bool = Field(
+        default=True,
+        description="Auto-convert DataFrame Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted.",
+    )
 
 
 class ClickHouseMetadataStore(IbisMetadataStore):
@@ -69,6 +73,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         *,
         connection_params: dict[str, Any] | None = None,
         fallback_stores: list["MetadataStore"] | None = None,
+        auto_cast_struct_for_map: bool = True,
         **kwargs: Any,
     ):
         """
@@ -100,6 +105,8 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
             fallback_stores: Ordered list of read-only fallback stores.
 
+            auto_cast_struct_for_map: whether to auto-convert DataFrame user-defined Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted.
+
             **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]`
 
         Raises:
@@ -114,6 +121,9 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         # Cache for ClickHouse table schemas (cleared on close)
         self._ch_schema_cache: dict[str, IbisSchema] = {}
+
+        # Store auto_cast_struct_for_map setting
+        self.auto_cast_struct_for_map = auto_cast_struct_for_map
 
         # Initialize Ibis store with ClickHouse backend
         super().__init__(
@@ -321,8 +331,11 @@ class ClickHouseMetadataStore(IbisMetadataStore):
     def _transform_struct_to_map(self, df: Frame, ch_schema: "IbisSchema") -> Frame:
         """Transform Struct columns to Map-compatible format for ClickHouse.
 
-        Only transforms known metaxy struct columns (metaxy_provenance_by_field,
-        metaxy_data_version_by_field) when the ClickHouse table has Map columns.
+        When `auto_cast_struct_for_map=True` (default), transforms ALL DataFrame Struct
+        columns to Map format when the corresponding ClickHouse column is Map type.
+
+        When `auto_cast_struct_for_map=False`, only transforms metaxy system columns
+        (metaxy_provenance_by_field, metaxy_data_version_by_field).
 
         For Polars: Converts Struct to List[Struct{key, value}] which Ibis/ClickHouse
         recognizes as array<struct<key, value>> and can insert into Map(K,V) columns.
@@ -343,35 +356,45 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             METAXY_PROVENANCE_BY_FIELD,
         )
 
-        # Only handle known metaxy struct columns
+        # Known metaxy struct columns (always transformed when auto_cast is False)
         metaxy_struct_columns = {
             METAXY_PROVENANCE_BY_FIELD,
             METAXY_DATA_VERSION_BY_FIELD,
         }
 
-        # Find Map columns in ClickHouse schema that are metaxy struct columns
-        map_columns = {
-            name
-            for name, dtype in ch_schema.items()
-            if isinstance(dtype, dt.Map) and name in metaxy_struct_columns
-        }
+        # Find Map columns in ClickHouse schema
+        if self.auto_cast_struct_for_map:
+            # Transform ALL Struct columns that have corresponding Map columns in CH
+            map_columns = {
+                name for name, dtype in ch_schema.items() if isinstance(dtype, dt.Map)
+            }
+        else:
+            # Only transform metaxy system columns
+            map_columns = {
+                name
+                for name, dtype in ch_schema.items()
+                if isinstance(dtype, dt.Map) and name in metaxy_struct_columns
+            }
 
         if not map_columns:
             return df
 
         # Handle Ibis-backed DataFrames (keep lazy)
         if df.implementation == nw.Implementation.IBIS:
-            return self._transform_ibis_struct_to_map(df, map_columns)
+            return self._transform_ibis_struct_to_map(df, map_columns, ch_schema)
 
         # All other backends: collect to Polars and transform
-        return self._transform_polars_struct_to_map(df, map_columns)
+        return self._transform_polars_struct_to_map(df, map_columns, ch_schema)
 
-    def _transform_ibis_struct_to_map(self, df: Frame, map_columns: set[str]) -> Frame:
+    def _transform_ibis_struct_to_map(
+        self, df: Frame, map_columns: set[str], ch_schema: "IbisSchema"
+    ) -> Frame:
         """Transform Ibis Struct columns to Map format for ClickHouse.
 
         Args:
             df: Narwhals DataFrame backed by Ibis
             map_columns: Set of column names that need to be converted to Map
+            ch_schema: ClickHouse table schema (to get Map value types)
 
         Returns:
             DataFrame with Struct columns converted to Map
@@ -396,10 +419,30 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             # Get field names from the struct type
             field_names = list(col_dtype.names)
 
+            # Get target Map value type from ClickHouse schema
+            # We already verified this is a Map type in the caller
+            ch_map_dtype = ch_schema[col_name]
+            target_value_type = ch_map_dtype.value_type  # ty: ignore[unresolved-attribute]
+
+            # Handle empty structs (no fields) - convert to empty Map
+            if not field_names:
+                # Create empty map literal with correct types
+                mutations[col_name] = ibis.literal(
+                    {},
+                    type=dt.Map(dt.String(), target_value_type),  # ty: ignore[invalid-argument-type, missing-argument]
+                )
+                continue
+
             # Build map from struct fields: Map(field_name -> field_value)
             # ibis.map() takes two arrays: keys and values
+            # Cast values to match ClickHouse Map value type
             keys = ibis.array([ibis.literal(name) for name in field_names])
-            values = ibis.array([ibis_table[col_name][name] for name in field_names])
+            values = ibis.array(
+                [
+                    ibis_table[col_name][name].cast(target_value_type)
+                    for name in field_names
+                ]
+            )
             mutations[col_name] = ibis.map(keys, values)
 
         if not mutations:
@@ -409,13 +452,14 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         return nw.from_native(result_table, eager_only=False)
 
     def _transform_polars_struct_to_map(
-        self, df: Frame, map_columns: set[str]
+        self, df: Frame, map_columns: set[str], ch_schema: "IbisSchema"
     ) -> Frame:
         """Transform Polars Struct columns to Map-compatible format for ClickHouse.
 
         Args:
             df: Narwhals DataFrame backed by Polars
             map_columns: Set of column names that need to be converted to Map
+            ch_schema: ClickHouse table schema (to get Map value types)
 
         Returns:
             DataFrame with Struct columns converted to List[Struct{key, value}]
@@ -428,13 +472,21 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         pl_df = collect_to_polars(df)
 
         # Check which columns need transformation (are Struct in Polars)
-        cols_to_transform: list[tuple[str, list[str]]] = []
+        # Tuple: (col_name, field_names, target_polars_type)
+        # field_names may be empty for empty structs
+        cols_to_transform: list[tuple[str, list[str], pl.DataType]] = []
         for col_name in map_columns:
             if col_name in pl_df.columns:
                 col_dtype = pl_df.schema[col_name]
                 if isinstance(col_dtype, pl.Struct):
                     field_names = [f.name for f in col_dtype.fields]
-                    cols_to_transform.append((col_name, field_names))
+                    # Get target value type from ClickHouse schema
+                    # We already verified this is a Map type in the caller
+                    ch_map_dtype = ch_schema[col_name]
+                    target_pl_type = self._ibis_type_to_polars(
+                        ch_map_dtype.value_type  # ty: ignore[unresolved-attribute]
+                    )
+                    cols_to_transform.append((col_name, field_names, target_pl_type))
 
         if not cols_to_transform:
             return df
@@ -442,22 +494,84 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         # Transform Struct columns to List[Struct{key, value}] format
         # This is what Ibis/ClickHouse expects for Map(K,V) columns
         transformations = []
-        for col_name, field_names in cols_to_transform:
-            # Build list of {key: field_name, value: field_value} structs
-            key_value_structs = [
-                pl.struct(
-                    [
-                        pl.lit(field_name).alias("key"),
-                        pl.col(col_name).struct.field(field_name).alias("value"),
-                    ]
+        for col_name, field_names, target_type in cols_to_transform:
+            # Handle empty structs (no fields) - convert to empty List
+            if not field_names:
+                # Create empty list with correct Map-compatible struct type
+                empty_list_type = pl.List(
+                    pl.Struct({"key": pl.Utf8, "value": target_type})
                 )
+                transformations.append(
+                    pl.lit([], dtype=empty_list_type).alias(col_name)
+                )
+                continue
+
+            # Build list of {key: field_name, value: field_value} structs
+            # Cast values to match ClickHouse Map value type
+            # Filter out NULL values since ClickHouse Maps don't support NULL
+            key_value_structs = [
+                pl.when(pl.col(col_name).struct.field(field_name).is_not_null())
+                .then(
+                    pl.struct(
+                        [
+                            pl.lit(field_name).alias("key"),
+                            pl.col(col_name)
+                            .struct.field(field_name)
+                            .cast(target_type)
+                            .alias("value"),
+                        ]
+                    )
+                )
+                .otherwise(None)
                 for field_name in field_names
             ]
-            transformations.append(pl.concat_list(key_value_structs).alias(col_name))
+            # Concat and drop nulls to exclude entries with NULL values
+            transformations.append(
+                pl.concat_list(key_value_structs).list.drop_nulls().alias(col_name)
+            )
 
         pl_df = pl_df.with_columns(transformations)
 
         return nw.from_native(pl_df)
+
+    @staticmethod
+    def _ibis_type_to_polars(ibis_type: Any) -> Any:
+        """Convert Ibis data type to Polars data type.
+
+        Args:
+            ibis_type: Ibis data type (e.g., dt.String(), dt.Int64())
+
+        Returns:
+            Corresponding Polars data type
+        """
+        import ibis.expr.datatypes as dt
+        import polars as pl
+
+        # Map common Ibis types to Polars types
+        type_map: dict[type, Any] = {
+            dt.String: pl.Utf8,
+            dt.Int8: pl.Int8,
+            dt.Int16: pl.Int16,
+            dt.Int32: pl.Int32,
+            dt.Int64: pl.Int64,
+            dt.UInt8: pl.UInt8,
+            dt.UInt16: pl.UInt16,
+            dt.UInt32: pl.UInt32,
+            dt.UInt64: pl.UInt64,
+            dt.Float32: pl.Float32,
+            dt.Float64: pl.Float64,
+            dt.Boolean: pl.Boolean,
+            dt.Date: pl.Date,
+            dt.Time: pl.Time,
+            dt.Timestamp: pl.Datetime,
+        }
+
+        for ibis_cls, pl_type in type_map.items():
+            if isinstance(ibis_type, ibis_cls):
+                return pl_type
+
+        # Default to String for unknown types
+        return pl.Utf8
 
     @property
     def sqlalchemy_url(self) -> str:

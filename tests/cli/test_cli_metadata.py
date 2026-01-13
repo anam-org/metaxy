@@ -82,7 +82,7 @@ def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject
 
         # Try to drop without specifying features
         result = metaxy_project.run_cli(
-            "metadata", "drop", "--confirm", "--format", "json", check=False
+            ["metadata", "drop", "--confirm", "--format", "json"], check=False
         )
 
         assert result.returncode == 1
@@ -114,12 +114,7 @@ def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
 
         # Try to drop without --confirm
         result = metaxy_project.run_cli(
-            "metadata",
-            "drop",
-            "--feature",
-            "video/files",
-            "--format",
-            "json",
+            ["metadata", "drop", "--feature", "video/files", "--format", "json"],
             check=False,
         )
 
@@ -161,13 +156,15 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
 
         # Drop one feature
         result = metaxy_project.run_cli(
-            "metadata",
-            "drop",
-            "--feature",
-            "video/files",
-            "--confirm",
-            "--format",
-            "json",
+            [
+                "metadata",
+                "drop",
+                "--feature",
+                "video/files",
+                "--confirm",
+                "--format",
+                "json",
+            ]
         )
 
         assert result.returncode == 0
@@ -219,15 +216,17 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
 
         # Drop multiple features
         result = metaxy_project.run_cli(
-            "metadata",
-            "drop",
-            "--feature",
-            "video/files",
-            "--feature",
-            "audio/files",
-            "--confirm",
-            "--format",
-            "json",
+            [
+                "metadata",
+                "drop",
+                "--feature",
+                "video/files",
+                "--feature",
+                "audio/files",
+                "--confirm",
+                "--format",
+                "json",
+            ]
         )
 
         assert result.returncode == 0
@@ -270,7 +269,7 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
 
         # Drop all features
         result = metaxy_project.run_cli(
-            "metadata", "drop", "--all-features", "--confirm"
+            ["metadata", "drop", "--all-features", "--confirm"]
         )
 
     with metaxy_project.with_features(features):
@@ -280,7 +279,7 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
 
         # Drop all features
         result = metaxy_project.run_cli(
-            "metadata", "drop", "--all-features", "--confirm", "--format", "json"
+            ["metadata", "drop", "--all-features", "--confirm", "--format", "json"]
         )
 
         assert result.returncode == 0
@@ -311,7 +310,7 @@ def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
 
         # Drop all features from empty store - should succeed (idempotent)
         result = metaxy_project.run_cli(
-            "metadata", "drop", "--all-features", "--confirm", "--format", "json"
+            ["metadata", "drop", "--all-features", "--confirm", "--format", "json"]
         )
 
         # Should succeed - drop is idempotent even if no metadata exists
@@ -340,14 +339,16 @@ def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProje
     with metaxy_project.with_features(features):
         # Try to specify both flags
         result = metaxy_project.run_cli(
-            "metadata",
-            "drop",
-            "--feature",
-            "video/files",
-            "--all-features",
-            "--confirm",
-            "--format",
-            "json",
+            [
+                "metadata",
+                "drop",
+                "--feature",
+                "video/files",
+                "--all-features",
+                "--confirm",
+                "--format",
+                "json",
+            ],
             check=False,
         )
 
@@ -378,15 +379,17 @@ def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
 
         # Drop with explicit store
         result = metaxy_project.run_cli(
-            "metadata",
-            "drop",
-            "--store",
-            "dev",
-            "--feature",
-            "video/files",
-            "--confirm",
-            "--format",
-            "json",
+            [
+                "metadata",
+                "drop",
+                "--store",
+                "dev",
+                "--feature",
+                "video/files",
+                "--confirm",
+                "--format",
+                "json",
+            ]
         )
 
         assert result.returncode == 0
@@ -446,12 +449,14 @@ def test_metadata_status_up_to_date(
 
         # Check status for the non-root feature
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--format",
-            output_format,
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--format",
+                output_format,
+            ]
         )
 
         assert result.returncode == 0
@@ -506,12 +511,14 @@ def test_metadata_status_missing_metadata(
 
         # Check status - should show missing metadata
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--format",
-            output_format,
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--format",
+                output_format,
+            ]
         )
 
         assert result.returncode == 0
@@ -563,11 +570,7 @@ def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject)
 
         # Check status with --assert-in-sync
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--assert-in-sync",
+            ["metadata", "status", "--feature", "video/files", "--assert-in-sync"],
             check=False,
         )
 
@@ -620,14 +623,16 @@ def test_metadata_status_multiple_features(
 
         # Check status for both
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--feature",
-            "audio/files",
-            "--format",
-            output_format,
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--feature",
+                "audio/files",
+                "--format",
+                output_format,
+            ]
         )
 
         assert result.returncode == 0
@@ -672,12 +677,14 @@ def test_metadata_status_invalid_feature_key(
     with metaxy_project.with_features(features):
         # Check status for non-existent feature
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "nonexistent/feature",
-            "--format",
-            output_format,
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "nonexistent/feature",
+                "--format",
+                output_format,
+            ],
             check=False,
         )
 
@@ -725,13 +732,15 @@ def test_metadata_status_with_verbose(
         _write_sample_metadata(metaxy_project, "video/files_root")
         # Check status with verbose
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--format",
-            output_format,
-            "--verbose",
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--format",
+                output_format,
+                "--verbose",
+            ]
         )
 
         assert result.returncode == 0
@@ -795,14 +804,16 @@ def test_metadata_status_with_explicit_store(
 
         # Check status with explicit store
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--store",
-            "dev",
-            "--format",
-            output_format,
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--store",
+                "dev",
+                "--format",
+                output_format,
+            ]
         )
 
         assert result.returncode == 0
@@ -837,7 +848,7 @@ def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProje
     with metaxy_project.with_features(features):
         # Try to check status without specifying features
         result = metaxy_project.run_cli(
-            "metadata", "status", "--format", "json", check=False
+            ["metadata", "status", "--format", "json"], check=False
         )
 
         assert result.returncode == 1
@@ -866,13 +877,15 @@ def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyPro
     with metaxy_project.with_features(features):
         # Try to specify both flags
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--all-features",
-            "--format",
-            "json",
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--all-features",
+                "--format",
+                "json",
+            ],
             check=False,
         )
 
@@ -926,11 +939,7 @@ def test_metadata_status_all_features(
 
         # Check status for all features
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--all-features",
-            "--format",
-            output_format,
+            ["metadata", "status", "--all-features", "--format", output_format]
         )
 
         assert result.returncode == 0
@@ -977,12 +986,14 @@ def test_metadata_status_root_feature(
 
         # Check status for the root feature
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "root_feature",
-            "--format",
-            output_format,
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "root_feature",
+                "--format",
+                output_format,
+            ]
         )
 
         assert result.returncode == 0
@@ -1028,12 +1039,14 @@ def test_metadata_status_root_feature_missing_metadata(
 
         # Check status for the root feature
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "root_feature",
-            "--format",
-            output_format,
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "root_feature",
+                "--format",
+                output_format,
+            ]
         )
 
         assert result.returncode == 0
@@ -1117,14 +1130,16 @@ def test_metadata_status_with_filter(
 
         # Check status with filter for category A - should be up-to-date
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--filter",
-            "category = 'A'",
-            "--format",
-            output_format,
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--filter",
+                "category = 'A'",
+                "--format",
+                output_format,
+            ]
         )
 
         assert result.returncode == 0
@@ -1144,14 +1159,16 @@ def test_metadata_status_with_filter(
 
         # Check status with filter for category B - should need updates
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--filter",
-            "category = 'B'",
-            "--format",
-            output_format,
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--filter",
+                "category = 'B'",
+                "--format",
+                output_format,
+            ]
         )
 
         assert result.returncode == 0
@@ -1190,14 +1207,16 @@ def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         # Try to check status with invalid filter syntax
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--filter",
-            "invalid syntax !!!",
-            "--format",
-            "json",
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--filter",
+                "invalid syntax !!!",
+                "--format",
+                "json",
+            ],
             check=False,
         )
 
@@ -1270,16 +1289,18 @@ def test_metadata_status_with_multiple_filters(
         # Check status with multiple filters: category A AND status active
         # Should match sample_uids 1 and 5
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--filter",
-            "category = 'A'",
-            "--filter",
-            "status = 'active'",
-            "--format",
-            output_format,
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--filter",
+                "category = 'A'",
+                "--filter",
+                "status = 'active'",
+                "--format",
+                output_format,
+            ]
         )
 
         assert result.returncode == 0
@@ -1387,13 +1408,15 @@ def test_metadata_status_with_progress_flag(
 
         # Check status with --progress flag
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--format",
-            output_format,
-            "--progress",
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--format",
+                output_format,
+                "--progress",
+            ]
         )
 
         assert result.returncode == 0
@@ -1464,13 +1487,15 @@ def test_metadata_status_verbose_includes_progress(
 
         # Check status with --verbose (should also include progress)
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--format",
-            output_format,
-            "--verbose",
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--format",
+                output_format,
+                "--verbose",
+            ]
         )
 
         assert result.returncode == 0
@@ -1515,13 +1540,15 @@ def test_metadata_status_progress_for_root_feature(
 
         # Check status with --progress flag
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "root_feature",
-            "--format",
-            "json",
-            "--progress",
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "root_feature",
+                "--format",
+                "json",
+                "--progress",
+            ]
         )
 
         assert result.returncode == 0
@@ -1583,13 +1610,15 @@ def test_metadata_status_progress_100_percent(
 
         # Check status with --progress flag
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--format",
-            "json",
-            "--progress",
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--format",
+                "json",
+                "--progress",
+            ]
         )
 
         assert result.returncode == 0
@@ -1638,15 +1667,17 @@ def test_metadata_status_progress_no_input_display(
         # Check status with --progress flag and a filter that excludes all rows
         # This simulates the "no input" scenario when all upstream data is filtered out
         result = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--format",
-            "plain",
-            "--progress",
-            "--filter",
-            "sample_uid > 999",  # No samples match this filter
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--format",
+                "plain",
+                "--progress",
+                "--filter",
+                "sample_uid > 999",  # No samples match this filter
+            ]
         )
 
         assert result.returncode == 0
@@ -1655,15 +1686,17 @@ def test_metadata_status_progress_no_input_display(
 
         # Check JSON format - should have null progress_percentage
         result_json = metaxy_project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "video/files",
-            "--format",
-            "json",
-            "--progress",
-            "--filter",
-            "sample_uid > 999",  # No samples match this filter
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "video/files",
+                "--format",
+                "json",
+                "--progress",
+                "--filter",
+                "sample_uid > 999",  # No samples match this filter
+            ]
         )
 
         assert result_json.returncode == 0
@@ -1774,12 +1807,7 @@ root_path = "{prod_path}"
 
         # Run CLI status command - should use fallback stores by default
         result = project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "downstream",
-            "--format",
-            output_format,
+            ["metadata", "status", "--feature", "downstream", "--format", output_format]
         )
 
         assert result.returncode == 0
@@ -1887,13 +1915,15 @@ root_path = "{prod_path}"
         # Run CLI status command WITH fallback enabled
         # Should find 3 rows in fallback store
         result_with_fallback = project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "root",
-            "--format",
-            "json",
-            # --allow-fallback-stores is True by default
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "root",
+                "--format",
+                "json",
+                # --allow-fallback-stores is True by default
+            ]
         )
 
         assert result_with_fallback.returncode == 0
@@ -1909,13 +1939,15 @@ root_path = "{prod_path}"
         # Run CLI status command WITH fallback DISABLED
         # Should NOT find any rows (not looking in fallback)
         result_no_fallback = project.run_cli(
-            "metadata",
-            "status",
-            "--feature",
-            "root",
-            "--format",
-            "json",
-            "--no-allow-fallback-stores",
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "root",
+                "--format",
+                "json",
+                "--no-allow-fallback-stores",
+            ]
         )
 
         assert result_no_fallback.returncode == 0
@@ -1955,22 +1987,14 @@ def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         # Missing --from
         result = metaxy_project.run_cli(
-            "metadata",
-            "copy",
-            "video/files",
-            "--to",
-            "dev",
+            ["metadata", "copy", "video/files", "--to", "dev"],
             check=False,
         )
         assert result.returncode != 0
 
         # Missing --to
         result = metaxy_project.run_cli(
-            "metadata",
-            "copy",
-            "video/files",
-            "--from",
-            "dev",
+            ["metadata", "copy", "video/files", "--from", "dev"],
             check=False,
         )
         assert result.returncode != 0
@@ -1994,12 +2018,7 @@ def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         result = metaxy_project.run_cli(
-            "metadata",
-            "copy",
-            "--from",
-            "dev",
-            "--to",
-            "dev",
+            ["metadata", "copy", "--from", "dev", "--to", "dev"],
             check=False,
         )
 
@@ -2051,13 +2070,7 @@ root_path = "{prod_path}"
 
         # Copy from dev to prod (positional args before keyword args)
         result = project.run_cli(
-            "metadata",
-            "copy",
-            "video/files",
-            "--from",
-            "dev",
-            "--to",
-            "prod",
+            ["metadata", "copy", "video/files", "--from", "dev", "--to", "prod"]
         )
 
         assert result.returncode == 0
@@ -2118,14 +2131,16 @@ root_path = "{prod_path}"
 
         # Copy multiple features from dev to prod using positional args
         result = project.run_cli(
-            "metadata",
-            "copy",
-            "video/files",
-            "audio/files",
-            "--from",
-            "dev",
-            "--to",
-            "prod",
+            [
+                "metadata",
+                "copy",
+                "video/files",
+                "audio/files",
+                "--from",
+                "dev",
+                "--to",
+                "prod",
+            ]
         )
 
         assert result.returncode == 0
@@ -2178,15 +2193,17 @@ root_path = "{prod_path}"
 
         # Copy with filter - only sample_uid <= 2
         result = project.run_cli(
-            "metadata",
-            "copy",
-            "video/files",
-            "--from",
-            "dev",
-            "--to",
-            "prod",
-            "--filter",
-            "sample_uid <= 2",
+            [
+                "metadata",
+                "copy",
+                "video/files",
+                "--from",
+                "dev",
+                "--to",
+                "prod",
+                "--filter",
+                "sample_uid <= 2",
+            ]
         )
 
         assert result.returncode == 0
@@ -2237,14 +2254,16 @@ root_path = "{prod_path}"
 
         # Try to copy including a non-existent feature
         result = project.run_cli(
-            "metadata",
-            "copy",
-            "video/files",
-            "nonexistent/feature",
-            "--from",
-            "dev",
-            "--to",
-            "prod",
+            [
+                "metadata",
+                "copy",
+                "video/files",
+                "nonexistent/feature",
+                "--from",
+                "dev",
+                "--to",
+                "prod",
+            ]
         )
 
         # Should succeed (copy what exists)
@@ -2295,13 +2314,15 @@ root_path = "{prod_path}"
     with project.with_features(features):
         # Try to copy a non-existent feature only
         result = project.run_cli(
-            "metadata",
-            "copy",
-            "nonexistent/feature",
-            "--from",
-            "dev",
-            "--to",
-            "prod",
+            [
+                "metadata",
+                "copy",
+                "nonexistent/feature",
+                "--from",
+                "dev",
+                "--to",
+                "prod",
+            ]
         )
 
         assert result.returncode == 0

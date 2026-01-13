@@ -944,7 +944,7 @@ class SystemTableStorage:
                 if isinstance(row["feature_spec"], str)
                 else row["feature_spec"],
                 "feature_class_path": row["feature_class_path"],
-                "metaxy_feature_version": row["feature_version"],
+                "metaxy_feature_version": row["metaxy_feature_version"],
             }
             for row in features_df.iter_rows(named=True)
         }

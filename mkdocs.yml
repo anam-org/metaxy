@@ -248,8 +248,10 @@ nav:
         - API: integrations/plugins/sqlalchemy/api.md
   - Examples:
     - examples/index.md
-    - One To Many: examples/one-to-many.md
-    - Migration Examples: examples/migrations/README.md
+    - Basic: examples/basic.md
+    - Aggregation: examples/aggregation.md
+    - Expansion: examples/expansion.md
+    - Migrations: examples/migrations/README.md
   - Reference:
     - reference/index.md
     - API:

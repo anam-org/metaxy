@@ -20,7 +20,7 @@ def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("graph", "push")
+        result = metaxy_project.run_cli(["graph", "push"])
 
         assert result.returncode == 0
         assert "Recorded feature graph" in result.stderr
@@ -46,11 +46,11 @@ def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # First push
-        result1 = metaxy_project.run_cli("graph", "push")
+        result1 = metaxy_project.run_cli(["graph", "push"])
         assert "Recorded feature graph" in result1.stderr
 
         # Second push - should skip
-        result2 = metaxy_project.run_cli("graph", "push")
+        result2 = metaxy_project.run_cli(["graph", "push"])
         assert "already recorded" in result2.stderr
         # Snapshot version now only goes to stdout, not stderr
         assert len(result2.stdout.strip()) == 64  # Check hash is in stdout
@@ -73,7 +73,7 @@ def test_graph_history_empty(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("graph", "history")
+        result = metaxy_project.run_cli(["graph", "history"])
 
         assert result.returncode == 0
         assert "No graph snapshots recorded yet" in result.stderr
@@ -97,10 +97,10 @@ def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push to create snapshot
-        metaxy_project.run_cli("graph", "push")
+        metaxy_project.run_cli(["graph", "push"])
 
         # Check history
-        result = metaxy_project.run_cli("graph", "history")
+        result = metaxy_project.run_cli(["graph", "history"])
 
         assert result.returncode == 0
         assert "Graph Snapshot History" in result.stderr
@@ -128,10 +128,10 @@ def test_graph_history_with_limit(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push once
-        metaxy_project.run_cli("graph", "push")
+        metaxy_project.run_cli(["graph", "push"])
 
         # Check history with limit
-        result = metaxy_project.run_cli("graph", "history", "--limit", "1")
+        result = metaxy_project.run_cli(["graph", "history", "--limit", "1"])
 
         assert result.returncode == 0
         assert "Total snapshots: 1" in result.stderr
@@ -154,7 +154,7 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("graph", "describe")
+        result = metaxy_project.run_cli(["graph", "describe"])
 
         assert result.returncode == 0
         assert "Describing current graph from code" in result.stderr
@@ -216,7 +216,7 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
     # Load both feature modules
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli("graph", "describe")
+            result = metaxy_project.run_cli(["graph", "describe"])
 
             assert result.returncode == 0
             assert "Total Features" in result.stderr
@@ -246,7 +246,7 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push to create snapshot
-        push_result = metaxy_project.run_cli("graph", "push")
+        push_result = metaxy_project.run_cli(["graph", "push"])
 
         # Extract snapshot version from stdout (just the raw hash)
         snapshot_version = push_result.stdout.strip()
@@ -256,7 +256,7 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
 
         # Describe specific snapshot
         result = metaxy_project.run_cli(
-            "graph", "describe", "--snapshot", snapshot_version
+            ["graph", "describe", "--snapshot", snapshot_version]
         )
 
         assert result.returncode == 0
@@ -285,7 +285,7 @@ def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push with explicit store (uses default "dev" store)
-        result = metaxy_project.run_cli("graph", "push", "--store", "dev")
+        result = metaxy_project.run_cli(["graph", "push", "--store", "dev"])
 
         assert result.returncode == 0
         assert result.stdout
@@ -318,7 +318,7 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Step 1: Push
-        push_result = metaxy_project.run_cli("graph", "push")
+        push_result = metaxy_project.run_cli(["graph", "push"])
         assert "Recorded feature graph" in push_result.stderr
 
         # Extract snapshot version from stdout (just the raw hash)
@@ -326,18 +326,18 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
         assert snapshot_version
 
         # Step 2: History should show the snapshot (table output goes to stderr)
-        history_result = metaxy_project.run_cli("graph", "history")
+        history_result = metaxy_project.run_cli(["graph", "history"])
         assert snapshot_version[:13] in history_result.stderr
         assert "2" in history_result.stderr  # 2 features
 
         # Step 3: Describe should show current graph
-        describe_result = metaxy_project.run_cli("graph", "describe")
+        describe_result = metaxy_project.run_cli(["graph", "describe"])
         assert "Total Features" in describe_result.stderr
         assert "2" in describe_result.stderr
 
         # Step 4: Describe historical snapshot
         describe_historical = metaxy_project.run_cli(
-            "graph", "describe", "--snapshot", snapshot_version
+            ["graph", "describe", "--snapshot", snapshot_version]
         )
         # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
         assert "Describing snapshot" in describe_historical.stderr
@@ -361,7 +361,7 @@ def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("graph", "render", "--format", "terminal")
+        result = metaxy_project.run_cli(["graph", "render", "--format", "terminal"])
 
         assert result.returncode == 0
         assert "Graph" in result.stdout
@@ -387,7 +387,7 @@ def test_graph_render_cards_format(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("graph", "render", "--type", "cards")
+        result = metaxy_project.run_cli(["graph", "render", "--type", "cards"])
 
         assert result.returncode == 0
         assert "Graph" in result.stdout
@@ -445,14 +445,16 @@ def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
             # Test terminal format shows dependencies
-            result = metaxy_project.run_cli("graph", "render", "--format", "terminal")
+            result = metaxy_project.run_cli(["graph", "render", "--format", "terminal"])
             assert result.returncode == 0
             assert "video/files" in result.stdout
             assert "video/processing" in result.stdout
             assert "depends on" in result.stdout
 
             # Test cards format shows edges
-            result_cards = metaxy_project.run_cli("graph", "render", "--type", "cards")
+            result_cards = metaxy_project.run_cli(
+                ["graph", "render", "--type", "cards"]
+            )
             assert result_cards.returncode == 0
             assert "video/files" in result_cards.stdout
             assert "video/processing" in result_cards.stdout
@@ -476,7 +478,7 @@ def test_graph_render_mermaid_format(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("graph", "render", "--format", "mermaid")
+        result = metaxy_project.run_cli(["graph", "render", "--format", "mermaid"])
 
         assert result.returncode == 0
         assert "flowchart" in result.stdout
@@ -501,7 +503,7 @@ def test_graph_render_minimal_preset(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("graph", "render", "--minimal")
+        result = metaxy_project.run_cli(["graph", "render", "--minimal"])
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
@@ -526,7 +528,7 @@ def test_graph_render_verbose_preset(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("graph", "render", "--verbose")
+        result = metaxy_project.run_cli(["graph", "render", "--verbose"])
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
@@ -575,12 +577,14 @@ def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject):
         with metaxy_project.with_features(dependent_features):
             # Focus on video/processing with upstream dependencies
             result = metaxy_project.run_cli(
-                "graph",
-                "render",
-                "--feature",
-                "video/processing",
-                "--up",
-                "1",
+                [
+                    "graph",
+                    "render",
+                    "--feature",
+                    "video/processing",
+                    "--up",
+                    "1",
+                ]
             )
 
             assert result.returncode == 0
@@ -607,12 +611,14 @@ def test_graph_render_output_to_file(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         output_file = metaxy_project.project_dir / "graph.mmd"
         result = metaxy_project.run_cli(
-            "graph",
-            "render",
-            "--format",
-            "mermaid",
-            "--output",
-            str(output_file),
+            [
+                "graph",
+                "render",
+                "--format",
+                "mermaid",
+                "--output",
+                str(output_file),
+            ]
         )
 
         assert result.returncode == 0
@@ -674,7 +680,7 @@ def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli("graph", "render", "--format", "terminal")
+            result = metaxy_project.run_cli(["graph", "render", "--format", "terminal"])
 
             assert result.returncode == 0
             # Should show field dependency
@@ -706,7 +712,7 @@ def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         # Test with no fields shown
         result = metaxy_project.run_cli(
-            "graph", "render", "--no-show-fields", "--no-show-snapshot-version"
+            ["graph", "render", "--no-show-fields", "--no-show-snapshot-version"]
         )
 
         assert result.returncode == 0
@@ -747,7 +753,7 @@ def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapsho
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("graph", "render", "--format", "graphviz")
+        result = metaxy_project.run_cli(["graph", "render", "--format", "graphviz"])
 
         assert result.returncode == 0
         assert result.stdout == snapshot
@@ -823,14 +829,14 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
 
     # Push v1
     with metaxy_project.with_features(features_v1):
-        result1 = metaxy_project.run_cli("graph", "push")
+        result1 = metaxy_project.run_cli(["graph", "push"])
         assert result1.returncode == 0
         assert "Recorded feature graph" in result1.stderr
         # Snapshot version now only goes to stdout
         assert len(result1.stdout.strip()) == 64
 
     with metaxy_project.with_features(features_v2):
-        result2 = metaxy_project.run_cli("graph", "push")
+        result2 = metaxy_project.run_cli(["graph", "push"])
         assert result2.returncode == 0
 
         # Should show metadata update message (rename doesn't change feature_version)
@@ -859,11 +865,11 @@ def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # First push
-        result1 = metaxy_project.run_cli("graph", "push")
+        result1 = metaxy_project.run_cli(["graph", "push"])
         assert "Recorded feature graph" in result1.stderr
 
         # Second push - no changes
-        result2 = metaxy_project.run_cli("graph", "push")
+        result2 = metaxy_project.run_cli(["graph", "push"])
         assert result2.returncode == 0
         assert "already recorded" in result2.stderr
         assert "no changes" in result2.stderr
@@ -937,7 +943,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
 
     # Scenario 1: First push (new snapshot)
     with metaxy_project.with_features(features_v1):
-        result1 = metaxy_project.run_cli("graph", "push")
+        result1 = metaxy_project.run_cli(["graph", "push"])
         assert result1.returncode == 0
         assert "Recorded feature graph" in result1.stderr
         # Snapshot version now only goes to stdout
@@ -945,7 +951,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
 
     # Scenario 2: Metadata change (columns doesn't affect feature_version)
     with metaxy_project.with_features(features_v2):
-        result2 = metaxy_project.run_cli("graph", "push")
+        result2 = metaxy_project.run_cli(["graph", "push"])
         assert result2.returncode == 0
         assert "Updated feature information" in result2.stderr
         assert "downstream" in result2.stderr
@@ -953,7 +959,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
     # Scenario 3: No change
     # Note: Re-pushing the same snapshot shows "already recorded"
     with metaxy_project.with_features(features_v2):
-        result3 = metaxy_project.run_cli("graph", "push")
+        result3 = metaxy_project.run_cli(["graph", "push"])
         assert result3.returncode == 0
         assert "already recorded" in result3.stderr
 
@@ -975,7 +981,7 @@ def test_graph_push_logs_store_metadata(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli("graph", "push")
+        result = metaxy_project.run_cli(["graph", "push"])
 
         assert result.returncode == 0
         # Should log store metadata (DuckDB shows table_name)
@@ -1075,12 +1081,12 @@ def test_graph_push_multiple_features_metadata_changes(
 
     # Push v1
     with metaxy_project.with_features(features_v1):
-        result1 = metaxy_project.run_cli("graph", "push")
+        result1 = metaxy_project.run_cli(["graph", "push"])
         assert "Recorded feature graph" in result1.stderr
 
     # Push v2 - multiple metadata changes (rename and columns don't affect feature_version)
     with metaxy_project.with_features(features_v2):
-        result2 = metaxy_project.run_cli("graph", "push")
+        result2 = metaxy_project.run_cli(["graph", "push"])
         assert result2.returncode == 0
         assert "Updated feature information" in result2.stderr
         # Should list both changed features

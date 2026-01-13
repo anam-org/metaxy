@@ -181,7 +181,7 @@ class _Key(RootModel[tuple[str, ...]]):
                     )
         return value
 
-    @model_serializer
+    @model_serializer(mode="plain")
     def _serialize_model(self) -> str:
         """Serialize to string format for JSON compatibility.
 

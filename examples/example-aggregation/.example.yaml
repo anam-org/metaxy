@@ -6,7 +6,8 @@ scenarios:
   - name: "Initial pipeline run"
     description: "First execution creates audio recordings (2 per speaker) and computes speaker embeddings"
     steps:
-      - type: "run_command"
+      - name: "run_pipeline"
+        type: "run_command"
         command: "python pipeline.py"
         description: "Run pipeline to create audio and speaker embeddings"
         capture_output: true

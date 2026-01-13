@@ -14,9 +14,24 @@
   <a href="https://prek.j178.dev"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/docs/assets/badge-v0.json" alt="prek"></a>
 </p>
 
-Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks feature versions, data dependencies - including multi-modal components - and lineage across complex computational graphs.
+Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks lineage and versioning across complex computational graphs for multi-modal datasets.
 
-Metaxy's goal is to provide a standard instrument for any kind of multi-modal (or just purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations with metadata.
+Metaxy manages **metadata** while **data** typically lives elsewhere:
+
+```
+┌─────────────────────────────────┐          ┌─────────────────────────┐
+│      Metadata (Metaxy)          │          │   Data (e.g., S3)       │
+├──────┬──────────┬──────┬────────┤          │                         │
+│  ID  │   path   │ size │version │          │  📦 s3://my-bucket/     │
+├──────┼──────────┼──────┼────────┤          │                         │
+│ img1 │ s3://... │ 2.1M │a3fdsf  │ ────────>│    ├─ img1.jpg          │
+│ img2 │ s3://... │ 1.8M │b7e123  │ ────────>│    ├─ img2.jpg          │
+└──────┴──────────┴──────┴────────┘          └─────────────────────────┘
+```
+
+The feature that makes Metaxy stand out is the ability to track **partial data dependencies** that are so common in multi-modal pipelines and skip downstream updates when they are not needed.
+
+Metaxy's goal is to provide a standard instrument for any kind of multi-modal (or just purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations over metadata.
 
 Read the [docs](https://anam-org.github.io/metaxy) to discover more about Metaxy.
 
@@ -28,7 +43,7 @@ Read the [docs](https://anam-org.github.io/metaxy) to discover more about Metaxy
 pip install --pre metaxy
 ```
 
-## Integrating Metaxy in your project
+## Using Metaxy
 
 Metaxy is highly pluggable and generally can be used with any kind of incremental pipelines, storage, metadata storage, and dataframe libraries.
 

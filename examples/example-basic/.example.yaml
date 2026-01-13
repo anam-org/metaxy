@@ -1,13 +1,14 @@
-name: "Recompute Example"
+name: "Basic Example"
 description: "Demonstrates automatic recomputation when upstream dependencies change"
-package_name: "example_recompute"
+package_name: "example_basic"
 
 scenarios:
   - name: "Setup upstream data"
     description: "Create initial upstream data for the pipeline"
     steps:
-      - type: "run_command"
-        command: "python -m example_recompute.setup_data"
+      - name: "setup_data"
+        type: "run_command"
+        command: "python -m example_basic.setup_data"
         description: "Generate raw data samples"
         capture_output: false
         timeout: 10.0
@@ -15,8 +16,9 @@ scenarios:
   - name: "Initial pipeline run"
     description: "First execution with version 1 features"
     steps:
-      - type: "run_command"
-        command: "python -m example_recompute.pipeline"
+      - name: "initial_run"
+        type: "run_command"
+        command: "python -m example_basic.pipeline"
         description: "Run pipeline with initial feature definitions"
         capture_output: true
         timeout: 30.0
@@ -31,8 +33,9 @@ scenarios:
   - name: "Idempotent rerun"
     description: "Second execution should detect no changes"
     steps:
-      - type: "run_command"
-        command: "python -m example_recompute.pipeline"
+      - name: "idempotent_run"
+        type: "run_command"
+        command: "python -m example_basic.pipeline"
         description: "Rerun pipeline without any code changes"
         capture_output: true
         timeout: 30.0
@@ -46,12 +49,14 @@ scenarios:
   - name: "Code evolution"
     description: "Apply patch to change parent feature code_version from 1 to 2, triggering child recomputation"
     steps:
-      - type: "apply_patch"
+      - name: "update_parent_version"
+        type: "apply_patch"
         patch_path: "patches/01_update_parent_algorithm.patch"
         description: "Change parent embedding code_version from 1 to 2"
 
-      - type: "run_command"
-        command: "python -m example_recompute.pipeline"
+      - name: "recompute_after_change"
+        type: "run_command"
+        command: "python -m example_basic.pipeline"
         description: "Run pipeline with updated parent feature"
         capture_output: true
         timeout: 30.0

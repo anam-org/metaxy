@@ -1,0 +1,19 @@
+# serializer version: 1
+# name: test_load_snapshot_data_computes_proper_field_versions[feature_version]
+  'd676afaa417a4b01f7b4d6cd703735706eb00b62dff706e6b45debb6572e3b7f'
+# ---
+# name: test_load_snapshot_data_computes_proper_field_versions[field_versions]
+  dict({
+    'field1': '86c9112b407adfd1f14746a726056e8b1388acbfa933f2ed4a1a1bc7c9cea931',
+    'field2': 'd3d954029202f4ba957dd286406f17c6f86634bdb9a7a0a030164b9da7a7cc71',
+  })
+# ---
+# name: test_load_snapshot_data_fallback_when_graph_reconstruction_fails[feature_version]
+  'ad1c1561abe9b59490ec15bdc82741377de80460dbb481f853b4d4a034b83b62'
+# ---
+# name: test_load_snapshot_data_fallback_when_graph_reconstruction_fails[field_versions]
+  dict({
+    'field1': 'a7ebc9a5c0b6159ad991c78629db0194503a42eb79b51385a047c90e916cbe15',
+    'field2': 'a7444ec98a61da8de5451b60c952cf1b59472782ae25d31ac1098bd3f73140fc',
+  })
+# ---

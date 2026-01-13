@@ -1,0 +1,36 @@
+name: "Overview Example"
+description: "Demonstrates feature graph versioning and change tracking"
+package_name: "example_overview"
+
+scenarios:
+  - name: "Initial feature graph"
+    description: "Render the initial feature graph with all features at version 1"
+    steps:
+      - name: "push_graph"
+        type: "run_command"
+        command: "metaxy graph push"
+        description: "Push initial graph snapshot"
+        capture_output: true
+        timeout: 10.0
+
+      - name: "render_graph"
+        type: "run_command"
+        command: "metaxy graph render --format mermaid"
+        description: "Render feature graph as mermaid diagram"
+        capture_output: true
+        timeout: 10.0
+
+  - name: "Code change - audio field"
+    description: "Change audio code_version from 1 to 2, observe version propagation"
+    steps:
+      - name: "update_audio_version"
+        type: "apply_patch"
+        patch_path: "patches/01_update_audio_version.patch"
+        description: "Change Video audio field code_version from 1 to 2"
+
+      - name: "render_diff"
+        type: "run_command"
+        command: "metaxy graph-diff render latest current --format mermaid"
+        description: "Show graph diff after code change"
+        capture_output: true
+        timeout: 10.0

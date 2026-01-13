@@ -1,6 +1,6 @@
 [project]
 name = "metaxy"
-version = "0.0.1.dev19"
+version = "0.0.1.dev20"
 description = "Pluggable versioned metadata management for incremental multi-modal pipelines."
 readme = "README.md"
 authors = [
@@ -98,6 +98,7 @@ dev = [
   "prek>=0.2.11",
   "pytest-env>=1.2.0",
   "pytest-cov>=7.0.0",
+  "pytest-rerunfailures>=15.0",
   "hypothesis>=6.142.4",
   "dprint-py>=0.50.2.0",
   "moto[s3,server]>=5.1.16",

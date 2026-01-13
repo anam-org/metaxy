@@ -1,0 +1,328 @@
+{
+  "runbook_name": "Basic Example",
+  "package_name": "example_basic",
+  "description": "Demonstrates automatic recomputation when upstream dependencies change",
+  "execution_state": {
+    "events": [
+      {
+        "type": "graph_pushed",
+        "snapshot_version": "0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3",
+        "graph": {
+          "examples/parent": {
+            "metaxy_feature_version": "0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8",
+            "fields": {
+              "embeddings": "05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459"
+            },
+            "feature_spec": {
+              "key": "examples/parent",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "embeddings",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "examples/child": {
+            "metaxy_feature_version": "467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939",
+            "fields": {
+              "predictions": "15e27d1ca8fad19456fd20b59e5904e79181fe6957e7b2e035bd94c6f2aa0643"
+            },
+            "feature_spec": {
+              "key": "examples/child",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [
+                {
+                  "feature": "examples/parent",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "predictions",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "timestamp": "2026-01-08T17:19:44.352059",
+        "scenario_name": "Setup upstream data",
+        "step_name": null
+      },
+      {
+        "type": "command_executed",
+        "command": "python -m example_basic.setup_data",
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "timestamp": "2026-01-08T17:19:44.409717",
+        "scenario_name": "Setup upstream data",
+        "step_name": "setup_data"
+      },
+      {
+        "type": "command_executed",
+        "command": "python -m example_basic.pipeline",
+        "returncode": 0,
+        "stdout": "Graph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\n\n📊 Computing examples/child...\n  feature_version: 467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470123186761611'}\n  sample_uid=2: {'predictions': '17377221795775496311'}\n  sample_uid=3: {'predictions': '11499809972266932532'}\n\n\n✅ Pipeline complete!\n",
+        "stderr": "",
+        "timestamp": "2026-01-08T17:19:45.495984",
+        "scenario_name": "Initial pipeline run",
+        "step_name": "initial_run"
+      },
+      {
+        "type": "command_executed",
+        "command": "python -m example_basic.pipeline",
+        "returncode": 0,
+        "stdout": "Graph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\nMetadata already exists for feature examples/parent (feature_version: 0aad9b8a2ea055cd...)\nSkipping write to avoid duplicates\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\n\n📊 Computing examples/child...\n  feature_version: 467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939\nIdentified: 0 new samples, 0 samples with new provenance_by_field\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470123186761611'}\n  sample_uid=2: {'predictions': '17377221795775496311'}\n  sample_uid=3: {'predictions': '11499809972266932532'}\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
+        "stderr": "",
+        "timestamp": "2026-01-08T17:19:46.552529",
+        "scenario_name": "Idempotent rerun",
+        "step_name": "idempotent_run"
+      },
+      {
+        "type": "graph_pushed",
+        "snapshot_version": "1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c",
+        "graph": {
+          "examples/parent": {
+            "metaxy_feature_version": "a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737",
+            "fields": {
+              "embeddings": "3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add"
+            },
+            "feature_spec": {
+              "key": "examples/parent",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "embeddings",
+                  "code_version": "2",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "examples/child": {
+            "metaxy_feature_version": "415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43",
+            "fields": {
+              "predictions": "391c5ef3b7b701ddf980431430cb1ed3b8b932c71b659cd53447a5a4a8e8888b"
+            },
+            "feature_spec": {
+              "key": "examples/child",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [
+                {
+                  "feature": "examples/parent",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "predictions",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "timestamp": "2026-01-08T17:19:47.163918",
+        "scenario_name": "Code evolution",
+        "step_name": "update_parent_version"
+      },
+      {
+        "type": "patch_applied",
+        "patch_path": "patches/01_update_parent_algorithm.patch",
+        "before_snapshot": "0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3",
+        "after_snapshot": "1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c",
+        "before_graph": {
+          "examples/parent": {
+            "metaxy_feature_version": "0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8",
+            "fields": {
+              "embeddings": "05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459"
+            },
+            "feature_spec": {
+              "key": "examples/parent",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "embeddings",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "examples/child": {
+            "metaxy_feature_version": "467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939",
+            "fields": {
+              "predictions": "15e27d1ca8fad19456fd20b59e5904e79181fe6957e7b2e035bd94c6f2aa0643"
+            },
+            "feature_spec": {
+              "key": "examples/child",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [
+                {
+                  "feature": "examples/parent",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "predictions",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "after_graph": {
+          "examples/parent": {
+            "metaxy_feature_version": "a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737",
+            "fields": {
+              "embeddings": "3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add"
+            },
+            "feature_spec": {
+              "key": "examples/parent",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "embeddings",
+                  "code_version": "2",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "examples/child": {
+            "metaxy_feature_version": "415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43",
+            "fields": {
+              "predictions": "391c5ef3b7b701ddf980431430cb1ed3b8b932c71b659cd53447a5a4a8e8888b"
+            },
+            "feature_spec": {
+              "key": "examples/child",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [
+                {
+                  "feature": "examples/parent",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "predictions",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "timestamp": "2026-01-08T17:19:47.167985",
+        "scenario_name": "Code evolution",
+        "step_name": "update_parent_version"
+      },
+      {
+        "type": "command_executed",
+        "command": "python -m example_basic.pipeline",
+        "returncode": 0,
+        "stdout": "Graph snapshot_version: 1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c\n\n📊 Computing examples/child...\n  feature_version: 415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470123186761611'}\n  sample_uid=2: {'predictions': '17377221795775496311'}\n  sample_uid=3: {'predictions': '11499809972266932532'}\n\n\n✅ Pipeline complete!\n",
+        "stderr": "",
+        "timestamp": "2026-01-08T17:19:48.252422",
+        "scenario_name": "Code evolution",
+        "step_name": "recompute_after_change"
+      }
+    ]
+  }
+}
