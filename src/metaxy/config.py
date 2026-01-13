@@ -7,13 +7,13 @@ import warnings
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import tomli
 from pydantic import Field as PydanticField
 from pydantic import PrivateAttr, field_validator
-from pydantic.types import ImportString
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -186,9 +186,14 @@ class StoreConfig(BaseSettings):
     model_config = SettingsConfigDict(
         extra="forbid",  # Only type and config fields allowed
         frozen=True,
+        populate_by_name=True,  # Allow both 'type' and 'type_path' in constructor
     )
 
-    type: ImportString[Any] = PydanticField(
+    # Store the import path as string (internal field)
+    # Uses alias="type" so TOML and constructor use "type"
+    # Annotated as str | type to allow passing class objects directly
+    type_path: str | type[Any] = PydanticField(
+        alias="type",
         description="Full import path to metadata store class (e.g., 'metaxy.metadata_store.duckdb.DuckDBMetadataStore')",
     )
 
@@ -196,6 +201,36 @@ class StoreConfig(BaseSettings):
         default_factory=dict,
         description="Store-specific configuration parameters (kwargs for __init__). Includes fallback_stores, database paths, connection parameters, etc.",
     )
+
+    @field_validator("type_path", mode="before")
+    @classmethod
+    def _coerce_type_to_string(cls, v: Any) -> str:
+        """Accept both string import paths and class objects.
+
+        Converts class objects to their full import path string.
+        """
+        if isinstance(v, str):
+            return v
+        if isinstance(v, type):
+            # Convert class to import path string
+            return f"{v.__module__}.{v.__qualname__}"
+        raise ValueError(f"type must be a string or class, got {type(v).__name__}")
+
+    @cached_property
+    def type(self) -> type[Any]:
+        """Get the store class, importing lazily on first access.
+
+        Returns:
+            The metadata store class
+
+        Raises:
+            ImportError: If the store class cannot be imported
+        """
+        from pydantic import TypeAdapter
+        from pydantic.types import ImportString
+
+        adapter: TypeAdapter[type[Any]] = TypeAdapter(ImportString[Any])
+        return adapter.validate_python(self.type_path)
 
 
 class PluginConfig(BaseSettings):
@@ -671,8 +706,14 @@ class MetaxyConfig(BaseSettings):
 
         store_config = self.stores[name]
 
-        # Get store class (already imported by Pydantic's ImportString)
-        store_class = store_config.type
+        # Get store class (lazily imported on first access)
+        try:
+            store_class = store_config.type
+        except Exception as e:
+            raise InvalidConfigError.from_config(
+                self,
+                f"Failed to import store class '{store_config.type_path}' for store '{name}': {e}",
+            ) from e
 
         if expected_type is not None and not issubclass(store_class, expected_type):
             raise InvalidConfigError.from_config(

@@ -805,3 +805,48 @@ def test_invalid_config_error_attributes() -> None:
     assert "Another message" in str(error_no_file)
     assert "Config file:" not in str(error_no_file)
     assert "METAXY_" in str(error_no_file)
+
+
+def test_store_config_type_is_lazy() -> None:
+    """Test that StoreConfig.type is lazily resolved on first access."""
+    # Use a non-existent import path - if type was eagerly resolved,
+    # this would raise an ImportError during StoreConfig creation
+    metaxy_config = MetaxyConfig(
+        stores={
+            "bad_store": StoreConfig(
+                type="non_existent_package.BadClass",
+                config={},
+            )
+        }
+    )
+
+    # Creating the config should succeed (no import yet)
+    assert (
+        metaxy_config.stores["bad_store"].type_path == "non_existent_package.BadClass"
+    )
+
+    # Accessing the store should fail with an error that includes the store name
+    with pytest.raises(InvalidConfigError, match="bad_store") as exc_info:
+        metaxy_config.get_store("bad_store")
+
+    # Verify the error message contains useful information
+    error_message = str(exc_info.value)
+    assert "non_existent_package.BadClass" in error_message
+    assert "bad_store" in error_message
+
+
+def test_store_config_accepts_class_directly() -> None:
+    """Test that StoreConfig.type accepts a class object directly."""
+    from metaxy.metadata_store import InMemoryMetadataStore
+
+    # Passing a class directly should work
+    config = StoreConfig(
+        type=InMemoryMetadataStore,
+        config={},
+    )
+
+    # The type_path should be the import string
+    assert config.type_path == "metaxy.metadata_store.memory.InMemoryMetadataStore"
+
+    # Accessing .type should return the same class
+    assert config.type is InMemoryMetadataStore
