@@ -31,9 +31,8 @@ from metaxy.models.feature import FeatureGraph
 def setup_default_config():
     """Set up default MetaxyConfig for all tests so features use project='default'."""
     config = MetaxyConfig(project="default", stores={})
-    MetaxyConfig.set(config)
-    yield
-    MetaxyConfig.reset()
+    with config.use():
+        yield
 
 
 def migrate_store_to_graph(

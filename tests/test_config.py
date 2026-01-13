@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from metaxy import MetaxyNotInitializedError
 from metaxy.config import InvalidConfigError, MetaxyConfig, StoreConfig
 from metaxy.metadata_store import InMemoryMetadataStore
 
@@ -850,3 +851,44 @@ def test_store_config_accepts_class_directly() -> None:
 
     # Accessing .type should return the same class
     assert config.type is InMemoryMetadataStore
+
+
+def test_get_raises_error_when_config_not_initialized() -> None:
+    """Test that MetaxyConfig.get() raises MetaxyNotInitializedError when config is not set."""
+    # Clear the global config using set(None)
+    previous = MetaxyConfig.get()
+    try:
+        MetaxyConfig.set(None)
+
+        with pytest.raises(
+            MetaxyNotInitializedError, match="Metaxy configuration not initialized"
+        ):
+            MetaxyConfig.get()
+    finally:
+        # Restore previous config
+        MetaxyConfig.set(previous)
+
+
+def test_load_respects_metaxy_config_env_var(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that MetaxyConfig.load() uses METAXY_CONFIG env var."""
+    # Create a config file
+    config_file = tmp_path / "my_config.toml"
+    config_file.write_text("""
+project = "env-var-project"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+""")
+
+    # Set the METAXY_CONFIG env var
+    monkeypatch.setenv("METAXY_CONFIG", str(config_file))
+
+    # load() should use the env var (it will override current config)
+    config = MetaxyConfig.load()
+
+    assert config.project == "env-var-project"
+    assert config.store == "dev"
+    assert "dev" in config.stores

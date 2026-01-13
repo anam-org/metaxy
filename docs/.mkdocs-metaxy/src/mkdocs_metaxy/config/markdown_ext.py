@@ -287,6 +287,12 @@ class MetaxyConfigExtension(Extension):
         Args:
             md: Markdown instance.
         """
+        # Initialize Metaxy with default config for docs generation
+        from metaxy.config import MetaxyConfig
+
+        if not MetaxyConfig.is_set():
+            MetaxyConfig.load()
+
         preprocessor = MetaxyConfigPreprocessor(md)
 
         # CRITICAL: Force our preprocessor to run BEFORE superfences

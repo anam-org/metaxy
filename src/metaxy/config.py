@@ -3,7 +3,6 @@
 
 import os
 import re
-import warnings
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -20,6 +19,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 from typing_extensions import Self
+
+from metaxy.utils.exceptions import MetaxyNotInitializedError
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import (
@@ -402,12 +403,10 @@ class MetaxyConfig(BaseSettings):
     def get_plugin(cls, name: str, plugin_cls: type[PluginConfigT]) -> PluginConfigT:
         """Get the plugin config from the global Metaxy config.
 
-        Unlike `get()`, this method does not warn when the global config is not
-        initialized. This is intentional because plugins may call this at import
-        time to read their configuration, and returning default plugin config
-        is always safe.
+        Raises:
+            RuntimeError: If config has not been initialized via `init_metaxy()`.
         """
-        ext = cls.get(_allow_default_config=True).ext
+        ext = cls.get().ext
         if name in ext:
             existing = ext[name]
             if isinstance(existing, plugin_cls):
@@ -451,26 +450,19 @@ class MetaxyConfig(BaseSettings):
         return (init_settings, env_settings, toml_settings)
 
     @classmethod
-    def get(cls, *, _allow_default_config: bool = False) -> "MetaxyConfig":
+    def get(cls) -> "MetaxyConfig":
         """Get the current Metaxy configuration.
 
-        Args:
-            _allow_default_config: Internal parameter. When True, returns default
-                config without warning if global config is not set. Used by methods
-                like `get_plugin` that may be called at import time.
+        Raises:
+            MetaxyNotInitializedError: If config has not been initialized via `init_metaxy()`.
         """
         cfg = _metaxy_config.get()
         if cfg is None:
-            if not _allow_default_config:
-                warnings.warn(
-                    UserWarning(
-                        "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project='default')."
-                    ),
-                    stacklevel=2,
-                )
-            return cls(project="default")
-        else:
-            return cfg
+            raise MetaxyNotInitializedError(
+                "Metaxy configuration not initialized. "
+                "Call init_metaxy() before using Metaxy features."
+            )
+        return cfg
 
     @classmethod
     def set(cls, config: Self | None) -> None:
@@ -481,11 +473,6 @@ class MetaxyConfig(BaseSettings):
     def is_set(cls) -> bool:
         """Check if the current Metaxy configuration is set."""
         return _metaxy_config.get() is not None
-
-    @classmethod
-    def reset(cls) -> None:
-        """Reset the current Metaxy configuration to None."""
-        _metaxy_config.set(None)
 
     @contextmanager
     def use(self) -> Iterator[Self]:

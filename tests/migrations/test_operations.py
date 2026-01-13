@@ -27,9 +27,8 @@ from metaxy.migrations.ops import BaseOperation, DataVersionReconciliation
 def setup_default_config():
     """Set up default MetaxyConfig for all tests."""
     config = MetaxyConfig(project="default", stores={})
-    MetaxyConfig.set(config)
-    yield
-    MetaxyConfig.reset()
+    with config.use():
+        yield
 
 
 # ============================================================================

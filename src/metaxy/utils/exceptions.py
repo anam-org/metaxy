@@ -21,3 +21,10 @@ class MetaxyEmptyCodeVersionError(MetaxyInvariantViolationError):
 
     Code version must be a non-empty string.
     """
+
+
+class MetaxyNotInitializedError(MetaxyError):
+    """Raised when Metaxy is accessed before initialization.
+
+    Call `init_metaxy()` before using Metaxy features.
+    """

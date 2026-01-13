@@ -60,6 +60,7 @@ from metaxy.models.types import (
     ValidatedFieldKeySequence,
     ValidatedFieldKeySequenceAdapter,
 )
+from metaxy.utils.exceptions import MetaxyNotInitializedError
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -155,6 +156,7 @@ __all__ = [
     "MetadataBackfill",
     "detect_diff_migration",
     "MetaxyConfig",
+    "MetaxyNotInitializedError",
     "StoreConfig",
     "init_metaxy",
     "IDColumns",

@@ -26,9 +26,8 @@ def test_feature_gets_project_from_config(snapshot: SnapshotAssertion) -> None:
     """Test that features get project from MetaxyConfig."""
     # Create config with specific project
     config = MetaxyConfig(project="test_project")
-    MetaxyConfig.set(config)
 
-    try:
+    with config.use():
         # Create feature - should get project from config
         class TestFeature(
             BaseFeature,
@@ -43,9 +42,6 @@ def test_feature_gets_project_from_config(snapshot: SnapshotAssertion) -> None:
         assert TestFeature.project == "test_project"
         assert TestFeature.project == snapshot
 
-    finally:
-        MetaxyConfig.reset()
-
 
 def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
     """Test that features in different graphs can have different projects."""
@@ -53,9 +49,7 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
     config_a = MetaxyConfig(project="project_a")
     graph_a = FeatureGraph()
 
-    MetaxyConfig.set(config_a)
-
-    with graph_a.use():
+    with config_a.use(), graph_a.use():
 
         class FeatureA(
             BaseFeature,
@@ -70,9 +64,7 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
     config_b = MetaxyConfig(project="project_b")
     graph_b = FeatureGraph()
 
-    MetaxyConfig.set(config_b)
-
-    with graph_b.use():
+    with config_b.use(), graph_b.use():
 
         class FeatureB(
             BaseFeature,
@@ -87,8 +79,6 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
     assert FeatureA.project == "project_a"
     assert FeatureB.project == "project_b"
     assert {"feature_a": FeatureA.project, "feature_b": FeatureB.project} == snapshot
-
-    MetaxyConfig.reset()
 
 
 def test_project_name_validation_empty() -> None:
@@ -148,12 +138,9 @@ def test_project_name_validation_valid_names() -> None:
 
 
 def test_default_project_from_config() -> None:
-    """Test that MetaxyConfig.get() returns default project when not initialized."""
-    # Reset config to ensure clean state
-    MetaxyConfig.reset()
-
-    # Get default config - should have project='default'
-    config = MetaxyConfig.get()
+    """Test that MetaxyConfig.load() returns default project when no config file exists."""
+    # Load default config - should have project='default'
+    config = MetaxyConfig.load(search_parents=False)
     assert config.project == "default"
 
 
@@ -175,8 +162,6 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
 
     assert config.project == "my_metaxy_project"
 
-    MetaxyConfig.reset()
-
 
 def test_project_from_pyproject_toml(tmp_path: Path) -> None:
     """Test loading project from pyproject.toml [tool.metaxy] section."""
@@ -197,8 +182,6 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
     config = MetaxyConfig.load(config_file)
 
     assert config.project == "pyproject_metaxy"
-
-    MetaxyConfig.reset()
 
 
 def test_project_override_via_env_var(
@@ -224,15 +207,12 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
     # Env var should win
     assert config.project == "env_project"
 
-    MetaxyConfig.reset()
-
 
 def test_multiple_features_same_project(snapshot: SnapshotAssertion) -> None:
     """Test that multiple features in the same graph share the same project."""
     config = MetaxyConfig(project="shared_project")
-    MetaxyConfig.set(config)
 
-    try:
+    with config.use():
 
         class Feature1(
             BaseFeature,
@@ -258,18 +238,14 @@ def test_multiple_features_same_project(snapshot: SnapshotAssertion) -> None:
         assert Feature1.project == Feature2.project
         assert Feature1.project == snapshot
 
-    finally:
-        MetaxyConfig.reset()
-
 
 def test_feature_project_persists_across_graph_operations(
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test that project is preserved during graph operations like to_snapshot/from_snapshot."""
     config = MetaxyConfig(project="persist_project")
-    MetaxyConfig.set(config)
 
-    try:
+    with config.use():
         graph = FeatureGraph()
 
         with graph.use():
@@ -313,6 +289,3 @@ def test_feature_project_persists_across_graph_operations(
             "project": snapshot_project,
             "tracking_version": snapshot_tracking[:8],
         } == snapshot
-
-    finally:
-        MetaxyConfig.reset()

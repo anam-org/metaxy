@@ -87,11 +87,7 @@ class TestHashTruncationUtils:
 
     def test_global_truncation_setting(self):
         """Test global hash truncation via MetaxyConfig."""
-        # Initial state - default truncation (64)
-        MetaxyConfig.reset()
-        assert get_hash_truncation_length() == 64
-
-        # Set truncation length via config
+        # Test with truncation length of 16
         config = MetaxyConfig(hash_truncation_length=16)
         with config.use():
             assert get_hash_truncation_length() == 16
@@ -100,11 +96,12 @@ class TestHashTruncationUtils:
             full_hash = "a" * 64
             assert truncate_hash(full_hash) == "a" * 16
 
-        # Reset to None
-        MetaxyConfig.reset()
-        assert get_hash_truncation_length() == 64
-        full_hash = "a" * 64
-        assert truncate_hash(full_hash) == full_hash
+        # Test with no truncation (None means use default 64)
+        config_none = MetaxyConfig(hash_truncation_length=None)
+        with config_none.use():
+            assert get_hash_truncation_length() == 64
+            full_hash = "a" * 64
+            assert truncate_hash(full_hash) == full_hash
 
     def test_global_truncation_minimum_validation(self):
         """Test validation of global truncation length."""
@@ -159,11 +156,12 @@ class TestNarwhalsFunctions:
             {"hash_column": ["a" * 64, "b" * 64, "c" * 64], "other_column": [1, 2, 3]}
         )
 
-        # No truncation when config is None
-        MetaxyConfig.reset()
-        # The function accepts the native DataFrame directly, thanks to @nw.narwhalify
-        result_pl = truncate_string_column(df, "hash_column")
-        assert result_pl["hash_column"][0] == "a" * 64
+        # No truncation when hash_truncation_length is None
+        config_none = MetaxyConfig(hash_truncation_length=None)
+        with config_none.use():
+            # The function accepts the native DataFrame directly, thanks to @nw.narwhalify
+            result_pl = truncate_string_column(df, "hash_column")
+            assert result_pl["hash_column"][0] == "a" * 64
 
         # With truncation
         config = MetaxyConfig(hash_truncation_length=12)
@@ -190,10 +188,11 @@ class TestNarwhalsFunctions:
             }
         )
 
-        # No truncation when config is None
-        MetaxyConfig.reset()
-        result_pl = truncate_struct_column(df, "metaxy_provenance_by_field")
-        assert result_pl["metaxy_provenance_by_field"][0]["field1"] == "a" * 64
+        # No truncation when hash_truncation_length is None
+        config_none = MetaxyConfig(hash_truncation_length=None)
+        with config_none.use():
+            result_pl = truncate_struct_column(df, "metaxy_provenance_by_field")
+            assert result_pl["metaxy_provenance_by_field"][0]["field1"] == "a" * 64
 
         # With truncation
         config = MetaxyConfig(hash_truncation_length=16)
@@ -281,9 +280,10 @@ class TestFeatureVersionTruncation:
         )
 
         # Without truncation - full 64 character SHA256 hex digest
-        MetaxyConfig.reset()
-        version_full = spec.feature_spec_version
-        assert len(version_full) == 64
+        config_none = MetaxyConfig(hash_truncation_length=None)
+        with config_none.use():
+            version_full = spec.feature_spec_version
+            assert len(version_full) == 64
 
         # With truncation enabled
         config = MetaxyConfig(hash_truncation_length=16)
@@ -366,13 +366,11 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
 
         # Load config - should store truncation setting
         config = MetaxyConfig.load(config_file)
-        assert config.hash_truncation_length == 16
+        with config.use():
+            assert config.hash_truncation_length == 16
 
-        # The hash truncation is now retrieved via MetaxyConfig.get()
-        assert get_hash_truncation_length() == 16
-
-        # Clean up - reset config
-        MetaxyConfig.reset()
+            # The hash truncation is now retrieved via MetaxyConfig.get()
+            assert get_hash_truncation_length() == 16
 
     def test_config_validation(self):
         """Test config validation for truncation length."""
@@ -386,18 +384,12 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
         config = MetaxyConfig(hash_truncation_length=None)
         assert config.hash_truncation_length is None
 
-    def test_environment_variable(self):
+    def test_environment_variable(self, monkeypatch):
         """Test setting truncation via environment variable."""
-        import os
-
         # Set via environment
-        os.environ["METAXY_HASH_TRUNCATION_LENGTH"] = "24"
+        monkeypatch.setenv("METAXY_HASH_TRUNCATION_LENGTH", "24")
         config = MetaxyConfig()
         assert config.hash_truncation_length == 24
-
-        # Clean up
-        del os.environ["METAXY_HASH_TRUNCATION_LENGTH"]
-        MetaxyConfig.reset()
 
 
 class TestMetadataStoreTruncation:
@@ -405,10 +397,11 @@ class TestMetadataStoreTruncation:
 
     def test_store_truncation_property(self):
         """Test that stores have hash_truncation_length property that pulls from config."""
-        # Default truncation (64)
-        MetaxyConfig.reset()
-        with InMemoryMetadataStore() as store:
-            assert store.hash_truncation_length == 64
+        # Default truncation (64) when hash_truncation_length is None
+        config_none = MetaxyConfig(hash_truncation_length=None)
+        with config_none.use():
+            with InMemoryMetadataStore() as store:
+                assert store.hash_truncation_length == 64
 
         # With global truncation
         config = MetaxyConfig(hash_truncation_length=16)

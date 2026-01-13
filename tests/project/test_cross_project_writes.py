@@ -20,9 +20,8 @@ from metaxy.models.feature import FeatureGraph
 def test_write_to_same_project_succeeds(snapshot: SnapshotAssertion) -> None:
     """Test that writing to a feature from the same project succeeds."""
     config = MetaxyConfig(project="test_project")
-    MetaxyConfig.set(config)
 
-    try:
+    with config.use():
 
         class TestFeature(
             BaseFeature,
@@ -57,28 +56,25 @@ def test_write_to_same_project_succeeds(snapshot: SnapshotAssertion) -> None:
             result = store.read_metadata(TestFeature)
             assert result.collect().shape[0] == 3
 
-    finally:
-        MetaxyConfig.reset()
-
 
 def test_write_to_different_project_fails() -> None:
     """Test that writing to a feature from a different project fails."""
     # Create feature in project_a
     config_a = MetaxyConfig(project="project_a")
-    MetaxyConfig.set(config_a)
 
-    class FeatureA(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    with config_a.use():
+
+        class FeatureA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
     # Switch to project_b
     config_b = MetaxyConfig(project="project_b")
-    MetaxyConfig.set(config_b)
 
     # Try to write to FeatureA (which belongs to project_a)
     import narwhals as nw
@@ -96,7 +92,7 @@ def test_write_to_different_project_fails() -> None:
         )
     )
 
-    with InMemoryMetadataStore() as store:
+    with config_b.use(), InMemoryMetadataStore() as store:
         # Write should fail (different project)
         with pytest.raises(
             ValueError,
@@ -104,27 +100,25 @@ def test_write_to_different_project_fails() -> None:
         ):
             store.write_metadata(FeatureA, metadata)
 
-    MetaxyConfig.reset()
-
 
 def test_allow_cross_project_writes_context_manager() -> None:
     """Test that allow_cross_project_writes() context manager enables cross-project writes."""
     # Create feature in project_a
     config_a = MetaxyConfig(project="project_a")
-    MetaxyConfig.set(config_a)
 
-    class FeatureA(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    with config_a.use():
+
+        class FeatureA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
     # Switch to project_b
     config_b = MetaxyConfig(project="project_b")
-    MetaxyConfig.set(config_b)
 
     import narwhals as nw
 
@@ -141,7 +135,7 @@ def test_allow_cross_project_writes_context_manager() -> None:
         )
     )
 
-    with InMemoryMetadataStore() as store:
+    with config_b.use(), InMemoryMetadataStore() as store:
         # With context manager, write should succeed
         with store.allow_cross_project_writes():
             store.write_metadata(FeatureA, metadata)
@@ -150,15 +144,12 @@ def test_allow_cross_project_writes_context_manager() -> None:
         result = store.read_metadata(FeatureA, current_only=False)
         assert result.collect().shape[0] == 3
 
-    MetaxyConfig.reset()
-
 
 def test_system_tables_exempt_from_project_validation() -> None:
     """Test that system tables (metaxy-system) are exempt from project validation."""
     from metaxy.metadata_store.system import METAXY_SYSTEM_KEY_PREFIX
 
     config = MetaxyConfig(project="test_project")
-    MetaxyConfig.set(config)
 
     # Create a system table feature key
     system_key = FeatureKey([METAXY_SYSTEM_KEY_PREFIX, "test_table"])
@@ -173,7 +164,7 @@ def test_system_tables_exempt_from_project_validation() -> None:
         )
     )
 
-    with InMemoryMetadataStore() as store:
+    with config.use(), InMemoryMetadataStore() as store:
         # System tables should not require project validation
         store.write_metadata(system_key, metadata)
 
@@ -181,15 +172,12 @@ def test_system_tables_exempt_from_project_validation() -> None:
         result = store.read_metadata(system_key, current_only=False)
         assert result.collect().shape[0] == 3
 
-    MetaxyConfig.reset()
-
 
 def test_write_multiple_features_same_project() -> None:
     """Test writing multiple features from the same project."""
     config = MetaxyConfig(project="multi_feature_project")
-    MetaxyConfig.set(config)
 
-    try:
+    with config.use():
 
         class Feature1(
             BaseFeature,
@@ -247,9 +235,6 @@ def test_write_multiple_features_same_project() -> None:
             assert result1.collect().shape[0] == 2
             assert result2.collect().shape[0] == 2
 
-    finally:
-        MetaxyConfig.reset()
-
 
 def test_cross_project_write_during_migration() -> None:
     """Test that migrations can write to features from different projects.
@@ -260,104 +245,101 @@ def test_cross_project_write_during_migration() -> None:
     graph = FeatureGraph()
 
     # Keep graph active throughout the test
+    config_a = MetaxyConfig(project="project_a")
+    config_b = MetaxyConfig(project="project_b")
+
     with graph.use():
         # Create features from two different projects
-        config_a = MetaxyConfig(project="project_a")
-        MetaxyConfig.set(config_a)
+        with config_a.use():
 
-        class FeatureA(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["feature_a"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
+            class FeatureA(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["feature_a"]),
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                ),
+            ):
+                pass
 
-        config_b = MetaxyConfig(project="project_b")
-        MetaxyConfig.set(config_b)
+        with config_b.use():
 
-        class FeatureB(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["feature_b"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
+            class FeatureB(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["feature_b"]),
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                ),
+            ):
+                pass
 
         # Now simulate a migration writing to both features
         # Set config to project_a
-        MetaxyConfig.set(config_a)
+        with config_a.use():
+            import narwhals as nw
 
-        import narwhals as nw
-
-        metadata_a = nw.from_native(
-            pl.DataFrame(
-                {
-                    "sample_uid": [1, 2],
-                    "metaxy_provenance_by_field": [
-                        {"default": "hash1"},
-                        {"default": "hash2"},
-                    ],
-                }
+            metadata_a = nw.from_native(
+                pl.DataFrame(
+                    {
+                        "sample_uid": [1, 2],
+                        "metaxy_provenance_by_field": [
+                            {"default": "hash1"},
+                            {"default": "hash2"},
+                        ],
+                    }
+                )
             )
-        )
 
-        metadata_b = nw.from_native(
-            pl.DataFrame(
-                {
-                    "sample_uid": [1, 2],
-                    "metaxy_provenance_by_field": [
-                        {"default": "hash1"},
-                        {"default": "hash2"},
-                    ],
-                }
+            metadata_b = nw.from_native(
+                pl.DataFrame(
+                    {
+                        "sample_uid": [1, 2],
+                        "metaxy_provenance_by_field": [
+                            {"default": "hash1"},
+                            {"default": "hash2"},
+                        ],
+                    }
+                )
             )
-        )
 
-        with InMemoryMetadataStore() as store:
-            # Write to FeatureA should succeed (same project)
-            store.write_metadata(FeatureA, metadata_a)
+            with InMemoryMetadataStore() as store:
+                # Write to FeatureA should succeed (same project)
+                store.write_metadata(FeatureA, metadata_a)
 
-            # Write to FeatureB should fail (different project) without context manager
-            with pytest.raises(ValueError, match="Cannot write to feature"):
-                store.write_metadata(FeatureB, metadata_b)
+                # Write to FeatureB should fail (different project) without context manager
+                with pytest.raises(ValueError, match="Cannot write to feature"):
+                    store.write_metadata(FeatureB, metadata_b)
 
-            # But with allow_cross_project_writes, should succeed
-            with store.allow_cross_project_writes():
-                # Only write to FeatureB here (FeatureA already written above)
-                store.write_metadata(FeatureB, metadata_b)
+                # But with allow_cross_project_writes, should succeed
+                with store.allow_cross_project_writes():
+                    # Only write to FeatureB here (FeatureA already written above)
+                    store.write_metadata(FeatureB, metadata_b)
 
-            # Verify both writes succeeded (inside store context)
-            result_a = store.read_metadata(FeatureA, current_only=False)
-            result_b = store.read_metadata(FeatureB, current_only=False)
+                # Verify both writes succeeded (inside store context)
+                result_a = store.read_metadata(FeatureA, current_only=False)
+                result_b = store.read_metadata(FeatureB, current_only=False)
 
-            assert result_a.collect().shape[0] == 2
-            assert result_b.collect().shape[0] == 2
-
-    MetaxyConfig.reset()
+                assert result_a.collect().shape[0] == 2
+                assert result_b.collect().shape[0] == 2
 
 
 def test_project_validation_with_feature_key() -> None:
     """Test that project validation works when passing FeatureKey directly."""
     # Create a feature in project_a
     config_a = MetaxyConfig(project="project_a")
-    MetaxyConfig.set(config_a)
 
-    # Use the active graph so the feature is registered globally
-    class FeatureA(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    with config_a.use():
+        # Use the active graph so the feature is registered globally
+        class FeatureA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
     # Switch to project_b
     config_b = MetaxyConfig(project="project_b")
-    MetaxyConfig.set(config_b)
 
     import narwhals as nw
 
@@ -374,7 +356,7 @@ def test_project_validation_with_feature_key() -> None:
         )
     )
 
-    with InMemoryMetadataStore() as store:
+    with config_b.use(), InMemoryMetadataStore() as store:
         # Pass FeatureKey instead of Feature class
         feature_key = FeatureKey(["test", "feature"])
 
@@ -382,26 +364,24 @@ def test_project_validation_with_feature_key() -> None:
         with pytest.raises(ValueError, match="Cannot write to feature"):
             store.write_metadata(feature_key, metadata)
 
-    MetaxyConfig.reset()
-
 
 def test_nested_cross_project_writes_context_managers() -> None:
     """Test that nested allow_cross_project_writes() context managers work correctly."""
     config_a = MetaxyConfig(project="project_a")
-    MetaxyConfig.set(config_a)
 
-    class FeatureA(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    with config_a.use():
+
+        class FeatureA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
     # Switch to project_b
     config_b = MetaxyConfig(project="project_b")
-    MetaxyConfig.set(config_b)
 
     import narwhals as nw
 
@@ -414,7 +394,7 @@ def test_nested_cross_project_writes_context_managers() -> None:
         )
     )
 
-    with InMemoryMetadataStore() as store:
+    with config_b.use(), InMemoryMetadataStore() as store:
         # Nested context managers should work
         with store.allow_cross_project_writes():
             # Inner context manager
@@ -427,5 +407,3 @@ def test_nested_cross_project_writes_context_managers() -> None:
         # Outside context manager, should fail again
         with pytest.raises(ValueError, match="Cannot write to feature"):
             store.write_metadata(FeatureA, metadata)
-
-    MetaxyConfig.reset()

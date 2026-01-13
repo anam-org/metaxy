@@ -27,9 +27,7 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
     config_a = MetaxyConfig(project="project_a")
     graph_a = FeatureGraph()
 
-    MetaxyConfig.set(config_a)
-
-    with graph_a.use():
+    with config_a.use(), graph_a.use():
 
         class FeatureInA(
             BaseFeature,
@@ -44,9 +42,7 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
     config_b = MetaxyConfig(project="project_b")
     graph_b = FeatureGraph()
 
-    MetaxyConfig.set(config_b)
-
-    with graph_b.use():
+    with config_b.use(), graph_b.use():
 
         class FeatureInB(
             BaseFeature,
@@ -83,8 +79,6 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
         == FeatureInB.feature_version(),
     } == snapshot
 
-    MetaxyConfig.reset()
-
 
 def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> None:
     """Test that feature_version does NOT change when only project changes.
@@ -97,9 +91,8 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
     graph_2 = FeatureGraph()
 
     config_1 = MetaxyConfig(project="project_1")
-    MetaxyConfig.set(config_1)
 
-    with graph_1.use():
+    with config_1.use(), graph_1.use():
 
         class Feature1(
             BaseFeature,
@@ -114,9 +107,8 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
             pass
 
     config_2 = MetaxyConfig(project="project_2")
-    MetaxyConfig.set(config_2)
 
-    with graph_2.use():
+    with config_2.use(), graph_2.use():
 
         class Feature2(
             BaseFeature,
@@ -140,15 +132,12 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
     # But projects should differ
     assert Feature1.project != Feature2.project
 
-    MetaxyConfig.reset()
-
 
 def test_tracking_version_deterministic(snapshot: SnapshotAssertion) -> None:
     """Test that tracking version (project + feature) is deterministic."""
     config = MetaxyConfig(project="deterministic_project")
-    MetaxyConfig.set(config)
 
-    try:
+    with config.use():
 
         class TestFeature(
             BaseFeature,
@@ -167,9 +156,6 @@ def test_tracking_version_deterministic(snapshot: SnapshotAssertion) -> None:
         assert len(tracking_1) == 64  # SHA256 hex
         assert tracking_1 == snapshot
 
-    finally:
-        MetaxyConfig.reset()
-
 
 def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> None:
     """Test feature_version stays same across projects even with dependencies."""
@@ -177,9 +163,7 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
     config_a = MetaxyConfig(project="project_a")
     graph_a = FeatureGraph()
 
-    MetaxyConfig.set(config_a)
-
-    with graph_a.use():
+    with config_a.use(), graph_a.use():
 
         class UpstreamA(
             BaseFeature,
@@ -204,9 +188,7 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
     config_b = MetaxyConfig(project="project_b")
     graph_b = FeatureGraph()
 
-    MetaxyConfig.set(config_b)
-
-    with graph_b.use():
+    with config_b.use(), graph_b.use():
 
         class UpstreamB(
             BaseFeature,
@@ -249,15 +231,12 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
         "downstream_b_project": DownstreamB.project,
     } == snapshot
 
-    MetaxyConfig.reset()
-
 
 def test_project_in_graph_snapshot(snapshot: SnapshotAssertion) -> None:
     """Test that project information is preserved in graph snapshots."""
     config = MetaxyConfig(project="snapshot_project")
-    MetaxyConfig.set(config)
 
-    try:
+    with config.use():
         graph = FeatureGraph()
 
         with graph.use():
@@ -298,9 +277,6 @@ def test_project_in_graph_snapshot(snapshot: SnapshotAssertion) -> None:
             "feature_keys": list(snapshot_data.keys()),
         } == snapshot
 
-    finally:
-        MetaxyConfig.reset()
-
 
 def test_provenance_by_field_unchanged_by_project(
     snapshot: SnapshotAssertion,
@@ -313,9 +289,8 @@ def test_provenance_by_field_unchanged_by_project(
     graph_b = FeatureGraph()
 
     config_a = MetaxyConfig(project="proj_a")
-    MetaxyConfig.set(config_a)
 
-    with graph_a.use():
+    with config_a.use(), graph_a.use():
 
         class FeatureA(
             BaseFeature,
@@ -330,9 +305,8 @@ def test_provenance_by_field_unchanged_by_project(
             pass
 
     config_b = MetaxyConfig(project="proj_b")
-    MetaxyConfig.set(config_b)
 
-    with graph_b.use():
+    with config_b.use(), graph_b.use():
 
         class FeatureB(
             BaseFeature,
@@ -355,5 +329,3 @@ def test_provenance_by_field_unchanged_by_project(
 
     # But projects should differ
     assert FeatureA.project != FeatureB.project
-
-    MetaxyConfig.reset()
