@@ -1,0 +1,7 @@
+# serializer version: 1
+# name: test_narwhals_expr_to_sql_predicate_outputs
+  dict({
+    'duckdb': '"price" > 5 AND "status" = \'active\'',
+    'trino': '"price" > 5 AND "status" = \'active\'',
+  })
+# ---

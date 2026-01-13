@@ -106,6 +106,7 @@ dev = [
   "mistune>=3.1.4",
   "dagster>=1.12.3",
   "ty>=0.0.4",
+  "datafusion>=51.0.0",
 ]
 
 examples = [
