@@ -1,9 +1,19 @@
-from collections.abc import Iterator
+from __future__ import annotations
+
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 
-from narwhals.typing import FrameT
+import narwhals as nw
+from narwhals.typing import Frame, FrameT
+from sqlglot import exp
+
+from metaxy.utils.constants import TEMP_TABLE_NAME
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 # Context variable for suppressing feature_version warning in migrations
 _suppress_feature_version_warning: ContextVar[bool] = ContextVar(
@@ -102,3 +112,98 @@ def sanitize_uri(uri: str) -> str:
         pass
 
     return uri
+
+
+def generate_sql(
+    narwhals_function: Callable[[Frame], Frame],
+    schema: nw.Schema,
+    *,
+    dialect: str,
+) -> str:
+    """Generate SQL for a Narwhals transformation given a schema."""
+    import ibis
+
+    ibis_table = ibis.table(ibis.schema(schema.to_arrow()), name=TEMP_TABLE_NAME)
+    nw_lf = nw.from_native(ibis_table, eager_only=False)
+    result_lf = narwhals_function(nw_lf)
+    ibis_expr = result_lf.to_native()
+    return ibis.to_sql(ibis_expr, dialect=dialect)
+
+
+def narwhals_expr_to_sql_predicate(
+    filters: nw.Expr | Sequence[nw.Expr],
+    schema: nw.Schema,
+    *,
+    dialect: str,
+) -> str:
+    """Convert Narwhals filter expressions to a SQL WHERE clause predicate.
+
+    This utility converts Narwhals filter expressions to SQL predicates by:
+    1. Creating a temporary Ibis table from the provided schema
+    2. Applying the Narwhals filters to generate SQL
+    3. Extracting the WHERE clause predicate
+    4. Stripping any table qualifiers (single-table only; not safe for joins)
+
+    Args:
+        filters: Narwhals filter expression or sequence of expressions to convert
+        schema: Narwhals schema to build the Ibis table
+        dialect: SQL dialect to use when generating SQL
+
+    Returns:
+        SQL WHERE clause predicate string (without the "WHERE" keyword)
+
+    Raises:
+        RuntimeError: If WHERE clause cannot be extracted from generated SQL
+
+    Example:
+        ```py
+        import narwhals as nw
+        import polars as pl
+
+        df = pl.DataFrame({"status": ["active"], "age": [25]})
+        filters = nw.col("status") == "active"
+        narwhals_expr_to_sql_predicate(filters, df, dialect="duckdb")
+        # '"status" = \'active\''
+        ```
+    """
+    filter_list = (
+        list(filters)
+        if isinstance(filters, Sequence) and not isinstance(filters, nw.Expr)
+        else [filters]
+    )
+    if not filter_list:
+        raise ValueError("narwhals_expr_to_sql_predicate expects at least one filter")
+    sql = generate_sql(lambda lf: lf.filter(*filter_list), schema, dialect=dialect)
+
+    import sqlglot
+    from sqlglot.optimizer.simplify import simplify
+
+    parsed = sqlglot.parse_one(sql, read=dialect)
+    where_expr = parsed.args.get("where")
+    if not where_expr:
+        raise RuntimeError(
+            f"Could not extract WHERE clause from generated SQL for filters: {filters}\n"
+            f"Generated SQL: {sql}"
+        )
+
+    predicate_expr = simplify(where_expr.this)
+
+    predicate_expr = predicate_expr.transform(_strip_table_qualifiers())
+
+    return predicate_expr.sql(dialect=dialect)
+
+
+def _strip_table_qualifiers() -> Callable[[exp.Expression], exp.Expression]:
+    def _strip(node: exp.Expression) -> exp.Expression:
+        if not isinstance(node, exp.Column):
+            return node
+
+        table_arg = node.args.get("table")
+        if table_arg is None:
+            return node
+
+        cleaned = node.copy()
+        cleaned.set("table", None)
+        return cleaned
+
+    return _strip
