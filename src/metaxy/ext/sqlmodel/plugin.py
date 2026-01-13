@@ -19,6 +19,7 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_DELETED_AT,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
@@ -362,7 +363,7 @@ class BaseSQLModelFeature(
     metaxy_created_at: AwareDatetime | None = Field(
         default=None,
         description="Timestamp when the metadata row was created (UTC)",
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
         sa_column_kwargs={
             "name": METAXY_CREATED_AT,
         },
@@ -376,6 +377,15 @@ class BaseSQLModelFeature(
             "name": METAXY_MATERIALIZATION_ID,
         },
         nullable=True,
+    )
+
+    metaxy_deleted_at: AwareDatetime | None = Field(
+        default=None,
+        description="Soft delete timestamp (UTC); null means active row",
+        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
+        sa_column_kwargs={
+            "name": METAXY_DELETED_AT,
+        },
     )
 
 
