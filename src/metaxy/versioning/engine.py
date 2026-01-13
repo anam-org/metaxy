@@ -574,7 +574,7 @@ class VersioningEngine(ABC):
         This method can be overridden by subclasses (e.g., flat engines) to handle
         different column representations.
         """
-        return df.with_columns(  # ty: ignore[invalid-argument-type,invalid-return-type]
+        return df.with_columns(  # ty: ignore[invalid-argument-type]
             nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
             nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         )

@@ -84,7 +84,7 @@ class FlatVersioningMixin:
         )
 
         # For flattened columns, create corresponding data_version_by_field columns
-        current_columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        current_columns = df.collect_schema().names()
         prov_prefix = f"{METAXY_PROVENANCE_BY_FIELD}__"
         data_prefix = f"{METAXY_DATA_VERSION_BY_FIELD}__"
 
@@ -93,9 +93,9 @@ class FlatVersioningMixin:
                 field_name = col.split("__", 1)[1]
                 target_col = f"{data_prefix}{field_name}"
                 if target_col not in current_columns:
-                    df = df.with_columns(nw.col(col).alias(target_col))  # ty: ignore[invalid-argument-type]
+                    df = df.with_columns(nw.col(col).alias(target_col))
 
-        return df  # ty: ignore[invalid-return-type]
+        return df
 
 
 class FlatVersioningEngine(FlatVersioningMixin, VersioningEngine, ABC):
