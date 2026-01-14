@@ -230,19 +230,19 @@ def load_features(
     entrypoints: list[str] | None = None,
     package_entrypoint_group: str = DEFAULT_ENTRY_POINT_GROUP,
     *,
-    load_config: bool = True,
     load_packages: bool = True,
     load_env: bool = True,
 ) -> "FeatureGraph":
-    """Discover and load all entrypoints from config, packages, and environment.
+    """Discover and load feature entrypoints from packages and environment.
 
-    This is the main entry point for loading features. It combines config-based,
-    package-based, and environment-based entrypoint discovery.
+    Note:
+        For most use cases, prefer `init_metaxy()` which loads config and
+        discovers features in one call. This function is primarily for
+        advanced use cases or internal use.
 
     Args:
         entrypoints: List of module paths (optional)
         package_entrypoint_group: Entry point group for package discovery
-        load_config: Whether to load config-based entrypoints (default: True)
         load_packages: Whether to load package-based entrypoints (default: True)
         load_env: Whether to load environment-based entrypoints (default: True)
 
@@ -251,27 +251,7 @@ def load_features(
 
     Raises:
         EntrypointLoadError: If any entrypoint fails to load
-
-    Example:
-        ```py
-        from metaxy.entrypoints import load_features
-
-        # Load from all sources
-        graph = load_features(
-            entrypoints=["myapp.features.core"],
-            load_packages=True,
-            load_env=True
-        )
-
-        # Load only from config
-        graph = load_features(
-            entrypoints=["myapp.features.core"],
-            load_packages=False,
-            load_env=False
-        )
-        ```
     """
-    from metaxy.config import MetaxyConfig
     from metaxy.models.feature import FeatureGraph
 
     target_graph = FeatureGraph.get_active()
@@ -279,11 +259,6 @@ def load_features(
     # Load explicit entrypoints
     if entrypoints:
         load_entrypoints(entrypoints)
-
-    # Load config-based entrypoints
-    if load_config:
-        config = MetaxyConfig.load(search_parents=True)
-        load_entrypoints(config.entrypoints)
 
     # Load package-based entrypoints
     if load_packages:

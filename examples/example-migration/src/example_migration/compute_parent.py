@@ -4,10 +4,10 @@ from pathlib import Path
 
 import polars as pl
 
-from metaxy import FeatureKey, get_feature_by_key, init_metaxy, load_features
+from metaxy import FeatureKey, get_feature_by_key, init_metaxy
 
-# Load features
-load_features()
+# Initialize metaxy (loads config and discovers features)
+config = init_metaxy()
 
 # Get feature class
 ParentFeature = get_feature_by_key(FeatureKey(["examples", "parent"]))
@@ -15,9 +15,6 @@ ParentFeature = get_feature_by_key(FeatureKey(["examples", "parent"]))
 # Load upstream data
 data_dir = Path("/tmp/migration_example_data")
 upstream_data = pl.read_parquet(data_dir / "upstream_data.parquet")
-
-# Get metadata store
-config = init_metaxy()
 with config.get_store() as store:
     print(f"📊 Computing {ParentFeature.spec().key.to_string()}...")
     print(f"  feature_version: {ParentFeature.feature_version()[:16]}...")
