@@ -13,20 +13,17 @@ from metaxy import (
     FeatureKey,
     get_feature_by_key,
     init_metaxy,
-    load_features,
 )
 from metaxy.metadata_store.system import SystemTableStorage
 
-load_features()
-
-# feature showcase: get feature classes by key
-child_key = FeatureKey(["examples", "child"])
-parent_key = FeatureKey(["examples", "parent"])
-ChildFeature = get_feature_by_key(child_key)
-ParentFeature = get_feature_by_key(parent_key)
-
-# Get metadata store from metaxy.toml config
+# Initialize metaxy (loads config and discovers features)
 config = init_metaxy()
+
+# feature showcase: get feature classes by key. Of course, they can be just imported instead.
+child_key = FeatureKey(["examples", "child"])
+ChildFeature = get_feature_by_key(child_key)
+ParentFeature = get_feature_by_key(["examples", "parent"])  # or use the list variant
+
 with config.get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
     result = SystemTableStorage(store).push_graph_snapshot()
@@ -36,7 +33,7 @@ with config.get_store() as store:
     print(f"Graph snapshot_version: {snapshot_version}")
 
     # Compute child feature (e.g., generate predictions from embeddings)
-    print(f"\n📊 Computing {ChildFeature.spec().key.to_string()}...")
+    print(f"\n📊 Computing {child_key.to_string()}...")
     print(f"  feature_version: {ChildFeature.feature_version()}")
 
     ids_lazy = store.read_metadata(ParentFeature, columns=["sample_uid"])

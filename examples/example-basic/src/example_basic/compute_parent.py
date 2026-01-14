@@ -15,18 +15,16 @@ from metaxy import (
     FeatureKey,
     get_feature_by_key,
     init_metaxy,
-    load_features,
 )
 from metaxy.metadata_store.system import SystemTableStorage
 
-load_features()
+# Initialize metaxy (loads config and discovers features)
+config = init_metaxy()
 
 # feature showcase: get feature classes by key
 parent_key = FeatureKey(["examples", "parent"])
 ParentFeature = get_feature_by_key(parent_key)
 
-# Get metadata store from metaxy.toml config
-config = init_metaxy()
 with config.get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
     result = SystemTableStorage(store).push_graph_snapshot()
