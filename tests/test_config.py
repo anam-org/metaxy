@@ -125,6 +125,62 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
     assert config.stores["staging"].config["fallback_stores"] == ["prod"]
 
 
+def test_load_from_metaxy_config_env_var(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that METAXY_CONFIG env var is respected for config file location."""
+    from metaxy import InMemoryMetadataStore
+
+    # Create config file in a non-standard location
+    config_dir = tmp_path / "custom" / "config" / "location"
+    config_dir.mkdir(parents=True)
+    config_file = config_dir / "my-metaxy-config.toml"
+    config_file.write_text("""
+project = "env_var_project"
+store = "custom"
+
+[stores.custom]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+""")
+
+    # Set the env var to point to our config file
+    monkeypatch.setenv("METAXY_CONFIG", str(config_file))
+
+    # Load config without specifying file - should use env var
+    config = MetaxyConfig.load()
+
+    assert config.project == "env_var_project"
+    assert config.store == "custom"
+    assert config.stores["custom"].type == InMemoryMetadataStore
+    assert config.config_file == config_file.resolve()
+
+
+def test_init_metaxy_respects_metaxy_config_env_var(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that init_metaxy respects METAXY_CONFIG env var."""
+    from metaxy import init_metaxy
+
+    # Create config file with entrypoints
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+project = "init_test_project"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+""")
+
+    # Set the env var
+    monkeypatch.setenv("METAXY_CONFIG", str(config_file))
+
+    # Call init_metaxy without specifying config file
+    config = init_metaxy()
+
+    assert config.project == "init_test_project"
+    assert config.config_file == config_file.resolve()
+
+
 def test_get_store_instantiates_correctly() -> None:
     config = MetaxyConfig(
         store="dev",
