@@ -173,35 +173,33 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
             "metaxy-system": MetaxyTableInfo(feature_key=spec.key).model_dump()
         }
 
+        # Base table kwargs that are always applied
+        base_table_kwargs = {"extend_existing": True}
+
         # Prepare constraints if requested
         constraints = []
         if inject_primary_key or inject_index:
             # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
-            key_columns = (
-                [METAXY_FEATURE_VERSION]
-                + list(spec.id_columns)
-                + [
-                    METAXY_CREATED_AT,
-                ]
-            )
+            key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_CREATED_AT]
 
             if inject_primary_key:
-                pk_constraint = PrimaryKeyConstraint(*key_columns, name="metaxy_pk")
-                constraints.append(pk_constraint)
+                constraints.append(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))
 
             if inject_index:
-                idx = Index("metaxy_idx", *key_columns)
-                constraints.append(idx)
+                constraints.append(Index("metaxy_idx", *key_columns))
 
         # Merge with existing __table_args__
         if "__table_args__" in namespace:
             existing_args = namespace["__table_args__"]
 
             if isinstance(existing_args, dict):
-                # Dict format: merge info, convert to tuple if we have constraints
+                # Dict format: merge info and base kwargs, convert to tuple if we have constraints
                 existing_info = existing_args.get("info", {})
                 existing_info.update(metaxy_info)
                 existing_args["info"] = existing_info
+                # Merge base table kwargs (don't override user settings)
+                for key, value in base_table_kwargs.items():
+                    existing_args.setdefault(key, value)
 
                 if constraints:
                     # Convert to tuple format with constraints
@@ -224,6 +222,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                 existing_info = table_kwargs.get("info", {})
                 existing_info.update(metaxy_info)
                 table_kwargs["info"] = existing_info
+                # Merge base table kwargs (don't override user settings)
+                for key, value in base_table_kwargs.items():
+                    table_kwargs.setdefault(key, value)
 
                 # Combine: existing constraints + new constraints + table kwargs
                 namespace["__table_args__"] = (
@@ -235,14 +236,13 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                 )
         else:
             # No existing __table_args__
+            table_kwargs = {**base_table_kwargs, "info": metaxy_info}
             if constraints:
-                # Create tuple format with constraints + info
-                namespace["__table_args__"] = tuple(constraints) + (
-                    {"info": metaxy_info},
-                )
+                # Create tuple format with constraints + table kwargs
+                namespace["__table_args__"] = tuple(constraints) + (table_kwargs,)
             else:
-                # Just info, use dict format
-                namespace["__table_args__"] = {"info": metaxy_info}
+                # Just table kwargs, use dict format
+                namespace["__table_args__"] = table_kwargs
 
 
 class BaseSQLModelFeature(
@@ -463,7 +463,8 @@ def filter_feature_sqlmodel_metadata(
         ```
     """
     from sqlalchemy import MetaData
-    from sqlalchemy.engine.url import make_url
+
+    from metaxy.ext.sqlalchemy.plugin import _get_store_sqlalchemy_url
 
     config = MetaxyConfig.get()
 
@@ -477,21 +478,7 @@ def filter_feature_sqlmodel_metadata(
     if inject_index is None:
         inject_index = sqlmodel_config.inject_index
 
-    # Get SQLAlchemy URL from store
-    if not store.sqlalchemy_url:
-        raise ValueError("IbisMetadataStore has an empty `sqlalchemy_url`.")
-    url = store.sqlalchemy_url
-
-    # Replace protocol and/or port if specified using SQLAlchemy's URL utilities
-    if protocol is not None or port is not None:
-        parsed_url = make_url(url)
-        if protocol is not None and port is not None:
-            parsed_url = parsed_url.set(drivername=protocol, port=port)
-        elif protocol is not None:
-            parsed_url = parsed_url.set(drivername=protocol)
-        elif port is not None:
-            parsed_url = parsed_url.set(port=port)
-        url = parsed_url.render_as_string(hide_password=False)
+    url = _get_store_sqlalchemy_url(store, protocol=protocol, port=port)
 
     # Create new metadata with transformed table names
     filtered_metadata = MetaData()

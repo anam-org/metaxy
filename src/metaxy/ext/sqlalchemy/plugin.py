@@ -43,11 +43,8 @@ def create_system_tables(
     Returns:
         Tuple of (feature_versions_table, events_table)
     """
-    feature_versions_name = (
-        f"{table_prefix}{FEATURE_VERSIONS_KEY.table_name}"
-        if table_prefix
-        else FEATURE_VERSIONS_KEY.table_name
-    )
+    feature_versions_name = f"{table_prefix}{FEATURE_VERSIONS_KEY.table_name}"
+    events_name = f"{table_prefix}{EVENTS_KEY.table_name}"
 
     feature_versions_table = Table(
         feature_versions_name,
@@ -55,34 +52,24 @@ def create_system_tables(
         # Composite primary key
         Column("project", String, primary_key=True, index=True),
         Column("feature_key", String, primary_key=True, index=True),
-        Column(
-            METAXY_FEATURE_SPEC_VERSION,
-            String,
-            primary_key=True,
-        ),
+        Column(METAXY_FEATURE_SPEC_VERSION, String, primary_key=True),
         # Versioning columns
         Column(METAXY_FEATURE_VERSION, String, index=True),
         Column(METAXY_FULL_DEFINITION_VERSION, String, index=True),
         Column(METAXY_SNAPSHOT_VERSION, String, index=True),
         # Metadata columns
         Column("recorded_at", DateTime, index=True),
-        Column("feature_spec", String),  # Full serialized FeatureSpec as JSON string
-        Column("feature_schema", String),  # Full Pydantic model schema as JSON string
-        Column("feature_class_path", String),  # Python import path to Feature class
-        Column("tags", String, default="{}"),  # JSON string
-        # Additional indexes
+        Column("feature_spec", String),
+        Column("feature_schema", String),
+        Column("feature_class_path", String),
+        Column("tags", String, default="{}"),
         Index(
             f"idx_{feature_versions_name}_lookup",
             "project",
             "feature_key",
             METAXY_FEATURE_VERSION,
         ),
-    )
-
-    events_name = (
-        f"{table_prefix}{EVENTS_KEY.table_name}"
-        if table_prefix
-        else EVENTS_KEY.table_name
+        extend_existing=True,
     )
 
     events_table = Table(
@@ -95,14 +82,14 @@ def create_system_tables(
         # Event fields
         Column("event_type", String, index=True),
         Column("feature_key", String, nullable=True, index=True),
-        Column("payload", String, default=""),  # JSON string
-        # Additional indexes
+        Column("payload", String, default=""),
         Index(
             f"idx_{events_name}_lookup",
             "project",
             "execution_id",
             "event_type",
         ),
+        extend_existing=True,
     )
 
     return feature_versions_table, events_table
@@ -136,18 +123,10 @@ def _get_store_sqlalchemy_url(
     if protocol is None and port is None:
         return base_url
 
-    # Use SQLAlchemy's URL utilities for proper parsing
     from sqlalchemy.engine.url import make_url
 
     url = make_url(base_url)
-
-    # Apply protocol and port overrides
-    if protocol is not None and port is not None:
-        url = url.set(drivername=protocol, port=port)
-    elif protocol is not None:
-        url = url.set(drivername=protocol)
-    elif port is not None:
-        url = url.set(port=port)
+    url = url.set(drivername=protocol, port=port)
 
     return url.render_as_string(hide_password=False)
 
@@ -298,20 +277,13 @@ def _inject_constraints(
     from metaxy.models.constants import METAXY_CREATED_AT, METAXY_FEATURE_VERSION
 
     # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
-    key_columns = [METAXY_FEATURE_VERSION] + list(spec.id_columns) + [METAXY_CREATED_AT]
+    key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_CREATED_AT]
 
     if inject_primary_key:
-        # Add primary key constraint
-        pk_constraint = PrimaryKeyConstraint(*key_columns, name="metaxy_pk")
-        table.append_constraint(pk_constraint)
+        table.append_constraint(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))
 
     if inject_index:
-        # Add composite index
-        idx = Index(
-            "metaxy_idx",
-            *key_columns,
-        )
-        table.append_constraint(idx)
+        table.append_constraint(Index("metaxy_idx", *key_columns))
 
 
 def filter_feature_sqla_metadata(
