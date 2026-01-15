@@ -64,7 +64,9 @@ delta = [
 dagster = [
   "dagster>=1.12.3",
 ]
-
+postgres = [
+  "ibis-framework[postgres]>=11.0.0",
+]
 lancedb = [
   "lancedb>=0.15.0",
   "polars>=1.36.1",
@@ -94,10 +96,11 @@ dev = [
   "duckdb>=1.4.1",
   "pytest>=8.4.2",
   "pytest-cases>=3.9.1",
+  "pytest-postgresql>=7.0.2",
   "hypothesis>=6.142.4",
   "ruff>=0.13.1",
   "syrupy>=5.0.0",
-  "ibis-framework[duckdb,clickhouse]>=11.0.0",
+  "ibis-framework[duckdb,clickhouse,postgres]>=11.0.0",
   "lancedb>=0.15.0",
   "vulture>=2.14",
   "prek>=0.2.11",

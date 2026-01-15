@@ -33,3 +33,5 @@ examples/.generated
 PLAN.md
 plans/*.md
 .cache/
+.nix-pg-shim/
+docs/slides/node_modules/

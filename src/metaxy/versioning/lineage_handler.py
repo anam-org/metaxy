@@ -5,7 +5,6 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING
 
-import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.lineage import (
@@ -171,11 +170,21 @@ class ExpansionLineageHandler(LineageHandler):
         current: FrameT,
         join_columns: list[str],
     ) -> FrameT:
-        """Collapse expanded rows to parent level for comparison."""
-        current_cols = current.collect_schema().names()  # ty: ignore[invalid-argument-type]
-        non_key_cols = [c for c in current_cols if c not in join_columns]
-        return current.group_by(*join_columns).agg(  # ty: ignore[invalid-argument-type]
-            *[nw.col(c).any_value(ignore_nulls=True) for c in non_key_cols]
+        """Collapse expanded rows to parent level for comparison.
+
+        For expansion lineage, all children inherit the same provenance from their parent,
+        so we just need to pick any one child per parent. We use the engine's
+        keep_latest_by_group method with a timestamp column (or create a row number)
+        to deterministically pick one row per parent.
+        """
+        from metaxy.models.constants import METAXY_CREATED_AT
+
+        # Use the engine's keep_latest_by_group to pick one row per parent group
+        # This handles all column types correctly (including JSONB for PostgreSQL)
+        return self.engine.keep_latest_by_group(
+            df=current,  # type: ignore[invalid-argument-type]
+            group_columns=join_columns,
+            timestamp_column=METAXY_CREATED_AT,
         )
 
 

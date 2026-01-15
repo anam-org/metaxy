@@ -8,6 +8,8 @@ Tests cover:
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import narwhals as nw
 import polars as pl
 import pytest
@@ -219,11 +221,19 @@ def video_metadata() -> nw.LazyFrame[pl.LazyFrame]:
 @pytest.fixture
 def video_frames_current() -> nw.LazyFrame[pl.LazyFrame]:
     """Current video frames metadata (many frames per video)."""
+    base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
     return nw.from_native(
         pl.DataFrame(
             {
                 "video_id": ["v1", "v1", "v1", "v2", "v2"],
                 "frame_id": [0, 1, 2, 0, 1],
+                "metaxy_created_at": [
+                    base_time,
+                    base_time + timedelta(seconds=1),
+                    base_time + timedelta(seconds=2),
+                    base_time + timedelta(seconds=3),
+                    base_time + timedelta(seconds=4),
+                ],
                 "metaxy_provenance_by_field": [
                     {"frame_embedding": "frame_v1_0_hash"},
                     {"frame_embedding": "frame_v1_1_hash"},
@@ -1149,11 +1159,19 @@ def test_expansion_lineage_upstream_data_version_change_triggers_update(
     ).collect()
 
     # Current frames for both videos using v1 data_version
+    base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
     current_v1 = nw.from_native(
         pl.DataFrame(
             {
                 "video_id": ["v1", "v1", "v1", "v2", "v2"],
                 "frame_id": [0, 1, 2, 0, 1],
+                "metaxy_created_at": [
+                    base_time,
+                    base_time + timedelta(seconds=1),
+                    base_time + timedelta(seconds=2),
+                    base_time + timedelta(seconds=3),
+                    base_time + timedelta(seconds=4),
+                ],
                 "metaxy_provenance_by_field": [
                     {"frame_embedding": "frame_v1_0_prov"},
                     {"frame_embedding": "frame_v1_1_prov"},
@@ -1419,11 +1437,13 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
 
     # Current frames - use the SAME provenance as computed expected
     # This ensures a baseline with no changes
+    base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
     current_base = nw.from_native(
         pl.DataFrame(
             {
                 "video_id": ["v1", "v1"],
                 "frame_id": [0, 1],
+                "metaxy_created_at": [base_time, base_time + timedelta(seconds=1)],
                 "metaxy_provenance_by_field": [
                     expected_base["metaxy_provenance_by_field"][0],
                     expected_base["metaxy_provenance_by_field"][0],  # Same for all frames
