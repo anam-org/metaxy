@@ -3,7 +3,7 @@
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from typing_extensions import Self
@@ -126,6 +126,8 @@ class DuckDBMetadataStore(IbisMetadataStore):
         )
         ```
     """
+
+    dialect: ClassVar[str] = "duckdb"
 
     def __init__(
         self,

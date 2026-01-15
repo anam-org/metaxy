@@ -1,6 +1,6 @@
 """BigQuery metadata store - thin wrapper around IbisMetadataStore."""
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
@@ -94,6 +94,8 @@ class BigQueryMetadataStore(IbisMetadataStore):
         )
         ```
     """
+
+    dialect: ClassVar[str] = "bigquery"
 
     def __init__(
         self,

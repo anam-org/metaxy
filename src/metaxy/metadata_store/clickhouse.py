@@ -2,7 +2,7 @@
 
 It takes care of some ClickHouse-specific logic such as `nw.Struct` type conversion against ClickHouse types such as `Map(K,V)`."""
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import narwhals as nw
 from pydantic import Field
@@ -66,6 +66,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
     """
 
     versioning_engine_cls = ClickHouseVersioningEngine
+    dialect: ClassVar[str] = "clickhouse"
 
     def __init__(
         self,

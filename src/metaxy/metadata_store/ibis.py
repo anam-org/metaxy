@@ -9,7 +9,7 @@ Supports any SQL database that Ibis supports:
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 import narwhals as nw
 from narwhals.typing import Frame
@@ -110,6 +110,8 @@ class IbisMetadataStore(MetadataStore, ABC):
             store.write_metadata(MyFeature, df)
         ```
     """
+
+    dialect: ClassVar[str] = "ansi"
 
     versioning_engine_cls = IbisVersioningEngine
 
