@@ -451,16 +451,23 @@ class MetaxyConfig(BaseSettings):
         return (init_settings, env_settings, toml_settings)
 
     @classmethod
-    def get(cls, *, _allow_default_config: bool = False) -> "MetaxyConfig":
+    def get(
+        cls, *, load: bool = False, _allow_default_config: bool = False
+    ) -> "MetaxyConfig":
         """Get the current Metaxy configuration.
 
         Args:
+            load: If True and config is not set, calls `MetaxyConfig.load()` to
+                load configuration from file. Useful for plugins that need config
+                but don't want to require manual initialization.
             _allow_default_config: Internal parameter. When True, returns default
                 config without warning if global config is not set. Used by methods
                 like `get_plugin` that may be called at import time.
         """
         cfg = _metaxy_config.get()
         if cfg is None:
+            if load:
+                return cls.load()
             if not _allow_default_config:
                 warnings.warn(
                     UserWarning(
