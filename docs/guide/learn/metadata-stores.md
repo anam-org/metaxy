@@ -30,6 +30,10 @@ Deletes are not required during normal operations, but they are still supported 
 
     1. :fire: for performance reasons
 
+!!! warning
+
+    Delete filters must compile to SQL WHERE clauses.
+
 !!! warning "Forged About ACID"
 
     Metadata reads/writes **are not guaranteed to be ACID**: Metaxy is designed to interact with analytical databases which lack ACID guarantees by definition and design. (1)
