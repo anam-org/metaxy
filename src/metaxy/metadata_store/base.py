@@ -1474,7 +1474,7 @@ class MetadataStore(ABC):
                 nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT)
             )
 
-        if METAXY_DELETED_AT not in df.columns:
+        if METAXY_DELETED_AT not in columns:
             df = df.with_columns(
                 nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(
                     METAXY_DELETED_AT
