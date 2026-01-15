@@ -207,7 +207,7 @@ def _get_features_metadata(
     """
     from metaxy.models.feature import FeatureGraph
 
-    config = MetaxyConfig.get()
+    config = MetaxyConfig.get(load=True)
 
     if project is None:
         project = config.project

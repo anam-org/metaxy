@@ -466,7 +466,7 @@ def filter_feature_sqlmodel_metadata(
 
     from metaxy.ext.sqlalchemy.plugin import _get_store_sqlalchemy_url
 
-    config = MetaxyConfig.get()
+    config = MetaxyConfig.get(load=True)
 
     if project is None:
         project = config.project

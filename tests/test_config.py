@@ -906,3 +906,66 @@ def test_store_config_accepts_class_directly() -> None:
 
     # Accessing .type should return the same class
     assert config.type is InMemoryMetadataStore
+
+
+def test_plugins_respect_metaxy_config_env_var_at_import_time(tmp_path: Path) -> None:
+    """Test that sqlalchemy and sqlmodel plugins load config via METAXY_CONFIG at import time.
+
+    These plugins use MetaxyConfig.get(load=True) which should auto-load config
+    from METAXY_CONFIG when the global config is not set.
+    """
+    import subprocess
+    import sys
+
+    # Create a config file with a specific project name
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+project = "plugin_import_test_project"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+""")
+
+    # Create a test script that imports the plugins and checks config
+    test_script = tmp_path / "test_plugin_import.py"
+    test_script.write_text("""
+import sys
+
+# Reset any existing config state
+from metaxy.config import MetaxyConfig
+MetaxyConfig.reset()
+
+# Verify config is not set before calling plugin functions
+assert not MetaxyConfig.is_set(), "Config should not be set before plugin call"
+
+# Import and call sqlalchemy plugin function that uses MetaxyConfig.get(load=True)
+from metaxy.ext.sqlalchemy.plugin import _get_features_metadata
+from metaxy.metadata_store import InMemoryMetadataStore
+from sqlalchemy import MetaData
+
+store = InMemoryMetadataStore()
+
+# This should trigger MetaxyConfig.get(load=True) and auto-load from METAXY_CONFIG
+_get_features_metadata(source_metadata=MetaData(), store=store)
+
+# Now config should be loaded
+assert MetaxyConfig.is_set(), "Config should be set after plugin call"
+config = MetaxyConfig.get()
+assert config.project == "plugin_import_test_project", f"Expected project 'plugin_import_test_project', got '{config.project}'"
+
+print("SUCCESS: Plugin correctly loaded config from METAXY_CONFIG")
+""")
+
+    # Run the test script in a subprocess with METAXY_CONFIG set
+    result = subprocess.run(
+        [sys.executable, str(test_script)],
+        env={**dict(__import__("os").environ), "METAXY_CONFIG": str(config_file)},
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, (
+        f"Script failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+    assert "SUCCESS" in result.stdout
