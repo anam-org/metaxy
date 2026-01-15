@@ -4,6 +4,11 @@ Metaxy implements [`DeltaMetadataStore`][metaxy.metadata_store.delta.DeltaMetada
 
 It supports the local filesystem and remote object stores.
 
+!!! tip
+
+    If Polars 1.37 or greater is installed, lazy Polars frames are sinked via
+    `LazyFrame.sink_delta`, avoiding unnecessary materialization.
+
 ## Installation
 
 ```shell

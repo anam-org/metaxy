@@ -6,16 +6,17 @@ from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, overload
 
 import deltalake
 import narwhals as nw
 import polars as pl
 from narwhals.typing import Frame
+from packaging.version import Version
 from pydantic import Field
 from typing_extensions import Self
 
-from metaxy._utils import switch_implementation_to_polars
+from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import is_local_path
@@ -63,6 +64,10 @@ class DeltaMetadataStore(MetadataStore):
 
     It stores feature metadata in Delta Lake tables located under ``root_path``.
     It uses the Polars versioning engine for provenance calculations.
+
+    !!! tip
+        If Polars 1.37 or greater is installed, lazy Polars frames are sinked via
+        `LazyFrame.sink_delta`, avoiding unnecessary materialization.
 
     Example:
 
@@ -245,6 +250,18 @@ class DeltaMetadataStore(MetadataStore):
             return False
         return True
 
+    @overload
+    def _cast_enum_to_string(self, frame: pl.DataFrame) -> pl.DataFrame: ...
+
+    @overload
+    def _cast_enum_to_string(self, frame: pl.LazyFrame) -> pl.LazyFrame: ...
+
+    def _cast_enum_to_string(
+        self, frame: pl.DataFrame | pl.LazyFrame
+    ) -> pl.DataFrame | pl.LazyFrame:
+        """Cast Enum columns to String to avoid delta-rs Utf8View incompatibility."""
+        return frame.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
+
     # ===== Storage operations =====
 
     def write_metadata_to_store(
@@ -257,40 +274,46 @@ class DeltaMetadataStore(MetadataStore):
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
-            **kwargs: Backend-specific parameters (currently unused)
+            df: DataFrame with metadata
+            **kwargs: Backend-specific parameters that are passed to `write_delta` or `sink_delta`.
+
+        !!! tip
+            If Polars 1.37 or greater is installed, lazy Polars frames are sinked via
+            `LazyFrame.sink_delta`, avoiding unnecessary materialization.
         """
         table_uri = self._feature_uri(feature_key)
 
-        # Delta Lake auto-creates tables on first write, no need to check existence
-        # Convert to Polars and collect lazy frames
-        df_polars = switch_implementation_to_polars(df)
-
-        # Collect lazy frames, keep eager frames as-is
-        if isinstance(df_polars, nw.LazyFrame):
-            df_native = df_polars.collect().to_native()
-        else:
-            df_native = df_polars.to_native()
-
-        assert isinstance(df_native, pl.DataFrame)
-
-        # Cast Enum columns to String to avoid delta-rs Utf8View incompatibility
-        # (delta-rs parquet writer cannot handle Utf8View dictionary values)
-        df_native = df_native.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
-
-        # Prepare write parameters for Polars write_delta
-        # Extract mode and storage_options as top-level parameters
+        # Prepare write parameters
         write_opts = self.default_delta_write_options.copy()
         mode = write_opts.pop("mode", "append")
         storage_options = write_opts.pop("storage_options", None)
 
-        # Write using Polars DataFrame.write_delta
-        df_native.write_delta(
-            table_uri,
-            mode=mode,
-            storage_options=storage_options,
-            delta_write_options=write_opts or None,
+        # Check if we can use sink_delta (Polars >= 1.37, native Polars LazyFrame)
+        can_sink = (
+            df.implementation == nw.Implementation.POLARS
+            and isinstance(df, nw.LazyFrame)
+            and Version(pl.__version__) >= Version("1.37.0")
         )
+
+        if can_sink:
+            lf_native = df.to_native()
+            assert isinstance(lf_native, pl.LazyFrame)
+
+            self._cast_enum_to_string(lf_native).sink_delta(
+                table_uri,
+                mode=mode,
+                storage_options=storage_options,
+                delta_write_options=write_opts or None,
+            )
+        else:
+            df_native = collect_to_polars(df)
+
+            self._cast_enum_to_string(df_native).write_delta(
+                table_uri,
+                mode=mode,
+                storage_options=storage_options,
+                delta_write_options=write_opts or None,
+            )
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop Delta table for the specified feature using soft delete.

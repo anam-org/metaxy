@@ -111,3 +111,69 @@ def test_delta_s3_storage_options_passed(
         )
         store.write_metadata(feature_cls, metadata)
         assert store.has_feature(feature_cls, check_fallback=False)
+
+
+def test_delta_sink_lazyframe_local(tmp_path, test_features) -> None:
+    """Verify LazyFrame.sink_delta works with local storage.
+
+    With Polars >= 1.37, lazy frames should be sinked directly without materialization.
+    """
+    store_path = tmp_path / "delta_store"
+    feature_cls = test_features["UpstreamFeatureA"]
+
+    # Create a lazy frame (native Polars)
+    metadata_lazy = pl.LazyFrame(
+        {
+            "sample_uid": [1, 2, 3],
+            "metaxy_provenance_by_field": [
+                {"frames": "h1", "audio": "h1"},
+                {"frames": "h2", "audio": "h2"},
+                {"frames": "h3", "audio": "h3"},
+            ],
+        }
+    )
+
+    with DeltaMetadataStore(store_path) as store:
+        store.write_metadata(feature_cls, metadata_lazy)
+
+        # Verify the table was created
+        expected_path = store_path / "test_stores" / "upstream_a.delta"
+        assert expected_path.exists()
+
+        # Verify we can read the data back
+        result = store.read_metadata(feature_cls)
+        assert result is not None
+        assert result.collect().to_native().height == 3
+
+
+def test_delta_sink_lazyframe_s3(s3_bucket_and_storage_options, test_features) -> None:
+    """Verify LazyFrame.sink_delta works with S3 storage.
+
+    With Polars >= 1.37, lazy frames should be sinked directly without materialization.
+    """
+    bucket_name, storage_options = s3_bucket_and_storage_options
+    store_path = f"s3://{bucket_name}/delta_store"
+    feature_cls = test_features["UpstreamFeatureA"]
+
+    # Create a lazy frame (native Polars)
+    metadata_lazy = pl.LazyFrame(
+        {
+            "sample_uid": [1, 2, 3],
+            "metaxy_provenance_by_field": [
+                {"frames": "h1", "audio": "h1"},
+                {"frames": "h2", "audio": "h2"},
+                {"frames": "h3", "audio": "h3"},
+            ],
+        }
+    )
+
+    with DeltaMetadataStore(store_path, storage_options=storage_options) as store:
+        store.write_metadata(feature_cls, metadata_lazy)
+
+        # Verify the feature exists
+        assert store.has_feature(feature_cls, check_fallback=False)
+
+        # Verify we can read the data back
+        result = store.read_metadata(feature_cls)
+        assert result is not None
+        assert result.collect().to_native().height == 3
