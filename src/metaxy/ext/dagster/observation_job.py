@@ -198,11 +198,33 @@ def build_metaxy_multi_observation_job(
     # Build a mapping of asset key -> spec for the dynamic op
     # This ensures each asset gets its own op, even if multiple assets share the same feature
     spec_by_asset_key = {spec.key.to_user_string(): spec for spec in metaxy_specs}
+    all_asset_keys = list(spec_by_asset_key.keys())
 
-    # Op that emits dynamic outputs for each asset
-    @dg.op(name=f"{name}_fanout", out=dg.DynamicOut(str))
-    def fanout_assets() -> Any:
-        for asset_key_str in spec_by_asset_key:
+    # Config class for runtime filtering of assets to observe
+    class _ObserveAssetsConfig(dg.Config):
+        asset_keys: list[str] = all_asset_keys
+
+    # Op that emits dynamic outputs for each asset, optionally filtered by config
+    @dg.op(
+        name="observe_assets",
+        out=dg.DynamicOut(str),
+        config_schema=_ObserveAssetsConfig.to_config_schema(),
+    )
+    def fanout_assets(context: dg.OpExecutionContext) -> Any:
+        config = _ObserveAssetsConfig.model_validate(context.op_config)
+
+        # Validate that requested asset keys exist
+        requested_keys = set(config.asset_keys)
+        available_keys = set(spec_by_asset_key.keys())
+        invalid_keys = requested_keys - available_keys
+        if invalid_keys:
+            raise ValueError(
+                f"Requested asset keys not found in job: {sorted(invalid_keys)}. "
+                f"Available keys: {sorted(available_keys)}"
+            )
+        asset_keys_to_observe = [k for k in spec_by_asset_key if k in requested_keys]
+
+        for asset_key_str in asset_keys_to_observe:
             # Use asset key (with / replaced by __) as mapping key for Dagster identifiers
             safe_mapping_key = asset_key_str.replace("/", "__")
             yield dg.DynamicOutput(asset_key_str, mapping_key=safe_mapping_key)
