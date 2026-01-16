@@ -1,3 +1,8 @@
+---
+title: "Memory Store API"
+description: "API reference for InMemoryMetadataStore."
+---
+
 # In-Memory Metadata Store
 
 This one is mostly useful for testing.

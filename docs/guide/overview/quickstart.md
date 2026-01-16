@@ -1,3 +1,8 @@
+---
+title: "Quickstart Guide"
+description: "Get started with Metaxy."
+---
+
 # Quickstart
 
 ## Installation

@@ -1,3 +1,8 @@
+---
+title: "ClickHouse Metadata Store"
+description: "ClickHouse as a metadata store backend."
+---
+
 # Metaxy + ClickHouse
 
 Metaxy implements [`ClickHouseMetadataStore`][metaxy.metadata_store.clickhouse.ClickHouseMetadataStore]. It uses [ClickHouse](https://clickhouse.com/) as metadata storage and versioning engine.

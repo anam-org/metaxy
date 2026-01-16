@@ -1,3 +1,8 @@
+---
+title: "Examples"
+description: "Example projects demonstrating Metaxy."
+---
+
 # Metaxy Examples
 
 Here you can find complete example Metaxy projects.

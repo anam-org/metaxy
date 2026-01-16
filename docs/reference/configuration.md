@@ -1,3 +1,8 @@
+---
+title: "Configuration Reference"
+description: "Configuration options for Metaxy."
+---
+
 # Configuration
 
 Metaxy can be configured using TOML configuration files, environment variables, or programmatically.

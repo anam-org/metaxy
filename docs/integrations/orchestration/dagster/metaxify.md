@@ -1,3 +1,8 @@
+---
+title: "Dagster @metaxify Decorator"
+description: "The @metaxify decorator for Dagster assets."
+---
+
 # Metaxify
 
 The [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify] decorator can be used to automatically enrich Dagster assets definitions with information taken from Metaxy features.

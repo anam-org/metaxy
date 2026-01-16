@@ -1,3 +1,8 @@
+---
+title: "Definitions API"
+description: "API reference for feature definitions."
+---
+
 # Definitions
 
 Metaxy's dependency specification system allows users to express dependencies between their features and their fields.

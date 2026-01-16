@@ -1,3 +1,8 @@
+---
+title: "Feature Dependencies"
+description: "Defining dependencies between features."
+---
+
 # Feature Dependencies
 
 [**Back to quickstart**](./quickstart.md)

@@ -1,3 +1,8 @@
+---
+title: "Metadata Stores"
+description: "How Metaxy abstracts metadata storage and versioning."
+---
+
 # Metadata Stores
 
 Metaxy abstracts interactions with metadata stored in external systems such as databases, files, or object stores, through a unified interface: [`MetadataStore`][metaxy.MetadataStore].

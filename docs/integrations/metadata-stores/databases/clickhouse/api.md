@@ -1,3 +1,8 @@
+---
+title: "ClickHouse API Reference"
+description: "API reference for ClickHouseMetadataStore."
+---
+
 # ClickHouse Metadata Store API
 
 ::: metaxy.metadata_store.clickhouse

@@ -1,3 +1,8 @@
+---
+title: "Feature API"
+description: "API reference for BaseFeature."
+---
+
 # Feature
 
 `BaseFeature` is the most important class in Metaxy.

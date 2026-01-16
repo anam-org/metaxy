@@ -1,3 +1,8 @@
+---
+title: "Metadata Stores API"
+description: "API reference for the MetadataStore interface."
+---
+
 # Metadata Stores
 
 Metaxy abstracts interactions with metadata behind an interface called [`MetadataStore`][metaxy.metadata_store.base.MetadataStore].

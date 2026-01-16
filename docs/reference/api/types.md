@@ -1,3 +1,8 @@
+---
+title: "Types API"
+description: "Type definitions used in Metaxy."
+---
+
 # Types
 
 ## Versioning Engine

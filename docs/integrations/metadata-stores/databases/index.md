@@ -1,3 +1,8 @@
+---
+title: "Database Metadata Stores"
+description: "Metadata stores backed by databases for scalable external compute and versioning."
+---
+
 # Database-Backed Metadata Stores
 
 These metadata stores provide external compute resources.

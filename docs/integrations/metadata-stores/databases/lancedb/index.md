@@ -1,3 +1,8 @@
+---
+title: "LanceDB Metadata Store"
+description: "LanceDB as a metadata store backend."
+---
+
 # Metaxy + LanceDB
 
 Metaxy implements [`LanceDBMetadataStore`][metaxy.metadata_store.lancedb.LanceDBMetadataStore]. LanceDB keeps one Lance table per feature, writes metadata in append mode, and uses the in-memory Polars versioning engine for provenance calculations. LanceDB handles schema evolution, transactions, and compaction automatically.

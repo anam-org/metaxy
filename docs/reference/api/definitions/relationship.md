@@ -1,3 +1,8 @@
+---
+title: "Relationship API"
+description: "API reference for LineageRelationship types."
+---
+
 # Lineage Relationships
 
 ::: metaxy.models.lineage.LineageRelationship

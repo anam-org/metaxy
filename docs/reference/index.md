@@ -1,3 +1,8 @@
+---
+title: "Reference"
+description: "Technical reference documentation for Metaxy."
+---
+
 # Reference
 
 Technical documentation for Metaxy.

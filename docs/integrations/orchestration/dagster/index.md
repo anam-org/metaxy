@@ -1,3 +1,8 @@
+---
+title: "Dagster Integration"
+description: "Dagster integration for Metaxy."
+---
+
 # Metaxy + Dagster
 
 Metaxy's dependency system has been originally inspired by [Dagster](https://dagster.io/).
