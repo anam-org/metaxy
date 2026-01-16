@@ -62,7 +62,7 @@ plugins:
   - gh-admonitions
   - macros:
       module_name: docs/main
-  # - social
+  - social
 
   # in the futurem, we could move navigation to a separate file
   # - literate-nav:
