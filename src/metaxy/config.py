@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import tomli
 from pydantic import Field as PydanticField
-from pydantic import PrivateAttr, field_validator
+from pydantic import PrivateAttr, field_validator, model_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -30,6 +30,17 @@ T = TypeVar("T")
 
 # Pattern for ${VAR} or ${VAR:-default} syntax
 _ENV_VAR_PATTERN = re.compile(r"\$\{([^}:]+)(?::-([^}]*))?\}")
+
+
+def _collect_dict_keys(d: dict[str, Any], prefix: str = "") -> list[str]:
+    """Recursively collect all keys from a nested dict as dot-separated paths."""
+    keys = []
+    for key, value in d.items():
+        full_key = f"{prefix}.{key}" if prefix else key
+        keys.append(full_key)
+        if isinstance(value, dict):
+            keys.extend(_collect_dict_keys(value, full_key))
+    return keys
 
 
 class InvalidConfigError(Exception):
@@ -279,7 +290,6 @@ class MetaxyConfig(BaseSettings):
         config = MetaxyConfig.load()
         ```
 
-
     Example: Getting a configured metadata store
         ```py
         store = config.get_store("prod")
@@ -292,6 +302,8 @@ class MetaxyConfig(BaseSettings):
         ```
 
     The default store is `"dev"`; `METAXY_STORE` can be used to override it.
+
+    Incomplete store configurations are filtered out if the store type is not set.
     """
 
     model_config = SettingsConfigDict(
@@ -309,6 +321,46 @@ class MetaxyConfig(BaseSettings):
         default_factory=dict,
         description="Named store configurations",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _filter_incomplete_stores(cls, data: Any) -> Any:
+        """Filter out incomplete store configs (e.g. from random environment variables).
+
+        When env vars like METAXY_STORES__PROD__CONFIG__CONNECTION_STRING are set
+        without METAXY_STORES__PROD__TYPE, pydantic-settings creates a partial dict
+        that would fail validation. This validator removes such incomplete entries
+        and emits a warning.
+        """
+        if not isinstance(data, dict) or "stores" not in data:
+            return data
+
+        stores = data["stores"]
+
+        if not isinstance(stores, dict):
+            return data
+
+        complete_stores = {}
+
+        for name, config in stores.items():
+            is_complete = isinstance(config, StoreConfig) or (
+                isinstance(config, dict) and ("type" in config or "type_path" in config)
+            )
+            if is_complete:
+                complete_stores[name] = config
+            else:
+                fields = _collect_dict_keys(config) if isinstance(config, dict) else []
+                fields_hint = f" (has fields: {', '.join(fields)})" if fields else ""
+                warnings.warn(
+                    f"Ignoring incomplete store config '{name}': missing required 'type' field{fields_hint}. "
+                    f"This is typically caused by environment variables.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        data["stores"] = complete_stores
+
+        return data
 
     migrations_dir: str = PydanticField(
         default=".metaxy/migrations",
