@@ -16,56 +16,120 @@ class MermaidRenderer(BaseRenderer):
     Supports both normal and diff rendering via node status.
     """
 
-    def render(self) -> str:
-        """Render graph as Mermaid flowchart.
+    def _create_mermaid_nodes(self, filtered_graph) -> tuple[list, dict]:
+        """Create Mermaid nodes from graph data.
+
+        Args:
+            filtered_graph: Filtered graph data
 
         Returns:
-            Mermaid markup as string
+            Tuple of (nodes list, node_map dict)
         """
-        from mermaid.flowchart import FlowChart, Link, Node
+        from mermaid.flowchart import Node
 
-        # Get filtered graph data
-        filtered_graph = self._get_filtered_graph_data()
-
-        # Create nodes with fields as sub-items in the label
         from metaxy.graph.diff.traversal import GraphWalker
 
         walker = GraphWalker(filtered_graph)
         nodes = []
-        node_map = {}  # feature_key string -> Node
+        node_map = {}
 
         for graph_node in walker.topological_sort():
             node_id = self._node_id_from_key(graph_node.key)
-
-            # Build label with fields inside
             label = self._build_feature_label_with_fields(graph_node)
-
-            # Choose shape based on status
             shape = self._get_node_shape(graph_node)
 
             node = Node(id_=node_id, content=label, shape=shape)
             nodes.append(node)
             node_map[graph_node.key.to_string()] = node
 
-        # Create links for dependencies
+        return nodes, node_map
+
+    def _create_mermaid_links(self, filtered_graph, node_map: dict) -> list:
+        """Create Mermaid links from graph dependencies.
+
+        Args:
+            filtered_graph: Filtered graph data
+            node_map: Map of feature key string to Node
+
+        Returns:
+            List of Link objects
+        """
+        from mermaid.flowchart import Link
+
         links = []
         for graph_node in filtered_graph.nodes.values():
-            if graph_node.dependencies:
-                target_node = node_map.get(graph_node.key.to_string())
-                if target_node:
-                    for dep_key in graph_node.dependencies:
-                        source_node = node_map.get(dep_key.to_string())
-                        if source_node:
-                            links.append(Link(origin=source_node, end=target_node))
+            if not graph_node.dependencies:
+                continue
+            target_node = node_map.get(graph_node.key.to_string())
+            if not target_node:
+                continue
+            for dep_key in graph_node.dependencies:
+                source_node = node_map.get(dep_key.to_string())
+                if source_node:
+                    links.append(Link(origin=source_node, end=target_node))
+        return links
 
-        # Create flowchart with appropriate title
+    def _get_chart_title(self, filtered_graph) -> str:
+        """Get the title for the flowchart.
+
+        Args:
+            filtered_graph: Filtered graph data
+
+        Returns:
+            Chart title string
+        """
         if self.config.title:
-            title = self.config.title
-        elif self._is_diff_mode(filtered_graph):
-            title = "Feature Graph Changes"
-        else:
-            title = "Feature Graph"
+            return self.config.title
+        if self._is_diff_mode(filtered_graph):
+            return "Feature Graph Changes"
+        return "Feature Graph"
 
+    def _insert_flowchart_metadata(self, script: str, filtered_graph) -> str:
+        """Insert metadata comments after the flowchart line.
+
+        Args:
+            script: Mermaid script
+            filtered_graph: Filtered graph data
+
+        Returns:
+            Modified script with metadata inserted
+        """
+        lines = script.split("\n")
+
+        for i, line in enumerate(lines):
+            if line.startswith("flowchart "):
+                insertions = []
+
+                if self.config.show_snapshot_version:
+                    snapshot_hash = self._format_hash(filtered_graph.snapshot_version)
+                    insertions.append(f"    %% Snapshot version: {snapshot_hash}")
+
+                insertions.append(
+                    "    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%"
+                )
+
+                for j, insertion in enumerate(insertions):
+                    lines.insert(i + 1 + j, insertion)
+                break
+
+        return "\n".join(lines)
+
+    def render(self) -> str:
+        """Render graph as Mermaid flowchart.
+
+        Returns:
+            Mermaid markup as string
+        """
+        from mermaid.flowchart import FlowChart
+
+        filtered_graph = self._get_filtered_graph_data()
+
+        # Create nodes and links
+        nodes, node_map = self._create_mermaid_nodes(filtered_graph)
+        links = self._create_mermaid_links(filtered_graph, node_map)
+
+        # Create flowchart
+        title = self._get_chart_title(filtered_graph)
         chart = FlowChart(
             title=title,
             nodes=nodes,
@@ -73,32 +137,8 @@ class MermaidRenderer(BaseRenderer):
             orientation=self.config.direction,
         )
 
-        script = chart.script
-
-        # Modify script to add styling and snapshot version
-        lines = script.split("\n")
-
-        # Find the flowchart line
-        for i, line in enumerate(lines):
-            if line.startswith("flowchart "):
-                insertions = []
-
-                # Add snapshot version comment if needed
-                if self.config.show_snapshot_version:
-                    snapshot_hash = self._format_hash(filtered_graph.snapshot_version)
-                    insertions.append(f"    %% Snapshot version: {snapshot_hash}")
-
-                # Add styling
-                insertions.append(
-                    "    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%"
-                )
-
-                # Insert all additions after the flowchart line
-                for j, insertion in enumerate(insertions):
-                    lines.insert(i + 1 + j, insertion)
-                break
-
-        script = "\n".join(lines)
+        # Insert metadata and styling
+        script = self._insert_flowchart_metadata(chart.script, filtered_graph)
 
         # Add color styling for diff nodes if in diff mode
         if self._is_diff_mode(filtered_graph):

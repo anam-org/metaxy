@@ -25,6 +25,95 @@ from metaxy.metadata_store.exceptions import FeatureNotFoundError
 logger = logging.getLogger(__name__)
 
 
+def _validate_observation_job_args(
+    asset_selection: dg.AssetSelection | None,
+    defs: dg.Definitions | None,
+    assets: Sequence[dg.AssetSpec | dg.AssetsDefinition | dg.SourceAsset] | None,
+) -> None:
+    """Validate argument combinations for build_metaxy_multi_observation_job."""
+    has_selection = asset_selection is not None or defs is not None
+    has_assets = assets is not None
+
+    if has_selection and has_assets:
+        raise ValueError(
+            "Cannot provide both 'assets' and 'asset_selection'/'defs'. "
+            "Use either asset_selection + defs, or assets alone."
+        )
+
+    if not has_selection and not has_assets:
+        raise ValueError("Must provide either 'asset_selection' + 'defs', or 'assets'.")
+
+    if has_selection:
+        if asset_selection is None:
+            raise ValueError("'defs' requires 'asset_selection' to be provided.")
+        if defs is None:
+            raise ValueError("'asset_selection' requires 'defs' to be provided.")
+
+
+def _extract_metaxy_specs_from_selection(
+    asset_selection: dg.AssetSelection,
+    defs: dg.Definitions,
+) -> tuple[list[dg.AssetSpec], list[dg.PartitionsDefinition | None]]:
+    """Extract Metaxy specs from asset selection and definitions."""
+    all_assets_defs = list(defs.resolve_asset_graph().assets_defs)
+    selected_keys = asset_selection.resolve(all_assets_defs)
+
+    metaxy_specs: list[dg.AssetSpec] = []
+    partitions_defs: list[dg.PartitionsDefinition | None] = []
+
+    for asset_def in all_assets_defs:
+        for spec in asset_def.specs:
+            if spec.key in selected_keys:
+                if spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY) is not None:
+                    metaxy_specs.append(spec)
+                    partitions_defs.append(asset_def.partitions_def)
+
+    return metaxy_specs, partitions_defs
+
+
+def _extract_metaxy_specs_from_assets(
+    assets: Sequence[dg.AssetSpec | dg.AssetsDefinition | dg.SourceAsset],
+) -> tuple[list[dg.AssetSpec], list[dg.PartitionsDefinition | None]]:
+    """Extract Metaxy specs from a direct list of assets."""
+    metaxy_specs: list[dg.AssetSpec] = []
+    partitions_defs: list[dg.PartitionsDefinition | None] = []
+
+    for asset in assets:
+        if isinstance(asset, dg.AssetSpec):
+            if asset.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY) is not None:
+                metaxy_specs.append(asset)
+                partitions_defs.append(asset.partitions_def)
+        elif isinstance(asset, dg.AssetsDefinition):
+            for spec in asset.specs:
+                if spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY) is not None:
+                    metaxy_specs.append(spec)
+                    partitions_defs.append(asset.partitions_def)
+        elif isinstance(asset, dg.SourceAsset):
+            # SourceAsset doesn't have metaxy/feature metadata typically
+            pass
+        else:
+            raise TypeError(
+                f"Expected AssetSpec, AssetsDefinition, or SourceAsset, "
+                f"got {type(asset).__name__}"
+            )
+
+    return metaxy_specs, partitions_defs
+
+
+def _validate_partitions_defs(
+    partitions_defs: list[dg.PartitionsDefinition | None],
+) -> dg.PartitionsDefinition | None:
+    """Validate all specs have the same partitions_def and return it."""
+    first_partitions_def = partitions_defs[0]
+    for i, pdef in enumerate(partitions_defs[1:], start=1):
+        if pdef != first_partitions_def:
+            raise ValueError(
+                f"All assets must have the same partitions_def. "
+                f"Asset 0 has {first_partitions_def}, but asset {i} has {pdef}."
+            )
+    return first_partitions_def
+
+
 def build_metaxy_multi_observation_job(
     name: str,
     *,
@@ -109,69 +198,16 @@ def build_metaxy_multi_observation_job(
     """
     tags = tags or {}
 
-    # Validate argument combinations
-    has_selection = asset_selection is not None or defs is not None
-    has_assets = assets is not None
+    _validate_observation_job_args(asset_selection, defs, assets)
 
-    if has_selection and has_assets:
-        raise ValueError(
-            "Cannot provide both 'assets' and 'asset_selection'/'defs'. "
-            "Use either asset_selection + defs, or assets alone."
+    # Extract specs based on argument type
+    if asset_selection is not None and defs is not None:
+        metaxy_specs, partitions_defs = _extract_metaxy_specs_from_selection(
+            asset_selection, defs
         )
-
-    if not has_selection and not has_assets:
-        raise ValueError("Must provide either 'asset_selection' + 'defs', or 'assets'.")
-
-    if has_selection:
-        if asset_selection is None:
-            raise ValueError("'defs' requires 'asset_selection' to be provided.")
-        if defs is None:
-            raise ValueError("'asset_selection' requires 'defs' to be provided.")
-
-        # Resolve selection using defs
-        all_assets_defs = list(defs.resolve_asset_graph().assets_defs)
-        selected_keys = asset_selection.resolve(all_assets_defs)
-
-        # Get specs for selected keys, with partitions_def
-        metaxy_specs: list[dg.AssetSpec] = []
-        partitions_defs: list[dg.PartitionsDefinition | None] = []
-
-        for asset_def in all_assets_defs:
-            for spec in asset_def.specs:
-                if spec.key in selected_keys:
-                    if (
-                        spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
-                        is not None
-                    ):
-                        metaxy_specs.append(spec)
-                        partitions_defs.append(asset_def.partitions_def)
     else:
-        # Direct assets list
         assert assets is not None
-        metaxy_specs = []
-        partitions_defs = []
-
-        for asset in assets:
-            if isinstance(asset, dg.AssetSpec):
-                if asset.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY) is not None:
-                    metaxy_specs.append(asset)
-                    partitions_defs.append(asset.partitions_def)
-            elif isinstance(asset, dg.AssetsDefinition):
-                for spec in asset.specs:
-                    if (
-                        spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
-                        is not None
-                    ):
-                        metaxy_specs.append(spec)
-                        partitions_defs.append(asset.partitions_def)
-            elif isinstance(asset, dg.SourceAsset):
-                # SourceAsset doesn't have metaxy/feature metadata typically
-                pass
-            else:
-                raise TypeError(
-                    f"Expected AssetSpec, AssetsDefinition, or SourceAsset, "
-                    f"got {type(asset).__name__}"
-                )
+        metaxy_specs, partitions_defs = _extract_metaxy_specs_from_assets(assets)
 
     if not metaxy_specs:
         raise ValueError(
@@ -179,15 +215,7 @@ def build_metaxy_multi_observation_job(
             "Ensure your assets have metadata={'metaxy/feature': 'feature/key'}."
         )
 
-    # Validate all specs have the same partitions_def
-    first_partitions_def = partitions_defs[0]
-    for i, pdef in enumerate(partitions_defs[1:], start=1):
-        if pdef != first_partitions_def:
-            raise ValueError(
-                f"All assets must have the same partitions_def. "
-                f"Asset 0 has {first_partitions_def}, but asset {i} has {pdef}."
-            )
-    partitions_def = first_partitions_def
+    partitions_def = _validate_partitions_defs(partitions_defs)
 
     # Build feature keys for description (may have duplicates when multiple assets share a feature)
     feature_keys = [

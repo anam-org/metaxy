@@ -1,12 +1,21 @@
 """Graph management commands for Metaxy CLI."""
 
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 import cyclopts
 from rich.table import Table
 
 from metaxy.cli.console import console, data_console, error_console
 from metaxy.graph import RenderConfig
+
+if TYPE_CHECKING:
+    from metaxy.graph import (
+        CardsRenderer,
+        GraphvizRenderer,
+        MermaidRenderer,
+        TerminalRenderer,
+    )
+    from metaxy.models.feature import FeatureGraph
 
 # Graph subcommand app
 app = cyclopts.App(
@@ -161,6 +170,52 @@ def history(
         console.print(f"\nTotal snapshots: {snapshots_df.height}")
 
 
+def _get_feature_count_for_table(info: dict) -> str:
+    """Get the appropriate feature count to display in the summary table."""
+    if "filtered_features" in info:
+        return str(info["filtered_features"])
+    return str(info["total_features"])
+
+
+def _display_describe_summary(info: dict, project: str | None) -> None:
+    """Display the summary table for graph describe."""
+    table_title = f"Graph Snapshot: {info['metaxy_snapshot_version']}"
+    if project:
+        table_title += f" (Project: {project})"
+
+    summary_table = Table(title=table_title)
+    summary_table.add_column("Metric", style="cyan", no_wrap=False)
+    summary_table.add_column("Value", style="yellow", justify="right", no_wrap=False)
+
+    has_filtering = (
+        "filtered_features" in info
+        and info["filtered_features"] < info["total_features"]
+    )
+    if has_filtering:
+        summary_table.add_row("Total Features", str(info["total_features"]))
+        summary_table.add_row(
+            f"Features in {info['filter_project']}", str(info["filtered_features"])
+        )
+    else:
+        summary_table.add_row("Total Features", _get_feature_count_for_table(info))
+
+    summary_table.add_row("Graph Depth", str(info["graph_depth"]))
+    summary_table.add_row("Root Features", str(len(info["root_features"])))
+    summary_table.add_row("Leaf Features", str(len(info["leaf_features"])))
+    console.print(summary_table)
+
+
+def _display_feature_list(title: str, features: list[str], limit: int = 10) -> None:
+    """Display a list of features with optional truncation."""
+    if not features:
+        return
+    console.print(f"\n[bold]{title}:[/bold]")
+    for feature_key_str in features[:limit]:
+        console.print(f"  • {feature_key_str}")
+    if len(features) > limit:
+        console.print(f"  ... and {len(features) - limit} more")
+
+
 @app.command()
 def describe(
     snapshot: Annotated[
@@ -216,100 +271,217 @@ def describe(
     metadata_store = context.get_store(store)
 
     with metadata_store:
-        # Determine which snapshot to describe
         if snapshot is None:
-            # Use current graph from code
             graph = FeatureGraph.get_active()
-            snapshot_version = graph.snapshot_version
             console.print("[cyan]Describing current graph from code[/cyan]")
         else:
-            # Use specified snapshot
-            snapshot_version = snapshot
-            console.print(f"[cyan]Describing snapshot: {snapshot_version}[/cyan]")
-
-            # Load graph from snapshot
+            console.print(f"[cyan]Describing snapshot: {snapshot}[/cyan]")
             from metaxy.metadata_store.system.storage import SystemTableStorage
 
             storage = SystemTableStorage(metadata_store)
             features_df = storage.read_features(
                 current=False,
-                snapshot_version=snapshot_version,
+                snapshot_version=snapshot,
                 project=context.project,
             )
 
             if features_df.height == 0:
-                console.print(
-                    f"[red]✗[/red] No features found for snapshot {snapshot_version}"
-                )
+                console.print(f"[red]✗[/red] No features found for snapshot {snapshot}")
                 if context.project:
                     console.print(f"  (filtered by project: {context.project})")
                 return
 
-            # For historical snapshots, we'll use the current graph structure
-            # but report on the features that were in that snapshot
             graph = FeatureGraph.get_active()
 
-        # Get graph description with optional project filter
         info = describe_graph(graph, project=context.project)
-
-        # Display summary table
         console.print()
-        table_title = f"Graph Snapshot: {info['metaxy_snapshot_version']}"
-        if context.project:
-            table_title += f" (Project: {context.project})"
+        _display_describe_summary(info, context.project)
 
-        summary_table = Table(title=table_title)
-        summary_table.add_column("Metric", style="cyan", no_wrap=False)
-        summary_table.add_column(
-            "Value", style="yellow", justify="right", no_wrap=False
-        )
-
-        # Only show filtered view if filtering actually reduces the feature count
-        if (
-            "filtered_features" in info
-            and info["filtered_features"] < info["total_features"]
-        ):
-            # Show both total and filtered counts when there's actual filtering
-            summary_table.add_row("Total Features", str(info["total_features"]))
-            summary_table.add_row(
-                f"Features in {info['filter_project']}", str(info["filtered_features"])
-            )
-        else:
-            # Show simple count when no filtering or all features are in the project
-            if "filtered_features" in info:
-                # Use filtered count if available (all features are in the project)
-                summary_table.add_row("Total Features", str(info["filtered_features"]))
-            else:
-                # Use total count
-                summary_table.add_row("Total Features", str(info["total_features"]))
-
-        summary_table.add_row("Graph Depth", str(info["graph_depth"]))
-        summary_table.add_row("Root Features", str(len(info["root_features"])))
-        summary_table.add_row("Leaf Features", str(len(info["leaf_features"])))
-
-        console.print(summary_table)
-
-        # Display project breakdown if multi-project
         if len(info["projects"]) > 1:
             console.print("\n[bold]Features by Project:[/bold]")
             for proj, count in sorted(info["projects"].items()):
                 console.print(f"  • {proj}: {count} features")
 
-        # Display root features
-        if info["root_features"]:
-            console.print("\n[bold]Root Features:[/bold]")
-            for feature_key_str in info["root_features"][:10]:  # Limit to 10
-                console.print(f"  • {feature_key_str}")
-            if len(info["root_features"]) > 10:
-                console.print(f"  ... and {len(info['root_features']) - 10} more")
+        _display_feature_list("Root Features", info["root_features"])
+        _display_feature_list("Leaf Features", info["leaf_features"])
 
-        # Display leaf features
-        if info["leaf_features"]:
-            console.print("\n[bold]Leaf Features:[/bold]")
-            for feature_key_str in info["leaf_features"][:10]:  # Limit to 10
-                console.print(f"  • {feature_key_str}")
-            if len(info["leaf_features"]) > 10:
-                console.print(f"  ... and {len(info['leaf_features']) - 10} more")
+
+def _validate_render_args(
+    format: str, type: str, minimal: bool, verbose: bool, render_config: RenderConfig
+) -> None:
+    """Validate render command arguments."""
+    valid_formats = ["terminal", "mermaid", "graphviz"]
+    if format not in valid_formats:
+        console.print(
+            f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}"
+        )
+        raise SystemExit(1)
+
+    valid_types = ["graph", "cards"]
+    if type not in valid_types:
+        console.print(
+            f"[red]Error:[/red] Invalid type '{type}'. Must be one of: {', '.join(valid_types)}"
+        )
+        raise SystemExit(1)
+
+    if type != "graph" and format != "terminal":
+        console.print(
+            "[red]Error:[/red] --type can only be used with --format terminal"
+        )
+        raise SystemExit(1)
+
+    if minimal and verbose:
+        console.print("[red]Error:[/red] Cannot specify both --minimal and --verbose")
+        raise SystemExit(1)
+
+    if render_config.direction not in ["TB", "LR"]:
+        console.print(
+            f"[red]Error:[/red] Invalid direction '{render_config.direction}'. Must be TB or LR."
+        )
+        raise SystemExit(1)
+
+    if (
+        render_config.up is not None or render_config.down is not None
+    ) and render_config.feature is None:
+        console.print(
+            "[red]Error:[/red] --up and --down require --feature to be specified"
+        )
+        raise SystemExit(1)
+
+
+def _apply_render_preset(
+    render_config: RenderConfig, minimal: bool, verbose: bool
+) -> RenderConfig:
+    """Apply preset configuration while preserving filtering parameters."""
+    if not minimal and not verbose:
+        return render_config
+
+    preset = (
+        RenderConfig.minimal(show_projects=render_config.show_projects)
+        if minimal
+        else RenderConfig.verbose(show_projects=render_config.show_projects)
+    )
+    preset.feature = render_config.feature
+    preset.up = render_config.up
+    preset.down = render_config.down
+    return preset
+
+
+def _load_graph_from_snapshot(snapshot: str, store: str | None) -> "FeatureGraph":
+    """Load a graph from a historical snapshot."""
+    from metaxy.cli.context import AppContext
+    from metaxy.metadata_store.system.storage import SystemTableStorage
+
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+
+    with metadata_store:
+        storage = SystemTableStorage(metadata_store)
+        try:
+            graph = storage.load_graph_from_snapshot(snapshot_version=snapshot)
+        except ValueError as e:
+            from metaxy.cli.utils import print_error
+
+            print_error(console, "Snapshot error", e)
+            raise SystemExit(1)
+        except ImportError as e:
+            from metaxy.cli.utils import print_error
+
+            print_error(console, "Failed to load snapshot", e)
+            console.print(
+                "[yellow]Hint:[/yellow] Feature classes may have been moved or deleted."
+            )
+            raise SystemExit(1) from e
+        except Exception as e:
+            from metaxy.cli.utils import print_error
+
+            print_error(console, "Failed to load snapshot", e)
+            raise SystemExit(1) from e
+
+        console.print(
+            f"[green]✓[/green] Loaded {len(graph.features_by_key)} features from snapshot {snapshot}"
+        )
+        return graph
+
+
+def _create_renderer(
+    format: str, type: str, graph: "FeatureGraph", render_config: RenderConfig
+) -> "TerminalRenderer | CardsRenderer | MermaidRenderer | GraphvizRenderer":
+    """Create the appropriate renderer for the given format and type."""
+    from metaxy.graph import (
+        CardsRenderer,
+        GraphvizRenderer,
+        MermaidRenderer,
+        TerminalRenderer,
+    )
+
+    if format == "terminal":
+        if type == "cards":
+            return CardsRenderer(graph, render_config)
+        return TerminalRenderer(graph, render_config)
+    if format == "mermaid":
+        return MermaidRenderer(graph, render_config)
+    if format == "graphviz":
+        try:
+            return GraphvizRenderer(graph, render_config)
+        except ImportError as e:
+            console.print(f"[red]✗[/red] {e}")
+            raise SystemExit(1)
+    console.print(f"[red]Error:[/red] Unknown format: {format}")
+    raise SystemExit(1)
+
+
+def _get_graph_for_render(
+    snapshot: str | None,
+    store: str | None,
+    render_config: RenderConfig,
+    output: str | None,
+) -> "FeatureGraph | None":
+    """Get the feature graph for rendering, either from code or a snapshot."""
+    from metaxy.models.feature import FeatureGraph
+
+    if snapshot is not None:
+        return _load_graph_from_snapshot(snapshot, store)
+
+    graph = FeatureGraph.get_active()
+
+    if render_config.feature is not None:
+        focus_key = render_config.get_feature_key()
+        if focus_key not in graph.features_by_key:
+            console.print(
+                f"[red]Error:[/red] Feature '{render_config.feature}' not found in graph"
+            )
+            console.print("\nAvailable features:")
+            for key in sorted(
+                graph.features_by_key.keys(), key=lambda k: k.to_string()
+            ):
+                console.print(f"  • {key.to_string()}")
+            raise SystemExit(1)
+
+    if len(graph.features_by_key) == 0:
+        console.print("[yellow]Warning:[/yellow] Graph is empty (no features found)")
+        if output:
+            with open(output, "w") as f:
+                f.write("")
+        return None
+
+    return graph
+
+
+def _output_rendered(rendered: str, output: str | None) -> None:
+    """Output the rendered graph to file or stdout."""
+    if output:
+        try:
+            with open(output, "w") as f:
+                f.write(rendered)
+            console.print(f"[green]✓[/green] Rendered graph saved to: {output}")
+        except Exception as e:
+            from metaxy.cli.utils import print_error
+
+            print_error(console, "Failed to write to file", e)
+            raise SystemExit(1)
+    else:
+        data_console.print(rendered)
 
 
 @app.command()
@@ -352,7 +524,6 @@ def render(
             help="Metadata store to use (for loading historical snapshots)",
         ),
     ] = None,
-    # Preset modes
     minimal: Annotated[
         bool,
         cyclopts.Parameter(
@@ -408,180 +579,27 @@ def render(
         # Render historical snapshot
         $ metaxy graph render --snapshot abc123... --store prod
     """
-    from metaxy.graph import (
-        CardsRenderer,
-        GraphvizRenderer,
-        MermaidRenderer,
-        TerminalRenderer,
-    )
-    from metaxy.models.feature import FeatureGraph
+    from metaxy.cli.context import AppContext
 
-    # Validate format
-    valid_formats = ["terminal", "mermaid", "graphviz"]
-    if format not in valid_formats:
-        console.print(
-            f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}"
-        )
-        raise SystemExit(1)
-
-    # Validate type (only applies to terminal format)
-    valid_types = ["graph", "cards"]
-    if type not in valid_types:
-        console.print(
-            f"[red]Error:[/red] Invalid type '{type}'. Must be one of: {', '.join(valid_types)}"
-        )
-        raise SystemExit(1)
-
-    # Validate type is only used with terminal format
-    if type != "graph" and format != "terminal":
-        console.print(
-            "[red]Error:[/red] --type can only be used with --format terminal"
-        )
-        raise SystemExit(1)
-
-    # Resolve configuration from presets
-    if minimal and verbose:
-        console.print("[red]Error:[/red] Cannot specify both --minimal and --verbose")
-        raise SystemExit(1)
-
-    # If config is None, create a default instance
     if render_config is None:
         render_config = RenderConfig()
 
-    # Apply presets if specified (overrides display settings but preserves filtering)
-    if minimal:
-        preset = RenderConfig.minimal(show_projects=render_config.show_projects)
-        # Preserve filtering parameters from original config
-        preset.feature = render_config.feature
-        preset.up = render_config.up
-        preset.down = render_config.down
-        render_config = preset
-    elif verbose:
-        preset = RenderConfig.verbose(show_projects=render_config.show_projects)
-        # Preserve filtering parameters from original config
-        preset.feature = render_config.feature
-        preset.up = render_config.up
-        preset.down = render_config.down
-        render_config = preset
+    _validate_render_args(format, type, minimal, verbose, render_config)
+    render_config = _apply_render_preset(render_config, minimal, verbose)
 
-    # Validate direction
-    if render_config.direction not in ["TB", "LR"]:
-        console.print(
-            f"[red]Error:[/red] Invalid direction '{render_config.direction}'. Must be TB or LR."
-        )
-        raise SystemExit(1)
-
-    # Validate filtering options
-    if (
-        render_config.up is not None or render_config.down is not None
-    ) and render_config.feature is None:
-        console.print(
-            "[red]Error:[/red] --up and --down require --feature to be specified"
-        )
-        raise SystemExit(1)
-
-    # Auto-disable field versions if fields are disabled
     if not render_config.show_fields and render_config.show_field_versions:
         render_config.show_field_versions = False
 
-    from metaxy.cli.context import AppContext
-
     context = AppContext.get()
-
-    # Apply project filter from context if not specified in config
     if render_config.project is None and context.project is not None:
         render_config.project = context.project
 
-    # Determine which graph to render
-    # Initialize to satisfy type checker - will be assigned in all code paths
-    graph = FeatureGraph.get_active()  # Default initialization
+    graph = _get_graph_for_render(snapshot, store, render_config, output)
+    if graph is None:
+        return
 
-    if snapshot is None:
-        # Use current graph from code
-        graph = FeatureGraph.get_active()
+    renderer = _create_renderer(format, type, graph, render_config)
 
-        # Validate feature exists if specified
-        if render_config.feature is not None:
-            focus_key = render_config.get_feature_key()
-            if focus_key not in graph.features_by_key:
-                console.print(
-                    f"[red]Error:[/red] Feature '{render_config.feature}' not found in graph"
-                )
-                console.print("\nAvailable features:")
-                for key in sorted(
-                    graph.features_by_key.keys(), key=lambda k: k.to_string()
-                ):
-                    console.print(f"  • {key.to_string()}")
-                raise SystemExit(1)
-
-        if len(graph.features_by_key) == 0:
-            console.print(
-                "[yellow]Warning:[/yellow] Graph is empty (no features found)"
-            )
-            if output:
-                # Write empty output to file
-                with open(output, "w") as f:
-                    f.write("")
-            return
-    else:
-        # Load historical snapshot from store
-        metadata_store = context.get_store(store)
-
-        from metaxy.metadata_store.system.storage import SystemTableStorage
-
-        with metadata_store:
-            storage = SystemTableStorage(metadata_store)
-            try:
-                graph = storage.load_graph_from_snapshot(snapshot_version=snapshot)
-            except ValueError as e:
-                from metaxy.cli.utils import print_error
-
-                print_error(console, "Snapshot error", e)
-                raise SystemExit(1)
-            except ImportError as e:
-                from metaxy.cli.utils import print_error
-
-                print_error(console, "Failed to load snapshot", e)
-                console.print(
-                    "[yellow]Hint:[/yellow] Feature classes may have been moved or deleted."
-                )
-                raise SystemExit(1) from e
-            except Exception as e:
-                from metaxy.cli.utils import print_error
-
-                print_error(console, "Failed to load snapshot", e)
-                raise SystemExit(1) from e
-
-            console.print(
-                f"[green]✓[/green] Loaded {len(graph.features_by_key)} features from snapshot {snapshot}"
-            )
-
-    # Instantiate renderer based on format and type
-    # (graph is guaranteed to be assigned by this point - either from get_active() or from_snapshot())
-    assert "graph" in locals(), "graph must be assigned"
-    if format == "terminal":
-        if type == "graph":
-            renderer = TerminalRenderer(graph, render_config)
-        elif type == "cards":
-            renderer = CardsRenderer(graph, render_config)
-        else:
-            # Should not reach here due to validation above
-            console.print(f"[red]Error:[/red] Unknown type: {type}")
-            raise SystemExit(1)
-    elif format == "mermaid":
-        renderer = MermaidRenderer(graph, render_config)
-    elif format == "graphviz":
-        try:
-            renderer = GraphvizRenderer(graph, render_config)
-        except ImportError as e:
-            console.print(f"[red]✗[/red] {e}")
-            raise SystemExit(1)
-    else:
-        # Should not reach here due to validation above
-        console.print(f"[red]Error:[/red] Unknown format: {format}")
-        raise SystemExit(1)
-
-    # Render graph
     try:
         rendered = renderer.render()
     except Exception as e:
@@ -593,18 +611,4 @@ def render(
         traceback.print_exc()
         raise SystemExit(1)
 
-    # Output to stdout or file
-    if output:
-        try:
-            with open(output, "w") as f:
-                f.write(rendered)
-            console.print(f"[green]✓[/green] Rendered graph saved to: {output}")
-        except Exception as e:
-            from metaxy.cli.utils import print_error
-
-            print_error(console, "Failed to write to file", e)
-            raise SystemExit(1)
-    else:
-        # Print to stdout using data_console
-        # Rendered graph output is data that users might pipe/redirect
-        data_console.print(rendered)
+    _output_rendered(rendered, output)

@@ -105,13 +105,6 @@ class DataVersionReconciliation(BaseOperation):
     This operation applies to affected features specified in the migration configuration.
     Feature keys are provided in the migration YAML operations list.
 
-    This operation:
-    1. For each affected feature, derives old/new feature_versions from snapshots
-    2. Finds rows with old feature_version
-    3. Recalculates field_provenance based on new feature definition
-    4. Writes new rows with updated feature_version and provenance_by_field
-    5. Preserves all user metadata columns (immutable)
-
     Use ONLY when code changed but computation results would be identical:
     - Dependency graph refactoring (more precise field dependencies)
     - Field structure changes (renaming, splitting, better schema)
@@ -121,8 +114,6 @@ class DataVersionReconciliation(BaseOperation):
     - Different algorithm/model → re-run pipeline instead
     - Bug fixes that affect output → re-run pipeline instead
     - New model version → re-run pipeline instead
-
-    Feature versions are automatically derived from the migration's snapshot versions.
 
     Example YAML:
         operations:
@@ -139,44 +130,14 @@ class DataVersionReconciliation(BaseOperation):
         from_snapshot_version: str | None = None,
         dry_run: bool = False,
     ) -> int:
-        """Execute field provenance reconciliation for a single feature.
-
-        Only works for features with upstream dependencies. For root features
-        (no upstream), field_provenance are user-defined and cannot be automatically
-        reconciled - user must re-run their computation pipeline.
-
-        Process:
-        1. Verify feature has upstream dependencies
-        2. Query old and new feature_versions from snapshot metadata
-        3. Load existing metadata with old feature_version
-        4. Use resolve_update() to calculate expected field_provenance based on current upstream
-        5. Join existing user metadata with new field_provenance
-        6. Write with new feature_version and snapshot_version
-
-        Args:
-            store: Metadata store
-            feature_key: Feature key string (e.g., "examples/child")
-            snapshot_version: Target snapshot version (new state)
-            from_snapshot_version: Source snapshot version (old state, required for this operation)
-            dry_run: If True, return row count without executing
-
-        Returns:
-            Number of rows affected
-
-        Raises:
-            ValueError: If feature has no upstream dependencies (root feature) or from_snapshot_version not provided
-        """
+        """Execute field provenance reconciliation for a single feature."""
         if from_snapshot_version is None:
             raise ValueError(
                 f"DataVersionReconciliation requires from_snapshot_version for feature {feature_key}"
             )
 
-        to_snapshot_version = snapshot_version
         import narwhals as nw
 
-        from metaxy.metadata_store.base import allow_feature_version_override
-        from metaxy.metadata_store.exceptions import FeatureNotFoundError
-        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
         from metaxy.models.feature import FeatureGraph
         from metaxy.models.types import FeatureKey
 
@@ -185,79 +146,107 @@ class DataVersionReconciliation(BaseOperation):
         graph = FeatureGraph.get_active()
         feature_cls = graph.features_by_key[feature_key_obj]
 
-        # 1. Verify feature has upstream dependencies
+        self._verify_has_upstream(graph, feature_key_obj, feature_key_str)
+
+        from_feature_version, to_feature_version = self._get_feature_versions(
+            store, feature_key_str, from_snapshot_version, snapshot_version
+        )
+
+        existing_metadata_df = self._load_existing_metadata(
+            store, feature_cls, from_feature_version
+        )
+        if existing_metadata_df is None or existing_metadata_df.shape[0] == 0:
+            return 0
+
+        if dry_run:
+            return existing_metadata_df.shape[0]
+
+        df_to_write = self._compute_new_provenance(
+            store, feature_cls, existing_metadata_df
+        )
+        if df_to_write is None:
+            return 0
+
+        df_to_write_nw = nw.from_native(df_to_write)
+        df_to_write_nw = df_to_write_nw.with_columns(
+            nw.lit(to_feature_version).alias("metaxy_feature_version"),
+            nw.lit(snapshot_version).alias("metaxy_snapshot_version"),
+        )
+
+        self._write_metadata(store, feature_cls, df_to_write_nw)
+        return len(df_to_write)
+
+    def _verify_has_upstream(self, graph, feature_key_obj, feature_key_str) -> None:
+        """Verify feature has upstream dependencies."""
         plan = graph.get_feature_plan(feature_key_obj)
         has_upstream = plan.deps is not None and len(plan.deps) > 0
-
         if not has_upstream:
             raise ValueError(
                 f"DataVersionReconciliation cannot be used for root feature {feature_key_str}. "
-                f"Root features have user-defined field_provenance that cannot be automatically reconciled. "
-                f"User must re-run their computation pipeline to generate new data."
+                f"Root features have user-defined field_provenance that cannot be automatically reconciled."
             )
 
-        # 2. Query feature versions from snapshot metadata
-        try:
-            from_version_data = store.read_metadata(
-                FEATURE_VERSIONS_KEY,
-                current_only=False,
-                allow_fallback=False,
-                filters=[
-                    (nw.col("metaxy_snapshot_version") == from_snapshot_version)
-                    & (nw.col("feature_key") == feature_key_str)
-                ],
-            )
-        except FeatureNotFoundError:
-            from_version_data = None
+    def _get_feature_versions(
+        self,
+        store: "MetadataStore",
+        feature_key_str: str,
+        from_snapshot_version: str,
+        to_snapshot_version: str,
+    ) -> tuple[str, str]:
+        """Query feature versions from snapshot metadata."""
+        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
-        try:
-            to_version_data = store.read_metadata(
-                FEATURE_VERSIONS_KEY,
-                current_only=False,
-                allow_fallback=False,
-                filters=[
-                    (nw.col("metaxy_snapshot_version") == to_snapshot_version)
-                    & (nw.col("feature_key") == feature_key_str)
-                ],
-            )
-        except FeatureNotFoundError:
-            to_version_data = None
+        from_feature_version = self._query_single_feature_version(
+            store, FEATURE_VERSIONS_KEY, feature_key_str, from_snapshot_version
+        )
+        to_feature_version = self._query_single_feature_version(
+            store, FEATURE_VERSIONS_KEY, feature_key_str, to_snapshot_version
+        )
 
-        # Extract feature versions from lazy frames
-        # Since we filter by snapshot_version and feature_key, there should be exactly one row
-        # We don't care about feature_spec_version changes, so just get the first row without sorting
-        from_feature_version: str | None = None
-        to_feature_version: str | None = None
-
-        if from_version_data is not None:
-            # Use .head(1) to limit at query level - no need to sort since we don't care about feature_spec_version
-            from_version_df = from_version_data.head(1).collect()
-            if from_version_df.shape[0] > 0:
-                from_feature_version = str(from_version_df["metaxy_feature_version"][0])
-            else:
-                from_version_data = None
-
-        if to_version_data is not None:
-            # Use .head(1) to limit at query level - no need to sort since we don't care about feature_spec_version
-            to_version_df = to_version_data.head(1).collect()
-            if to_version_df.shape[0] > 0:
-                to_feature_version = str(to_version_df["metaxy_feature_version"][0])
-            else:
-                to_version_data = None
-
-        if from_version_data is None:
+        if from_feature_version is None:
             raise ValueError(
                 f"Feature {feature_key_str} not found in from_snapshot {from_snapshot_version}"
             )
-        if to_version_data is None:
+        if to_feature_version is None:
             raise ValueError(
                 f"Feature {feature_key_str} not found in to_snapshot {to_snapshot_version}"
             )
 
-        assert from_feature_version is not None
-        assert to_feature_version is not None
+        return from_feature_version, to_feature_version
 
-        # 3. Load existing metadata with old feature_version
+    def _query_single_feature_version(
+        self, store: "MetadataStore", key, feature_key_str: str, snapshot_version: str
+    ) -> str | None:
+        """Query a single feature version from snapshot metadata."""
+        import narwhals as nw
+
+        from metaxy.metadata_store.exceptions import FeatureNotFoundError
+
+        try:
+            version_data = store.read_metadata(
+                key,
+                current_only=False,
+                allow_fallback=False,
+                filters=[
+                    (nw.col("metaxy_snapshot_version") == snapshot_version)
+                    & (nw.col("feature_key") == feature_key_str)
+                ],
+            )
+            version_df = version_data.head(1).collect()
+            if version_df.shape[0] > 0:
+                return str(version_df["metaxy_feature_version"][0])
+        except FeatureNotFoundError:
+            pass
+        return None
+
+    def _load_existing_metadata(
+        self, store: "MetadataStore", feature_cls, from_feature_version: str
+    ):
+        """Load existing metadata with old feature_version."""
+        import narwhals as nw
+
+        from metaxy.metadata_store.exceptions import FeatureNotFoundError
+
         try:
             existing_metadata = store.read_metadata(
                 feature_cls,
@@ -265,20 +254,16 @@ class DataVersionReconciliation(BaseOperation):
                 filters=[nw.col("metaxy_feature_version") == from_feature_version],
                 allow_fallback=False,
             )
+            return existing_metadata.collect()
         except FeatureNotFoundError:
-            # Feature doesn't exist yet - nothing to migrate
-            return 0
+            return None
 
-        # Collect to check existence and get row count
-        existing_metadata_df = existing_metadata.collect()
-        if existing_metadata_df.shape[0] == 0:
-            # Already migrated (idempotent)
-            return 0
+    def _compute_new_provenance(
+        self, store: "MetadataStore", feature_cls, existing_metadata_df
+    ):
+        """Compute new provenance using resolve_update."""
+        import narwhals as nw
 
-        if dry_run:
-            return existing_metadata_df.shape[0]
-
-        # 4. Get sample metadata (exclude system columns)
         user_columns = [
             c
             for c in existing_metadata_df.columns
@@ -290,43 +275,29 @@ class DataVersionReconciliation(BaseOperation):
             ]
         ]
         sample_metadata = existing_metadata_df.select(user_columns)
-
-        # 5. Use resolve_update to calculate field_provenance based on current upstream
-        # Don't pass samples - let resolve_update auto-load upstream and calculate provenance_by_field
         diff_result = store.resolve_update(feature_cls)
 
-        # Convert to Polars for the join to avoid cross-backend issues
         sample_metadata_pl = nw.from_native(sample_metadata.to_native()).to_polars()
 
-        # Use 'changed' for reconciliation (field_provenance changed due to upstream)
-        # Use 'added' for new feature materialization
-        # Convert results to Polars for consistent joining
         if len(diff_result.changed) > 0:
             changed_pl = nw.from_native(diff_result.changed.to_native()).to_polars()
             new_provenance = changed_pl.select(
                 ["sample_uid", "metaxy_provenance_by_field"]
             )
-            df_to_write = sample_metadata_pl.join(
-                new_provenance, on="sample_uid", how="inner"
-            )
+            return sample_metadata_pl.join(new_provenance, on="sample_uid", how="inner")
         elif len(diff_result.added) > 0:
-            df_to_write = nw.from_native(diff_result.added.to_native()).to_polars()
-        else:
-            return 0
+            return nw.from_native(diff_result.added.to_native()).to_polars()
+        return None
 
-        # 6. Write with new feature_version and snapshot_version
-        # Wrap in Narwhals for write_metadata
-        df_to_write_nw = nw.from_native(df_to_write)
-        df_to_write_nw = df_to_write_nw.with_columns(
-            nw.lit(to_feature_version).alias("metaxy_feature_version"),
-            nw.lit(to_snapshot_version).alias("metaxy_snapshot_version"),
-        )
+    def _write_metadata(
+        self, store: "MetadataStore", feature_cls, df_to_write_nw
+    ) -> None:
+        """Write metadata with version override."""
+        from metaxy.metadata_store.base import allow_feature_version_override
 
         with allow_feature_version_override():
             with store.allow_cross_project_writes():
                 store.write_metadata(feature_cls, df_to_write_nw)
-
-        return len(df_to_write)
 
 
 class MetadataBackfill(BaseOperation, ABC):

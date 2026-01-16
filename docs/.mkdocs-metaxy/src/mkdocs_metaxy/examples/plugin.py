@@ -87,6 +87,59 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         return config
 
+    def _dedent_content(self, content: str) -> str:
+        """Dedent directive content while preserving relative indentation."""
+        lines = content.split("\n")
+        non_empty = [line for line in lines if line.strip()]
+        if not non_empty:
+            return content
+        min_indent = min(len(line) - len(line.lstrip()) for line in non_empty)
+        return "\n".join(
+            line[min_indent:] if len(line) >= min_indent else line for line in lines
+        ).strip()
+
+    def _dispatch_directive(
+        self, directive_type: str, example_name: str, params: dict[str, Any]
+    ) -> str:
+        """Dispatch a directive to its handler.
+
+        Args:
+            directive_type: Type of directive.
+            example_name: Name of the example.
+            params: Directive parameters.
+
+        Returns:
+            Rendered markdown string.
+
+        Raises:
+            ValueError: If directive type is unknown.
+        """
+        assert self.loader is not None
+        assert self.renderer is not None
+
+        if directive_type == "scenarios":
+            scenarios = self.loader.get_scenarios(example_name)
+            return self.renderer.render_scenarios(scenarios, example_name)
+        if directive_type in ("source-link", "github"):
+            button_style = params.get("button", True)
+            text = params.get("text", None)
+            return self.renderer.render_source_link(
+                example_name, button_style=button_style, text=text
+            )
+        if directive_type == "file":
+            return self._render_file(example_name, params)
+        if directive_type == "patch":
+            return self._render_patch(example_name, params)
+        if directive_type == "patch-with-diff":
+            return self._render_patch_with_diff(example_name, params)
+        if directive_type == "output":
+            return self._render_output(example_name, params)
+        if directive_type == "graph":
+            return self._render_graph(example_name, params)
+        if directive_type == "graph-diff":
+            return self._render_graph_diff(example_name, params)
+        raise ValueError(f"Unknown directive type: {directive_type}")
+
     def on_page_markdown(self, markdown: str, **kwargs: Any) -> str:
         """Process markdown before it's converted to HTML.
 
@@ -100,64 +153,21 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         if self.loader is None or self.renderer is None or self.generated_dir is None:
             return markdown
 
-        # Pattern to match directive blocks (allow hyphens in directive type)
         directive_pattern = re.compile(
             r"^:::\s+metaxy-example\s+([\w-]+)\s*\n(.*?)\n:::\s*$",
             re.MULTILINE | re.DOTALL,
         )
 
         def replace_directive(match: re.Match[str]) -> str:
-            # These are guaranteed to be non-None due to the check above
-            assert self.loader is not None
-            assert self.renderer is not None
-
             directive_type = match.group(1)
-            directive_content = match.group(2)
-
-            # Parse YAML content
-            # Dedent the content - must NOT strip before splitting to preserve
-            # relative indentation
-            lines = directive_content.split("\n")
-            non_empty = [line for line in lines if line.strip()]
-            if non_empty:
-                min_indent = min(len(line) - len(line.lstrip()) for line in non_empty)
-                directive_content = "\n".join(
-                    line[min_indent:] if len(line) >= min_indent else line
-                    for line in lines
-                ).strip()
-
+            directive_content = self._dedent_content(match.group(2))
             params = yaml.safe_load(directive_content) or {}
             example_name = params.get("example")
             if not example_name:
                 raise ValueError(
                     f"Missing required 'example' parameter in {directive_type} directive"
                 )
-
-            # Process based on directive type
-            if directive_type == "scenarios":
-                scenarios = self.loader.get_scenarios(example_name)
-                return self.renderer.render_scenarios(scenarios, example_name)
-            elif directive_type == "source-link" or directive_type == "github":
-                # Render GitHub source link
-                button_style = params.get("button", True)
-                text = params.get("text", None)
-                return self.renderer.render_source_link(
-                    example_name, button_style=button_style, text=text
-                )
-            elif directive_type == "file":
-                return self._render_file(example_name, params)
-            elif directive_type == "patch":
-                return self._render_patch(example_name, params)
-            elif directive_type == "patch-with-diff":
-                return self._render_patch_with_diff(example_name, params)
-            elif directive_type == "output":
-                return self._render_output(example_name, params)
-            elif directive_type == "graph":
-                return self._render_graph(example_name, params)
-            elif directive_type == "graph-diff":
-                return self._render_graph_diff(example_name, params)
-            else:
-                raise ValueError(f"Unknown directive type: {directive_type}")
+            return self._dispatch_directive(directive_type, example_name, params)
 
         return directive_pattern.sub(replace_directive, markdown)
 

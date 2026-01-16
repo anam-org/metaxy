@@ -90,6 +90,45 @@ class DiffFormatter:
                 f"Unknown format: {format}. Must be one of: terminal, json, yaml, mermaid"
             )
 
+    def _format_field_change_line(self, field_change: FieldChange) -> str:
+        """Format a single field change line with appropriate color and version info.
+
+        Args:
+            field_change: The field change to format
+
+        Returns:
+            Formatted line string with Rich markup
+        """
+        field_key_str = utils.format_field_key(field_change.field_key)
+
+        if field_change.is_added:
+            new_ver = (
+                utils.format_hash(field_change.new_version)
+                if field_change.new_version
+                else "none"
+            )
+            return f"      [green]+[/green] {field_key_str} ({new_ver}...)"
+        elif field_change.is_removed:
+            old_ver = (
+                utils.format_hash(field_change.old_version)
+                if field_change.old_version
+                else "none"
+            )
+            return f"      [red]-[/red] {field_key_str} ({old_ver}...)"
+        else:
+            # Changed
+            old_ver = (
+                utils.format_hash(field_change.old_version)
+                if field_change.old_version
+                else "none"
+            )
+            new_ver = (
+                utils.format_hash(field_change.new_version)
+                if field_change.new_version
+                else "none"
+            )
+            return f"      [yellow]~[/yellow] {field_key_str} ({old_ver}... → {new_ver}...)"
+
     def format_terminal_diff_only(self, diff: GraphDiff, verbose: bool = False) -> str:
         """Format a GraphDiff as a human-readable string with colored markup.
 
@@ -160,41 +199,7 @@ class DiffFormatter:
                 if all_field_changes:
                     lines.append("    fields:")
                     for field_change in all_field_changes:
-                        field_key_str = utils.format_field_key(field_change.field_key)
-
-                        if field_change.is_added:
-                            new_ver = (
-                                utils.format_hash(field_change.new_version)
-                                if field_change.new_version
-                                else "none"
-                            )
-                            lines.append(
-                                f"      [green]+[/green] {field_key_str} ({new_ver}...)"
-                            )
-                        elif field_change.is_removed:
-                            old_ver = (
-                                utils.format_hash(field_change.old_version)
-                                if field_change.old_version
-                                else "none"
-                            )
-                            lines.append(
-                                f"      [red]-[/red] {field_key_str} ({old_ver}...)"
-                            )
-                        elif field_change.is_changed:
-                            old_ver = (
-                                utils.format_hash(field_change.old_version)
-                                if field_change.old_version
-                                else "none"
-                            )
-                            new_ver = (
-                                utils.format_hash(field_change.new_version)
-                                if field_change.new_version
-                                else "none"
-                            )
-                            lines.append(
-                                f"      [yellow]~[/yellow] {field_key_str} "
-                                f"({old_ver}... → {new_ver}...)"
-                            )
+                        lines.append(self._format_field_change_line(field_change))
             lines.append("")
 
         # Summary
@@ -390,6 +395,147 @@ class DiffFormatter:
 
     # Merged graph format methods
 
+    def _get_status_symbol_and_text(self, status: str) -> tuple[str, str]:
+        """Get the symbol and text for a given status.
+
+        Args:
+            status: The node status (added, removed, changed, unchanged)
+
+        Returns:
+            Tuple of (symbol, status_text) with Rich markup
+        """
+        status_map = {
+            "added": ("[green]+[/green]", "[green](added)[/green]"),
+            "removed": ("[red]-[/red]", "[red](removed)[/red]"),
+            "changed": ("[yellow]~[/yellow]", "[yellow](changed)[/yellow]"),
+        }
+        return status_map.get(status, (" ", ""))
+
+    def _format_version_line(
+        self, status: str, old_version: str | None, new_version: str | None
+    ) -> str:
+        """Format the version line based on status.
+
+        Args:
+            status: The node status
+            old_version: The old version hash
+            new_version: The new version hash
+
+        Returns:
+            Formatted version line
+        """
+        if status == "added":
+            ver = utils.format_hash(new_version) if new_version else "none"
+            return f"  version: {ver}..."
+        elif status == "removed":
+            ver = utils.format_hash(old_version) if old_version else "none"
+            return f"  version: {ver}..."
+        elif status == "changed":
+            old_ver_str = utils.format_hash(old_version) if old_version else "none"
+            new_ver_str = utils.format_hash(new_version) if new_version else "none"
+            return f"  version: {old_ver_str}... → {new_ver_str}..."
+        else:
+            # Unchanged
+            ver = utils.format_hash(new_version) if new_version else "none"
+            return f"  version: {ver}..."
+
+    def _format_merged_field_line(
+        self,
+        field_key_str: str,
+        field_change: FieldChange | None,
+        field_version: str | None,
+    ) -> str:
+        """Format a single field line for merged output.
+
+        Args:
+            field_key_str: The field key string
+            field_change: The field change if any, None for unchanged fields
+            field_version: The field version for unchanged fields
+
+        Returns:
+            Formatted field line with Rich markup
+        """
+        if field_change is None:
+            # Unchanged field
+            ver = utils.format_hash(field_version) if field_version else "none"
+            return f"      {field_key_str} ({ver}...)"
+
+        if field_change.is_added:
+            new_ver = (
+                utils.format_hash(field_change.new_version)
+                if field_change.new_version
+                else "none"
+            )
+            return f"    [green]+[/green] {field_key_str} ({new_ver}...)"
+        elif field_change.is_removed:
+            old_ver = (
+                utils.format_hash(field_change.old_version)
+                if field_change.old_version
+                else "none"
+            )
+            return f"    [red]-[/red] {field_key_str} ({old_ver}...)"
+        else:
+            # Changed
+            old_ver = (
+                utils.format_hash(field_change.old_version)
+                if field_change.old_version
+                else "none"
+            )
+            new_ver = (
+                utils.format_hash(field_change.new_version)
+                if field_change.new_version
+                else "none"
+            )
+            return (
+                f"    [yellow]~[/yellow] {field_key_str} "
+                f"([red]{old_ver}[/red]... → [green]{new_ver}[/green]...)"
+            )
+
+    def _format_merged_node_fields(
+        self,
+        fields: dict[str, str | None],
+        field_changes: list[FieldChange],
+        show_all_fields: bool,
+    ) -> list[str]:
+        """Format the fields section for a merged node.
+
+        Args:
+            fields: Dictionary of field key to version
+            field_changes: List of field changes
+            show_all_fields: Whether to show all fields or only changed ones
+
+        Returns:
+            List of formatted field lines
+        """
+        lines: list[str] = []
+        lines.append("  fields:")
+
+        # Build a map of field changes for quick lookup
+        field_change_map = {
+            fc.field_key.to_string(): fc
+            for fc in field_changes
+            if isinstance(fc, FieldChange)
+        }
+
+        # Collect field keys based on show_all_fields setting
+        if show_all_fields:
+            all_field_keys = set(fields.keys())
+            all_field_keys.update(field_change_map.keys())
+        else:
+            all_field_keys = set(field_change_map.keys())
+
+        # Show fields
+        for field_key_str in sorted(all_field_keys):
+            field_change = field_change_map.get(field_key_str)
+            field_version = fields.get(field_key_str)
+            lines.append(
+                self._format_merged_field_line(
+                    field_key_str, field_change, field_version
+                )
+            )
+
+        return lines
+
     def format_terminal_merged(
         self,
         merged_data: dict[str, Any],
@@ -411,128 +557,43 @@ class DiffFormatter:
         if not nodes:
             return "[yellow]Empty graph (no features)[/yellow]"
 
-        lines = []
+        lines: list[str] = []
         lines.append("[bold]Feature Graph (merged view):[/bold]")
         lines.append("")
 
-        # Build dependency graph for hierarchical display
-        # We'll sort features by status priority: unchanged, changed, added, removed
+        # Sort features by status priority: unchanged, changed, added, removed
         status_order = {"unchanged": 0, "changed": 1, "added": 2, "removed": 3}
-
         sorted_features = sorted(
             nodes.items(), key=lambda x: (status_order[x[1]["status"]], x[0])
         )
 
         for feature_key_str, node_data in sorted_features:
             status = node_data["status"]
-            old_version = node_data["old_version"]
-            new_version = node_data["new_version"]
-            field_changes = node_data["field_changes"]
-            dependencies = node_data["dependencies"]
-
-            # Status symbols and colors
-            if status == "added":
-                symbol = "[green]+[/green]"
-                status_text = "[green](added)[/green]"
-            elif status == "removed":
-                symbol = "[red]-[/red]"
-                status_text = "[red](removed)[/red]"
-            elif status == "changed":
-                symbol = "[yellow]~[/yellow]"
-                status_text = "[yellow](changed)[/yellow]"
-            else:
-                symbol = " "
-                status_text = ""
+            symbol, status_text = self._get_status_symbol_and_text(status)
 
             # Feature line
             lines.append(f"{symbol} [bold]{feature_key_str}[/bold] {status_text}")
 
             # Version information
-            if status == "added":
-                lines.append(f"  version: {utils.format_hash(new_version)}...")
-            elif status == "removed":
-                lines.append(f"  version: {utils.format_hash(old_version)}...")
-            elif status == "changed":
-                old_ver_str = utils.format_hash(old_version) if old_version else "none"
-                new_ver_str = utils.format_hash(new_version) if new_version else "none"
-                lines.append(f"  version: {old_ver_str}... → {new_ver_str}...")
-            else:
-                # Unchanged
-                lines.append(f"  version: {utils.format_hash(new_version)}...")
+            lines.append(
+                self._format_version_line(
+                    status, node_data["old_version"], node_data["new_version"]
+                )
+            )
 
             # Dependencies
+            dependencies = node_data["dependencies"]
             if dependencies:
                 lines.append(f"  depends on: {', '.join(dependencies)}")
 
-            # Fields (show fields for all features by default)
+            # Fields
             fields = node_data["fields"]
             if fields:
-                lines.append("  fields:")
-
-                # Build a map of field changes for quick lookup
-                field_change_map = {
-                    fc.field_key.to_string(): fc
-                    for fc in field_changes
-                    if isinstance(fc, FieldChange)
-                }
-
-                # Collect field keys based on show_all_fields setting
-                if show_all_fields:
-                    # Show all fields (from both fields dict and field_changes for removed fields)
-                    all_field_keys = set(fields.keys())
-                    all_field_keys.update(field_change_map.keys())
-                else:
-                    # Show only changed fields
-                    all_field_keys = set(field_change_map.keys())
-
-                # Show fields
-                for field_key_str_inner in sorted(all_field_keys):
-                    if field_key_str_inner in field_change_map:
-                        # This field has a change
-                        field_change = field_change_map[field_key_str_inner]
-
-                        if field_change.is_added:
-                            new_ver = (
-                                utils.format_hash(field_change.new_version)
-                                if field_change.new_version
-                                else "none"
-                            )
-                            lines.append(
-                                f"    [green]+[/green] {field_key_str_inner} ({new_ver}...)"
-                            )
-                        elif field_change.is_removed:
-                            old_ver = (
-                                utils.format_hash(field_change.old_version)
-                                if field_change.old_version
-                                else "none"
-                            )
-                            lines.append(
-                                f"    [red]-[/red] {field_key_str_inner} ({old_ver}...)"
-                            )
-                        elif field_change.is_changed:
-                            old_ver = (
-                                utils.format_hash(field_change.old_version)
-                                if field_change.old_version
-                                else "none"
-                            )
-                            new_ver = (
-                                utils.format_hash(field_change.new_version)
-                                if field_change.new_version
-                                else "none"
-                            )
-                            lines.append(
-                                f"    [yellow]~[/yellow] {field_key_str_inner} "
-                                f"([red]{old_ver}[/red]... → [green]{new_ver}[/green]...)"
-                            )
-                    else:
-                        # Unchanged field - no color, but show with proper spacing
-                        field_version = fields[field_key_str_inner]
-                        ver = (
-                            utils.format_hash(field_version)
-                            if field_version
-                            else "none"
-                        )
-                        lines.append(f"      {field_key_str_inner} ({ver}...)")
+                lines.extend(
+                    self._format_merged_node_fields(
+                        fields, node_data["field_changes"], show_all_fields
+                    )
+                )
 
             lines.append("")
 
@@ -627,6 +688,156 @@ class DiffFormatter:
             allow_unicode=True,
         )
 
+    def _format_mermaid_version_part(
+        self, status: str, old_version: str | None, new_version: str | None
+    ) -> str:
+        """Format version part for Mermaid node label.
+
+        Args:
+            status: The node status
+            old_version: The old version hash
+            new_version: The new version hash
+
+        Returns:
+            Formatted version string for Mermaid label
+        """
+        if status == "changed":
+            old_ver = (
+                utils.format_hash(old_version, length=6) if old_version else "none"
+            )
+            new_ver = (
+                utils.format_hash(new_version, length=6) if new_version else "none"
+            )
+            return (
+                f'<font color="#CC0000">{old_ver}</font> → '
+                f'<font color="#00AA00">{new_ver}</font>'
+            )
+        elif status == "removed":
+            ver = utils.format_hash(old_version, length=6) if old_version else "none"
+            return ver
+        else:
+            # Added or unchanged
+            ver = utils.format_hash(new_version, length=6) if new_version else "none"
+            return ver
+
+    def _format_mermaid_field_label(
+        self,
+        field_key_str: str,
+        field_change: FieldChange | None,
+        field_version: str | None,
+    ) -> str | None:
+        """Format a single field for Mermaid node label.
+
+        Args:
+            field_key_str: The field key string
+            field_change: The field change if any
+            field_version: The field version for unchanged fields
+
+        Returns:
+            Formatted field label string, or None if field should be skipped
+        """
+        if field_change is None:
+            # Unchanged field
+            if field_version:
+                ver = utils.format_hash(field_version, length=6)
+                return f"- {field_key_str} ({ver})"
+            return None
+
+        if field_change.is_added:
+            new_ver = (
+                utils.format_hash(field_change.new_version, length=6)
+                if field_change.new_version
+                else "none"
+            )
+            return f'<font color="#00AA00">- {field_key_str} ({new_ver})</font>'
+        elif field_change.is_removed:
+            old_ver = (
+                utils.format_hash(field_change.old_version, length=6)
+                if field_change.old_version
+                else "none"
+            )
+            return f'<font color="#CC0000">- {field_key_str} ({old_ver})</font>'
+        else:
+            # Changed
+            old_ver = (
+                utils.format_hash(field_change.old_version, length=6)
+                if field_change.old_version
+                else "none"
+            )
+            new_ver = (
+                utils.format_hash(field_change.new_version, length=6)
+                if field_change.new_version
+                else "none"
+            )
+            return (
+                f'- <font color="#FFAA00">{field_key_str}</font> '
+                f'(<font color="#CC0000">{old_ver}</font> → '
+                f'<font color="#00AA00">{new_ver}</font>)'
+            )
+
+    def _get_mermaid_node_style(self, status: str, node_id: str) -> str | None:
+        """Get Mermaid style line for a node based on status.
+
+        Args:
+            status: The node status
+            node_id: The node ID
+
+        Returns:
+            Style line string, or None for unchanged nodes
+        """
+        style_map = {
+            "added": f"    style {node_id} stroke:#00FF00,stroke-width:2px",
+            "removed": f"    style {node_id} stroke:#FF0000,stroke-width:2px",
+            "changed": f"    style {node_id} stroke:#FFAA00,stroke-width:2px",
+        }
+        return style_map.get(status)
+
+    def _build_mermaid_field_labels(
+        self,
+        fields: dict[str, str | None],
+        field_changes: list[FieldChange],
+        status: str,
+        show_all_fields: bool,
+    ) -> list[str]:
+        """Build field label parts for Mermaid node.
+
+        Args:
+            fields: Dictionary of field key to version
+            field_changes: List of field changes
+            status: The node status
+            show_all_fields: Whether to show all fields or only changed ones
+
+        Returns:
+            List of field label strings
+        """
+        # Build field change map
+        field_change_map = {
+            fc.field_key.to_string(): fc
+            for fc in field_changes
+            if isinstance(fc, FieldChange)
+        }
+
+        # Collect field keys based on show_all_fields setting
+        if show_all_fields:
+            all_field_keys = set(fields.keys())
+            all_field_keys.update(field_change_map.keys())
+        elif status == "changed" and field_change_map:
+            all_field_keys = set(field_change_map.keys())
+        else:
+            all_field_keys = set()
+
+        label_parts: list[str] = []
+        for field_key_str in sorted(all_field_keys):
+            field_change = field_change_map.get(field_key_str)
+            field_version = fields.get(field_key_str)
+            label = self._format_mermaid_field_label(
+                field_key_str, field_change, field_version
+            )
+            if label:
+                label_parts.append(label)
+
+        return label_parts
+
     def format_mermaid_merged(
         self,
         merged_data: dict[str, Any],
@@ -646,7 +857,7 @@ class DiffFormatter:
         nodes = merged_data["nodes"]
         edges = merged_data["edges"]
 
-        lines = []
+        lines: list[str] = []
         lines.append("---")
         lines.append("title: Feature Graph Changes")
         lines.append("---")
@@ -667,130 +878,36 @@ class DiffFormatter:
         for feature_key_str, node_data in nodes.items():
             node_id = sanitize_id(feature_key_str)
             status = node_data["status"]
-            old_version = node_data["old_version"]
-            new_version = node_data["new_version"]
-            field_changes = node_data["field_changes"]
-
-            # Build node label
-            # Feature key in bold
-            label_parts = [f"<b>{feature_key_str}</b>"]
             fields = node_data["fields"]
 
-            # Add version info
-            if status == "changed":
-                old_ver = (
-                    utils.format_hash(old_version, length=6) if old_version else "none"
-                )
-                new_ver = (
-                    utils.format_hash(new_version, length=6) if new_version else "none"
-                )
-                # Red for old version, green for new version
-                label_parts.append(
-                    f'<font color="#CC0000">{old_ver}</font> → '
-                    f'<font color="#00AA00">{new_ver}</font>'
-                )
-            elif status == "added":
-                ver = (
-                    utils.format_hash(new_version, length=6) if new_version else "none"
-                )
-                label_parts.append(f"{ver}")
-            elif status == "removed":
-                ver = (
-                    utils.format_hash(old_version, length=6) if old_version else "none"
-                )
-                label_parts.append(f"{ver}")
-            else:
-                # Unchanged
-                ver = (
-                    utils.format_hash(new_version, length=6) if new_version else "none"
-                )
-                label_parts.append(f"{ver}")
+            # Build node label parts
+            label_parts = [f"<b>{feature_key_str}</b>"]
 
-            # Add separator line before fields
+            # Add version info
+            label_parts.append(
+                self._format_mermaid_version_part(
+                    status, node_data["old_version"], node_data["new_version"]
+                )
+            )
+
+            # Add separator and fields
             if fields:
                 label_parts.append('<font color="#999">---</font>')
+                label_parts.extend(
+                    self._build_mermaid_field_labels(
+                        fields, node_data["field_changes"], status, show_all_fields
+                    )
+                )
 
-            # Show fields for all features (not just changed)
-            if fields:
-                # Build field change map (only for changed features)
-                field_change_map = {
-                    fc.field_key.to_string(): fc
-                    for fc in field_changes
-                    if isinstance(fc, FieldChange)
-                }
-
-                # Collect field keys based on show_all_fields setting
-                if show_all_fields:
-                    # Show all fields (from both fields dict and field_changes for removed fields)
-                    all_field_keys = set(fields.keys())
-                    all_field_keys.update(field_change_map.keys())
-                else:
-                    # Show only changed fields (skip if no changes for this feature)
-                    if status != "changed" or not field_change_map:
-                        all_field_keys = set()
-                    else:
-                        all_field_keys = set(field_change_map.keys())
-
-                for field_key_str_inner in sorted(all_field_keys):
-                    if field_key_str_inner in field_change_map:
-                        fc = field_change_map[field_key_str_inner]
-                        if fc.is_added:
-                            # Green for added (with version)
-                            new_ver = (
-                                utils.format_hash(fc.new_version, length=6)
-                                if fc.new_version
-                                else "none"
-                            )
-                            label_parts.append(
-                                f'<font color="#00AA00">- {field_key_str_inner} ({new_ver})</font>'
-                            )
-                        elif fc.is_removed:
-                            # Red for removed (with version)
-                            old_ver = (
-                                utils.format_hash(fc.old_version, length=6)
-                                if fc.old_version
-                                else "none"
-                            )
-                            label_parts.append(
-                                f'<font color="#CC0000">- {field_key_str_inner} ({old_ver})</font>'
-                            )
-                        elif fc.is_changed:
-                            # Yellow field name, red old version, green new version
-                            old_ver = (
-                                utils.format_hash(fc.old_version, length=6)
-                                if fc.old_version
-                                else "none"
-                            )
-                            new_ver = (
-                                utils.format_hash(fc.new_version, length=6)
-                                if fc.new_version
-                                else "none"
-                            )
-                            label_parts.append(
-                                f'- <font color="#FFAA00">{field_key_str_inner}</font> '
-                                f'(<font color="#CC0000">{old_ver}</font> → '
-                                f'<font color="#00AA00">{new_ver}</font>)'
-                            )
-                    else:
-                        # Unchanged field - no color, with dash prefix
-                        field_version = fields.get(field_key_str_inner)
-                        if field_version:
-                            ver = utils.format_hash(field_version, length=6)
-                            label_parts.append(f"- {field_key_str_inner} ({ver})")
-
-            # Wrap content in left-aligned div (like graph render does)
+            # Wrap content in left-aligned div
             label = "<br/>".join(label_parts)
             label = f'<div style="text-align:left">{label}</div>'
             lines.append(f'    {node_id}["{label}"]')
 
-            # Apply styling based on status (border only, no fill)
-            if status == "added":
-                lines.append(f"    style {node_id} stroke:#00FF00,stroke-width:2px")
-            elif status == "removed":
-                lines.append(f"    style {node_id} stroke:#FF0000,stroke-width:2px")
-            elif status == "changed":
-                lines.append(f"    style {node_id} stroke:#FFAA00,stroke-width:2px")
-            # else: unchanged - no special styling
+            # Apply styling based on status
+            style_line = self._get_mermaid_node_style(status, node_id)
+            if style_line:
+                lines.append(style_line)
 
         lines.append("")
 

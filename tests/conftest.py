@@ -255,55 +255,58 @@ def find_free_port() -> int:
     return port
 
 
-@pytest.fixture(scope="session")
-def clickhouse_server(tmp_path_factory):
-    """Start a ClickHouse server for testing (session-scoped).
+def _check_clickhouse_available() -> str:
+    """Check if ClickHouse binary and ibis backend are available.
 
-    Uses clickhouse binary to start a local server.
-    Cleans up the process after all tests complete.
-
-    Yields connection params (host, port) if ClickHouse is available, otherwise skips tests.
+    Returns the path to the clickhouse binary, or skips the test if unavailable.
     """
-
-    # Check if clickhouse binary is available
     clickhouse_bin = shutil.which("clickhouse") or shutil.which("clickhouse-server")
-    if not clickhouse_bin:
+    if clickhouse_bin is None:
         pytest.skip("ClickHouse binary not found in PATH")
+        raise AssertionError("unreachable")
 
-    # Check if ibis-clickhouse is installed
     try:
         import ibis.backends.clickhouse  # noqa: F401
     except ImportError:
         pytest.skip("ibis-clickhouse not installed")
 
-    port = find_free_port()
-    http_port = find_free_port()
+    return clickhouse_bin
 
+
+def _create_clickhouse_directories(tmp_path_factory) -> dict[str, Any]:
+    """Create required directories for ClickHouse server."""
     base_dir = tmp_path_factory.mktemp("clickhouse")
-    data_dir = base_dir / "data"
-    data_dir.mkdir()
-    log_dir = base_dir / "log"
-    log_dir.mkdir()
-    tmp_dir = base_dir / "tmp"
-    tmp_dir.mkdir()
-    user_files_dir = base_dir / "user_files"
-    user_files_dir.mkdir()
-    format_schemas_dir = base_dir / "format_schemas"
-    format_schemas_dir.mkdir()
+    dirs = {
+        "data": base_dir / "data",
+        "log": base_dir / "log",
+        "tmp": base_dir / "tmp",
+        "user_files": base_dir / "user_files",
+        "format_schemas": base_dir / "format_schemas",
+    }
+    for d in dirs.values():
+        d.mkdir()
+    return dirs
 
-    process: subprocess.Popen[bytes] | None = None
+
+def _start_clickhouse_process(
+    clickhouse_bin: str,
+    port: int,
+    http_port: int,
+    dirs: dict[str, Any],
+) -> subprocess.Popen[bytes]:
+    """Start the ClickHouse server process."""
     try:
-        process = subprocess.Popen(  # ty: ignore[no-matching-overload]
+        return subprocess.Popen(  # ty: ignore[no-matching-overload]
             [
                 clickhouse_bin,
                 "server",
                 "--",
                 f"--tcp_port={port}",
                 f"--http_port={http_port}",
-                f"--path={data_dir}/",
-                f"--tmp_path={tmp_dir}/",
-                f"--user_files_path={user_files_dir}/",
-                f"--format_schema_path={format_schemas_dir}/",
+                f"--path={dirs['data']}/",
+                f"--tmp_path={dirs['tmp']}/",
+                f"--user_files_path={dirs['user_files']}/",
+                f"--format_schema_path={dirs['format_schemas']}/",
                 "--logger.console=1",
                 "--logger.level=warning",
             ],
@@ -313,66 +316,95 @@ def clickhouse_server(tmp_path_factory):
     except Exception as e:
         pytest.skip(f"Failed to start ClickHouse server: {e}")
 
-    assert process is not None, "Process should be initialized"
 
-    # Wait for ClickHouse to be ready (max 30 seconds)
-    # First, wait for the TCP port to be accepting connections
-    max_retries = 30
-    ready = False
-    last_error = None
+def _get_process_error(process: subprocess.Popen[bytes]) -> str:
+    """Get error output from a process."""
+    try:
+        _, stderr = process.communicate(timeout=5)
+        return stderr.decode()[:500]
+    except Exception:
+        return "Could not get error output"
 
-    for i in range(max_retries):
-        # Check if process is still running
+
+def _wait_for_clickhouse_port(
+    process: subprocess.Popen[bytes],
+    port: int,
+    max_retries: int = 30,
+) -> None:
+    """Wait for ClickHouse TCP port to be ready, or skip test on failure."""
+    last_error: Exception | None = None
+
+    for _ in range(max_retries):
         if process.poll() is not None:
-            # Process died - get stderr output
             _, stderr = process.communicate()
             pytest.skip(
                 f"ClickHouse server process terminated unexpectedly: {stderr.decode()[:500]}"
             )
 
-        # Try to connect to the port
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(1)
                 s.connect(("localhost", port))
-                ready = True
-                break
+                return  # Port is ready
         except (TimeoutError, ConnectionRefusedError, OSError) as e:
             last_error = e
             time.sleep(1)
 
-    if not ready:
-        process.terminate()
-        try:
-            _, stderr = process.communicate(timeout=5)
-            error_msg = stderr.decode()[:500]
-        except Exception:
-            error_msg = "Could not get error output"
-        pytest.skip(
-            f"ClickHouse server port not ready. Last error: {last_error}. Stderr: {error_msg}"
-        )
+    process.terminate()
+    error_msg = _get_process_error(process)
+    pytest.skip(
+        f"ClickHouse server port not ready. Last error: {last_error}. Stderr: {error_msg}"
+    )
 
+
+def _verify_clickhouse_connection(
+    process: subprocess.Popen[bytes],
+    http_port: int,
+) -> None:
+    """Verify that ibis can connect to ClickHouse, or skip test on failure."""
     connection_string = f"clickhouse://localhost:{http_port}/default"
     try:
         conn: Any = ibis.connect(connection_string)
         conn.list_tables()
     except Exception as e:
         process.terminate()
-        try:
-            _, stderr = process.communicate(timeout=5)
-            error_msg = stderr.decode()[:500]
-        except Exception:
-            error_msg = "Could not get error output"
+        error_msg = _get_process_error(process)
         pytest.skip(f"ClickHouse Ibis connection failed: {e}. Stderr: {error_msg}")
 
-    yield {"host": "localhost", "port": http_port}
 
+def _terminate_clickhouse_process(process: subprocess.Popen[bytes]) -> None:
+    """Terminate the ClickHouse server process gracefully."""
     process.terminate()
     try:
         process.wait(timeout=5)
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait()
+
+
+@pytest.fixture(scope="session")
+def clickhouse_server(tmp_path_factory):
+    """Start a ClickHouse server for testing (session-scoped).
+
+    Uses clickhouse binary to start a local server.
+    Cleans up the process after all tests complete.
+
+    Yields connection params (host, port) if ClickHouse is available, otherwise skips tests.
+    """
+    clickhouse_bin = _check_clickhouse_available()
+
+    port = find_free_port()
+    http_port = find_free_port()
+
+    dirs = _create_clickhouse_directories(tmp_path_factory)
+    process = _start_clickhouse_process(clickhouse_bin, port, http_port, dirs)
+
+    _wait_for_clickhouse_port(process, port)
+    _verify_clickhouse_connection(process, http_port)
+
+    yield {"host": "localhost", "port": http_port}
+
+    _terminate_clickhouse_process(process)
 
 
 @pytest.fixture

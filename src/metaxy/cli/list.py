@@ -131,52 +131,107 @@ def features(
         _output_features_plain(features_data, verbose)
 
 
-def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -> None:
-    """Output features in plain format using rich tables."""
-    if not features_data:
-        data_console.print("[yellow]No features found in the current project.[/yellow]")
-        return
-
-    # Group features by project
-
+def _group_features_by_project(
+    features_data: list[dict[str, Any]],
+) -> dict[str, list[dict[str, Any]]]:
+    """Group features by project name."""
     features_by_project: dict[str, list[dict[str, Any]]] = {}
     for feature in features_data:
         project = feature["project"]
         if project not in features_by_project:
             features_by_project[project] = []
         features_by_project[project].append(feature)
+    return features_by_project
 
-    # Output each project group
-    for project, project_features in features_by_project.items():
-        table = Table(
-            title=f"[bold]{project}[/bold]",
-            show_header=True,
-            header_style="bold",
-        )
-        table.add_column("Feature", no_wrap=True)
-        table.add_column("Import Path", no_wrap=True)
 
+def _create_project_table(
+    project: str, project_features: list[dict[str, Any]], verbose: bool
+) -> Table:
+    """Create a table for a project's features."""
+    table = Table(
+        title=f"[bold]{project}[/bold]",
+        show_header=True,
+        header_style="bold",
+    )
+    table.add_column("Feature", no_wrap=True)
+    table.add_column("Import Path", no_wrap=True)
+
+    if verbose:
+        table.add_column("Dependencies")
+
+    for feature in project_features:
         if verbose:
-            table.add_column("Dependencies")
+            deps_display = ", ".join(feature.get("deps", [])) or "-"
+            table.add_row(feature["key"], feature["import_path"], deps_display)
+        else:
+            table.add_row(feature["key"], feature["import_path"])
 
-        for feature in project_features:
-            if verbose:
-                deps_display = ", ".join(feature.get("deps", [])) or "-"
-                table.add_row(
-                    feature["key"],
-                    feature["import_path"],
-                    deps_display,
-                )
-            else:
-                table.add_row(
-                    feature["key"],
-                    feature["import_path"],
-                )
+    return table
 
+
+def _format_field_deps(field: dict[str, Any]) -> str:
+    """Format field dependencies as a string."""
+    if "deps" not in field:
+        return "-"
+
+    deps_list = []
+    for dep in field["deps"]:
+        if "special" in dep:
+            deps_list.append("[all upstream]")
+        else:
+            for dep_field in dep["fields"]:
+                if dep_field == "*":
+                    deps_list.append(f"{dep['feature']}.*")
+                else:
+                    deps_list.append(f"{dep['feature']}.{dep_field}")
+    return ", ".join(deps_list) if deps_list else "-"
+
+
+def _output_verbose_field_details(features_data: list[dict[str, Any]]) -> None:
+    """Output verbose field details for each feature."""
+    data_console.print()
+    for feature in features_data:
+        data_console.print(
+            f"[bold cyan]{feature['key']}[/bold cyan] "
+            f"[dim]({feature['project']})[/dim] "
+            f"{feature['import_path']}"
+        )
+
+        field_table = Table(show_header=True, header_style="bold dim")
+        field_table.add_column("Field", no_wrap=True)
+        field_table.add_column("Code Version", no_wrap=True)
+        field_table.add_column("Version", no_wrap=True)
+        field_table.add_column("Dependencies", no_wrap=False)
+
+        for field in feature["fields"]:
+            version = field["version"]
+            field_version_display = (
+                version[:12] + "..." if len(version) > 12 else version
+            )
+            field_table.add_row(
+                field["key"],
+                field["code_version"],
+                field_version_display,
+                _format_field_deps(field),
+            )
+
+        data_console.print(field_table)
+        data_console.print()
+
+
+def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -> None:
+    """Output features in plain format using rich tables."""
+    if not features_data:
+        data_console.print("[yellow]No features found in the current project.[/yellow]")
+        return
+
+    features_by_project = _group_features_by_project(features_data)
+
+    for project, project_features in features_by_project.items():
+        table = _create_project_table(project, project_features, verbose)
         data_console.print(table)
         data_console.print()
 
-    # Summary
     root_count = sum(1 for f in features_data if f["is_root"])
     dependent_count = len(features_data) - root_count
     data_console.print(
@@ -184,49 +239,5 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
         f"({root_count} root, {dependent_count} dependent)[/dim]"
     )
 
-    # Verbose: show field details for each feature
     if verbose:
-        data_console.print()
-        for feature in features_data:
-            data_console.print(
-                f"[bold cyan]{feature['key']}[/bold cyan] "
-                f"[dim]({feature['project']})[/dim] "
-                f"{feature['import_path']}"
-            )
-
-            field_table = Table(show_header=True, header_style="bold dim")
-            field_table.add_column("Field", no_wrap=True)
-            field_table.add_column("Code Version", no_wrap=True)
-            field_table.add_column("Version", no_wrap=True)
-            field_table.add_column("Dependencies", no_wrap=False)
-
-            for field in feature["fields"]:
-                field_version_display = (
-                    field["version"][:12] + "..."
-                    if len(field["version"]) > 12
-                    else field["version"]
-                )
-                deps_str = "-"
-                if "deps" in field:
-                    deps_list = []
-                    for dep in field["deps"]:
-                        if "special" in dep:
-                            # SpecialFieldDep.ALL
-                            deps_list.append("[all upstream]")
-                        else:
-                            for dep_field in dep["fields"]:
-                                if dep_field == "*":
-                                    deps_list.append(f"{dep['feature']}.*")
-                                else:
-                                    deps_list.append(f"{dep['feature']}.{dep_field}")
-                    deps_str = ", ".join(deps_list) if deps_list else "-"
-
-                field_table.add_row(
-                    field["key"],
-                    field["code_version"],
-                    field_version_display,
-                    deps_str,
-                )
-
-            data_console.print(field_table)
-            data_console.print()
+        _output_verbose_field_details(features_data)

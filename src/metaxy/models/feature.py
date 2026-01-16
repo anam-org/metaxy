@@ -83,6 +83,102 @@ class SerializedFeature(TypedDict):
     project: str
 
 
+def _collect_modules_to_reload(
+    snapshot_data: Mapping[str, Mapping[str, Any]],
+    class_path_overrides: dict[str, str],
+) -> set[str]:
+    """Collect module paths that need to be reloaded from snapshot data."""
+    import sys
+
+    modules_to_reload: set[str] = set()
+    for feature_key_str, feature_data in snapshot_data.items():
+        class_path = class_path_overrides.get(feature_key_str) or feature_data.get(
+            "feature_class_path"
+        )
+        if class_path:
+            module_path, _ = class_path.rsplit(".", 1)
+            if module_path in sys.modules:
+                modules_to_reload.add(module_path)
+    return modules_to_reload
+
+
+def _get_class_path(
+    feature_key_str: str,
+    feature_data: Mapping[str, Any],
+    class_path_overrides: dict[str, str],
+) -> str:
+    """Get the class path for a feature, checking overrides first."""
+    if feature_key_str in class_path_overrides:
+        return class_path_overrides[feature_key_str]
+    class_path = feature_data.get("feature_class_path")
+    if not class_path:
+        raise ValueError(
+            f"Feature '{feature_key_str}' has no feature_class_path in snapshot. "
+            f"Cannot reconstruct historical graph."
+        )
+    return class_path
+
+
+def _remove_features_from_module(
+    graph: "FeatureGraph",
+    module_path: str,
+    snapshot_data: Mapping[str, Mapping[str, Any]],
+    class_path_overrides: dict[str, str],
+) -> None:
+    """Remove all features from a module before reloading."""
+    for fk_str, fd in snapshot_data.items():
+        fcp = class_path_overrides.get(fk_str) or fd.get("feature_class_path")
+        if fcp and fcp.rsplit(".", 1)[0] == module_path:
+            fspec_dict = fd["feature_spec"]
+            fspec = FeatureSpec.model_validate(fspec_dict)
+            if fspec.key in graph.features_by_key:
+                graph.remove_feature(fspec.key)
+
+
+def _import_feature_class(
+    class_path: str,
+    feature_key_str: str,
+    module_path: str,
+    force_reload: bool,
+    modules_to_reload: set[str],
+    graph: "FeatureGraph",
+    snapshot_data: Mapping[str, Mapping[str, Any]],
+    class_path_overrides: dict[str, str],
+) -> type["BaseFeature"] | None:
+    """Import a feature class from its module path.
+
+    Returns the imported class, or None if import failed.
+    """
+    import importlib
+    import logging
+    import sys
+
+    try:
+        class_name = class_path.rsplit(".", 1)[1]
+
+        # Force reload module from disk if requested
+        if force_reload and module_path in modules_to_reload:
+            # Before first reload of this module, remove ALL features from this module
+            _remove_features_from_module(
+                graph, module_path, snapshot_data, class_path_overrides
+            )
+            # Mark module as processed so we don't remove features again
+            modules_to_reload.discard(module_path)
+            module = importlib.reload(sys.modules[module_path])
+        else:
+            module = __import__(module_path, fromlist=[class_name])
+
+        return getattr(module, class_name)
+    except (ImportError, AttributeError):
+        # Feature class not importable - log warning and return None
+        logger = logging.getLogger(__name__)
+        logger.exception(
+            f"Cannot import Feature class '{class_path}' for '{feature_key_str}'. "
+            f"Adding only the FeatureSpec. "
+        )
+        return None
+
+
 class FeatureGraph:
     def __init__(self):
         self.features_by_key: dict[FeatureKey, type[BaseFeature]] = {}
@@ -651,24 +747,17 @@ class FeatureGraph:
             )
             ```
         """
-        import importlib
-        import sys
 
         graph = cls()
         class_path_overrides = class_path_overrides or {}
 
         # If force_reload, collect all module paths first to remove ALL features
         # from those modules before reloading (modules can have multiple features)
-        modules_to_reload = set()
-        if force_reload:
-            for feature_key_str, feature_data in snapshot_data.items():
-                class_path = class_path_overrides.get(
-                    feature_key_str
-                ) or feature_data.get("feature_class_path")
-                if class_path:
-                    module_path, _ = class_path.rsplit(".", 1)
-                    if module_path in sys.modules:
-                        modules_to_reload.add(module_path)
+        modules_to_reload = (
+            _collect_modules_to_reload(snapshot_data, class_path_overrides)
+            if force_reload
+            else set()
+        )
 
         # Use context manager to temporarily set the new graph as active
         # This ensures imported Feature classes register to the new graph, not the current one
@@ -679,59 +768,26 @@ class FeatureGraph:
                 FeatureSpec.model_validate(feature_spec_dict)
 
                 # Get class path (check overrides first)
-                if feature_key_str in class_path_overrides:
-                    class_path = class_path_overrides[feature_key_str]
-                else:
-                    class_path = feature_data.get("feature_class_path")
-                    if not class_path:
-                        raise ValueError(
-                            f"Feature '{feature_key_str}' has no feature_class_path in snapshot. "
-                            f"Cannot reconstruct historical graph."
-                        )
+                class_path = _get_class_path(
+                    feature_key_str, feature_data, class_path_overrides
+                )
+                module_path = class_path.rsplit(".", 1)[0]
 
-                # Import the class
-                try:
-                    module_path, class_name = class_path.rsplit(".", 1)
+                # Import the class (may return None if import failed)
+                feature_cls = _import_feature_class(
+                    class_path,
+                    feature_key_str,
+                    module_path,
+                    force_reload,
+                    modules_to_reload,
+                    graph,
+                    snapshot_data,
+                    class_path_overrides,
+                )
 
-                    # Force reload module from disk if requested
-                    # This is critical for migration detection - when code changes,
-                    # we need fresh imports to detect the changes
-                    if force_reload and module_path in modules_to_reload:
-                        # Before first reload of this module, remove ALL features from this module
-                        # (a module can define multiple features)
-                        if module_path in modules_to_reload:
-                            # Find all features from this module in snapshot and remove them
-                            for fk_str, fd in snapshot_data.items():
-                                fcp = class_path_overrides.get(fk_str) or fd.get(
-                                    "feature_class_path"
-                                )
-                                if fcp and fcp.rsplit(".", 1)[0] == module_path:
-                                    fspec_dict = fd["feature_spec"]
-                                    fspec = FeatureSpec.model_validate(fspec_dict)
-                                    if fspec.key in graph.features_by_key:
-                                        graph.remove_feature(fspec.key)
-
-                            # Mark module as processed so we don't remove features again
-                            modules_to_reload.discard(module_path)
-
-                        module = importlib.reload(sys.modules[module_path])
-                    else:
-                        module = __import__(module_path, fromlist=[class_name])
-
-                    feature_cls = getattr(module, class_name)
-                except (ImportError, AttributeError):
+                if feature_cls is None:
                     # Feature class not importable - add as standalone spec instead
-                    # This allows migrations to work even when old Feature classes are deleted/moved
-                    import logging
-
-                    logger = logging.getLogger(__name__)
-                    logger.exception(
-                        f"Cannot import Feature class '{class_path}' for '{feature_key_str}'. "
-                        f"Adding only the FeatureSpec. "
-                    )
-
                     feature_spec = FeatureSpec.model_validate(feature_spec_dict)
-                    # Add the spec as a standalone spec
                     graph.add_feature_spec(feature_spec)
                     continue
 

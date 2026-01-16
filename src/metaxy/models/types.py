@@ -26,6 +26,28 @@ FEATURE_KEY_SEPARATOR = KEY_SEPARATOR
 FIELD_KEY_SEPARATOR = KEY_SEPARATOR
 
 
+def _validate_dict_input(data: dict[str, Any]) -> tuple[str, ...]:
+    """Convert dict input to tuple of strings for Key validation."""
+    # RootModel deserialization passes dict with "root" key
+    if "root" in data:
+        root_value = data["root"]
+        if isinstance(root_value, tuple):
+            return root_value
+        if isinstance(root_value, (list, Sequence)):
+            return tuple(root_value)
+    # Legacy "parts" key for backward compatibility
+    if "parts" in data:
+        parts = data["parts"]
+        if isinstance(parts, (list, tuple)) and parts and isinstance(parts[0], dict):
+            # Handle incorrectly nested structure like {'parts': [{'parts': [...]}]}
+            if "parts" in parts[0]:
+                return tuple(parts[0]["parts"])
+            raise ValueError(f"Invalid nested structure in parts: {parts}")
+        return tuple(parts) if not isinstance(parts, tuple) else parts
+    # Empty dict or missing keys
+    raise ValueError("Dict must contain 'root' or 'parts' key")
+
+
 class SnapshotPushResult(NamedTuple):
     """Result of recording a feature graph snapshot.
 
@@ -81,48 +103,16 @@ class _Key(RootModel[tuple[str, ...]]):
     @classmethod
     def _validate_input(cls, data: Any) -> Any:
         """Convert various input types to tuple of strings."""
-        # If it's already a tuple, validate and return it
         if isinstance(data, tuple):
             return data
-
-        # Handle dict input (from Pydantic deserialization)
         if isinstance(data, dict):
-            # RootModel deserialization passes dict with "root" key
-            if "root" in data:
-                root_value = data["root"]
-                if isinstance(root_value, tuple):
-                    return root_value
-                elif isinstance(root_value, (list, Sequence)):
-                    return tuple(root_value)
-            # Legacy "parts" key for backward compatibility
-            elif "parts" in data:
-                parts = data["parts"]
-                if (
-                    isinstance(parts, (list, tuple))
-                    and parts
-                    and isinstance(parts[0], dict)
-                ):
-                    # Handle incorrectly nested structure like {'parts': [{'parts': [...]}]}
-                    if "parts" in parts[0]:
-                        return tuple(parts[0]["parts"])
-                    else:
-                        raise ValueError(f"Invalid nested structure in parts: {parts}")
-                return tuple(parts) if not isinstance(parts, tuple) else parts
-            # Empty dict
-            raise ValueError("Dict must contain 'root' or 'parts' key")
-
-        # Handle string input - split on separator
+            return _validate_dict_input(data)
         if isinstance(data, str):
             return tuple(data.split(KEY_SEPARATOR))
-
-        # Handle instance of same class - extract root
         if isinstance(data, cls):
             return data.root
-
-        # Handle sequence (list, etc.)
         if isinstance(data, Sequence):
             return tuple(data)
-
         raise ValueError(f"Cannot create {cls.__name__} from {type(data).__name__}")
 
     @field_validator("root", mode="after")

@@ -147,6 +147,271 @@ def _cast_present_system_columns(
     return df
 
 
+def _check_implementation_mismatch(
+    df: nw.DataFrame[Any] | nw.LazyFrame[Any],
+    expected_implementation: nw.Implementation,
+    engine_mode: VersioningEngineOptions,
+    fallback_stores: list[MetadataStore],
+    context_name: str,
+) -> tuple[nw.Implementation, bool]:
+    """Check for implementation mismatch and determine handling.
+
+    Args:
+        df: DataFrame to check
+        expected_implementation: Expected native implementation
+        engine_mode: Versioning engine mode (auto, native, polars)
+        fallback_stores: List of fallback stores
+        context_name: Name for error/warning messages (e.g., feature key or "samples")
+
+    Returns:
+        Tuple of (implementation to use, switched_to_polars flag)
+
+    Raises:
+        VersioningEngineMismatchError: If native mode and implementation doesn't match
+    """
+    if df.implementation == expected_implementation:
+        return expected_implementation, False
+
+    # Implementation mismatch detected
+    # Only raise error in "native" mode if no fallback stores configured
+    if engine_mode == "native" and not fallback_stores:
+        raise VersioningEngineMismatchError(
+            f"versioning_engine='native' but {context_name} "
+            f"has implementation {df.implementation}, expected {expected_implementation}"
+        )
+
+    if engine_mode == "auto" or (engine_mode == "native" and fallback_stores):
+        PolarsMaterializationWarning.warn_on_implementation_mismatch(
+            expected=expected_implementation,
+            actual=df.implementation,
+            message=f"Using Polars for resolving the increment instead. This was caused by {context_name}.",
+        )
+
+    return nw.Implementation.POLARS, True
+
+
+def _resolve_versioning_implementation(
+    engine_mode: VersioningEngineOptions,
+    native_implementation: nw.Implementation,
+    samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
+    upstream_by_key: dict[FeatureKey, nw.LazyFrame[Any]],
+    fallback_stores: list[MetadataStore],
+) -> tuple[nw.Implementation, bool]:
+    """Determine which implementation to use for versioning operations.
+
+    Args:
+        engine_mode: Versioning engine mode (auto, native, polars)
+        native_implementation: Store's native implementation
+        samples_nw: Optional samples DataFrame
+        upstream_by_key: Dict of upstream feature DataFrames
+        fallback_stores: List of fallback stores
+
+    Returns:
+        Tuple of (implementation to use, whether switched to polars)
+
+    Raises:
+        VersioningEngineMismatchError: If native mode and incompatible DataFrames
+    """
+    # If "polars" mode, force Polars immediately
+    if engine_mode == "polars":
+        return nw.Implementation.POLARS, True
+
+    implementation = native_implementation
+    switched_to_polars = False
+
+    # Check upstream DataFrames
+    for upstream_key, df in upstream_by_key.items():
+        impl, switched = _check_implementation_mismatch(
+            df,
+            native_implementation,
+            engine_mode,
+            fallback_stores,
+            f"upstream feature `{upstream_key.to_string()}`",
+        )
+        if switched:
+            implementation = impl
+            switched_to_polars = True
+            break
+
+    # Check samples DataFrame
+    if samples_nw is not None and samples_nw.implementation != native_implementation:
+        if not switched_to_polars:
+            if engine_mode == "native":
+                # Always raise error for samples with wrong implementation
+                raise VersioningEngineMismatchError(
+                    f"versioning_engine='native' but provided `samples` have implementation {samples_nw.implementation}, "
+                    f"expected {native_implementation}"
+                )
+            if engine_mode == "auto":
+                PolarsMaterializationWarning.warn_on_implementation_mismatch(
+                    expected=native_implementation,
+                    actual=samples_nw.implementation,
+                    message=f"Provided `samples` have implementation {samples_nw.implementation}. Using Polars for resolving the increment instead.",
+                )
+            implementation = nw.Implementation.POLARS
+            switched_to_polars = True
+
+    return implementation, switched_to_polars
+
+
+def _build_increment_result(
+    added: nw.LazyFrame[Any] | nw.DataFrame[Any],
+    changed: nw.LazyFrame[Any] | nw.DataFrame[Any] | None,
+    removed: nw.LazyFrame[Any] | nw.DataFrame[Any] | None,
+    input_df: nw.LazyFrame[Any] | nw.DataFrame[Any] | None,
+    lazy: bool,
+) -> Increment | LazyIncrement:
+    """Build the final Increment or LazyIncrement result.
+
+    Args:
+        added: DataFrame of added rows
+        changed: DataFrame of changed rows (may be None)
+        removed: DataFrame of removed rows (may be None)
+        input_df: DataFrame of input data (may be None)
+        lazy: Whether to return lazy or eager result
+
+    Returns:
+        Increment or LazyIncrement depending on lazy parameter
+    """
+    # Convert None to empty DataFrames
+    if changed is None:
+        changed = empty_frame_like(added)  # ty: ignore[invalid-argument-type]
+    if removed is None:
+        removed = empty_frame_like(added)  # ty: ignore[invalid-argument-type]
+
+    if lazy:
+        return LazyIncrement(
+            added=added if isinstance(added, nw.LazyFrame) else nw.from_native(added),  # ty: ignore[invalid-argument-type]
+            changed=changed  # ty: ignore[invalid-argument-type]
+            if isinstance(changed, nw.LazyFrame)
+            else nw.from_native(changed),
+            removed=removed  # ty: ignore[invalid-argument-type]
+            if isinstance(removed, nw.LazyFrame)
+            else nw.from_native(removed),
+            input=input_df  # ty: ignore[invalid-argument-type]
+            if input_df is None or isinstance(input_df, nw.LazyFrame)
+            else nw.from_native(input_df),
+        )
+
+    return Increment(
+        added=added.collect() if isinstance(added, nw.LazyFrame) else added,
+        changed=changed.collect() if isinstance(changed, nw.LazyFrame) else changed,
+        removed=removed.collect() if isinstance(removed, nw.LazyFrame) else removed,
+    )
+
+
+def _normalize_samples(
+    samples: IntoFrame | Frame | None,
+) -> nw.DataFrame[Any] | nw.LazyFrame[Any] | None:
+    """Convert samples to Narwhals frame if not already."""
+    if samples is None:
+        return None
+    if isinstance(samples, (nw.DataFrame, nw.LazyFrame)):
+        return samples
+    return nw.from_native(samples)  # ty: ignore[invalid-return-type]
+
+
+def _validate_root_feature_samples(
+    plan: FeaturePlan,
+    samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
+    feature_key: FeatureKey,
+) -> None:
+    """Validate that root features have samples provided."""
+    if not plan.deps and samples_nw is None:
+        raise ValueError(
+            f"Feature {feature_key} has no upstream dependencies (root feature). "
+            f"Must provide 'samples' parameter with sample_uid and {METAXY_PROVENANCE_BY_FIELD} columns. "
+            f"Root features require manual {METAXY_PROVENANCE_BY_FIELD} computation."
+        )
+
+
+def _validate_version_parameters(
+    feature_version: str | None,
+    current_only: bool,
+) -> None:
+    """Validate mutually exclusive version parameters."""
+    if feature_version is not None and current_only:
+        raise ValueError(
+            "Cannot specify both feature_version and current_only=True. "
+            "Use current_only=False with feature_version parameter."
+        )
+
+
+def _build_read_columns(
+    columns: list[str],
+    is_system_table: bool,
+) -> list[str] | None:
+    """Build the list of columns to read including system columns."""
+    if columns and not is_system_table:
+        columns_set = set(columns)
+        missing_system_cols = [c for c in ALL_SYSTEM_COLUMNS if c not in columns_set]
+        return [*columns, *missing_system_cols]
+    return None
+
+
+def _drop_existing_version_columns(
+    df: Frame,
+    has_feature_version: bool,
+    has_snapshot_version: bool,
+    has_feature_spec_version: bool,
+) -> Frame:
+    """Drop existing version columns from DataFrame."""
+    columns_to_drop = []
+    if has_feature_version:
+        columns_to_drop.append(METAXY_FEATURE_VERSION)
+    if has_snapshot_version:
+        columns_to_drop.append(METAXY_SNAPSHOT_VERSION)
+    if has_feature_spec_version:
+        columns_to_drop.append(METAXY_FEATURE_SPEC_VERSION)
+    if columns_to_drop:
+        return df.drop(*columns_to_drop)
+    return df
+
+
+def _get_feature_versions(
+    feature: CoercibleToFeatureKey,
+    feature_key: FeatureKey,
+) -> tuple[str, str]:
+    """Get feature version and feature spec version."""
+    # Use duck typing to avoid Ray serialization issues with issubclass
+    if (
+        isinstance(feature, type)
+        and hasattr(feature, "feature_version")
+        and callable(feature.feature_version)
+    ):
+        return feature.feature_version(), feature.feature_spec_version()  # ty: ignore[call-top-callable, invalid-return-type, possibly-missing-attribute]
+
+    from metaxy import get_feature_by_key
+
+    feature_cls = get_feature_by_key(feature_key)
+    return feature_cls.feature_version(), feature_cls.feature_spec_version()
+
+
+def _apply_polars_switch(
+    switched_to_polars: bool,
+    current_metadata: nw.LazyFrame[Any] | None,
+    samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
+    upstream_by_key: dict[FeatureKey, nw.LazyFrame[Any]],
+) -> tuple[
+    nw.LazyFrame[Any] | None,
+    nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
+    dict[FeatureKey, nw.LazyFrame[Any]],
+]:
+    """Apply Polars implementation switch to all dataframes if needed."""
+    if not switched_to_polars:
+        return current_metadata, samples_nw, upstream_by_key
+
+    if current_metadata is not None:
+        current_metadata = switch_implementation_to_polars(current_metadata)
+    if samples_nw is not None:
+        samples_nw = switch_implementation_to_polars(samples_nw)
+    new_upstream: dict[FeatureKey, nw.LazyFrame[Any]] = {}
+    for upstream_key, df in upstream_by_key.items():
+        new_upstream[upstream_key] = switch_implementation_to_polars(df)
+
+    return current_metadata, samples_nw, new_upstream
+
+
 class MetadataStore(ABC):
     """
     Abstract base class for metadata storage backends.
@@ -318,235 +583,60 @@ class MetadataStore(ABC):
             result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
             ```
         """
-        import narwhals as nw
-
-        # Convert samples to Narwhals frame if not already
-        samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None
-        if samples is not None:
-            if isinstance(samples, (nw.DataFrame, nw.LazyFrame)):
-                samples_nw = samples
-            else:
-                samples_nw = nw.from_native(samples)  # ty: ignore[invalid-assignment]
-
-        # Normalize filter keys to FeatureKey
-        normalized_filters: dict[FeatureKey, list[nw.Expr]] = {}
-        if filters:
-            for key, exprs in filters.items():
-                feature_key = self._resolve_feature_key(key)
-                normalized_filters[feature_key] = list(exprs)
-
-        # Convert global_filters to a list for easy concatenation
+        samples_nw = _normalize_samples(samples)
+        normalized_filters = self._normalize_filter_keys(filters)
         global_filter_list = list(global_filters) if global_filters else []
 
         feature_key = self._resolve_feature_key(feature)
         graph = current_graph()
         plan = graph.get_feature_plan(feature_key)
 
-        # Root features without samples: error (samples required)
-        if not plan.deps and samples_nw is None:
-            raise ValueError(
-                f"Feature {feature_key} has no upstream dependencies (root feature). "
-                f"Must provide 'samples' parameter with sample_uid and {METAXY_PROVENANCE_BY_FIELD} columns. "
-                f"Root features require manual {METAXY_PROVENANCE_BY_FIELD} computation."
-            )
+        _validate_root_feature_samples(plan, samples_nw, feature_key)
 
-        # Combine feature-specific filters with global filters
         current_feature_filters = [
             *normalized_filters.get(feature_key, []),
             *global_filter_list,
         ]
 
-        # Read current metadata with deduplication (latest_only=True by default)
-        # Use allow_fallback=False since we only want metadata from THIS store
-        # to determine what needs to be updated locally
-        try:
-            current_metadata: nw.LazyFrame[Any] | None = self.read_metadata(
-                feature_key,
-                filters=current_feature_filters if current_feature_filters else None,
-                allow_fallback=False,
-                current_only=True,  # filters by current feature_version
-                latest_only=True,  # deduplicates by id_columns, keeping latest
-            )
-        except FeatureNotFoundError:
-            current_metadata = None
+        current_metadata = self._read_current_metadata_for_update(
+            feature_key, current_feature_filters
+        )
 
-        upstream_by_key: dict[FeatureKey, nw.LazyFrame[Any]] = {}
-        filters_by_key: dict[FeatureKey, list[nw.Expr]] = {}
+        upstream_by_key, samples_nw = self._prepare_upstream_data(
+            samples_nw,
+            plan,
+            current_feature_filters,
+            normalized_filters,
+            global_filter_list,
+        )
 
-        # if samples are provided, use them as source of truth for upstream data
-        if samples_nw is not None:
-            # Apply filters to samples if any
-            filtered_samples = samples_nw
-            if current_feature_filters:
-                filtered_samples = samples_nw.filter(current_feature_filters)
-
-            # fill in METAXY_PROVENANCE column if it's missing (e.g. for root features)
-            samples_nw = self.hash_struct_version_column(
-                plan,
-                df=filtered_samples,
-                struct_column=METAXY_PROVENANCE_BY_FIELD,
-                hash_column=METAXY_PROVENANCE,
-            )
-
-            # For root features, add data_version columns if they don't exist
-            # (root features have no computation, so data_version equals provenance)
-            # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
-            if METAXY_DATA_VERSION_BY_FIELD not in samples_nw.collect_schema().names():
-                samples_nw = samples_nw.with_columns(
-                    nw.col(METAXY_PROVENANCE_BY_FIELD).alias(
-                        METAXY_DATA_VERSION_BY_FIELD
-                    ),
-                    nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
-                )
-        else:
-            for upstream_spec in plan.deps or []:
-                # Combine feature-specific filters with global filters for upstream
-                upstream_filters = [
-                    *normalized_filters.get(upstream_spec.key, []),
-                    *global_filter_list,
-                ]
-                upstream_feature_metadata = self.read_metadata(
-                    upstream_spec.key,
-                    filters=upstream_filters,
-                )
-                if upstream_feature_metadata is not None:
-                    upstream_by_key[upstream_spec.key] = upstream_feature_metadata
-
-        # determine which implementation to use for resolving the increment
-        # consider (1) whether all upstream metadata has been loaded with the native implementation
-        # (2) if samples have native implementation
-
-        # Use parameter if provided, otherwise use store default
         engine_mode = (
             versioning_engine
             if versioning_engine is not None
             else self._versioning_engine
         )
+        implementation, switched_to_polars = _resolve_versioning_implementation(
+            engine_mode=engine_mode,
+            native_implementation=self.native_implementation(),
+            samples_nw=samples_nw,
+            upstream_by_key=upstream_by_key,
+            fallback_stores=self.fallback_stores,
+        )
 
-        # If "polars" mode, force Polars immediately
-        if engine_mode == "polars":
-            implementation = nw.Implementation.POLARS
-            switched_to_polars = True
-        else:
-            implementation = self.native_implementation()
-            switched_to_polars = False
+        current_metadata, samples_nw, upstream_by_key = _apply_polars_switch(
+            switched_to_polars, current_metadata, samples_nw, upstream_by_key
+        )
 
-            for upstream_key, df in upstream_by_key.items():
-                if df.implementation != implementation:
-                    switched_to_polars = True
-                    # Only raise error in "native" mode if no fallback stores configured.
-                    # If fallback stores exist, the implementation mismatch indicates data came
-                    # from fallback (different implementation), which is legitimate fallback access.
-                    # If data were local, it would have the native implementation.
-                    if engine_mode == "native" and not self.fallback_stores:
-                        raise VersioningEngineMismatchError(
-                            f"versioning_engine='native' but upstream feature `{upstream_key.to_string()}` "
-                            f"has implementation {df.implementation}, expected {self.native_implementation()}"
-                        )
-                    elif engine_mode == "auto" or (
-                        engine_mode == "native" and self.fallback_stores
-                    ):
-                        PolarsMaterializationWarning.warn_on_implementation_mismatch(
-                            expected=self.native_implementation(),
-                            actual=df.implementation,
-                            message=f"Using Polars for resolving the increment instead. This was caused by upstream feature `{upstream_key.to_string()}`.",
-                        )
-                    implementation = nw.Implementation.POLARS
-                    break
+        added, changed, removed, input_df = self._resolve_increment(
+            plan,
+            implementation,
+            skip_comparison,
+            samples_nw,
+            upstream_by_key,
+            current_metadata,
+        )
 
-            if (
-                samples_nw is not None
-                and samples_nw.implementation != self.native_implementation()
-            ):
-                if not switched_to_polars:
-                    if engine_mode == "native":
-                        # Always raise error for samples with wrong implementation, regardless
-                        # of fallback stores, because samples come from user argument, not from fallback
-                        raise VersioningEngineMismatchError(
-                            f"versioning_engine='native' but provided `samples` have implementation {samples_nw.implementation}, "
-                            f"expected {self.native_implementation()}"
-                        )
-                    elif engine_mode == "auto":
-                        PolarsMaterializationWarning.warn_on_implementation_mismatch(
-                            expected=self.native_implementation(),
-                            actual=samples_nw.implementation,
-                            message=f"Provided `samples` have implementation {samples_nw.implementation}. Using Polars for resolving the increment instead.",
-                        )
-                implementation = nw.Implementation.POLARS
-                switched_to_polars = True
-
-        if switched_to_polars:
-            if current_metadata:
-                current_metadata = switch_implementation_to_polars(current_metadata)
-            if samples_nw:
-                samples_nw = switch_implementation_to_polars(samples_nw)
-            for upstream_key, df in upstream_by_key.items():
-                upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
-
-        with self.create_versioning_engine(
-            plan=plan, implementation=implementation
-        ) as engine:
-            if skip_comparison:
-                # Skip comparison: return all upstream samples as added
-                if samples_nw is not None:
-                    # Root features or user-provided samples: use samples directly
-                    # Note: samples already has metaxy_provenance computed
-                    added = samples_nw.lazy()
-                    input_df = None  # Root features have no upstream input
-                else:
-                    # Non-root features: load all upstream with provenance
-                    added = engine.load_upstream_with_provenance(
-                        upstream=upstream_by_key,
-                        hash_algo=self.hash_algorithm,
-                        filters=filters_by_key,
-                    )
-                    input_df = (
-                        added  # Input is the same as added when skipping comparison
-                    )
-                changed = None
-                removed = None
-            else:
-                added, changed, removed, input_df = (
-                    engine.resolve_increment_with_provenance(
-                        current=current_metadata,
-                        upstream=upstream_by_key,
-                        hash_algorithm=self.hash_algorithm,
-                        filters=filters_by_key,
-                        sample=samples_nw.lazy() if samples_nw is not None else None,
-                    )
-                )
-
-        # Convert None to empty DataFrames
-        if changed is None:
-            changed = empty_frame_like(added)
-        if removed is None:
-            removed = empty_frame_like(added)
-
-        if lazy:
-            return LazyIncrement(
-                added=added
-                if isinstance(added, nw.LazyFrame)
-                else nw.from_native(added),
-                changed=changed
-                if isinstance(changed, nw.LazyFrame)
-                else nw.from_native(changed),
-                removed=removed
-                if isinstance(removed, nw.LazyFrame)
-                else nw.from_native(removed),
-                input=input_df
-                if input_df is None or isinstance(input_df, nw.LazyFrame)
-                else nw.from_native(input_df),
-            )
-        else:
-            return Increment(
-                added=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                changed=changed.collect()
-                if isinstance(changed, nw.LazyFrame)
-                else changed,
-                removed=removed.collect()
-                if isinstance(removed, nw.LazyFrame)
-                else removed,
-            )
+        return _build_increment_result(added, changed, removed, input_df, lazy)
 
     def compute_provenance(
         self,
@@ -696,107 +786,45 @@ class MetadataStore(ABC):
         """
         self._check_open()
 
-        filters = filters or []
-        columns = columns or []
+        filters = list(filters) if filters else []
+        columns = list(columns) if columns else []
 
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
 
-        # If caller wants soft-deleted records, do not filter them out later
+        _validate_version_parameters(feature_version, current_only)
+
+        filters = self._build_version_filters(
+            filters, feature_key, feature_version, current_only, is_system_table
+        )
+        read_columns = _build_read_columns(columns, is_system_table)
         filter_deleted = not include_soft_deleted and not is_system_table
 
-        # Validate mutually exclusive parameters
-        if feature_version is not None and current_only:
-            raise ValueError(
-                "Cannot specify both feature_version and current_only=True. "
-                "Use current_only=False with feature_version parameter."
-            )
-
-        # Add feature_version filter only when needed
-        if current_only or feature_version is not None and not is_system_table:
-            version_filter = nw.col(METAXY_FEATURE_VERSION) == (
-                current_graph().get_feature_version(feature_key)
-                if current_only
-                else feature_version
-            )
-            filters = [version_filter, *filters]
-
-        if columns and not is_system_table:
-            # Add only system columns that aren't already in the user's columns list
-            columns_set = set(columns)
-            missing_system_cols = [
-                c for c in ALL_SYSTEM_COLUMNS if c not in columns_set
-            ]
-            read_columns = [*columns, *missing_system_cols]
-        else:
-            read_columns = None
-
-        lazy_frame = None
-        try:
-            lazy_frame = self.read_metadata_in_store(
-                feature, filters=filters, columns=read_columns
-            )
-        except FeatureNotFoundError as e:
-            # do not read system features from fallback stores
-            if is_system_table:
-                raise SystemDataNotFoundError(
-                    f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
-                ) from e
-
-        # Handle case where read_metadata_in_store returns None (no exception raised)
-        if lazy_frame is None and is_system_table:
-            raise SystemDataNotFoundError(
-                f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
-            )
-
-        if lazy_frame is not None and not is_system_table:
-            # Deduplicate first (records have +1μs created_at so they win)
-            # Then filter soft-deleted rows
-            if latest_only:
-                id_cols = list(
-                    self._resolve_feature_plan(feature_key).feature.id_columns
-                )
-                lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
-                    df=lazy_frame,
-                    group_columns=id_cols,
-                    timestamp_column=METAXY_CREATED_AT,
-                )
-
-            if filter_deleted:
-                lazy_frame = lazy_frame.filter(nw.col(METAXY_DELETED_AT).is_null())
+        lazy_frame = self._read_from_store_with_system_check(
+            feature, feature_key, is_system_table, filters, read_columns
+        )
 
         if lazy_frame is not None:
-            # After dedup, filter to requested columns if specified
-            if columns:
-                lazy_frame = lazy_frame.select(columns)
-
+            lazy_frame = self._apply_post_read_processing(
+                lazy_frame,
+                feature_key,
+                is_system_table,
+                latest_only,
+                filter_deleted,
+                columns,
+            )
             return lazy_frame
 
-        # Try fallback stores (opened on demand)
-        if allow_fallback:
-            for store in self.fallback_stores:
-                try:
-                    # Open fallback store on demand for reading
-                    with store:
-                        # Use full read_metadata to handle nested fallback chains
-                        return store.read_metadata(
-                            feature,
-                            feature_version=feature_version,
-                            filters=filters,
-                            columns=columns,
-                            allow_fallback=True,
-                            current_only=current_only,
-                            latest_only=latest_only,
-                            include_soft_deleted=include_soft_deleted,
-                        )
-                except FeatureNotFoundError:
-                    # Try next fallback store
-                    continue
-
-        # Not found anywhere
-        raise FeatureNotFoundError(
-            f"Feature {feature_key.to_string()} not found in store"
-            + (" or fallback stores" if allow_fallback else "")
+        return self._read_from_fallback_stores(
+            feature,
+            feature_key,
+            feature_version,
+            filters,
+            columns,
+            allow_fallback,
+            current_only,
+            latest_only,
+            include_soft_deleted,
         )
 
     def write_metadata(
@@ -1239,6 +1267,227 @@ class MetadataStore(ABC):
         """Check if feature key is a system table."""
         return len(feature_key) >= 1 and feature_key[0] == METAXY_SYSTEM_KEY_PREFIX
 
+    def _normalize_filter_keys(
+        self,
+        filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None,
+    ) -> dict[FeatureKey, list[nw.Expr]]:
+        """Normalize filter keys from various types to FeatureKey."""
+        if not filters:
+            return {}
+        return {
+            self._resolve_feature_key(key): list(exprs)
+            for key, exprs in filters.items()
+        }
+
+    def _read_current_metadata_for_update(
+        self,
+        feature_key: FeatureKey,
+        current_feature_filters: list[nw.Expr],
+    ) -> nw.LazyFrame[Any] | None:
+        """Read current metadata for update resolution."""
+        try:
+            return self.read_metadata(
+                feature_key,
+                filters=current_feature_filters if current_feature_filters else None,
+                allow_fallback=False,
+                current_only=True,
+                latest_only=True,
+            )
+        except FeatureNotFoundError:
+            return None
+
+    def _prepare_upstream_data(
+        self,
+        samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
+        plan: FeaturePlan,
+        current_feature_filters: list[nw.Expr],
+        normalized_filters: dict[FeatureKey, list[nw.Expr]],
+        global_filter_list: list[nw.Expr],
+    ) -> tuple[
+        dict[FeatureKey, nw.LazyFrame[Any]],
+        nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
+    ]:
+        """Prepare upstream data, either from samples or by loading metadata."""
+        upstream_by_key: dict[FeatureKey, nw.LazyFrame[Any]] = {}
+        if samples_nw is not None:
+            samples_nw = self._prepare_samples_with_provenance(
+                samples_nw, plan, current_feature_filters
+            )
+        else:
+            upstream_by_key = self._load_upstream_metadata(
+                plan, normalized_filters, global_filter_list
+            )
+        return upstream_by_key, samples_nw
+
+    def _resolve_increment(
+        self,
+        plan: FeaturePlan,
+        implementation: nw.Implementation,
+        skip_comparison: bool,
+        samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
+        upstream_by_key: dict[FeatureKey, nw.LazyFrame[Any]],
+        current_metadata: nw.LazyFrame[Any] | None,
+    ) -> tuple[
+        nw.LazyFrame[Any],
+        nw.LazyFrame[Any] | None,
+        nw.LazyFrame[Any] | None,
+        nw.LazyFrame[Any] | None,
+    ]:
+        """Resolve the increment using the versioning engine."""
+        filters_by_key: dict[FeatureKey, list[nw.Expr]] = {}
+
+        with self.create_versioning_engine(
+            plan=plan, implementation=implementation
+        ) as engine:
+            if skip_comparison:
+                return self._resolve_increment_skip_comparison(
+                    engine, samples_nw, upstream_by_key, filters_by_key
+                )
+            added, changed, removed, input_df = (
+                engine.resolve_increment_with_provenance(
+                    current=current_metadata,
+                    upstream=upstream_by_key,
+                    hash_algorithm=self.hash_algorithm,
+                    filters=filters_by_key,
+                    sample=samples_nw.lazy() if samples_nw is not None else None,
+                )
+            )
+            return added, changed, removed, input_df
+
+    def _resolve_increment_skip_comparison(
+        self,
+        engine: VersioningEngine,
+        samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None,
+        upstream_by_key: dict[FeatureKey, nw.LazyFrame[Any]],
+        filters_by_key: dict[FeatureKey, list[nw.Expr]],
+    ) -> tuple[
+        nw.LazyFrame[Any],
+        nw.LazyFrame[Any] | None,
+        nw.LazyFrame[Any] | None,
+        nw.LazyFrame[Any] | None,
+    ]:
+        """Resolve increment when skipping comparison (return all as added)."""
+        if samples_nw is not None:
+            added = samples_nw.lazy()
+            input_df = None
+        else:
+            added = engine.load_upstream_with_provenance(
+                upstream=upstream_by_key,
+                hash_algo=self.hash_algorithm,
+                filters=filters_by_key,
+            )
+            input_df = added
+        return added, None, None, input_df
+
+    def _build_version_filters(
+        self,
+        filters: list[nw.Expr],
+        feature_key: FeatureKey,
+        feature_version: str | None,
+        current_only: bool,
+        is_system_table: bool,
+    ) -> list[nw.Expr]:
+        """Build filters including version filter if needed."""
+        if (current_only or feature_version is not None) and not is_system_table:
+            version_value = (
+                current_graph().get_feature_version(feature_key)
+                if current_only
+                else feature_version
+            )
+            version_filter = nw.col(METAXY_FEATURE_VERSION) == version_value
+            return [version_filter, *filters]
+        return filters
+
+    def _read_from_store_with_system_check(
+        self,
+        feature: CoercibleToFeatureKey,
+        feature_key: FeatureKey,
+        is_system_table: bool,
+        filters: list[nw.Expr],
+        read_columns: list[str] | None,
+    ) -> nw.LazyFrame[Any] | None:
+        """Read from store and handle system table errors."""
+        try:
+            lazy_frame = self.read_metadata_in_store(
+                feature, filters=filters, columns=read_columns
+            )
+        except FeatureNotFoundError as e:
+            if is_system_table:
+                raise SystemDataNotFoundError(
+                    f"System Metaxy data with key {feature_key} is missing in {self.display()}. "
+                    f"Invoke `metaxy graph push` before attempting to read system data."
+                ) from e
+            return None
+
+        if lazy_frame is None and is_system_table:
+            raise SystemDataNotFoundError(
+                f"System Metaxy data with key {feature_key} is missing in {self.display()}. "
+                f"Invoke `metaxy graph push` before attempting to read system data."
+            )
+        return lazy_frame
+
+    def _apply_post_read_processing(
+        self,
+        lazy_frame: nw.LazyFrame[Any],
+        feature_key: FeatureKey,
+        is_system_table: bool,
+        latest_only: bool,
+        filter_deleted: bool,
+        columns: list[str],
+    ) -> nw.LazyFrame[Any]:
+        """Apply deduplication and filtering after reading."""
+        if not is_system_table:
+            if latest_only:
+                id_cols = list(
+                    self._resolve_feature_plan(feature_key).feature.id_columns
+                )
+                lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
+                    df=lazy_frame,
+                    group_columns=id_cols,
+                    timestamp_column=METAXY_CREATED_AT,
+                )
+            if filter_deleted:
+                lazy_frame = lazy_frame.filter(nw.col(METAXY_DELETED_AT).is_null())
+
+        if columns:
+            lazy_frame = lazy_frame.select(columns)
+        return lazy_frame
+
+    def _read_from_fallback_stores(
+        self,
+        feature: CoercibleToFeatureKey,
+        feature_key: FeatureKey,
+        feature_version: str | None,
+        filters: list[nw.Expr],
+        columns: list[str],
+        allow_fallback: bool,
+        current_only: bool,
+        latest_only: bool,
+        include_soft_deleted: bool,
+    ) -> nw.LazyFrame[Any]:
+        """Try reading from fallback stores."""
+        if allow_fallback:
+            for store in self.fallback_stores:
+                try:
+                    with store:
+                        return store.read_metadata(
+                            feature,
+                            feature_version=feature_version,
+                            filters=filters,
+                            columns=columns,
+                            allow_fallback=True,
+                            current_only=current_only,
+                            latest_only=latest_only,
+                            include_soft_deleted=include_soft_deleted,
+                        )
+                except FeatureNotFoundError:
+                    continue
+
+        raise FeatureNotFoundError(
+            f"Feature {feature_key.to_string()} not found in store"
+            + (" or fallback stores" if allow_fallback else "")
+        )
+
     def _resolve_feature_key(self, feature: CoercibleToFeatureKey) -> FeatureKey:
         """Resolve various types to FeatureKey.
 
@@ -1259,6 +1508,76 @@ class MetadataStore(ABC):
         # Then get the plan
         graph = current_graph()
         return graph.get_feature_plan(feature_key)
+
+    def _prepare_samples_with_provenance(
+        self,
+        samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any],
+        plan: FeaturePlan,
+        current_feature_filters: list[nw.Expr],
+    ) -> nw.DataFrame[Any] | nw.LazyFrame[Any]:
+        """Prepare samples DataFrame with provenance columns.
+
+        Args:
+            samples_nw: Input samples DataFrame
+            plan: Feature plan for provenance computation
+            current_feature_filters: Filters to apply to samples
+
+        Returns:
+            Samples with provenance columns added
+        """
+        # Apply filters to samples if any
+        filtered_samples = samples_nw
+        if current_feature_filters:
+            filtered_samples = samples_nw.filter(current_feature_filters)
+
+        # Fill in METAXY_PROVENANCE column if it's missing (e.g. for root features)
+        samples_nw = self.hash_struct_version_column(
+            plan,
+            df=filtered_samples,
+            struct_column=METAXY_PROVENANCE_BY_FIELD,
+            hash_column=METAXY_PROVENANCE,
+        )
+
+        # For root features, add data_version columns if they don't exist
+        if METAXY_DATA_VERSION_BY_FIELD not in samples_nw.collect_schema().names():
+            samples_nw = samples_nw.with_columns(
+                nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
+                nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+            )
+
+        return samples_nw
+
+    def _load_upstream_metadata(
+        self,
+        plan: FeaturePlan,
+        normalized_filters: dict[FeatureKey, list[nw.Expr]],
+        global_filter_list: list[nw.Expr],
+    ) -> dict[FeatureKey, nw.LazyFrame[Any]]:
+        """Load metadata for all upstream dependencies.
+
+        Args:
+            plan: Feature plan with dependencies
+            normalized_filters: Feature-specific filters
+            global_filter_list: Global filters to apply
+
+        Returns:
+            Dict mapping feature keys to their metadata LazyFrames
+        """
+        upstream_by_key: dict[FeatureKey, nw.LazyFrame[Any]] = {}
+
+        for upstream_spec in plan.deps or []:
+            upstream_filters = [
+                *normalized_filters.get(upstream_spec.key, []),
+                *global_filter_list,
+            ]
+            upstream_feature_metadata = self.read_metadata(
+                upstream_spec.key,
+                filters=upstream_filters,
+            )
+            if upstream_feature_metadata is not None:
+                upstream_by_key[upstream_spec.key] = upstream_feature_metadata
+
+        return upstream_by_key
 
     # ========== Core CRUD Operations ==========
 
@@ -1368,10 +1687,24 @@ class MetadataStore(ABC):
         """
         feature_key = self._resolve_feature_key(feature)
 
-        # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
+        df = self._add_version_columns(df, feature, feature_key)
+        df = self._add_provenance_columns(df, feature_key)
+        df = self._add_timestamp_columns(df)
+        df = self._add_materialization_id(df, materialization_id)
+        df = self._add_data_version_columns(df, feature_key)
+        df = _cast_present_system_columns(df)
+
+        return df
+
+    def _add_version_columns(
+        self,
+        df: Frame,
+        feature: CoercibleToFeatureKey,
+        feature_key: FeatureKey,
+    ) -> Frame:
+        """Add version columns to the DataFrame."""
         columns = df.collect_schema().names()
 
-        # Check if version columns already exist in DataFrame
         has_feature_version = METAXY_FEATURE_VERSION in columns
         has_snapshot_version = METAXY_SNAPSHOT_VERSION in columns
         has_feature_spec_version = METAXY_FEATURE_SPEC_VERSION in columns
@@ -1383,88 +1716,59 @@ class MetadataStore(ABC):
             and has_snapshot_version
             and has_feature_spec_version
         ):
-            pass  # Use existing values for migrations
-        else:
-            # Drop any existing version columns (e.g., from SQLModel with null values)
-            # and add current versions
-            columns_to_drop = []
-            if has_feature_version:
-                columns_to_drop.append(METAXY_FEATURE_VERSION)
-            if has_snapshot_version:
-                columns_to_drop.append(METAXY_SNAPSHOT_VERSION)
-            if has_feature_spec_version:
-                columns_to_drop.append(METAXY_FEATURE_SPEC_VERSION)
-            if columns_to_drop:
-                df = df.drop(*columns_to_drop)
+            return df
 
-            # Get current feature version, feature_spec_version, and snapshot_version from code
-            # Use duck typing to avoid Ray serialization issues with issubclass
-            if (
-                isinstance(feature, type)
-                and hasattr(feature, "feature_version")
-                and callable(feature.feature_version)
-            ):
-                current_feature_version = feature.feature_version()  # ty: ignore[call-top-callable]
-                current_feature_spec_version = feature.feature_spec_version()  # ty: ignore[possibly-missing-attribute]
-            else:
-                from metaxy import get_feature_by_key
-
-                feature_cls = get_feature_by_key(feature_key)
-                current_feature_version = feature_cls.feature_version()
-                current_feature_spec_version = feature_cls.feature_spec_version()
-
-            # Get snapshot_version from active graph
-            from metaxy.models.feature import FeatureGraph
-
-            graph = FeatureGraph.get_active()
-            current_snapshot_version = graph.snapshot_version
-
-            df = df.with_columns(
-                [
-                    nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),  # ty: ignore[invalid-argument-type]
-                    nw.lit(current_snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
-                    nw.lit(current_feature_spec_version).alias(
-                        METAXY_FEATURE_SPEC_VERSION
-                    ),
-                ]
-            )
-
-        # These should normally be added by the provenance engine during resolve_update
-        from metaxy.models.constants import (
-            METAXY_CREATED_AT,
-            METAXY_DATA_VERSION,
-            METAXY_DATA_VERSION_BY_FIELD,
+        df = _drop_existing_version_columns(
+            df, has_feature_version, has_snapshot_version, has_feature_spec_version
         )
 
-        # Re-fetch columns since df may have been modified above
+        current_feature_version, current_feature_spec_version = _get_feature_versions(
+            feature, feature_key
+        )
+
+        from metaxy.models.feature import FeatureGraph
+
+        graph = FeatureGraph.get_active()
+        current_snapshot_version = graph.snapshot_version
+
+        return df.with_columns(
+            [
+                nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),  # ty: ignore[invalid-argument-type]
+                nw.lit(current_snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+                nw.lit(current_feature_spec_version).alias(METAXY_FEATURE_SPEC_VERSION),
+            ]
+        )
+
+    def _add_provenance_columns(self, df: Frame, feature_key: FeatureKey) -> Frame:
+        """Add provenance columns to the DataFrame."""
         columns = df.collect_schema().names()
 
         if METAXY_PROVENANCE_BY_FIELD not in columns:
             raise ValueError(
-                f"Metadata is missing a required column `{METAXY_PROVENANCE_BY_FIELD}`. It should have been created by a prior `MetadataStore.resolve_update` call. Did you drop it on the way?"
+                f"Metadata is missing a required column `{METAXY_PROVENANCE_BY_FIELD}`. "
+                f"It should have been created by a prior `MetadataStore.resolve_update` call. "
+                f"Did you drop it on the way?"
             )
 
         if METAXY_PROVENANCE not in columns:
             plan = self._resolve_feature_plan(feature_key)
-
-            # Only warn for non-root features (features with dependencies).
-            # Root features don't have upstream dependencies, so they don't go through
-            # resolve_update() - they just need metaxy_provenance_by_field to be set.
             if plan.deps:
                 MetaxyColumnMissingWarning.warn_on_missing_column(
                     expected=METAXY_PROVENANCE,
                     df=df,
-                    message=f"It should have been created by a prior `MetadataStore.resolve_update` call. Re-crearing it from `{METAXY_PROVENANCE_BY_FIELD}` Did you drop it on the way?",
+                    message=f"It should have been created by a prior `MetadataStore.resolve_update` call. "
+                    f"Re-crearing it from `{METAXY_PROVENANCE_BY_FIELD}` Did you drop it on the way?",
                 )
-
             df = self.hash_struct_version_column(
                 plan=plan,
                 df=df,
                 struct_column=METAXY_PROVENANCE_BY_FIELD,
                 hash_column=METAXY_PROVENANCE,
             )
+        return df
 
-        # Re-fetch columns since df may have been modified
+    def _add_timestamp_columns(self, df: Frame) -> Frame:
+        """Add timestamp columns to the DataFrame."""
         columns = df.collect_schema().names()
 
         if METAXY_CREATED_AT not in columns:
@@ -1480,18 +1784,20 @@ class MetadataStore(ABC):
                     METAXY_DELETED_AT
                 )
             )
+        return df
 
-        # Add materialization_id if not already present
-        from metaxy.models.constants import METAXY_MATERIALIZATION_ID
-
-        df = df.with_columns(
+    def _add_materialization_id(
+        self, df: Frame, materialization_id: str | None
+    ) -> Frame:
+        """Add materialization ID column to the DataFrame."""
+        return df.with_columns(
             nw.lit(
                 materialization_id or self._materialization_id, dtype=nw.String
             ).alias(METAXY_MATERIALIZATION_ID)
         )
 
-        # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)
-        # Re-fetch columns since df may have been modified
+    def _add_data_version_columns(self, df: Frame, feature_key: FeatureKey) -> Frame:
+        """Add data version columns to the DataFrame."""
         columns = df.collect_schema().names()
 
         if METAXY_DATA_VERSION_BY_FIELD not in columns:
@@ -1506,12 +1812,6 @@ class MetadataStore(ABC):
                 struct_column=METAXY_DATA_VERSION_BY_FIELD,
                 hash_column=METAXY_DATA_VERSION,
             )
-
-        # Cast system columns with Null dtype to their correct types
-        # This handles edge cases where empty DataFrames or certain operations
-        # result in Null-typed columns that break downstream processing
-        df = _cast_present_system_columns(df)
-
         return df
 
     def _validate_schema(self, df: Frame) -> None:

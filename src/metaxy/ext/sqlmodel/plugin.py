@@ -143,6 +143,113 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
         return new_class
 
     @staticmethod
+    def _build_constraints(
+        spec: FeatureSpec,
+        inject_primary_key: bool,
+        inject_index: bool,
+    ) -> list[Any]:
+        """Build primary key and/or index constraints for the table.
+
+        Args:
+            spec: Feature specification with id_columns
+            inject_primary_key: If True, create a primary key constraint
+            inject_index: If True, create an index constraint
+
+        Returns:
+            List of SQLAlchemy constraint objects
+        """
+        from sqlalchemy import Index, PrimaryKeyConstraint
+
+        constraints: list[Any] = []
+        if not (inject_primary_key or inject_index):
+            return constraints
+
+        # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
+        key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_CREATED_AT]
+
+        if inject_primary_key:
+            constraints.append(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))
+        if inject_index:
+            constraints.append(Index("metaxy_idx", *key_columns))
+
+        return constraints
+
+    @staticmethod
+    def _merge_table_kwargs(
+        table_kwargs: dict[str, Any],
+        metaxy_info: dict[str, Any],
+        base_table_kwargs: dict[str, Any],
+    ) -> None:
+        """Merge Metaxy info and base kwargs into table_kwargs (in-place).
+
+        Args:
+            table_kwargs: Table kwargs dict to modify
+            metaxy_info: Metaxy system info to merge into 'info' key
+            base_table_kwargs: Base kwargs to set as defaults
+        """
+        existing_info = table_kwargs.get("info", {})
+        existing_info.update(metaxy_info)
+        table_kwargs["info"] = existing_info
+        for key, value in base_table_kwargs.items():
+            table_kwargs.setdefault(key, value)
+
+    @staticmethod
+    def _merge_with_dict_table_args(
+        existing_args: dict[str, Any],
+        constraints: list[Any],
+        metaxy_info: dict[str, Any],
+        base_table_kwargs: dict[str, Any],
+    ) -> dict[str, Any] | tuple[Any, ...]:
+        """Merge Metaxy table args with existing dict-format __table_args__.
+
+        Args:
+            existing_args: Existing dict-format table args
+            constraints: List of constraints to add
+            metaxy_info: Metaxy system info
+            base_table_kwargs: Base table kwargs
+
+        Returns:
+            Updated table args (dict if no constraints, tuple otherwise)
+        """
+        SQLModelFeatureMeta._merge_table_kwargs(
+            existing_args, metaxy_info, base_table_kwargs
+        )
+        if constraints:
+            return tuple(constraints) + (existing_args,)
+        return existing_args
+
+    @staticmethod
+    def _merge_with_tuple_table_args(
+        existing_args: tuple[Any, ...],
+        constraints: list[Any],
+        metaxy_info: dict[str, Any],
+        base_table_kwargs: dict[str, Any],
+    ) -> tuple[Any, ...]:
+        """Merge Metaxy table args with existing tuple-format __table_args__.
+
+        Args:
+            existing_args: Existing tuple-format table args
+            constraints: List of constraints to add
+            metaxy_info: Metaxy system info
+            base_table_kwargs: Base table kwargs
+
+        Returns:
+            Updated table args as tuple
+        """
+        # Extract existing constraints and table kwargs
+        if existing_args and isinstance(existing_args[-1], dict):
+            existing_constraints = existing_args[:-1]
+            table_kwargs = dict(existing_args[-1])
+        else:
+            existing_constraints = existing_args
+            table_kwargs = {}
+
+        SQLModelFeatureMeta._merge_table_kwargs(
+            table_kwargs, metaxy_info, base_table_kwargs
+        )
+        return existing_constraints + tuple(constraints) + (table_kwargs,)
+
+    @staticmethod
     def _inject_table_args(
         namespace: dict[str, Any],
         spec: FeatureSpec,
@@ -165,84 +272,41 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
             inject_primary_key: If True, inject composite primary key
             inject_index: If True, inject composite index
         """
-
-        from sqlalchemy import Index, PrimaryKeyConstraint
-
-        # Prepare info dict with Metaxy metadata (always added)
         metaxy_info = {
             "metaxy-system": MetaxyTableInfo(feature_key=spec.key).model_dump()
         }
-
-        # Base table kwargs that are always applied
         base_table_kwargs = {"extend_existing": True}
+        constraints = SQLModelFeatureMeta._build_constraints(
+            spec, inject_primary_key, inject_index
+        )
 
-        # Prepare constraints if requested
-        constraints = []
-        if inject_primary_key or inject_index:
-            # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
-            key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_CREATED_AT]
-
-            if inject_primary_key:
-                constraints.append(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))
-
-            if inject_index:
-                constraints.append(Index("metaxy_idx", *key_columns))
-
-        # Merge with existing __table_args__
-        if "__table_args__" in namespace:
-            existing_args = namespace["__table_args__"]
-
-            if isinstance(existing_args, dict):
-                # Dict format: merge info and base kwargs, convert to tuple if we have constraints
-                existing_info = existing_args.get("info", {})
-                existing_info.update(metaxy_info)
-                existing_args["info"] = existing_info
-                # Merge base table kwargs (don't override user settings)
-                for key, value in base_table_kwargs.items():
-                    existing_args.setdefault(key, value)
-
-                if constraints:
-                    # Convert to tuple format with constraints
-                    namespace["__table_args__"] = tuple(constraints) + (existing_args,)
-                # else: keep as dict
-
-            elif isinstance(existing_args, tuple):
-                # Tuple format: append constraints and merge info in table kwargs dict
-                # Extract existing constraints and table kwargs
-                if existing_args and isinstance(existing_args[-1], dict):
-                    # Has table kwargs dict at the end
-                    existing_constraints = existing_args[:-1]
-                    table_kwargs = dict(existing_args[-1])
-                else:
-                    # No table kwargs dict
-                    existing_constraints = existing_args
-                    table_kwargs = {}
-
-                # Merge info
-                existing_info = table_kwargs.get("info", {})
-                existing_info.update(metaxy_info)
-                table_kwargs["info"] = existing_info
-                # Merge base table kwargs (don't override user settings)
-                for key, value in base_table_kwargs.items():
-                    table_kwargs.setdefault(key, value)
-
-                # Combine: existing constraints + new constraints + table kwargs
-                namespace["__table_args__"] = (
-                    existing_constraints + tuple(constraints) + (table_kwargs,)
-                )
-            else:
-                raise ValueError(
-                    f"Invalid __table_args__ type in {cls_name}: {type(existing_args)}"
-                )
-        else:
+        if "__table_args__" not in namespace:
             # No existing __table_args__
             table_kwargs = {**base_table_kwargs, "info": metaxy_info}
             if constraints:
-                # Create tuple format with constraints + table kwargs
                 namespace["__table_args__"] = tuple(constraints) + (table_kwargs,)
             else:
-                # Just table kwargs, use dict format
                 namespace["__table_args__"] = table_kwargs
+            return
+
+        existing_args = namespace["__table_args__"]
+
+        if isinstance(existing_args, dict):
+            namespace["__table_args__"] = (
+                SQLModelFeatureMeta._merge_with_dict_table_args(
+                    existing_args, constraints, metaxy_info, base_table_kwargs
+                )
+            )
+        elif isinstance(existing_args, tuple):
+            namespace["__table_args__"] = (
+                SQLModelFeatureMeta._merge_with_tuple_table_args(
+                    existing_args, constraints, metaxy_info, base_table_kwargs
+                )
+            )
+        else:
+            raise ValueError(
+                f"Invalid __table_args__ type in {cls_name}: {type(existing_args)}"
+            )
 
 
 class BaseSQLModelFeature(

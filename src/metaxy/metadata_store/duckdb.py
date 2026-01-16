@@ -41,6 +41,66 @@ ExtensionInput = str | ExtensionSpec | Mapping[str, Any]
 NormalisedExtension = str | ExtensionSpec
 
 
+def _get_extension_names(extensions: Sequence[NormalisedExtension]) -> list[str]:
+    """Extract extension names from a sequence of extension specs."""
+    names = []
+    for ext in extensions:
+        if isinstance(ext, str):
+            names.append(ext)
+        elif isinstance(ext, ExtensionSpec):
+            names.append(ext.name)
+    return names
+
+
+def _create_md5_hash_function() -> dict[HashAlgorithm, Any]:
+    """Create MD5 hash function for DuckDB."""
+    import ibis
+
+    @ibis.udf.scalar.builtin
+    def MD5(x: str) -> str:  # ty: ignore[invalid-return-type]
+        """DuckDB MD5() function."""
+        ...
+
+    @ibis.udf.scalar.builtin
+    def LOWER(x: str) -> str:  # ty: ignore[invalid-return-type]
+        """DuckDB LOWER() function."""
+        ...
+
+    def md5_hash(col_expr):
+        """Hash a column using DuckDB's MD5() function."""
+        return LOWER(MD5(col_expr.cast(str)))
+
+    return {HashAlgorithm.MD5: md5_hash}
+
+
+def _create_xxhash_functions() -> dict[HashAlgorithm, Any]:
+    """Create xxHash functions for DuckDB (requires hashfuncs extension)."""
+    import ibis
+
+    @ibis.udf.scalar.builtin
+    def xxh32(x: str) -> int:  # ty: ignore[invalid-return-type]
+        """DuckDB xxh32() hash function from hashfuncs extension."""
+        ...
+
+    @ibis.udf.scalar.builtin
+    def xxh64(x: str) -> int:  # ty: ignore[invalid-return-type]
+        """DuckDB xxh64() hash function from hashfuncs extension."""
+        ...
+
+    def xxhash32_hash(col_expr):
+        """Hash a column using DuckDB's xxh32() function."""
+        return xxh32(col_expr.cast(str)).cast(str)
+
+    def xxhash64_hash(col_expr):
+        """Hash a column using DuckDB's xxh64() function."""
+        return xxh64(col_expr.cast(str)).cast(str)
+
+    return {
+        HashAlgorithm.XXHASH32: xxhash32_hash,
+        HashAlgorithm.XXHASH64: xxhash64_hash,
+    }
+
+
 class DuckDBMetadataStoreConfig(IbisMetadataStoreConfig):
     """Configuration for DuckDBMetadataStore.
 
@@ -308,71 +368,11 @@ class DuckDBMetadataStore(IbisMetadataStore):
         Returns hash functions that take Ibis column expressions and return
         Ibis expressions that call DuckDB SQL functions.
         """
-        # Import ibis for wrapping built-in SQL functions
-        import ibis
+        hash_functions = _create_md5_hash_function()
 
-        hash_functions = {}
-
-        # DuckDB MD5 implementation
-        @ibis.udf.scalar.builtin
-        def MD5(x: str) -> str:  # ty: ignore[invalid-return-type]
-            """DuckDB MD5() function."""
-            ...
-
-        @ibis.udf.scalar.builtin
-        def HEX(x: str) -> str:  # ty: ignore[invalid-return-type]
-            """DuckDB HEX() function."""
-            ...
-
-        @ibis.udf.scalar.builtin
-        def LOWER(x: str) -> str:  # ty: ignore[invalid-return-type]
-            """DuckDB LOWER() function."""
-            ...
-
-        def md5_hash(col_expr):
-            """Hash a column using DuckDB's MD5() function."""
-            # MD5 already returns hex string, just convert to lowercase
-            return LOWER(MD5(col_expr.cast(str)))
-
-        hash_functions[HashAlgorithm.MD5] = md5_hash
-
-        # Determine which extensions are available
-        extension_names = []
-        for ext in self.extensions:
-            if isinstance(ext, str):
-                extension_names.append(ext)
-            elif isinstance(ext, ExtensionSpec):
-                extension_names.append(ext.name)
-
-        # Add xxHash functions if hashfuncs extension is loaded
+        extension_names = _get_extension_names(self.extensions)
         if "hashfuncs" in extension_names:
-            # Use Ibis's builtin UDF decorator to wrap DuckDB's xxhash functions
-            # These functions already exist in DuckDB (via hashfuncs extension)
-            # The decorator tells Ibis to call them directly in SQL
-            # NOTE: xxh32/xxh64 return integers in DuckDB, not strings
-            @ibis.udf.scalar.builtin
-            def xxh32(x: str) -> int:  # ty: ignore[invalid-return-type]
-                """DuckDB xxh32() hash function from hashfuncs extension."""
-                ...
-
-            @ibis.udf.scalar.builtin
-            def xxh64(x: str) -> int:  # ty: ignore[invalid-return-type]
-                """DuckDB xxh64() hash function from hashfuncs extension."""
-                ...
-
-            # Create hash functions that use these wrapped SQL functions
-            def xxhash32_hash(col_expr):
-                """Hash a column using DuckDB's xxh32() function."""
-                # Cast to string and then cast result to string (xxh32 returns integer in DuckDB)
-                return xxh32(col_expr.cast(str)).cast(str)
-
-            def xxhash64_hash(col_expr):
-                """Hash a column using DuckDB's xxh64() function."""
-                # Cast to string and then cast result to string (xxh64 returns integer in DuckDB)
-                return xxh64(col_expr.cast(str)).cast(str)
-
-            hash_functions[HashAlgorithm.XXHASH32] = xxhash32_hash
-            hash_functions[HashAlgorithm.XXHASH64] = xxhash64_hash
+            hash_functions.update(_create_xxhash_functions())
 
         return hash_functions
 

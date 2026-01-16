@@ -121,7 +121,22 @@ class MetaxyConfigPreprocessor(Preprocessor):
         Raises:
             ValueError: If required parameters are missing or class cannot be imported.
         """
-        # Parse YAML content
+        params = self._parse_directive_params(content)
+        config_class = self._import_config_class(params["class"])
+        env_prefix, env_nested_delimiter = self._extract_env_config(config_class)
+        fields = self._extract_fields(config_class, params["class"])
+        filtered_fields = self._filter_fields(fields, params["exclude_fields"])
+        return self._generate_field_docs(
+            filtered_fields,
+            fields,
+            params["path_prefix"],
+            params["header_level"],
+            env_prefix,
+            env_nested_delimiter,
+        )
+
+    def _parse_directive_params(self, content: str) -> dict[str, Any]:
+        """Parse and validate directive parameters from YAML content."""
         try:
             params = yaml.safe_load(content) or {}
         except yaml.YAMLError as e:
@@ -136,10 +151,8 @@ class MetaxyConfigPreprocessor(Preprocessor):
         if not class_path:
             raise ValueError("Missing required parameter: class")
 
-        # Optional path prefix for nested configs (e.g., ["ext", "sqlmodel"])
         path_prefix = params.get("path_prefix", [])
         if isinstance(path_prefix, str):
-            # Allow comma-separated or dot-separated strings
             if "," in path_prefix:
                 path_prefix = [p.strip() for p in path_prefix.split(",")]
             elif "." in path_prefix:
@@ -147,26 +160,29 @@ class MetaxyConfigPreprocessor(Preprocessor):
             else:
                 path_prefix = [path_prefix]
 
-        # Optional header level (default 3 = h3)
-        header_level = params.get("header_level", 3)
-
-        # Optional list of field names to exclude from documentation
         exclude_fields = params.get("exclude_fields", [])
         if isinstance(exclude_fields, str):
             exclude_fields = [f.strip() for f in exclude_fields.split(",")]
 
-        # Import the class dynamically
+        return {
+            "class": class_path,
+            "path_prefix": path_prefix,
+            "header_level": params.get("header_level", 3),
+            "exclude_fields": exclude_fields,
+        }
+
+    def _import_config_class(self, class_path: str) -> type:
+        """Import a config class from its dotted path."""
         try:
             module_path, class_name = class_path.rsplit(".", 1)
             module = importlib.import_module(module_path)
-            config_class = getattr(module, class_name)
+            return getattr(module, class_name)
         except (ValueError, ImportError, AttributeError) as e:
             raise ValueError(f"Failed to import class '{class_path}': {e}") from e
 
-        # Extract env_prefix from model_config
-        # For pydantic-settings BaseSettings, model_config is a SettingsConfigDict (TypedDict)
+    def _extract_env_config(self, config_class: type) -> tuple[str, str]:
+        """Extract environment variable configuration from a config class."""
         model_config = getattr(config_class, "model_config", {})
-        # Handle both dict-like and object-like access
         if isinstance(model_config, dict):
             env_prefix = model_config.get("env_prefix") or "METAXY_"
             env_nested_delimiter = model_config.get("env_nested_delimiter") or "__"
@@ -175,107 +191,120 @@ class MetaxyConfigPreprocessor(Preprocessor):
             env_nested_delimiter = (
                 getattr(model_config, "env_nested_delimiter", None) or "__"
             )
+        return env_prefix, env_nested_delimiter
 
-        # Extract field information
+    def _extract_fields(
+        self, config_class: type, class_path: str
+    ) -> list[dict[str, Any]]:
+        """Extract field information from a config class."""
         try:
-            fields = extract_field_info(config_class)
+            return extract_field_info(config_class)
         except Exception as e:
             raise ValueError(
                 f"Failed to extract field info from {class_path}: {e}"
             ) from e
 
-        # Helper to check if a nested field has children
-        def has_children(
-            field: dict[str, Any], all_fields: list[dict[str, Any]]
-        ) -> bool:
-            """Check if a nested model field has child fields."""
-            field_path = field["path"]
-            for other in all_fields:
-                if other is field:
-                    continue
-                # Check if other field is a child (starts with this field's path)
-                if (
-                    len(other["path"]) > len(field_path)
-                    and other["path"][: len(field_path)] == field_path
-                ):
-                    return True
-            return False
-
-        # Filter fields: include leaf fields and nested models with children
-        filtered_fields = []
+    def _filter_fields(
+        self, fields: list[dict[str, Any]], exclude_fields: list[str]
+    ) -> list[dict[str, Any]]:
+        """Filter fields based on exclusion rules."""
+        filtered = []
         for field in fields:
-            # Skip 'ext' field to avoid infinite recursion
             if field["name"] == "ext":
                 continue
-
-            # Skip explicitly excluded fields (from directive or field metadata)
             if field["name"] in exclude_fields:
                 continue
-
-            # Skip fields marked with mkdocs_metaxy_hide
             if field.get("hide_from_docs", False):
                 continue
-
             if field["is_nested"]:
-                # Only include nested models that have children
-                if has_children(field, fields):
-                    filtered_fields.append(field)
+                if self._has_children(field, fields):
+                    filtered.append(field)
             else:
-                # Include all leaf fields
-                filtered_fields.append(field)
+                filtered.append(field)
+        return filtered
 
-        # Build a map of nested model paths for depth calculation
+    def _has_children(
+        self, field: dict[str, Any], all_fields: list[dict[str, Any]]
+    ) -> bool:
+        """Check if a nested model field has child fields."""
+        field_path = field["path"]
+        for other in all_fields:
+            if other is field:
+                continue
+            if (
+                len(other["path"]) > len(field_path)
+                and other["path"][: len(field_path)] == field_path
+            ):
+                return True
+        return False
+
+    def _generate_field_docs(
+        self,
+        filtered_fields: list[dict[str, Any]],
+        all_fields: list[dict[str, Any]],
+        path_prefix: list[str],
+        header_level: int,
+        env_prefix: str,
+        env_nested_delimiter: str,
+    ) -> str:
+        """Generate documentation for filtered fields."""
         nested_model_paths = {
             tuple(field["path"]): field
             for field in filtered_fields
             if field["is_nested"]
         }
 
-        # Generate documentation for each field
         field_docs = []
         for field in filtered_fields:
-            # Store original path for depth calculation
             original_path = field["path"].copy()
+            depth = self._calculate_field_depth(original_path, nested_model_paths)
 
-            # Calculate depth: how many nested models are parents of this field
-            depth = 0
-            for parent_path in nested_model_paths:
-                if len(parent_path) < len(original_path):
-                    if original_path[: len(parent_path)] == list(parent_path):
-                        depth += 1
-
-            # Apply path prefix for TOML display if provided
             if path_prefix:
                 field["path"] = path_prefix + field["path"]
 
-            # Calculate header level based on depth
             field_header_level = header_level + depth
-
-            # For nested models with children, just generate a header
-            if field["is_nested"]:
-                # Use just field name for header, not full path with prefix
-                header_prefix = "#" * field_header_level
-                field_doc = f"{header_prefix} `{field['name']}`\n\n"
-                if field["description"]:
-                    field_doc += f"{field['description']}\n\n"
-            else:
-                # Generate full doc with examples for leaf fields
-                # Use full path (with prefix) for env var generation
-                field_doc = generate_individual_field_doc(
-                    field,
-                    env_prefix=env_prefix,
-                    env_nested_delimiter=env_nested_delimiter,
-                    include_tool_prefix=False,
-                    header_level=field_header_level,
-                    env_var_path=field["path"],  # Use full path with prefix
-                    header_name=field["name"],  # Use just field name for header
-                )
+            field_doc = self._generate_single_field_doc(
+                field, field_header_level, env_prefix, env_nested_delimiter
+            )
             field_docs.append(field_doc)
 
-        # Concatenate all field docs
-        markdown = "\n".join(field_docs)
+        return "\n".join(field_docs)
 
-        return markdown
+    def _calculate_field_depth(
+        self, original_path: list[str], nested_model_paths: dict[tuple, Any]
+    ) -> int:
+        """Calculate nesting depth for a field."""
+        depth = 0
+        for parent_path in nested_model_paths:
+            if len(parent_path) < len(original_path):
+                if original_path[: len(parent_path)] == list(parent_path):
+                    depth += 1
+        return depth
+
+    def _generate_single_field_doc(
+        self,
+        field: dict[str, Any],
+        header_level: int,
+        env_prefix: str,
+        env_nested_delimiter: str,
+    ) -> str:
+        """Generate documentation for a single field."""
+        if field["is_nested"]:
+            header_prefix = "#" * header_level
+            field_doc = f"{header_prefix} `{field['name']}`\n\n"
+            if field["description"]:
+                field_doc += f"{field['description']}\n\n"
+            return field_doc
+
+        return generate_individual_field_doc(
+            field,
+            env_prefix=env_prefix,
+            env_nested_delimiter=env_nested_delimiter,
+            include_tool_prefix=False,
+            header_level=header_level,
+            env_var_path=field["path"],
+            header_name=field["name"],
+        )
 
 
 class MetaxyConfigExtension(Extension):

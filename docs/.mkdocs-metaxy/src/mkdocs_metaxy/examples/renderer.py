@@ -110,75 +110,67 @@ class ExampleRenderer:
         Returns:
             Markdown string with snippet directive.
         """
-        # Determine file extension for syntax highlighting
-        lang = ""
-        if "." in path:
-            base, extension = path.rsplit(".", 1)
-            if extension:
-                # Map patch extension to diff language
-                if extension == "patch":
-                    lang = "diff"
-                else:
-                    lang = extension
+        lang = self._get_language_from_path(path)
+        display_path = self._get_display_path(path)
+        fence_attrs = self._build_fence_attrs(
+            lang, display_path, show_line_numbers, hl_lines
+        )
+        return self._build_snippet_result(path, display_path, fence_attrs, collapsible)
 
-        # Clean up path for display in title
-        display_path = path
+    def _get_language_from_path(self, path: str) -> str:
+        """Determine syntax highlighting language from file path."""
+        if "." not in path:
+            return ""
+        _, extension = path.rsplit(".", 1)
+        if not extension:
+            return ""
+        return "diff" if extension == "patch" else extension
 
-        # Remove .generated/ prefix for patched/generated files
-        if display_path.startswith(".generated/"):
-            display_path = display_path[11:]  # Remove .generated/ prefix
-        # Remove example-name prefix for regular files (e.g., "example-recompute/")
-        elif "/" in display_path:
-            # Check if it starts with an example name pattern
-            parts_split = display_path.split("/", 1)
+    def _get_display_path(self, path: str) -> str:
+        """Clean up path for display in title."""
+        if path.startswith(".generated/"):
+            return path[11:]  # Remove .generated/ prefix
+        if "/" in path:
+            parts_split = path.split("/", 1)
             if parts_split[0].startswith("example-"):
-                # Keep only the path after the example name
-                display_path = parts_split[1]
+                return parts_split[1]
+        return path
 
-        # Build the code fence with pymdownx.superfences attributes
-        # Format: ``` language title="filename" linenums="1" hl_lines="1 2 3"
+    def _build_fence_attrs(
+        self,
+        lang: str,
+        display_path: str,
+        show_line_numbers: bool,
+        hl_lines: list[int] | None,
+    ) -> str:
+        """Build the code fence attributes string."""
         parts = []
-
-        # Language must come first
         if lang:
             parts.append(lang)
-
-        # Add title to display the file path
         if display_path:
             parts.append(f'title="{display_path}"')
-
-        # Add line numbers if requested
         if show_line_numbers:
             parts.append('linenums="1"')
-
-        # Add highlighted lines if provided
         if hl_lines:
             hl_lines_str = " ".join(str(line) for line in hl_lines)
             parts.append(f'hl_lines="{hl_lines_str}"')
+        return " ".join(parts)
 
-        # Join all parts
-        fence_attrs = " ".join(parts)
-
-        # Build the result with optional collapsible wrapper
+    def _build_snippet_result(
+        self, path: str, display_path: str, fence_attrs: str, collapsible: bool
+    ) -> str:
+        """Build the final snippet result with optional collapsible wrapper."""
         result = "\n\n"
-
         if collapsible:
-            # Use pymdownx.details for collapsible sections (expanded by default with ???+)
-            # The summary will be just the file path
             summary_text = f"`{display_path}`"
-
             result += f'???+ example "{summary_text}"\n\n'
-            # Indent the code block for the details section
-            code_block = f"    ``` {fence_attrs}\n"
-            code_block += f'    --8<-- "{path}"\n'
-            code_block += "    ```\n"
-            result += code_block
+            result += f"    ``` {fence_attrs}\n"
+            result += f'    --8<-- "{path}"\n'
+            result += "    ```\n"
         else:
-            # Non-collapsible version
             result += f"``` {fence_attrs}\n"
             result += f'--8<-- "{path}"\n'
             result += "```\n"
-
         result += "\n"
         return result
 

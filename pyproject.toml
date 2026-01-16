@@ -145,6 +145,7 @@ extend-select = [
   "I",
   "TID252",
   "UP",
+  "C901", # mccabe complexity
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]

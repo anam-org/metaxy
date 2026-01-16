@@ -25,6 +25,270 @@ app = cyclopts.App(
 )
 
 
+def _create_status_table() -> Table:
+    """Create the status table with standard columns."""
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Status", justify="center", no_wrap=True)
+    table.add_column("Feature", no_wrap=True)
+    table.add_column("Materialized", justify="right", no_wrap=True)
+    table.add_column("Missing", justify="right", no_wrap=True)
+    table.add_column("Stale", justify="right", no_wrap=True)
+    table.add_column("Orphaned", justify="right", no_wrap=True)
+    table.add_column("Info", no_wrap=False)
+    return table
+
+
+def _add_error_row_to_table(
+    table: Table, feature_cls: type[BaseFeature], error_msg: str
+) -> None:
+    """Add an error row to the status table."""
+    from metaxy.graph.status import _STATUS_ICONS
+
+    icon = _STATUS_ICONS["error"]
+    feature_key_str = feature_cls.spec().key.to_string()
+    truncated_error = error_msg[:60] + "..." if len(error_msg) > 60 else error_msg
+    table.add_row(
+        icon, feature_key_str, "-", "-", "-", "-", f"[red]{truncated_error}[/red]"
+    )
+
+
+def _add_status_row_to_table(
+    table: Table,
+    status_with_increment: FeatureMetadataStatusWithIncrement,
+    compute_progress: bool,
+    verbose: bool,
+    verbose_details: list[tuple[str, list[str]]],
+) -> None:
+    """Add a status row to the table."""
+    from metaxy.graph.status import _STATUS_ICONS
+
+    status = status_with_increment.status
+    icon = _STATUS_ICONS[status.status_category]
+    feature_key_str = status.feature_key.to_string()
+
+    no_input = (
+        compute_progress
+        and not status.is_root_feature
+        and status.progress_percentage is None
+    )
+
+    if status.progress_percentage is not None:
+        status_str = f"{icon} ({status.progress_percentage:.0f}%)"
+    elif no_input:
+        warning_icon = _STATUS_ICONS["needs_update"]
+        status_str = f"{warning_icon} [dim](no input)[/dim]"
+    else:
+        status_str = icon
+
+    info_str = str(status.store_metadata) if status.store_metadata else ""
+
+    if status.is_root_feature or no_input:
+        table.add_row(
+            status_str,
+            feature_key_str,
+            str(status.store_row_count),
+            "-",
+            "-",
+            "-",
+            info_str,
+        )
+    else:
+        table.add_row(
+            status_str,
+            feature_key_str,
+            str(status.store_row_count),
+            str(status.missing_count),
+            str(status.stale_count),
+            str(status.orphaned_count),
+            info_str,
+        )
+
+    if verbose:
+        sample_details = status_with_increment.sample_details()
+        if sample_details:
+            verbose_details.append((feature_key_str, sample_details))
+
+
+def _output_status_plain(
+    collected_statuses: list[
+        tuple[type[BaseFeature], FeatureMetadataStatusWithIncrement | None, str | None]
+    ],
+    errors: list[tuple[str, str, Exception]],
+    compute_progress: bool,
+    verbose: bool,
+) -> None:
+    """Output status in plain format."""
+    from rich.traceback import Traceback
+
+    if errors:
+        for feat, _, exc in errors:
+            error_console.print(
+                f"\n[bold red]Error processing feature:[/bold red] {feat}"
+            )
+            error_console.print(
+                Traceback.from_exception(type(exc), exc, exc.__traceback__)
+            )
+
+    table = _create_status_table()
+    verbose_details: list[tuple[str, list[str]]] = []
+
+    for feature_cls, status_with_increment, error_msg in collected_statuses:
+        if error_msg is not None:
+            _add_error_row_to_table(table, feature_cls, error_msg)
+        else:
+            assert status_with_increment is not None
+            _add_status_row_to_table(
+                table, status_with_increment, compute_progress, verbose, verbose_details
+            )
+
+    data_console.print(table)
+
+    if verbose and verbose_details:
+        for feature_key_str, details in verbose_details:
+            data_console.print()
+            data_console.print(f"[bold cyan]`{feature_key_str}` preview[/bold cyan]")
+            data_console.print()
+            for line in details:
+                data_console.print(line)
+                data_console.print()
+
+    if errors:
+        data_console.print()
+        data_console.print(
+            f"[yellow]Warning:[/yellow] {len(errors)} feature(s) had errors (see tracebacks above)"
+        )
+
+
+def _output_status_json(
+    feature_reps: dict[str, Any],
+    snapshot_version: str | None,
+    needs_update: bool,
+    missing_keys: list,
+    errors: list[tuple[str, str, Exception]],
+) -> None:
+    """Output status in JSON format."""
+    from pydantic import TypeAdapter
+
+    from metaxy.graph.status import FullFeatureMetadataRepresentation
+
+    adapter = TypeAdapter(dict[str, FullFeatureMetadataRepresentation])
+    output: dict[str, Any] = {
+        "snapshot_version": snapshot_version,
+        "features": json.loads(adapter.dump_json(feature_reps, exclude_none=True)),
+        "needs_update": needs_update,
+    }
+    warnings_dict: dict[str, Any] = {}
+    if missing_keys:
+        warnings_dict["missing_in_graph"] = [k.to_string() for k in missing_keys]
+    if errors:
+        warnings_dict["errors"] = [
+            {"feature": feat, "error": err} for feat, err, _ in errors
+        ]
+    if warnings_dict:
+        output["warnings"] = warnings_dict
+    print(json.dumps(output, indent=2))
+
+
+def _handle_missing_keys_warning(
+    missing_keys: list,
+    assert_in_sync: bool,
+    format: OutputFormat,
+) -> None:
+    """Handle warning for missing feature keys."""
+    from metaxy.cli.utils import CLIError, exit_with_error
+
+    if assert_in_sync:
+        exit_with_error(
+            CLIError(
+                code="FEATURES_NOT_FOUND",
+                message="Feature(s) not found in graph",
+                details={"features": [k.to_string() for k in missing_keys]},
+            ),
+            format,
+        )
+    elif format == "plain":
+        formatted = ", ".join(k.to_string() for k in missing_keys)
+        data_console.print(
+            f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}"
+        )
+
+
+def _collect_feature_statuses(
+    valid_keys: list,
+    graph: Any,
+    metadata_store: Any,
+    allow_fallback_stores: bool,
+    global_filters: list | None,
+    compute_progress: bool,
+    verbose: bool,
+    format: OutputFormat,
+) -> tuple[
+    dict[str, Any],
+    list[
+        tuple[type[BaseFeature], FeatureMetadataStatusWithIncrement | None, str | None]
+    ],
+    list[tuple[str, str, Exception]],
+    bool,
+]:
+    """Collect status for each feature and return collected data."""
+    from metaxy.graph.status import (
+        FullFeatureMetadataRepresentation,
+        get_feature_metadata_status,
+    )
+
+    needs_update = False
+    feature_reps: dict[str, Any] = {}
+    collected_statuses: list[
+        tuple[type[BaseFeature], FeatureMetadataStatusWithIncrement | None, str | None]
+    ] = []
+    errors: list[tuple[str, str, Exception]] = []
+
+    for feature_key in valid_keys:
+        feature_cls = graph.features_by_key[feature_key]
+        try:
+            status_with_increment = get_feature_metadata_status(
+                feature_cls,
+                metadata_store,
+                use_fallback=allow_fallback_stores,
+                global_filters=global_filters,
+                compute_progress=compute_progress,
+            )
+
+            if status_with_increment.status.needs_update:
+                needs_update = True
+
+            if format == "json":
+                feature_reps[feature_key.to_string()] = (
+                    status_with_increment.to_representation(verbose=verbose)
+                )
+            else:
+                collected_statuses.append((feature_cls, status_with_increment, None))
+        except Exception as e:
+            error_msg = str(e)
+            errors.append((feature_key.to_string(), error_msg, e))
+
+            if format == "json":
+                feature_reps[feature_key.to_string()] = (
+                    FullFeatureMetadataRepresentation(
+                        feature_key=feature_key.to_string(),
+                        status="error",
+                        needs_update=False,
+                        metadata_exists=False,
+                        store_rows=0,
+                        missing=None,
+                        stale=None,
+                        orphaned=None,
+                        target_version="",
+                        is_root_feature=False,
+                        error_message=error_msg,
+                    )
+                )
+            else:
+                collected_statuses.append((feature_cls, None, error_msg))
+
+    return feature_reps, collected_statuses, errors, needs_update
+
+
 @app.command()
 def status(
     *,
@@ -89,278 +353,58 @@ def status(
         $ metaxy metadata status --all-features --filter "status = 'active'"
     """
     from metaxy.cli.context import AppContext
-    from metaxy.cli.utils import CLIError, exit_with_error, load_graph_for_command
-    from metaxy.graph.status import get_feature_metadata_status
+    from metaxy.cli.utils import load_graph_for_command
 
     filters = filters or []
-
-    # Validate feature selection
     selector.validate(format)
-
-    # Filters are already parsed by the converter
     global_filters = filters if filters else None
 
     context = AppContext.get()
     metadata_store = context.get_store(store)
 
     with metadata_store:
-        # Load graph (from snapshot or current)
         graph = load_graph_for_command(
             context, snapshot_version, metadata_store, format
         )
-
-        # Resolve feature keys
         valid_keys, missing_keys = selector.resolve_keys(graph, format)
 
-        # Handle empty result for --all-features
         if selector.all_features and not valid_keys:
             _output_no_features_warning(format, snapshot_version)
             return
 
-        # Handle missing features
         if missing_keys:
-            if assert_in_sync:
-                exit_with_error(
-                    CLIError(
-                        code="FEATURES_NOT_FOUND",
-                        message="Feature(s) not found in graph",
-                        details={"features": [k.to_string() for k in missing_keys]},
-                    ),
-                    format,
-                )
-            elif format == "plain":
-                formatted = ", ".join(k.to_string() for k in missing_keys)
-                data_console.print(
-                    f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}"
-                )
+            _handle_missing_keys_warning(missing_keys, assert_in_sync, format)
 
-        # If no valid features remain
         if not valid_keys:
             _output_no_features_warning(format, snapshot_version)
             return
 
-        # Print header for plain format only when using a snapshot
         if format == "plain" and snapshot_version:
             data_console.print(
                 f"\n[bold]Metadata status (snapshot {snapshot_version})[/bold]"
             )
 
-        # Collect status for all features
-        needs_update = False
-        feature_reps: dict[str, Any] = {}
-        # Each item is (feature_cls, status_with_increment, error_msg)
-        # error_msg is None for success, or a string for errors
-        collected_statuses: list[
-            tuple[
-                type[BaseFeature], FeatureMetadataStatusWithIncrement | None, str | None
-            ]
-        ] = []
-
-        errors: list[tuple[str, str, Exception]] = []
-
-        # Enable progress calculation if --progress or --verbose is set
         compute_progress = progress or verbose
+        feature_reps, collected_statuses, errors, needs_update = (
+            _collect_feature_statuses(
+                valid_keys,
+                graph,
+                metadata_store,
+                allow_fallback_stores,
+                global_filters,
+                compute_progress,
+                verbose,
+                format,
+            )
+        )
 
-        for feature_key in valid_keys:
-            feature_cls = graph.features_by_key[feature_key]
-            try:
-                status_with_increment = get_feature_metadata_status(
-                    feature_cls,
-                    metadata_store,
-                    use_fallback=allow_fallback_stores,
-                    global_filters=global_filters,
-                    compute_progress=compute_progress,
-                )
-
-                if status_with_increment.status.needs_update:
-                    needs_update = True
-
-                if format == "json":
-                    feature_reps[feature_key.to_string()] = (
-                        status_with_increment.to_representation(verbose=verbose)
-                    )
-                else:
-                    collected_statuses.append(
-                        (feature_cls, status_with_increment, None)
-                    )
-            except Exception as e:
-                # Log the error and continue with other features
-                error_msg = str(e)
-                errors.append((feature_key.to_string(), error_msg, e))
-
-                if format == "json":
-                    from metaxy.graph.status import FullFeatureMetadataRepresentation
-
-                    feature_reps[feature_key.to_string()] = (
-                        FullFeatureMetadataRepresentation(
-                            feature_key=feature_key.to_string(),
-                            status="error",
-                            needs_update=False,
-                            metadata_exists=False,
-                            store_rows=0,
-                            missing=None,
-                            stale=None,
-                            orphaned=None,
-                            target_version="",
-                            is_root_feature=False,
-                            error_message=error_msg,
-                        )
-                    )
-                else:
-                    # For plain format, store (feature_cls, None, error_msg)
-                    collected_statuses.append((feature_cls, None, error_msg))
-
-        # Output plain format as Rich Table
         if format == "plain":
-            from rich.traceback import Traceback
+            _output_status_plain(collected_statuses, errors, compute_progress, verbose)
+        elif format == "json":
+            _output_status_json(
+                feature_reps, snapshot_version, needs_update, missing_keys, errors
+            )
 
-            from metaxy.graph.status import _STATUS_ICONS
-
-            # Print rich tracebacks for any errors before the table
-            if errors:
-                for feat, _, exc in errors:
-                    error_console.print(
-                        f"\n[bold red]Error processing feature:[/bold red] {feat}"
-                    )
-                    error_console.print(
-                        Traceback.from_exception(type(exc), exc, exc.__traceback__)
-                    )
-
-            table = Table(show_header=True, header_style="bold")
-            table.add_column("Status", justify="center", no_wrap=True)
-            table.add_column("Feature", no_wrap=True)
-            table.add_column("Materialized", justify="right", no_wrap=True)
-            table.add_column("Missing", justify="right", no_wrap=True)
-            table.add_column("Stale", justify="right", no_wrap=True)
-            table.add_column("Orphaned", justify="right", no_wrap=True)
-            table.add_column("Info", no_wrap=False)
-
-            verbose_details: list[tuple[str, list[str]]] = []
-
-            for feature_cls, status_with_increment, error_msg in collected_statuses:
-                # Handle error case
-                if error_msg is not None:
-                    icon = _STATUS_ICONS["error"]
-                    feature_key_str = feature_cls.spec().key.to_string()
-                    # Truncate error message for display
-                    truncated_error = (
-                        error_msg[:60] + "..." if len(error_msg) > 60 else error_msg
-                    )
-                    table.add_row(
-                        icon,
-                        feature_key_str,
-                        "-",
-                        "-",
-                        "-",
-                        "-",
-                        f"[red]{truncated_error}[/red]",
-                    )
-                    continue
-
-                # status_with_increment is not None at this point
-                assert status_with_increment is not None
-                status = status_with_increment.status
-                icon = _STATUS_ICONS[status.status_category]
-                feature_key_str = status.feature_key.to_string()
-
-                # Determine if this is a "no input" case
-                no_input = (
-                    compute_progress
-                    and not status.is_root_feature
-                    and status.progress_percentage is None
-                )
-
-                # Format status column with progress if available
-                if status.progress_percentage is not None:
-                    status_str = f"{icon} ({status.progress_percentage:.0f}%)"
-                elif no_input:
-                    # Progress was requested but None means no upstream input available
-                    # Show warning icon since we can't determine status without input
-                    warning_icon = _STATUS_ICONS["needs_update"]
-                    status_str = f"{warning_icon} [dim](no input)[/dim]"
-                else:
-                    status_str = icon
-
-                # Format store metadata for Info column
-                info_str = str(status.store_metadata) if status.store_metadata else ""
-
-                # For root features or no-input cases, show "-" for Missing/Stale/Orphaned
-                if status.is_root_feature or no_input:
-                    table.add_row(
-                        status_str,
-                        feature_key_str,
-                        str(status.store_row_count),
-                        "-",
-                        "-",
-                        "-",
-                        info_str,
-                    )
-                else:
-                    table.add_row(
-                        status_str,
-                        feature_key_str,
-                        str(status.store_row_count),
-                        str(status.missing_count),
-                        str(status.stale_count),
-                        str(status.orphaned_count),
-                        info_str,
-                    )
-
-                # Collect verbose details for later
-                if verbose:
-                    sample_details = status_with_increment.sample_details()
-                    if sample_details:
-                        verbose_details.append((feature_key_str, sample_details))
-
-            data_console.print(table)
-
-            # Print verbose sample details after the table
-            if verbose and verbose_details:
-                for feature_key_str, details in verbose_details:
-                    data_console.print()  # Blank line before each feature
-                    data_console.print(
-                        f"[bold cyan]`{feature_key_str}` preview[/bold cyan]"
-                    )
-                    data_console.print()  # Blank line after title
-                    for line in details:
-                        data_console.print(line)
-                        data_console.print()  # Blank line after each section
-
-            # Print error summary (tracebacks already printed above)
-            if errors:
-                data_console.print()
-                data_console.print(
-                    f"[yellow]Warning:[/yellow] {len(errors)} feature(s) had errors (see tracebacks above)"
-                )
-
-        # Output JSON result
-        if format == "json":
-            from pydantic import TypeAdapter
-
-            from metaxy.graph.status import FullFeatureMetadataRepresentation
-
-            adapter = TypeAdapter(dict[str, FullFeatureMetadataRepresentation])
-            output: dict[str, Any] = {
-                "snapshot_version": snapshot_version,
-                "features": json.loads(
-                    adapter.dump_json(feature_reps, exclude_none=True)
-                ),
-                "needs_update": needs_update,
-            }
-            warnings_dict: dict[str, Any] = {}
-            if missing_keys:
-                warnings_dict["missing_in_graph"] = [
-                    k.to_string() for k in missing_keys
-                ]
-            if errors:
-                warnings_dict["errors"] = [
-                    {"feature": feat, "error": err} for feat, err, _ in errors
-                ]
-            if warnings_dict:
-                output["warnings"] = warnings_dict
-            print(json.dumps(output, indent=2))
-
-        # Exit with error if assert_in_sync and updates needed
         if assert_in_sync and needs_update:
             raise SystemExit(1)
 
@@ -383,6 +427,41 @@ def _output_no_features_warning(
         )
     else:
         data_console.print("[yellow]Warning:[/yellow] No valid features to check.")
+
+
+def _output_drop_no_features_warning(format: OutputFormat) -> None:
+    """Output warning when no features are found to drop."""
+    if format == "json":
+        print(
+            json.dumps(
+                {
+                    "warning": "NO_FEATURES_FOUND",
+                    "message": "No features found in active graph.",
+                    "features_dropped": 0,
+                }
+            )
+        )
+    else:
+        console.print("[yellow]Warning:[/yellow] No features found in active graph.")
+
+
+def _output_drop_result(
+    format: OutputFormat, dropped: list[str], failed: list[dict[str, str]]
+) -> None:
+    """Output the result of the drop operation."""
+    if format == "json":
+        result: dict[str, Any] = {
+            "success": True,
+            "features_dropped": len(dropped),
+            "dropped": dropped,
+        }
+        if failed:
+            result["failed"] = failed
+        print(json.dumps(result, indent=2))
+    else:
+        console.print(
+            f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped"
+        )
 
 
 @app.command()
@@ -443,26 +522,10 @@ def drop(
 
     with metadata_store.open("write"):
         graph = context.graph
-
-        # Resolve feature keys
         valid_keys, _ = selector.resolve_keys(graph, format)
 
-        # Handle no features
         if not valid_keys:
-            if format == "json":
-                print(
-                    json.dumps(
-                        {
-                            "warning": "NO_FEATURES_FOUND",
-                            "message": "No features found in active graph.",
-                            "features_dropped": 0,
-                        }
-                    )
-                )
-            else:
-                console.print(
-                    "[yellow]Warning:[/yellow] No features found in active graph."
-                )
+            _output_drop_no_features_warning(format)
             return
 
         if format == "plain":
@@ -470,7 +533,6 @@ def drop(
                 f"\n[bold]Dropping metadata for {len(valid_keys)} feature(s)...[/bold]\n"
             )
 
-        # Drop each feature
         dropped: list[str] = []
         failed: list[dict[str, str]] = []
 
@@ -490,20 +552,7 @@ def drop(
                         console, key_str, e, prefix="[red]✗[/red] Failed to drop"
                     )
 
-        # Output result
-        if format == "json":
-            result: dict[str, Any] = {
-                "success": True,
-                "features_dropped": len(dropped),
-                "dropped": dropped,
-            }
-            if failed:
-                result["failed"] = failed
-            print(json.dumps(result, indent=2))
-        else:
-            console.print(
-                f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped"
-            )
+        _output_drop_result(format, dropped, failed)
 
 
 @app.command()

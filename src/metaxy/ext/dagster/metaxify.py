@@ -342,6 +342,133 @@ def _replace_specs_on_assets_definition(
     return result
 
 
+def _resolve_final_asset_key(
+    spec: dg.AssetSpec,
+    feature_spec: mx.FeatureSpec,
+    key: dg.AssetKey | None,
+    key_prefix: dg.AssetKey | None,
+) -> dg.AssetKey:
+    """Resolve the final asset key based on explicit key, prefix, or feature spec."""
+    if key is not None:
+        return key
+    resolved_key = get_asset_key_for_metaxy_feature_spec(feature_spec)
+    if key_prefix is not None:
+        return dg.AssetKey([*key_prefix.path, *resolved_key.path])
+    return resolved_key
+
+
+def _build_deps_from_feature(
+    feature_spec: mx.FeatureSpec,
+    key_prefix: dg.AssetKey | None,
+) -> set[dg.AssetDep]:
+    """Build asset dependencies from feature dependencies."""
+    deps: set[dg.AssetDep] = set()
+    for dep in feature_spec.deps:
+        upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
+        upstream_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
+        if key_prefix is not None:
+            upstream_key = dg.AssetKey([*key_prefix.path, *upstream_key.path])
+        deps.add(dg.AssetDep(asset=upstream_key))
+    return deps
+
+
+def _extract_dagster_attrs(feature_spec: mx.FeatureSpec) -> dict[str, Any]:
+    """Extract dagster attributes from feature metadata, excluding asset_key."""
+    raw_attrs = feature_spec.metadata.get(METAXY_DAGSTER_METADATA_KEY)
+    if raw_attrs is None:
+        return {}
+    if not isinstance(raw_attrs, dict):
+        raise ValueError(
+            f"Invalid metadata format for `{feature_spec.key}` "
+            f"Metaxy feature metadata key {METAXY_DAGSTER_METADATA_KEY}: "
+            f"expected dict, got {type(raw_attrs).__name__}"
+        )
+    return {k: v for k, v in raw_attrs.items() if k != "asset_key"}
+
+
+def _build_code_version(
+    spec: dg.AssetSpec,
+    feature_spec: mx.FeatureSpec,
+    inject_code_version: bool,
+) -> str | None:
+    """Build the final code version by appending metaxy version if requested."""
+    if not inject_code_version:
+        return spec.code_version
+    metaxy_code_version = f"metaxy:{feature_spec.code_version}"
+    if spec.code_version:
+        return f"{spec.code_version},{metaxy_code_version}"
+    return metaxy_code_version
+
+
+def _build_column_schema_for_spec(
+    spec: dg.AssetSpec,
+    feature_cls: type[mx.BaseFeature],
+) -> dg.TableSchema | None:
+    """Build column schema from Pydantic fields, respecting existing user-defined schema."""
+    existing_schema = spec.metadata.get(DAGSTER_COLUMN_SCHEMA_METADATA_KEY)
+    existing_columns: list[dg.TableColumn] = []
+    existing_column_names: set[str] = set()
+    if existing_schema is not None:
+        existing_columns = list(existing_schema.columns)
+        existing_column_names = {col.name for col in existing_columns}
+
+    metaxy_columns: list[dg.TableColumn] = []
+    for field_name, field_info in feature_cls.model_fields.items():
+        if field_name not in existing_column_names:
+            metaxy_columns.append(
+                dg.TableColumn(
+                    name=field_name,
+                    type=_get_type_string(field_info.annotation),
+                    description=field_info.description,
+                )
+            )
+
+    all_columns = existing_columns + metaxy_columns
+    if not all_columns:
+        return None
+    all_columns.sort(key=lambda col: col.name)
+    return dg.TableSchema(columns=all_columns)
+
+
+def _build_column_lineage_for_spec(
+    spec: dg.AssetSpec,
+    feature_cls: type[mx.BaseFeature],
+    feature_spec: mx.FeatureSpec,
+) -> dg.TableColumnLineage | None:
+    """Build column lineage from upstream dependencies, merging with existing user-defined lineage."""
+    existing_lineage = spec.metadata.get(DAGSTER_COLUMN_LINEAGE_METADATA_KEY)
+    existing_deps_by_column: dict[str, list[dg.TableColumnDep]] = {}
+    if existing_lineage is not None:
+        existing_deps_by_column = dict(existing_lineage.deps_by_column)
+
+    metaxy_lineage = build_column_lineage(
+        feature_cls=feature_cls,
+        feature_spec=feature_spec,
+    )
+
+    if metaxy_lineage is not None:
+        merged_deps_by_column: dict[str, list[dg.TableColumnDep]] = {
+            col: list(deps) for col, deps in metaxy_lineage.deps_by_column.items()
+        }
+        for col, deps in existing_deps_by_column.items():
+            if col in merged_deps_by_column:
+                merged_deps_by_column[col] = merged_deps_by_column[col] + deps
+            else:
+                merged_deps_by_column[col] = deps
+        sorted_deps = {
+            k: merged_deps_by_column[k] for k in sorted(merged_deps_by_column)
+        }
+        return dg.TableColumnLineage(deps_by_column=sorted_deps)
+
+    if existing_deps_by_column:
+        sorted_deps = {
+            k: existing_deps_by_column[k] for k in sorted(existing_deps_by_column)
+        }
+        return dg.TableColumnLineage(deps_by_column=sorted_deps)
+
+    return None
+
+
 def _metaxify_spec(
     spec: dg.AssetSpec,
     *,
@@ -360,9 +487,7 @@ def _metaxify_spec(
     """
     metadata_feature_key = spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
 
-    # Feature key must come from metadata
     if metadata_feature_key is None:
-        # No feature key set - but still apply key_prefix if provided
         if key_prefix is not None:
             new_key = dg.AssetKey([*key_prefix.path, *spec.key.path])
             return spec.replace_attributes(key=new_key)
@@ -372,140 +497,32 @@ def _metaxify_spec(
     feature_cls = mx.get_feature_by_key(feature_key)
     feature_spec = feature_cls.spec()
 
-    # Determine the final asset key
-    # Priority: key > key_prefix + resolved_key > resolved_key
-    if key is not None:
-        # Explicit key overrides everything
-        final_key = key
-    else:
-        # Resolve key from feature spec
-        resolved_key = get_asset_key_for_metaxy_feature_spec(feature_spec)
-        if key_prefix is not None:
-            # Prepend prefix to resolved key
-            final_key = dg.AssetKey([*key_prefix.path, *resolved_key.path])
-        else:
-            final_key = resolved_key
+    final_key = _resolve_final_asset_key(spec, feature_spec, key, key_prefix)
+    deps_to_add = _build_deps_from_feature(feature_spec, key_prefix)
+    dagster_attrs = _extract_dagster_attrs(feature_spec)
+    final_code_version = _build_code_version(spec, feature_spec, inject_code_version)
 
-    # Build deps from feature dependencies
-    deps_to_add: set[dg.AssetDep] = set()
-    for dep in feature_spec.deps:
-        upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
-        upstream_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
-        # Apply key_prefix to upstream deps as well
-        if key_prefix is not None:
-            upstream_key = dg.AssetKey([*key_prefix.path, *upstream_key.path])
-        deps_to_add.add(dg.AssetDep(asset=upstream_key))
-
-    # Build kinds
-    kinds_to_add: set[str] = set()
-    if inject_metaxy_kind:
-        kinds_to_add.add(DAGSTER_METAXY_KIND)
-
-    # Extract dagster attributes (excluding asset_key which is handled separately)
-    dagster_attrs: dict[str, Any] = {}
-    raw_dagster_attrs = feature_spec.metadata.get(METAXY_DAGSTER_METADATA_KEY)
-    if raw_dagster_attrs is not None:
-        if not isinstance(raw_dagster_attrs, dict):
-            raise ValueError(
-                f"Invalid metadata format for `{feature_spec.key}` "
-                f"Metaxy feature metadata key {METAXY_DAGSTER_METADATA_KEY}: "
-                f"expected dict, got {type(raw_dagster_attrs).__name__}"
-            )
-        dagster_attrs = {k: v for k, v in raw_dagster_attrs.items() if k != "asset_key"}
-
-    # Build code version: append metaxy version to existing code version if present
-    if inject_code_version:
-        metaxy_code_version = f"metaxy:{feature_spec.code_version}"
-        if spec.code_version:
-            final_code_version = f"{spec.code_version},{metaxy_code_version}"
-        else:
-            final_code_version = metaxy_code_version
-    else:
-        final_code_version = spec.code_version
-
-    # Use feature class docstring as description if not set on asset spec
     final_description = spec.description
     if set_description and final_description is None and feature_cls.__doc__:
         final_description = inspect.cleandoc(feature_cls.__doc__)
 
-    # Build tags for project and feature
-    # Note: Dagster tag values only allow alpha-numeric, '_', '-', '.'
-    # so we use table_name which uses '__' separator
+    kinds_to_add: set[str] = {DAGSTER_METAXY_KIND} if inject_metaxy_kind else set()
     tags_to_add: dict[str, str] = {
         DAGSTER_METAXY_PROJECT_TAG_KEY: mx.MetaxyConfig.get().project,
         DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.table_name,
     }
 
-    # Build column schema from Pydantic fields (includes inherited system columns)
-    # Respects existing user-defined column schema and appends Metaxy columns
-    column_schema: dg.TableSchema | None = None
-    if inject_column_schema:
-        # Start with user-defined columns if present
-        existing_schema = spec.metadata.get(DAGSTER_COLUMN_SCHEMA_METADATA_KEY)
-        existing_columns: list[dg.TableColumn] = []
-        existing_column_names: set[str] = set()
-        if existing_schema is not None:
-            existing_columns = list(existing_schema.columns)
-            existing_column_names = {col.name for col in existing_columns}
+    column_schema = (
+        _build_column_schema_for_spec(spec, feature_cls)
+        if inject_column_schema
+        else None
+    )
+    column_lineage = (
+        _build_column_lineage_for_spec(spec, feature_cls, feature_spec)
+        if inject_column_lineage and feature_spec.deps
+        else None
+    )
 
-        # Add Metaxy columns that aren't already defined by user
-        # (user-defined columns take precedence)
-        metaxy_columns: list[dg.TableColumn] = []
-        for field_name, field_info in feature_cls.model_fields.items():
-            if field_name not in existing_column_names:
-                metaxy_columns.append(
-                    dg.TableColumn(
-                        name=field_name,
-                        type=_get_type_string(field_info.annotation),
-                        description=field_info.description,
-                    )
-                )
-
-        all_columns = existing_columns + metaxy_columns
-        if all_columns:
-            # Sort columns alphabetically by name
-            all_columns.sort(key=lambda col: col.name)
-            column_schema = dg.TableSchema(columns=all_columns)
-
-    # Build column lineage from upstream dependencies
-    # Respects existing user-defined column lineage and merges with Metaxy lineage
-    column_lineage: dg.TableColumnLineage | None = None
-    if inject_column_lineage and feature_spec.deps:
-        # Start with user-defined lineage if present
-        existing_lineage = spec.metadata.get(DAGSTER_COLUMN_LINEAGE_METADATA_KEY)
-        existing_deps_by_column: dict[str, list[dg.TableColumnDep]] = {}
-        if existing_lineage is not None:
-            existing_deps_by_column = dict(existing_lineage.deps_by_column)
-
-        metaxy_lineage = build_column_lineage(
-            feature_cls=feature_cls,
-            feature_spec=feature_spec,
-        )
-
-        if metaxy_lineage is not None:
-            # Merge: user-defined lineage takes precedence for same columns
-            merged_deps_by_column: dict[str, list[dg.TableColumnDep]] = {
-                col: list(deps) for col, deps in metaxy_lineage.deps_by_column.items()
-            }
-            for col, deps in existing_deps_by_column.items():
-                if col in merged_deps_by_column:
-                    # Append user deps to metaxy deps (user can add extra lineage)
-                    merged_deps_by_column[col] = merged_deps_by_column[col] + deps
-                else:
-                    merged_deps_by_column[col] = deps
-            # Sort columns alphabetically
-            sorted_deps = {
-                k: merged_deps_by_column[k] for k in sorted(merged_deps_by_column)
-            }
-            column_lineage = dg.TableColumnLineage(deps_by_column=sorted_deps)
-        elif existing_deps_by_column:
-            # Sort columns alphabetically
-            sorted_deps = {
-                k: existing_deps_by_column[k] for k in sorted(existing_deps_by_column)
-            }
-            column_lineage = dg.TableColumnLineage(deps_by_column=sorted_deps)
-
-    # Build the replacement attributes
     metadata_to_add: dict[str, Any] = {
         **spec.metadata,
         DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.to_string(),

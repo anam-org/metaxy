@@ -88,16 +88,89 @@ def _parse_to_sqlglot_expression(filter_string: str) -> sqlglot.exp.Expression:
     return parsed
 
 
+def _handle_not(node: exp.Not) -> nw.Expr:
+    """Handle NOT operator."""
+    operand = node.this
+    if operand is None:
+        raise FilterParseError("NOT operator requires an operand.")
+    return ~_expression_to_narwhals(operand)
+
+
+def _handle_is(node: exp.Is) -> nw.Expr:
+    """Handle IS / IS NOT operators."""
+    left = node.this
+    right = node.expression
+    if left is None or right is None:
+        raise FilterParseError("IS operator requires two operands.")
+
+    left_operand = _operand_info(left)
+    right_operand = _operand_info(right)
+
+    null_comparison = _maybe_null_comparison(left_operand, right_operand, node)
+    if null_comparison is not None:
+        return null_comparison
+
+    result = left_operand.expr == right_operand.expr
+    return ~result if _is_is_not_node(node) else result
+
+
+def _handle_in(node: exp.In) -> nw.Expr:
+    """Handle IN / NOT IN operators."""
+    left = node.this
+    right = node.expressions
+    if left is None or right is None:
+        raise FilterParseError("IN operator requires a column and a list of values.")
+
+    column_operand = _operand_info(left)
+    if not column_operand.is_column:
+        raise FilterParseError("IN operator left-hand side must be a column.")
+
+    values: list[LiteralValue] = []
+    for item in right:
+        item_info = _operand_info(item)
+        if not item_info.is_literal:
+            raise FilterParseError("IN operator values must be literals.")
+        values.append(item_info.literal_value)
+
+    result = column_operand.expr.is_in(values)
+    return ~result if node.args.get("is_not") else result
+
+
+def _handle_comparison(node: exp.Expression) -> nw.Expr:
+    """Handle comparison operators (EQ, NEQ, GT, LT, GTE, LTE)."""
+    left = node.this
+    right = node.expression
+    if left is None or right is None:
+        raise FilterParseError(
+            f"Comparison operator {type(node).__name__} requires two operands."
+        )
+    left_operand = _operand_info(left)
+    right_operand = _operand_info(right)
+
+    null_comparison = _maybe_null_comparison(left_operand, right_operand, node)
+    if null_comparison is not None:
+        return null_comparison
+
+    if isinstance(node, exp.EQ):
+        return left_operand.expr == right_operand.expr
+    if isinstance(node, exp.NEQ):
+        return left_operand.expr != right_operand.expr
+    if isinstance(node, exp.GT):
+        return left_operand.expr > right_operand.expr
+    if isinstance(node, exp.LT):
+        return left_operand.expr < right_operand.expr
+    if isinstance(node, exp.GTE):
+        return left_operand.expr >= right_operand.expr
+    # Must be LTE
+    return left_operand.expr <= right_operand.expr
+
+
 def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
     """Convert a SQLGlot expression AST node to a Narwhals expression."""
     node = _strip_parens(node)
 
-    # Logical operators
     if isinstance(node, exp.Not):
-        operand = node.this
-        if operand is None:
-            raise FilterParseError("NOT operator requires an operand.")
-        return ~_expression_to_narwhals(operand)
+        return _handle_not(node)
 
     if isinstance(node, exp.And):
         return _expression_to_narwhals(node.this) & _expression_to_narwhals(
@@ -109,91 +182,18 @@ def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
             node.expression
         )
 
-    # IS / IS NOT operators
     if isinstance(node, exp.Is):
-        left = node.this
-        right = node.expression
-        if left is None or right is None:
-            raise FilterParseError("IS operator requires two operands.")
+        return _handle_is(node)
 
-        left_operand = _operand_info(left)
-        right_operand = _operand_info(right)
-
-        null_comparison = _maybe_null_comparison(left_operand, right_operand, node)
-        if null_comparison is not None:
-            return null_comparison
-
-        result = left_operand.expr == right_operand.expr
-        return ~result if _is_is_not_node(node) else result
-
-    # IN / NOT IN operators
     if isinstance(node, exp.In):
-        left = node.this
-        right = node.expressions
-        if left is None or right is None:
-            raise FilterParseError(
-                "IN operator requires a column and a list of values."
-            )
+        return _handle_in(node)
 
-        column_operand = _operand_info(left)
-        if not column_operand.is_column:
-            raise FilterParseError("IN operator left-hand side must be a column.")
-
-        # Extract literal values from the list
-        values: list[LiteralValue] = []
-        for item in right:
-            item_info = _operand_info(item)
-            if not item_info.is_literal:
-                raise FilterParseError("IN operator values must be literals.")
-            values.append(item_info.literal_value)
-
-        result = column_operand.expr.is_in(values)
-        # Check if this is NOT IN
-        if node.args.get("is_not"):
-            return ~result
-        return result
-
-    # Comparison operators - direct mapping to Narwhals operations
     if isinstance(node, (exp.EQ, exp.NEQ, exp.GT, exp.LT, exp.GTE, exp.LTE)):
-        left = node.this
-        right = node.expression
-        if left is None or right is None:
-            raise FilterParseError(
-                f"Comparison operator {type(node).__name__} requires two operands."
-            )
-        left_operand = _operand_info(left)
-        right_operand = _operand_info(right)
+        return _handle_comparison(node)
 
-        # Handle NULL comparisons with IS NULL / IS NOT NULL
-        null_comparison = _maybe_null_comparison(left_operand, right_operand, node)
-        if null_comparison is not None:
-            return null_comparison
-
-        # Apply the appropriate Narwhals operator
-        if isinstance(node, exp.EQ):
-            return left_operand.expr == right_operand.expr
-        elif isinstance(node, exp.NEQ):
-            return left_operand.expr != right_operand.expr
-        elif isinstance(node, exp.GT):
-            return left_operand.expr > right_operand.expr
-        elif isinstance(node, exp.LT):
-            return left_operand.expr < right_operand.expr
-        elif isinstance(node, exp.GTE):
-            return left_operand.expr >= right_operand.expr
-        elif isinstance(node, exp.LTE):
-            return left_operand.expr <= right_operand.expr
-
-    # Terminal nodes (operands)
     if isinstance(
         node,
-        (
-            exp.Column,
-            exp.Identifier,
-            exp.Boolean,
-            exp.Literal,
-            exp.Null,
-            exp.Neg,
-        ),
+        (exp.Column, exp.Identifier, exp.Boolean, exp.Literal, exp.Null, exp.Neg),
     ):
         return _operand_info(node).expr
 

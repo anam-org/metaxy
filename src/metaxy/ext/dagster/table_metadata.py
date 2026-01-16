@@ -5,6 +5,7 @@ This module provides utilities for building Dagster table metadata
 """
 
 import types
+from collections.abc import Sequence
 from typing import Any, Union, get_args, get_origin
 
 import dagster as dg
@@ -103,6 +104,79 @@ def _get_type_string(annotation: Any) -> str:
     return str(annotation)
 
 
+def _add_column_dep(
+    deps_by_column: dict[str, list[dg.TableColumnDep]],
+    downstream_col: str,
+    upstream_asset_key: dg.AssetKey,
+    upstream_col: str,
+) -> None:
+    """Add a column dependency to the deps_by_column dict."""
+    if downstream_col not in deps_by_column:
+        deps_by_column[downstream_col] = []
+    deps_by_column[downstream_col].append(
+        dg.TableColumnDep(
+            asset_key=upstream_asset_key,
+            column_name=upstream_col,
+        )
+    )
+
+
+def _process_dependency_lineage(
+    dep: mx.FeatureDep,
+    feature_spec: mx.FeatureSpec,
+    downstream_columns: set[str],
+    deps_by_column: dict[str, list[dg.TableColumnDep]],
+) -> None:
+    """Process a single dependency to extract column lineage."""
+    upstream_feature_cls = mx.get_feature_by_key(dep.feature)
+    upstream_feature_spec = upstream_feature_cls.spec()
+    upstream_asset_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
+    upstream_columns = set(upstream_feature_cls.model_fields.keys())
+
+    # Build reverse rename map: downstream_name -> upstream_name
+    reverse_rename: dict[str, str] = {}
+    if dep.rename:
+        reverse_rename = {v: k for k, v in dep.rename.items()}
+
+    # Get ID column mappings based on lineage type
+    id_column_mapping = _get_id_column_mapping(
+        downstream_id_columns=feature_spec.id_columns,
+        upstream_id_columns=upstream_feature_spec.id_columns,
+        lineage=dep.lineage,
+        rename=reverse_rename,
+    )
+
+    # Process ID columns
+    for downstream_col, upstream_col in id_column_mapping.items():
+        if downstream_col in downstream_columns:
+            _add_column_dep(
+                deps_by_column, downstream_col, upstream_asset_key, upstream_col
+            )
+
+    # Process renamed columns (that aren't ID columns)
+    for downstream_col, upstream_col in reverse_rename.items():
+        if (
+            downstream_col in downstream_columns
+            and downstream_col not in id_column_mapping
+        ):
+            if upstream_col in upstream_columns:
+                _add_column_dep(
+                    deps_by_column, downstream_col, upstream_asset_key, upstream_col
+                )
+
+    # Process direct pass-through columns (same name in both, not renamed, ID, or system)
+    handled_columns = (
+        set(id_column_mapping.keys()) | set(reverse_rename.keys()) | ALL_SYSTEM_COLUMNS
+    )
+    for col in downstream_columns - handled_columns:
+        if col in upstream_columns:
+            _add_column_dep(deps_by_column, col, upstream_asset_key, col)
+
+    # Process system columns with lineage
+    for sys_col in SYSTEM_COLUMNS_WITH_LINEAGE:
+        _add_column_dep(deps_by_column, sys_col, upstream_asset_key, sys_col)
+
+
 def build_column_lineage(
     feature_cls: type[mx.BaseFeature],
     feature_spec: mx.FeatureSpec | None = None,
@@ -137,88 +211,9 @@ def build_column_lineage(
     downstream_columns = set(feature_cls.model_fields.keys())
 
     for dep in feature_spec.deps:
-        upstream_feature_cls = mx.get_feature_by_key(dep.feature)
-        upstream_feature_spec = upstream_feature_cls.spec()
-        upstream_asset_key = get_asset_key_for_metaxy_feature_spec(
-            upstream_feature_spec
+        _process_dependency_lineage(
+            dep, feature_spec, downstream_columns, deps_by_column
         )
-        upstream_columns = set(upstream_feature_cls.model_fields.keys())
-
-        # Build reverse rename map: downstream_name -> upstream_name
-        # FeatureDep.rename is {old_upstream_name: new_downstream_name}
-        reverse_rename: dict[str, str] = {}
-        if dep.rename:
-            reverse_rename = {v: k for k, v in dep.rename.items()}
-
-        # Track columns based on lineage relationship (now per-dependency)
-        lineage = dep.lineage
-
-        # Get ID column mappings based on lineage type
-        id_column_mapping = _get_id_column_mapping(
-            downstream_id_columns=feature_spec.id_columns,
-            upstream_id_columns=upstream_feature_spec.id_columns,
-            lineage=lineage,
-            rename=reverse_rename,
-        )
-
-        # Process ID columns
-        for downstream_col, upstream_col in id_column_mapping.items():
-            if downstream_col in downstream_columns:
-                if downstream_col not in deps_by_column:
-                    deps_by_column[downstream_col] = []
-                deps_by_column[downstream_col].append(
-                    dg.TableColumnDep(
-                        asset_key=upstream_asset_key,
-                        column_name=upstream_col,
-                    )
-                )
-
-        # Process renamed columns (that aren't ID columns)
-        for downstream_col, upstream_col in reverse_rename.items():
-            if (
-                downstream_col in downstream_columns
-                and downstream_col not in id_column_mapping
-            ):
-                if upstream_col in upstream_columns:
-                    if downstream_col not in deps_by_column:
-                        deps_by_column[downstream_col] = []
-                    deps_by_column[downstream_col].append(
-                        dg.TableColumnDep(
-                            asset_key=upstream_asset_key,
-                            column_name=upstream_col,
-                        )
-                    )
-
-        # Process direct pass-through columns (same name in both, not renamed, ID, or system)
-        # System columns are handled separately below since only some have lineage
-        handled_columns = (
-            set(id_column_mapping.keys())
-            | set(reverse_rename.keys())
-            | ALL_SYSTEM_COLUMNS
-        )
-        for col in downstream_columns - handled_columns:
-            if col in upstream_columns:
-                if col not in deps_by_column:
-                    deps_by_column[col] = []
-                deps_by_column[col].append(
-                    dg.TableColumnDep(
-                        asset_key=upstream_asset_key,
-                        column_name=col,
-                    )
-                )
-
-        # Process system columns with lineage (metaxy_provenance_by_field, metaxy_provenance)
-        # These columns are always present in both upstream and downstream features
-        # and have a direct lineage relationship (downstream values are computed from upstream)
-        for sys_col in SYSTEM_COLUMNS_WITH_LINEAGE:
-            if sys_col not in deps_by_column:
-                deps_by_column[sys_col] = []
-            deps_by_column[sys_col].append(
-                dg.TableColumnDep(
-                    asset_key=upstream_asset_key,
-                    column_name=sys_col,
-                )
-            )
 
     if not deps_by_column:
         return None
@@ -226,6 +221,36 @@ def build_column_lineage(
     # Sort columns alphabetically
     sorted_deps = {k: deps_by_column[k] for k in sorted(deps_by_column)}
     return dg.TableColumnLineage(deps_by_column=sorted_deps)
+
+
+def _map_columns_to_upstream(
+    columns_to_map: Sequence[str],
+    downstream_id_columns: tuple[str, ...],
+    upstream_id_columns: tuple[str, ...],
+    rename: dict[str, str],
+    *,
+    require_in_downstream_ids: bool = True,
+) -> dict[str, str]:
+    """Map columns to their upstream counterparts.
+
+    Args:
+        columns_to_map: Columns to attempt mapping.
+        downstream_id_columns: ID columns of the downstream feature.
+        upstream_id_columns: ID columns of the upstream feature.
+        rename: Reverse rename map (downstream_name -> upstream_name).
+        require_in_downstream_ids: If True, only map columns that are in downstream_id_columns.
+
+    Returns:
+        Mapping of downstream column names to upstream column names.
+    """
+    mapping: dict[str, str] = {}
+    for downstream_col in columns_to_map:
+        if require_in_downstream_ids and downstream_col not in downstream_id_columns:
+            continue
+        upstream_col = rename.get(downstream_col, downstream_col)
+        if upstream_col in upstream_id_columns:
+            mapping[downstream_col] = upstream_col
+    return mapping
 
 
 def _get_id_column_mapping(
@@ -251,37 +276,39 @@ def _get_id_column_mapping(
         IdentityRelationship,
     )
 
-    mapping: dict[str, str] = {}
     rel = lineage.relationship
 
     if isinstance(rel, IdentityRelationship):
         # 1:1 - downstream ID columns map to same-named upstream ID columns
-        # (accounting for any renames)
-        for downstream_col in downstream_id_columns:
-            # Check if this column was renamed from upstream
-            upstream_col = rename.get(downstream_col, downstream_col)
-            if upstream_col in upstream_id_columns:
-                mapping[downstream_col] = upstream_col
+        return _map_columns_to_upstream(
+            downstream_id_columns,
+            downstream_id_columns,
+            upstream_id_columns,
+            rename,
+            require_in_downstream_ids=False,
+        )
 
-    elif isinstance(rel, AggregationRelationship):
+    if isinstance(rel, AggregationRelationship):
         # N:1 - aggregation columns map to upstream
         # Use `on` columns if specified, otherwise use all downstream ID columns
-        agg_columns = rel.on if rel.on is not None else downstream_id_columns
-        for downstream_col in agg_columns:
-            if downstream_col in downstream_id_columns:
-                upstream_col = rename.get(downstream_col, downstream_col)
-                if upstream_col in upstream_id_columns:
-                    mapping[downstream_col] = upstream_col
+        columns_to_map = rel.on if rel.on is not None else downstream_id_columns
+        return _map_columns_to_upstream(
+            columns_to_map,
+            downstream_id_columns,
+            upstream_id_columns,
+            rename,
+        )
 
-    elif isinstance(rel, ExpansionRelationship):
+    if isinstance(rel, ExpansionRelationship):
         # 1:N - `on` columns (parent ID columns) map to upstream ID columns
-        for downstream_col in rel.on:
-            if downstream_col in downstream_id_columns:
-                upstream_col = rename.get(downstream_col, downstream_col)
-                if upstream_col in upstream_id_columns:
-                    mapping[downstream_col] = upstream_col
+        return _map_columns_to_upstream(
+            rel.on,
+            downstream_id_columns,
+            upstream_id_columns,
+            rename,
+        )
 
-    return mapping
+    return {}
 
 
 def _collect_tail(lazy_df: nw.LazyFrame[Any], n_rows: int) -> pl.DataFrame:

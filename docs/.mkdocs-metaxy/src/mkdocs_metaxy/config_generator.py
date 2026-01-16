@@ -114,6 +114,70 @@ def format_default_value(default: Any) -> str:
         return f"`{default}`"
 
 
+def _unwrap_optional_type(field_type: Any) -> tuple[Any, bool]:
+    """Unwrap Optional/Union types to get the actual type.
+
+    Returns:
+        Tuple of (unwrapped_type, is_nested_model)
+    """
+    import typing
+
+    if not hasattr(typing, "get_origin"):
+        return field_type, False
+
+    origin = typing.get_origin(field_type)
+    if origin is not None:
+        args = typing.get_args(field_type)
+        for arg in args:
+            if arg is not type(None):  # noqa: E721
+                field_type = arg
+                break
+
+    is_nested_model = isinstance(field_type, type) and issubclass(
+        field_type, (BaseSettings, BaseModel)
+    )
+    return field_type, is_nested_model
+
+
+def _extract_single_field_info(
+    field_name: str, field_info: FieldInfo, current_path: list[str]
+) -> dict[str, Any]:
+    """Extract information from a single field."""
+    from pydantic_core import PydanticUndefined
+
+    field_type = field_info.annotation
+    try:
+        field_type, is_nested_model = _unwrap_optional_type(field_type)
+    except (TypeError, AttributeError):
+        is_nested_model = False
+
+    description = field_info.description or ""
+    default = field_info.default
+
+    if default is Ellipsis or default is PydanticUndefined:
+        default = None
+        required = default is Ellipsis
+    else:
+        required = False
+
+    json_schema_extra = field_info.json_schema_extra
+    hide_from_docs = isinstance(json_schema_extra, dict) and json_schema_extra.get(
+        "mkdocs_metaxy_hide", False
+    )
+
+    return {
+        "name": field_name,
+        "path": current_path,
+        "type": format_field_type(field_info, add_links=True),
+        "default": default,
+        "description": description,
+        "required": required,
+        "is_nested": is_nested_model,
+        "hide_from_docs": hide_from_docs,
+        "_field_type": field_type,  # Internal use for recursion
+    }
+
+
 def extract_field_info(
     model: type[BaseSettings] | type[BaseModel],
     path_prefix: list[str] | None = None,
@@ -146,80 +210,51 @@ def extract_field_info(
 
     for field_name, field_info in model.model_fields.items():
         current_path = path_prefix + [field_name]
-
-        # Check if this is a nested BaseSettings or BaseModel
-        field_type = field_info.annotation
-        is_nested_model = False
-
-        # Try to get the actual type (unwrap Optional, etc.)
-        try:
-            # Handle Optional/Union types
-            import typing
-
-            if hasattr(typing, "get_origin"):
-                origin = typing.get_origin(field_type)
-                if origin is not None:
-                    args = typing.get_args(field_type)
-                    # Get non-None type from Union
-                    for arg in args:
-                        if arg is not type(None):  # noqa: E721
-                            field_type = arg
-                            break
-
-            # Check if it's a Pydantic model
-            if isinstance(field_type, type) and issubclass(
-                field_type, (BaseSettings, BaseModel)
-            ):
-                is_nested_model = True
-        except (TypeError, AttributeError):
-            pass
-
-        # Get field description from docstring or field description
-        description = field_info.description or ""
-
-        # Get default value
-        default = field_info.default
-
-        # Check for Pydantic sentinel values indicating no default
-        from pydantic_core import PydanticUndefined
-
-        if (
-            default is Ellipsis or default is PydanticUndefined
-        ):  # Required field or no default
-            default = None
-            required = default is Ellipsis  # Only Ellipsis means required
-        else:
-            required = False
-
-        # Check for mkdocs_metaxy_hide in json_schema_extra
-        json_schema_extra = field_info.json_schema_extra
-        hide_from_docs = False
-        if isinstance(json_schema_extra, dict):
-            hide_from_docs = json_schema_extra.get("mkdocs_metaxy_hide", False)
-
-        field_dict = {
-            "name": field_name,
-            "path": current_path,
-            "type": format_field_type(field_info, add_links=True),
-            "default": default,
-            "description": description,
-            "required": required,
-            "is_nested": is_nested_model,
-            "hide_from_docs": hide_from_docs,
-        }
-
+        field_dict = _extract_single_field_info(field_name, field_info, current_path)
+        field_type = field_dict.pop("_field_type")
         fields_info.append(field_dict)
 
-        # Recursively extract nested model fields
-        if is_nested_model and isinstance(field_type, type):
+        if field_dict["is_nested"] and isinstance(field_type, type):
             try:
                 nested_fields = extract_field_info(field_type, current_path)
                 fields_info.extend(nested_fields)
             except Exception:
-                # If we can't introspect, just skip nested fields
                 pass
 
     return fields_info
+
+
+def _generate_field_toml_lines(
+    field: dict[str, Any], use_path_suffix: bool = False
+) -> list[str]:
+    """Generate TOML lines for a single field.
+
+    Args:
+        field: Field information dictionary
+        use_path_suffix: If True, use the last element of path as field name
+
+    Returns:
+        List of TOML lines for this field
+    """
+    lines = []
+    field_name = field["path"][-1] if use_path_suffix else field["name"]
+    default = field["default"]
+
+    if default is not None:
+        if field["description"]:
+            lines.append(f"# {field['description']}")
+        value = format_toml_value(default)
+        lines.append(f"{field_name} = {value}")
+    else:
+        desc = field["description"]
+        if desc:
+            lines.append(f"# Optional: {desc}")
+        else:
+            lines.append("# Optional")
+        placeholder = _get_field_placeholder(field["type"])
+        lines.append(f"# {field_name} = {placeholder}")
+
+    return lines
 
 
 def generate_toml_example(
@@ -248,42 +283,16 @@ def generate_toml_example(
     if include_tool_section:
         lines.append("[tool.metaxy]")
 
-    # Group fields by section (top-level vs nested)
-    top_level = [f for f in fields if len(f["path"]) == 1]
+    top_level = [f for f in fields if len(f["path"]) == 1 and not f["is_nested"]]
     nested = [f for f in fields if len(f["path"]) > 1]
 
-    # Generate top-level fields
     first_field = True
     for field in top_level:
-        if field["is_nested"]:
-            continue  # Skip, will be handled in nested section
-
-        # Add blank line between fields (except before first field)
         if not first_field:
             lines.append("")
         first_field = False
+        lines.extend(_generate_field_toml_lines(field))
 
-        default = field["default"]
-        if default is not None:
-            # Add description as comment on line before field
-            if field["description"]:
-                lines.append(f"# {field['description']}")
-            value = format_toml_value(default)
-            lines.append(f"{field['name']} = {value}")
-        else:
-            # Show optional fields as commented out
-            desc = field["description"] if field["description"] else None
-
-            # Add description or "Optional" as comment on line before
-            if desc:
-                lines.append(f"# Optional: {desc}")
-            else:
-                lines.append("# Optional")
-
-            placeholder = _get_field_placeholder(field["type"])
-            lines.append(f"# {field['name']} = {placeholder}")
-
-    # Generate nested sections
     sections: dict[str, list[dict[str, Any]]] = {}
     for field in nested:
         section_path = ".".join(field["path"][:-1])
@@ -292,45 +301,24 @@ def generate_toml_example(
         sections[section_path].append(field)
 
     for section_path, section_fields in sections.items():
-        # Filter out nested model headers - only include actual fields
         actual_fields = [f for f in section_fields if not f["is_nested"]]
-
-        # Skip empty sections
         if not actual_fields:
             continue
 
         lines.append("")
-        if include_tool_section:
-            lines.append(f"[tool.metaxy.{section_path}]")
-        else:
-            lines.append(f"[{section_path}]")
+        section_header = (
+            f"[tool.metaxy.{section_path}]"
+            if include_tool_section
+            else f"[{section_path}]"
+        )
+        lines.append(section_header)
 
         first_field_in_section = True
         for field in actual_fields:
-            # Add blank line between fields within section
             if not first_field_in_section:
                 lines.append("")
             first_field_in_section = False
-
-            default = field["default"]
-            if default is not None:
-                # Add description as comment on line before field
-                if field["description"]:
-                    lines.append(f"# {field['description']}")
-                value = format_toml_value(default)
-                lines.append(f"{field['path'][-1]} = {value}")
-            else:
-                # Show optional fields as commented out
-                desc = field["description"] if field["description"] else None
-
-                # Add description or "Optional" as comment on line before
-                if desc:
-                    lines.append(f"# Optional: {desc}")
-                else:
-                    lines.append("# Optional")
-
-                placeholder = _get_field_placeholder(field["type"])
-                lines.append(f"# {field['path'][-1]} = {placeholder}")
+            lines.extend(_generate_field_toml_lines(field, use_path_suffix=True))
 
     return "\n".join(lines)
 

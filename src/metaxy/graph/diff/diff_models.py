@@ -13,6 +13,32 @@ from metaxy.utils.constants import DEFAULT_CODE_VERSION
 from metaxy.utils.exceptions import MetaxyEmptyCodeVersionError
 
 
+def _field_to_struct(field: dict[str, Any]) -> dict[str, Any]:
+    """Convert a field dict to struct format."""
+    key = field["key"]
+    return {
+        "key": key if isinstance(key, str) else key.to_string(),
+        "version": field.get("version", ""),
+        "code_version": field["code_version"],
+    }
+
+
+def _validate_code_version(code_version: str | None, context: str) -> None:
+    """Validate that code_version is not empty."""
+    if not code_version:
+        raise MetaxyEmptyCodeVersionError(f"{context} has empty code_version.")
+
+
+def _is_invalid_code_version(value: str | None) -> bool:
+    """Check if a code_version value is invalid (None, empty, or default)."""
+    return value in (None, "", DEFAULT_CODE_VERSION)
+
+
+def _parse_version(value: str | None) -> str | None:
+    """Parse a version string, converting empty strings to None."""
+    return value if value else None
+
+
 class FieldChange(FrozenBaseModel):
     """Represents a change in a field between two snapshots."""
 
@@ -131,135 +157,256 @@ class GraphDiff(FrozenBaseModel):
         """Check if diff contains any changes."""
         return bool(self.added_nodes or self.removed_nodes or self.changed_nodes)
 
+    def _added_or_removed_node_to_struct(
+        self, node: "AddedNode | RemovedNode"
+    ) -> dict[str, Any]:
+        """Convert an AddedNode or RemovedNode to struct format."""
+        _validate_code_version(
+            node.code_version, f"Node {node.feature_key.to_string()}"
+        )
+        return {
+            "key": node.feature_key.to_string(),
+            "version": node.version,
+            "code_version": node.code_version,
+            "fields": [_field_to_struct(f) for f in node.fields],
+            "dependencies": [dep.to_string() for dep in node.dependencies],
+        }
+
+    def _changed_node_to_struct(self, node: "NodeChange") -> dict[str, Any]:
+        """Convert a NodeChange to struct format."""
+        node_key = node.feature_key.to_string()
+
+        added_fields_list = self._added_fields_to_struct(node.added_fields, node_key)
+        removed_fields_list = self._removed_fields_to_struct(
+            node.removed_fields, node_key
+        )
+        changed_fields_list = self._changed_fields_to_struct(
+            node.changed_fields, node_key
+        )
+
+        if not (node.old_code_version and node.new_code_version):
+            raise MetaxyEmptyCodeVersionError(
+                f"Node {node_key} has empty old/new code_version."
+            )
+
+        return {
+            "key": node_key,
+            "old_version": node.old_version or "",
+            "new_version": node.new_version or "",
+            "old_code_version": node.old_code_version,
+            "new_code_version": node.new_code_version,
+            "added_fields": added_fields_list,
+            "removed_fields": removed_fields_list,
+            "changed_fields": changed_fields_list,
+        }
+
+    def _added_fields_to_struct(
+        self, fields: list["FieldChange"], node_key: str
+    ) -> list[dict[str, Any]]:
+        """Convert added fields to struct format."""
+        result = []
+        for field in fields:
+            _validate_code_version(
+                field.new_code_version,
+                f"Node {node_key} field {field.field_key.to_string()}",
+            )
+            result.append(
+                {
+                    "key": field.field_key.to_string(),
+                    "version": field.new_version or "",
+                    "code_version": field.new_code_version,
+                }
+            )
+        return result
+
+    def _removed_fields_to_struct(
+        self, fields: list["FieldChange"], node_key: str
+    ) -> list[dict[str, Any]]:
+        """Convert removed fields to struct format."""
+        result = []
+        for field in fields:
+            _validate_code_version(field.old_code_version, f"Node {node_key}")
+            result.append(
+                {
+                    "key": field.field_key.to_string(),
+                    "version": field.old_version or "",
+                    "code_version": field.old_code_version,
+                }
+            )
+        return result
+
+    def _changed_fields_to_struct(
+        self, fields: list["FieldChange"], node_key: str
+    ) -> list[dict[str, Any]]:
+        """Convert changed fields to struct format."""
+        result = []
+        for field in fields:
+            if not (field.old_code_version and field.new_code_version):
+                raise MetaxyEmptyCodeVersionError(
+                    f"Node {node_key} has empty code_version."
+                )
+            result.append(
+                {
+                    "key": field.field_key.to_string(),
+                    "old_version": field.old_version or "",
+                    "new_version": field.new_version or "",
+                    "old_code_version": field.old_code_version,
+                    "new_code_version": field.new_code_version,
+                }
+            )
+        return result
+
     def to_struct(self) -> dict[str, Any]:
         """Serialize to struct (native Python types for storage).
 
         Returns:
             Dict with structure compatible with Polars struct type
         """
-        added_nodes_list = []
-        for node in self.added_nodes:
-            fields_list = []
-            for field in node.fields:
-                fields_list.append(
-                    {
-                        "key": field["key"]
-                        if isinstance(field["key"], str)
-                        else field["key"].to_string(),
-                        "version": field.get("version", ""),
-                        "code_version": field["code_version"],
-                    }
-                )
-            if not node.code_version:
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node.feature_key.to_string()} has empty code_version."
-                )
-            added_nodes_list.append(
-                {
-                    "key": node.feature_key.to_string(),
-                    "version": node.version,
-                    "code_version": node.code_version,
-                    "fields": fields_list,
-                    "dependencies": [dep.to_string() for dep in node.dependencies],
-                }
-            )
-
-        removed_nodes_list = []
-        for node in self.removed_nodes:
-            fields_list = []
-            for field in node.fields:
-                fields_list.append(
-                    {
-                        "key": field["key"]
-                        if isinstance(field["key"], str)
-                        else field["key"].to_string(),
-                        "version": field.get("version", ""),
-                        "code_version": field["code_version"],
-                    }
-                )
-
-            if not node.code_version:
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node.feature_key.to_string()} has empty code_version."
-                )
-            removed_nodes_list.append(
-                {
-                    "key": node.feature_key.to_string(),
-                    "version": node.version,
-                    "code_version": node.code_version,
-                    "fields": fields_list,
-                    "dependencies": [dep.to_string() for dep in node.dependencies],
-                }
-            )
-
-        changed_nodes_list = []
-        for node in self.changed_nodes:
-            added_fields_list = []
-            for field in node.added_fields:
-                if not field.new_code_version:
-                    raise MetaxyEmptyCodeVersionError(
-                        f"Node {node.feature_key.to_string()} has empty code_version for field {field.field_key.to_string()}."
-                    )
-                added_fields_list.append(
-                    {
-                        "key": field.field_key.to_string(),
-                        "version": field.new_version or "",
-                        "code_version": field.new_code_version,
-                    }
-                )
-
-            removed_fields_list = []
-            for field in node.removed_fields:
-                if not field.old_code_version:
-                    raise MetaxyEmptyCodeVersionError(
-                        f"Node {node.feature_key.to_string()} has empty code_version."
-                    )
-                removed_fields_list.append(
-                    {
-                        "key": field.field_key.to_string(),
-                        "version": field.old_version or "",
-                        "code_version": field.old_code_version,
-                    }
-                )
-
-            changed_fields_list = []
-            for field in node.changed_fields:
-                if not (field.old_code_version and field.new_code_version):
-                    raise MetaxyEmptyCodeVersionError(
-                        f"Node {node.feature_key.to_string()} has empty code_version."
-                    )
-                changed_fields_list.append(
-                    {
-                        "key": field.field_key.to_string(),
-                        "old_version": field.old_version or "",
-                        "new_version": field.new_version or "",
-                        "old_code_version": field.old_code_version,
-                        "new_code_version": field.new_code_version,
-                    }
-                )
-
-            if not (node.old_code_version and node.new_code_version):
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node.feature_key.to_string()} has empty old/new code_version."
-                )
-            changed_nodes_list.append(
-                {
-                    "key": node.feature_key.to_string(),
-                    "old_version": node.old_version or "",
-                    "new_version": node.new_version or "",
-                    "old_code_version": node.old_code_version,
-                    "new_code_version": node.new_code_version,
-                    "added_fields": added_fields_list,
-                    "removed_fields": removed_fields_list,
-                    "changed_fields": changed_fields_list,
-                }
-            )
-
         return {
-            "added_nodes": added_nodes_list,
-            "removed_nodes": removed_nodes_list,
-            "changed_nodes": changed_nodes_list,
+            "added_nodes": [
+                self._added_or_removed_node_to_struct(n) for n in self.added_nodes
+            ],
+            "removed_nodes": [
+                self._added_or_removed_node_to_struct(n) for n in self.removed_nodes
+            ],
+            "changed_nodes": [
+                self._changed_node_to_struct(n) for n in self.changed_nodes
+            ],
         }
+
+    @classmethod
+    def _field_from_struct(cls, field_data: dict[str, Any]) -> dict[str, Any]:
+        """Parse a field dict from struct format."""
+        return {
+            "key": field_data["key"],
+            "version": _parse_version(field_data["version"]),
+            "code_version": field_data["code_version"],
+        }
+
+    @classmethod
+    def _validate_node_code_version(cls, node_data: dict[str, Any]) -> None:
+        """Validate that a node has a valid code_version."""
+        if _is_invalid_code_version(node_data.get("code_version")):
+            raise MetaxyEmptyCodeVersionError(
+                f"Node {node_data['key']} has empty code_version."
+            )
+
+    @classmethod
+    def _added_node_from_struct(cls, node_data: dict[str, Any]) -> "AddedNode":
+        """Parse an AddedNode from struct format."""
+        cls._validate_node_code_version(node_data)
+        return AddedNode(
+            feature_key=FeatureKey(node_data["key"].split("/")),
+            version=node_data["version"],
+            code_version=node_data["code_version"],
+            fields=[cls._field_from_struct(f) for f in node_data.get("fields", [])],
+            dependencies=[
+                FeatureKey(dep.split("/")) for dep in node_data.get("dependencies", [])
+            ],
+        )
+
+    @classmethod
+    def _removed_node_from_struct(cls, node_data: dict[str, Any]) -> "RemovedNode":
+        """Parse a RemovedNode from struct format."""
+        cls._validate_node_code_version(node_data)
+        return RemovedNode(
+            feature_key=FeatureKey(node_data["key"].split("/")),
+            version=node_data["version"],
+            code_version=node_data["code_version"],
+            fields=[cls._field_from_struct(f) for f in node_data.get("fields", [])],
+            dependencies=[
+                FeatureKey(dep.split("/")) for dep in node_data.get("dependencies", [])
+            ],
+        )
+
+    @classmethod
+    def _added_field_from_struct(
+        cls, field_data: dict[str, Any], node_key: str
+    ) -> "FieldChange":
+        """Parse an added field FieldChange from struct format."""
+        if _is_invalid_code_version(field_data.get("code_version")):
+            raise MetaxyEmptyCodeVersionError(
+                f"Field {field_data['key']} in feature {node_key} has empty code_version."
+            )
+        return FieldChange(
+            field_key=FieldKey(field_data["key"].split("/")),
+            old_version=None,
+            new_version=_parse_version(field_data["version"]),
+            old_code_version=None,
+            new_code_version=field_data["code_version"],
+        )
+
+    @classmethod
+    def _removed_field_from_struct(
+        cls, field_data: dict[str, Any], node_key: str
+    ) -> "FieldChange":
+        """Parse a removed field FieldChange from struct format."""
+        if _is_invalid_code_version(field_data.get("code_version")):
+            raise MetaxyEmptyCodeVersionError(
+                f"Field {field_data['key']} in feature {node_key} has empty code_version."
+            )
+        return FieldChange(
+            field_key=FieldKey(field_data["key"].split("/")),
+            old_version=_parse_version(field_data["version"]),
+            new_version=None,
+            old_code_version=field_data["code_version"],
+            new_code_version=None,
+        )
+
+    @classmethod
+    def _changed_field_from_struct(
+        cls, field_data: dict[str, Any], node_key: str
+    ) -> "FieldChange":
+        """Parse a changed field FieldChange from struct format."""
+        if _is_invalid_code_version(
+            field_data.get("old_code_version")
+        ) or _is_invalid_code_version(field_data.get("new_code_version")):
+            raise MetaxyEmptyCodeVersionError(
+                f"Field {field_data['key']} in feature {node_key} has empty code_version."
+            )
+        return FieldChange(
+            field_key=FieldKey(field_data["key"].split("/")),
+            old_version=_parse_version(field_data["old_version"]),
+            new_version=_parse_version(field_data["new_version"]),
+            old_code_version=field_data["old_code_version"],
+            new_code_version=field_data["new_code_version"],
+        )
+
+    @classmethod
+    def _changed_node_from_struct(cls, node_data: dict[str, Any]) -> "NodeChange":
+        """Parse a NodeChange from struct format."""
+        node_key = node_data["key"]
+
+        added_fields = [
+            cls._added_field_from_struct(f, node_key)
+            for f in node_data.get("added_fields", [])
+        ]
+        removed_fields = [
+            cls._removed_field_from_struct(f, node_key)
+            for f in node_data.get("removed_fields", [])
+        ]
+        changed_fields = [
+            cls._changed_field_from_struct(f, node_key)
+            for f in node_data.get("changed_fields", [])
+        ]
+
+        if _is_invalid_code_version(
+            node_data.get("old_code_version")
+        ) or _is_invalid_code_version(node_data.get("new_code_version")):
+            raise MetaxyEmptyCodeVersionError(
+                f"Node {node_key} has empty old/new code_version."
+            )
+
+        return NodeChange(
+            feature_key=FeatureKey(node_key.split("/")),
+            old_version=_parse_version(node_data["old_version"]),
+            new_version=_parse_version(node_data["new_version"]),
+            old_code_version=node_data["old_code_version"],
+            new_code_version=node_data["new_code_version"],
+            added_fields=added_fields,
+            removed_fields=removed_fields,
+            changed_fields=changed_fields,
+        )
 
     @classmethod
     def from_struct(
@@ -278,169 +425,19 @@ class GraphDiff(FrozenBaseModel):
         Returns:
             GraphDiff instance
         """
-        added_nodes = []
-        for node_data in struct_data.get("added_nodes", []):
-            fields = []
-            for field_data in node_data.get("fields", []):
-                fields.append(
-                    {
-                        "key": field_data["key"],
-                        "version": field_data["version"]
-                        if field_data["version"]
-                        else None,
-                        "code_version": field_data["code_version"],
-                    }
-                )
-
-            if (
-                not node_data["code_version"]
-                or node_data["code_version"] == DEFAULT_CODE_VERSION
-            ):
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node_data['key']} has empty code_version."
-                )
-            added_nodes.append(
-                AddedNode(
-                    feature_key=FeatureKey(node_data["key"].split("/")),
-                    version=node_data["version"],
-                    code_version=node_data["code_version"],
-                    fields=fields,
-                    dependencies=[
-                        FeatureKey(dep.split("/"))
-                        for dep in node_data.get("dependencies", [])
-                    ],
-                )
-            )
-
-        removed_nodes = []
-        for node_data in struct_data.get("removed_nodes", []):
-            fields = []
-            for field_data in node_data.get("fields", []):
-                fields.append(
-                    {
-                        "key": field_data["key"],
-                        "version": field_data["version"]
-                        if field_data["version"]
-                        else None,
-                        "code_version": field_data["code_version"],
-                    }
-                )
-
-            if (
-                not node_data["code_version"]
-                or node_data["code_version"] == DEFAULT_CODE_VERSION
-            ):
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node_data['key']} has empty code_version."
-                )
-            removed_nodes.append(
-                RemovedNode(
-                    feature_key=FeatureKey(node_data["key"].split("/")),
-                    version=node_data["version"],
-                    code_version=node_data["code_version"],
-                    fields=fields,
-                    dependencies=[
-                        FeatureKey(dep.split("/"))
-                        for dep in node_data.get("dependencies", [])
-                    ],
-                )
-            )
-
-        changed_nodes = []
-        for node_data in struct_data.get("changed_nodes", []):
-            added_fields = []
-            for field_data in node_data.get("added_fields", []):
-                if (
-                    not field_data["code_version"]
-                    or field_data["code_version"] == DEFAULT_CODE_VERSION
-                ):
-                    raise MetaxyEmptyCodeVersionError(
-                        f"Field {field_data['key']} in feature {node_data['key']} has empty code_version."
-                    )
-                added_fields.append(
-                    FieldChange(
-                        field_key=FieldKey(field_data["key"].split("/")),
-                        old_version=None,
-                        new_version=field_data["version"]
-                        if field_data["version"]
-                        else None,
-                        old_code_version=None,
-                        new_code_version=field_data["code_version"],
-                    )
-                )
-
-            removed_fields = []
-            for field_data in node_data.get("removed_fields", []):
-                if (
-                    not field_data["code_version"]
-                    or field_data["code_version"] == DEFAULT_CODE_VERSION
-                ):
-                    raise MetaxyEmptyCodeVersionError(
-                        f"Field {field_data['key']} in feature {node_data['key']} has empty code_version."
-                    )
-                removed_fields.append(
-                    FieldChange(
-                        field_key=FieldKey(field_data["key"].split("/")),
-                        old_version=field_data["version"]
-                        if field_data["version"]
-                        else None,
-                        new_version=None,
-                        old_code_version=field_data["code_version"],
-                        new_code_version=None,
-                    )
-                )
-
-            changed_fields = []
-            for field_data in node_data.get("changed_fields", []):
-                if any(
-                    field_data.get(k) in (None, "", DEFAULT_CODE_VERSION)
-                    for k in ("old_code_version", "new_code_version")
-                ):
-                    raise MetaxyEmptyCodeVersionError(
-                        f"Field {field_data['key']} in feature {node_data['key']} has empty code_version."
-                    )
-                changed_fields.append(
-                    FieldChange(
-                        field_key=FieldKey(field_data["key"].split("/")),
-                        old_version=field_data["old_version"]
-                        if field_data["old_version"]
-                        else None,
-                        new_version=field_data["new_version"]
-                        if field_data["new_version"]
-                        else None,
-                        old_code_version=field_data["old_code_version"],
-                        new_code_version=field_data["new_code_version"],
-                    )
-                )
-
-            if any(
-                node_data.get(k) in (None, "", DEFAULT_CODE_VERSION)
-                for k in ("old_code_version", "new_code_version")
-            ):
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node_data['key']} has empty old/new code_version."
-                )
-            changed_nodes.append(
-                NodeChange(
-                    feature_key=FeatureKey(node_data["key"].split("/")),
-                    old_version=node_data["old_version"]
-                    if node_data["old_version"]
-                    else None,
-                    new_version=node_data["new_version"]
-                    if node_data["new_version"]
-                    else None,
-                    old_code_version=node_data["old_code_version"],
-                    new_code_version=node_data["new_code_version"],
-                    added_fields=added_fields,
-                    removed_fields=removed_fields,
-                    changed_fields=changed_fields,
-                )
-            )
-
         return cls(
             from_snapshot_version=from_snapshot_version,
             to_snapshot_version=to_snapshot_version,
-            added_nodes=added_nodes,
-            removed_nodes=removed_nodes,
-            changed_nodes=changed_nodes,
+            added_nodes=[
+                cls._added_node_from_struct(n)
+                for n in struct_data.get("added_nodes", [])
+            ],
+            removed_nodes=[
+                cls._removed_node_from_struct(n)
+                for n in struct_data.get("removed_nodes", [])
+            ],
+            changed_nodes=[
+                cls._changed_node_from_struct(n)
+                for n in struct_data.get("changed_nodes", [])
+            ],
         )

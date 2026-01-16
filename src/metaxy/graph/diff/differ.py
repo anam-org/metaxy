@@ -112,99 +112,104 @@ class GraphDiffer:
         removed_keys = keys1 - keys2
         common_keys = keys1 & keys2
 
-        # Build added nodes
-        added_nodes = []
-        for key_str in sorted(added_keys):
-            feature_data = snapshot2_data[key_str]
-            feature_spec = feature_data.get("feature_spec", {})
+        # Build nodes for each category
+        added_nodes = [
+            self._build_added_node(key_str, snapshot2_data[key_str])
+            for key_str in sorted(added_keys)
+        ]
+        removed_nodes = [
+            self._build_removed_node(key_str, snapshot1_data[key_str])
+            for key_str in sorted(removed_keys)
+        ]
+        changed_nodes = self._build_changed_nodes(
+            common_keys, snapshot1_data, snapshot2_data
+        )
 
-            # Extract fields
-            fields_list = []
-            for field_dict in feature_spec.get("fields", []):
-                field_key_list = field_dict.get("key", [])
-                field_key_str = (
-                    "/".join(field_key_list)
-                    if isinstance(field_key_list, list)
-                    else field_key_list
-                )
-                fields_list.append(
-                    {
-                        "key": field_key_str,
-                        "version": feature_data.get("fields", {}).get(
-                            field_key_str, ""
-                        ),
-                        "code_version": field_dict.get("code_version"),
-                    }
-                )
+        return GraphDiff(
+            from_snapshot_version=from_snapshot_version,
+            to_snapshot_version=to_snapshot_version,
+            added_nodes=added_nodes,
+            removed_nodes=removed_nodes,
+            changed_nodes=changed_nodes,
+        )
 
-            # Extract dependencies
-            deps = []
-            if feature_spec.get("deps"):
-                for dep in feature_spec["deps"]:
-                    # Check for 'feature' field (new format) or 'key' field (old format)
-                    dep_key = dep.get("feature") or dep.get("key", [])
-                    if isinstance(dep_key, list):
-                        deps.append(FeatureKey(dep_key))
-                    else:
-                        deps.append(FeatureKey(dep_key.split("/")))
+    def _build_added_node(
+        self, key_str: str, feature_data: Mapping[str, Any]
+    ) -> AddedNode:
+        """Build an AddedNode from feature data."""
+        feature_spec = feature_data.get("feature_spec", {})
+        fields_list = self._extract_fields_list(feature_data, feature_spec)
+        deps = self._extract_dependency_keys(feature_spec)
 
-            added_nodes.append(
-                AddedNode(
-                    feature_key=FeatureKey(key_str.split("/")),
-                    version=feature_data["metaxy_feature_version"],
-                    code_version=feature_spec.get("code_version"),
-                    fields=fields_list,
-                    dependencies=deps,
-                )
+        return AddedNode(
+            feature_key=FeatureKey(key_str.split("/")),
+            version=feature_data["metaxy_feature_version"],
+            code_version=feature_spec.get("code_version"),
+            fields=fields_list,
+            dependencies=deps,
+        )
+
+    def _build_removed_node(
+        self, key_str: str, feature_data: Mapping[str, Any]
+    ) -> RemovedNode:
+        """Build a RemovedNode from feature data."""
+        feature_spec = feature_data.get("feature_spec", {})
+        fields_list = self._extract_fields_list(feature_data, feature_spec)
+        deps = self._extract_dependency_keys(feature_spec)
+
+        return RemovedNode(
+            feature_key=FeatureKey(key_str.split("/")),
+            version=feature_data["metaxy_feature_version"],
+            code_version=feature_spec.get("code_version"),
+            fields=fields_list,
+            dependencies=deps,
+        )
+
+    def _extract_fields_list(
+        self, feature_data: Mapping[str, Any], feature_spec: Mapping[str, Any]
+    ) -> list[dict[str, Any]]:
+        """Extract fields list from feature data and spec."""
+        fields_list = []
+        for field_dict in feature_spec.get("fields", []):
+            field_key_list = field_dict.get("key", [])
+            field_key_str = (
+                "/".join(field_key_list)
+                if isinstance(field_key_list, list)
+                else field_key_list
             )
-
-        # Build removed nodes
-        removed_nodes = []
-        for key_str in sorted(removed_keys):
-            feature_data = snapshot1_data[key_str]
-            feature_spec = feature_data.get("feature_spec", {})
-
-            # Extract fields
-            fields_list = []
-            for field_dict in feature_spec.get("fields", []):
-                field_key_list = field_dict.get("key", [])
-                field_key_str = (
-                    "/".join(field_key_list)
-                    if isinstance(field_key_list, list)
-                    else field_key_list
-                )
-                fields_list.append(
-                    {
-                        "key": field_key_str,
-                        "version": feature_data.get("fields", {}).get(
-                            field_key_str, ""
-                        ),
-                        "code_version": field_dict.get("code_version"),
-                    }
-                )
-
-            # Extract dependencies
-            deps = []
-            if feature_spec.get("deps"):
-                for dep in feature_spec["deps"]:
-                    # Check for 'feature' field (new format) or 'key' field (old format)
-                    dep_key = dep.get("feature") or dep.get("key", [])
-                    if isinstance(dep_key, list):
-                        deps.append(FeatureKey(dep_key))
-                    else:
-                        deps.append(FeatureKey(dep_key.split("/")))
-
-            removed_nodes.append(
-                RemovedNode(
-                    feature_key=FeatureKey(key_str.split("/")),
-                    version=feature_data["metaxy_feature_version"],
-                    code_version=feature_spec.get("code_version"),
-                    fields=fields_list,
-                    dependencies=deps,
-                )
+            fields_list.append(
+                {
+                    "key": field_key_str,
+                    "version": feature_data.get("fields", {}).get(field_key_str, ""),
+                    "code_version": field_dict.get("code_version"),
+                }
             )
+        return fields_list
 
-        # Identify changed features
+    def _extract_dependency_keys(
+        self, feature_spec: Mapping[str, Any]
+    ) -> list[FeatureKey]:
+        """Extract dependency FeatureKeys from feature spec."""
+        deps: list[FeatureKey] = []
+        if not feature_spec.get("deps"):
+            return deps
+
+        for dep in feature_spec["deps"]:
+            # Check for 'feature' field (new format) or 'key' field (old format)
+            dep_key = dep.get("feature") or dep.get("key", [])
+            if isinstance(dep_key, list):
+                deps.append(FeatureKey(dep_key))
+            else:
+                deps.append(FeatureKey(dep_key.split("/")))
+        return deps
+
+    def _build_changed_nodes(
+        self,
+        common_keys: set[str],
+        snapshot1_data: Mapping[str, Mapping[str, Any]],
+        snapshot2_data: Mapping[str, Mapping[str, Any]],
+    ) -> list[NodeChange]:
+        """Build NodeChange objects for features that exist in both snapshots."""
         changed_nodes = []
         for key_str in sorted(common_keys):
             feature1 = snapshot1_data[key_str]
@@ -213,12 +218,6 @@ class GraphDiffer:
             version1 = feature1["metaxy_feature_version"]
             version2 = feature2["metaxy_feature_version"]
 
-            spec1 = feature1.get("feature_spec", {})
-            spec2 = feature2.get("feature_spec", {})
-
-            fields1 = feature1.get("fields", {})
-            fields2 = feature2.get("fields", {})
-
             # Get tracking versions for migration detection
             # Use tracking version if available (new system), otherwise fall back to feature_version
             tracking_version1 = feature1.get("metaxy_full_definition_version", version1)
@@ -226,7 +225,11 @@ class GraphDiffer:
 
             # Check if feature tracking version changed (indicates migration needed)
             if tracking_version1 != tracking_version2:
-                # Compute field changes
+                spec1 = feature1.get("feature_spec", {})
+                spec2 = feature2.get("feature_spec", {})
+                fields1 = feature1.get("fields", {})
+                fields2 = feature2.get("fields", {})
+
                 field_changes = self._compute_field_changes(fields1, fields2)
 
                 changed_nodes.append(
@@ -242,13 +245,7 @@ class GraphDiffer:
                     )
                 )
 
-        return GraphDiff(
-            from_snapshot_version=from_snapshot_version,
-            to_snapshot_version=to_snapshot_version,
-            added_nodes=added_nodes,
-            removed_nodes=removed_nodes,
-            changed_nodes=changed_nodes,
-        )
+        return changed_nodes
 
     def _compute_field_changes(
         self, fields1: dict[str, str], fields2: dict[str, str]
@@ -474,72 +471,81 @@ class GraphDiffer:
             ValueError: If focus_feature is specified but not found in graph
         """
         if focus_feature is None:
-            # No filtering
             return merged_data
 
-        # Parse feature key (support both / and __ formats)
-        if "/" in focus_feature:
-            focus_key = focus_feature
-        else:
-            focus_key = focus_feature.replace("__", "/")
+        focus_key = self._normalize_feature_key(focus_feature)
 
-        # Check if focus feature exists
         if focus_key not in merged_data["nodes"]:
             raise ValueError(f"Feature '{focus_feature}' not found in graph")
 
-        # Build dependency graph for traversal
-        # Build forward edges (feature -> dependents) and backward edges (feature -> dependencies)
-        forward_edges: dict[str, list[str]] = {}  # feature -> list of dependents
-        backward_edges: dict[str, list[str]] = {}  # feature -> list of dependencies
+        forward_edges, backward_edges = self._build_edge_maps(merged_data["edges"])
+        features_to_include = self._collect_features_to_include(
+            focus_key, forward_edges, backward_edges, up, down
+        )
 
-        for edge in merged_data["edges"]:
+        return self._filter_graph_data(merged_data, features_to_include)
+
+    def _normalize_feature_key(self, focus_feature: str) -> str:
+        """Normalize feature key to use / separator."""
+        if "/" in focus_feature:
+            return focus_feature
+        return focus_feature.replace("__", "/")
+
+    def _build_edge_maps(
+        self, edges: list[dict[str, str]]
+    ) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+        """Build forward and backward edge maps from edge list.
+
+        Returns:
+            Tuple of (forward_edges, backward_edges) where:
+            - forward_edges: feature -> list of dependents
+            - backward_edges: feature -> list of dependencies
+        """
+        forward_edges: dict[str, list[str]] = {}
+        backward_edges: dict[str, list[str]] = {}
+
+        for edge in edges:
             dep = edge["from"]  # dependency
             feat = edge["to"]  # dependent feature
 
-            if feat not in backward_edges:
-                backward_edges[feat] = []
-            backward_edges[feat].append(dep)
+            backward_edges.setdefault(feat, []).append(dep)
+            forward_edges.setdefault(dep, []).append(feat)
 
-            if dep not in forward_edges:
-                forward_edges[dep] = []
-            forward_edges[dep].append(feat)
+        return forward_edges, backward_edges
 
-        # Find features to include
+    def _collect_features_to_include(
+        self,
+        focus_key: str,
+        forward_edges: dict[str, list[str]],
+        backward_edges: dict[str, list[str]],
+        up: int | None,
+        down: int | None,
+    ) -> set[str]:
+        """Collect all features to include based on focus and level parameters."""
         features_to_include = {focus_key}
 
-        # Add upstream (dependencies)
-        # Default behavior: if focus_feature is set but up is not specified, include all upstream
-        if up is None:
-            # Include all upstream
+        # Add upstream (dependencies) - None means all levels, 0 means none
+        if up is None or up > 0:
+            max_levels = None if up is None else up
             upstream = self._get_upstream_features(
-                focus_key, backward_edges, max_levels=None
+                focus_key, backward_edges, max_levels=max_levels
             )
             features_to_include.update(upstream)
-        elif up > 0:
-            # Include specified number of levels
-            upstream = self._get_upstream_features(
-                focus_key, backward_edges, max_levels=up
-            )
-            features_to_include.update(upstream)
-        # else: up == 0, don't include upstream
 
-        # Add downstream (dependents)
-        # Default behavior: if focus_feature is set but down is not specified, include all downstream
-        if down is None:
-            # Include all downstream
+        # Add downstream (dependents) - None means all levels, 0 means none
+        if down is None or down > 0:
+            max_levels = None if down is None else down
             downstream = self._get_downstream_features(
-                focus_key, forward_edges, max_levels=None
+                focus_key, forward_edges, max_levels=max_levels
             )
             features_to_include.update(downstream)
-        elif down > 0:
-            # Include specified number of levels
-            downstream = self._get_downstream_features(
-                focus_key, forward_edges, max_levels=down
-            )
-            features_to_include.update(downstream)
-        # else: down == 0, don't include downstream
 
-        # Filter nodes and edges
+        return features_to_include
+
+    def _filter_graph_data(
+        self, merged_data: dict[str, Any], features_to_include: set[str]
+    ) -> dict[str, Any]:
+        """Filter nodes and edges to only include specified features."""
         filtered_nodes = {
             k: v for k, v in merged_data["nodes"].items() if k in features_to_include
         }

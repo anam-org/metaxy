@@ -80,6 +80,35 @@ class VersioningEngine(ABC):
 
         return cols
 
+    def _join_all_inner(
+        self, upstream: Mapping[FeatureKey, RenamedDataFrame[FrameT]]
+    ) -> FrameT:
+        """Join all upstream DataFrames using inner joins (fallback when no feature_deps)."""
+        key, renamed_df = next(iter(upstream.items()))
+        df = renamed_df.df
+        for next_key, next_renamed_df in upstream.items():
+            if key == next_key:
+                continue
+            df = cast(
+                FrameT,
+                df.join(next_renamed_df.df, on=self.shared_id_columns, how="inner"),
+            )
+        return df
+
+    def _coalesce_id_columns_after_full_join(self, df: FrameT) -> FrameT:
+        """Coalesce ID columns after a full outer join to handle NULLs from either side."""
+        for id_col in self.shared_id_columns:
+            right_col = f"{id_col}_right"
+            col_names = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+            if right_col in col_names:
+                df = cast(
+                    FrameT,
+                    df.with_columns(  # ty: ignore[invalid-argument-type]
+                        nw.coalesce(nw.col(id_col), nw.col(right_col)).alias(id_col)
+                    ).drop(right_col),
+                )
+        return df
+
     def join(self, upstream: Mapping[FeatureKey, RenamedDataFrame[FrameT]]) -> FrameT:
         """Join renamed upstream DataFrames respecting optional/required dependencies.
 
@@ -97,22 +126,11 @@ class VersioningEngine(ABC):
 
         # If no feature_deps, fall back to original behavior (all inner joins)
         if not self.plan.feature_deps:
-            key, renamed_df = next(iter(upstream.items()))
-            df = renamed_df.df
-            for next_key, renamed_df in upstream.items():
-                if key == next_key:
-                    continue
-                df = cast(
-                    FrameT,
-                    df.join(renamed_df.df, on=self.shared_id_columns, how="inner"),
-                )
-            return df
+            return self._join_all_inner(upstream)  # ty: ignore[invalid-argument-type]
 
         # Use cached properties for required and optional dependencies
         required_deps = self.plan.required_deps
         optional_deps = self.plan.optional_deps
-
-        # Check if all dependencies are optional
         all_optional = len(required_deps) == 0
 
         df: FrameT | None = None
@@ -121,9 +139,7 @@ class VersioningEngine(ABC):
         for dep in required_deps:
             if dep.feature not in upstream:
                 continue
-
             renamed_df = upstream[dep.feature]
-
             if df is None:
                 df = renamed_df.df
             else:
@@ -139,11 +155,8 @@ class VersioningEngine(ABC):
         for dep in optional_deps:
             if dep.feature not in upstream:
                 continue
-
             renamed_df = upstream[dep.feature]
-
             if df is None:
-                # First dependency when all are optional - becomes the base
                 df = renamed_df.df
             else:
                 df = cast(
@@ -154,22 +167,8 @@ class VersioningEngine(ABC):
                         how=optional_join_type,
                     ),
                 )
-
-                # For full outer join, coalesce the ID columns
                 if optional_join_type == "full":
-                    for id_col in self.shared_id_columns:
-                        right_col = f"{id_col}_right"
-                        # Check if the right column exists (ty ignore for generic type)
-                        col_names = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
-                        if right_col in col_names:
-                            df = cast(
-                                FrameT,
-                                df.with_columns(  # ty: ignore[invalid-argument-type]
-                                    nw.coalesce(
-                                        nw.col(id_col), nw.col(right_col)
-                                    ).alias(id_col)
-                                ).drop(right_col),
-                            )
+                    df = self._coalesce_id_columns_after_full_join(df)  # ty: ignore[invalid-argument-type]
 
         assert df is not None, "No dataframes were joined"
         return df
@@ -451,6 +450,31 @@ class VersioningEngine(ABC):
             res[field_spec.key] = field_provenance
         return res
 
+    def _get_renamed_columns_to_drop(
+        self,
+        current_columns: list[str],
+        drop_renamed_data_version_col: bool,
+    ) -> list[str]:
+        """Get list of renamed upstream system columns to drop after provenance computation."""
+        columns_to_drop: list[str] = []
+        for transformer in self.feature_transformers_by_key.values():
+            renamed_prov_col = transformer.renamed_provenance_col
+            renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
+            renamed_data_version_by_field_col = (
+                transformer.renamed_data_version_by_field_col
+            )
+            if renamed_prov_col in current_columns:
+                columns_to_drop.append(renamed_prov_col)
+            if renamed_prov_by_field_col in current_columns:
+                columns_to_drop.append(renamed_prov_by_field_col)
+            if renamed_data_version_by_field_col in current_columns:
+                columns_to_drop.append(renamed_data_version_by_field_col)
+            if drop_renamed_data_version_col:
+                renamed_data_version_col = transformer.renamed_data_version_col
+                if renamed_data_version_col in current_columns:
+                    columns_to_drop.append(renamed_data_version_col)
+        return columns_to_drop
+
     def _compute_provenance_internal(
         self,
         df: FrameT,
@@ -517,29 +541,13 @@ class VersioningEngine(ABC):
 
         # Drop renamed upstream system columns
         current_columns = df.collect_schema().names()
-        columns_to_drop: list[str] = []
-        for transformer in self.feature_transformers_by_key.values():
-            renamed_prov_col = transformer.renamed_provenance_col
-            renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
-            renamed_data_version_by_field_col = (
-                transformer.renamed_data_version_by_field_col
-            )
-            if renamed_prov_col in current_columns:
-                columns_to_drop.append(renamed_prov_col)
-            if renamed_prov_by_field_col in current_columns:
-                columns_to_drop.append(renamed_prov_by_field_col)
-            if renamed_data_version_by_field_col in current_columns:
-                columns_to_drop.append(renamed_data_version_by_field_col)
-            if drop_renamed_data_version_col:
-                renamed_data_version_col = transformer.renamed_data_version_col
-                if renamed_data_version_col in current_columns:
-                    columns_to_drop.append(renamed_data_version_col)
-
+        columns_to_drop = self._get_renamed_columns_to_drop(
+            current_columns, drop_renamed_data_version_col
+        )
         if columns_to_drop:
             df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
 
         # Add data_version columns (default to provenance values)
-
         df = df.with_columns(  # ty: ignore[invalid-argument-type]
             nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
             nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),

@@ -714,6 +714,75 @@ class MetaxyConfig(BaseSettings):
         **kwargs: Any,
     ) -> StoreTypeT: ...
 
+    def _validate_store_exists(self, name: str) -> None:
+        """Validate that a store with the given name exists."""
+        if len(self.stores) == 0:
+            raise InvalidConfigError.from_config(
+                self,
+                "No Metaxy stores available. They should be configured in metaxy.toml|pyproject.toml or via environment variables.",
+            )
+        if name not in self.stores:
+            raise InvalidConfigError.from_config(
+                self,
+                f"Store '{name}' not found in config. Available stores: {list(self.stores.keys())}",
+            )
+
+    def _import_store_class(
+        self, store_config: "StoreConfig", name: str, expected_type: type | None
+    ) -> type["MetadataStore"]:
+        """Import and validate store class."""
+        try:
+            store_class = store_config.type
+        except Exception as e:
+            raise InvalidConfigError.from_config(
+                self,
+                f"Failed to import store class '{store_config.type_path}' for store '{name}': {e}",
+            ) from e
+
+        if expected_type is not None and not issubclass(store_class, expected_type):
+            raise InvalidConfigError.from_config(
+                self, f"Store '{name}' is not of type '{expected_type.__name__}'"
+            )
+        return store_class
+
+    def _prepare_store_config(
+        self,
+        store_config: "StoreConfig",
+        store_class: type["MetadataStore"],
+        kwargs: dict[str, Any],
+    ) -> tuple[Any, Any, dict[str, Any]]:
+        """Prepare store config and return (typed_config, hash_algorithm, extra_kwargs)."""
+        from metaxy.versioning.types import HashAlgorithm
+
+        config_copy = store_config.config.copy()
+
+        configured_hash_algorithm = config_copy.get("hash_algorithm")
+        if configured_hash_algorithm is not None and isinstance(
+            configured_hash_algorithm, str
+        ):
+            configured_hash_algorithm = HashAlgorithm(configured_hash_algorithm)
+            config_copy["hash_algorithm"] = configured_hash_algorithm
+
+        config_model_cls = store_class.config_model()
+
+        if (
+            "auto_create_tables" not in config_copy
+            and self.auto_create_tables is not None
+            and "auto_create_tables" in config_model_cls.model_fields
+        ):
+            config_copy["auto_create_tables"] = self.auto_create_tables
+
+        config_fields = set(config_model_cls.model_fields.keys())
+        extra_kwargs = {}
+        for key, value in kwargs.items():
+            if key in config_fields:
+                config_copy[key] = value
+            else:
+                extra_kwargs[key] = value
+
+        typed_config = config_model_cls.model_validate(config_copy)
+        return typed_config, configured_hash_algorithm, extra_kwargs
+
     def get_store(
         self,
         name: str | None = None,
@@ -747,89 +816,25 @@ class MetaxyConfig(BaseSettings):
             store = config.get_store()
             ```
         """
-        from metaxy.versioning.types import HashAlgorithm
-
-        if len(self.stores) == 0:
-            raise InvalidConfigError.from_config(
-                self,
-                "No Metaxy stores available. They should be configured in metaxy.toml|pyproject.toml or via environment variables.",
-            )
-
         name = name or self.store
-
-        if name not in self.stores:
-            raise InvalidConfigError.from_config(
-                self,
-                f"Store '{name}' not found in config. Available stores: {list(self.stores.keys())}",
-            )
+        self._validate_store_exists(name)
 
         store_config = self.stores[name]
+        store_class = self._import_store_class(store_config, name, expected_type)
 
-        # Get store class (lazily imported on first access)
         try:
-            store_class = store_config.type
-        except Exception as e:
-            raise InvalidConfigError.from_config(
-                self,
-                f"Failed to import store class '{store_config.type_path}' for store '{name}': {e}",
-            ) from e
-
-        if expected_type is not None and not issubclass(store_class, expected_type):
-            raise InvalidConfigError.from_config(
-                self,
-                f"Store '{name}' is not of type '{expected_type.__name__}'",
+            typed_config, configured_hash_algorithm, extra_kwargs = (
+                self._prepare_store_config(store_config, store_class, kwargs)
             )
-
-        # Extract configuration and prepare for typed config model
-        config_copy = store_config.config.copy()
-
-        # Get hash_algorithm from config (if specified) and convert to enum
-        configured_hash_algorithm = config_copy.get("hash_algorithm")
-        if configured_hash_algorithm is not None:
-            # Convert string to enum if needed
-            if isinstance(configured_hash_algorithm, str):
-                configured_hash_algorithm = HashAlgorithm(configured_hash_algorithm)
-                config_copy["hash_algorithm"] = configured_hash_algorithm
-        else:
-            # Don't set a default here - let the store choose its own default
-            configured_hash_algorithm = None
-
-        # Get the store's config model class and create typed config
-        config_model_cls = store_class.config_model()
-
-        # Get auto_create_tables from global config only if the config model supports it
-        if (
-            "auto_create_tables" not in config_copy
-            and self.auto_create_tables is not None
-            and "auto_create_tables" in config_model_cls.model_fields
-        ):
-            # Use global setting from MetaxyConfig if not specified per-store
-            config_copy["auto_create_tables"] = self.auto_create_tables
-
-        # Separate kwargs into config fields and extra constructor args
-        config_fields = set(config_model_cls.model_fields.keys())
-        extra_kwargs = {}
-        for key, value in kwargs.items():
-            if key in config_fields:
-                config_copy[key] = value
-            else:
-                extra_kwargs[key] = value
-
-        try:
-            typed_config = config_model_cls.model_validate(config_copy)
         except Exception as e:
             raise InvalidConfigError.from_config(
-                self,
-                f"Failed to validate config for store '{name}': {e}",
+                self, f"Failed to validate config for store '{name}': {e}"
             ) from e
 
-        # Instantiate using from_config() - fallback stores are resolved via MetaxyConfig.get()
-        # Use self.use() to ensure this config is available for fallback resolution
         try:
             with self.use():
                 store = store_class.from_config(typed_config, **extra_kwargs)
         except InvalidConfigError:
-            # Don't re-wrap InvalidConfigError (e.g., from nested fallback store resolution)
             raise
         except Exception as e:
             raise InvalidConfigError.from_config(
@@ -837,9 +842,6 @@ class MetaxyConfig(BaseSettings):
                 f"Failed to instantiate store '{name}' ({store_class.__name__}): {e}",
             ) from e
 
-        # Verify the store actually uses the hash algorithm we configured
-        # (in case a store subclass overrides the default or ignores the parameter)
-        # Only check if we explicitly configured a hash algorithm
         if (
             configured_hash_algorithm is not None
             and store.hash_algorithm != configured_hash_algorithm
@@ -854,8 +856,7 @@ class MetaxyConfig(BaseSettings):
 
         if expected_type is not None and not isinstance(store, expected_type):
             raise InvalidConfigError.from_config(
-                self,
-                f"Store '{name}' is not of type '{expected_type.__name__}'",
+                self, f"Store '{name}' is not of type '{expected_type.__name__}'"
             )
 
         return store

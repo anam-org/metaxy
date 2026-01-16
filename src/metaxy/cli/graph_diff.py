@@ -1,11 +1,14 @@
 """Graph diff commands for Metaxy CLI."""
 
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import cyclopts
 
 from metaxy.cli.console import console, data_console, error_console
 from metaxy.graph import RenderConfig
+
+if TYPE_CHECKING:
+    pass
 
 # Graph-diff subcommand app
 app = cyclopts.App(
@@ -14,6 +17,173 @@ app = cyclopts.App(
     console=console,  # pyrefly: ignore[unexpected-keyword]
     error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
 )
+
+
+def _validate_graph_diff_args(
+    format: str, minimal: bool, verbose: bool, config: RenderConfig
+) -> None:
+    """Validate render command arguments."""
+    valid_formats = ["terminal", "cards", "mermaid", "graphviz", "json", "yaml"]
+    if format not in valid_formats:
+        console.print(
+            f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}"
+        )
+        raise SystemExit(1)
+
+    if minimal and verbose:
+        console.print("[red]Error:[/red] Cannot specify both --minimal and --verbose")
+        raise SystemExit(1)
+
+    if (config.up is not None or config.down is not None) and config.feature is None:
+        console.print(
+            "[red]Error:[/red] --up and --down require --feature to be specified"
+        )
+        raise SystemExit(1)
+
+
+def _apply_graph_diff_preset(
+    config: RenderConfig, minimal: bool, verbose: bool
+) -> RenderConfig:
+    """Apply preset configuration while preserving filtering parameters."""
+    if not minimal and not verbose:
+        return config
+
+    preset = RenderConfig.minimal() if minimal else RenderConfig.verbose()
+    preset.feature = config.feature
+    preset.up = config.up
+    preset.down = config.down
+    return preset
+
+
+def _load_and_diff_snapshots(
+    from_snapshot: str,
+    to_snapshot: str,
+    store: str | None,
+    config: RenderConfig,
+) -> tuple[dict[str, Any], bool]:
+    """Load snapshots, compute diff, and return merged data."""
+    from metaxy.cli.context import AppContext
+    from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
+
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+    graph = context.graph
+    project = context.get_required_project()
+
+    with metadata_store:
+        resolver = SnapshotResolver()
+        try:
+            from_snapshot_version = resolver.resolve_snapshot(
+                from_snapshot, metadata_store, graph
+            )
+            to_snapshot_version = resolver.resolve_snapshot(
+                to_snapshot, metadata_store, graph
+            )
+        except ValueError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise SystemExit(1)
+
+        differ = GraphDiffer()
+        try:
+            from_snapshot_data = differ.load_snapshot_data(
+                metadata_store, from_snapshot_version, project
+            )
+            to_snapshot_data = differ.load_snapshot_data(
+                metadata_store, to_snapshot_version, project
+            )
+        except ValueError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise SystemExit(1)
+
+        graph_diff = differ.diff(from_snapshot_data, to_snapshot_data)
+        merged_data = differ.create_merged_graph_data(
+            from_snapshot_data, to_snapshot_data, graph_diff
+        )
+
+        if config.feature is not None:
+            try:
+                merged_data = differ.filter_merged_graph(
+                    merged_data,
+                    focus_feature=config.feature,
+                    up=config.up,
+                    down=config.down,
+                )
+            except ValueError as e:
+                console.print(f"[red]Error:[/red] {e}")
+                raise SystemExit(1)
+
+        return merged_data, True
+
+
+def _render_diff_formatter(merged_data: Any, format: str, verbose: bool) -> str:
+    """Render using DiffFormatter for terminal/json/yaml/mermaid."""
+    from metaxy.graph.diff.rendering.formatter import DiffFormatter
+
+    formatter = DiffFormatter(console)
+    try:
+        return formatter.format(
+            merged_data=merged_data,
+            format=format,
+            verbose=verbose,
+            diff_only=False,
+            show_all_fields=True,
+        )
+    except Exception as e:
+        from metaxy.cli.utils import print_error
+
+        print_error(console, "Rendering failed", e, prefix="[red]Error:[/red]")
+        import traceback
+
+        traceback.print_exc()
+        raise SystemExit(1)
+
+
+def _render_unified_renderer(
+    merged_data: Any, format: str, config: RenderConfig
+) -> str:
+    """Render using unified renderers for cards/graphviz."""
+    from metaxy.graph import CardsRenderer, GraphData, GraphvizRenderer
+    from metaxy.graph.diff.rendering.theme import Theme
+
+    theme = Theme.default()
+    graph_data = GraphData.from_merged_diff(merged_data)
+
+    if format == "cards":
+        renderer = CardsRenderer(graph_data=graph_data, config=config, theme=theme)
+    elif format == "graphviz":
+        renderer = GraphvizRenderer(graph_data=graph_data, config=config, theme=theme)
+    else:
+        console.print(f"[red]Error:[/red] Unknown format: {format}")
+        raise SystemExit(1)
+
+    try:
+        return renderer.render()
+    except Exception as e:
+        from metaxy.cli.utils import print_error
+
+        print_error(console, "Rendering failed", e, prefix="[red]Error:[/red]")
+        import traceback
+
+        traceback.print_exc()
+        raise SystemExit(1)
+
+
+def _output_graph_diff(rendered: str, output: str | None) -> None:
+    """Output the rendered diff to file or stdout."""
+    if output:
+        try:
+            with open(output, "w") as f:
+                f.write(rendered)
+            console.print(f"[green]Success:[/green] Diff rendered to: {output}")
+        except Exception as e:
+            from metaxy.cli.utils import print_error
+
+            print_error(
+                console, "Failed to write to file", e, prefix="[red]Error:[/red]"
+            )
+            raise SystemExit(1)
+    else:
+        data_console.print(rendered)
 
 
 @app.command()
@@ -111,187 +281,17 @@ def render(
         # Everything
         $ metaxy graph-diff render latest current --verbose
     """
-    from metaxy.graph import (
-        CardsRenderer,
-        GraphData,
-        GraphvizRenderer,
-    )
-    from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
-
-    # Validate format
-    valid_formats = ["terminal", "cards", "mermaid", "graphviz", "json", "yaml"]
-    if format not in valid_formats:
-        console.print(
-            f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}"
-        )
-        raise SystemExit(1)
-
-    # Resolve configuration from presets
-    if minimal and verbose:
-        console.print("[red]Error:[/red] Cannot specify both --minimal and --verbose")
-        raise SystemExit(1)
-
-    # If config is None, create a default instance
     if config is None:
         config = RenderConfig()
 
-    # Apply presets if specified (overrides display settings but preserves filtering)
-    if minimal:
-        preset = RenderConfig.minimal()
-        # Preserve filtering parameters from original config
-        preset.feature = config.feature
-        preset.up = config.up
-        preset.down = config.down
-        config = preset
-    elif verbose:
-        preset = RenderConfig.verbose()
-        # Preserve filtering parameters from original config
-        preset.feature = config.feature
-        preset.up = config.up
-        preset.down = config.down
-        config = preset
+    _validate_graph_diff_args(format, minimal, verbose, config)
+    config = _apply_graph_diff_preset(config, minimal, verbose)
 
-    # Validate filtering options
-    if (config.up is not None or config.down is not None) and config.feature is None:
-        console.print(
-            "[red]Error:[/red] --up and --down require --feature to be specified"
-        )
-        raise SystemExit(1)
+    merged_data, _ = _load_and_diff_snapshots(from_snapshot, to_snapshot, store, config)
 
-    from metaxy.cli.context import AppContext
+    if format in ("terminal", "mermaid", "json", "yaml"):
+        rendered = _render_diff_formatter(merged_data, format, verbose)
+    else:
+        rendered = _render_unified_renderer(merged_data, format, config)
 
-    context = AppContext.get()
-    metadata_store = context.get_store(store)
-    graph = context.graph
-    project = context.get_required_project()  # This command needs a specific project
-
-    with metadata_store:
-        # Resolve snapshot versions
-        resolver = SnapshotResolver()
-        try:
-            from_snapshot_version = resolver.resolve_snapshot(
-                from_snapshot, metadata_store, graph
-            )
-            to_snapshot_version = resolver.resolve_snapshot(
-                to_snapshot, metadata_store, graph
-            )
-        except ValueError as e:
-            console.print(f"[red]Error:[/red] {e}")
-            raise SystemExit(1)
-
-        # Load snapshot data
-        # Don't use class_path_overrides - let the loader use stored paths
-        # and fall back to spec-only mode for features that can't be imported.
-        # This avoids conflicts when modules define multiple features.
-        differ = GraphDiffer()
-        try:
-            from_snapshot_data = differ.load_snapshot_data(
-                metadata_store,
-                from_snapshot_version,
-                project,
-            )
-            to_snapshot_data = differ.load_snapshot_data(
-                metadata_store,
-                to_snapshot_version,
-                project,
-            )
-        except ValueError as e:
-            console.print(f"[red]Error:[/red] {e}")
-            raise SystemExit(1)
-
-        # Compute diff
-        graph_diff = differ.diff(from_snapshot_data, to_snapshot_data)
-
-        # Create merged graph data
-        merged_data = differ.create_merged_graph_data(
-            from_snapshot_data, to_snapshot_data, graph_diff
-        )
-
-        # Apply graph slicing if requested
-        if config.feature is not None:
-            try:
-                merged_data = differ.filter_merged_graph(
-                    merged_data,
-                    focus_feature=config.feature,
-                    up=config.up,
-                    down=config.down,
-                )
-            except ValueError as e:
-                console.print(f"[red]Error:[/red] {e}")
-                raise SystemExit(1)
-
-        # Render the diff
-        # Use DiffFormatter for terminal/json/yaml/mermaid (has proper diff visualization)
-        # Use unified renderers for cards/graphviz (DiffFormatter doesn't support these)
-        if format in ("terminal", "mermaid", "json", "yaml"):
-            from metaxy.graph.diff.rendering.formatter import DiffFormatter
-
-            formatter = DiffFormatter(console)
-
-            # Determine show_all_fields based on config
-            # TODO: add show_changed_fields_only to config
-            show_all_fields = True  # Default: show all fields
-
-            try:
-                rendered = formatter.format(
-                    merged_data=merged_data,
-                    format=format,
-                    verbose=verbose,
-                    diff_only=False,  # Always use merged view for graph-diff render
-                    show_all_fields=show_all_fields,
-                )
-            except Exception as e:
-                from metaxy.cli.utils import print_error
-
-                print_error(console, "Rendering failed", e, prefix="[red]Error:[/red]")
-                import traceback
-
-                traceback.print_exc()
-                raise SystemExit(1)
-        else:
-            # Use unified renderers for cards/graphviz formats
-            from metaxy.graph.diff.rendering.theme import Theme
-
-            theme = Theme.default()
-            graph_data = GraphData.from_merged_diff(merged_data)
-
-            if format == "cards":
-                renderer = CardsRenderer(
-                    graph_data=graph_data, config=config, theme=theme
-                )
-            elif format == "graphviz":
-                renderer = GraphvizRenderer(
-                    graph_data=graph_data, config=config, theme=theme
-                )
-            else:
-                console.print(f"[red]Error:[/red] Unknown format: {format}")
-                raise SystemExit(1)
-
-            try:
-                rendered = renderer.render()
-            except Exception as e:
-                from metaxy.cli.utils import print_error
-
-                print_error(console, "Rendering failed", e, prefix="[red]Error:[/red]")
-                import traceback
-
-                traceback.print_exc()
-                raise SystemExit(1)
-
-        # Output to file or stdout
-        if output:
-            try:
-                with open(output, "w") as f:
-                    f.write(rendered)
-                console.print(f"[green]Success:[/green] Diff rendered to: {output}")
-            except Exception as e:
-                from metaxy.cli.utils import print_error
-
-                print_error(
-                    console, "Failed to write to file", e, prefix="[red]Error:[/red]"
-                )
-                raise SystemExit(1)
-        else:
-            # Print to stdout using data_console
-            # Rendered diff output is data that users might pipe/redirect
-            data_console.print(rendered)
+    _output_graph_diff(rendered, output)

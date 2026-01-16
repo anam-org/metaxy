@@ -24,6 +24,24 @@ class NodeStatus(str, Enum):
     REMOVED = "removed"  # Removed in diff
     CHANGED = "changed"  # Changed in diff
 
+    @classmethod
+    def from_string(cls, status_str: str) -> "NodeStatus":
+        """Convert a status string to NodeStatus enum.
+
+        Args:
+            status_str: Status string (added, removed, changed, unchanged)
+
+        Returns:
+            Corresponding NodeStatus enum value
+        """
+        status_map = {
+            "added": cls.ADDED,
+            "removed": cls.REMOVED,
+            "changed": cls.CHANGED,
+            "unchanged": cls.UNCHANGED,
+        }
+        return status_map.get(status_str, cls.NORMAL)
+
 
 class FieldNode(FrozenBaseModel):
     """Represents a field within a feature node.
@@ -41,6 +59,70 @@ class FieldNode(FrozenBaseModel):
     old_version: str | None = None  # For diff mode
     code_version: str | None = None
     status: NodeStatus = NodeStatus.NORMAL
+
+    @classmethod
+    def from_field_change(cls, field_key: FieldKey, field_change: Any) -> "FieldNode":
+        """Create a FieldNode from a FieldChange object.
+
+        Args:
+            field_key: The field key
+            field_change: FieldChange instance containing version info
+
+        Returns:
+            FieldNode with appropriate status and versions
+        """
+        from metaxy.graph.diff.diff_models import FieldChange
+
+        if not isinstance(field_change, FieldChange):
+            msg = f"Expected FieldChange, got {type(field_change)}"
+            raise TypeError(msg)
+
+        if field_change.is_added:
+            return cls(
+                key=field_key,
+                version=field_change.new_version,
+                old_version=None,
+                status=NodeStatus.ADDED,
+            )
+        if field_change.is_removed:
+            return cls(
+                key=field_key,
+                version=None,
+                old_version=field_change.old_version,
+                status=NodeStatus.REMOVED,
+            )
+        if field_change.is_changed:
+            return cls(
+                key=field_key,
+                version=field_change.new_version,
+                old_version=field_change.old_version,
+                status=NodeStatus.CHANGED,
+            )
+        # Unchanged
+        return cls(
+            key=field_key,
+            version=field_change.new_version or field_change.old_version,
+            old_version=None,
+            status=NodeStatus.UNCHANGED,
+        )
+
+    @classmethod
+    def from_unchanged(cls, field_key: FieldKey, version: str | None) -> "FieldNode":
+        """Create an unchanged FieldNode.
+
+        Args:
+            field_key: The field key
+            version: The field version
+
+        Returns:
+            FieldNode with UNCHANGED status
+        """
+        return cls(
+            key=field_key,
+            version=version,
+            old_version=None,
+            status=NodeStatus.UNCHANGED,
+        )
 
 
 class GraphNode(FrozenBaseModel):
@@ -402,105 +484,107 @@ class GraphData(FrozenBaseModel):
         Returns:
             GraphData with status annotations
         """
-        from metaxy.graph.diff.diff_models import FieldChange
-
         nodes: dict[str, GraphNode] = {}
-        edges: list[EdgeData] = []
 
         # Convert nodes
         for feature_key_str, node_data in merged_data["nodes"].items():
-            # Parse feature key
-            feature_key = FeatureKey(feature_key_str.split("/"))
-
-            # Map status strings to NodeStatus enum
-            status_str = node_data["status"]
-            if status_str == "added":
-                status = NodeStatus.ADDED
-            elif status_str == "removed":
-                status = NodeStatus.REMOVED
-            elif status_str == "changed":
-                status = NodeStatus.CHANGED
-            elif status_str == "unchanged":
-                status = NodeStatus.UNCHANGED
-            else:
-                status = NodeStatus.NORMAL
-
-            # Convert fields
-            fields_dict = node_data.get("fields", {})
-            field_changes_list = node_data.get("field_changes", [])
-
-            # Build field change map for quick lookup
-            field_change_map: dict[str, FieldChange] = {}
-            for fc in field_changes_list:
-                if isinstance(fc, FieldChange):
-                    field_change_map[fc.field_key.to_string()] = fc
-
-            # Get all field keys (from both current fields and removed fields in changes)
-            all_field_keys = set(fields_dict.keys())
-            all_field_keys.update(field_change_map.keys())
-
-            field_nodes: list[FieldNode] = []
-            for field_key_str in all_field_keys:
-                # Parse field key
-                field_key = FieldKey(field_key_str.split("/"))
-
-                # Determine field status and versions
-                if field_key_str in field_change_map:
-                    fc = field_change_map[field_key_str]
-                    if fc.is_added:
-                        field_status = NodeStatus.ADDED
-                        field_version = fc.new_version
-                        old_field_version = None
-                    elif fc.is_removed:
-                        field_status = NodeStatus.REMOVED
-                        field_version = None
-                        old_field_version = fc.old_version
-                    elif fc.is_changed:
-                        field_status = NodeStatus.CHANGED
-                        field_version = fc.new_version
-                        old_field_version = fc.old_version
-                    else:
-                        field_status = NodeStatus.UNCHANGED
-                        field_version = fc.new_version or fc.old_version
-                        old_field_version = None
-                else:
-                    # Unchanged field
-                    field_status = NodeStatus.UNCHANGED
-                    field_version = fields_dict.get(field_key_str)
-                    old_field_version = None
-
-                field_node = FieldNode(
-                    key=field_key,
-                    version=field_version,
-                    old_version=old_field_version,
-                    status=field_status,
-                )
-                field_nodes.append(field_node)
-
-            # Parse dependencies
-            dependencies = [
-                FeatureKey(dep_str.split("/"))
-                for dep_str in node_data.get("dependencies", [])
-            ]
-
-            # Create node
-            node = GraphNode(
-                key=feature_key,
-                version=node_data.get("new_version"),
-                old_version=node_data.get("old_version"),
-                fields=field_nodes,
-                dependencies=dependencies,
-                status=status,
-            )
+            node = cls._convert_merged_node(feature_key_str, node_data)
             nodes[feature_key_str] = node
 
         # Convert edges
-        for edge_dict in merged_data["edges"]:
-            from_key = FeatureKey(edge_dict["from"].split("/"))
-            to_key = FeatureKey(edge_dict["to"].split("/"))
-            edges.append(EdgeData(from_key=from_key, to_key=to_key))
+        edges = cls._convert_merged_edges(merged_data["edges"])
 
-        return cls(
-            nodes=nodes,
-            edges=edges,
+        return cls(nodes=nodes, edges=edges)
+
+    @classmethod
+    def _convert_merged_node(
+        cls, feature_key_str: str, node_data: dict[str, Any]
+    ) -> GraphNode:
+        """Convert a merged node dict to a GraphNode.
+
+        Args:
+            feature_key_str: Feature key string
+            node_data: Node data dict from merged diff
+
+        Returns:
+            GraphNode with status annotations
+        """
+        feature_key = FeatureKey(feature_key_str.split("/"))
+        status = NodeStatus.from_string(node_data["status"])
+
+        # Convert fields
+        field_nodes = cls._convert_merged_fields(node_data)
+
+        # Parse dependencies
+        dependencies = [
+            FeatureKey(dep_str.split("/"))
+            for dep_str in node_data.get("dependencies", [])
+        ]
+
+        return GraphNode(
+            key=feature_key,
+            version=node_data.get("new_version"),
+            old_version=node_data.get("old_version"),
+            fields=field_nodes,
+            dependencies=dependencies,
+            status=status,
         )
+
+    @classmethod
+    def _convert_merged_fields(cls, node_data: dict[str, Any]) -> list[FieldNode]:
+        """Convert merged field data to FieldNodes.
+
+        Args:
+            node_data: Node data dict containing fields and field_changes
+
+        Returns:
+            List of FieldNodes with status annotations
+        """
+        from metaxy.graph.diff.diff_models import FieldChange
+
+        fields_dict = node_data.get("fields", {})
+        field_changes_list = node_data.get("field_changes", [])
+
+        # Build field change map for quick lookup
+        field_change_map: dict[str, FieldChange] = {
+            fc.field_key.to_string(): fc
+            for fc in field_changes_list
+            if isinstance(fc, FieldChange)
+        }
+
+        # Get all field keys (from both current fields and removed fields in changes)
+        all_field_keys = set(fields_dict.keys()) | set(field_change_map.keys())
+
+        field_nodes: list[FieldNode] = []
+        for field_key_str in all_field_keys:
+            field_key = FieldKey(field_key_str.split("/"))
+
+            if field_key_str in field_change_map:
+                field_node = FieldNode.from_field_change(
+                    field_key, field_change_map[field_key_str]
+                )
+            else:
+                field_node = FieldNode.from_unchanged(
+                    field_key, fields_dict.get(field_key_str)
+                )
+            field_nodes.append(field_node)
+
+        return field_nodes
+
+    @classmethod
+    def _convert_merged_edges(cls, edges_data: list[dict[str, str]]) -> list[EdgeData]:
+        """Convert merged edge data to EdgeData objects.
+
+        Args:
+            edges_data: List of edge dicts with 'from' and 'to' keys
+
+        Returns:
+            List of EdgeData objects
+        """
+        return [
+            EdgeData(
+                from_key=FeatureKey(edge_dict["from"].split("/")),
+                to_key=FeatureKey(edge_dict["to"].split("/")),
+            )
+            for edge_dict in edges_data
+        ]
