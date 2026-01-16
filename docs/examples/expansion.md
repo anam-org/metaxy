@@ -1,3 +1,8 @@
+---
+title: "Expansion Example"
+description: "Example of one-to-many expansion relationships."
+---
+
 # Expansion
 
 ## Overview

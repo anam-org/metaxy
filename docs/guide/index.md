@@ -1,3 +1,8 @@
+---
+title: "User Guide"
+description: "Comprehensive documentation for using Metaxy in your multi-modal pipelines."
+---
+
 # User Guide
 
 Learn how to use Metaxy step by step.

@@ -1,3 +1,8 @@
+---
+title: "BigQuery Configuration"
+description: "Configuration options for BigQueryMetadataStore."
+---
+
 # BigQuery Configuration
 
 <!-- dprint-ignore-start -->

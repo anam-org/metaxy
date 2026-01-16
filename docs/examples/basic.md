@@ -1,3 +1,8 @@
+---
+title: "Basic Example"
+description: "Basic example of upstream change detection and recomputation."
+---
+
 # Basic Example
 
 ## Overview

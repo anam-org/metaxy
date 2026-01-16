@@ -1,3 +1,8 @@
+---
+title: "SQLAlchemy Configuration"
+description: "Configuration options for the SQLAlchemy plugin."
+---
+
 # SQLAlchemy Configuration
 
 <!-- dprint-ignore-start -->

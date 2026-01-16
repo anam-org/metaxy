@@ -1,3 +1,8 @@
+---
+title: "DuckDB Metadata Store"
+description: "DuckDB as a metadata store backend."
+---
+
 # Metaxy + DuckDB
 
 Metaxy implements [`DuckDBMetadataStore`][metaxy.metadata_store.duckdb.DuckDBMetadataStore]. It uses [DuckDB](https://duckdb.org/) as metadata storage and versioning engine.

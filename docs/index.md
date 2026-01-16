@@ -1,3 +1,8 @@
+---
+title: "Metaxy Overview"
+description: "Introduction to Metaxy, its core features, and how to get started."
+---
+
 <p align="center">
   <img src="assets/metaxy.svg" alt="Metaxy Logo" width="100"/>
 </p>

@@ -1,3 +1,8 @@
+---
+title: "API Reference"
+description: "Python API reference for Metaxy."
+---
+
 # API Reference
 
 ## `metaxy`

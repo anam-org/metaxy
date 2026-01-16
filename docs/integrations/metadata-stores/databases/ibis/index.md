@@ -1,3 +1,8 @@
+---
+title: "Ibis Metadata Store"
+description: "Ibis-based metadata store for SQL databases."
+---
+
 # Ibis Integration
 
 Metaxy uses [Ibis](https://ibis-project.org/) as a portable dataframe abstraction for SQL-based metadata stores. The [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] is the base class for all SQL-backed stores.

@@ -1,3 +1,8 @@
+---
+title: "Fields Mapping API"
+description: "API reference for field dependency mappings."
+---
+
 # Fields Mapping
 
 Metaxy provides a few helpers when defining field-level dependencies:

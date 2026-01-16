@@ -1,3 +1,8 @@
+---
+title: "Aggregation Example"
+description: "Example of many-to-one aggregation relationships."
+---
+
 # Aggregation
 
 ## Overview

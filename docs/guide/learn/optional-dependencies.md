@@ -1,3 +1,8 @@
+---
+title: "Optional Dependencies"
+description: "Optional feature dependencies."
+---
+
 # Optional Dependencies
 
 By default, feature dependencies use **inner joins** - a sample only exists in the downstream feature if it exists in **all** upstream dependencies.

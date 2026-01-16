@@ -1,3 +1,8 @@
+---
+title: "Data Versioning"
+description: "How Metaxy calculates and tracks versions."
+---
+
 # Versioning
 
 Metaxy calculates a few types of versions at [feature](feature-definitions.md), [field](feature-definitions.md), and [sample](#samples) levels.
