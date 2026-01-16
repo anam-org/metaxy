@@ -562,6 +562,91 @@ class TestBuildMetaxyMultiObservationJob:
         result = job.execute_in_process(resources=custom_resources, instance=instance)
         assert result.success
 
+    def test_runtime_asset_keys_config_filters_observations(
+        self,
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that asset_keys config filters which assets are observed at runtime."""
+        # Write data for both features
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+        _write_feature_data(feature_b, ["4", "5"], resources, instance)
+
+        @mxd.metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/obs_job/a"})
+        def obs_a():
+            pass
+
+        @mxd.metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/obs_job/b"})
+        def obs_b():
+            pass
+
+        job = mxd.build_metaxy_multi_observation_job(
+            name="observe_filtered",
+            assets=[obs_a, obs_b],
+        )
+
+        # Execute with config that filters to only feature_a
+        result = job.execute_in_process(
+            resources=resources,
+            instance=instance,
+            run_config={
+                "ops": {
+                    "observe_assets": {"config": {"asset_keys": ["test/obs_job/a"]}}
+                }
+            },
+        )
+        assert result.success
+
+        # Should have observation for feature_a
+        obs_a_records = instance.fetch_observations(
+            dg.AssetKey(["test", "obs_job", "a"]), limit=1
+        )
+        assert len(obs_a_records.records) == 1
+        obs_a_meta = obs_a_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        assert obs_a_meta["dagster/row_count"].value == 3
+
+        # Should NOT have observation for feature_b (it was filtered out)
+        obs_b_records = instance.fetch_observations(
+            dg.AssetKey(["test", "obs_job", "b"]), limit=1
+        )
+        assert len(obs_b_records.records) == 0
+
+    def test_runtime_config_with_invalid_asset_key_raises(
+        self,
+        feature_a: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that invalid asset keys in config raise an error."""
+        _write_feature_data(feature_a, ["1", "2"], resources, instance)
+
+        @mxd.metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/obs_job/a"})
+        def obs_a():
+            pass
+
+        job = mxd.build_metaxy_multi_observation_job(
+            name="observe_invalid",
+            assets=[obs_a],
+        )
+
+        # Execute with config that includes a non-existent asset key
+        result = job.execute_in_process(
+            resources=resources,
+            instance=instance,
+            run_config={
+                "ops": {
+                    "observe_assets": {"config": {"asset_keys": ["nonexistent/asset"]}}
+                }
+            },
+            raise_on_error=False,
+        )
+        assert not result.success
+
     def test_raises_on_mismatched_partitions_def(
         self,
         feature_a: type[mx.BaseFeature],

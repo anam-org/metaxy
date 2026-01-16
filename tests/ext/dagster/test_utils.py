@@ -248,6 +248,38 @@ class TestGenerateMaterializationEvents:
         results = list(mxd.generate_materialize_results(context, metadata_store, specs))
         assert results == []
 
+    def test_works_with_op_execution_context(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that generate_materialize_results works with OpExecutionContext."""
+        # Write some data first
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+
+        specs = [dg.AssetSpec("my_asset", metadata={"metaxy/feature": "test/utils/a"})]
+
+        # Use build_op_context instead of build_asset_context
+        context = dg.build_op_context()
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 3
+        assert events[0].asset_key == dg.AssetKey("my_asset")
+
+    def test_op_execution_context_requires_specs(
+        self,
+        metadata_store: mx.MetadataStore,
+    ):
+        """Test that OpExecutionContext raises ValueError when specs not provided."""
+        context = dg.build_op_context()
+
+        with pytest.raises(ValueError, match="specs must be provided"):
+            list(mxd.generate_materialize_results(context, metadata_store))
+
 
 class TestGenerateObservationEvents:
     """Tests for generate_observe_results."""
@@ -405,6 +437,38 @@ class TestGenerateObservationEvents:
         # Should not raise, just skip the feature and log
         results = list(mxd.generate_observe_results(context, metadata_store, specs))
         assert results == []
+
+    def test_works_with_op_execution_context(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that generate_observe_results works with OpExecutionContext."""
+        # Write some data first
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+
+        specs = [dg.AssetSpec("my_asset", metadata={"metaxy/feature": "test/utils/a"})]
+
+        # Use build_op_context instead of build_asset_context
+        context = dg.build_op_context()
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 3
+        assert events[0].asset_key == dg.AssetKey("my_asset")
+
+    def test_op_execution_context_requires_specs(
+        self,
+        metadata_store: mx.MetadataStore,
+    ):
+        """Test that OpExecutionContext raises ValueError when specs not provided."""
+        context = dg.build_op_context()
+
+        with pytest.raises(ValueError, match="specs must be provided"):
+            list(mxd.generate_observe_results(context, metadata_store))
 
 
 class TestPartitionedAssets:

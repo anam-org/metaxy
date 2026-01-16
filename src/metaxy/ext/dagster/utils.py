@@ -279,7 +279,7 @@ def get_asset_key_for_metaxy_feature_spec(
 
 
 def generate_materialize_results(
-    context: dg.AssetExecutionContext,
+    context: dg.AssetExecutionContext | dg.OpExecutionContext,
     store: mx.MetadataStore | MetaxyStoreFromConfigResource,
     specs: Iterable[dg.AssetSpec] | None = None,
 ) -> Iterator[dg.MaterializeResult[None]]:
@@ -290,15 +290,16 @@ def generate_materialize_results(
     Each result includes the row count as `"dagster/row_count"` metadata.
 
     Args:
-        context: The Dagster asset execution context.
+        context: The Dagster execution context.
         store: The Metaxy metadata store to read from.
-        specs: Optional, concrete Dagster asset specs.
-            If missing, specs will be taken from the context.
+        specs: Concrete Dagster asset specs. Required when using `OpExecutionContext`.
+            Optional for `AssetExecutionContext` (defaults to `context.assets_def.specs`).
 
     Yields:
         Materialization result for each asset in topological order.
 
     Example:
+        Using with `@multi_asset`:
         ```python
         specs = [
             dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
@@ -311,10 +312,25 @@ def generate_materialize_results(
             # ... compute and write data ...
             yield from generate_materialize_results(context, store)
         ```
+
+        Using with `@op`:
+        ```python
+        specs = [
+            dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
+        ]
+
+        @dg.op
+        def my_op(context: dg.OpExecutionContext, store: mx.MetadataStore):
+            # ... compute and write data ...
+            yield from generate_materialize_results(context, store, specs=specs)
+        ```
     """
     # Build mapping from feature key to asset spec
     spec_by_feature_key: dict[mx.FeatureKey, dg.AssetSpec] = {}
-    specs = specs or context.assets_def.specs
+    if specs is None:
+        if not isinstance(context, dg.AssetExecutionContext):
+            raise ValueError("specs must be provided when using OpExecutionContext")
+        specs = context.assets_def.specs
     for spec in specs:
         if feature_key_raw := spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY):
             feature_key = mx.coerce_to_feature_key(feature_key_raw)
@@ -558,7 +574,7 @@ def build_runtime_feature_metadata(
 
 
 def generate_observe_results(
-    context: dg.AssetExecutionContext,
+    context: dg.AssetExecutionContext | dg.OpExecutionContext,
     store: mx.MetadataStore | MetaxyStoreFromConfigResource,
     specs: Iterable[dg.AssetSpec] | None = None,
 ) -> Iterator[dg.ObserveResult]:
@@ -569,15 +585,16 @@ def generate_observe_results(
     Each result includes the row count as `"dagster/row_count"` metadata.
 
     Args:
-        context: The Dagster asset execution context.
+        context: The Dagster execution context.
         store: The Metaxy metadata store to read from.
-        specs: Optional, concrete Dagster asset specs.
-            If missing, this function will take the current specs from the context.
+        specs: Concrete Dagster asset specs. Required when using `OpExecutionContext`.
+            Optional for `AssetExecutionContext` (defaults to `context.assets_def.specs`).
 
     Yields:
         Observation result for each asset in topological order.
 
     Example:
+        Using with `@multi_observable_source_asset`:
         ```python
         specs = [
             dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
@@ -589,10 +606,24 @@ def generate_observe_results(
         def my_observable_assets(context: dg.AssetExecutionContext, store: mx.MetadataStore):
             yield from generate_observe_results(context, store)
         ```
+
+        Using with `@op`:
+        ```python
+        specs = [
+            dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
+        ]
+
+        @dg.op
+        def my_op(context: dg.OpExecutionContext, store: mx.MetadataStore):
+            yield from generate_observe_results(context, store, specs=specs)
+        ```
     """
     # Build mapping from feature key to asset spec
     spec_by_feature_key: dict[mx.FeatureKey, dg.AssetSpec] = {}
-    specs = specs or context.assets_def.specs
+    if specs is None:
+        if not isinstance(context, dg.AssetExecutionContext):
+            raise ValueError("specs must be provided when using OpExecutionContext")
+        specs = context.assets_def.specs
 
     for spec in specs:
         if feature_key_raw := spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY):
