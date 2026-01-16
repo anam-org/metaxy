@@ -237,11 +237,27 @@ class StoreConfig(BaseSettings):
         Raises:
             ImportError: If the store class cannot be imported
         """
+        import importlib
+
         from pydantic import TypeAdapter
         from pydantic.types import ImportString
 
         adapter: TypeAdapter[type[Any]] = TypeAdapter(ImportString[Any])
-        return adapter.validate_python(self.type_path)
+        try:
+            return adapter.validate_python(self.type_path)
+        except Exception:
+            # Pydantic's ImportString swallows the underlying ImportError for other packages/modules,
+            # showing a potentially misleading message.
+            # Try a direct import to surface the real error (e.g., missing dependency).
+            module_path, _, _ = str(self.type_path).rpartition(".")
+            if module_path:
+                try:
+                    importlib.import_module(module_path)
+                except ImportError as import_err:
+                    raise ImportError(
+                        f"Cannot import '{self.type_path}': {import_err}"
+                    ) from import_err
+            raise
 
 
 class PluginConfig(BaseSettings):
