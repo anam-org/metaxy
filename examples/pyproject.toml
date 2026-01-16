@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-metaxy = { workspace = true }
+# metaxy = { workspace = true }
 
 example-overview = { workspace = true }
 example-basic = { workspace = true }
