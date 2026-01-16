@@ -299,6 +299,79 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
     assert config.stores["prod"].type == InMemoryMetadataStore
 
 
+def test_partial_env_var_store_config_filtered_out_with_warning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that partial env vars for a store are filtered out with a warning.
+
+    When env vars like METAXY_STORES__PROD__CONFIG__CONNECTION_STRING are set
+    without METAXY_STORES__PROD__TYPE, the incomplete store config should be
+    filtered out and a warning emitted that includes the fields that were set.
+    """
+    # Create config file with only dev store
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+""")
+
+    # Set partial config for prod store (config but no type)
+    monkeypatch.setenv(
+        "METAXY_STORES__PROD__CONFIG__CONNECTION_STRING", "clickhouse://localhost"
+    )
+
+    # Config should load successfully but emit a warning with field hints
+    with pytest.warns(
+        UserWarning,
+        match=r"Ignoring incomplete store config 'prod'.*has fields: config.*environment variables",
+    ):
+        config = MetaxyConfig.load(config_file)
+
+    # dev store should work
+    assert (
+        config.stores["dev"].type_path == "metaxy.metadata_store.InMemoryMetadataStore"
+    )
+
+    # prod store should be filtered out (not present) since it lacks 'type'
+    assert "prod" not in config.stores
+
+
+def test_incomplete_store_warning_shows_all_fields(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that the warning for incomplete stores lists all fields that were set."""
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text("""
+store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.InMemoryMetadataStore"
+""")
+
+    # Set multiple fields for an incomplete store
+    monkeypatch.setenv(
+        "METAXY_STORES__PROD__CONFIG__CONNECTION_STRING", "clickhouse://localhost"
+    )
+    monkeypatch.setenv("METAXY_STORES__PROD__CONFIG__DATABASE", "mydb")
+
+    with pytest.warns(UserWarning) as record:
+        MetaxyConfig.load(config_file)
+
+    # Find the warning for 'prod' store
+    prod_warnings = [w for w in record if "prod" in str(w.message)]
+    assert len(prod_warnings) == 1
+
+    warning_msg = str(prod_warnings[0].message)
+    assert "missing required 'type' field" in warning_msg
+    assert "has fields:" in warning_msg
+    # Should show nested fields with dot notation
+    assert "config.connection_string" in warning_msg
+    assert "config.database" in warning_msg
+    assert "environment variables" in warning_msg
+
+
 def test_hash_algorithm_must_match_in_fallback_chain() -> None:
     from metaxy.versioning.types import HashAlgorithm
 
