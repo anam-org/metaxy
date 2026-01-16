@@ -5,23 +5,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "ruff check --fix",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "ty check",
+            "command": "ruff format && ruff check --fix",
             "timeout": 30
-          },
-          {
-            "type": "prompt",
-            "prompt": "STOP GATE: Review the ruff and ty check output above. If ANY errors were reported, you MUST fix them NOW before stopping. Do not respond to the user until all checks pass. If checks passed, you may proceed.",
-            "timeout": 60
           },
           {
             "type": "prompt",
             "prompt": "REFLECTION CHECK: Briefly reflect on this session. If there were serious mistakes (repeated errors, misunderstandings requiring correction, violated CLAUDE.md rules, significant rework), suggest to the user: 'This session had some issues that could be prevented. Consider running /claude-improve-config to propose configuration improvements.' Only mention this if there were genuine problems worth addressing - do not suggest it for clean sessions or minor one-off issues.",
-            "timeout": 30
+            "timeout": 60
           }
         ]
       }
