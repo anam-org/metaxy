@@ -1620,6 +1620,27 @@ class MetadataStore(ABC):
         """
         pass
 
+    def read_feature_schema_from_store(
+        self,
+        feature: CoercibleToFeatureKey,
+    ) -> nw.Schema:
+        """Read the schema for a feature from the store.
+
+        Args:
+            feature: Feature to read schema for
+
+        Returns:
+            Narwhals schema for the feature
+
+        Raises:
+            FeatureNotFoundError: If feature not found in the store
+        """
+        lazy = self.read_metadata(
+            feature,
+            allow_fallback=False,
+        )
+        return lazy.collect_schema()
+
     # ========== Feature Existence ==========
 
     def has_feature(
