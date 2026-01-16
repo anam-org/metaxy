@@ -181,7 +181,7 @@ markdown_extensions:
   - pymdownx.tilde
 
 nav:
-  - Home: index.md
+  - Overview: index.md
   - User Guide:
     - guide/index.md
     - Getting Started:

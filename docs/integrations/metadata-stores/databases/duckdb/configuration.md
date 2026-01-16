@@ -1,3 +1,8 @@
+---
+title: "DuckDB Configuration"
+description: "Configuration options for DuckDBMetadataStore."
+---
+
 # DuckDB Configuration
 
 <!-- dprint-ignore-start -->

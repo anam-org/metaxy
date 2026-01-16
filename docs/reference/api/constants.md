@@ -1,3 +1,8 @@
+---
+title: "Constants API"
+description: "Reference for Metaxy constants."
+---
+
 # Constants
 
 ::: metaxy.models.constants

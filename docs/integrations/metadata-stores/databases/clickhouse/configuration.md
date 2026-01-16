@@ -1,3 +1,8 @@
+---
+title: "ClickHouse Configuration"
+description: "Configuration options for ClickHouseMetadataStore."
+---
+
 # ClickHouse Configuration
 
 <!-- dprint-ignore-start -->

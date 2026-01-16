@@ -1,3 +1,8 @@
+---
+title: "Dagster API Reference"
+description: "API reference for Dagster integration."
+---
+
 # Dagster Integration API
 
 [Integration docs](index.md)

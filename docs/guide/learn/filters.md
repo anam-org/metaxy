@@ -1,3 +1,8 @@
+---
+title: "Filters"
+description: "SQL-like filter expressions."
+---
+
 # Specifying Filters As Text
 
 There are a few occasions with Metaxy where users may want to define custom filter expressions via text, mainly being CLI arguments or configuration files.

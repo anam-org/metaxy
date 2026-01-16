@@ -1,3 +1,8 @@
+---
+title: "Integrations"
+description: "Connect Metaxy with orchestrators, metadata stores, and plugins."
+---
+
 # Metaxy Integrations
 
 ## Orchestration

@@ -1,3 +1,8 @@
+---
+title: "Testing Features"
+description: "Testing Metaxy features."
+---
+
 # Testing Metaxy Features
 
 This guide covers patterns for testing your features when using Metaxy.

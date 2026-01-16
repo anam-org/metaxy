@@ -1,3 +1,8 @@
+---
+title: "Feature Definitions"
+description: "Declarative feature definitions with Pydantic models."
+---
+
 # Feature System
 
 Metaxy has a declarative (defined statically at class level), expressive, flexible feature system.

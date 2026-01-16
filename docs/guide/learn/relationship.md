@@ -1,3 +1,8 @@
+---
+title: "Lineage Relationships"
+description: "Lineage relationships between features."
+---
+
 # Lineage Relationships
 
 Metaxy supports a few common mappings from parent to child samples out of the box. These include:
