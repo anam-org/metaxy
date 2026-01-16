@@ -642,6 +642,79 @@ class TestBuildMetaxyMultiObservationJob:
         with pytest.raises(ValueError, match="Must provide either"):
             mxd.build_metaxy_multi_observation_job(name="observe_nothing")
 
+    def test_target_asset_keys_filters_assets(
+        self,
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that target_asset_keys filters which assets are observed."""
+        # Write data for both features
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+        _write_feature_data(feature_b, ["4", "5"], resources, instance)
+
+        @mxd.metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/obs_job/a"})
+        def obs_a():
+            pass
+
+        @mxd.metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/obs_job/b"})
+        def obs_b():
+            pass
+
+        # Only observe feature_a by filtering with target_asset_keys
+        job = mxd.build_metaxy_multi_observation_job(
+            name="observe_filtered",
+            assets=[obs_a, obs_b],
+            target_asset_keys=[dg.AssetKey(["test", "obs_job", "a"])],
+        )
+
+        assert job.name == "observe_filtered"
+        # Description should only mention 1 asset
+        assert "Observe 1 Metaxy assets:" in (job.description or "")
+        assert "test/obs_job/a" in (job.description or "")
+        assert "test/obs_job/b" not in (job.description or "")
+
+        # Execute the job
+        result = job.execute_in_process(resources=resources, instance=instance)
+        assert result.success
+
+        # Only obs_a should have an observation
+        obs_a_records = instance.fetch_observations(
+            dg.AssetKey(["test", "obs_job", "a"]), limit=1
+        )
+        assert len(obs_a_records.records) == 1
+        obs_a_meta = obs_a_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        assert obs_a_meta["dagster/row_count"].value == 3
+
+        # obs_b should have no observations from this job run
+        obs_b_records = instance.fetch_observations(
+            dg.AssetKey(["test", "obs_job", "b"]), limit=1
+        )
+        assert len(obs_b_records.records) == 0
+
+    def test_target_asset_keys_raises_when_no_match(
+        self,
+        feature_a: type[mx.BaseFeature],
+    ):
+        """Test that ValueError is raised if no assets match target_asset_keys."""
+
+        @mxd.metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/obs_job/a"})
+        def obs_a():
+            pass
+
+        with pytest.raises(
+            ValueError, match="No assets match the provided target_asset_keys"
+        ):
+            mxd.build_metaxy_multi_observation_job(
+                name="observe_no_match",
+                assets=[obs_a],
+                target_asset_keys=[dg.AssetKey("nonexistent")],
+            )
+
 
 class TestMultiObservationJobWithMetaxyPartition:
     """Tests for build_metaxy_multi_observation_job with metaxy/partition.

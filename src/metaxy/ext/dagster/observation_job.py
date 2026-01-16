@@ -6,6 +6,7 @@ from typing import Any
 
 import dagster as dg
 from dagster import Nothing
+from pydantic import Field
 
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
@@ -199,10 +200,25 @@ def build_metaxy_multi_observation_job(
     # This ensures each asset gets its own op, even if multiple assets share the same feature
     spec_by_asset_key = {spec.key.to_user_string(): spec for spec in metaxy_specs}
 
+    class _Config(dg.Config):
+        asset_keys: list[str] = Field(
+            default_factory=[str(k) for k in spec_by_asset_key.keys()]
+        )
+
     # Op that emits dynamic outputs for each asset
-    @dg.op(name=f"{name}_fanout", out=dg.DynamicOut(str))
-    def fanout_assets() -> Any:
-        for asset_key_str in spec_by_asset_key:
+    @dg.op(
+        name=f"{name}_fanout",
+        out=dg.DynamicOut(str),
+        # config_schema={
+        #     "asset_keys": dg.Array(
+        #         dg.String(),
+        #     )
+        # },
+    )
+    def fanout_assets(config: _Config) -> Any:
+        keys = config.asset_keys
+
+        for asset_key_str in keys:
             # Use asset key (with / replaced by __) as mapping key for Dagster identifiers
             safe_mapping_key = asset_key_str.replace("/", "__")
             yield dg.DynamicOutput(asset_key_str, mapping_key=safe_mapping_key)
