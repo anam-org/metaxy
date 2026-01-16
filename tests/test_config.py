@@ -4,8 +4,60 @@ from pathlib import Path
 
 import pytest
 
-from metaxy.config import InvalidConfigError, MetaxyConfig, StoreConfig
+from metaxy.config import (
+    InvalidConfigError,
+    MetaxyConfig,
+    StoreConfig,
+    _collect_dict_keys,
+)
 from metaxy.metadata_store import InMemoryMetadataStore
+
+
+class TestCollectDictKeys:
+    """Tests for _collect_dict_keys helper function."""
+
+    def test_empty_dict(self) -> None:
+        assert _collect_dict_keys({}) == []
+
+    def test_flat_dict(self) -> None:
+        result = _collect_dict_keys({"a": 1, "b": 2})
+        assert set(result) == {"a", "b"}
+
+    def test_nested_dict(self) -> None:
+        result = _collect_dict_keys({"config": {"host": "localhost", "port": 5432}})
+        assert set(result) == {"config", "config.host", "config.port"}
+
+    def test_deeply_nested_dict(self) -> None:
+        result = _collect_dict_keys({"a": {"b": {"c": {"d": 1}}}})
+        assert set(result) == {"a", "a.b", "a.b.c", "a.b.c.d"}
+
+    def test_dict_with_list_value(self) -> None:
+        """Lists should not be recursed into."""
+        result = _collect_dict_keys({"items": [1, 2, 3], "name": "test"})
+        assert set(result) == {"items", "name"}
+
+    def test_dict_with_none_value(self) -> None:
+        result = _collect_dict_keys({"value": None, "other": "test"})
+        assert set(result) == {"value", "other"}
+
+    def test_dict_with_mixed_values(self) -> None:
+        result = _collect_dict_keys(
+            {
+                "string": "hello",
+                "number": 42,
+                "nested": {"inner": "value"},
+                "list": [1, 2],
+                "none": None,
+            }
+        )
+        assert set(result) == {
+            "string",
+            "number",
+            "nested",
+            "nested.inner",
+            "list",
+            "none",
+        }
 
 
 def test_store_config_basic() -> None:
