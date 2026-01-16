@@ -35,6 +35,18 @@
           graphviz
           nodejs_22
           (mermaid-ascii.packages.${system}.default or null)
+          # Image processing dependencies for mkdocs-material social cards
+          cairo
+          freetype
+          libffi
+          libjpeg
+          libpng
+          zlib
+          pngquant
+          # Additional libraries for Cairo/Pango text rendering
+          pango
+          gdk-pixbuf
+          gobject-introspection
         ];
 
         # Function to create a dev shell for a specific Python version
@@ -54,6 +66,15 @@
               pkgs.clickhouse
               pkgs.graphviz
               python
+              # Image processing libraries for mkdocs-material social cards
+              pkgs.cairo
+              pkgs.freetype
+              pkgs.libffi
+              pkgs.libjpeg
+              pkgs.libpng
+              pkgs.zlib
+              pkgs.pango
+              pkgs.gdk-pixbuf
             ] ++ lib.optionals isLinux [
               pkgs.gcc-unwrapped.lib
               pkgs.glibc
