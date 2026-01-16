@@ -1,4 +1,136 @@
 # serializer version: 1
+# name: test_fallback_store_switches_to_polars_components[duckdb-md5]
+  dict({
+    tuple(
+      'duckdb',
+      'deltalake',
+      'all_local',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': 'a0c201d1a1d544ffb280b77f5eba6370',
+        }),
+        dict({
+          'default': 'f040041d473979cf6b09e52b5fd30507',
+        }),
+        dict({
+          'default': 'd298fdb1b67f63faf57475ec9873beb8',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'deltalake',
+      'with_fallback',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': 'a0c201d1a1d544ffb280b77f5eba6370',
+        }),
+        dict({
+          'default': 'f040041d473979cf6b09e52b5fd30507',
+        }),
+        dict({
+          'default': 'd298fdb1b67f63faf57475ec9873beb8',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_fallback_store_switches_to_polars_components[duckdb-xxhash32]
+  dict({
+    tuple(
+      'duckdb',
+      'deltalake',
+      'all_local',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '621878453',
+        }),
+        dict({
+          'default': '517716338',
+        }),
+        dict({
+          'default': '1041616769',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'deltalake',
+      'with_fallback',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '621878453',
+        }),
+        dict({
+          'default': '517716338',
+        }),
+        dict({
+          'default': '1041616769',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_fallback_store_switches_to_polars_components[duckdb-xxhash64]
+  dict({
+    tuple(
+      'duckdb',
+      'deltalake',
+      'all_local',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '10287390557157909633',
+        }),
+        dict({
+          'default': '9105599929563734189',
+        }),
+        dict({
+          'default': '5530377118348852693',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'deltalake',
+      'with_fallback',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '10287390557157909633',
+        }),
+        dict({
+          'default': '9105599929563734189',
+        }),
+        dict({
+          'default': '5530377118348852693',
+        }),
+      ]),
+    }),
+  })
+# ---
 # name: test_fallback_store_switches_to_polars_components[inmemory-duckdb-md5]
   dict({
     tuple(
@@ -113,6 +245,138 @@
       'duckdb',
       'inmemory',
       'with_fallback',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '10287390557157909633',
+        }),
+        dict({
+          'default': '9105599929563734189',
+        }),
+        dict({
+          'default': '5530377118348852693',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_fallback_store_warning_issued[duckdb-md5]
+  dict({
+    tuple(
+      'duckdb',
+      'deltalake',
+      'native',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': 'a0c201d1a1d544ffb280b77f5eba6370',
+        }),
+        dict({
+          'default': 'f040041d473979cf6b09e52b5fd30507',
+        }),
+        dict({
+          'default': 'd298fdb1b67f63faf57475ec9873beb8',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'deltalake',
+      'polars',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': 'a0c201d1a1d544ffb280b77f5eba6370',
+        }),
+        dict({
+          'default': 'f040041d473979cf6b09e52b5fd30507',
+        }),
+        dict({
+          'default': 'd298fdb1b67f63faf57475ec9873beb8',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_fallback_store_warning_issued[duckdb-xxhash32]
+  dict({
+    tuple(
+      'duckdb',
+      'deltalake',
+      'native',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '621878453',
+        }),
+        dict({
+          'default': '517716338',
+        }),
+        dict({
+          'default': '1041616769',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'deltalake',
+      'polars',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '621878453',
+        }),
+        dict({
+          'default': '517716338',
+        }),
+        dict({
+          'default': '1041616769',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_fallback_store_warning_issued[duckdb-xxhash64]
+  dict({
+    tuple(
+      'duckdb',
+      'deltalake',
+      'native',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '10287390557157909633',
+        }),
+        dict({
+          'default': '9105599929563734189',
+        }),
+        dict({
+          'default': '5530377118348852693',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'deltalake',
+      'polars',
     ): dict({
       'added': 3,
       'changed': 0,

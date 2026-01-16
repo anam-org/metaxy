@@ -37,26 +37,6 @@ def find_free_port() -> int:
     return port
 
 
-@pytest.fixture
-def store_params(tmp_path: Path, clickhouse_db: str) -> dict[str, Any]:
-    """Provide all store-specific parameters in a single dict.
-
-    Combines all store-specific fixtures (tmp_path, clickhouse_db, etc.) into
-    one dictionary that can be passed to create_store().
-
-    Args:
-        tmp_path: Temporary directory for file-based stores
-        clickhouse_db: ClickHouse connection string
-
-    Returns:
-        Dictionary with all available store parameters
-    """
-    return {
-        "tmp_path": tmp_path,
-        "clickhouse_db": clickhouse_db,
-    }
-
-
 class StoreCases:
     """Store configuration cases for parametrization."""
 
@@ -105,7 +85,7 @@ class BasicStoreCases:
 def persistent_store(
     store_config: tuple[type[MetadataStore], dict[str, Any]],
 ) -> MetadataStore:
-    """Parametrized persistent store (InMemory + DuckDB)."""
+    """Parametrized persistent store."""
     store_type, config = store_config
     return store_type(**config)
 

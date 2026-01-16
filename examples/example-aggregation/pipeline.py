@@ -76,6 +76,7 @@ def main():
             pl.concat([added_df, changed_df])
             .select("speaker_id")
             .unique()
+            .sort("speaker_id")
             .to_series()
             .to_list()
         )

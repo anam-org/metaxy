@@ -166,6 +166,43 @@ jobs:
           report-only-changed-files: true
           unique-id-for-comment: ${{ matrix.python-version }}
 
+  test-windows:
+    needs: filter
+    if: ${{ needs.filter.outputs.test == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: windows-latest
+    env:
+      UV_PYTHON_PREFERENCE: only-system
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install Dependencies
+        run: |
+          uv python pin ${{ matrix.python-version }}
+          uv sync --group dev --all-extras --no-extra clickhouse --no-extra graphviz
+
+      - name: Run Tests
+        run: >
+          uv run pytest
+          --ignore=tests/metadata_stores/test_clickhouse.py
+          --ignore=tests/docs
+          --ignore=tests/cli
+          --durations=15
+
   docs:
     runs-on: depot-ubuntu-latest
     needs:
@@ -200,6 +237,7 @@ jobs:
     runs-on: depot-ubuntu-latest
     needs:
       - test
+      - test-windows
       - lint
       - format
       # - typecheck
@@ -211,4 +249,4 @@ jobs:
         uses: re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: test,docs
+          allowed-skips: test, test-windows, docs

@@ -624,6 +624,9 @@ class ExternalMetaxyProject(MetaxyProject):
         # Start with current environment
         cmd_env = os.environ.copy()
 
+        # Force UTF-8 encoding for subprocess output (Windows defaults to cp1252)
+        cmd_env["PYTHONIOENCODING"] = "utf-8"
+
         # Add project directory (and src/ subdirectory if it exists) to PYTHONPATH
         # so modules can be imported. These are prepended to take precedence.
         paths_to_add = [str(self.project_dir)]
@@ -785,8 +788,9 @@ class TempMetaxyProject(MetaxyProject):
             config_content = self._custom_config
         else:
             # Default DuckDB store configuration
-            dev_db_path = self.project_dir / "metadata.duckdb"
-            staging_db_path = self.project_dir / "metadata_staging.duckdb"
+            # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+            dev_db_path = (self.project_dir / "metadata.duckdb").as_posix()
+            staging_db_path = (self.project_dir / "metadata_staging.duckdb").as_posix()
             config_content = f'''project = "test"
 store = "dev"
 

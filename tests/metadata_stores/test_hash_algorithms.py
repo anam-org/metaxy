@@ -1,7 +1,7 @@
 """Focused tests for hash algorithms across metadata stores.
 
 This test file focuses on hash algorithm behavior, including:
-- Testing all supported hash algorithms with ONE store (InMemory for speed)
+- Testing all supported hash algorithms with ONE store
 - Testing hash truncation independently
 - Testing hash algorithm compatibility with different stores
 - Validating golden hash values for each algorithm
