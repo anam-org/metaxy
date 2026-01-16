@@ -32,3 +32,4 @@ examples/.generated
 # Claude stuff
 PLAN.md
 plans/*.md
+.cache/
