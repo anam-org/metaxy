@@ -180,6 +180,8 @@ class TestGenerateMaterializationEvents:
         assert "metaxy" in info
         assert info["feature"]["project"] == mx.MetaxyConfig.get().project
         assert info["feature"]["version"] == feature_a.feature_version()
+        # type should be the full import path: module.ClassName
+        assert info["feature"]["type"] == f"{feature_a.__module__}.{feature_a.__name__}"
         assert info["metaxy"]["version"] == mx.__version__
         assert info["metaxy"]["plugins"] == mx.MetaxyConfig.get().plugins
 
@@ -371,6 +373,8 @@ class TestGenerateObservationEvents:
         assert "metaxy" in info
         assert info["feature"]["project"] == mx.MetaxyConfig.get().project
         assert info["feature"]["version"] == feature_a.feature_version()
+        # type should be the full import path: module.ClassName
+        assert info["feature"]["type"] == f"{feature_a.__module__}.{feature_a.__name__}"
         assert info["metaxy"]["version"] == mx.__version__
         assert info["metaxy"]["plugins"] == mx.MetaxyConfig.get().plugins
 
