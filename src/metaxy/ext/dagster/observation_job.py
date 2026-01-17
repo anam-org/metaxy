@@ -206,7 +206,7 @@ def build_metaxy_multi_observation_job(
 
     # Op that emits dynamic outputs for each asset, optionally filtered by config
     @dg.op(
-        name="observe_assets",
+        name=f"{name}_fanout",
         out=dg.DynamicOut(str),
         config_schema=_ObserveAssetsConfig.to_config_schema(),
     )
