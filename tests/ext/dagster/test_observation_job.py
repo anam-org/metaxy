@@ -595,7 +595,9 @@ class TestBuildMetaxyMultiObservationJob:
             instance=instance,
             run_config={
                 "ops": {
-                    "observe_assets": {"config": {"asset_keys": ["test/obs_job/a"]}}
+                    "observe_filtered_fanout": {
+                        "config": {"asset_keys": ["test/obs_job/a"]}
+                    }
                 }
             },
         )
@@ -640,7 +642,9 @@ class TestBuildMetaxyMultiObservationJob:
             instance=instance,
             run_config={
                 "ops": {
-                    "observe_assets": {"config": {"asset_keys": ["nonexistent/asset"]}}
+                    "observe_invalid_fanout": {
+                        "config": {"asset_keys": ["nonexistent/asset"]}
+                    }
                 }
             },
             raise_on_error=False,
@@ -726,6 +730,55 @@ class TestBuildMetaxyMultiObservationJob:
         """Test that ValueError is raised if neither assets nor selection is provided."""
         with pytest.raises(ValueError, match="Must provide either"):
             mxd.build_metaxy_multi_observation_job(name="observe_nothing")
+
+    def test_multiple_jobs_in_same_definitions_have_unique_op_names(
+        self,
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+        resources: dict[str, Any],
+    ):
+        """Test that multiple observation jobs can coexist in the same Definitions.
+
+        Each job should have unique op names to avoid conflicts when Dagster
+        validates the repository.
+        """
+
+        @mxd.metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/obs_job/a"})
+        def obs_a():
+            pass
+
+        @mxd.metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/obs_job/b"})
+        def obs_b():
+            pass
+
+        # Create two separate observation jobs
+        job_1 = mxd.build_metaxy_multi_observation_job(
+            name="observe_features_group_1",
+            assets=[obs_a],
+        )
+        job_2 = mxd.build_metaxy_multi_observation_job(
+            name="observe_features_group_2",
+            assets=[obs_b],
+        )
+
+        # This should NOT raise DagsterInvalidDefinitionError about conflicting op names
+        defs = dg.Definitions(
+            assets=[obs_a, obs_b],
+            jobs=[job_1, job_2],
+            resources=resources,
+        )
+
+        # Getting the repository triggers validation of all jobs and their op names
+        # This would raise DagsterInvalidDefinitionError if op names conflict
+        repo = defs.get_repository_def()
+        all_jobs = repo.get_all_jobs()
+
+        # Verify both jobs are present
+        job_names = {job.name for job in all_jobs}
+        assert "observe_features_group_1" in job_names
+        assert "observe_features_group_2" in job_names
 
 
 class TestMultiObservationJobWithMetaxyPartition:
