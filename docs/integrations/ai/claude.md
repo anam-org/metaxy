@@ -14,8 +14,9 @@ A [Claude Code](https://claude.com/product/claude-code) plugin that provides add
 
 ## Installation
 
-```
-/plugin install anam-org/metaxy
+```bash
+/plugin marketplace add anam-org/metaxy
+/plugin install metaxy
 ```
 
 ## Requirements
