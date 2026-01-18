@@ -156,6 +156,16 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
+-   :custom-claude:{ .lg .middle } [**Claude Code**](ai/claude.md)
+
+    ---
+
+    :material-tag-outline: AI • LLM
+
+    Use Metaxy with [Claude Code](https://claude.ai/claude-code) through the official plugin, providing the `/metaxy` skill and MCP tools.
+
+    [:octicons-arrow-right-24: Integration docs](ai/claude.md)
+
 -   :custom-mcp:{ .lg .middle } [**MCP Server**](ai/mcp.md)
 
     ---

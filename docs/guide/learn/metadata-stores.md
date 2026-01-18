@@ -26,18 +26,12 @@ It looks more or less like this:
 
 Metadata stores implement an append-only storage model and rely on [Metaxy system columns](system-columns.md).
 
-Deletes are not required during normal operations, but they are still supported since users would want to eventually delete stale metadata and data.
-
 !!! note
 
-    Metaxy does not mutate metadata in-place, unless explicitly requested. (1)
+    Metaxy never mutates metadata in-place (1)
     { .annotate }
 
-    1. :fire: for performance reasons
-
-!!! warning
-
-    Delete filters must compile to SQL WHERE clauses.
+    1. :fire: safety and performance reasons
 
 !!! warning "Forged About ACID"
 
@@ -69,6 +63,27 @@ This includes joining upstream features, hashing their versions, and filtering o
     3. If a **fallback store** had to be used to retrieve one of the parent features missing in the current store.
 
     All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.
+
+## Deletions
+
+Deletes are typically not required during normal operations, but they are still supported for cleanup purposes. (1)
+{ .annotate }
+
+1. deletions might be necessary when working with [expansion linear relationships](relationship.md).
+
+Here is an example of how a deletion would look like:
+
+```py
+from datetime import datetime, timedelta
+
+import narwhals as nw
+
+with store.open("write"):
+    store.delete_metadata(
+        "my/feature",
+        filters=[nw.col("metaxy_created_at") < datetime.now() - timedelta(days=30)],
+    )
+```
 
 ## Metadata Store Implementations
 

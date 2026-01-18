@@ -31,7 +31,7 @@ Run the MCP server from your Metaxy project directory:
 metaxy mcp # (1)!
 ```
 
-1. Use `uvx --from 'metaxy[mcp]' metaxy mcp` to run the server as an isolated [uv tool](https://docs.astral.sh/uv/guides/tools/)
+1. Use `uv run metaxy mcp` to run the server within the project's Python environment.
 
 The server uses the standard Metaxy configuration discovery, loading `metaxy.toml` from the current directory or parent directories.
 
