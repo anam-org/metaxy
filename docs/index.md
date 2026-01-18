@@ -1,6 +1,6 @@
 ---
 title: "Metaxy Overview"
-description: "Introduction to Metaxy, its core features, and how to get started."
+description: "Introduction to Metaxy."
 ---
 
 <p align="center">
