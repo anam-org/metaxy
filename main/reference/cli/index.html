@@ -993,6 +993,8 @@
       
         
       
+        
+      
     
     
     
@@ -2543,6 +2545,98 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    AI
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/ai/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3720,6 +3814,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#metaxy-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy mcp
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4034,6 +4139,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#metaxy-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy mcp
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4163,12 +4279,14 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><a href="#metaxy-metadata-copy"><code>copy</code></a></li>
 </ul>
 </li>
+<li><a href="#metaxy-mcp"><code>mcp</code></a></li>
 </ul>
 <p><strong>Commands</strong>:</p>
 <ul>
 <li><a href="#metaxy-graph"><code>graph</code></a>: Manage feature graphs</li>
 <li><a href="#metaxy-graph-diff"><code>graph-diff</code></a>: Compare and visualize graph snapshots</li>
 <li><a href="#metaxy-list"><code>list</code></a>: List Metaxy entities</li>
+<li><a href="#metaxy-mcp"><code>mcp</code></a>: MCP (Model Context Protocol) server commands.</li>
 <li><a href="#metaxy-metadata"><code>metadata</code></a>: Manage Metaxy metadata</li>
 <li><a href="#metaxy-migrations"><code>migrations</code></a>: Metadata migration commands</li>
 <li><a href="#metaxy-shell"><code>shell</code></a>: Start interactive shell.</li>
@@ -4466,6 +4584,16 @@ keeping only the latest row per sample (--latest-only).</p>
 <li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://anam-org.github.io/metaxy/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
 <li><code>--current-only, --no-current-only</code>: Only copy rows with the current feature_version (as defined in loaded feature graph).  <em>[default: False]</em></li>
 <li><code>--latest-only, --no-latest-only</code>: Deduplicate samples by keeping only the latest row per id_columns group.  <em>[default: True]</em></li>
+</ul>
+<h2 id="metaxy-mcp">metaxy mcp<a class="headerlink" href="#metaxy-mcp" title="Permanent link">&para;</a></h2>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="go">metaxy mcp</span>
+</span></code></pre></div>
+<p>MCP (Model Context Protocol) server commands.</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 </ul>
 
 
