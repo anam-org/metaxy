@@ -7,11 +7,12 @@
     {
       "name": "metaxy",
       "source": {
-        "type": "github",
-        "repo": "anam-org/metaxy"
+        "source": "url",
+        "url": "https://github.com/anam-org/metaxy.git"
       },
-      "description": "Provides the /metaxy skill for guidance on feature definitions, versioning, and metadata stores, plus MCP tools for exploring feature graphs and querying metadata.",
-      "version": "0.1.0"
+      "description": "Feature metadata management for multi-modal data and ML pipelines. Provides guidance on feature definitions, versioning, metadata stores, and testing.",
+      "version": "0.1.0",
+      "homepage": "https://anam-org.github.io/metaxy/"
     }
   ]
 }
