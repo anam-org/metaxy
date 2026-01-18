@@ -1,0 +1,6 @@
+{
+  "metaxy": {
+    "command": "uv",
+    "args": ["run", "metaxy", "mcp"]
+  }
+}

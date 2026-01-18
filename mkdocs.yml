@@ -1,5 +1,5 @@
 site_name: Metaxy
-site_description: Pluggable metadata layer for multi-modal ML pipelines
+site_description: Pluggable metadata layer for multi-modal pipelines
 site_url: https://anam-org.github.io/metaxy
 repo_url: https://github.com/anam-org/metaxy
 repo_name: anam-org/metaxy
@@ -247,6 +247,7 @@ nav:
         - Configuration: integrations/plugins/sqlalchemy/configuration.md
         - API: integrations/plugins/sqlalchemy/api.md
     - AI:
+      - Claude Code: integrations/ai/claude.md
       - MCP Server: integrations/ai/mcp.md
   - Examples:
     - examples/index.md
