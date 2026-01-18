@@ -71,3 +71,75 @@ class VersionedFeature(
 !!! critical
 
     Changing the `code_version` of a field will invalidate downstream feature samples that depend on this field.
+
+## Field Dependencies via Mapping
+
+Use `FieldsMapping` on `FeatureDep` to automatically resolve field dependencies:
+
+```python
+import metaxy as mx
+from metaxy.models.fields_mapping import FieldsMapping
+
+
+class DownstreamFeature(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
+        key="downstream",
+        deps=[
+            # Default mapping: auto-matches fields by name
+            mx.FeatureDep(feature=UpstreamFeature),
+            # Suffix matching: "french" matches "audio/french"
+            mx.FeatureDep(
+                feature=AudioFeature,
+                fields_mapping=FieldsMapping.default(match_suffix=True),
+            ),
+        ],
+        fields=["audio", "french", "combined"],
+        id_columns=["sample_id"],
+    ),
+):
+    sample_id: str
+```
+
+Consult with documentation for more details and mapping options.
+
+## Direct Field Dependencies (FieldDep)
+
+Use `FieldDep` on `FieldSpec` to explicitly specify which upstream fields a field depends on:
+
+```python
+import metaxy as mx
+
+
+class Crop(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
+        key="example/crop",
+        deps=[mx.FeatureDep(feature=Video)],
+        fields=[
+            mx.FieldSpec(
+                key="audio",
+                code_version="1",
+                deps=[
+                    mx.FieldDep(
+                        feature=Video,
+                        fields=["audio"],  # Depend only on Video's audio field
+                    )
+                ],
+            ),
+            mx.FieldSpec(
+                key="frames",
+                code_version="1",
+                deps=[
+                    mx.FieldDep(
+                        feature=Video,
+                        fields=["frames"],  # Depend only on Video's frames field
+                    )
+                ],
+            ),
+        ],
+        id_columns=["sample_uid"],
+    ),
+):
+    sample_uid: str
+```

@@ -1,6 +1,6 @@
 ---
 name: metaxy
-description: Use when working with Metaxy, a feature metadata management system for multi-modal data and ML pipelines. Helps with feature definitions, versioning, metadata stores, and testing.
+description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level dependencies", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, or testing patterns.
 ---
 
 # Metaxy
@@ -9,26 +9,110 @@ Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages an
 
 ## Core Concepts
 
-- **Feature Definitions**: Declarative Python classes that define metadata schemas with field-level dependencies
-- **Data Versioning**: Automatic tracking of sample versions with change propagation
-- **Metadata Stores**: Pluggable backends (DuckDB, ClickHouse, BigQuery, LanceDB, Delta Lake) for storing feature metadata
-- **Feature Graph**: Dependency graph of features with partial data dependency tracking
+### Feature Definitions
 
-## Key Capabilities
+To define a feature, create a class inheriting from `mx.BaseFeature` with a `FeatureSpec` metaclass argument:
 
-1. **Incremental Processing**: Skip downstream updates when only unrelated fields change
-2. **Field-Level Dependencies**: Express partial data dependencies to avoid unnecessary recomputations
-3. **Backend Agnostic**: Works with any tabular compute engine via Narwhals (Polars, Pandas, Spark)
+```python
+import metaxy as mx
+
+
+class MyFeature(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
+        key="my/feature",
+        id_columns=["sample_id"],
+        fields=["embedding", "score"],
+    ),
+):
+    sample_id: str
+    embedding: list[float]
+    score: float
+```
+
+To add dependencies between features, use the `deps` parameter with `FeatureDep`. To specify field-level dependencies (for partial data dependencies processing), use `FieldSpec` with `FieldDep` or `FieldsMapping`.
+
+### Data Versioning
+
+Metaxy automatically tracks sample versions and propagates changes through the dependency graph. To trigger recomputation when code changes, set `code_version` on `FieldSpec`:
+
+```python
+fields = [
+    mx.FieldSpec(key="embedding", code_version="2"),  # Bump to invalidate downstream
+]
+```
+
+### Metadata Stores
+
+To configure a metadata store, create a `metaxy.toml` file or use programmatic configuration:
+
+```python
+with mx.MetaxyConfig(
+    stores={"dev": mx.DeltaMetadataStore(root_path="/tmp/metaxy")}
+).use() as config:
+    store = config.get_store("dev")
+```
+
+Supported backends: DuckDB, ClickHouse, BigQuery, LanceDB, Delta Lake.
+
+### Feature Graph
+
+To visualize and manage the feature dependency graph, use the CLI:
+
+```bash
+mx graph render            # Terminal visualization
+mx graph push --store dev  # Push graph to store
+```
+
+## CLI
+
+Metaxy provides a CLI (`metaxy` or `mx` alias) for managing features, metadata, and migrations:
+
+```bash
+mx list features --verbose     # List features with dependencies
+mx graph render                # Visualize feature graph
+mx metadata status --all-features  # Check metadata freshness (expensive!)
+mx migrations apply            # Apply pending migrations
+mx mcp                         # Start MCP server for AI assistants
+```
+
+## Testing
+
+To test features in isolation, use context managers to avoid polluting the global registry:
+
+```python
+import pytest
+import metaxy as mx
+
+
+@pytest.fixture
+def metaxy_env():
+    with mx.FeatureGraph().use():
+        with mx.MetaxyConfig(
+            stores={"test": mx.InMemoryMetadataStore()}
+        ).use() as config:
+            yield config
+```
+
+## Examples
+
+For complete code examples, see:
+
+- `examples/feature-definitions.md` - Feature classes with dependencies and field-level deps
+- `examples/configuration.md` - TOML and programmatic configuration
+- `examples/metadata-stores.md` - Store operations
+- `examples/testing.md` - Test isolation patterns
+- `examples/cli.md` - CLI command reference
 
 ## Documentation
 
-For comprehensive documentation, visit: https://anam-org.github.io/metaxy/
+For comprehensive documentation: https://anam-org.github.io/metaxy/
 
-Key documentation pages:
+Key pages:
 
 - **Quickstart**: https://anam-org.github.io/metaxy/guide/overview/quickstart/
 - **Feature Definitions**: https://anam-org.github.io/metaxy/guide/learn/feature-definitions/
 - **Data Versioning**: https://anam-org.github.io/metaxy/guide/learn/data-versioning/
 - **Metadata Stores**: https://anam-org.github.io/metaxy/guide/learn/metadata-stores/
-- **Integrations**: https://anam-org.github.io/metaxy/integrations/
+- **CLI Reference**: https://anam-org.github.io/metaxy/reference/cli/
 - **API Reference**: https://anam-org.github.io/metaxy/reference/api/
