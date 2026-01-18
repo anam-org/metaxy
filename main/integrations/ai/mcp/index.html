@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://anam-org.github.io/metaxy/main/integrations/ai/mcp/">
       
       
-        <link rel="prev" href="../../plugins/sqlalchemy/api/">
+        <link rel="prev" href="../claude/">
       
       
         <link rel="next" href="../../../examples/">
@@ -2574,6 +2574,8 @@
       
         
       
+        
+      
     
     
     
@@ -2621,6 +2623,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../claude/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -3940,7 +3970,7 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../claude/" class="md-path__link">
           
   <span class="md-ellipsis">
     AI
@@ -3986,7 +4016,7 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>metaxy<span class="w"> </span>mcp<span class="w"> </span><span class="c1"># (1)!</span>
 </span></code></pre></div>
 <ol>
-<li>Use <code>uvx --from 'metaxy[mcp]' metaxy mcp</code> to run the server as an isolated <a href="https://docs.astral.sh/uv/guides/tools/">uv tool</a></li>
+<li>Use <code>uv run metaxy mcp</code> to run the server within the project's Python environment.</li>
 </ol>
 <p>The server uses the standard Metaxy configuration discovery, loading <code>metaxy.toml</code> from the current directory or parent directories.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
