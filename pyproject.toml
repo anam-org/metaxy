@@ -30,6 +30,7 @@ dependencies = [
   "sqlglot>=28.1.0",
   "tomli>=2.3.0",
   "rich>=13.0.0",
+  "packaging>=25.0",
 ]
 
 [project.optional-dependencies]
