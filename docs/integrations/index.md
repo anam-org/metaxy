@@ -150,3 +150,21 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 <!-- dprint-ignore-end -->
 
 </div>
+
+## AI
+
+<div class="grid cards" markdown>
+
+<!-- dprint-ignore-start -->
+-   :custom-mcp:{ .lg .middle } [**MCP Server**](ai/mcp.md)
+
+    ---
+
+    :material-tag-outline: AI • LLM
+
+    Expose Metaxy's feature graph and metadata store operations to AI assistants via the [Model Context Protocol](https://modelcontextprotocol.io/).
+
+    [:octicons-arrow-right-24: Integration docs](ai/mcp.md)
+<!-- dprint-ignore-end -->
+
+</div>

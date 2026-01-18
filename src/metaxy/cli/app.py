@@ -87,6 +87,7 @@ app.command("metaxy.cli.graph:app", name="graph")
 app.command("metaxy.cli.graph_diff:app", name="graph-diff")
 app.command("metaxy.cli.list:app", name="list")
 app.command("metaxy.cli.metadata:app", name="metadata")
+app.command("metaxy.cli.mcp:app", name="mcp")
 
 
 def main():

@@ -165,6 +165,7 @@ markdown_extensions:
   # Metaxy custom extensions (must be before superfences to inject fenced code blocks)
   - metaxy_config
   - metaxy_examples
+  - metaxy_mcp
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -245,6 +246,8 @@ nav:
         - integrations/plugins/sqlalchemy/index.md
         - Configuration: integrations/plugins/sqlalchemy/configuration.md
         - API: integrations/plugins/sqlalchemy/api.md
+    - AI:
+      - MCP Server: integrations/ai/mcp.md
   - Examples:
     - examples/index.md
     - Basic: examples/basic.md
