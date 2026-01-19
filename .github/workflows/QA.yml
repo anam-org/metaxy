@@ -32,6 +32,9 @@ jobs:
               - 'tests/**'
               - 'pyproject.toml'
               - 'uv.lock'
+            docs:
+              - mkdocs.yml
+              - 'docs/**'
 
   lint:
     runs-on: depot-ubuntu-latest
@@ -163,6 +166,9 @@ jobs:
 
   docs:
     runs-on: depot-ubuntu-latest
+    needs:
+      - filter
+    if: ${{ needs.filter.outputs.test == 'true' || needs.filter.outputs.docs == 'true' || github.event_name == 'workflow_dispatch' }}
     env:
       UV_PYTHON_PREFERENCE: only-system
     steps:
@@ -203,4 +209,4 @@ jobs:
         uses: re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: test
+          allowed-skips: test,docs
