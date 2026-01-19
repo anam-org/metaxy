@@ -387,14 +387,20 @@ def _metaxify_spec(
             final_key = resolved_key
 
     # Build deps from feature dependencies
-    deps_to_add: set[dg.AssetDep] = set()
+    metaxy_deps_by_key: dict[dg.AssetKey, dg.AssetDep] = {}
     for dep in feature_spec.deps:
         upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
         upstream_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
         # Apply key_prefix to upstream deps as well
         if key_prefix is not None:
             upstream_key = dg.AssetKey([*key_prefix.path, *upstream_key.path])
-        deps_to_add.add(dg.AssetDep(asset=upstream_key))
+        metaxy_deps_by_key[upstream_key] = dg.AssetDep(asset=upstream_key)
+
+    # Merge: user-specified deps (spec.deps) take precedence over metaxy-generated deps
+    # This allows users to override with custom metadata or partition_mapping
+    deps_by_key = {**metaxy_deps_by_key}
+    for dep in spec.deps:
+        deps_by_key[dep.asset_key] = dep
 
     # Build kinds
     kinds_to_add: set[str] = set()
@@ -518,7 +524,7 @@ def _metaxify_spec(
 
     replace_attrs: dict[str, Any] = {
         "key": final_key,
-        "deps": {*spec.deps, *deps_to_add},
+        "deps": list(deps_by_key.values()),
         "metadata": metadata_to_add,
         "kinds": {*spec.kinds, *kinds_to_add},
         "tags": {**spec.tags, **tags_to_add},
