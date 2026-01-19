@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
+from datetime import datetime, timezone
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
@@ -113,8 +114,8 @@ _SYSTEM_COLUMN_DTYPES = {
     METAXY_FEATURE_SPEC_VERSION: nw.String,
     METAXY_SNAPSHOT_VERSION: nw.String,
     METAXY_DATA_VERSION: nw.String,
-    METAXY_CREATED_AT: nw.Datetime,
-    METAXY_DELETED_AT: nw.Datetime,
+    METAXY_CREATED_AT: nw.Datetime(time_zone="UTC"),
+    METAXY_DELETED_AT: nw.Datetime(time_zone="UTC"),
     METAXY_MATERIALIZATION_ID: nw.String,
 }
 
@@ -339,6 +340,10 @@ class MetadataStore(ABC):
         global_filter_list = list(global_filters) if global_filters else []
 
         feature_key = self._resolve_feature_key(feature)
+        if self._is_system_table(feature_key):
+            raise NotImplementedError(
+                "Delete operations are not yet supported for system tables."
+            )
         graph = current_graph()
         plan = graph.get_feature_plan(feature_key)
 
@@ -750,16 +755,17 @@ class MetadataStore(ABC):
             )
 
         if lazy_frame is not None and not is_system_table:
-            # Deduplicate first (records have +1μs created_at so they win)
-            # Then filter soft-deleted rows
+            # Deduplicate first, then filter soft-deleted rows
             if latest_only:
                 id_cols = list(
                     self._resolve_feature_plan(feature_key).feature.id_columns
                 )
+                # Treat soft-deletes like hard deletes by ordering on the
+                # most recent lifecycle timestamp.
                 lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
                     df=lazy_frame,
                     group_columns=id_cols,
-                    timestamp_column=METAXY_CREATED_AT,
+                    timestamp_columns=[METAXY_DELETED_AT, METAXY_CREATED_AT],
                 )
 
             if filter_deleted:
@@ -1575,6 +1581,25 @@ class MetadataStore(ABC):
         """
         pass
 
+    @abstractmethod
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr] | None,
+        *,
+        current_only: bool,
+    ) -> None:
+        """Backend-specific hard delete implementation.
+
+        Args:
+            feature_key: Feature to delete from
+            filters: Optional Narwhals expressions to filter records; None or empty deletes all
+            current_only: Whether to only affect the records with the current feature version
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not yet support hard delete."
+        )
+
     def drop_feature_metadata(self, feature: CoercibleToFeatureKey) -> None:
         """Drop all metadata for a feature.
 
@@ -1595,7 +1620,75 @@ class MetadataStore(ABC):
         """
         self._check_open()
         feature_key = self._resolve_feature_key(feature)
+        if self._is_system_table(feature_key):
+            raise NotImplementedError(
+                f"{self.__class__.__name__} does not support deletes for system tables"
+            )
         self._drop_feature_metadata_impl(feature_key)
+
+    def delete_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        filters: Sequence[nw.Expr] | nw.Expr | None,
+        *,
+        soft: bool = True,
+        current_only: bool = True,
+        latest_only: bool = True,
+    ) -> None:
+        """Delete records matching provided filters.
+
+        Performs a soft delete by default. This is achieved by setting metaxy_deleted_at to the current timestamp.
+        Subsequent [[MetadataStore.read_metadata]] calls would ignore these records by default.
+
+        Args:
+            feature: Feature to delete from.
+            filters: One or more Narwhals expressions or a sequence of expressions that determine which records to delete.
+                If `None`, deletes all records (subject to `current_only` and `latest_only` constraints).
+            soft: Whether to perform a soft delete.
+            current_only: Whether to only affect the records with the current feature version. Set this to False to also affect historical metadata.
+            latest_only: Whether to deduplicate to the latest rows before soft deletion.
+
+        !!! critical
+            By default, deletions target historical records. Even when `current_only` is set to `True`,
+            records with the same feature version but an older `metaxy_created_at` would be targeted as
+            well. Consider adding additional conditions to `filters` if you want to avoid that.
+        """
+        self._check_open()
+        feature_key = self._resolve_feature_key(feature)
+
+        # Normalize filters to list
+        if filters is None:
+            filter_list: list[nw.Expr] = []
+        elif isinstance(filters, nw.Expr):
+            filter_list = [filters]
+        else:
+            filter_list = list(filters)
+
+        if soft:
+            # Soft delete: mark records with deletion timestamp
+            lazy = self.read_metadata(
+                feature_key,
+                filters=filter_list,
+                include_soft_deleted=False,
+                current_only=current_only,
+                latest_only=latest_only,
+                allow_fallback=True,
+            )
+            soft_deletion_marked = lazy.with_columns(
+                nw.lit(datetime.now(timezone.utc)).alias(METAXY_DELETED_AT)
+            )
+            self.write_metadata(feature_key, soft_deletion_marked.to_native())
+        else:
+            # Hard delete: add version filter if needed, then delegate to backend
+            if current_only and not self._is_system_table(feature_key):
+                version_filter = nw.col(
+                    METAXY_FEATURE_VERSION
+                ) == current_graph().get_feature_version(feature_key)
+                filter_list = [version_filter, *filter_list]
+
+            self._delete_metadata_impl(
+                feature_key, filter_list, current_only=current_only
+            )
 
     @abstractmethod
     def read_metadata_in_store(

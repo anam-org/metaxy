@@ -273,14 +273,14 @@ class VersioningEngine(ABC):
     def keep_latest_by_group(
         df: FrameT,
         group_columns: list[str],
-        timestamp_column: str,
+        timestamp_columns: list[str],
     ) -> FrameT:
-        """Keep only the latest row per group based on a timestamp column.
+        """Keep only the latest row per group based on timestamp columns.
 
         Args:
             df: Input DataFrame.
             group_columns: Columns defining the groups.
-            timestamp_column: Column containing timestamps for ordering.
+            timestamp_columns: Column names to coalesce for ordering (uses first non-null value).
 
         Returns:
             DataFrame with only the latest row per group.

@@ -175,18 +175,16 @@ def narwhals_expr_to_sql_predicate(
         raise ValueError("narwhals_expr_to_sql_predicate expects at least one filter")
     sql = generate_sql(lambda lf: lf.filter(*filter_list), schema, dialect=dialect)
 
-    import sqlglot
     from sqlglot.optimizer.simplify import simplify
 
-    parsed = sqlglot.parse_one(sql, read=dialect)
-    where_expr = parsed.args.get("where")
-    if not where_expr:
+    predicate_expr = _extract_where_expression(sql, dialect=dialect)
+    if predicate_expr is None:
         raise RuntimeError(
             f"Could not extract WHERE clause from generated SQL for filters: {filters}\n"
             f"Generated SQL: {sql}"
         )
 
-    predicate_expr = simplify(where_expr.this)
+    predicate_expr = simplify(predicate_expr)
 
     predicate_expr = predicate_expr.transform(_strip_table_qualifiers())
 
@@ -194,12 +192,17 @@ def narwhals_expr_to_sql_predicate(
 
 
 def _strip_table_qualifiers() -> Callable[[exp.Expression], exp.Expression]:
+    """Return a transformer function that removes table qualifiers from column references.
+
+    Used to convert qualified column names like `table.column` to unqualified `column`
+    when generating DELETE statements from SELECT queries.
+    """
+
     def _strip(node: exp.Expression) -> exp.Expression:
         if not isinstance(node, exp.Column):
             return node
 
-        table_arg = node.args.get("table")
-        if table_arg is None:
+        if node.args.get("table") is None:
             return node
 
         cleaned = node.copy()
@@ -207,3 +210,17 @@ def _strip_table_qualifiers() -> Callable[[exp.Expression], exp.Expression]:
         return cleaned
 
     return _strip
+
+
+def _extract_where_expression(
+    sql: str,
+    *,
+    dialect: str | None = None,
+) -> exp.Expression | None:
+    import sqlglot
+
+    parsed = sqlglot.parse_one(sql, read=dialect) if dialect else sqlglot.parse_one(sql)
+    where_expr = parsed.args.get("where")
+    if where_expr is None:
+        return None
+    return where_expr.this

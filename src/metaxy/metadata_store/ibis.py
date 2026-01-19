@@ -22,6 +22,7 @@ from metaxy.metadata_store.base import (
     VersioningEngineOptions,
 )
 from metaxy.metadata_store.exceptions import (
+    FeatureNotFoundError,
     HashAlgorithmNotSupportedError,
     TableNotFoundError,
 )
@@ -442,6 +443,69 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Check if table exists
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
+
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr] | None,
+        *,
+        current_only: bool,  # noqa: ARG002 - version filtering handled by base class
+    ) -> None:
+        """Backend-specific hard delete implementation for SQL databases.
+
+        Translates Narwhals filter expression to Ibis and executes DELETE in database.
+
+        Args:
+            feature_key: Feature to delete from
+            filters: Narwhals expressions to filter records
+            current_only: Not used here - version filtering handled by base class
+        """
+        from metaxy.metadata_store.utils import (
+            _extract_where_expression,
+            _strip_table_qualifiers,
+        )
+
+        table_name = self.get_table_name(feature_key)
+        filter_list = list(filters or [])
+
+        # Handle empty filters - truncate entire table
+        if not filter_list:
+            if table_name not in self.conn.list_tables():
+                raise TableNotFoundError(
+                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}."
+                )
+            self.conn.truncate_table(table_name)  # ty: ignore[unresolved-attribute]
+            return
+
+        # Read and filter using store's lazy path to build WHERE clause
+        filtered = self.read_metadata_in_store(feature_key, filters=filter_list)
+        if filtered is None:
+            raise FeatureNotFoundError(
+                f"Feature {feature_key.to_string()} not found in store"
+            )
+
+        # Extract WHERE clause from compiled SELECT statement
+        ibis_filtered = cast("ibis.expr.types.Table", filtered.to_native())
+        select_sql = str(ibis_filtered.compile())
+
+        dialect = self._get_sql_dialect
+        predicate = _extract_where_expression(select_sql, dialect=dialect)
+        if predicate is None:
+            raise ValueError(
+                f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}"
+            )
+
+        # Generate and execute DELETE statement
+        predicate = predicate.transform(_strip_table_qualifiers())
+        where_clause = predicate.sql(dialect=dialect) if dialect else predicate.sql()
+
+        delete_stmt = f"DELETE FROM {table_name} WHERE {where_clause}"
+        self.conn.raw_sql(delete_stmt)  # ty: ignore[unresolved-attribute]
+
+    @property
+    def _get_sql_dialect(self) -> str | None:
+        """Extract SQL dialect from the active backend connection."""
+        return self.conn.name
 
     def read_metadata_in_store(
         self,

@@ -8,6 +8,7 @@ import polars as pl
 import polars_hash  # noqa: F401  # Registers .nchash and .chash namespaces
 from narwhals.typing import FrameT
 
+from metaxy.utils.constants import TEMP_TABLE_NAME
 from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -154,39 +155,32 @@ class PolarsVersioningEngine(VersioningEngine):
     def keep_latest_by_group(
         df: FrameT,
         group_columns: list[str],
-        timestamp_column: str,
+        timestamp_columns: list[str],
     ) -> FrameT:
-        """Keep only the latest row per group based on a timestamp column.
+        """Keep only the latest row per group based on timestamp columns.
 
         Args:
             df: Narwhals DataFrame/LazyFrame backed by Polars
             group_columns: Columns to group by (typically ID columns)
-            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+            timestamp_columns: Column names to coalesce for ordering (uses first non-null value)
 
         Returns:
             Narwhals DataFrame/LazyFrame with only the latest row per group
-
-        Raises:
-            ValueError: If timestamp_column doesn't exist in df
         """
         assert df.implementation == nw.Implementation.POLARS, (
             "Only Polars DataFrames are accepted"
         )
 
-        # Check if timestamp_column exists
-        # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
-        columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
-        if timestamp_column not in columns:
-            raise ValueError(
-                f"Timestamp column '{timestamp_column}' not found in DataFrame. "
-                f"Available columns: {columns}"
-            )
-
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
+        # Create a temporary column for ordering using coalesce
+        ordering_expr = pl.coalesce([pl.col(col) for col in timestamp_columns])
+        df_pl = df_pl.with_columns(ordering_expr.alias(TEMP_TABLE_NAME))
+
         result = df_pl.group_by(group_columns).agg(
-            pl.col("*").sort_by(timestamp_column).last()
+            pl.col("*").sort_by(TEMP_TABLE_NAME).last()
         )
+        result = result.drop(TEMP_TABLE_NAME)
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result))
