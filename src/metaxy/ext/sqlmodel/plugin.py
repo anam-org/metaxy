@@ -386,6 +386,7 @@ class BaseSQLModelFeature(
         sa_column_kwargs={
             "name": METAXY_DELETED_AT,
         },
+        nullable=True,
     )
 
 
