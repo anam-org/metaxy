@@ -34,6 +34,7 @@ from metaxy.versioning.types import HashAlgorithm
 if TYPE_CHECKING:
     import ibis
     import ibis.expr.types
+    from ibis.backends.sql import SQLBackend
 
 
 class IbisMetadataStoreConfig(MetadataStoreConfig):
@@ -159,12 +160,12 @@ class IbisMetadataStore(MetadataStore, ABC):
                 )
             ```
         """
-        import ibis
+        from ibis.backends.sql import SQLBackend
 
         self.connection_string = connection_string
         self.backend = backend
         self.connection_params = connection_params or {}
-        self._conn: ibis.BaseBackend | None = None
+        self._conn: SQLBackend | None = None
         self._table_prefix = table_prefix or ""
 
         super().__init__(
@@ -270,7 +271,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             )
 
     @property
-    def ibis_conn(self) -> "ibis.BaseBackend":
+    def conn(self) -> "SQLBackend":
         """Get Ibis backend connection.
 
         Returns:
@@ -285,19 +286,8 @@ class IbisMetadataStore(MetadataStore, ABC):
             raise StoreNotOpenError(
                 "Ibis connection is not open. Store must be used as a context manager."
             )
-        return self._conn
-
-    @property
-    def conn(self) -> "ibis.BaseBackend":
-        """Get connection (alias for ibis_conn for consistency).
-
-        Returns:
-            Active Ibis backend connection
-
-        Raises:
-            StoreNotOpenError: If store is not open
-        """
-        return self.ibis_conn
+        else:
+            return self._conn  # ty: ignore[invalid-return-type]
 
     @contextmanager
     def open(self, mode: AccessMode = "read") -> Iterator[Self]:
@@ -412,7 +402,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             df_to_insert = collect_to_polars(df)  # Polars DataFrame
 
         try:
-            self.conn.insert(table_name, obj=df_to_insert)  # ty: ignore[unresolved-attribute]
+            self.conn.insert(table_name, obj=df_to_insert)  # ty: ignore[invalid-argument-type]
         except Exception as e:
             import ibis.common.exceptions
 
