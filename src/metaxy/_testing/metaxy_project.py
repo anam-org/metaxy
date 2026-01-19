@@ -8,7 +8,10 @@ import textwrap
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from narwhals.typing import IntoFrame
 
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.base import MetadataStore
@@ -979,3 +982,92 @@ database = "{staging_db_path}"
                 sys.path.remove(project_dir_str)
 
         return graph
+
+    def write_sample_metadata(
+        self,
+        feature_key_str: str,
+        store_name: str = "dev",
+        num_rows: int = 3,
+        id_values: dict[str, list[int]] | None = None,
+    ):
+        """Helper to write sample metadata for a feature.
+
+        Uses hypothesis strategy to generate valid metadata that respects
+        the feature spec's ID columns and field structure.
+
+        NOTE: This function must be called within a graph.use() context,
+        and the same graph context must be active when reading the metadata.
+
+        Args:
+            feature_key_str: Feature key as string (e.g., "video/files")
+            store_name: Name of store to write to (default: "dev")
+            num_rows: Number of sample rows to generate (default: 3).
+                Ignored if id_values is provided.
+            id_values: Optional dict mapping ID column names to lists of values.
+                If provided, uses these specific values instead of generating random ones.
+                For example: {"sample_uid": [1, 2, 3, 4, 5]}
+        """
+        import polars as pl
+
+        from metaxy._testing.parametric.metadata import feature_metadata_strategy
+        from metaxy.metadata_store.system import SystemTableStorage
+        from metaxy.models.types import FeatureKey
+
+        # Parse feature key
+        feature_key = FeatureKey(feature_key_str.split("/"))
+
+        # Get feature class from project's graph (imported from the features module)
+        graph = self.graph
+        feature_cls = graph.get_feature_by_key(feature_key)
+
+        # Get versions from graph
+        feature_version = feature_cls.feature_version()
+        snapshot_version = graph.snapshot_version
+
+        # Prepare id_columns_df if specific ID values were provided
+        id_columns_df = None
+        if id_values is not None:
+            id_columns_df = pl.DataFrame(id_values)
+            num_rows = len(id_columns_df)
+
+        # Use hypothesis strategy to generate valid metadata
+        # .example() gives us a concrete instance without running a full property test
+        sample_data = feature_metadata_strategy(
+            feature_cls.spec(),
+            feature_version=feature_version,
+            snapshot_version=snapshot_version,
+            num_rows=num_rows,
+            id_columns_df=id_columns_df,
+        ).example()
+
+        # Write metadata directly to store
+        store = self.stores[store_name]
+        # Use the project's graph context so the store can resolve feature plans
+        with graph.use():
+            with store.open("write"):
+                store.write_metadata(feature_cls, sample_data)
+                # Record the feature graph snapshot so copy_metadata can determine snapshot_version
+                SystemTableStorage(store).push_graph_snapshot()
+
+    def write_custom_metadata(
+        self,
+        feature_key_str: str,
+        data: "IntoFrame",
+        store_name: str = "dev",
+    ):
+        """Helper to write custom metadata for a feature with custom fields.
+
+        Args:
+            feature_key_str: Feature key as string
+            data: DataFrame with metadata to write (must include metaxy_provenance_by_field)
+            store_name: Name of store to write to (default: "dev")
+        """
+        from metaxy.models.types import FeatureKey
+
+        feature_key = FeatureKey(feature_key_str.split("/"))
+        graph = self.graph
+        feature_cls = graph.get_feature_by_key(feature_key)
+        store = self.stores[store_name]
+
+        with graph.use(), store.open("write"):
+            store.write_metadata(feature_cls, data)
