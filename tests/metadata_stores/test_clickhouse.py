@@ -38,7 +38,7 @@ def test_clickhouse_table_naming(
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
         # Check table was created with correct name using Ibis
-        table_names = store.ibis_conn.list_tables()
+        table_names = store.conn.list_tables()
         assert "test_stores__upstream_a" in table_names
 
 
@@ -53,8 +53,8 @@ def test_clickhouse_uses_ibis_backend(
         test_features: Dict with test feature classes
     """
     with ClickHouseMetadataStore(clickhouse_db) as store:
-        # Should have ibis_conn
-        assert hasattr(store, "ibis_conn")
+        # Should have conn
+        assert hasattr(store, "conn")
         # Backend should be clickhouse
         assert store._conn is not None
 
