@@ -488,7 +488,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         ibis_filtered = cast("ibis.expr.types.Table", filtered.to_native())
         select_sql = str(ibis_filtered.compile())
 
-        dialect = self._get_sql_dialect
+        dialect = self._sql_dialect
         predicate = _extract_where_expression(select_sql, dialect=dialect)
         if predicate is None:
             raise ValueError(
@@ -503,7 +503,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         self.conn.raw_sql(delete_stmt)  # ty: ignore[unresolved-attribute]
 
     @property
-    def _get_sql_dialect(self) -> str | None:
+    def _sql_dialect(self) -> str | None:
         """Extract SQL dialect from the active backend connection."""
         return self.conn.name
 
