@@ -203,7 +203,7 @@ class TestProperDataframeWrite:
             )
 
 
-def test_get_sql_dialect_uses_connection(ibis_store: DuckDBMetadataStore) -> None:
+def test_sql_dialect_uses_connection(ibis_store: DuckDBMetadataStore) -> None:
     with ibis_store.open("write"):
         expected = ibis_store.conn.name
-        assert ibis_store._get_sql_dialect == expected
+        assert ibis_store._sql_dialect == expected
