@@ -3818,6 +3818,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metaxy-metadata-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy metadata delete
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metaxy-metadata-drop" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4143,6 +4154,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metaxy-metadata-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy metadata delete
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metaxy-metadata-drop" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4305,6 +4327,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 </li>
 <li><a href="#metaxy-metadata"><code>metadata</code></a><ul>
 <li><a href="#metaxy-metadata-status"><code>status</code></a></li>
+<li><a href="#metaxy-metadata-delete"><code>delete</code></a></li>
 <li><a href="#metaxy-metadata-drop"><code>drop</code></a></li>
 <li><a href="#metaxy-metadata-copy"><code>copy</code></a></li>
 </ul>
@@ -4583,8 +4606,21 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--allow-fallback-stores, --no-allow-fallback-stores</code>: Whether to read metadata from fallback stores.  <em>[default: True]</em></li>
 <li><code>--format</code>:   <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
+<h3 id="metaxy-metadata-delete">metaxy metadata delete<a class="headerlink" href="#metaxy-metadata-delete" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="go">metaxy metadata delete [OPTIONS]</span>
+</span></code></pre></div>
+<p>Delete metadata rows matching filters.</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>--feature, --empty-feature</code>: Feature key (e.g., 'my_feature' or 'namespace/feature'). Can be repeated.</li>
+<li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
+<li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://anam-org.github.io/metaxy/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
+<li><code>--soft, --no-soft</code>: Whether to mark records with deletion timestamps vs physically remove them.  <em>[default: True]</em></li>
+<li><code>--yes, --no-yes</code>: Confirm deletion without prompting (required for hard deletes without filters).  <em>[default: False]</em></li>
+</ul>
 <h3 id="metaxy-metadata-drop">metaxy metadata drop<a class="headerlink" href="#metaxy-metadata-drop" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="go">metaxy metadata drop [OPTIONS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="go">metaxy metadata drop [OPTIONS]</span>
 </span></code></pre></div>
 <p>Drop metadata from a store.</p>
 <p>Removes metadata for specified features. This is destructive and requires --confirm.</p>
@@ -4597,7 +4633,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--format</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h3 id="metaxy-metadata-copy">metaxy metadata copy<a class="headerlink" href="#metaxy-metadata-copy" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="go">metaxy metadata copy [OPTIONS] FROM TO [ARGS...]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="go">metaxy metadata copy [OPTIONS] FROM TO [ARGS...]</span>
 </span></code></pre></div>
 <p>Copy metadata from one store to another.</p>
 <p>Copies metadata for specified features from source to destination store.
@@ -4616,7 +4652,7 @@ keeping only the latest row per sample (--latest-only).</p>
 <li><code>--latest-only, --no-latest-only</code>: Deduplicate samples by keeping only the latest row per id_columns group.  <em>[default: True]</em></li>
 </ul>
 <h2 id="metaxy-mcp">metaxy mcp<a class="headerlink" href="#metaxy-mcp" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="go">metaxy mcp</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="go">metaxy mcp</span>
 </span></code></pre></div>
 <p>MCP (Model Context Protocol) server commands.</p>
 <p><strong>Parameters</strong>:</p>
