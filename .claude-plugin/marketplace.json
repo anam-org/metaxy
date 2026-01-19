@@ -6,7 +6,10 @@
   "plugins": [
     {
       "name": "metaxy",
-      "source": ".",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/anam-org/metaxy.git"
+      },
       "description": "Feature metadata management for multi-modal data and ML pipelines. Provides guidance on feature definitions, versioning, metadata stores, and testing.",
       "version": "0.1.0",
       "homepage": "https://anam-org.github.io/metaxy/"
