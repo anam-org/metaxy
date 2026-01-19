@@ -1021,6 +1021,7 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
         This method computes a hash of the entire feature class definition, including:
         - Pydantic model schema
+        - Feature specification version
         - Project name
 
         Used in the `metaxy_full_definition_version` column of system tables.
@@ -1028,19 +1029,14 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
         Returns:
             SHA256 hex digest of the complete definition
         """
-        import json
+        from metaxy.models.feature_definition import FeatureDefinition
 
+        # Get the base definition version (spec + schema, excludes project)
+        base_version = FeatureDefinition._compute_definition_version(cls.spec(), cls.model_json_schema())
+
+        # Add project to create full definition version
         hasher = hashlib.sha256()
-
-        # Hash the Pydantic schema (includes field types, descriptions, validators, etc.)
-        schema = cls.model_json_schema()
-        schema_json = json.dumps(schema, sort_keys=True)
-        hasher.update(schema_json.encode())
-
-        # Hash the feature specification
-        hasher.update(cls.feature_spec_version().encode())
-
-        # Hash the project name
+        hasher.update(base_version.encode())
         hasher.update(cls.metaxy_project().encode())
 
         return truncate_hash(hasher.hexdigest())
