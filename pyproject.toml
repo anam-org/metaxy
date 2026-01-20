@@ -59,6 +59,7 @@ duckdb = [
 ]
 delta = [
   "deltalake>=1.2.1",
+  "ibis-framework>=11.0.0",
 ]
 dagster = [
   "dagster>=1.12.3",

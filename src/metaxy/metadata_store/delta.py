@@ -154,8 +154,7 @@ class DeltaMetadataStore(MetadataStore):
         Returns:
             True if feature exists, False otherwise
         """
-        feature_key = self._resolve_feature_key(feature)
-        return self._table_exists(self._feature_uri(feature_key))
+        return self._table_exists(feature)
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Use XXHASH64 by default to match other non-SQL stores."""
@@ -232,8 +231,8 @@ class DeltaMetadataStore(MetadataStore):
             table_path = feature_key.table_name
         return f"{self._root_uri}/{table_path}.delta"
 
-    def _table_exists(self, table_uri: str) -> bool:
-        """Check whether the provided URI already contains a Delta table.
+    def _table_exists(self, feature: CoercibleToFeatureKey) -> bool:
+        """Check whether the feature exists as a Delta table.
 
         Works for both local and remote (object store) paths.
         """
@@ -243,9 +242,7 @@ class DeltaMetadataStore(MetadataStore):
         from deltalake.exceptions import TableNotFoundError as DeltaTableNotFoundError
 
         try:
-            _ = deltalake.DeltaTable(
-                table_uri, storage_options=self.storage_options, without_files=True
-            )
+            _ = self._open_delta_table(feature, without_files=True)
         except DeltaTableNotFoundError:
             return False
         return True
@@ -261,6 +258,17 @@ class DeltaMetadataStore(MetadataStore):
     ) -> pl.DataFrame | pl.LazyFrame:
         """Cast Enum columns to String to avoid delta-rs Utf8View incompatibility."""
         return frame.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
+
+    def _open_delta_table(
+        self, feature: CoercibleToFeatureKey, *, without_files: bool = False
+    ) -> deltalake.DeltaTable:
+        feature_key = self._resolve_feature_key(feature)
+        table_uri = self._feature_uri(feature_key)
+        return deltalake.DeltaTable(
+            table_uri,
+            storage_options=self.storage_options or None,
+            without_files=without_files,
+        )
 
     # ===== Storage operations =====
 
@@ -321,18 +329,12 @@ class DeltaMetadataStore(MetadataStore):
         Uses Delta's delete operation which marks rows as deleted in the transaction log
         rather than physically removing files.
         """
-        table_uri = self._feature_uri(feature_key)
-
         # Check if table exists first
-        if not self._table_exists(table_uri):
+        if not self._table_exists(feature_key):
             return
 
         # Load the Delta table
-        delta_table = deltalake.DeltaTable(
-            table_uri,
-            storage_options=self.storage_options or None,
-            without_files=True,  # Don't track files for this operation
-        )
+        delta_table = self._open_delta_table(feature_key, without_files=True)
 
         # Use Delta's delete operation - soft delete all rows
         # This marks rows as deleted in transaction log without physically removing files
@@ -345,10 +347,34 @@ class DeltaMetadataStore(MetadataStore):
         *,
         current_only: bool,
     ) -> None:
-        """Hard delete not yet supported for Delta backend."""
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not yet implement hard delete"
+        """Hard-delete rows from a Delta table using the native DELETE operation.
+
+        Note:
+            This implementation relies on Ibis (ibis-framework) to generate SQL from Narwhals expressions.
+            The `ibis` package is included in the `delta` extras: `pip install metaxy[delta]`.
+        """
+        if not self._table_exists(feature_key):
+            return
+
+        # Load Delta table
+        delta_table = self._open_delta_table(feature_key)
+
+        # Convert Narwhals filter expressions to SQL predicate using Ibis
+        if not filters:
+            delta_table.delete()
+            return
+
+        from metaxy.metadata_store.utils import narwhals_expr_to_sql_predicate
+
+        schema = self.read_feature_schema_from_store(feature_key)
+        predicate = narwhals_expr_to_sql_predicate(
+            filters,
+            schema,
+            dialect="postgres",
         )
+
+        # Use Delta's native DELETE operation
+        delta_table.delete(predicate=predicate)
 
     def read_metadata_in_store(
         self,
@@ -368,10 +394,11 @@ class DeltaMetadataStore(MetadataStore):
         """
         self._check_open()
 
+        if not self._table_exists(feature):
+            return None
+
         feature_key = self._resolve_feature_key(feature)
         table_uri = self._feature_uri(feature_key)
-        if not self._table_exists(table_uri):
-            return None
 
         # Use scan_delta for lazy evaluation
         lf = pl.scan_delta(
