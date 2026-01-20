@@ -248,7 +248,6 @@ filterwarnings = [
   "ignore::metaxy.metadata_store.warnings.PolarsMaterializationWarning",
 ]
 markers = [
-  "inmemory: InMemory store tests",
   "duckdb: DuckDB store tests",
   "clickhouse: ClickHouse store tests",
   "ibis: Ibis-based store tests (DuckDB, ClickHouse)",

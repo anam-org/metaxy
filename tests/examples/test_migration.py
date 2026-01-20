@@ -87,7 +87,7 @@ def test_pipeline(tmp_path, snapshot):
     )
     print(result.stdout)
     assert "Pipeline STAGE=1" in result.stdout
-    assert "✅ Stage 1 pipeline complete!" in result.stdout
+    assert "[OK] Stage 1 pipeline complete!" in result.stdout
 
     # Step 3: Push STAGE=2 snapshot (simulates CD after code deployment)
     result = project.run_cli(
@@ -160,7 +160,7 @@ def test_pipeline(tmp_path, snapshot):
     print("\n--- Stage 2 after migration ---")
     print(result.stdout)
     assert "Pipeline STAGE=2" in result.stdout
-    assert "✅ Stage 2 pipeline complete!" in result.stdout
+    assert "[OK] Stage 2 pipeline complete!" in result.stdout
 
     # The migration should have reconciled the child feature's field_provenance,
     # so no recomputation should be needed

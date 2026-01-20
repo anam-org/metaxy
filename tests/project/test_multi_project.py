@@ -21,6 +21,10 @@ from metaxy.models.types import FeatureKey, FieldKey
 class TestProjectDetection:
     """Test automatic project detection from various sources."""
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="uv pip --python doesn't find venv Python on Windows",
+    )
     def test_detect_project_from_entrypoints(self):
         """Test project detection from installed package with entry points."""
         # Install the test-project fixture in a temporary venv and test it
@@ -384,13 +388,6 @@ class TestSystemTableRecording:
                     == TestFeature.full_definition_version()
                 )
                 assert row["project"] == "test_project"
-
-
-# Note: TestBackwardCompatibility was removed because it tested schema-less writes
-# that were only possible with InMemoryMetadataStore. DeltaMetadataStore enforces
-# schemas and cannot write partial records. The backward compatibility concern
-# (reading old snapshots without full_definition_version) is now handled by the
-# schema evolution capabilities of Delta Lake itself.
 
 
 class TestProjectValidation:

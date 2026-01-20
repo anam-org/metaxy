@@ -358,7 +358,8 @@ class TestConfigIntegration:
         """Test that MetaxyConfig stores truncation length."""
         # Create config with truncation
         config_file = tmp_path / "metaxy.toml"
-        delta_path = tmp_path / "delta_dev"
+        # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+        delta_path = (tmp_path / "delta_dev").as_posix()
         config_file.write_text(f"""
 hash_truncation_length = 16
 

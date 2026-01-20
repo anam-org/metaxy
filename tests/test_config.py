@@ -126,8 +126,9 @@ def test_metaxy_config_from_dict(tmp_path: Path) -> None:
 def test_load_from_metaxy_toml(tmp_path: Path) -> None:
     from metaxy.metadata_store.delta import DeltaMetadataStore
 
-    dev_path = tmp_path / "delta_dev"
-    prod_path = tmp_path / "delta_prod"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
+    prod_path = (tmp_path / "delta_prod").as_posix()
 
     # Create metaxy.toml
     config_file = tmp_path / "metaxy.toml"
@@ -158,8 +159,9 @@ fallback_stores = []
 
 
 def test_load_from_pyproject_toml(tmp_path: Path) -> None:
-    staging_path = tmp_path / "delta_staging"
-    prod_path = tmp_path / "delta_prod"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    staging_path = (tmp_path / "delta_staging").as_posix()
+    prod_path = (tmp_path / "delta_prod").as_posix()
 
     config_file = tmp_path / "pyproject.toml"
     config_file.write_text(f"""
@@ -196,7 +198,8 @@ def test_load_from_metaxy_config_env_var(
     """Test that METAXY_CONFIG env var is respected for config file location."""
     from metaxy.metadata_store.delta import DeltaMetadataStore
 
-    custom_path = tmp_path / "delta_custom"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    custom_path = (tmp_path / "delta_custom").as_posix()
 
     # Create config file in a non-standard location
     config_dir = tmp_path / "custom" / "config" / "location"
@@ -231,7 +234,8 @@ def test_init_metaxy_respects_metaxy_config_env_var(
     """Test that init_metaxy respects METAXY_CONFIG env var."""
     from metaxy import init_metaxy
 
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     # Create config file with entrypoints
     config_file = tmp_path / "metaxy.toml"
@@ -351,7 +355,8 @@ def test_get_store_nonexistent_raises(tmp_path: Path) -> None:
 def test_config_with_env_vars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from metaxy.metadata_store.delta import DeltaMetadataStore
 
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
     prod_path = tmp_path / "delta_prod"
 
     # Create config file
@@ -394,7 +399,8 @@ def test_partial_env_var_store_config_filtered_out_with_warning(
     without METAXY_STORES__PROD__TYPE, the incomplete store config should be
     filtered out and a warning emitted that includes the fields that were set.
     """
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     # Create config file with only dev store
     config_file = tmp_path / "metaxy.toml"
@@ -434,7 +440,8 @@ def test_incomplete_store_warning_shows_all_fields(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Test that the warning for incomplete stores lists all fields that were set."""
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text(f"""
@@ -601,7 +608,8 @@ def test_env_var_expansion_in_toml_config(
     monkeypatch.setenv("DAGSTER_CLOUD_GIT_BRANCH", "feature-branch")
     monkeypatch.setenv("MY_PROJECT_NAME", "test-project")
 
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text(f"""
@@ -631,7 +639,8 @@ def test_env_var_expansion_with_default_value(
     # Set one variable to verify it takes precedence over default
     monkeypatch.setenv("SET_VAR", "actual-value")
 
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text(f"""
@@ -660,7 +669,8 @@ def test_env_var_expansion_unset_becomes_empty_string(
     """Test that ${VAR} without default becomes empty string when unset."""
     monkeypatch.delenv("UNSET_VAR", raising=False)
 
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text(f"""
@@ -686,7 +696,8 @@ def test_env_var_expansion_in_nested_structures(
     monkeypatch.setenv("STORE_PATH", "/data/metadata")
     monkeypatch.setenv("FALLBACK_STORE", "prod")
 
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text(f"""
@@ -771,8 +782,8 @@ def test_get_store_with_fallback_chain_delta_from_toml(tmp_path: Path) -> None:
     """
     from metaxy.metadata_store.delta import DeltaMetadataStore
 
-    dev_path = tmp_path / "dev"
-    branch_path = tmp_path / "branch"
+    dev_path = (tmp_path / "dev").as_posix()
+    branch_path = (tmp_path / "branch").as_posix()
 
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text(f"""
@@ -806,7 +817,8 @@ root_path = "{branch_path}"
 
 def test_config_file_attribute_set_when_loaded_from_file(tmp_path: Path) -> None:
     """Test that config_file attribute is set when loading from a TOML file."""
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text(f"""
@@ -831,7 +843,8 @@ def test_config_file_attribute_set_when_auto_discovered(tmp_path: Path) -> None:
     """Test that config_file attribute is set when auto-discovering config."""
     import os
 
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text(f"""
@@ -888,7 +901,8 @@ def test_config_file_attribute_none_when_created_directly() -> None:
 
 def test_get_store_error_includes_config_file_path(tmp_path: Path) -> None:
     """Test that get_store error messages include the config file path."""
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text(f"""
@@ -1061,6 +1075,7 @@ invalid_field = "should_fail"
 
 def test_invalid_config_error_attributes() -> None:
     """Test that InvalidConfigError has the expected attributes."""
+    import sys
     from pathlib import Path
 
     # Test with config file
@@ -1068,7 +1083,11 @@ def test_invalid_config_error_attributes() -> None:
     assert error.config_file == Path("/path/to/config.toml")
     assert error.base_message == "Test message"
     assert "Test message" in str(error)
-    assert "/path/to/config.toml" in str(error)
+    # Path separators differ between platforms
+    if sys.platform == "win32":
+        assert "\\path\\to\\config.toml" in str(error)
+    else:
+        assert "/path/to/config.toml" in str(error)
     assert "METAXY_" in str(error)
 
     # Test without config file
@@ -1134,7 +1153,8 @@ def test_plugins_respect_metaxy_config_env_var_at_import_time(tmp_path: Path) ->
     import subprocess
     import sys
 
-    dev_path = tmp_path / "delta_dev"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    dev_path = (tmp_path / "delta_dev").as_posix()
 
     # Create a config file with a specific project name
     config_file = tmp_path / "metaxy.toml"
