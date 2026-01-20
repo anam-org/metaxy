@@ -4,6 +4,7 @@
   "toml": {
   },
   "ruff": {
+    "line-length": 120
   },
   "excludes": [
     "**/*.lock",
