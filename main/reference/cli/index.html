@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/reference/cli/">
+        <link rel="canonical" href="https://docs.metaxy.io/main/reference/cli/">
       
       
         <link rel="prev" href="../configuration/">
@@ -65,15 +65,15 @@
 <meta property="og:type" content="website" />
 <meta property="og:title" content="CLI Reference - Metaxy" />
 <meta property="og:description" content="Reference for the Metaxy command-line interface." />
-<meta property="og:image" content="https://anam-org.github.io/metaxy/main/assets/images/social/reference/cli.png" />
+<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/reference/cli.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://anam-org.github.io/metaxy/main/reference/cli/" />
+<meta property="og:url" content="https://docs.metaxy.io/main/reference/cli/" />
 <meta property="twitter:card" content="summary_large_image" />
 <meta property="twitter:title" content="CLI Reference - Metaxy" />
 <meta property="twitter:description" content="Reference for the Metaxy command-line interface." />
-<meta property="twitter:image" content="https://anam-org.github.io/metaxy/main/assets/images/social/reference/cli.png" />
+<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/reference/cli.png" />
 </head>
   
   
@@ -4296,7 +4296,7 @@
 </span></code></pre></div>
 <p>Metaxy CLI.</p>
 <p>Auto-discovers configuration (<code>metaxy.toml</code> or <code>pyproject.toml</code>) in current or parent directories.
-Feature definitions are collected via <a href="https://anam-org.github.io/metaxy/main/learn/feature-discovery/">feature discovery</a>.
+Feature definitions are collected via <a href="https://docs.metaxy.io/main/learn/feature-discovery/">feature discovery</a>.
 Supports loading environment variables from a <code>.env</code> file in the current directory.</p>
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
 <ul>
@@ -4598,7 +4598,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--feature, --empty-feature</code>: Feature key (e.g., 'my_feature' or 'namespace/feature'). Can be repeated.</li>
 <li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://anam-org.github.io/metaxy/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
 <li><code>--snapshot-id</code>: Check metadata against a specific snapshot version.</li>
 <li><code>--assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: False]</em></li>
 <li><code>--verbose, --no-verbose</code>: Whether to display sample slices of dataframes.  <em>[default: False]</em></li>
@@ -4615,7 +4615,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--feature, --empty-feature</code>: Feature key (e.g., 'my_feature' or 'namespace/feature'). Can be repeated.</li>
 <li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://anam-org.github.io/metaxy/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
 <li><code>--soft, --no-soft</code>: Whether to mark records with deletion timestamps vs physically remove them.  <em>[default: True]</em></li>
 <li><code>--yes, --no-yes</code>: Confirm deletion without prompting (required for hard deletes without filters).  <em>[default: False]</em></li>
 </ul>
@@ -4647,7 +4647,7 @@ keeping only the latest row per sample (--latest-only).</p>
 <ul>
 <li><code>FROM, --from</code>: Source store name to copy metadata from.  <strong>[required]</strong></li>
 <li><code>TO, --to</code>: Destination store name to copy metadata to.  <strong>[required]</strong></li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://anam-org.github.io/metaxy/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
 <li><code>--current-only, --no-current-only</code>: Only copy rows with the current feature_version (as defined in loaded feature graph).  <em>[default: False]</em></li>
 <li><code>--latest-only, --no-latest-only</code>: Deduplicate samples by keeping only the latest row per id_columns group.  <em>[default: True]</em></li>
 </ul>
