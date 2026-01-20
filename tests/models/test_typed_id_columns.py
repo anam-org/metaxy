@@ -1,5 +1,6 @@
 """Tests for custom ID columns feature (simplified after removing type support)."""
 
+from pathlib import Path
 from typing import Any
 
 import narwhals as nw
@@ -8,6 +9,7 @@ import pytest
 
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.pytest_helpers import add_metaxy_system_columns
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
@@ -265,9 +267,8 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
     assert str(result.schema["content_id"]) == "String"
 
 
-def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
+def test_metadata_store_with_custom_id_columns(graph: FeatureGraph, tmp_path: Path):
     """Test that metadata store works with custom ID columns."""
-    from metaxy.metadata_store import InMemoryMetadataStore
 
     # Create feature with custom ID
     class CustomIDFeature(
@@ -280,7 +281,7 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
     ):
         pass
 
-    with InMemoryMetadataStore() as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Write metadata with string ID
         df = nw.from_native(
             pl.DataFrame(

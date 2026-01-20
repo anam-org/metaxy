@@ -278,7 +278,6 @@ class: text-center
 
 [Documentation](https://docs.metaxy.io) · [GitHub](https://github.com/anam-org/metaxy/)
 
-
 <div class="w-60 relative">
   <div class="relative w-40 h-40">
     <img

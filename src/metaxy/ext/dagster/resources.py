@@ -4,7 +4,7 @@ import metaxy as mx
 
 
 class MetaxyStoreFromConfigResource(dg.ConfigurableResource[mx.MetadataStore]):
-    """This resource creates a [`metaxy.MetadataStore`](https://anam-org.github.io/metaxy/main/guide/learn/metadata-stores/) based on the current Metaxy configuration (`metaxy.toml`).
+    """This resource creates a [`metaxy.MetadataStore`](https://docs.metaxy.io/main/guide/learn/metadata-stores/) based on the current Metaxy configuration (`metaxy.toml`).
 
     If `name` is not provided, the default store will be used.
     The default store name can be set with `store = "my_name"` in `metaxy.toml` or with` $METAXY_STORE` environment variable.

@@ -1,10 +1,12 @@
 """Test field version computation in load_snapshot_data()."""
 
+from pathlib import Path
+
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.graph.diff.differ import GraphDiffer
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.field import FieldSpec
@@ -13,7 +15,7 @@ from metaxy.models.types import FeatureKey, FieldKey
 
 
 def test_load_snapshot_data_computes_proper_field_versions(
-    graph: FeatureGraph, snapshot: SnapshotAssertion
+    graph: FeatureGraph, snapshot: SnapshotAssertion, tmp_path: Path
 ):
     """Test that field versions are computed correctly from specs.
 
@@ -49,7 +51,7 @@ def test_load_snapshot_data_computes_proper_field_versions(
     # Field versions should be different from each other (different code versions)
     assert parent_field1_version != parent_field2_version
 
-    with InMemoryMetadataStore() as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -74,7 +76,7 @@ def test_load_snapshot_data_computes_proper_field_versions(
 
 
 def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
-    graph: FeatureGraph, snapshot: SnapshotAssertion
+    graph: FeatureGraph, snapshot: SnapshotAssertion, tmp_path: Path
 ):
     """Test field version computation when feature classes cannot be imported."""
     differ = GraphDiffer()
@@ -92,7 +94,7 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
     ):
         pass
 
-    with InMemoryMetadataStore() as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -116,7 +118,7 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
         )
 
 
-def test_field_key_normalization(graph: FeatureGraph):
+def test_field_key_normalization(graph: FeatureGraph, tmp_path: Path):
     """Test that field keys are normalized to "/" separator format."""
     differ = GraphDiffer()
 
@@ -131,7 +133,7 @@ def test_field_key_normalization(graph: FeatureGraph):
     ):
         pass
 
-    with InMemoryMetadataStore() as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 

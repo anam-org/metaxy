@@ -32,10 +32,12 @@ def test_my_feature(isolated_graph):
 
 ```python
 import metaxy as mx
+from metaxy.metadata_store.delta import DeltaMetadataStore
 
 
-def test_with_custom_config():
-    with mx.MetaxyConfig(stores={"test": mx.InMemoryMetadataStore()}).use() as config:
+def test_with_custom_config(tmp_path):
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_test")
+    with mx.MetaxyConfig(stores={"test": store}).use() as config:
         store = config.get_store("test")
         # test with isolated config and store
 ```
@@ -45,14 +47,14 @@ def test_with_custom_config():
 ```python
 import pytest
 import metaxy as mx
+from metaxy.metadata_store.delta import DeltaMetadataStore
 
 
 @pytest.fixture
-def metaxy_env():
+def metaxy_env(tmp_path):
     with mx.FeatureGraph().use():
-        with mx.MetaxyConfig(
-            stores={"test": mx.InMemoryMetadataStore()}
-        ).use() as config:
+        store = DeltaMetadataStore(root_path=tmp_path / "delta_test")
+        with mx.MetaxyConfig(stores={"test": store}).use() as config:
             yield config
 
 

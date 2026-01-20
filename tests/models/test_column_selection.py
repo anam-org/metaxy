@@ -1050,11 +1050,13 @@ class TestColumnSelection:
         # Verify mapping
         assert mapping["test/upstream"] == "metaxy_provenance_by_field__test_upstream"
 
-    def test_columns_and_rename_serialized_to_snapshot(self, graph: FeatureGraph):
+    def test_columns_and_rename_serialized_to_snapshot(
+        self, graph: FeatureGraph, tmp_path
+    ):
         """Test that columns and rename fields are properly serialized when pushing graph snapshot."""
         import json
 
-        from metaxy.metadata_store import InMemoryMetadataStore
+        from metaxy.metadata_store.delta import DeltaMetadataStore
         from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
         # Create features with columns and rename specified
@@ -1082,8 +1084,7 @@ class TestColumnSelection:
             pass
 
         # Create store and push snapshot
-        store = InMemoryMetadataStore()
-        with store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             _ = SystemTableStorage(store).push_graph_snapshot()
 
             # Read the snapshot from feature_versions table

@@ -7,8 +7,8 @@ from typing import Any
 
 import polars as pl
 
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 
 
@@ -240,11 +240,12 @@ def test_mode_parameter_passed_to_open(tmp_path: Path) -> None:
         )
 
 
-def test_memory_store_modes(test_graph, test_features: dict[str, Any]) -> None:
-    """Test that InMemoryMetadataStore works with explicit modes."""
-    # In-memory stores don't have locking
-    store_read = InMemoryMetadataStore(auto_create_tables=False)
-    store_write = InMemoryMetadataStore(auto_create_tables=False)
+def test_delta_store_modes(
+    test_graph, test_features: dict[str, Any], tmp_path: Path
+) -> None:
+    """Test that DeltaMetadataStore works with explicit modes."""
+    store_read = DeltaMetadataStore(root_path=tmp_path / "delta_read")
+    store_write = DeltaMetadataStore(root_path=tmp_path / "delta_write")
 
     # Read mode
     with store_read.open("read"):

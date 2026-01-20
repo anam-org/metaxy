@@ -27,8 +27,6 @@ Here are some of the built-in metadata store types:
 
 - [DeltaMetadataStore](../../../integrations/metadata-stores/storage/delta/index.md)
 
-- [InMemoryMetadataStore](./memory.md)
-
 The full list can be found [here](../../../integrations/metadata-stores/index.md)
 
 ---

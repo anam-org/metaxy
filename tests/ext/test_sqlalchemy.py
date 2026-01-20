@@ -331,15 +331,15 @@ def test_get_store_sqlalchemy_url_error_no_property():
     config = MetaxyConfig(
         project="test",
         stores={  # ty: ignore[invalid-argument-type]
-            "memory_store": {
-                "type": "metaxy.metadata_store.memory.InMemoryMetadataStore",
+            "delta_store": {
+                "type": "metaxy.metadata_store.delta.DeltaMetadataStore",
                 "config": {},
             }
         },
     )
 
     with config.use():
-        store = config.get_store("memory_store", expected_type=IbisMetadataStore)
+        store = config.get_store("delta_store", expected_type=IbisMetadataStore)
         with pytest.raises(
             AttributeError, match="does not have a `sqlalchemy_url` property"
         ):

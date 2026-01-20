@@ -18,7 +18,7 @@ app = cyclopts.App(
     config=cyclopts.config.Env(  # pyrefly: ignore[unexpected-keyword,implicit-import]  # ty: ignore[invalid-argument-type]
         "METAXY_",  # Every environment variable for setting the arguments will begin with this.  # pyrefly: ignore[bad-argument-count]
     ),
-    help_epilogue="Learn more in [Metaxy docs](https://anam-org.github.io/metaxy)",
+    help_epilogue="Learn more in [Metaxy docs](https://docs.metaxy.io)",
 )
 
 
@@ -59,7 +59,7 @@ def launcher(
     """Metaxy CLI.
 
     Auto-discovers configuration (`metaxy.toml` or `pyproject.toml`) in current or parent directories.
-    Feature definitions are collected via [feature discovery](https://anam-org.github.io/metaxy/main/learn/feature-discovery/).
+    Feature definitions are collected via [feature discovery](https://docs.metaxy.io/main/learn/feature-discovery/).
     Supports loading environment variables from a `.env` file in the current directory.
     """
     import logging

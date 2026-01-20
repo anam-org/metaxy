@@ -1,5 +1,6 @@
 """Tests for configurable ID columns feature."""
 
+from pathlib import Path
 from typing import Any
 
 import narwhals as nw
@@ -8,6 +9,7 @@ import pytest
 
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.pytest_helpers import add_metaxy_system_columns
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
@@ -397,9 +399,10 @@ def test_feature_spec_version_includes_id_columns():
     assert spec2.feature_spec_version == spec3.feature_spec_version
 
 
-def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
+def test_metadata_store_integration_with_custom_id_columns(
+    graph: FeatureGraph, tmp_path: Path
+):
     """Test full metadata store integration with custom ID columns."""
-    from metaxy.metadata_store import InMemoryMetadataStore
 
     # Create features with custom ID columns
     class UserFeature(
@@ -427,7 +430,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
     ):
         pass
 
-    with InMemoryMetadataStore() as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Write user feature metadata with user_id
         user_df = nw.from_native(
             pl.DataFrame(
@@ -589,9 +592,10 @@ def test_joiner_preserves_all_id_columns_in_result(graph: FeatureGraph):
     assert len(result) == 0
 
 
-def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
+def test_backwards_compatibility_default_id_columns(
+    graph: FeatureGraph, tmp_path: Path
+):
     """Test that features without explicit id_columns still use sample_uid."""
-    from metaxy.metadata_store import InMemoryMetadataStore
 
     # Create feature WITHOUT specifying id_columns (backwards compatibility)
     class LegacyFeature(
@@ -608,7 +612,7 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
     assert LegacyFeature.spec().id_columns == ["sample_uid"]
 
     # Test with metadata store
-    with InMemoryMetadataStore() as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         df = nw.from_native(
             pl.DataFrame(
                 {

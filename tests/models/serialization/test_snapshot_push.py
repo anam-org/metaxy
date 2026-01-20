@@ -7,12 +7,14 @@ without triggering migrations.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import polars as pl
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import SnapshotPushResult
@@ -38,7 +40,7 @@ def test_snapshot_push_result_model():
     assert features == []
 
 
-def test_record_snapshot_first_time():
+def test_record_snapshot_first_time(tmp_path: Path):
     """Test recording a brand new snapshot (computational changes).
 
     Scenario 1: Empty store, first push.
@@ -57,7 +59,7 @@ def test_record_snapshot_first_time():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             result = SystemTableStorage(store).push_graph_snapshot()
 
             # Verify result
@@ -78,7 +80,7 @@ def test_record_snapshot_first_time():
             assert versions_df["metaxy_snapshot_version"][0] == graph.snapshot_version
 
 
-def test_record_snapshot_metadata_only_changes():
+def test_record_snapshot_metadata_only_changes(tmp_path: Path):
     """Test recording metadata-only changes (rename in FeatureDep).
 
     Scenario 2: Snapshot exists, but feature_spec_version changed
@@ -117,7 +119,7 @@ def test_record_snapshot_metadata_only_changes():
         spec_version_v1 = Downstream.feature_spec_version()
 
         # First push
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
 
@@ -204,7 +206,7 @@ def test_record_snapshot_metadata_only_changes():
                 )  # Two versions of upstream (class name changed)
 
 
-def test_record_snapshot_no_changes():
+def test_record_snapshot_no_changes(tmp_path: Path):
     """Test recording when nothing changed.
 
     Scenario 3: Snapshot exists with identical code.
@@ -223,7 +225,7 @@ def test_record_snapshot_no_changes():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # First push
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
@@ -245,7 +247,7 @@ def test_record_snapshot_no_changes():
             assert versions_df.height == 1  # Still only 1 row
 
 
-def test_record_snapshot_partial_metadata_changes():
+def test_record_snapshot_partial_metadata_changes(tmp_path: Path):
     """Test metadata changes for SOME features (not all).
 
     Only changed features should appear in updated_features.
@@ -285,7 +287,7 @@ def test_record_snapshot_partial_metadata_changes():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
 
@@ -349,7 +351,7 @@ def test_record_snapshot_partial_metadata_changes():
                 assert versions_df.height == 6
 
 
-def test_record_snapshot_append_only_behavior():
+def test_record_snapshot_append_only_behavior(tmp_path: Path):
     """Test append-only behavior: old rows preserved, new rows added with same snapshot_version."""
     from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
@@ -378,7 +380,7 @@ def test_record_snapshot_append_only_behavior():
 
         snapshot_v1 = graph_v1.snapshot_version
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Push v1
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.snapshot_version == snapshot_v1
@@ -467,7 +469,7 @@ def test_record_snapshot_append_only_behavior():
                 assert timestamps[1] > timestamp_v1  # New row has later timestamp
 
 
-def test_record_snapshot_computational_change():
+def test_record_snapshot_computational_change(tmp_path: Path):
     """Test computational change (code_version change) creates NEW snapshot.
 
     This is NOT a metadata-only change - it should return already_pushed=False.
@@ -486,7 +488,7 @@ def test_record_snapshot_computational_change():
 
         snapshot_v1 = graph_v1.snapshot_version
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.snapshot_version == snapshot_v1
 
@@ -519,7 +521,9 @@ def test_record_snapshot_computational_change():
                 assert result2.snapshot_version == snapshot_v2
 
 
-def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
+def test_snapshot_push_result_snapshot_comparison(
+    snapshot: SnapshotAssertion, tmp_path: Path
+):
     """Test complete flow with snapshot for regression testing."""
     from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
@@ -549,7 +553,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             results.append(
                 {
@@ -629,7 +633,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                 } == snapshot
 
 
-def test_feature_info_changes_trigger_repush():
+def test_feature_info_changes_trigger_repush(tmp_path: Path):
     """Test that changing feature info (metadata, descriptions) triggers feature repush.
 
     Verifies that:
@@ -659,7 +663,7 @@ def test_feature_info_changes_trigger_repush():
         snapshot_v1 = graph_v1.snapshot_version
 
         # First push
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
             assert result1.snapshot_version == snapshot_v1

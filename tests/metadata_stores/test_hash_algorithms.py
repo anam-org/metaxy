@@ -25,9 +25,7 @@ from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.parametric import (
     downstream_metadata_strategy,
 )
-from metaxy.metadata_store import (
-    InMemoryMetadataStore,
-)
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
@@ -41,6 +39,7 @@ if TYPE_CHECKING:
 def test_hash_algorithm_produces_consistent_hashes(
     hash_algorithm: HashAlgorithm,
     graph: FeatureGraph,
+    tmp_path,
 ):
     """Test that each hash algorithm produces consistent hashes across runs."""
 
@@ -82,7 +81,9 @@ def test_hash_algorithm_produces_consistent_hashes(
     parent_df = upstream_data["parent"]
 
     # Create store with specific hash algorithm
-    store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    store = DeltaMetadataStore(
+        root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm
+    )
 
     with store, graph.use():
         # Write parent metadata
@@ -128,6 +129,7 @@ def test_hash_truncation(
     config_with_truncation,
     hash_algorithm: HashAlgorithm,
     graph: FeatureGraph,
+    tmp_path,
 ):
     # Config is already set by fixture
     truncation_length = config_with_truncation.hash_truncation_length
@@ -186,7 +188,9 @@ def test_hash_truncation(
 
     parent_df = upstream_data["parent"]
 
-    store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    store = DeltaMetadataStore(
+        root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm
+    )
 
     with store, graph.use():
         # Write parent metadata
@@ -222,6 +226,7 @@ def test_hash_truncation(
 def test_field_level_provenance_structure(
     hash_algorithm: HashAlgorithm,
     graph: FeatureGraph,
+    tmp_path,
 ):
     """Test that field-level provenance has correct structure for each hash algorithm."""
 
@@ -250,7 +255,9 @@ def test_field_level_provenance_structure(
         "child": ChildFeature.feature_version(),
     }
 
-    store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    store = DeltaMetadataStore(
+        root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm
+    )
 
     with store, graph.use():
         # Generate test data

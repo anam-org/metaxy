@@ -117,7 +117,7 @@ def test_diff_migration_get_affected_features():
     assert migration.to_snapshot_version == "snap2"
 
 
-def test_full_graph_migration():
+def test_full_graph_migration(tmp_path):
     migration = FullGraphMigration(
         migration_id="test_002",
         parent="initial",
@@ -128,13 +128,13 @@ def test_full_graph_migration():
 
     assert migration.migration_type == "metaxy.migrations.models.FullGraphMigration"
     # FullGraphMigration.get_affected_features() returns sorted list from ops
-    from metaxy import InMemoryMetadataStore
+    from metaxy.metadata_store.delta import DeltaMetadataStore
 
-    with InMemoryMetadataStore() as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         assert migration.get_affected_features(store, "default") == []
 
 
-def test_custom_migration():
+def test_custom_migration(tmp_path):
     class TestCustomMigration(Migration):
         custom_field: str
 
@@ -169,9 +169,9 @@ def test_custom_migration():
     # Migration type should be automatically set from class path
     assert "TestCustomMigration" in migration.migration_type
     # get_affected_features() requires store parameter
-    from metaxy import InMemoryMetadataStore
+    from metaxy.metadata_store.delta import DeltaMetadataStore
 
-    with InMemoryMetadataStore() as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         assert (
             migration.get_affected_features(store, "default") == []
         )  # Default implementation
@@ -367,7 +367,7 @@ def test_operation_with_basesettings_env_vars():
 # ============================================================================
 
 
-def test_full_graph_migration_get_affected_features():
+def test_full_graph_migration_get_affected_features(tmp_path):
     migration = FullGraphMigration(
         migration_id="test_full_001",
         parent="initial",
@@ -385,16 +385,16 @@ def test_full_graph_migration_get_affected_features():
         ],
     )
 
-    from metaxy import InMemoryMetadataStore
+    from metaxy.metadata_store.delta import DeltaMetadataStore
 
-    with InMemoryMetadataStore() as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         affected = migration.get_affected_features(store, "default")
 
         # Should include all features from all operations (sorted)
         assert affected == ["feature/a", "feature/b", "feature/c"]
 
 
-def test_full_graph_migration_deduplicates_features():
+def test_full_graph_migration_deduplicates_features(tmp_path):
     migration = FullGraphMigration(
         migration_id="test_full_002",
         parent="initial",
@@ -412,9 +412,9 @@ def test_full_graph_migration_deduplicates_features():
         ],
     )
 
-    from metaxy import InMemoryMetadataStore
+    from metaxy.metadata_store.delta import DeltaMetadataStore
 
-    with InMemoryMetadataStore() as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         affected = migration.get_affected_features(store, "default")
 
         # Should deduplicate feature/b
