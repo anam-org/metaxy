@@ -1,14 +1,16 @@
-name: CI/CD (main)
+name: Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      # Semver tags: v1.0.0, v1.0.0-alpha.1, v1.0.0-rc.1, etc.
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -30,6 +32,7 @@ jobs:
       python-versions: '["3.10", "3.11", "3.12", "3.13"]'
       run-windows: true
       run-macos: true
+      run-all-checks: true
 
   release:
     needs: qa
@@ -39,6 +42,8 @@ jobs:
       pages: write
       id-token: write
     with:
-      publish-pypi: false
-      deploy-docs: true
+      publish-pypi: true
+      # Only deploy docs for stable releases (vX.Y.Z without pre-release suffix)
+      deploy-docs: ${{ github.ref_type == 'tag' && !contains(github.ref_name, '-') }}
       docs-version: ${{ github.ref_name }}
+      docs-alias: 'latest'
