@@ -2,7 +2,7 @@
 
 import pytest
 
-from metaxy import InMemoryMetadataStore
+from metaxy import DuckDBMetadataStore
 from metaxy.metadata_store.system import (
     Event,
     EventType,
@@ -14,7 +14,7 @@ from metaxy.metadata_store.system import (
 @pytest.fixture
 def store():
     """Create fresh store for each test."""
-    with InMemoryMetadataStore() as s:
+    with DuckDBMetadataStore() as s:
         yield s
 
 

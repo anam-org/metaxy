@@ -399,7 +399,7 @@ def test_feature_spec_version_includes_id_columns():
 
 def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
     """Test full metadata store integration with custom ID columns."""
-    from metaxy.metadata_store import InMemoryMetadataStore
+    from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
     # Create features with custom ID columns
     class UserFeature(
@@ -427,7 +427,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
     ):
         pass
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         # Write user feature metadata with user_id
         user_df = nw.from_native(
             pl.DataFrame(
@@ -591,7 +591,7 @@ def test_joiner_preserves_all_id_columns_in_result(graph: FeatureGraph):
 
 def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
     """Test that features without explicit id_columns still use sample_uid."""
-    from metaxy.metadata_store import InMemoryMetadataStore
+    from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
     # Create feature WITHOUT specifying id_columns (backwards compatibility)
     class LegacyFeature(
@@ -608,7 +608,7 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
     assert LegacyFeature.spec().id_columns == ["sample_uid"]
 
     # Test with metadata store
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         df = nw.from_native(
             pl.DataFrame(
                 {

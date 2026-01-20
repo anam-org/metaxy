@@ -11,7 +11,7 @@ import pytest
 from metaxy._testing import SampleFeature
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FieldSpec
@@ -358,7 +358,7 @@ class TestSystemTableRecording:
             TestFeature.project = "test_project"
 
             # Create a store and record snapshot (while the test graph is still active)
-            with InMemoryMetadataStore() as store:
+            with DuckDBMetadataStore() as store:
                 storage = SystemTableStorage(store)
                 result = storage.push_graph_snapshot()
 
@@ -396,7 +396,7 @@ class TestBackwardCompatibility:
         import polars as pl
 
         # Create a store with an old-style snapshot (no tracking version)
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Manually insert old-style feature version record
             from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
@@ -462,7 +462,7 @@ class TestProjectValidation:
             # Override to different project
             TestFeature.project = "different_project"
 
-            with InMemoryMetadataStore() as store:
+            with DuckDBMetadataStore() as store:
                 # Create some test data
                 test_df = pl.DataFrame(
                     {

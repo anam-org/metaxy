@@ -128,9 +128,9 @@ def test_full_graph_migration():
 
     assert migration.migration_type == "metaxy.migrations.models.FullGraphMigration"
     # FullGraphMigration.get_affected_features() returns sorted list from ops
-    from metaxy import InMemoryMetadataStore
+    from metaxy import DuckDBMetadataStore
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         assert migration.get_affected_features(store, "default") == []
 
 
@@ -169,9 +169,9 @@ def test_custom_migration():
     # Migration type should be automatically set from class path
     assert "TestCustomMigration" in migration.migration_type
     # get_affected_features() requires store parameter
-    from metaxy import InMemoryMetadataStore
+    from metaxy import DuckDBMetadataStore
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         assert (
             migration.get_affected_features(store, "default") == []
         )  # Default implementation
@@ -385,9 +385,9 @@ def test_full_graph_migration_get_affected_features():
         ],
     )
 
-    from metaxy import InMemoryMetadataStore
+    from metaxy import DuckDBMetadataStore
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         affected = migration.get_affected_features(store, "default")
 
         # Should include all features from all operations (sorted)
@@ -412,9 +412,9 @@ def test_full_graph_migration_deduplicates_features():
         ],
     )
 
-    from metaxy import InMemoryMetadataStore
+    from metaxy import DuckDBMetadataStore
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         affected = migration.get_affected_features(store, "default")
 
         # Should deduplicate feature/b

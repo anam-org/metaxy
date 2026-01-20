@@ -13,7 +13,6 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
-    InMemoryMetadataStore,
 )
 from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
 from metaxy._testing.models import SampleFeatureSpec
@@ -173,7 +172,7 @@ def test_full_graph_migration_single_operation_single_feature():
     )
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         # Setup data
         Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
         Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
@@ -239,7 +238,7 @@ def test_full_graph_migration_single_operation_multiple_features():
     temp_module.write_features({"FeatureA": feature_a_spec, "FeatureB": feature_b_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -284,7 +283,7 @@ def test_full_graph_migration_multiple_operations():
     temp_module.write_features({"FeatureA": feature_a_spec, "FeatureB": feature_b_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -349,7 +348,7 @@ def test_full_graph_migration_topological_sorting():
     )
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -397,7 +396,7 @@ def test_full_graph_migration_operation_fails():
     temp_module.write_features({"FeatureA": feature_a_spec, "FeatureB": feature_b_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -439,7 +438,7 @@ def test_full_graph_migration_invalid_operation_class():
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -479,7 +478,7 @@ def test_full_graph_migration_dry_run():
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -543,7 +542,7 @@ def test_full_graph_migration_resume_after_partial_failure():
     )
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         # Setup data
         Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
         Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
@@ -608,7 +607,7 @@ def test_full_graph_migration_operation_specific_config():
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -647,7 +646,7 @@ def test_full_graph_migration_events_tracking():
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -712,7 +711,7 @@ def test_data_version_reconciliation_requires_from_snapshot():
     )
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         SystemTableStorage(store).push_graph_snapshot()
 
         op = DataVersionReconciliation()
@@ -743,7 +742,7 @@ def test_data_version_reconciliation_root_feature_error():
     temp_module.write_features({"Root": root_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         Root = graph.features_by_key[FeatureKey(["test", "root"])]
 
         # Write some data

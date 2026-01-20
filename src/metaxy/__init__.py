@@ -7,7 +7,7 @@ from metaxy.entrypoints import (
     load_module_entrypoint,
     load_package_entrypoints,
 )
-from metaxy.metadata_store import AccessMode, InMemoryMetadataStore, MetadataStore
+from metaxy.metadata_store import AccessMode, MetadataStore
 from metaxy.migrations import (
     BaseOperation,
     DataVersionReconciliation,
@@ -140,7 +140,6 @@ __all__ = [
     "ValidatedFeatureKeySequence",
     "ValidatedFieldKeySequence",
     "MetadataStore",
-    "InMemoryMetadataStore",
     "load_features",
     "load_module_entrypoint",
     "load_package_entrypoints",

@@ -4,7 +4,7 @@ from syrupy.assertion import SnapshotAssertion
 
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.graph.diff.differ import GraphDiffer
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.field import FieldSpec
@@ -49,7 +49,7 @@ def test_load_snapshot_data_computes_proper_field_versions(
     # Field versions should be different from each other (different code versions)
     assert parent_field1_version != parent_field2_version
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -92,7 +92,7 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
     ):
         pass
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -131,7 +131,7 @@ def test_field_key_normalization(graph: FeatureGraph):
     ):
         pass
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 

@@ -1,6 +1,7 @@
 """Tests for metadata store."""
 
 from collections.abc import Iterator, Sequence
+from pathlib import Path
 
 import narwhals as nw
 import polars as pl
@@ -14,15 +15,16 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
+    HashAlgorithm,
 )
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
     FeatureNotFoundError,
-    InMemoryMetadataStore,
     MetadataSchemaError,
     StoreNotOpenError,
 )
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
 @pytest.fixture
@@ -116,17 +118,23 @@ def UpstreamFeatureB(features: dict[str, type[BaseFeature]]):
 
 
 @pytest.fixture
-def empty_store(graph: FeatureGraph) -> Iterator[InMemoryMetadataStore]:
-    """Empty in-memory store."""
-    yield InMemoryMetadataStore()
+def empty_store(graph: FeatureGraph, tmp_path: Path) -> Iterator[DuckDBMetadataStore]:
+    """Empty DuckDB store."""
+    yield DuckDBMetadataStore(
+        database=tmp_path / "empty_store.duckdb",
+        hash_algorithm=HashAlgorithm.XXHASH64,
+    )
 
 
 @pytest.fixture
 def populated_store(
-    graph: FeatureGraph, UpstreamFeatureA, make_upstream_a_data
-) -> Iterator[InMemoryMetadataStore]:
+    graph: FeatureGraph, UpstreamFeatureA, make_upstream_a_data, tmp_path: Path
+) -> Iterator[DuckDBMetadataStore]:
     """Store with sample upstream data."""
-    store = InMemoryMetadataStore()
+    store = DuckDBMetadataStore(
+        database=tmp_path / "populated_store.duckdb",
+        hash_algorithm=HashAlgorithm.XXHASH64,
+    )
 
     with store.open("write"):
         # Add upstream feature A
@@ -143,12 +151,23 @@ def populated_store(
 
 @pytest.fixture
 def multi_env_stores(
-    graph: FeatureGraph, UpstreamFeatureA, make_upstream_a_data
-) -> Iterator[dict[str, InMemoryMetadataStore]]:
+    graph: FeatureGraph, UpstreamFeatureA, make_upstream_a_data, tmp_path: Path
+) -> Iterator[dict[str, DuckDBMetadataStore]]:
     """Multi-environment store setup (prod, staging, dev)."""
-    prod = InMemoryMetadataStore()
-    staging = InMemoryMetadataStore(fallback_stores=[prod])
-    dev = InMemoryMetadataStore(fallback_stores=[staging])
+    prod = DuckDBMetadataStore(
+        database=tmp_path / "prod.duckdb",
+        hash_algorithm=HashAlgorithm.XXHASH64,
+    )
+    staging = DuckDBMetadataStore(
+        database=tmp_path / "staging.duckdb",
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        fallback_stores=[prod],
+    )
+    dev = DuckDBMetadataStore(
+        database=tmp_path / "dev.duckdb",
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        fallback_stores=[staging],
+    )
 
     with prod:
         # Populate prod with upstream data
@@ -167,7 +186,7 @@ def multi_env_stores(
 
 
 def test_write_and_read_metadata(
-    empty_store: InMemoryMetadataStore, UpstreamFeatureA, make_upstream_a_data
+    empty_store: DuckDBMetadataStore, UpstreamFeatureA, make_upstream_a_data
 ) -> None:
     """Test basic write and read operations."""
     with empty_store.open("write"):
@@ -187,7 +206,7 @@ def test_write_and_read_metadata(
 
 
 def test_write_invalid_schema(
-    empty_store: InMemoryMetadataStore, UpstreamFeatureA
+    empty_store: DuckDBMetadataStore, UpstreamFeatureA
 ) -> None:
     """Test that writing without provenance_by_field column raises error."""
     with empty_store.open("write"):
@@ -204,7 +223,7 @@ def test_write_invalid_schema(
 
 
 def test_write_append(
-    empty_store: InMemoryMetadataStore,
+    empty_store: DuckDBMetadataStore,
     UpstreamFeatureA,
     make_upstream_a_data,
 ) -> None:
@@ -231,7 +250,7 @@ def test_write_append(
 
 
 def test_read_with_filters(
-    populated_store: InMemoryMetadataStore, UpstreamFeatureA
+    populated_store: DuckDBMetadataStore, UpstreamFeatureA
 ) -> None:
     """Test reading with Polars filter expressions."""
     with populated_store.open("write"):
@@ -246,7 +265,7 @@ def test_read_with_filters(
 
 
 def test_read_with_column_selection(
-    populated_store: InMemoryMetadataStore, UpstreamFeatureA
+    populated_store: DuckDBMetadataStore, UpstreamFeatureA
 ) -> None:
     """Test reading specific columns."""
     with populated_store.open("write"):
@@ -261,7 +280,7 @@ def test_read_with_column_selection(
 
 
 def test_read_nonexistent_feature(
-    empty_store: InMemoryMetadataStore, UpstreamFeatureA
+    empty_store: DuckDBMetadataStore, UpstreamFeatureA
 ) -> None:
     """Test that reading nonexistent feature raises error."""
     with empty_store.open("write"):
@@ -273,7 +292,7 @@ def test_read_nonexistent_feature(
 
 
 def test_has_feature_local(
-    populated_store: InMemoryMetadataStore, UpstreamFeatureA, UpstreamFeatureB
+    populated_store: DuckDBMetadataStore, UpstreamFeatureA, UpstreamFeatureB
 ) -> None:
     """Test has_feature for local store."""
     with populated_store.open("write"):
@@ -282,7 +301,7 @@ def test_has_feature_local(
 
 
 def test_has_feature_with_fallback(
-    multi_env_stores: dict[str, InMemoryMetadataStore],
+    multi_env_stores: dict[str, DuckDBMetadataStore],
     UpstreamFeatureA,
     UpstreamFeatureB,
 ) -> None:
@@ -301,7 +320,7 @@ def test_has_feature_with_fallback(
 
 
 def test_read_from_fallback(
-    multi_env_stores: dict[str, InMemoryMetadataStore], UpstreamFeatureA
+    multi_env_stores: dict[str, DuckDBMetadataStore], UpstreamFeatureA
 ) -> None:
     """Test reading from fallback store."""
     dev = multi_env_stores["dev"]
@@ -317,7 +336,7 @@ def test_read_from_fallback(
 
 
 def test_read_no_fallback(
-    multi_env_stores: dict[str, InMemoryMetadataStore], UpstreamFeatureA
+    multi_env_stores: dict[str, DuckDBMetadataStore], UpstreamFeatureA
 ) -> None:
     """Test that allow_fallback=False doesn't check fallback stores."""
     dev = multi_env_stores["dev"]
@@ -328,7 +347,7 @@ def test_read_no_fallback(
 
 
 def test_soft_delete_from_fallback_creates_soft_deletion_marker(
-    multi_env_stores: dict[str, InMemoryMetadataStore], UpstreamFeatureA
+    multi_env_stores: dict[str, DuckDBMetadataStore], UpstreamFeatureA
 ) -> None:
     """Soft delete should allow targeting fallback data and write markers locally."""
     dev = multi_env_stores["dev"]
@@ -367,7 +386,7 @@ def test_soft_delete_from_fallback_creates_soft_deletion_marker(
 
 
 def test_write_to_dev_not_prod(
-    multi_env_stores: dict[str, InMemoryMetadataStore],
+    multi_env_stores: dict[str, DuckDBMetadataStore],
     UpstreamFeatureA,
     UpstreamFeatureB,
 ) -> None:
@@ -396,21 +415,11 @@ def test_write_to_dev_not_prod(
         assert not prod.has_feature(UpstreamFeatureB, check_fallback=False)
 
 
-def test_clear_store(populated_store: InMemoryMetadataStore, UpstreamFeatureA) -> None:
-    """Test clearing store."""
-    with populated_store.open("write"):
-        assert populated_store.has_feature(UpstreamFeatureA)
-
-        populated_store.clear()
-
-        assert not populated_store.has_feature(UpstreamFeatureA)
-
-
 # Store Open/Close Tests
 
 
 def test_store_not_open_write_raises(
-    empty_store: InMemoryMetadataStore, UpstreamFeatureA
+    empty_store: DuckDBMetadataStore, UpstreamFeatureA
 ) -> None:
     """Test that writing to a closed store raises StoreNotOpenError."""
     metadata = pl.DataFrame(
@@ -429,7 +438,7 @@ def test_store_not_open_write_raises(
 
 
 def test_store_not_open_read_raises(
-    populated_store: InMemoryMetadataStore, UpstreamFeatureA
+    populated_store: DuckDBMetadataStore, UpstreamFeatureA
 ) -> None:
     """Test that reading from a closed store raises StoreNotOpenError."""
     # Store is already closed after fixture setup
@@ -438,7 +447,7 @@ def test_store_not_open_read_raises(
 
 
 def test_store_not_open_has_feature_raises(
-    populated_store: InMemoryMetadataStore, UpstreamFeatureA
+    populated_store: DuckDBMetadataStore, UpstreamFeatureA
 ) -> None:
     """Test that has_feature on a closed store raises StoreNotOpenError."""
     with pytest.raises(StoreNotOpenError, match="must be opened before use"):
@@ -446,7 +455,7 @@ def test_store_not_open_has_feature_raises(
 
 
 def test_store_context_manager_opens_and_closes(
-    empty_store: InMemoryMetadataStore,
+    empty_store: DuckDBMetadataStore,
 ) -> None:
     """Test that context manager properly opens and closes store."""
     # Initially closed
@@ -461,7 +470,7 @@ def test_store_context_manager_opens_and_closes(
 
 
 def test_write_metadata_casts_null_typed_system_columns(
-    empty_store: InMemoryMetadataStore, UpstreamFeatureA
+    empty_store: DuckDBMetadataStore, UpstreamFeatureA
 ) -> None:
     """Test that system columns with Null dtype are cast to correct types."""
     # Create a DataFrame with Null-typed system columns
@@ -507,7 +516,7 @@ def test_write_metadata_casts_null_typed_system_columns(
 
 
 def test_resolve_update_accepts_feature_key(
-    populated_store: InMemoryMetadataStore, features: dict[str, type[BaseFeature]]
+    populated_store: DuckDBMetadataStore, features: dict[str, type[BaseFeature]]
 ) -> None:
     """Test that resolve_update accepts FeatureKey in addition to feature class."""
     # UpstreamFeatureA = features["UpstreamFeatureA"]

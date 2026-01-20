@@ -319,7 +319,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
     """Test that feature_spec_version is recorded when pushing to metadata store."""
 
     from metaxy import BaseFeature, FeatureGraph
-    from metaxy.metadata_store import InMemoryMetadataStore
+    from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
     graph = FeatureGraph()
 
@@ -336,7 +336,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
         ):
             pass
 
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
 
         with store:
             # Record the feature graph snapshot
@@ -388,7 +388,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
 def test_feature_spec_version_idempotent_snapshot_recording() -> None:
     """Test that recording the same snapshot twice preserves feature_spec_version."""
     from metaxy import BaseFeature, FeatureGraph
-    from metaxy.metadata_store import InMemoryMetadataStore
+    from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
     graph = FeatureGraph()
 
@@ -405,7 +405,7 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
         ):
             pass
 
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
 
         with store:
             # First push

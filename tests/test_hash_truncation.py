@@ -8,7 +8,7 @@ import pytest
 
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature_spec import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -361,7 +361,7 @@ class TestConfigIntegration:
 hash_truncation_length = 16
 
 [stores.dev]
-type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
+type = "metaxy.metadata_store.memory.DuckDBMetadataStore"
 """)
 
         # Load config - should store truncation setting
@@ -407,19 +407,19 @@ class TestMetadataStoreTruncation:
         """Test that stores have hash_truncation_length property that pulls from config."""
         # Default truncation (64)
         MetaxyConfig.reset()
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             assert store.hash_truncation_length == 64
 
         # With global truncation
         config = MetaxyConfig(hash_truncation_length=16)
         with config.use():
-            with InMemoryMetadataStore() as store:
+            with DuckDBMetadataStore() as store:
                 assert store.hash_truncation_length == 16
 
         # Different config value
         config = MetaxyConfig(hash_truncation_length=20)
         with config.use():
-            with InMemoryMetadataStore() as store:
+            with DuckDBMetadataStore() as store:
                 assert store.hash_truncation_length == 20
 
     def test_provenance_truncation(self, graph):
@@ -439,7 +439,7 @@ class TestMetadataStoreTruncation:
         config = MetaxyConfig(project="test", hash_truncation_length=16)
         with config.use():
             # Store should use truncated field provenances
-            with InMemoryMetadataStore() as store:
+            with DuckDBMetadataStore() as store:
                 # Write some dummy metadata with provenance_by_field
                 metadata = pl.DataFrame(
                     {
@@ -485,7 +485,7 @@ class TestMigrationCompatibility:
                 pass
 
             # Record snapshot
-            with InMemoryMetadataStore() as store:
+            with DuckDBMetadataStore() as store:
                 result = SystemTableStorage(store).push_graph_snapshot()
 
                 snapshot_v1 = result.snapshot_version
@@ -569,7 +569,7 @@ class TestEndToEnd:
             assert len(graph.snapshot_version) == 16
 
             # Store metadata
-            with InMemoryMetadataStore() as store:
+            with DuckDBMetadataStore() as store:
                 # Record snapshot
                 result = SystemTableStorage(store).push_graph_snapshot()
 

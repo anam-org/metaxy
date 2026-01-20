@@ -9,7 +9,7 @@ import polars as pl
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy._version import __version__
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 
@@ -29,7 +29,7 @@ def test_push_graph_snapshot_with_default_tags():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Push without explicit tags
             SystemTableStorage(store).push_graph_snapshot()
 
@@ -63,7 +63,7 @@ def test_push_graph_snapshot_with_custom_tags():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Push with custom tags
             custom_tags = {
                 "environment": "production",
@@ -105,7 +105,7 @@ def test_push_graph_snapshot_tags_persist_across_pushes():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # First push
             SystemTableStorage(store).push_graph_snapshot(
                 tags={"environment": "staging"}
@@ -149,7 +149,7 @@ def test_push_graph_snapshot_tags_updated_with_feature_changes():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # First push
             SystemTableStorage(store).push_graph_snapshot(
                 tags={"environment": "staging", "build": "123"}

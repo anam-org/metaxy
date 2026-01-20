@@ -332,7 +332,7 @@ def test_get_store_sqlalchemy_url_error_no_property():
         project="test",
         stores={  # ty: ignore[invalid-argument-type]
             "memory_store": {
-                "type": "metaxy.metadata_store.memory.InMemoryMetadataStore",
+                "type": "metaxy.metadata_store.memory.DuckDBMetadataStore",
                 "config": {},
             }
         },

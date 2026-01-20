@@ -71,15 +71,17 @@ import pytest
 @pytest.mark.parametrize(
     "store_cls",
     [
-        InMemoryMetadataStore,
         DuckDBMetadataStore,
+        DeltaMetadataStore,
     ],
 )
 def test_store_behavior(store_cls, tmp_path):
     # Use tmp_path for file-based stores
     store_kwargs = {}
-    if store_cls != InMemoryMetadataStore:
-        store_kwargs["path"] = tmp_path / "test.db"
+    if store_cls == DuckDBMetadataStore:
+        store_kwargs["database"] = tmp_path / "test.duckdb"
+    elif store_cls == DeltaMetadataStore:
+        store_kwargs["root_path"] = tmp_path / "delta_store"
 
     with store_cls(**store_kwargs) as store:
         # Test your feature operations

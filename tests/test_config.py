@@ -10,7 +10,7 @@ from metaxy.config import (
     StoreConfig,
     _collect_dict_keys,
 )
-from metaxy.metadata_store import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
 class TestCollectDictKeys:
@@ -61,28 +61,28 @@ class TestCollectDictKeys:
 
 
 def test_store_config_basic() -> None:
-    from metaxy import InMemoryMetadataStore
+    from metaxy import DuckDBMetadataStore
 
     config = StoreConfig(
-        type="metaxy.metadata_store.InMemoryMetadataStore",
+        type="metaxy.metadata_store.DuckDBMetadataStore",
         config={},
     )
 
-    assert config.type == InMemoryMetadataStore
+    assert config.type == DuckDBMetadataStore
     assert config.config == {}
 
 
 def test_store_config_with_options() -> None:
-    from metaxy import InMemoryMetadataStore
+    from metaxy import DuckDBMetadataStore
 
     config = StoreConfig(
-        type="metaxy.metadata_store.InMemoryMetadataStore",
+        type="metaxy.metadata_store.DuckDBMetadataStore",
         config={
             "fallback_stores": ["prod"],
         },
     )
 
-    assert config.type == InMemoryMetadataStore
+    assert config.type == DuckDBMetadataStore
     assert config.config["fallback_stores"] == ["prod"]
 
 
@@ -98,15 +98,15 @@ def test_metaxy_config_from_dict() -> None:
         store="staging",
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={},
             ),
             "staging": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={"fallback_stores": ["prod"]},
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={},
             ),
         },
@@ -120,7 +120,7 @@ def test_metaxy_config_from_dict() -> None:
 
 
 def test_load_from_metaxy_toml(tmp_path: Path) -> None:
-    from metaxy import InMemoryMetadataStore
+    from metaxy import DuckDBMetadataStore
 
     # Create metaxy.toml
     config_file = tmp_path / "metaxy.toml"
@@ -128,13 +128,13 @@ def test_load_from_metaxy_toml(tmp_path: Path) -> None:
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 
 [stores.dev.config]
 # No config needed for in-memory
 
 [stores.prod]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 
 [stores.prod.config]
 fallback_stores = []
@@ -145,8 +145,8 @@ fallback_stores = []
 
     assert config.store == "dev"
     assert len(config.stores) == 2
-    assert config.stores["dev"].type == InMemoryMetadataStore
-    assert config.stores["prod"].type == InMemoryMetadataStore
+    assert config.stores["dev"].type == DuckDBMetadataStore
+    assert config.stores["prod"].type == DuckDBMetadataStore
 
 
 def test_load_from_pyproject_toml(tmp_path: Path) -> None:
@@ -159,13 +159,13 @@ name = "test"
 store = "staging"
 
 [tool.metaxy.stores.staging]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 
 [tool.metaxy.stores.staging.config]
 fallback_stores = ["prod"]
 
 [tool.metaxy.stores.prod]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 
 [tool.metaxy.stores.prod.config]
 """)
@@ -181,7 +181,7 @@ def test_load_from_metaxy_config_env_var(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Test that METAXY_CONFIG env var is respected for config file location."""
-    from metaxy import InMemoryMetadataStore
+    from metaxy import DuckDBMetadataStore
 
     # Create config file in a non-standard location
     config_dir = tmp_path / "custom" / "config" / "location"
@@ -192,7 +192,7 @@ project = "env_var_project"
 store = "custom"
 
 [stores.custom]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """)
 
     # Set the env var to point to our config file
@@ -203,7 +203,7 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
 
     assert config.project == "env_var_project"
     assert config.store == "custom"
-    assert config.stores["custom"].type == InMemoryMetadataStore
+    assert config.stores["custom"].type == DuckDBMetadataStore
     assert config.config_file == config_file.resolve()
 
 
@@ -220,7 +220,7 @@ project = "init_test_project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """)
 
     # Set the env var
@@ -238,7 +238,7 @@ def test_get_store_instantiates_correctly() -> None:
         store="dev",
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={},
             )
         },
@@ -246,7 +246,7 @@ def test_get_store_instantiates_correctly() -> None:
 
     store = config.get_store("dev")
 
-    assert isinstance(store, InMemoryMetadataStore)
+    assert isinstance(store)
     assert store.fallback_stores == []
 
 
@@ -254,15 +254,15 @@ def test_get_store_with_fallback_chain() -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={"fallback_stores": ["staging"]},
             ),
             "staging": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={"fallback_stores": ["prod"]},
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={},
             ),
         },
@@ -270,15 +270,15 @@ def test_get_store_with_fallback_chain() -> None:
 
     dev_store = config.get_store("dev")
 
-    assert isinstance(dev_store, InMemoryMetadataStore)
+    assert isinstance(dev_store)
     assert len(dev_store.fallback_stores) == 1
 
     staging_store = dev_store.fallback_stores[0]
-    assert isinstance(staging_store, InMemoryMetadataStore)
+    assert isinstance(staging_store)
     assert len(staging_store.fallback_stores) == 1
 
     prod_store = staging_store.fallback_stores[0]
-    assert isinstance(prod_store, InMemoryMetadataStore)
+    assert isinstance(prod_store)
     assert len(prod_store.fallback_stores) == 0
 
 
@@ -287,11 +287,11 @@ def test_get_store_uses_default() -> None:
         store="staging",
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={},
             ),
             "staging": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={},
             ),
         },
@@ -299,7 +299,7 @@ def test_get_store_uses_default() -> None:
 
     # Without name, should use store
     store = config.get_store()
-    assert isinstance(store, InMemoryMetadataStore)
+    assert isinstance(store)
 
     # Verify it's actually staging by checking it has no special config
     # (would need better verification in real scenario)
@@ -309,7 +309,7 @@ def test_get_store_nonexistent_raises() -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={},
             )
         }
@@ -320,7 +320,7 @@ def test_get_store_nonexistent_raises() -> None:
 
 
 def test_config_with_env_vars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from metaxy import InMemoryMetadataStore
+    from metaxy import DuckDBMetadataStore
 
     # Create config file
     config_file = tmp_path / "metaxy.toml"
@@ -328,7 +328,7 @@ def test_config_with_env_vars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 
 [stores.dev.config]
 """)
@@ -338,7 +338,7 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
 
     # Also add prod store via env var (pydantic-settings supports this!)
     monkeypatch.setenv(
-        "METAXY_STORES__PROD__TYPE", "metaxy.metadata_store.InMemoryMetadataStore"
+        "METAXY_STORES__PROD__TYPE", "metaxy.metadata_store.DuckDBMetadataStore"
     )
 
     config = MetaxyConfig.load(config_file)
@@ -348,7 +348,7 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
 
     # Store from env var should be available
     assert "prod" in config.stores
-    assert config.stores["prod"].type == InMemoryMetadataStore
+    assert config.stores["prod"].type == DuckDBMetadataStore
 
 
 def test_partial_env_var_store_config_filtered_out_with_warning(
@@ -366,7 +366,7 @@ def test_partial_env_var_store_config_filtered_out_with_warning(
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """)
 
     # Set partial config for prod store (config but no type)
@@ -382,9 +382,7 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
         config = MetaxyConfig.load(config_file)
 
     # dev store should work
-    assert (
-        config.stores["dev"].type_path == "metaxy.metadata_store.InMemoryMetadataStore"
-    )
+    assert config.stores["dev"].type_path == "metaxy.metadata_store.DuckDBMetadataStore"
 
     # prod store should be filtered out (not present) since it lacks 'type'
     assert "prod" not in config.stores
@@ -399,7 +397,7 @@ def test_incomplete_store_warning_shows_all_fields(
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """)
 
     # Set multiple fields for an incomplete store
@@ -430,18 +428,18 @@ def test_hash_algorithm_must_match_in_fallback_chain() -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={
                     "hash_algorithm": "sha256",
                     "fallback_stores": ["staging"],
                 },
             ),
             "staging": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={"hash_algorithm": "sha256", "fallback_stores": ["prod"]},
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={"hash_algorithm": "sha256"},
             ),
         },
@@ -465,11 +463,11 @@ def test_hash_algorithm_defaults_to_xxhash64() -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={"fallback_stores": ["prod"]},
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={},
             ),
         },
@@ -489,14 +487,14 @@ def test_hash_algorithm_conflict_raises_error() -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={
                     "hash_algorithm": "sha256",
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={"hash_algorithm": "md5"},
             ),
         },
@@ -518,7 +516,7 @@ def test_store_respects_configured_hash_algorithm() -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={"hash_algorithm": "md5"},
             ),
         },
@@ -544,7 +542,7 @@ store = "dev"
 project = "${MY_PROJECT_NAME}"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 
 [stores.dev.config]
 branch = "${DAGSTER_CLOUD_GIT_BRANCH}"
@@ -571,7 +569,7 @@ store = "dev"
 project = "${UNSET_VAR:-default-project}"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 
 [stores.dev.config]
 value_with_default = "${SET_VAR:-fallback}"
@@ -597,7 +595,7 @@ store = "dev"
 migrations_dir = "prefix-${UNSET_VAR}-suffix"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """)
 
     config = MetaxyConfig.load(config_file)
@@ -618,7 +616,7 @@ store = "dev"
 entrypoints = ["${STORE_PATH}/features", "another/path"]
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 
 [stores.dev.config]
 path = "${STORE_PATH}"
@@ -735,7 +733,7 @@ project = "test-project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """)
 
     config = MetaxyConfig.load(config_file)
@@ -755,7 +753,7 @@ project = "discovered-project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """)
 
     # Change to tmp_path so auto-discovery finds the config
@@ -807,7 +805,7 @@ project = "test-project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """)
 
     config = MetaxyConfig.load(config_file)
@@ -849,7 +847,7 @@ def test_get_store_error_without_config_file_no_path_in_message() -> None:
         project="direct-config",
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.InMemoryMetadataStore",
+                type="metaxy.metadata_store.DuckDBMetadataStore",
                 config={},
             )
         },
@@ -1018,19 +1016,18 @@ def test_store_config_type_is_lazy() -> None:
 
 def test_store_config_accepts_class_directly() -> None:
     """Test that StoreConfig.type accepts a class object directly."""
-    from metaxy.metadata_store import InMemoryMetadataStore
 
     # Passing a class directly should work
     config = StoreConfig(
-        type=InMemoryMetadataStore,
+        type=DuckDBMetadataStore,
         config={},
     )
 
     # The type_path should be the import string
-    assert config.type_path == "metaxy.metadata_store.memory.InMemoryMetadataStore"
+    assert config.type_path == "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 
     # Accessing .type should return the same class
-    assert config.type is InMemoryMetadataStore
+    assert config.type is DuckDBMetadataStore
 
 
 def test_plugins_respect_metaxy_config_env_var_at_import_time(tmp_path: Path) -> None:
@@ -1049,7 +1046,7 @@ project = "plugin_import_test_project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """)
 
     # Create a test script that imports the plugins and checks config
@@ -1066,10 +1063,10 @@ assert not MetaxyConfig.is_set(), "Config should not be set before plugin call"
 
 # Import and call sqlalchemy plugin function that uses MetaxyConfig.get(load=True)
 from metaxy.ext.sqlalchemy.plugin import _get_features_metadata
-from metaxy.metadata_store import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from sqlalchemy import MetaData
 
-store = InMemoryMetadataStore()
+store = DuckDBMetadataStore()
 
 # This should trigger MetaxyConfig.get(load=True) and auto-load from METAXY_CONFIG
 _get_features_metadata(source_metadata=MetaData(), store=store)

@@ -4,7 +4,9 @@ These tests use TempFeatureModule to create realistic graph evolution scenarios
 and test the full migration workflow: detect → execute → verify.
 """
 
+import shutil
 from datetime import datetime, timezone
+from pathlib import Path
 
 import polars as pl
 import pytest
@@ -16,12 +18,12 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
-    InMemoryMetadataStore,
 )
 from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations import MigrationExecutor, detect_diff_migration
 from metaxy.models.feature import FeatureGraph
@@ -37,19 +39,21 @@ def setup_default_config():
 
 
 def migrate_store_to_graph(
-    source_store: InMemoryMetadataStore,
+    source_store: DuckDBMetadataStore,
     target_graph: FeatureGraph,
-) -> InMemoryMetadataStore:
+    tmp_path: Path,
+) -> DuckDBMetadataStore:
     """Create new store with target graph context but source store's data.
 
-    This includes system tables (snapshots, migrations, events) so that
-    migration detection can find the previous snapshot.
+    This copies the DuckDB database file to create a new store with the same data.
     """
-    new_store = InMemoryMetadataStore()
-    # Copy all storage including system tables
-    new_store._storage = source_store._storage.copy()
-    # System tables are already copied since they're part of _storage
-    return new_store
+    # Copy the database file
+    source_db_path = source_store.database
+    dest_db_path = tmp_path / "migrated.duckdb"
+    shutil.copy(source_db_path, dest_db_path)
+
+    # Create new store with the copied database
+    return DuckDBMetadataStore(database=dest_db_path)
 
 
 @pytest.fixture
@@ -162,11 +166,11 @@ def test_basic_migration_flow(
     simple_graph_v1: FeatureGraph,
     simple_graph_v2: FeatureGraph,
     snapshot: SnapshotAssertion,
-    tmp_path,
+    tmp_path: Path,
 ):
     """Test basic end-to-end migration flow: detect → execute → verify."""
     # Step 1: Setup v1 data
-    store_v1 = InMemoryMetadataStore()
+    store_v1 = DuckDBMetadataStore(database=tmp_path / "store_v1.duckdb")
     SimpleV1 = simple_graph_v1.features_by_key[
         FeatureKey(["test_integration", "simple"])
     ]
@@ -190,7 +194,7 @@ def test_basic_migration_flow(
         SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Step 2: Migrate to v2 graph
-    store_v2 = migrate_store_to_graph(store_v1, simple_graph_v2)
+    store_v2 = migrate_store_to_graph(store_v1, simple_graph_v2, tmp_path)
     SimpleV2 = simple_graph_v2.features_by_key[
         FeatureKey(["test_integration", "simple"])
     ]
@@ -264,7 +268,7 @@ def test_upstream_downstream_migration(
 ):
     """Test migration with upstream/downstream dependency chain."""
     # Step 1: Setup v1 data
-    store_v1 = InMemoryMetadataStore()
+    store_v1 = DuckDBMetadataStore(database=tmp_path / "store_v1.duckdb")
     UpstreamV1 = upstream_downstream_v1.features_by_key[
         FeatureKey(["test_integration", "upstream"])
     ]
@@ -298,7 +302,7 @@ def test_upstream_downstream_migration(
         SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Step 2: Migrate to v2 graph
-    store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
+    store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2, tmp_path)
     UpstreamV2 = upstream_downstream_v2.features_by_key[
         FeatureKey(["test_integration", "upstream"])
     ]
@@ -373,7 +377,7 @@ def test_migration_idempotency(
 ):
     """Test that migrations can be re-run safely (idempotent)."""
     # Setup v1 data with downstream
-    store_v1 = InMemoryMetadataStore()
+    store_v1 = DuckDBMetadataStore(database=tmp_path / "store_v1.duckdb")
     UpstreamV1 = upstream_downstream_v1.features_by_key[
         FeatureKey(["test_integration", "upstream"])
     ]
@@ -399,7 +403,7 @@ def test_migration_idempotency(
         SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Migrate to v2
-    store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
+    store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2, tmp_path)
     UpstreamV2 = upstream_downstream_v2.features_by_key[
         FeatureKey(["test_integration", "upstream"])
     ]
@@ -473,7 +477,7 @@ def test_migration_dry_run(
 ):
     """Test dry-run mode doesn't modify data."""
     # Setup v1 data
-    store_v1 = InMemoryMetadataStore()
+    store_v1 = DuckDBMetadataStore(database=tmp_path / "store_v1.duckdb")
     UpstreamV1 = upstream_downstream_v1.features_by_key[
         FeatureKey(["test_integration", "upstream"])
     ]
@@ -499,7 +503,7 @@ def test_migration_dry_run(
         SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Migrate to v2
-    store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
+    store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2, tmp_path)
     UpstreamV2 = upstream_downstream_v2.features_by_key[
         FeatureKey(["test_integration", "upstream"])
     ]
@@ -635,7 +639,7 @@ def test_field_dependency_change(tmp_path):
     graph_v2 = temp_v2.graph
 
     # Setup v1 data
-    store_v1 = InMemoryMetadataStore()
+    store_v1 = DuckDBMetadataStore(database=tmp_path / "store_v1.duckdb")
     UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test", "upstream"])]
     DownstreamV1 = graph_v1.features_by_key[FeatureKey(["test", "downstream"])]
 
@@ -659,7 +663,7 @@ def test_field_dependency_change(tmp_path):
         SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Migrate to v2
-    store_v2 = migrate_store_to_graph(store_v1, graph_v2)
+    store_v2 = migrate_store_to_graph(store_v1, graph_v2, tmp_path)
     graph_v2.features_by_key[FeatureKey(["test", "upstream"])]
     graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
 
@@ -757,7 +761,7 @@ def test_feature_dependency_swap(tmp_path):
     assert down_v1.feature_version() != down_v2.feature_version()
 
     # Setup v1 data
-    store_v1 = InMemoryMetadataStore()
+    store_v1 = DuckDBMetadataStore(database=tmp_path / "store_v1.duckdb")
     upstream_a_v1 = graph_v1.features_by_key[FeatureKey(["test", "upstream_a"])]
     upstream_b_v1 = graph_v1.features_by_key[FeatureKey(["test", "upstream_b"])]
     graph_v1.features_by_key[FeatureKey(["test", "downstream"])]
@@ -785,7 +789,7 @@ def test_feature_dependency_swap(tmp_path):
         SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Migrate to v2
-    store_v2 = migrate_store_to_graph(store_v1, graph_v2)
+    store_v2 = migrate_store_to_graph(store_v1, graph_v2, tmp_path)
     graph_v2.features_by_key[FeatureKey(["test", "upstream_a"])]
     graph_v2.features_by_key[FeatureKey(["test", "upstream_b"])]
     graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
@@ -810,7 +814,7 @@ def test_feature_dependency_swap(tmp_path):
 
 def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
     """Test that no migration is generated when nothing changed."""
-    store = InMemoryMetadataStore()
+    store = DuckDBMetadataStore(database=tmp_path / "store.duckdb")
     SimpleV1 = simple_graph_v1.features_by_key[
         FeatureKey(["test_integration", "simple"])
     ]
@@ -841,7 +845,7 @@ def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
 def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
     """Test that adding a new feature doesn't trigger migration for it."""
     # Setup v1 data
-    store_v1 = InMemoryMetadataStore()
+    store_v1 = DuckDBMetadataStore(database=tmp_path / "store_v1.duckdb")
     SimpleV1 = simple_graph_v1.features_by_key[
         FeatureKey(["test_integration", "simple"])
     ]
@@ -874,7 +878,7 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
     graph_v2 = temp_v2.graph
 
     # Migrate store
-    store_v2 = migrate_store_to_graph(store_v1, graph_v2)
+    store_v2 = migrate_store_to_graph(store_v1, graph_v2, tmp_path)
 
     with graph_v2.use(), store_v2:
         SystemTableStorage(store_v2).push_graph_snapshot()
@@ -936,7 +940,7 @@ def test_full_graph_migration_integration(tmp_path):
     )
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         # Setup initial data
         Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
         Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
@@ -1010,7 +1014,7 @@ def test_migration_rerun_flag(tmp_path):
     temp_module.write_features({"RerunFeature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         # Setup initial data
         Feature = graph.features_by_key[FeatureKey(["test", "rerun_feature"])]
 
@@ -1083,7 +1087,7 @@ def test_full_graph_migration_empty_operations(tmp_path):
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use()() as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 

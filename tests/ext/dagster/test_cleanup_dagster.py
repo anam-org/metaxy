@@ -93,7 +93,7 @@ def test_delete_metadata_integration(feature_cls):
     """Integration test: create job, write data, run delete, verify results."""
 
     # Create an in-memory store
-    store = mx.InMemoryMetadataStore()
+    store = mx.DuckDBMetadataStore()
 
     # Define a job with the delete op
     @dg.job(
@@ -160,7 +160,7 @@ def test_delete_metadata_integration_hard_delete(feature_cls):
     """Integration test for hard delete: data is physically removed."""
 
     # Create an in-memory store
-    store = mx.InMemoryMetadataStore()
+    store = mx.DuckDBMetadataStore()
 
     # Define a job with the delete op
     @dg.job(

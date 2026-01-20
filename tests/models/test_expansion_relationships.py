@@ -6,7 +6,7 @@ import polars as pl
 from metaxy import BaseFeature
 from metaxy._testing import add_metaxy_provenance_column
 from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.lineage import LineageRelationship
@@ -59,7 +59,7 @@ class TestExpansionRelationships:
         )
 
         # Test with metadata store
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Write parent metadata
             video_data = pl.DataFrame(
                 {
@@ -132,7 +132,7 @@ class TestExpansionRelationships:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Parent metadata
             article_data = pl.DataFrame(
                 {

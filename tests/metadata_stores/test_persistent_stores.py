@@ -1,7 +1,7 @@
 """Store-agnostic tests for persistent metadata stores.
 
 These tests run against all persistent store implementations
-(InMemoryMetadataStore, DuckDBMetadataStore, etc.) using pytest-cases parametrization.
+(DuckDBMetadataStore, etc.) using pytest-cases parametrization.
 """
 
 from typing import Any

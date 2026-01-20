@@ -28,7 +28,7 @@ from metaxy import (
 )
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
 @pytest.fixture
@@ -89,9 +89,9 @@ def features_with_deps(graph: FeatureGraph):
 
 
 @pytest.fixture
-def store() -> Iterator[InMemoryMetadataStore]:
+def store() -> Iterator[DuckDBMetadataStore]:
     """Create an empty in-memory metadata store."""
-    store = InMemoryMetadataStore()
+    store = DuckDBMetadataStore()
     with store.open("write"):
         yield store
 
@@ -99,14 +99,14 @@ def store() -> Iterator[InMemoryMetadataStore]:
 class TestBasicFunctionality:
     """Test basic functionality of write_metadata_multi."""
 
-    def test_empty_dict_is_noop(self, store: InMemoryMetadataStore):
+    def test_empty_dict_is_noop(self, store: DuckDBMetadataStore):
         """Test that passing an empty dict does nothing (no-op)."""
         # Should not raise any errors
         store.write_metadata_multi({})
 
     def test_single_feature(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test writing metadata for a single feature."""
@@ -135,7 +135,7 @@ class TestBasicFunctionality:
 
     def test_multiple_features_no_dependencies(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test writing metadata for multiple features without dependencies."""
@@ -173,7 +173,7 @@ class TestReverseTopologicalOrder:
 
     def test_writes_in_reverse_topological_order(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test that features are written in reverse topological order (dependents first).
@@ -243,9 +243,7 @@ class TestReverseTopologicalOrder:
         # All features should have been written
         assert len(write_order) == 4
 
-    def test_writes_linear_chain_in_reverse_order(
-        self, store: InMemoryMetadataStore, graph: FeatureGraph
-    ):
+    def test_writes_linear_chain_in_reverse_order(self, store, graph: FeatureGraph):
         """Test a simple linear chain is written in reverse order: C -> B -> A for A -> B -> C."""
 
         class FeatureA(
@@ -313,7 +311,7 @@ class TestInputVariations:
 
     def test_accepts_feature_keys(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test that feature keys can be provided as FeatureKey objects."""
@@ -336,7 +334,7 @@ class TestInputVariations:
 
     def test_accepts_string_paths(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test that feature keys can be provided as string paths."""
@@ -359,7 +357,7 @@ class TestInputVariations:
 
     def test_accepts_feature_classes(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test that feature keys can be provided as Feature classes."""
@@ -382,7 +380,7 @@ class TestInputVariations:
 
     def test_accepts_mixed_key_types(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test that feature keys can be provided as mixed types."""
@@ -419,7 +417,7 @@ class TestMaterializationId:
 
     def test_materialization_id_parameter(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test that materialization_id is passed to write_metadata calls."""
@@ -456,7 +454,7 @@ class TestMaterializationId:
 
     def test_materialization_id_propagates_to_all_writes(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test that materialization_id is passed to all write_metadata calls."""
@@ -504,7 +502,7 @@ class TestDataIntegrity:
 
     def test_data_integrity_after_multi_write(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test that data written via write_metadata_multi can be read back correctly."""
@@ -562,7 +560,7 @@ class TestErrorHandling:
 
         FeatureA = features_with_deps["FeatureA"]
 
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
 
         metadata = {
             FeatureA: pl.DataFrame(
@@ -579,7 +577,7 @@ class TestErrorHandling:
 
     def test_invalid_schema_raises(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test that invalid schema raises MetadataSchemaError."""
@@ -607,7 +605,7 @@ class TestSubsetOfFeatures:
 
     def test_write_subset_of_features(
         self,
-        store: InMemoryMetadataStore,
+        store,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
         """Test writing metadata for only some features in a dependency graph."""

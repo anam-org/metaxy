@@ -16,7 +16,6 @@ from metaxy._testing import HashAlgorithmCases
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
-    InMemoryMetadataStore,
     MetadataStore,
 )
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
@@ -60,11 +59,6 @@ def store_params(tmp_path: Path, clickhouse_db: str) -> dict[str, Any]:
 
 class StoreCases:
     """Store configuration cases for parametrization."""
-
-    def case_inmemory(
-        self, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        return (InMemoryMetadataStore, {})
 
     def case_duckdb(
         self, tmp_path: Path, test_graph: FeatureGraph
@@ -111,7 +105,7 @@ class BasicStoreCases:
 def persistent_store(
     store_config: tuple[type[MetadataStore], dict[str, Any]],
 ) -> MetadataStore:
-    """Parametrized persistent store (InMemory + DuckDB)."""
+    """Parametrized persistent store (DuckDB)."""
     store_type, config = store_config
     return store_type(**config)
 
@@ -120,9 +114,13 @@ def persistent_store(
 
 
 @pytest.fixture
-def default_store() -> InMemoryMetadataStore:
-    """Default store (InMemory, xxhash64)."""
-    return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
+def default_store(tmp_path: Path) -> DuckDBMetadataStore:
+    """Default store (DuckDB, xxhash64)."""
+    return DuckDBMetadataStore(
+        database=tmp_path / "default_store.duckdb",
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        extensions=["hashfuncs"],
+    )
 
 
 @pytest.fixture
@@ -138,12 +136,7 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
 
 
 class AnyStoreCases:
-    """Minimal store cases (InMemory + DuckDB)."""
-
-    @pytest.mark.inmemory
-    @pytest.mark.polars
-    def case_inmemory(self) -> MetadataStore:
-        return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
+    """Minimal store cases (DuckDB)."""
 
     @pytest.mark.ibis
     @pytest.mark.native
@@ -157,12 +150,7 @@ class AnyStoreCases:
 
 
 class AllStoresCases:
-    """All store types (InMemory, DuckDB, ClickHouse)."""
-
-    @pytest.mark.inmemory
-    @pytest.mark.polars
-    def case_inmemory(self) -> MetadataStore:
-        return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
+    """All store types (DuckDB, ClickHouse, Delta, LanceDB)."""
 
     @pytest.mark.ibis
     @pytest.mark.native
@@ -205,7 +193,7 @@ class AllStoresCases:
 @fixture
 @parametrize_with_cases("store", cases=AllStoresCases)
 def any_store(store: MetadataStore) -> MetadataStore:
-    """Parametrized store (InMemory + DuckDB + ClickHouse)."""
+    """Parametrized store (DuckDB + ClickHouse + Delta + LanceDB)."""
     return store
 
 

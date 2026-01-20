@@ -9,7 +9,7 @@ from pydantic import Field
 
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 
@@ -32,7 +32,7 @@ def test_push_graph_snapshot_stores_feature_schema():
             custom_field: str = Field(description="A custom field")
             another_field: int = Field(default=42, description="An integer field")
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Push snapshot
             SystemTableStorage(store).push_graph_snapshot()
 
@@ -105,7 +105,7 @@ def test_feature_schema_differs_between_features():
             field_b: int
             field_c: bool = Field(default=True)
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Push snapshot
             SystemTableStorage(store).push_graph_snapshot()
 
@@ -237,7 +237,7 @@ def test_feature_schema_for_feature_without_custom_fields():
 
             pass  # No custom fields, just inherits from Feature
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Push snapshot
             SystemTableStorage(store).push_graph_snapshot()
 

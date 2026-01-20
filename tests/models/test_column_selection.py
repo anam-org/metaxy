@@ -1054,7 +1054,7 @@ class TestColumnSelection:
         """Test that columns and rename fields are properly serialized when pushing graph snapshot."""
         import json
 
-        from metaxy.metadata_store import InMemoryMetadataStore
+        from metaxy.metadata_store.duckdb import DuckDBMetadataStore
         from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
         # Create features with columns and rename specified
@@ -1082,7 +1082,7 @@ class TestColumnSelection:
             pass
 
         # Create store and push snapshot
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
         with store:
             _ = SystemTableStorage(store).push_graph_snapshot()
 

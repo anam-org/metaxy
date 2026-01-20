@@ -8,7 +8,6 @@ from typing import Any
 import polars as pl
 
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 
 
@@ -238,28 +237,6 @@ def test_mode_parameter_passed_to_open(tmp_path: Path) -> None:
             "read_only" not in store2.connection_params
             or store2.connection_params.get("read_only") is False
         )
-
-
-def test_memory_store_modes(test_graph, test_features: dict[str, Any]) -> None:
-    """Test that InMemoryMetadataStore works with explicit modes."""
-    # In-memory stores don't have locking
-    store_read = InMemoryMetadataStore(auto_create_tables=False)
-    store_write = InMemoryMetadataStore(auto_create_tables=False)
-
-    # Read mode
-    with store_read.open("read"):
-        assert store_read._is_open
-
-    # Write mode
-    with store_write.open("write"):
-        assert store_write._is_open
-        metadata = pl.DataFrame(
-            {
-                "sample_uid": ["s1"],
-                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
-            }
-        )
-        store_write.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
 
 def test_mode_reset_between_opens(tmp_path: Path) -> None:

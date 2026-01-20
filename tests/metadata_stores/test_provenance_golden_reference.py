@@ -1591,7 +1591,7 @@ def test_provenance_snapshot(
     Records the exact provenance values computed for each lineage type,
     enabling regression detection when the versioning engine changes.
 
-    Uses fixed input data and InMemoryMetadataStore with xxhash64 for determinism.
+    Uses fixed input data and DuckDBMetadataStore with xxhash64 for determinism.
     """
     from datetime import datetime
 

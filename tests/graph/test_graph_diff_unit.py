@@ -13,7 +13,7 @@ from metaxy.graph.diff.diff_models import (
     RemovedNode,
 )
 from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -151,7 +151,7 @@ class TestSnapshotResolver:
     def test_resolve_latest_empty_store(self):
         """Test resolving 'latest' with empty store fails."""
         resolver = SnapshotResolver()
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             with pytest.raises(ValueError, match="No snapshots found"):
                 resolver.resolve_snapshot("latest", store, None)
 
@@ -168,7 +168,7 @@ class TestSnapshotResolver:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Record a snapshot
             result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -381,7 +381,7 @@ class TestGraphDiffer:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Record snapshot
             result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -403,7 +403,7 @@ class TestGraphDiffer:
         """Test loading non-existent snapshot fails."""
         differ = GraphDiffer()
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             with pytest.raises(ValueError, match="No features recorded for snapshot"):
                 differ.load_snapshot_data(store, "nonexistent", project="default")
 

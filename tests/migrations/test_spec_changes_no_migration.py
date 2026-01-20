@@ -13,6 +13,9 @@ This is important for:
 
 from __future__ import annotations
 
+import shutil
+from pathlib import Path
+
 import polars as pl
 from syrupy.assertion import SnapshotAssertion
 
@@ -21,12 +24,20 @@ from metaxy import (
     FeatureKey,
     FieldKey,
     FieldSpec,
-    InMemoryMetadataStore,
 )
 from metaxy._testing import TempFeatureModule
 from metaxy._testing.models import SampleFeatureSpec
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations import detect_diff_migration
+
+
+def copy_store(
+    source_store: DuckDBMetadataStore, dest_path: Path
+) -> DuckDBMetadataStore:
+    """Copy a DuckDB store to a new location and return a new store instance."""
+    shutil.copy(source_store.database, dest_path)
+    return DuckDBMetadataStore(database=dest_path)
 
 
 def test_feature_spec_version_exists_and_differs_from_feature_version():
@@ -90,7 +101,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     SimpleV1 = graph_v1.features_by_key[FeatureKey(["test", "simple"])]
 
     # Setup v1 data and snapshot
-    store_v1 = InMemoryMetadataStore()
+    store_v1 = DuckDBMetadataStore(database=tmp_path / "store_v1.duckdb")
     with graph_v1.use(), store_v1:
         data = pl.DataFrame(
             {
@@ -140,9 +151,8 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
         v1_feature_spec_version != v2_feature_spec_version
     )  # Also changed (includes code_version)
 
-    # Test migration detection
-    store_v2 = InMemoryMetadataStore()
-    store_v2._storage = store_v1._storage.copy()  # Copy v1 data
+    # Test migration detection - copy store_v1 data to new store
+    store_v2 = copy_store(store_v1, tmp_path / "store_v2.duckdb")
 
     with graph_v2.use(), store_v2:
         # Detect migration (compares latest snapshot vs current graph)
@@ -192,7 +202,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
     TestFeature = graph.features_by_key[FeatureKey(["test", "feature"])]
 
     # Setup data and snapshot
-    store = InMemoryMetadataStore()
+    store = DuckDBMetadataStore(database=tmp_path / "store.duckdb")
     with graph.use(), store:
         data = pl.DataFrame(
             {
@@ -381,7 +391,7 @@ def test_snapshot_stores_both_versions(tmp_path):
     TestFeature = graph.features_by_key[FeatureKey(["test", "feature"])]
 
     # Create store and record snapshot
-    store = InMemoryMetadataStore()
+    store = DuckDBMetadataStore(database=tmp_path / "store.duckdb")
     with graph.use(), store:
         data = pl.DataFrame(
             {

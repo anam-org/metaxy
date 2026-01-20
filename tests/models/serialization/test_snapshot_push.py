@@ -12,7 +12,7 @@ from syrupy.assertion import SnapshotAssertion
 
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import SnapshotPushResult
@@ -57,7 +57,7 @@ def test_record_snapshot_first_time():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             result = SystemTableStorage(store).push_graph_snapshot()
 
             # Verify result
@@ -117,7 +117,7 @@ def test_record_snapshot_metadata_only_changes():
         spec_version_v1 = Downstream.feature_spec_version()
 
         # First push
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
 
@@ -223,7 +223,7 @@ def test_record_snapshot_no_changes():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # First push
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
@@ -285,7 +285,7 @@ def test_record_snapshot_partial_metadata_changes():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
 
@@ -378,7 +378,7 @@ def test_record_snapshot_append_only_behavior():
 
         snapshot_v1 = graph_v1.snapshot_version
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Push v1
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.snapshot_version == snapshot_v1
@@ -486,7 +486,7 @@ def test_record_snapshot_computational_change():
 
         snapshot_v1 = graph_v1.snapshot_version
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.snapshot_version == snapshot_v1
 
@@ -549,7 +549,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             results.append(
                 {
@@ -659,7 +659,7 @@ def test_feature_info_changes_trigger_repush():
         snapshot_v1 = graph_v1.snapshot_version
 
         # First push
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
             assert result1.snapshot_version == snapshot_v1

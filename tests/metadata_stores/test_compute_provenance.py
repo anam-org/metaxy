@@ -14,7 +14,7 @@ from pytest_cases import parametrize_with_cases
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store import MetadataStore
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
@@ -56,7 +56,7 @@ class TestComputeProvenance:
         ):
             sample_uid: str
 
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
 
         # Create upstream metadata with provenance columns
         upstream_df = pl.DataFrame(
@@ -128,7 +128,7 @@ class TestComputeProvenance:
         ):
             sample_uid: str
 
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
 
         # Create joined DataFrame with both upstream columns renamed
         upstream1_key = Upstream1Feature.spec().key
@@ -188,7 +188,7 @@ class TestComputeProvenance:
         ):
             sample_uid: str
 
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
 
         # Create DataFrame WITHOUT the required renamed column
         df = pl.DataFrame(
@@ -226,7 +226,7 @@ class TestComputeProvenance:
         ):
             sample_uid: str
 
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
 
         upstream_key = UpstreamFeature.spec().key
         renamed_col = f"{METAXY_DATA_VERSION_BY_FIELD}__{upstream_key.table_name}"
@@ -270,7 +270,7 @@ class TestComputeProvenance:
         ):
             sample_uid: str
 
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
 
         upstream_key = UpstreamFeature.spec().key
         renamed_col = f"{METAXY_DATA_VERSION_BY_FIELD}__{upstream_key.table_name}"
@@ -314,7 +314,7 @@ class TestComputeProvenance:
         ):
             sample_uid: str
 
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
 
         upstream_key = UpstreamFeature.spec().key
         renamed_col = f"{METAXY_DATA_VERSION_BY_FIELD}__{upstream_key.table_name}"
@@ -357,7 +357,7 @@ class TestComputeProvenance:
         ):
             sample_uid: str
 
-        store = InMemoryMetadataStore()
+        store = DuckDBMetadataStore()
 
         # Root features have no upstream deps, so no renamed columns needed
         df = pl.DataFrame(

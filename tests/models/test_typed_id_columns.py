@@ -267,7 +267,7 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
 
 def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
     """Test that metadata store works with custom ID columns."""
-    from metaxy.metadata_store import InMemoryMetadataStore
+    from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
     # Create feature with custom ID
     class CustomIDFeature(
@@ -280,7 +280,7 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
     ):
         pass
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         # Write metadata with string ID
         df = nw.from_native(
             pl.DataFrame(

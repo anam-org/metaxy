@@ -166,7 +166,7 @@ def test_project_from_metaxy_toml(tmp_path: Path) -> None:
 project = "my_metaxy_project"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """
     )
 
@@ -190,7 +190,7 @@ name = "test"
 project = "pyproject_metaxy"
 
 [tool.metaxy.stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """
     )
 
@@ -212,7 +212,7 @@ def test_project_override_via_env_var(
 project = "file_project"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.DuckDBMetadataStore"
 """
     )
 

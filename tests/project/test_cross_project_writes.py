@@ -13,7 +13,7 @@ from syrupy.assertion import SnapshotAssertion
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store import InMemoryMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 
@@ -49,7 +49,7 @@ def test_write_to_same_project_succeeds(snapshot: SnapshotAssertion) -> None:
             )
         )
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Write should succeed (same project)
             store.write_metadata(TestFeature, metadata)
 
@@ -96,7 +96,7 @@ def test_write_to_different_project_fails() -> None:
         )
     )
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         # Write should fail (different project)
         with pytest.raises(
             ValueError,
@@ -141,7 +141,7 @@ def test_allow_cross_project_writes_context_manager() -> None:
         )
     )
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         # With context manager, write should succeed
         with store.allow_cross_project_writes():
             store.write_metadata(FeatureA, metadata)
@@ -173,7 +173,7 @@ def test_system_tables_exempt_from_project_validation() -> None:
         )
     )
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         # System tables should not require project validation
         store.write_metadata(system_key, metadata)
 
@@ -235,7 +235,7 @@ def test_write_multiple_features_same_project() -> None:
             )
         )
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Both writes should succeed (same project)
             store.write_metadata(Feature1, metadata1)
             store.write_metadata(Feature2, metadata2)
@@ -316,7 +316,7 @@ def test_cross_project_write_during_migration() -> None:
             )
         )
 
-        with InMemoryMetadataStore() as store:
+        with DuckDBMetadataStore() as store:
             # Write to FeatureA should succeed (same project)
             store.write_metadata(FeatureA, metadata_a)
 
@@ -374,7 +374,7 @@ def test_project_validation_with_feature_key() -> None:
         )
     )
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         # Pass FeatureKey instead of Feature class
         feature_key = FeatureKey(["test", "feature"])
 
@@ -414,7 +414,7 @@ def test_nested_cross_project_writes_context_managers() -> None:
         )
     )
 
-    with InMemoryMetadataStore() as store:
+    with DuckDBMetadataStore() as store:
         # Nested context managers should work
         with store.allow_cross_project_writes():
             # Inner context manager

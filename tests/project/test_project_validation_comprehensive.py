@@ -13,7 +13,6 @@ from metaxy.metadata_store.base import (
     MetadataStore,
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.ops import DataVersionReconciliation
 from metaxy.models.feature import BaseFeature, FeatureGraph
@@ -24,7 +23,7 @@ from metaxy.models.types import FeatureKey, FieldKey
 class TestProjectValidationComprehensive:
     """Comprehensive tests for project validation across all components."""
 
-    @pytest.fixture(params=[InMemoryMetadataStore, DuckDBMetadataStore])
+    @pytest.fixture(params=[DuckDBMetadataStore])
     def store_cls(self, request) -> type[MetadataStore]:
         """Test with different store backends."""
         return request.param
@@ -38,7 +37,7 @@ class TestProjectValidationComprehensive:
     @pytest.fixture
     def store(self, store_cls, temp_dir):
         """Create a metadata store instance."""
-        if store_cls == InMemoryMetadataStore:
+        if store_cls == DuckDBMetadataStore:
             with store_cls() as store:
                 yield store
         else:
