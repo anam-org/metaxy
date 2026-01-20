@@ -55,4 +55,5 @@ The full list can be found [here](https://docs.metaxy.io/main/integrations).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-<img referrerpolicy="no-referrer" src="https://static.scarf.sh/a.png?x-pxid=22cb75dc-201e-4a72-9fb2-c3a53ce9207e&page=README.md" />
+<!-- scarf.sh for telemetry collection ( it does not record personal data such as IP addresses) -->
+<img referrerpolicy="no-referrer" src="https://telemetry.metaxy.io/a.png?x-pxid=22cb75dc-201e-4a72-9fb2-c3a53ce9207e&page=README.md" />
