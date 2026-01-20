@@ -1,6 +1,7 @@
+// scarf.sh for telemetry collection ( it does not record personal data such as IP addresses)
 (function () {
   var TOKEN = "22cb75dc-201e-4a72-9fb2-c3a53ce9207e";
-  var PIXEL_BASE = "https://static.scarf.sh/a.png?x-pxid=" + TOKEN + "=";
+  var PIXEL_BASE = "https://telemetry.metaxy.io/a.png?x-pxid=" + TOKEN + "=";
   var lastIdentifier = null;
   var pendingPixels = [];
 
