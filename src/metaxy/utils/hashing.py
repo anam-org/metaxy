@@ -105,7 +105,7 @@ def ensure_hash_compatibility(hash1: str, hash2: str) -> bool:
 
     # Check if one is a prefix of the other (truncation)
     shorter, longer = sorted([hash1, hash2], key=len)
-    return longer.startswith(shorter)
+    return longer.startswith(shorter)  # ty: ignore[possibly-missing-attribute]
 
 
 @nw.narwhalify

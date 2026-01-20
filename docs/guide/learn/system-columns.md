@@ -1,3 +1,8 @@
+---
+title: "System Columns"
+description: "Reserved system columns in Metaxy."
+---
+
 # System Column Registry
 
 Metaxy reserves a set of [system-managed columns](../../reference/api/constants.md) that it attaches to user-defined feature

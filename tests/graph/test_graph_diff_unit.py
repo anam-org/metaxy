@@ -404,7 +404,7 @@ class TestGraphDiffer:
         differ = GraphDiffer()
 
         with InMemoryMetadataStore() as store:
-            with pytest.raises(ValueError, match="Failed to load snapshot"):
+            with pytest.raises(ValueError, match="No features recorded for snapshot"):
                 differ.load_snapshot_data(store, "nonexistent", project="default")
 
 

@@ -1,3 +1,8 @@
+---
+title: "Dagster @metaxify Decorator"
+description: "The @metaxify decorator for Dagster assets."
+---
+
 # Metaxify
 
 The [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify] decorator can be used to automatically enrich Dagster assets definitions with information taken from Metaxy features.
@@ -96,7 +101,7 @@ Tracks which upstream columns each downstream column depends on by analyzing:
 
 - **`FeatureDep.rename`**: Renamed columns trace back to their original upstream column names.
 
-- **`FeatureSpec.lineage`**: ID column relationships based on lineage type (identity, aggregation, expansion).
+- **`FeatureDep.lineage`**: ID column relationships based on lineage type (identity, aggregation, expansion).
 
 Column lineage is derived from Pydantic model fields on the feature class.
 If the asset already has column lineage defined, Metaxy lineage is merged with user-defined

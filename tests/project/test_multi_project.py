@@ -183,7 +183,7 @@ class TestFeatureTrackingVersion:
                 pass
 
             # Override project for testing
-            TestFeature.project = "project_a"  # type: ignore[attr-defined]
+            TestFeature.project = "project_a"
 
             # Get the tracking version
             tracking_version = TestFeature.full_definition_version()
@@ -193,12 +193,12 @@ class TestFeatureTrackingVersion:
             assert tracking_version != spec_version
 
             # Verify it changes when project changes
-            TestFeature.project = "project_b"  # type: ignore[attr-defined]
+            TestFeature.project = "project_b"
             new_tracking_version = TestFeature.full_definition_version()
             assert new_tracking_version != tracking_version
 
             # Verify it's deterministic
-            TestFeature.project = "project_a"  # type: ignore[attr-defined]
+            TestFeature.project = "project_a"
             assert TestFeature.full_definition_version() == tracking_version
 
     def test_tracking_version_in_snapshot(self):
@@ -218,7 +218,7 @@ class TestFeatureTrackingVersion:
                 pass
 
             # Override project
-            TestFeature.project = "test_project"  # type: ignore[attr-defined]
+            TestFeature.project = "test_project"
 
             # Get snapshot
             snapshot = test_graph.to_snapshot()
@@ -256,7 +256,7 @@ class TestMultiProjectIsolation:
                 pass
 
             # Override project for FeatureA
-            FeatureA.project = "project_a"  # type: ignore[attr-defined]
+            FeatureA.project = "project_a"
 
             # Create second feature
             class FeatureB(
@@ -269,10 +269,10 @@ class TestMultiProjectIsolation:
                 pass
 
             # Override project for FeatureB
-            FeatureB.project = "project_b"  # type: ignore[attr-defined]
+            FeatureB.project = "project_b"
 
             # Verify they have different projects
-            assert FeatureA.project != FeatureB.project  # type: ignore[attr-defined]
+            assert FeatureA.project != FeatureB.project
 
             # Verify they have different tracking versions
             assert (
@@ -300,7 +300,7 @@ class TestMultiProjectIsolation:
             ):
                 pass
 
-            FeatureV1.project = "project_a"  # type: ignore[attr-defined]
+            FeatureV1.project = "project_a"
 
         snapshot1 = graph1.to_snapshot()
         tracking_v1 = snapshot1["test/feature"]["metaxy_full_definition_version"]
@@ -321,7 +321,7 @@ class TestMultiProjectIsolation:
             ):
                 pass
 
-            FeatureV2.project = "project_b"  # type: ignore[attr-defined]  # Different project
+            FeatureV2.project = "project_b"  # Different project
 
         snapshot2 = graph2.to_snapshot()
         tracking_v2 = snapshot2["test/feature"]["metaxy_full_definition_version"]
@@ -355,7 +355,7 @@ class TestSystemTableRecording:
             ):
                 pass
 
-            TestFeature.project = "test_project"  # type: ignore[attr-defined]
+            TestFeature.project = "test_project"
 
             # Create a store and record snapshot (while the test graph is still active)
             with InMemoryMetadataStore() as store:
@@ -460,7 +460,7 @@ class TestProjectValidation:
                 pass
 
             # Override to different project
-            TestFeature.project = "different_project"  # type: ignore[attr-defined]
+            TestFeature.project = "different_project"
 
             with InMemoryMetadataStore() as store:
                 # Create some test data

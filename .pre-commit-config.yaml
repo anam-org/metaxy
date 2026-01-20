@@ -7,10 +7,10 @@ repos:
       - id: trailing-whitespace
         exclude: '\.ambr$'  # Exclude syrupy snapshot files
       - id: end-of-file-fixer
-        exclude: '^(\.basedpyright/baseline\.json|uv\.lock)$'
+        exclude: '^uv\.lock$'
       - id: check-yaml
       - id: check-added-large-files
-        exclude: '^(\.basedpyright/baseline\.json|uv\.lock)$'
+        exclude: '^uv\.lock|examples/example-dagster/uv\.lock$'
   - repo: local
     hooks:
     - id: ruff-check
@@ -23,14 +23,14 @@ repos:
       entry: uv run dprint fmt
       language: system
       pass_filenames: false
-    - id: basedpyright
-      name: Basedpyright
-      entry: uv run basedpyright --level error
+    - id: typecheck
+      name: Typecheck
+      entry: uv run ty check
       language: system
-      pass_filenames: true
-      types: [python]
+      pass_filenames: false
     - id: build-docs
       name: Build Docs
       entry: uv run --group docs mkdocs build --strict
       language: system
       pass_filenames: false
+      files: ^(src/|docs/|pyproject\.toml|uv\.lock|mkdocs\.yml|\.pre-commit-config\.yaml)

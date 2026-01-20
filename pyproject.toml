@@ -1,24 +1,36 @@
 [project]
 name = "metaxy"
-version = "0.0.1.dev1"
-description = "Add your description here"
+version = "0.0.1.dev24"
+description = "Pluggable versioned metadata management for incremental multi-modal pipelines."
 readme = "README.md"
 authors = [
   { name = "Daniel Gafni", email = "danielgafni16@gmail.com" },
 ]
 requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
 dependencies = [
-  "cyclopts",
-  "narwhals>=2.9.0",
+  "cyclopts>=4.4.0",
+  "narwhals>=2.14.0",
   "platformdirs>=4.5.0",
-  "polars>=1.33.1",
+  "polars>=1.35.0",
   "polars-hash>=0.5.1",
   "pydantic>=2.11.9",
   "pydantic-settings>=2.11.0",
+  "python-dotenv>=1.0.0",
   "pyyaml>=6.0.0",
-  "sqlglot>=27.29.0",
+  "sqlglot>=28.1.0",
   "tomli>=2.3.0",
   "rich>=13.0.0",
+  "packaging>=25.0",
 ]
 
 [project.optional-dependencies]
@@ -47,6 +59,7 @@ duckdb = [
 ]
 delta = [
   "deltalake>=1.2.1",
+  "ibis-framework>=11.0.0",
 ]
 dagster = [
   "dagster>=1.12.3",
@@ -54,11 +67,20 @@ dagster = [
 
 lancedb = [
   "lancedb>=0.15.0",
+  "polars>=1.36.1",
+]
+mcp = [
+  "fastmcp>=2.0.0",
 ]
 
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
 mx = "metaxy.cli.app:main"
+
+[project.urls]
+Documentation = "https://metaxy.dev"
+Repository = "https://github.com/anam-org/metaxy"
+Issues = "https://github.com/anam-org/metaxy/issues"
 
 [build-system]
 requires = ["uv_build>=0.8.14,<0.9.0"]
@@ -77,17 +99,20 @@ dev = [
   "syrupy>=5.0.0",
   "ibis-framework[duckdb,clickhouse]>=11.0.0",
   "lancedb>=0.15.0",
-  "basedpyright>=1.32.1",
   "vulture>=2.14",
   "prek>=0.2.11",
   "pytest-env>=1.2.0",
   "pytest-cov>=7.0.0",
+  "pytest-rerunfailures>=15.0",
   "hypothesis>=6.142.4",
   "dprint-py>=0.50.2.0",
   "moto[s3,server]>=5.1.16",
   "deltalake>=1.2.1",
   "mistune>=3.1.4",
   "dagster>=1.12.3",
+  "ty>=0.0.4",
+  "datafusion>=51.0.0",
+  "pytest-asyncio>=0.26.0",
 ]
 
 examples = [
@@ -143,7 +168,6 @@ members = [
 [tool.uv.sources]
 examples = { workspace = true }
 mkdocs-metaxy = { workspace = true }
-cyclopts = { git = "https://github.com/BrianPugh/cyclopts.git", branch = "mkdocs-plugin" }
 
 [tool.vulture]
 exclude = [
@@ -175,6 +199,21 @@ exclude_lines = [
 show_missing = true
 skip_covered = false
 
+[tool.ty.environment]
+python-version = "3.10"
+
+[tool.ty.src]
+include = [
+  "src",
+  "tests",
+  "examples",
+]
+exclude = [
+  ".venv",
+  "examples/example-dagster/src/example_dagster/definitions.py",
+  "tests/models/test_extra_args_forbidden.py", # intentionally passes invalid args for runtime validation
+]
+
 [tool.pyright]
 reportAny = "none"
 reportExplicitAny = "none"
@@ -195,10 +234,13 @@ exclude = [
 
 [tool.pytest.ini_options]
 addopts = "--snapshot-details"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 env = [
   "METAXY_AUTO_CREATE_TABLES=1",
 ]
 filterwarnings = [
+  "error::polars.exceptions.PerformanceWarning",
   "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",
   "ignore:Global Metaxy configuration not initialized:UserWarning",
   "ignore::hypothesis.errors.NonInteractiveExampleWarning",
@@ -212,4 +254,5 @@ markers = [
   "ibis: Ibis-based store tests (DuckDB, ClickHouse)",
   "native: Stores with native compute capabilities",
   "polars: Stores using Polars for compute",
+  "delta: Delta Lake store tests",
 ]

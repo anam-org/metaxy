@@ -39,16 +39,16 @@ def setup_default_config():
 
 def test_base_operation_is_abstract():
     with pytest.raises(TypeError):
-        _ = BaseOperation()  # pyright: ignore[reportAbstractUsage]
+        _ = BaseOperation()
 
 
 def test_base_operation_requires_execute_for_feature():
     # Create a subclass without implementing execute_for_feature
-    class IncompleteOperation(BaseOperation):  # pyright: ignore[reportImplicitAbstractClass]
+    class IncompleteOperation(BaseOperation):
         pass
 
     with pytest.raises(TypeError, match="abstract"):
-        _ = IncompleteOperation()  # pyright: ignore[reportAbstractUsage]
+        _ = IncompleteOperation()
 
 
 def test_base_operation_subclass_implements_interface():

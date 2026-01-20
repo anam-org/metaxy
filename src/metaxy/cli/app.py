@@ -15,7 +15,7 @@ app = cyclopts.App(
     version=__version__,  # pyrefly: ignore[unexpected-keyword]
     console=console,  # pyrefly: ignore[unexpected-keyword]
     error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
-    config=cyclopts.config.Env(  # pyrefly: ignore[unexpected-keyword,implicit-import]
+    config=cyclopts.config.Env(  # pyrefly: ignore[unexpected-keyword,implicit-import]  # ty: ignore[invalid-argument-type]
         "METAXY_",  # Every environment variable for setting the arguments will begin with this.  # pyrefly: ignore[bad-argument-count]
     ),
     help_epilogue="Learn more in [Metaxy docs](https://anam-org.github.io/metaxy)",
@@ -60,6 +60,7 @@ def launcher(
 
     Auto-discovers configuration (`metaxy.toml` or `pyproject.toml`) in current or parent directories.
     Feature definitions are collected via [feature discovery](https://anam-org.github.io/metaxy/main/learn/feature-discovery/).
+    Supports loading environment variables from a `.env` file in the current directory.
     """
     import logging
     import os
@@ -86,10 +87,17 @@ app.command("metaxy.cli.graph:app", name="graph")
 app.command("metaxy.cli.graph_diff:app", name="graph-diff")
 app.command("metaxy.cli.list:app", name="list")
 app.command("metaxy.cli.metadata:app", name="metadata")
+app.command("metaxy.cli.mcp:app", name="mcp")
 
 
 def main():
     """Entry point for the CLI."""
+    from dotenv import load_dotenv
+
+    # Load .env from the current working directory before parsing CLI arguments
+    # This allows .env to configure METAXY_* environment variables for the CLI
+    load_dotenv(dotenv_path=Path.cwd() / ".env")
+
     app.meta()
 
 

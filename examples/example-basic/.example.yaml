@@ -1,0 +1,69 @@
+name: "Basic Example"
+description: "Demonstrates automatic recomputation when upstream dependencies change"
+package_name: "example_basic"
+
+scenarios:
+  - name: "Setup upstream data"
+    description: "Create initial upstream data for the pipeline"
+    steps:
+      - name: "setup_data"
+        type: "run_command"
+        command: "python -m example_basic.setup_data"
+        description: "Generate raw data samples"
+        capture_output: false
+        timeout: 10.0
+
+  - name: "Initial pipeline run"
+    description: "First execution with version 1 features"
+    steps:
+      - name: "initial_run"
+        type: "run_command"
+        command: "python -m example_basic.pipeline"
+        description: "Run pipeline with initial feature definitions"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify pipeline completed successfully"
+        returncode: 0
+        contains:
+          - "Pipeline"
+          - "✅ Pipeline complete!"
+
+  - name: "Idempotent rerun"
+    description: "Second execution should detect no changes"
+    steps:
+      - name: "idempotent_run"
+        type: "run_command"
+        command: "python -m example_basic.pipeline"
+        description: "Rerun pipeline without any code changes"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify idempotence (no recomputation)"
+        returncode: 0
+        contains:
+          - "No changes detected (idempotent)"
+
+  - name: "Code evolution"
+    description: "Apply patch to change parent feature code_version from 1 to 2, triggering child recomputation"
+    steps:
+      - name: "update_parent_version"
+        type: "apply_patch"
+        patch_path: "patches/01_update_parent_algorithm.patch"
+        description: "Change parent embedding code_version from 1 to 2"
+
+      - name: "recompute_after_change"
+        type: "run_command"
+        command: "python -m example_basic.pipeline"
+        description: "Run pipeline with updated parent feature"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify child recomputed due to parent change"
+        returncode: 0
+        contains:
+          - "✅ Pipeline complete!"
+          - "Materialized"

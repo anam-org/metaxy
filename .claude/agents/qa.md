@@ -1,7 +1,6 @@
 ---
 name: qa
 description: Use this agent when:\n\n1. A logical unit of work has been completed (feature implementation, bug fix, refactoring)\n2. Code changes are ready for review before committing or creating a pull request\n3. You need to verify that acceptance criteria and definition of done are met\n4. After making changes to test files to ensure tests are meaningful and not dummy implementations\n5. When you want to validate code quality through linting and type checking\n6. To determine the optimal test scope (subset vs full suite) based on changes made\n\n**Examples of when to use this agent:**\n\n<example>\nContext: User has just implemented a new feature for calculating data versions in the metadata store.\n\nuser: "I've finished implementing the native data version calculator for DuckDB. Can you review it?"\n\nassistant: "Let me use the qa agent to thoroughly check your implementation against acceptance criteria and run the appropriate tests."\n\n<uses Task tool to launch qa agent>\n</example>\n\n<example>\nContext: User has refactored migration detection logic and updated related tests.\n\nuser: "I've refactored the migration detection code and updated the tests in test_migrations.py"\n\nassistant: "I'll use the qa agent to verify that the tests properly validate the refactored logic and aren't just dummy tests, plus run linting and the relevant test subset."\n\n<uses Task tool to launch qa agent>\n</example>\n\n<example>\nContext: User has made changes across multiple modules affecting core functionality.\n\nuser: "I've updated the FeatureGraph class and modified how feature versions are calculated across several files"\n\nassistant: "Since your changes affect core functionality across multiple modules, I'll use the qa agent to determine if we need the full test suite or can run a targeted subset, and validate all acceptance criteria."\n\n<uses Task tool to launch qa agent>\n</example>\n\n<example>\nContext: Agent should proactively suggest QA validation after observing code completion.\n\nuser: "Here's the implementation for the new ClickHouse metadata store backend"\n\nassistant: "Great! Now let me proactively use the qa agent to ensure this implementation meets all acceptance criteria, has proper test coverage, and passes all quality checks."\n\n<uses Task tool to launch qa agent>\n</example>
-model: sonnet
 color: orange
 ---
 
@@ -54,9 +53,9 @@ You have zero tolerance for meaningless tests. For every test:
 - Report any violations with clear explanations
 - Suggest fixes for common issues
 
-**Type Checking with basedpyright:**
+**Type Checking with ty:**
 
-- Run `uv run basedpyright` (or the project's configured type checker)
+- Run `uv run ty check` (or the project's configured type checker)
 - Identify type errors and inconsistencies
 - Verify that type hints are present and accurate
 - Check for proper use of generics and type variables
@@ -133,7 +132,7 @@ Based on CLAUDE.md context:
 
 4. **Run Quality Checks:**
    - Execute ruff linting and formatting checks
-   - Run type checker (basedpyright or configured alternative)
+   - Run type checker (ty or configured alternative)
    - Report all violations clearly
 
 5. **Execute Tests:**

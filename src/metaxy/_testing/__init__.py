@@ -18,14 +18,22 @@ from metaxy._testing.metaxy_project import (
     assert_all_results_equal,
 )
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.pytest_helpers import add_metaxy_provenance_column
+from metaxy._testing.pytest_helpers import (
+    add_metaxy_provenance_column,
+    add_metaxy_system_columns,
+)
 from metaxy._testing.runbook import (
     ApplyPatchStep,
     AssertOutputStep,
     BaseStep,
+    CommandExecuted,
+    GraphPushed,
+    PatchApplied,
     Runbook,
+    RunbookExecutionState,
     RunbookRunner,
     RunCommandStep,
+    SavedRunbookResult,
     Scenario,
     StepType,
 )
@@ -40,6 +48,12 @@ __all__ = [
     "AssertOutputStep",
     "StepType",
     "RunbookRunner",
+    # Runbook execution state
+    "RunbookExecutionState",
+    "SavedRunbookResult",
+    "GraphPushed",
+    "PatchApplied",
+    "CommandExecuted",
     # Metaxy project helpers
     "TempFeatureModule",
     "HashAlgorithmCases",
@@ -49,6 +63,7 @@ __all__ = [
     "assert_all_results_equal",
     # Pytest helpers
     "add_metaxy_provenance_column",
+    "add_metaxy_system_columns",
     # Testing models
     "SampleFeatureSpec",
     "SampleFeature",

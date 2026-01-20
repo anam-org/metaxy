@@ -995,6 +995,82 @@ def test_full_graph_migration_integration(tmp_path):
 # to avoid redundant test operation class definitions.
 
 
+def test_migration_rerun_flag(tmp_path):
+    """Test that rerun=True forces re-execution of completed features."""
+    from metaxy.migrations.models import FullGraphMigration
+
+    # Create test graph
+    temp_module = TempFeatureModule("test_migration_rerun")
+
+    feature_spec = SampleFeatureSpec(
+        key=FeatureKey(["test", "rerun_feature"]),
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+    )
+
+    temp_module.write_features({"RerunFeature": feature_spec})
+    graph = temp_module.graph
+
+    with graph.use(), InMemoryMetadataStore() as store:
+        # Setup initial data
+        Feature = graph.features_by_key[FeatureKey(["test", "rerun_feature"])]
+
+        feature_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
+            }
+        )
+        feature_data = add_metaxy_provenance_column(feature_data, Feature)
+        store.write_metadata(Feature, feature_data)
+
+        SystemTableStorage(store).push_graph_snapshot()
+        snapshot_version = graph.snapshot_version
+
+        # Create migration with test operation
+        migration = FullGraphMigration(
+            migration_id="rerun_test_001",
+            parent="initial",
+            created_at=datetime.now(timezone.utc),
+            snapshot_version=snapshot_version,
+            ops=[
+                {
+                    "type": "tests.migrations.test_operations._TestBackfillOperation",
+                    "features": ["test/rerun_feature"],
+                    "fixed_value": "test_value",
+                }
+            ],
+        )
+
+        storage = SystemTableStorage(store)
+        executor = MigrationExecutor(storage)
+
+        # Execute first time - should complete successfully
+        result1 = executor.execute(migration, store, "default", dry_run=False)
+        assert result1.status == "completed"
+        assert result1.features_completed == 1
+        assert result1.rows_affected == 5  # From test operation
+
+        # Execute second time without rerun - should skip completed feature
+        result2 = executor.execute(migration, store, "default", dry_run=False)
+        assert result2.status == "completed"
+        assert result2.features_completed == 1  # Still counted as completed
+        assert result2.rows_affected == 0  # But no new work done (skipped)
+
+        # Execute third time with rerun=True - should re-process
+        result3 = executor.execute(
+            migration, store, "default", dry_run=False, rerun=True
+        )
+        assert result3.status == "completed"
+        assert result3.features_completed == 1
+        assert result3.rows_affected == 5  # Work done again
+
+    temp_module.cleanup()
+
+
 def test_full_graph_migration_empty_operations(tmp_path):
     """Test FullGraphMigration with no operations."""
     temp_module = TempFeatureModule("test_empty_ops")

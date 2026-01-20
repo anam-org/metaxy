@@ -6,7 +6,8 @@ scenarios:
   - name: "Initial pipeline run"
     description: "First execution creates videos, chunks, and face recognition"
     steps:
-      - type: "run_command"
+      - name: "initial_run"
+        type: "run_command"
         command: "python pipeline.py"
         description: "Run pipeline to create videos, chunks, and face recognition"
         capture_output: true
@@ -26,7 +27,8 @@ scenarios:
   - name: "Idempotent rerun"
     description: "Second execution should detect no changes"
     steps:
-      - type: "run_command"
+      - name: "idempotent_run"
+        type: "run_command"
         command: "python pipeline.py"
         description: "Rerun pipeline without any code changes"
         capture_output: true
@@ -42,11 +44,13 @@ scenarios:
   - name: "Code change - audio field only"
     description: "Apply patch to change Video audio code_version, observe field-level tracking"
     steps:
-      - type: "apply_patch"
+      - name: "update_audio_version"
+        type: "apply_patch"
         patch_path: "patches/01_update_video_code_version.patch"
         description: "Change Video audio field code_version from 1 to 2"
 
-      - type: "run_command"
+      - name: "recompute_after_audio_change"
+        type: "run_command"
         command: "python pipeline.py"
         description: "Run pipeline after audio code_version change"
         capture_output: true
@@ -64,7 +68,8 @@ scenarios:
   - name: "Final idempotent check"
     description: "Verify no further recomputation needed after code change processed"
     steps:
-      - type: "run_command"
+      - name: "final_idempotent_check"
+        type: "run_command"
         command: "python pipeline.py"
         description: "Rerun pipeline after code change"
         capture_output: true

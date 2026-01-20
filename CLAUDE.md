@@ -1,90 +1,48 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. Always use the following agents:
+## Agent Workflow
 
-Start each task with @agent-planner.
-
-Use @agent-python-dev to write code.
-Use @agent-python-test-engineer to write tests for it.
-
-Iterate until @agent-qa is happy.
+Start each task with the planner agent. Use python-dev to write code, python-test-engineer to write tests. Iterate until qa is satisfied.
 
 ## Project Status
 
-**⚠️ Early Development - No Stable API**
+**Early Development - No Stable API**
 
-This project is in active development with no users yet. Breaking changes are expected and encouraged:
-
-- **No backward compatibility required** - **we have no users yet**, refactor freely, prioritize changes that improve design and functionality
-- **API changes allowed** - improve interfaces without deprecation warnings
-- **Breaking changes welcome** - prioritize better design over stability
-- **Move fast** - optimize for the best long-term architecture, not short-term compatibility
+No users yet. Breaking changes are encouraged. Prioritize better design over backward compatibility. Refactor freely.
 
 ## Project Overview
 
-Metaxy is a feature metadata management system for multimodal ML pipelines that tracks feature versions, dependencies, and data lineage. It enables:
+Metaxy is a feature metadata management system for multimodal ML pipelines. It tracks feature versions, dependencies, and data lineage with declarative definitions, automatic change detection, and smart migrations.
 
-- **Declarative feature definitions** with explicit dependencies and versioning
-- **Automatic change detection** to identify affected downstream features
-- **Smart migrations** to reconcile metadata when code refactors don't change computation
-- **Dependency-aware updates** with automatic recomputation when upstream dependencies change
-- **Immutable metadata** with copy-on-write storage preserving historical versions
-- **Graph snapshots** recording complete feature graph states in deployment pipelines
-
-## Development
-
-Never create git commits unless asked for explicitly by the user.
-
-You can check GitHub Actions for your PR to see if tests pass.
-
-### Environment Setup
+## Commands
 
 ```bash
-# Install dependencies (uv is required)
-uv sync
-
-# Install with optional dependencies
-uv sync --extra ibis
+just sync        # Install all dependencies
+just ruff        # Lint and format
+just typecheck   # Type check with ty
+uv run pytest    # Run tests (add -k "pattern" to filter)
 ```
 
-### Testing
+## Guardrails
 
-```bash
-# Run all tests
-uv run pytest
+**Git commits**: Do not create commits unless explicitly requested. When asked to commit, follow standard git workflow.
 
-# Run specific test file
-uv run pytest tests/test_migrations.py
+**Tests**:
 
-# Run specific test
-uv run pytest tests/test_migrations.py::test_migration_generation
+- Always add or update tests when modifying features. Run `uv run pytest tests/path/to/test.py` to verify changes before considering work complete.
+- Never run the full test suite unless instructed. Only run relevant tests by filtering with `-k "pattern"`, specific files or specific tests `uv run pytest tests/test_migrations.py::test_migration_generation`
 
-# Run tests with specific backend
-uv run pytest tests/metadata_stores/test_duckdb.py
-```
+**Type safety**: Code must pass `just typecheck`. Fix type errors before submitting.
 
-Always keep tests up-to-date and maintainable. Add or update tests as features are added or modified.
+**Snapshot tests**: If tests fail due to snapshot mismatches after intentional changes, update with `uv run pytest --snapshot-update path/to/test.py`.
 
-### Linting and Formatting
+**Error handling**: Fail fast with clean errors. Do not catch exceptions to handle them gracefully. Let errors propagate with clear messages. Avoid try/except blocks unless re-raising with additional context.
 
-```bash
-# Run ruff linter
-uv run ruff check .
+## When to Consult Docs
 
-# Auto-fix issues
-uv run ruff check --fix .
+- **Architecture decisions or unfamiliar patterns**: See `docs/guide/` for concepts like feature graphs, migrations, and metadata stores
+- **Backend-specific issues** (DuckDB, ClickHouse, BigQuery): Check `docs/integrations/metadata-stores/` and corresponding test files in `tests/metadata_stores/`
 
-# Format code
-uv run ruff format .
-```
+## Writing Docs
 
-### Type Checking
-
-```bash
-# Run pyrefly type checker
-uv run basedpyright --level error
-```
-
-## Docs
-
-See the @docs directory to learn more.
+Write in complete English sentences. Do not use (braces) excessively. Explain concepts clearly and concisely. First provide a generic explanation, then give a concrete example if necessary. Use `Material for Mkdocs` features: tooltips and admonitions to keep examples aside from the main flow.

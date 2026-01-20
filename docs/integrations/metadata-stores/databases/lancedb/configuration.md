@@ -1,3 +1,8 @@
+---
+title: "LanceDB Configuration"
+description: "Configuration options for LanceDBMetadataStore."
+---
+
 # LanceDB Configuration
 
 <!-- dprint-ignore-start -->

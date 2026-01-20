@@ -7,6 +7,7 @@ import polars as pl
 import pytest
 
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
+from metaxy._testing.pytest_helpers import add_metaxy_system_columns
 from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
@@ -16,20 +17,6 @@ from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.versioning.polars import PolarsVersioningEngine
-
-
-# Helper function to add metaxy_provenance column to test data
-def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
-    """Add metaxy_provenance column (hash of provenance_by_field) to test data."""
-    df = df.with_columns(
-        pl.col("metaxy_provenance_by_field")
-        .map_elements(
-            lambda x: f"hash_{'_'.join(str(v) for v in x.values())}",
-            return_dtype=pl.String,
-        )
-        .alias("metaxy_provenance")
-    )
-    return df
 
 
 # Simple test joiner
@@ -62,8 +49,7 @@ class TestJoiner:
         upstream_by_key = {}
         for k, v in upstream_refs.items():
             df = v.collect().to_polars()
-            if "metaxy_provenance" not in df.columns:
-                df = add_metaxy_provenance(df)
+            df = add_metaxy_system_columns(df)
             upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
 
         joined = engine.prepare_upstream(upstream_by_key, filters=None)
@@ -76,7 +62,7 @@ class TestJoiner:
             )
             mapping[upstream_key_str] = provenance_col_name
 
-        return joined, mapping
+        return joined, mapping  # ty: ignore[invalid-return-type]
 
 
 def test_feature_spec_id_columns_list_only():

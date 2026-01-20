@@ -3,7 +3,7 @@ from metaxy.models.types import FieldKey
 
 
 def test_default_code_version():
-    field = FieldSpec("my_field")
+    field = FieldSpec(key="my_field")
 
     # this default is EXTREMELY important
     # changing it will affect **all versions on all fields and features**
@@ -12,7 +12,7 @@ def test_default_code_version():
 
 def test_field_spec_from_string():
     """Test that FieldSpec can be constructed from just a string key."""
-    field = FieldSpec("my_field")
+    field = FieldSpec(key="my_field")
 
     assert isinstance(field.key, FieldKey)
     assert field.key.to_string() == "my_field"
@@ -21,7 +21,7 @@ def test_field_spec_from_string():
 
 def test_field_spec_from_string_with_code_version():
     """Test FieldSpec construction with explicit code_version."""
-    field = FieldSpec("my_field", code_version="2")
+    field = FieldSpec(key="my_field", code_version="2")
 
     assert field.key.to_string() == "my_field"
     assert field.code_version == "2"
@@ -53,7 +53,7 @@ def test_field_spec_adapter_validates_dict():
 
 def test_field_spec_adapter_preserves_field_spec():
     """Test that CoersibleToFieldSpecsTypeAdapter preserves existing FieldSpec instances."""
-    original = FieldSpec("my_field", code_version="5")
+    original = FieldSpec(key="my_field", code_version="5")
     validated = CoersibleToFieldSpecsTypeAdapter.validate_python([original])
 
     assert len(validated) == 1
@@ -86,7 +86,7 @@ def test_feature_spec_with_mixed_fields():
         key="test/feature",
         fields=[
             "simple_field",
-            FieldSpec("complex_field", code_version="2"),
+            FieldSpec(key="complex_field", code_version="2"),
             "another_simple_field",
         ],
     )

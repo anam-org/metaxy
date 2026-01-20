@@ -38,7 +38,7 @@ def clean_imports():
 # Test fixtures - Define features dynamically in tests
 def create_test_feature(name: str, key: list[str]) -> type[BaseFeature]:
     """Helper to create test feature classes."""
-    return type(
+    return type(  # ty: ignore[no-matching-overload]
         name,
         (BaseFeature,),
         {},
@@ -359,7 +359,6 @@ class ConfigFeature(BaseFeature, spec=SampleFeatureSpec(
             # Load from both sources
             result_graph = load_features(
                 entrypoints=["config_module.feature"],
-                load_config=True,
                 load_packages=True,
             )
 
@@ -372,9 +371,9 @@ class ConfigFeature(BaseFeature, spec=SampleFeatureSpec(
         sys.path.remove(str(tmp_path))
 
 
-def test_load_features_config_only(graph: FeatureGraph, tmp_path: Path):
-    """Test loading only config entrypoints."""
-    module_dir = tmp_path / "config_only"
+def test_load_features_entrypoints_only(graph: FeatureGraph, tmp_path: Path):
+    """Test loading only explicit entrypoints."""
+    module_dir = tmp_path / "entrypoints_only"
     module_dir.mkdir()
     (module_dir / "__init__.py").write_text("")
 
@@ -383,8 +382,8 @@ def test_load_features_config_only(graph: FeatureGraph, tmp_path: Path):
 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
 from metaxy._testing.models import SampleFeatureSpec
 
-class ConfigOnlyFeature(BaseFeature, spec=SampleFeatureSpec(
-    key=FeatureKey(["config_only", "feature"]),
+class EntrypointsOnlyFeature(BaseFeature, spec=SampleFeatureSpec(
+    key=FeatureKey(["entrypoints_only", "feature"]),
 
     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")]
 )):
@@ -397,13 +396,12 @@ class ConfigOnlyFeature(BaseFeature, spec=SampleFeatureSpec(
         with patch("metaxy.entrypoints.entry_points") as mock_entry_points:
             # Should not be called when load_packages=False
             load_features(
-                entrypoints=["config_only.feature"],
-                load_config=True,
+                entrypoints=["entrypoints_only.feature"],
                 load_packages=False,
             )
 
             mock_entry_points.assert_not_called()
-            assert FeatureKey(["config_only", "feature"]) in graph.features_by_key
+            assert FeatureKey(["entrypoints_only", "feature"]) in graph.features_by_key
     finally:
         sys.path.remove(str(tmp_path))
 
@@ -433,7 +431,6 @@ def test_load_features_packages_only(graph: FeatureGraph):
 
         load_features(
             entrypoints=None,
-            load_config=False,
             load_packages=True,
         )
 
@@ -444,7 +441,6 @@ def test_load_features_returns_graph(graph: FeatureGraph):
     """Test that load_features returns the populated graph."""
     result = load_features(
         entrypoints=None,
-        load_config=False,
         load_packages=False,
     )
 

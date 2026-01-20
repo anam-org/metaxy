@@ -1,3 +1,8 @@
+---
+title: "Metadata Store Integrations"
+description: "Available metadata store backends for Metaxy."
+---
+
 # Metadata Stores
 
 Metadata stores may come in two flavors.

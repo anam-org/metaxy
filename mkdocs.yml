@@ -1,6 +1,6 @@
 site_name: Metaxy
-site_description: Metadata layer for multi-modal ML pipelines
-site_url: https://docs.metaxy.io
+site_description: Pluggable metadata layer for multi-modal pipelines
+site_url: https://anam-org.github.io/metaxy
 repo_url: https://github.com/anam-org/metaxy
 repo_name: anam-org/metaxy
 
@@ -62,7 +62,7 @@ plugins:
   - gh-admonitions
   - macros:
       module_name: docs/main
-  # - social
+  - social
 
   # in the futurem, we could move navigation to a separate file
   # - literate-nav:
@@ -165,6 +165,7 @@ markdown_extensions:
   # Metaxy custom extensions (must be before superfences to inject fenced code blocks)
   - metaxy_config
   - metaxy_examples
+  - metaxy_mcp
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -181,7 +182,7 @@ markdown_extensions:
   - pymdownx.tilde
 
 nav:
-  - Home: index.md
+  - Overview: index.md
   - User Guide:
     - guide/index.md
     - Getting Started:
@@ -194,6 +195,7 @@ nav:
       - Feature Discovery: guide/learn/feature-discovery.md
       - Syntactic Sugar: guide/learn/syntactic-sugar.md
       - Lineage Relationship: guide/learn/relationship.md
+      - Optional Dependencies: guide/learn/optional-dependencies.md
       - Filters: guide/learn/filters.md
       - Testing: guide/learn/testing.md
       - System Columns: guide/learn/system-columns.md
@@ -235,6 +237,7 @@ nav:
           - Configuration: integrations/metadata-stores/storage/delta/configuration.md
           - API: integrations/metadata-stores/storage/delta/api.md
     - Plugins:
+      - integrations/plugins/index.md
       - SQLModel:
         - integrations/plugins/sqlmodel/index.md
         - Configuration: integrations/plugins/sqlmodel/configuration.md
@@ -243,9 +246,14 @@ nav:
         - integrations/plugins/sqlalchemy/index.md
         - Configuration: integrations/plugins/sqlalchemy/configuration.md
         - API: integrations/plugins/sqlalchemy/api.md
+    - AI:
+      - Claude Code: integrations/ai/claude.md
+      - MCP Server: integrations/ai/mcp.md
   - Examples:
     - examples/index.md
-    - One To Many: examples/one-to-many.md
+    - Basic: examples/basic.md
+    - Aggregation: examples/aggregation.md
+    - Expansion: examples/expansion.md
   - Reference:
     - reference/index.md
     - API:

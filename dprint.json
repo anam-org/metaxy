@@ -9,7 +9,6 @@
     "**/*.lock",
     "docs/reference/**",
     "**/api.md",
-    ".basedpyright/baseline.json",
     "docs/index.md"
   ],
   "plugins": [

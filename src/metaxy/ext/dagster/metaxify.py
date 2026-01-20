@@ -43,8 +43,6 @@ class metaxify:
         key_prefix: Prefix to prepend to the resolved asset key. Also applied to upstream
             dependency keys. Cannot be used with `key`.
         inject_metaxy_kind: Whether to inject `"metaxy"` kind into asset kinds.
-            Currently, kinds count is limited by 3, and `metaxify` will skip kind injection
-            if there are already 3 kinds on the asset.
         inject_code_version: Whether to inject the Metaxy feature code version into the asset's
             code version. The version is appended in the format `metaxy:<version>`.
         set_description: Whether to set the asset description from the feature class docstring
@@ -53,11 +51,14 @@ class metaxify:
             Field types are converted to strings, and field descriptions are used as column descriptions.
         inject_column_lineage: Whether to inject column-level lineage into the asset metadata under
             `dagster/column_lineage`. Uses Pydantic model fields to track
-            column provenance via `FeatureDep.rename`, `FeatureSpec.lineage`, and direct pass-through.
+            column provenance via `FeatureDep.rename`, `FeatureDep.lineage`, and direct pass-through.
 
     !!! tip
-        Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
-        `"metaxy/feature"` metadata. This is a perfectly valid setup since Metaxy writes are append-only.
+        Multiple Dagster assets can contribute to the same Metaxy feature.
+        This is a perfectly valid setup since Metaxy writes are append-only. In order to do this, set the following metadata keys:
+
+            - `"metaxy/feature"` pointing to the same Metaxy feature key
+            - `"metaxy/partition"` should be set to a dictionary mapping column names to values produced by the specific Dagster asset
 
     !!! example
         ```py  {hl_lines="8"}
@@ -102,6 +103,27 @@ class metaxify:
             metadata={"metaxy/feature": "my/feature/key"},
         )
         asset_spec = mxd.metaxify()(asset_spec)
+        ```
+
+    ??? example "Multiple Dagster assets contributing to the same Metaxy feature"
+        ```py
+        @dg.asset(
+            metadata={
+                "metaxy/feature": "my/feature/key",
+                "metaxy/partition": {"dataset": "a"},
+            },
+        )
+        def my_feature_dataset_a():
+            ...
+
+        @dg.asset(
+            metadata={
+                "metaxy/feature": "my/feature/key",
+                "metaxy/partition": {"dataset": "b"},
+            },
+        )
+        def my_feature_dataset_b():
+            ...
         ```
     """
 
@@ -199,7 +221,7 @@ class metaxify:
 
     def __call__(self, asset: _T) -> _T:
         return self._transform(
-            asset,
+            asset,  # ty: ignore[invalid-argument-type]
             key=self.key,
             key_prefix=self.key_prefix,
             inject_metaxy_kind=self.inject_metaxy_kind,
@@ -223,7 +245,7 @@ class metaxify:
     ) -> _T:
         """Transform an AssetsDefinition or AssetSpec with Metaxy metadata."""
         if isinstance(asset, dg.AssetSpec):
-            return _metaxify_spec(
+            return _metaxify_spec(  # ty: ignore[invalid-return-type]
                 asset,
                 key=key,
                 key_prefix=key_prefix,
@@ -261,7 +283,7 @@ class metaxify:
                 keys_to_replace[orig_key] = new_spec.key
             transformed_specs.append(new_spec)
 
-        return _replace_specs_on_assets_definition(
+        return _replace_specs_on_assets_definition(  # ty: ignore[invalid-return-type]
             asset, transformed_specs, keys_to_replace
         )
 
@@ -365,18 +387,24 @@ def _metaxify_spec(
             final_key = resolved_key
 
     # Build deps from feature dependencies
-    deps_to_add: set[dg.AssetDep] = set()
+    metaxy_deps_by_key: dict[dg.AssetKey, dg.AssetDep] = {}
     for dep in feature_spec.deps:
         upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
         upstream_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
         # Apply key_prefix to upstream deps as well
         if key_prefix is not None:
             upstream_key = dg.AssetKey([*key_prefix.path, *upstream_key.path])
-        deps_to_add.add(dg.AssetDep(asset=upstream_key))
+        metaxy_deps_by_key[upstream_key] = dg.AssetDep(asset=upstream_key)
+
+    # Merge: user-specified deps (spec.deps) take precedence over metaxy-generated deps
+    # This allows users to override with custom metadata or partition_mapping
+    deps_by_key = {**metaxy_deps_by_key}
+    for dep in spec.deps:
+        deps_by_key[dep.asset_key] = dep
 
     # Build kinds
     kinds_to_add: set[str] = set()
-    if inject_metaxy_kind and len(spec.kinds) < 3:
+    if inject_metaxy_kind:
         kinds_to_add.add(DAGSTER_METAXY_KIND)
 
     # Extract dagster attributes (excluding asset_key which is handled separately)
@@ -496,7 +524,7 @@ def _metaxify_spec(
 
     replace_attrs: dict[str, Any] = {
         "key": final_key,
-        "deps": {*spec.deps, *deps_to_add},
+        "deps": list(deps_by_key.values()),
         "metadata": metadata_to_add,
         "kinds": {*spec.kinds, *kinds_to_add},
         "tags": {**spec.tags, **tags_to_add},

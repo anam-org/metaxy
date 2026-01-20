@@ -1,3 +1,8 @@
+---
+title: "Integrations"
+description: "Connect Metaxy with orchestrators, metadata stores, and plugins."
+---
+
 # Metaxy Integrations
 
 ## Orchestration
@@ -5,13 +10,17 @@
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
--   :custom-dagster:{ .lg .middle } [**Dagster**](orchestration/dagster/index.md)
+  - :custom-dagster:{ .lg .middle } [**Dagster**](orchestration/dagster/index.md)
 
     ---
 
     :material-tag-outline: Orchestration • Data Platform
 
-    Integrate Metaxy with Dagster using ConfigurableResource to manage metadata stores in your data pipelines.
+    Seamlessly integrate Metaxy with [Dagster](https://dagster.io/) with the power of `@metaxify` and the `MetaxyIOManager`.
+
+    !!! success "Recommended"
+
+        Metaxy has been built with Dagster in mind. This integration is the best way to organize, materialize and observe multiple Metaxy features at scale.
 
     [:octicons-arrow-right-24: Integration docs](orchestration/dagster/index.md)
 
@@ -24,71 +33,91 @@
 
 Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
+<div class="annotate" markdown>
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
--   :custom-deltalake:{ .lg .middle } [**Delta Lake**](metadata-stores/storage/delta/index.md)
 
-    ---
-
-    :material-tag-outline: Storage Only
-
-    Store metadata in Delta Lake format with support for local filesystem and remote object stores (S3, Azure, GCS).
-
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta/index.md)
-
-    [:octicons-arrow-right-24: API docs](metadata-stores/storage/delta/api.md)
-
--   :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb/index.md)
+  - :custom-bigquery-blue:{ .lg .middle } [**BigQuery**](metadata-stores/databases/bigquery/index.md)
 
     ---
 
     :material-tag-outline: Database
 
-    Columnar database optimized for vector search and multimodal data with embedded (local) and external (object store or LanceDB Cloud) deployments.
+    Use [Google BigQuery](https://cloud.google.com/bigquery) - scalable serverless analytical database on GCP.
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb/index.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/bigquery/index.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/lancedb/api.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/bigquery/api.md)
 
--   :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb/index.md)
-
-    ---
-
-    :material-tag-outline: Database
-
-    Store metadata in DuckDB with support for local files, in-memory databases, and MotherDuck cloud.
-
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb/index.md)
-
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/duckdb/api.md)
-
--   :custom-clickhouse:{ .lg .middle } [**ClickHouse**](metadata-stores/databases/clickhouse/index.md)
+  - :custom-clickhouse:{ .lg .middle } [**ClickHouse**](metadata-stores/databases/clickhouse/index.md)
 
     ---
 
     :material-tag-outline: Database
 
-    Leverage ClickHouse for large metadata volumes and high-throughput setups.
+    Leverage the lightning-fast analytical [ClickHouse](https://clickhouse.com/) database for large metadata volume and high-throughput setups.
+
+    !!! success "Recommended"
+
+        Ideal for production.
 
     [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/clickhouse/index.md)
 
     [:octicons-arrow-right-24: API docs](metadata-stores/databases/clickhouse/api.md)
 
--   :custom-bigquery-blue:{ .lg .middle } [**BigQuery**](metadata-stores/databases/bigquery/index.md)
+  - :custom-deltalake:{ .lg .middle } [**Delta Lake**](metadata-stores/storage/delta/index.md)
 
     ---
 
-    :material-tag-outline: Database
+    :material-tag-outline: Storage
 
-    Use Google BigQuery as a scalable serverless metadata store on GCP.
+    Store metadata in [Delta Lake](https://delta.io/) format in local files or remote object stores (S3, GCS, and others). (1)
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/bigquery/index.md)
+    !!! success "Recommended"
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/bigquery/api.md)
+        Ideal for dev environments.
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta/index.md)
+
+    [:octicons-arrow-right-24: API docs](metadata-stores/storage/delta/api.md)
+
+  - :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb/index.md)
+
+    ---
+
+    :material-tag-outline: Database • :material-tag-outline: Storage
+
+    Use [DuckDB](https://duckdb.org/) - a fast analytical database with support for local and remote compute.
+    [DuckLake](https://ducklake.select/) is available as well.
+
+    !!! warning
+
+        DuckDB is not recommended for production due to [parallel writes limitations](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb/index.md)
+
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/duckdb/api.md)
+
+  - :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb/index.md)
+
+    ---
+
+    :material-tag-outline: Database • :material-tag-outline: Storage
+
+    Use the multi-modal [LanceDB](https://lancedb.com/) database or [Lance](https://lancedb.com/docs/overview/lance/) storage format. (2)
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb/index.md)
+
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/lancedb/api.md)
 <!-- dprint-ignore-end -->
 
 </div>
+</div>
+
+1. uses a local versioning engine implemented in [Polars](https://docs.pola.rs/) and [`polars-hash`](https://github.com/ion-elgreco/polars-hash)
+
+2. uses a local versioning engine implemented in [Polars](https://docs.pola.rs/) and [`polars-hash`](https://github.com/ion-elgreco/polars-hash)
 
 ## Plugins
 
@@ -118,6 +147,34 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
     [:octicons-arrow-right-24: Integration docs](plugins/sqlmodel/index.md)
 
     [:octicons-arrow-right-24: API docs](plugins/sqlmodel/api.md)
+<!-- dprint-ignore-end -->
+
+</div>
+
+## AI
+
+<div class="grid cards" markdown>
+
+<!-- dprint-ignore-start -->
+-   :custom-claude:{ .lg .middle } [**Claude Code**](ai/claude.md)
+
+    ---
+
+    :material-tag-outline: AI • LLM
+
+    Use Metaxy with [Claude Code](https://claude.ai/claude-code) through the official plugin, providing the `/metaxy` skill and MCP tools.
+
+    [:octicons-arrow-right-24: Integration docs](ai/claude.md)
+
+-   :custom-mcp:{ .lg .middle } [**MCP Server**](ai/mcp.md)
+
+    ---
+
+    :material-tag-outline: AI • LLM
+
+    Expose Metaxy's feature graph and metadata store operations to AI assistants via the [Model Context Protocol](https://modelcontextprotocol.io/).
+
+    [:octicons-arrow-right-24: Integration docs](ai/mcp.md)
 <!-- dprint-ignore-end -->
 
 </div>

@@ -326,7 +326,7 @@ class DiffFormatter:
         """
         lines = []
         lines.append("---")
-        lines.append("title: Graph Diff")
+        lines.append("title: Feature Graph Changes")
         lines.append("---")
         lines.append("flowchart TB")
         lines.append(
@@ -648,7 +648,7 @@ class DiffFormatter:
 
         lines = []
         lines.append("---")
-        lines.append("title: Merged Graph Diff")
+        lines.append("title: Feature Graph Changes")
         lines.append("---")
         lines.append("flowchart TB")
         lines.append(

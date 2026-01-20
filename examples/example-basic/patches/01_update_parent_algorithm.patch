@@ -1,0 +1,11 @@
+--- a/src/example_basic/features.py
++++ b/src/example_basic/features.py
+@@ -15,7 +15,7 @@ class ParentFeature(
+         fields=[
+             FieldSpec(
+                 key="embeddings",
+-                code_version="1",
++                code_version="2",
+             ),
+         ],
+         id_columns=("sample_uid",),

@@ -39,7 +39,7 @@ def test_duckdb_table_naming(
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
         # Check table was created with correct name using Ibis
-        table_names = store.ibis_conn.list_tables()
+        table_names = store.conn.list_tables()
         assert "test_stores__upstream_a" in table_names
 
 
@@ -68,7 +68,7 @@ def test_duckdb_table_prefix_applied(
         # Record snapshot to ensure system table is materialized
         SystemTableStorage(store).push_graph_snapshot()
 
-        table_names = set(store.ibis_conn.list_tables())
+        table_names = set(store.conn.list_tables())
         assert expected_feature_table in table_names
         assert store.get_table_name(feature.spec().key) == expected_feature_table
         assert store.get_table_name(FEATURE_VERSIONS_KEY) == expected_system_table
@@ -108,8 +108,8 @@ def test_duckdb_uses_ibis_backend(
     db_path = tmp_path / "test.duckdb"
 
     with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
-        # Should have ibis_conn
-        assert hasattr(store, "ibis_conn")
+        # Should have conn
+        assert hasattr(store, "conn")
         # Backend should be duckdb
         assert store.backend == "duckdb"
 

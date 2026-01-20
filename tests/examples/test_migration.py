@@ -37,8 +37,8 @@ def test_pipeline(tmp_path, snapshot):
     # Override specific values for the test using proper Pydantic environment variables
     base_env.update(
         {
-            # Override the database path for the dev store
-            "METAXY_STORES__DEV__CONFIG__DATABASE": str(test_db),
+            # Override the root path for the dev store (DeltaMetadataStore uses root_path)
+            "METAXY_STORES__DEV__CONFIG__ROOT_PATH": str(test_db),
             # Override the migrations directory
             "METAXY_MIGRATIONS_DIR": str(test_migrations_dir),
             # Ensure HOME is set for DuckDB extension installation
@@ -60,8 +60,7 @@ def test_pipeline(tmp_path, snapshot):
 
     # Step 1: metaxy graph push with STAGE=1
     result = project.run_cli(
-        "graph",
-        "push",
+        ["graph", "push"],
         env={**base_env, "STAGE": "1"},
     )
     assert result.returncode == 0, f"Push v1 failed: {result.stderr}"
@@ -92,8 +91,7 @@ def test_pipeline(tmp_path, snapshot):
 
     # Step 3: Push STAGE=2 snapshot (simulates CD after code deployment)
     result = project.run_cli(
-        "graph",
-        "push",
+        ["graph", "push"],
         env={**base_env, "STAGE": "2"},
     )
     assert result.returncode == 0, f"Push v2 failed: {result.stderr}"
@@ -133,8 +131,7 @@ def test_pipeline(tmp_path, snapshot):
 
     # Step 5: Apply migration (use STAGE=2 env)
     result = project.run_cli(
-        "migrations",
-        "apply",
+        ["migrations", "apply"],
         env={**base_env, "STAGE": "2"},
     )
     assert result.returncode == 0, (

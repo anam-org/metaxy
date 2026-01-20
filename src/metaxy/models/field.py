@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import TYPE_CHECKING, Annotated, Any, Literal, overload
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from pydantic import BaseModel, BeforeValidator, TypeAdapter
 from pydantic import Field as PydanticField
@@ -16,11 +16,6 @@ from metaxy.models.types import (
 
 if TYPE_CHECKING:
     # yes, these are circular imports, the TYPE_CHECKING block hides them at runtime.
-    # neither pyright not basedpyright allow ignoring `reportImportCycles` because they think it's a bad practice
-    # and it would be very smart to force the user to restructure their project instead
-    # context: https://github.com/microsoft/pyright/issues/1825
-    # however, considering the recursive nature of graphs, and the syntactic sugar that we want to support,
-    # I decided to just put these errors into `.basedpyright/baseline.json` (after ensuring this is the only error produced by basedpyright)
     from metaxy.models.feature import BaseFeature
     from metaxy.models.feature_spec import FeatureSpec
 
@@ -64,6 +59,8 @@ def _validate_field_dep_fields(
 
 
 class FieldDep(BaseModel):
+    model_config = {"extra": "forbid"}
+
     feature: Annotated[FeatureKey, BeforeValidator(_validate_field_dep_feature)]
     fields: Annotated[
         list[FieldKey] | Literal[SpecialFieldDep.ALL],
@@ -72,59 +69,9 @@ class FieldDep(BaseModel):
 
     if TYPE_CHECKING:
 
-        @overload
-        @overload
         def __init__(
             self,
-            feature: str,
-            **kwargs: Any,
-        ) -> None:
-            """Initialize from string feature key."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            feature: Sequence[str],
-            **kwargs: Any,
-        ) -> None:
-            """Initialize from sequence of parts."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            feature: FeatureKey,
-            **kwargs: Any,
-        ) -> None:
-            """Initialize from FeatureKey instance."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            feature: "FeatureSpec",
-            **kwargs: Any,
-        ) -> None:
-            """Initialize from FeatureSpec instance."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            feature: type["BaseFeature"],
-            **kwargs: Any,
-        ) -> None:
-            """Initialize from BaseFeature class."""
-            ...
-
-        # Final signature combining all overloads
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
-            self,
+            *,
             feature: str
             | Sequence[str]
             | FeatureKey
@@ -132,8 +79,7 @@ class FieldDep(BaseModel):
             | type["BaseFeature"],
             fields: list[CoercibleToFieldKey]
             | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
-            **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
+        ) -> None: ...
 
 
 def _validate_field_spec_from_string(value: Any) -> Any:
@@ -164,6 +110,8 @@ def _validate_field_spec_key(value: Any) -> FieldKey:
 
 
 class FieldSpec(BaseModel):
+    model_config = {"extra": "forbid"}
+
     key: Annotated[FieldKey, BeforeValidator(_validate_field_spec_key)] = PydanticField(
         default_factory=lambda: FieldKey(["default"])
     )
@@ -190,72 +138,13 @@ class FieldSpec(BaseModel):
 
     if TYPE_CHECKING:
 
-        @overload
-        def __init__(self, key: CoercibleToFieldKey, **kwargs) -> None:
-            """Initialize from key and no other arguments."""
-            ...
-
-        @overload
         def __init__(
             self,
-            key: str,
-            code_version: str,
-            deps: SpecialFieldDep | list[FieldDep] | None = None,
-        ) -> None:
-            """Initialize from string key."""
-            ...
-
-        @overload
-        def __init__(
-            self,
-            key: Sequence[str],
-            code_version: str,
-            deps: SpecialFieldDep | list[FieldDep] | None = None,
-        ) -> None:
-            """Initialize from sequence of parts."""
-            ...
-
-        @overload
-        def __init__(
-            self,
-            key: FieldKey,
-            code_version: str,
-            deps: SpecialFieldDep | list[FieldDep] | None = None,
-        ) -> None:
-            """Initialize from FieldKey instance."""
-            ...
-
-        # Final signature combining all overloads
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
-            self,
-            key: CoercibleToFieldKey,
+            *,
+            key: CoercibleToFieldKey | None = None,
             code_version: str = DEFAULT_CODE_VERSION,
             deps: SpecialFieldDep | list[FieldDep] | None = None,
-            **kwargs: Any,
         ) -> None: ...
-
-    # Runtime __init__ to handle positional arguments
-    def __init__(
-        self,
-        key: CoercibleToFieldKey,
-        code_version: str = DEFAULT_CODE_VERSION,
-        deps: SpecialFieldDep | list[FieldDep] | None = None,
-        *args,
-        **kwargs: Any,
-    ) -> None:
-        validated_key = FieldKeyAdapter.validate_python(key)
-
-        # Handle None deps - use empty list as default
-        if deps is None:
-            deps = []
-
-        super().__init__(
-            key=validated_key,
-            code_version=code_version,
-            deps=deps,
-            *args,
-            **kwargs,
-        )
 
 
 # Type adapter for validating FieldSpec with string coercion support

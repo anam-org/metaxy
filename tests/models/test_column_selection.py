@@ -8,22 +8,10 @@ import pytest
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
 from metaxy._testing.models import SampleFeatureSpec
+from metaxy._testing.pytest_helpers import add_metaxy_system_columns
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.polars import PolarsVersioningEngine
-
-
-# Helper function to add metaxy_provenance column to test data
-def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
-    """Add metaxy_provenance column (hash of provenance_by_field) to test data."""
-    # For tests, we just use a simple hash-like string based on the provenance_by_field
-    # In real usage, this would be calculated by the VersioningEngine
-    df = df.with_columns(
-        pl.col("metaxy_provenance_by_field")
-        .map_elements(lambda x: f"hash_{x['default']}", return_dtype=pl.String)
-        .alias("metaxy_provenance")
-    )
-    return df
 
 
 # Simple test joiner that uses VersioningEngine
@@ -51,10 +39,9 @@ class TestJoiner:
         # Convert string keys back to FeatureKey objects and ensure data is materialized
         upstream_by_key = {}
         for k, v in upstream_refs.items():
-            # Materialize the lazy frame and ensure it has metaxy_provenance
+            # Materialize the lazy frame and ensure it has all metaxy system columns
             df = v.collect().to_polars()
-            if "metaxy_provenance" not in df.columns:
-                df = add_metaxy_provenance(df)
+            df = add_metaxy_system_columns(df)
             upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
 
         # Prepare upstream (handles filtering, selecting, renaming, and joining)
@@ -71,7 +58,7 @@ class TestJoiner:
             )
             mapping[upstream_key_str] = provenance_col_name
 
-        return joined, mapping
+        return joined, mapping  # ty: ignore[invalid-return-type]
 
 
 class TestColumnSelection:
@@ -457,9 +444,7 @@ class TestColumnSelection:
         }
 
         # Should raise error about column conflict
-        with pytest.raises(
-            ValueError, match="Found additional shared columns.*conflict_col"
-        ):
+        with pytest.raises(ValueError, match="Found column collisions.*conflict_col"):
             DownstreamFeature.load_input(joiner, upstream_refs)
 
     def test_column_conflict_resolved_with_rename(self):
@@ -809,7 +794,8 @@ class TestColumnSelection:
         # Serialize to dict - custom serializer always uses "filters" key
         # Test serialization with by_alias=True to use serialization_alias
         dep_dict = dep.model_dump(by_alias=True)
-        assert dep_dict["feature"] == ["test", "upstream"]
+        # FeatureKey now serializes to string format for JSON dict key compatibility
+        assert dep_dict["feature"] == "test/upstream"
         assert dep_dict["columns"] == ("col1", "col2")
         assert dep_dict["rename"] == {"col1": "new_col1"}
         assert dep_dict["filters"] == ("col1 = 'x'",)
@@ -1123,7 +1109,8 @@ class TestColumnSelection:
 
             # Verify columns and rename are serialized
             dep = feature_spec_dict["deps"][0]
-            assert dep["feature"] == ["test", "upstream"]
+            # FeatureKey serializes to string format for JSON dict key compatibility
+            assert dep["feature"] == "test/upstream"
             assert dep["columns"] == [
                 "col1",
                 "col2",
@@ -1138,7 +1125,8 @@ class TestColumnSelection:
             downstream_spec_dict = downstream_snapshot["feature_spec"]
             assert "deps" in downstream_spec_dict
             dep_dict = downstream_spec_dict["deps"][0]
-            assert dep_dict["feature"] == ["test", "upstream"]
+            # FeatureKey serializes to string format for JSON dict key compatibility
+            assert dep_dict["feature"] == "test/upstream"
             assert dep_dict["columns"] == ["col1", "col2"]
             assert dep_dict["rename"] == {"col1": "renamed_col1"}
 
@@ -1380,3 +1368,128 @@ class TestColumnSelection:
                 ),
             ):
                 pass
+
+    def test_aggregation_lineage_column_selection_drops_non_join_id_columns(self):
+        """Test that aggregation lineage drops upstream ID columns not in the aggregation key.
+
+        When two upstreams share a column that is an ID column in one of them,
+        column selection should drop it because it's not needed for the aggregation.
+        The `on=` columns are auto-included, so users only specify the data columns.
+        """
+        from metaxy.models.lineage import LineageRelationship
+
+        # Upstream1 has id_columns=["item_id", "group_id"]
+        class Upstream1(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "upstream1"]),
+                id_columns=["item_id", "group_id"],
+            ),
+        ):
+            pass
+
+        # Upstream2 has id_columns=["item_id", "group_id"]
+        class Upstream2(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "upstream2"]),
+                id_columns=["item_id", "group_id"],
+            ),
+        ):
+            pass
+
+        # Downstream aggregates both upstreams on group_id
+        # Both upstreams have item_id as an ID column, which would collide
+        # But with column selection, we only select the data columns we need
+        # group_id is auto-included from the aggregation `on=`
+        class DownstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "downstream"]),
+                id_columns=["group_id"],
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream1"]),
+                        columns=(
+                            "col1",
+                        ),  # Only select col1, group_id comes from aggregation
+                        lineage=LineageRelationship.aggregation(on=["group_id"]),
+                    ),
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream2"]),
+                        columns=(
+                            "col2",
+                        ),  # Only select col2, group_id comes from aggregation
+                        lineage=LineageRelationship.aggregation(on=["group_id"]),
+                    ),
+                ],
+            ),
+        ):
+            pass
+
+        # Prepare test data - both have item_id but we're not selecting it
+        upstream1_data = pl.DataFrame(
+            {
+                "item_id": [1, 2, 3, 4],
+                "group_id": ["g1", "g1", "g2", "g2"],
+                "col1": ["a", "b", "c", "d"],
+                "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                    {"default": "h4"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"default": "v1"},
+                    {"default": "v2"},
+                    {"default": "v3"},
+                    {"default": "v4"},
+                ],
+            }
+        )
+
+        upstream2_data = pl.DataFrame(
+            {
+                "item_id": [
+                    10,
+                    20,
+                    30,
+                    40,
+                ],  # Different item_ids, would collide if selected
+                "group_id": ["g1", "g1", "g2", "g2"],
+                "col2": [100, 200, 300, 400],
+                "metaxy_provenance_by_field": [
+                    {"default": "p1"},
+                    {"default": "p2"},
+                    {"default": "p3"},
+                    {"default": "p4"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"default": "d1"},
+                    {"default": "d2"},
+                    {"default": "d3"},
+                    {"default": "d4"},
+                ],
+            }
+        )
+
+        joiner = TestJoiner()
+        upstream_refs = {
+            "test/upstream1": nw.from_native(upstream1_data.lazy(), eager_only=False),
+            "test/upstream2": nw.from_native(upstream2_data.lazy(), eager_only=False),
+        }
+
+        # This should NOT raise a column collision error because item_id is dropped
+        joined, mapping = DownstreamFeature.load_input(joiner, upstream_refs)
+        joined_df = joined.collect().to_polars()
+
+        # Verify item_id is NOT in the result (was dropped by column selection)
+        assert "item_id" not in joined_df.columns
+
+        # Verify the selected columns are present
+        assert "group_id" in joined_df.columns  # Auto-included from aggregation on=
+        assert "col1" in joined_df.columns
+        assert "col2" in joined_df.columns
+
+        # Verify the join worked (we have data from both upstreams)
+        assert len(joined_df) > 0

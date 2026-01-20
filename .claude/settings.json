@@ -5,21 +5,27 @@
         "hooks": [
           {
             "type": "command",
-            "command": "ruff check --fix",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "basedpyright --level error",
+            "command": "ruff format && ruff check --fix",
             "timeout": 30
           },
           {
             "type": "prompt",
-            "prompt": "Evaluate whether Claude should stop working. If there are any linter errors left, fix them.",
-            "timeout": 30
+            "prompt": "REFLECTION CHECK: Briefly reflect on this session. If there were serious mistakes (repeated errors, misunderstandings requiring correction, violated CLAUDE.md rules, significant rework), suggest to the user: 'This session had some issues that could be prevented. Consider running /claude-improve-config to propose configuration improvements.' Only mention this if there were genuine problems worth addressing - do not suggest it for clean sessions or minor one-off issues.",
+            "timeout": 60
           }
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "astral@astral-sh": true
+  },
+  "extraKnownMarketplaces": {
+    "astral-sh": {
+      "source": {
+        "source": "github",
+        "repo": "astral-sh/claude-code-plugins"
+      }
+    }
   }
 }

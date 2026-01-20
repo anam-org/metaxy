@@ -21,6 +21,8 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_DELETED_AT,
+    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
@@ -47,11 +49,11 @@ if TYPE_CHECKING:
 
 # Map HashAlgorithm enum to polars-hash functions
 _HASH_FUNCTION_MAP: dict[HashAlgorithm, Callable[[pl.Expr], pl.Expr]] = {
-    HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),  # pyright: ignore[reportAttributeAccessIssue]
-    HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),  # pyright: ignore[reportAttributeAccessIssue]
-    HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),  # pyright: ignore[reportAttributeAccessIssue]
-    HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),  # pyright: ignore[reportAttributeAccessIssue]
-    HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),  # pyright: ignore[reportAttributeAccessIssue]
+    HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),
+    HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),
+    HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),
+    HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),
+    HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),
 }
 
 
@@ -169,7 +171,7 @@ def calculate_provenance_by_field_polars(
         field_exprs[field_key_str] = hashed
 
     # Create provenance struct
-    provenance_expr = pl.struct(**field_exprs)  # type: ignore[call-overload]
+    provenance_expr = pl.struct(**field_exprs)
 
     return joined_upstream_df.with_columns(
         provenance_expr.alias(METAXY_PROVENANCE_BY_FIELD)
@@ -301,9 +303,10 @@ def feature_metadata_strategy(
     df = draw(df_strategy)
 
     # Add constant version columns
-    df = df.with_columns(
+    df = df.with_columns(  # ty: ignore[unresolved-attribute]
         pl.lit(feature_version).alias(METAXY_FEATURE_VERSION),
         pl.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+        pl.lit(feature_spec.feature_spec_version).alias(METAXY_FEATURE_SPEC_VERSION),
     )
 
     # Add METAXY_PROVENANCE column - hash of all field hashes concatenated
@@ -341,6 +344,7 @@ def feature_metadata_strategy(
 
     df = df.with_columns(
         pl.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+        pl.lit(None, dtype=pl.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT),
     )
 
     # If id_columns_df was provided, replace the generated ID columns with provided ones
@@ -371,6 +375,8 @@ def upstream_metadata_strategy(
     snapshot_version: str,
     min_rows: int = 1,
     max_rows: int = 100,
+    aggregation_multiplier_min: int = 2,
+    aggregation_multiplier_max: int = 5,
 ) -> dict[str, pl.DataFrame]:
     """Generate upstream reference metadata for a given FeaturePlan.
 
@@ -380,6 +386,16 @@ def upstream_metadata_strategy(
     and ID columns as defined in each upstream feature spec.
 
     Uses Polars' native parametric testing for efficient generation.
+
+    **Lineage-Aware Row Generation:**
+
+    This strategy generates the correct number of rows based on each upstream
+    dependency's lineage relationship:
+
+    - **Identity (1:1)**: Same number of rows as the output (min_rows to max_rows)
+    - **Aggregation (N:1)**: Multiple rows per output row (aggregation_multiplier_min
+      to aggregation_multiplier_max rows per group)
+    - **Expansion (1:N)**: Same number of rows as the output (at parent level)
 
     The generated metadata has the structure expected by metadata stores:
     - ID columns (as defined per feature spec) with generated values
@@ -392,8 +408,10 @@ def upstream_metadata_strategy(
         feature_plan: FeaturePlan containing the feature and its upstream dependencies
         feature_versions: Dict mapping feature key strings to their feature_version hashes
         snapshot_version: The snapshot version hash to use for all features
-        min_rows: Minimum number of rows to generate per upstream feature (default: 1)
-        max_rows: Maximum number of rows to generate per upstream feature (default: 100)
+        min_rows: Minimum number of rows for base (downstream) level (default: 1)
+        max_rows: Maximum number of rows for base (downstream) level (default: 100)
+        aggregation_multiplier_min: Minimum rows per group for aggregation upstreams (default: 2)
+        aggregation_multiplier_max: Maximum rows per group for aggregation upstreams (default: 5)
 
     Returns:
         Dictionary mapping upstream feature key strings to Polars DataFrames
@@ -440,36 +458,48 @@ def upstream_metadata_strategy(
         - Each upstream feature respects its own ID column definition from its spec
         - For joins to work, features with overlapping ID columns will have aligned values
         - System columns use actual Metaxy constant names from models.constants
+        - Aggregation upstreams have extra rows per shared ID group
     """
+    from metaxy.models.lineage import LineageRelationshipType
+
     if not feature_plan.deps:
         return {}
 
-    # Generate number of rows (same for all upstream features to enable joins)
-    num_rows = draw(st.integers(min_value=min_rows, max_value=max_rows))
+    # Generate number of base (downstream) rows
+    num_base_rows = draw(st.integers(min_value=min_rows, max_value=max_rows))
 
-    # Collect all unique ID columns across all upstream features
-    # and generate shared values for columns that appear in multiple features
-    all_id_columns: set[str] = set()
-    for upstream_spec in feature_plan.deps:
-        all_id_columns.update(upstream_spec.id_columns)
+    # Build a mapping from feature_dep.feature to FeatureDep for lineage info
+    feature_deps_by_key = {
+        dep.feature: dep for dep in (feature_plan.feature_deps or [])
+    }
 
-    # Generate a DataFrame with all unique ID columns using Polars parametric testing
-    id_cols = [
+    # Determine the shared ID columns (the columns after lineage transformation)
+    # This is the input_id_columns from the plan
+    shared_id_columns = feature_plan.input_id_columns or list(
+        feature_plan.feature.id_columns
+    )
+
+    # Generate a DataFrame with shared ID columns using Polars parametric testing
+    shared_id_cols = [
         column(
             name=id_col,
             dtype=pl.Int64,
             unique=True,
             allow_null=False,
         )
-        for id_col in sorted(all_id_columns)  # Sort for deterministic ordering
+        for id_col in sorted(shared_id_columns)  # Sort for deterministic ordering
     ]
 
-    id_columns_df_strategy = dataframes(
-        cols=id_cols,
-        min_size=num_rows,
-        max_size=num_rows,
+    shared_id_columns_df_strategy = dataframes(
+        cols=shared_id_cols,
+        min_size=num_base_rows,
+        max_size=num_base_rows,
     )
-    id_columns_df = draw(id_columns_df_strategy)
+    # Note: draw() returns the actual DataFrame from the strategy, but the type
+    # system doesn't understand this, so we cast to fix type errors.
+    from typing import cast
+
+    shared_id_columns_df = cast(pl.DataFrame, draw(shared_id_columns_df_strategy))
 
     # Generate metadata for each upstream feature using feature_metadata_strategy
     result: dict[str, pl.DataFrame] = {}
@@ -484,9 +514,107 @@ def upstream_metadata_strategy(
             )
         feature_version = feature_versions[feature_key_str]
 
-        # Use feature_metadata_strategy to generate metadata for this spec
-        # Pass only the ID columns that this feature needs
-        upstream_id_df = id_columns_df.select(list(upstream_spec.id_columns))
+        # Get the FeatureDep for this upstream to check lineage
+        feature_dep = feature_deps_by_key.get(upstream_spec.key)
+        lineage_type = (
+            feature_dep.lineage.relationship.type
+            if feature_dep
+            else LineageRelationshipType.IDENTITY
+        )
+
+        # Get the columns shared between upstream and downstream
+        # For aggregation: the aggregation columns (a subset of upstream ID columns)
+        # For expansion: the parent columns (ExpansionRelationship.on)
+        # For identity: the upstream ID columns
+        if feature_dep:
+            input_cols_for_dep = feature_plan.get_input_id_columns_for_dep(feature_dep)
+        else:
+            input_cols_for_dep = list(upstream_spec.id_columns)
+
+        # Determine which shared columns exist in this upstream
+        cols_to_use = [
+            col for col in input_cols_for_dep if col in shared_id_columns_df.columns
+        ]
+
+        if lineage_type == LineageRelationshipType.AGGREGATION:
+            # For aggregation: need to generate multiple rows per shared ID group
+            # The upstream has extra ID columns beyond the shared ones
+            aggregation_multiplier = draw(
+                st.integers(
+                    min_value=aggregation_multiplier_min,
+                    max_value=aggregation_multiplier_max,
+                )
+            )
+
+            # Expand the shared ID columns by repeating each row
+            base_shared_df = shared_id_columns_df.select(cols_to_use)
+            # Use Polars native repeat to preserve types
+            expanded_shared_df = pl.concat(
+                [base_shared_df] * aggregation_multiplier, how="vertical"
+            ).sort(cols_to_use)
+
+            # Generate extra ID columns that the upstream has but aren't shared
+            extra_id_columns = [
+                col for col in upstream_spec.id_columns if col not in cols_to_use
+            ]
+
+            if extra_id_columns:
+                # Generate unique values for extra ID columns
+                extra_id_cols = [
+                    column(
+                        name=id_col,
+                        dtype=pl.Int64,
+                        unique=True,
+                        allow_null=False,
+                    )
+                    for id_col in extra_id_columns
+                ]
+
+                extra_id_df_strategy = dataframes(
+                    cols=extra_id_cols,
+                    min_size=len(expanded_shared_df),
+                    max_size=len(expanded_shared_df),
+                )
+                extra_id_df = cast(pl.DataFrame, draw(extra_id_df_strategy))
+
+                # Combine shared and extra ID columns
+                upstream_id_df = pl.concat(
+                    [expanded_shared_df, extra_id_df], how="horizontal"
+                )
+            else:
+                upstream_id_df = expanded_shared_df
+
+        else:
+            # For identity and expansion: 1:1 with shared IDs
+            # Select only the columns this upstream has
+            upstream_id_df = shared_id_columns_df.select(cols_to_use)
+
+            # For upstreams with additional ID columns not in shared, generate them
+            extra_id_columns = [
+                col for col in upstream_spec.id_columns if col not in cols_to_use
+            ]
+
+            if extra_id_columns:
+                extra_id_cols = [
+                    column(
+                        name=id_col,
+                        dtype=pl.Int64,
+                        unique=True,
+                        allow_null=False,
+                    )
+                    for id_col in extra_id_columns
+                ]
+
+                extra_id_df_strategy = dataframes(
+                    cols=extra_id_cols,
+                    min_size=num_base_rows,
+                    max_size=num_base_rows,
+                )
+                extra_id_df = cast(pl.DataFrame, draw(extra_id_df_strategy))
+
+                upstream_id_df = pl.concat(
+                    [upstream_id_df, extra_id_df], how="horizontal"
+                )
 
         df = draw(
             feature_metadata_strategy(
@@ -591,6 +719,24 @@ def downstream_metadata_strategy(
         )
     )
 
+    # For optional dependencies, generate incomplete metadata by dropping some rows.
+    # This tests left join behavior where optional upstream samples may be missing.
+    optional_dep_keys = {dep.feature.to_string() for dep in feature_plan.optional_deps}
+    for feature_key_str, df in upstream_data.items():
+        if feature_key_str in optional_dep_keys and len(df) > 1:
+            # Drop approximately half of the rows (at least 1, keep at least 1)
+            num_to_keep = max(1, len(df) // 2)
+            # Use hypothesis to draw which rows to keep for reproducibility
+            keep_indices = draw(
+                st.lists(
+                    st.integers(min_value=0, max_value=len(df) - 1),
+                    min_size=num_to_keep,
+                    max_size=num_to_keep,
+                    unique=True,
+                )
+            )
+            upstream_data[feature_key_str] = df[keep_indices]
+
     # If there are no upstream features, return empty upstream and just the downstream
     if not upstream_data:
         # Generate standalone downstream metadata
@@ -649,11 +795,16 @@ def downstream_metadata_strategy(
     downstream_df = downstream_df.with_columns(
         nw.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
         nw.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+        nw.lit(feature_plan.feature.feature_spec_version).alias(
+            METAXY_FEATURE_SPEC_VERSION
+        ),
         # Add data_version columns (default to provenance)
         nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
         nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         # Add created_at timestamp
         nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+        # Soft delete column defaults to NULL
+        nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT),
         # Add materialization_id (nullable)
         nw.lit(None, dtype=nw.String).alias(METAXY_MATERIALIZATION_ID),
     )

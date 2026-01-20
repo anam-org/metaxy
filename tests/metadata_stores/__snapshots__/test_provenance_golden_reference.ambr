@@ -1,0 +1,123 @@
+# serializer version: 1
+# name: test_provenance_snapshot[aggregation]
+  list([
+    dict({
+      'metaxy_data_version': '1014862498860343476',
+      'metaxy_data_version_by_field': dict({
+        'avg_temp': '6163507272211444577',
+      }),
+      'metaxy_provenance': '1014862498860343476',
+      'metaxy_provenance_by_field': dict({
+        'avg_temp': '6163507272211444577',
+      }),
+      'sensor_id': 's1',
+    }),
+    dict({
+      'metaxy_data_version': '1014862498860343476',
+      'metaxy_data_version_by_field': dict({
+        'avg_temp': '6163507272211444577',
+      }),
+      'metaxy_provenance': '1014862498860343476',
+      'metaxy_provenance_by_field': dict({
+        'avg_temp': '6163507272211444577',
+      }),
+      'sensor_id': 's1',
+    }),
+    dict({
+      'metaxy_data_version': '18096585114014269458',
+      'metaxy_data_version_by_field': dict({
+        'avg_temp': '261283034550370924',
+      }),
+      'metaxy_provenance': '18096585114014269458',
+      'metaxy_provenance_by_field': dict({
+        'avg_temp': '261283034550370924',
+      }),
+      'sensor_id': 's2',
+    }),
+    dict({
+      'metaxy_data_version': '18096585114014269458',
+      'metaxy_data_version_by_field': dict({
+        'avg_temp': '261283034550370924',
+      }),
+      'metaxy_provenance': '18096585114014269458',
+      'metaxy_provenance_by_field': dict({
+        'avg_temp': '261283034550370924',
+      }),
+      'sensor_id': 's2',
+    }),
+    dict({
+      'metaxy_data_version': '18096585114014269458',
+      'metaxy_data_version_by_field': dict({
+        'avg_temp': '261283034550370924',
+      }),
+      'metaxy_provenance': '18096585114014269458',
+      'metaxy_provenance_by_field': dict({
+        'avg_temp': '261283034550370924',
+      }),
+      'sensor_id': 's2',
+    }),
+  ])
+# ---
+# name: test_provenance_snapshot[expansion]
+  list([
+    dict({
+      'metaxy_data_version': '17728614726008822322',
+      'metaxy_data_version_by_field': dict({
+        'frames': '630352910380992152',
+      }),
+      'metaxy_provenance': '17728614726008822322',
+      'metaxy_provenance_by_field': dict({
+        'frames': '630352910380992152',
+      }),
+      'video_id': 'v1',
+    }),
+    dict({
+      'metaxy_data_version': '14296500364855365617',
+      'metaxy_data_version_by_field': dict({
+        'frames': '10348219724213583713',
+      }),
+      'metaxy_provenance': '14296500364855365617',
+      'metaxy_provenance_by_field': dict({
+        'frames': '10348219724213583713',
+      }),
+      'video_id': 'v2',
+    }),
+  ])
+# ---
+# name: test_provenance_snapshot[identity]
+  list([
+    dict({
+      'id': 'p1',
+      'metaxy_data_version': '15883541735666767932',
+      'metaxy_data_version_by_field': dict({
+        'derived': '8475109261492640533',
+      }),
+      'metaxy_provenance': '15883541735666767932',
+      'metaxy_provenance_by_field': dict({
+        'derived': '8475109261492640533',
+      }),
+    }),
+    dict({
+      'id': 'p2',
+      'metaxy_data_version': '1808417406924181125',
+      'metaxy_data_version_by_field': dict({
+        'derived': '8296696257561636328',
+      }),
+      'metaxy_provenance': '1808417406924181125',
+      'metaxy_provenance_by_field': dict({
+        'derived': '8296696257561636328',
+      }),
+    }),
+    dict({
+      'id': 'p3',
+      'metaxy_data_version': '17174152805143818928',
+      'metaxy_data_version_by_field': dict({
+        'derived': '9339585255793357375',
+      }),
+      'metaxy_provenance': '17174152805143818928',
+      'metaxy_provenance_by_field': dict({
+        'derived': '9339585255793357375',
+      }),
+    }),
+  ])
+# ---

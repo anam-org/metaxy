@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Annotated, Any, NamedTuple, TypeAlias, overload
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    NamedTuple,
+    TypeAlias,
+    overload,
+)
 
 from pydantic import (
     BeforeValidator,
@@ -54,7 +61,10 @@ class _Key(RootModel[tuple[str, ...]]):
              String format is split on "/" separator.
     """
 
-    model_config = ConfigDict(frozen=True, repr=False)  # pyright: ignore[reportCallIssue]  # Make immutable for hashability, use custom __repr__
+    model_config = ConfigDict(
+        frozen=True,
+        repr=False,  # ty: ignore[invalid-key]
+    )  # Make immutable for hashability, use custom __repr__
 
     root: tuple[str, ...]
 
@@ -69,7 +79,7 @@ class _Key(RootModel[tuple[str, ...]]):
         @overload
         def __init__(self, parts: Self) -> None: ...
 
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             parts: str | Sequence[str] | Self,
         ) -> None: ...
@@ -125,12 +135,30 @@ class _Key(RootModel[tuple[str, ...]]):
     @field_validator("root", mode="after")
     @classmethod
     def _validate_root_content(cls, value: tuple[str, ...]) -> tuple[str, ...]:
-        """Validate that parts don't contain forbidden characters."""
-        for part in value:
+        """Validate that parts follow naming conventions.
+
+        Rules:
+        - First part must start with a lowercase letter (a-z) or underscore (_)
+        - All parts can contain only lowercase letters, digits, underscores, or hyphens
+        - No part can contain forward slashes (/) or double underscores (__)
+
+        These rules ensure compatibility with SQL column naming conventions
+        across databases (PostgreSQL, DuckDB, etc.) without requiring quoting.
+        """
+        import re
+
+        # Pattern for first part: must start with lowercase letter or underscore
+        first_part_pattern = re.compile(r"^[a-z_][a-z0-9_-]*$")
+        # Pattern for subsequent parts: can start with letter, digit, or underscore
+        other_part_pattern = re.compile(r"^[a-z0-9_][a-z0-9_-]*$")
+
+        for i, part in enumerate(value):
             if not isinstance(part, str):
                 raise ValueError(
                     f"{cls.__name__} parts must be strings, got {type(part).__name__}"
                 )
+            if not part:
+                raise ValueError(f"{cls.__name__} parts cannot be empty strings")
             if "/" in part:
                 raise ValueError(
                     f"{cls.__name__} part '{part}' cannot contain forward slashes (/). "
@@ -142,12 +170,32 @@ class _Key(RootModel[tuple[str, ...]]):
                     f"{cls.__name__} part '{part}' cannot contain double underscores (__). "
                     f"Use single underscores or hyphens instead."
                 )
+
+            # First part must start with letter or underscore
+            if i == 0:
+                if not first_part_pattern.match(part):
+                    raise ValueError(
+                        f"{cls.__name__} first part '{part}' is invalid. "
+                        f"The first part must start with a lowercase letter (a-z) or underscore (_), "
+                        f"and contain only lowercase letters, digits, underscores, or hyphens."
+                    )
+            else:
+                if not other_part_pattern.match(part):
+                    raise ValueError(
+                        f"{cls.__name__} part '{part}' is invalid. "
+                        f"Parts must contain only lowercase letters, digits, underscores, or hyphens, "
+                        f"and cannot start with a hyphen."
+                    )
         return value
 
-    @model_serializer
-    def _serialize_model(self) -> list[str]:
-        """Serialize to list format for backward compatibility."""
-        return list(self.parts)
+    @model_serializer(mode="plain")
+    def _serialize_model(self) -> str:
+        """Serialize to string format for JSON compatibility.
+
+        Keys are serialized as strings (e.g., "a/b/c") so they can be used
+        as dictionary keys in JSON, which requires string keys.
+        """
+        return self.to_string()
 
     @property
     def parts(self) -> tuple[str, ...]:
@@ -198,7 +246,7 @@ class _Key(RootModel[tuple[str, ...]]):
             return self.parts >= other.parts
         return NotImplemented
 
-    def __iter__(self) -> Iterator[str]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __iter__(self) -> Iterator[str]:  # ty: ignore[invalid-method-override]
         """Return iterator over parts."""
         return iter(self.parts)
 
@@ -263,16 +311,14 @@ class FeatureKey(_Key):
         @overload
         def __init__(self, parts: FeatureKey) -> None: ...
 
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             parts: str | Sequence[str] | FeatureKey,
         ) -> None: ...
 
     def model_dump(self, **kwargs: Any) -> Any:
-        """Serialize to list format for backward compatibility."""
-        # When serializing this key, return it as a list of parts
-        # instead of the full Pydantic model structure
-        return list(self.parts)
+        """Serialize to string format for JSON dict key compatibility."""
+        return self.to_string()
 
     def __hash__(self) -> int:
         """Return hash for use as dict keys."""
@@ -321,16 +367,14 @@ class FieldKey(_Key):
         @overload
         def __init__(self, parts: FieldKey) -> None: ...
 
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             parts: str | Sequence[str] | FieldKey,
         ) -> None: ...
 
     def model_dump(self, **kwargs: Any) -> Any:
-        """Serialize to list format for backward compatibility."""
-        # When serializing this key, return it as a list of parts
-        # instead of the full Pydantic model structure
-        return list(self.parts)
+        """Serialize to string format for JSON dict key compatibility."""
+        return self.to_string()
 
     def __hash__(self) -> int:
         """Return hash for use as dict keys."""
@@ -450,6 +494,23 @@ ValidatedFeatureKeyAdapter: TypeAdapter[ValidatedFeatureKey] = TypeAdapter(
 ValidatedFieldKeyAdapter: TypeAdapter[ValidatedFieldKey] = TypeAdapter(
     ValidatedFieldKey
 )
+
+
+# Dagster-compatible version: validates FeatureKey semantics but stores as list[str]
+# This is necessary because Dagster resolves types at import time and can't handle FeatureKey
+def _coerce_to_feature_key_list(value: Any) -> list[str]:
+    """Coerce to FeatureKey, validate, and return as list[str] for Dagster compatibility."""
+    feature_key = _coerce_to_feature_key(value)
+    return list(feature_key.parts)
+
+
+ValidatedFeatureKeyList: TypeAlias = Annotated[
+    list[str],
+    BeforeValidator(_coerce_to_feature_key_list),
+    Field(
+        description="Feature key as list of strings (e.g., ['user', 'profile']). Validates using FeatureKey rules."
+    ),
+]
 
 
 # Collection types for common patterns - automatically validate sequences

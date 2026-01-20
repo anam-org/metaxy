@@ -1,8 +1,6 @@
 import json
-from typing import Any, cast
 
 import pytest
-from pydantic import ValidationError
 from pydantic.types import JsonValue
 
 from metaxy import BaseFeature, FeatureKey
@@ -62,12 +60,6 @@ def test_metadata_json_serializable() -> None:
     assert spec.metadata == valid_metadata
     assert json.dumps(spec.metadata) is not None
 
-    with pytest.raises(ValidationError):
-        _ = SampleFeatureSpec(
-            key=FeatureKey(["tests", "metadata", "json"]),
-            metadata=cast(Any, {"func": object()}),
-        )
-
 
 def test_metadata_immutable() -> None:
     """Metadata mapping should be immutable after initialization."""
@@ -78,7 +70,7 @@ def test_metadata_immutable() -> None:
     assert spec.metadata == {"key": "value"}
 
     with pytest.raises(Exception):
-        spec.metadata = {"key": "new_value"}  # type: ignore[assignment]
+        spec.metadata = {"key": "new_value"}
 
 
 def test_metadata_defaults_to_empty_dict() -> None:

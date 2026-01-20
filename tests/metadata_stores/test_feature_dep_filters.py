@@ -37,10 +37,10 @@ def test_feature_dep_filters_basic() -> None:
                     FeatureDep(
                         feature=UpstreamFeature,
                         filters=["age >= 25", "status = 'active'"],
+                        fields_mapping=FieldsMapping.all(),
                     )
                 ],
                 fields=["result"],
-                fields_mapping=FieldsMapping.all(),
             ),
         ):
             pass
@@ -145,10 +145,10 @@ def test_feature_dep_filters_integration(any_store: MetadataStore) -> None:
                     FeatureDep(
                         feature=UpstreamFeature,
                         filters=["age >= 25"],  # Only include samples with age >= 25
+                        fields_mapping=FieldsMapping.all(),
                     )
                 ],
                 fields=["result"],
-                fields_mapping=FieldsMapping.all(),
             ),
         ):
             pass

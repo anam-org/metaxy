@@ -264,7 +264,132 @@ def test_custom_tablename_raises_error():
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
             ):
-                __tablename__: str = "my_custom_table"  # pyright: ignore[reportIncompatibleVariableOverride]
+                __tablename__: str = "my_custom_table"
                 project = "test_project"
                 id: str = Field(primary_key=True)
                 value: str
+
+
+class TestProtocolParameter:
+    """Tests for the protocol parameter in filter_feature_sqlmodel_metadata."""
+
+    def test_protocol_override_replaces_url_protocol(self):
+        """Test that protocol parameter replaces the URL protocol."""
+        config = MetaxyConfig(
+            project="test_project",
+            stores={
+                "test_store": StoreConfig(
+                    type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    config={"database": "test.db"},
+                )
+            },
+            store="test_store",
+            ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
+        )
+
+        with config.use():
+
+            class ProtocolTestFeature(
+                BaseSQLModelFeature,
+                table=True,
+                spec=FeatureSpec(
+                    key=FeatureKey(["protocol", "test"]),
+                    id_columns=["id"],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                ),
+            ):
+                id: str = Field(primary_key=True)
+                value: str
+
+            store = config.get_store(expected_type=IbisMetadataStore)
+
+            # Without protocol override
+            url_default, _ = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
+            assert url_default == "duckdb:///test.db"
+
+            # With protocol override
+            url_override, metadata = filter_feature_sqlmodel_metadata(
+                store, SQLModel.metadata, protocol="clickhouse+native"
+            )
+            assert url_override == "clickhouse+native:///test.db"
+            # Metadata should still be filtered correctly
+            assert "protocol__test" in metadata.tables
+
+    def test_protocol_none_preserves_original_url(self):
+        """Test that protocol=None preserves the original URL."""
+        config = MetaxyConfig(
+            project="test_project",
+            stores={
+                "test_store": StoreConfig(
+                    type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    config={"database": "mydb.db"},
+                )
+            },
+            store="test_store",
+            ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
+        )
+
+        with config.use():
+
+            class ProtocolNoneFeature(
+                BaseSQLModelFeature,
+                table=True,
+                spec=FeatureSpec(
+                    key=FeatureKey(["protocol", "none"]),
+                    id_columns=["id"],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                ),
+            ):
+                id: str = Field(primary_key=True)
+                value: str
+
+            store = config.get_store(expected_type=IbisMetadataStore)
+            url, _ = filter_feature_sqlmodel_metadata(
+                store, SQLModel.metadata, protocol=None
+            )
+            assert url == "duckdb:///mydb.db"
+
+    def test_protocol_override_with_table_prefix(self):
+        """Test that protocol override works together with table_prefix."""
+        config = MetaxyConfig(
+            project="test_project",
+            stores={
+                "prefixed_store": StoreConfig(
+                    type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    config={
+                        "database": "test.db",
+                        "table_prefix": "myprefix_",
+                    },
+                )
+            },
+            store="prefixed_store",
+            ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
+        )
+
+        with config.use():
+
+            class PrefixProtocolFeature(
+                BaseSQLModelFeature,
+                table=True,
+                spec=FeatureSpec(
+                    key=FeatureKey(["prefix", "protocol"]),
+                    id_columns=["id"],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                ),
+            ):
+                id: str = Field(primary_key=True)
+                value: str
+
+            store = config.get_store(expected_type=IbisMetadataStore)
+
+            # With protocol override
+            url, metadata = filter_feature_sqlmodel_metadata(
+                store, SQLModel.metadata, protocol="postgresql+psycopg2"
+            )
+
+            # Protocol should be replaced
+            assert url.startswith("postgresql+psycopg2://")
+
+            # Table prefix should still be applied
+            assert "myprefix_prefix__protocol" in metadata.tables
+            assert "prefix__protocol" not in metadata.tables

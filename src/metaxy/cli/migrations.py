@@ -188,6 +188,10 @@ def apply(
         bool,
         cyclopts.Parameter(help="Preview changes without executing"),
     ] = False,
+    rerun: Annotated[
+        bool,
+        cyclopts.Parameter(help="Re-run all steps, including already completed ones"),
+    ] = False,
 ):
     """Apply migration(s) from YAML files.
 
@@ -204,6 +208,9 @@ def apply(
 
         # Dry run
         $ metaxy migrations apply --dry-run
+
+        # Re-run all migrations, including already completed ones
+        $ metaxy migrations apply --rerun
     """
     from pathlib import Path
 
@@ -252,12 +259,16 @@ def apply(
             ):
                 completed_ids.add(m.migration_id)
 
-        # Filter to unapplied migrations
+        # Filter to migrations to apply
         if migration_id is None:
-            # Apply all unapplied
-            to_apply = [m for m in chain if m.migration_id not in completed_ids]
+            if rerun:
+                # Re-run all migrations
+                to_apply = list(chain)
+            else:
+                # Apply all unapplied
+                to_apply = [m for m in chain if m.migration_id not in completed_ids]
         else:
-            # Apply specific migration and its unapplied predecessors
+            # Apply specific migration and its predecessors
             target_index = None
             for i, m in enumerate(chain):
                 if m.migration_id == migration_id:
@@ -270,12 +281,16 @@ def apply(
                 )
                 raise SystemExit(1)
 
-            # Include all unapplied migrations up to and including target
-            to_apply = [
-                m
-                for m in chain[: target_index + 1]
-                if m.migration_id not in completed_ids
-            ]
+            if rerun:
+                # Include all migrations up to and including target
+                to_apply = list(chain[: target_index + 1])
+            else:
+                # Include all unapplied migrations up to and including target
+                to_apply = [
+                    m
+                    for m in chain[: target_index + 1]
+                    if m.migration_id not in completed_ids
+                ]
 
         if not to_apply:
             app.console.print("[blue]ℹ[/blue] All migrations already completed")
@@ -284,6 +299,8 @@ def apply(
         # Execute migrations in order
         if dry_run:
             app.console.print("[yellow]=== DRY RUN MODE ===[/yellow]\n")
+        if rerun:
+            app.console.print("[yellow]=== RERUN MODE ===[/yellow]\n")
 
         app.console.print(f"Applying {len(to_apply)} migration(s) in chain order:")
         for m in to_apply:
@@ -297,7 +314,12 @@ def apply(
             status_info = migration.get_status_info(metadata_store, project)
 
             app.console.print(f"[bold]Applying: {migration.migration_id}[/bold]")
-            if status_info.features_remaining > 0:
+            if rerun:
+                # In rerun mode, all features from YAML will be reprocessed
+                app.console.print(
+                    f"  Reprocessing all {status_info.features_total} feature(s)"
+                )
+            elif status_info.features_remaining > 0:
                 app.console.print(
                     f"  Processing {status_info.features_remaining} feature(s) "
                     f"({len(status_info.completed_features)} already completed)"
@@ -308,7 +330,7 @@ def apply(
                 )
 
             result = executor.execute(
-                migration, metadata_store, project, dry_run=dry_run
+                migration, metadata_store, project, dry_run=dry_run, rerun=rerun
             )
 
             # Print result

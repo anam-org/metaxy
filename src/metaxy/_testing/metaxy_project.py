@@ -8,7 +8,10 @@ import textwrap
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from narwhals.typing import IntoFrame
 
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.base import MetadataStore
@@ -20,6 +23,44 @@ from metaxy.versioning.types import HashAlgorithm
 
 DEFAULT_ID_COLUMNS = ["sample_uid"]
 
+
+@contextmanager
+def env_override(overrides: dict[str, str | None]):
+    """Context manager to temporarily override environment variables.
+
+    Args:
+        overrides: Dict mapping env var names to values. None values will unset the var.
+
+    Yields:
+        None
+
+    Example:
+        ```py
+        with env_override({"FOO": "bar", "BAZ": None}):
+            # FOO is set to "bar", BAZ is unset
+            do_something()
+        # Original values restored
+        ```
+    """
+    old_values = {}
+    for key in overrides:
+        old_values[key] = os.environ.get(key)
+
+    try:
+        for key, value in overrides.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        yield
+    finally:
+        for key, old_value in old_values.items():
+            if old_value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = old_value
+
+
 __all__ = [
     "TempFeatureModule",
     "assert_all_results_equal",
@@ -28,6 +69,7 @@ __all__ = [
     "ExternalMetaxyProject",
     "TempMetaxyProject",  # Backward compatibility alias
     "DEFAULT_ID_COLUMNS",
+    "env_override",
 ]
 
 
@@ -129,11 +171,11 @@ class TempFeatureModule:
                     c_parts.append("deps=SpecialFieldDep.ALL")
                 elif isinstance(deps_val, list) and deps_val:
                     # Field deps (list of FieldDep)
-                    cdeps: list[str] = []  # type: ignore[misc]
+                    cdeps: list[str] = []
                     for cd in deps_val:
                         fields_val = cd.get("fields")
                         if fields_val == "__METAXY_ALL_DEP__":
-                            cdeps.append(  # type: ignore[arg-type]
+                            cdeps.append(
                                 f"FieldDep(feature=FeatureKey({cd['feature']!r}), fields=SpecialFieldDep.ALL)"
                             )
                         else:
@@ -144,7 +186,7 @@ class TempFeatureModule:
                             )
                     c_parts.append(f"deps=[{', '.join(cdeps)}]")
 
-                field_reprs.append(f"FieldSpec({', '.join(c_parts)})")  # type: ignore[arg-type]
+                field_reprs.append(f"FieldSpec({', '.join(c_parts)})")
 
             parts.append(f"fields=[{', '.join(field_reprs)}]")
 
@@ -257,12 +299,17 @@ class MetaxyProject:
         self.project_dir = Path(project_dir)
 
     def run_cli(
-        self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs
+        self,
+        args: list[str],
+        *,
+        check: bool = True,
+        env: dict[str, str] | None = None,
+        **kwargs,
     ):
         """Run CLI command with proper environment setup.
 
         Args:
-            *args: CLI command arguments (e.g., "graph", "push")
+            args: CLI command arguments (e.g., ["graph", "push"])
             check: If True (default), raises CalledProcessError on non-zero exit
             env: Optional dict of additional environment variables
             **kwargs: Additional arguments to pass to subprocess.run()
@@ -275,15 +322,21 @@ class MetaxyProject:
 
         Example:
             ```py
-            result = project.run_cli("graph", "history", "--limit", "5")
+            result = project.run_cli(["graph", "history", "--limit", "5"])
             print(result.stdout)
             ```
         """
         # Start with current environment
         cmd_env = os.environ.copy()
 
-        # Add project directory to PYTHONPATH so modules can be imported
-        pythonpath = str(self.project_dir)
+        # Add project directory (and src/ subdirectory if it exists) to PYTHONPATH
+        # so modules can be imported. These are prepended to take precedence.
+        paths_to_add = [str(self.project_dir)]
+        src_dir = self.project_dir / "src"
+        if src_dir.is_dir():
+            paths_to_add.insert(0, str(src_dir))
+
+        pythonpath = os.pathsep.join(paths_to_add)
         if "PYTHONPATH" in cmd_env:
             pythonpath = f"{pythonpath}{os.pathsep}{cmd_env['PYTHONPATH']}"
         cmd_env["PYTHONPATH"] = pythonpath
@@ -305,7 +358,7 @@ class MetaxyProject:
             )
         except subprocess.CalledProcessError as e:
             # Re-raise with stderr output for better debugging
-            error_msg = f"CLI command failed: {' '.join(args)}\n"
+            error_msg = f"CLI command failed: {' '.join(str(a) for a in args)}\n"
             error_msg += f"Exit code: {e.returncode}\n"
             if e.stdout:
                 error_msg += f"STDOUT:\n{e.stdout}\n"
@@ -335,7 +388,7 @@ class ExternalMetaxyProject(MetaxyProject):
     Example:
         ```py
         project = ExternalMetaxyProject(Path("examples/example-migration"))
-        result = project.run_cli("graph", "push", env={"STAGE": "1"})
+        result = project.run_cli(["graph", "push"], env={"STAGE": "1"})
         assert result.returncode == 0
         print(project.package_name)  # "example_migration"
         ```
@@ -392,7 +445,7 @@ class ExternalMetaxyProject(MetaxyProject):
             # .parent -> repo root
             import metaxy
 
-            install_metaxy_from = Path(metaxy.__file__).parent.parent.parent
+            install_metaxy_from = Path(metaxy.__file__).parent.parent.parent  # ty: ignore[invalid-argument-type]
 
         # Set VIRTUAL_ENV to activate the venv
         venv_env = os.environ.copy()
@@ -538,6 +591,152 @@ class ExternalMetaxyProject(MetaxyProject):
         # Convert project name to valid Python package name (replace hyphens with underscores)
         return project_name.replace("-", "_")
 
+    def run_command(
+        self,
+        command: str,
+        env: dict[str, str] | None = None,
+        capture_output: bool = True,
+        timeout: float | None = None,
+        check: bool = False,
+    ) -> subprocess.CompletedProcess[str]:
+        """Run an arbitrary shell command in the project context.
+
+        Handles:
+        - PYTHONPATH setup to include project directory
+        - PATH setup to prefer current Python executable's directory
+
+        Args:
+            command: Shell command to execute.
+            env: Optional dict of additional environment variables.
+            capture_output: Whether to capture stdout/stderr (default: True).
+            timeout: Optional timeout in seconds.
+            check: If True, raises CalledProcessError on non-zero exit (default: False).
+
+        Returns:
+            subprocess.CompletedProcess: Result of the command.
+
+        Example:
+            ```py
+            result = project.run_command("python -m example.pipeline")
+            print(result.stdout)
+            ```
+        """
+        # Start with current environment
+        cmd_env = os.environ.copy()
+
+        # Add project directory (and src/ subdirectory if it exists) to PYTHONPATH
+        # so modules can be imported. These are prepended to take precedence.
+        paths_to_add = [str(self.project_dir)]
+        src_dir = self.project_dir / "src"
+        if src_dir.is_dir():
+            paths_to_add.insert(0, str(src_dir))
+
+        pythonpath = os.pathsep.join(paths_to_add)
+        if "PYTHONPATH" in cmd_env:
+            pythonpath = f"{pythonpath}{os.pathsep}{cmd_env['PYTHONPATH']}"
+        cmd_env["PYTHONPATH"] = pythonpath
+
+        # Prepend Python executable's directory to PATH so "python" resolves correctly
+        python_dir = str(Path(sys.executable).parent)
+        current_path = cmd_env.get("PATH", "")
+        cmd_env["PATH"] = (
+            f"{python_dir}{os.pathsep}{current_path}" if current_path else python_dir
+        )
+
+        # Apply additional env overrides
+        if env:
+            cmd_env.update(env)
+
+        # Run command
+        return subprocess.run(
+            command,
+            shell=True,
+            cwd=str(self.project_dir),
+            capture_output=capture_output,
+            text=True,
+            env=cmd_env,
+            timeout=timeout,
+            check=check,
+        )
+
+    def push_graph(
+        self, env: dict[str, str] | None = None
+    ) -> subprocess.CompletedProcess[str]:
+        """Push the current graph snapshot.
+
+        Args:
+            env: Optional dict of additional environment variables.
+
+        Returns:
+            subprocess.CompletedProcess: Result of the push command.
+        """
+        return self.run_cli(["graph", "push"], env=env)
+
+    @property
+    def graph(self) -> FeatureGraph:
+        """Load the feature graph from entrypoints.
+
+        Forces a fresh reload of all entrypoint modules to capture any source changes.
+
+        Returns:
+            FeatureGraph with all features loaded from entrypoints.
+        """
+        # Build paths to add to sys.path
+        paths_to_add: list[str] = []
+        src_dir = self.project_dir / "src"
+        if src_dir.is_dir():
+            paths_to_add.append(str(src_dir))
+        paths_to_add.append(str(self.project_dir))
+
+        # Track which paths we actually add (weren't already there)
+        added_paths: list[str] = []
+        for path in paths_to_add:
+            if path not in sys.path:
+                sys.path.insert(0, path)
+                added_paths.append(path)
+
+        try:
+            graph = FeatureGraph()
+            with graph.use():
+                for entrypoint in self.config.entrypoints:
+                    # Force reload to pick up any source file changes
+                    # First, invalidate any cached modules in the package hierarchy
+                    self._invalidate_module_cache(entrypoint)
+                    importlib.import_module(entrypoint)
+            return graph
+        finally:
+            # Clean up sys.path
+            for path in added_paths:
+                if path in sys.path:
+                    sys.path.remove(path)
+
+    def _invalidate_module_cache(self, entrypoint: str) -> None:
+        """Remove entrypoint and its parent/sibling modules from sys.modules.
+
+        This ensures importlib.import_module() loads fresh code from disk
+        rather than returning cached modules with stale code.
+        """
+        # Remove the entrypoint itself and any parent packages
+        parts = entrypoint.split(".")
+        modules_to_remove = []
+        for i in range(len(parts)):
+            module_name = ".".join(parts[: i + 1])
+            if module_name in sys.modules:
+                modules_to_remove.append(module_name)
+
+        # Get the package root (first component)
+        package_root = parts[0]
+
+        # Remove ALL modules in the package hierarchy
+        # This ensures sibling modules (like example_overview.features) are also invalidated
+        for mod_name in list(sys.modules.keys()):
+            if mod_name == package_root or mod_name.startswith(package_root + "."):
+                if mod_name not in modules_to_remove:
+                    modules_to_remove.append(mod_name)
+
+        for mod_name in modules_to_remove:
+            del sys.modules[mod_name]
+
 
 class TempMetaxyProject(MetaxyProject):
     """Helper for creating temporary Metaxy projects.
@@ -631,7 +830,7 @@ database = "{staging_db_path}"
 
             with project.with_features(my_features) as module:
                 print(module)  # "features_0"
-                result = project.run_cli("graph", "push")
+                result = project.run_cli(["graph", "push"])
             ```
         """
 
@@ -675,15 +874,20 @@ database = "{staging_db_path}"
         return _context()
 
     def run_cli(
-        self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs
-    ):
+        self,
+        args: list[str],
+        *,
+        check: bool = True,
+        env: dict[str, str] | None = None,
+        **kwargs,
+    ) -> subprocess.CompletedProcess[str]:
         """Run CLI command with current feature modules loaded.
 
         Automatically sets METAXY_ENTRYPOINT_0, METAXY_ENTRYPOINT_1, etc.
         based on active with_features() context managers.
 
         Args:
-            *args: CLI command arguments (e.g., "graph", "push")
+            args: CLI command arguments (e.g., ["graph", "push"])
             check: If True (default), raises CalledProcessError on non-zero exit
             env: Optional dict of additional environment variables
             **kwargs: Additional arguments to pass to subprocess.run()
@@ -696,7 +900,7 @@ database = "{staging_db_path}"
 
         Example:
             ```py
-            result = project.run_cli("graph", "history", "--limit", "5")
+            result = project.run_cli(["graph", "history", "--limit", "5"])
             print(result.stdout)
             ```
         """
@@ -731,7 +935,7 @@ database = "{staging_db_path}"
             )
         except subprocess.CalledProcessError as e:
             # Re-raise with stderr output for better debugging
-            error_msg = f"CLI command failed: {' '.join(args)}\n"
+            error_msg = f"CLI command failed: {' '.join(str(a) for a in args)}\n"
             error_msg += f"Exit code: {e.returncode}\n"
             if e.stdout:
                 error_msg += f"STDOUT:\n{e.stdout}\n"
@@ -778,3 +982,92 @@ database = "{staging_db_path}"
                 sys.path.remove(project_dir_str)
 
         return graph
+
+    def write_sample_metadata(
+        self,
+        feature_key_str: str,
+        store_name: str = "dev",
+        num_rows: int = 3,
+        id_values: dict[str, list[int]] | None = None,
+    ):
+        """Helper to write sample metadata for a feature.
+
+        Uses hypothesis strategy to generate valid metadata that respects
+        the feature spec's ID columns and field structure.
+
+        NOTE: This function must be called within a graph.use() context,
+        and the same graph context must be active when reading the metadata.
+
+        Args:
+            feature_key_str: Feature key as string (e.g., "video/files")
+            store_name: Name of store to write to (default: "dev")
+            num_rows: Number of sample rows to generate (default: 3).
+                Ignored if id_values is provided.
+            id_values: Optional dict mapping ID column names to lists of values.
+                If provided, uses these specific values instead of generating random ones.
+                For example: {"sample_uid": [1, 2, 3, 4, 5]}
+        """
+        import polars as pl
+
+        from metaxy._testing.parametric.metadata import feature_metadata_strategy
+        from metaxy.metadata_store.system import SystemTableStorage
+        from metaxy.models.types import FeatureKey
+
+        # Parse feature key
+        feature_key = FeatureKey(feature_key_str.split("/"))
+
+        # Get feature class from project's graph (imported from the features module)
+        graph = self.graph
+        feature_cls = graph.get_feature_by_key(feature_key)
+
+        # Get versions from graph
+        feature_version = feature_cls.feature_version()
+        snapshot_version = graph.snapshot_version
+
+        # Prepare id_columns_df if specific ID values were provided
+        id_columns_df = None
+        if id_values is not None:
+            id_columns_df = pl.DataFrame(id_values)
+            num_rows = len(id_columns_df)
+
+        # Use hypothesis strategy to generate valid metadata
+        # .example() gives us a concrete instance without running a full property test
+        sample_data = feature_metadata_strategy(
+            feature_cls.spec(),
+            feature_version=feature_version,
+            snapshot_version=snapshot_version,
+            num_rows=num_rows,
+            id_columns_df=id_columns_df,
+        ).example()
+
+        # Write metadata directly to store
+        store = self.stores[store_name]
+        # Use the project's graph context so the store can resolve feature plans
+        with graph.use():
+            with store.open("write"):
+                store.write_metadata(feature_cls, sample_data)
+                # Record the feature graph snapshot so copy_metadata can determine snapshot_version
+                SystemTableStorage(store).push_graph_snapshot()
+
+    def write_custom_metadata(
+        self,
+        feature_key_str: str,
+        data: "IntoFrame",
+        store_name: str = "dev",
+    ):
+        """Helper to write custom metadata for a feature with custom fields.
+
+        Args:
+            feature_key_str: Feature key as string
+            data: DataFrame with metadata to write (must include metaxy_provenance_by_field)
+            store_name: Name of store to write to (default: "dev")
+        """
+        from metaxy.models.types import FeatureKey
+
+        feature_key = FeatureKey(feature_key_str.split("/"))
+        graph = self.graph
+        feature_cls = graph.get_feature_by_key(feature_key)
+        store = self.stores[store_name]
+
+        with graph.use(), store.open("write"):
+            store.write_metadata(feature_cls, data)

@@ -60,7 +60,7 @@ class OperationConfig(pydantic.BaseModel):
     features: list[str] = pydantic.Field(default_factory=list)
 
 
-class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
+class Migration(pydantic.BaseModel, ABC):
     """Abstract base class for all migrations.
 
     Subclasses must define:
@@ -73,6 +73,8 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
     All migrations form a chain via parent IDs (like git commits):
     - parent: ID of parent migration ("initial" for first migration)
     """
+
+    model_config = pydantic.ConfigDict(extra="forbid")
 
     # Use AliasChoices to accept both "id" (from generated YAML) and "migration_id" (from tests/manual YAML)
     migration_id: str = PydanticField(
@@ -139,17 +141,29 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
 
         storage = SystemTableStorage(store)
 
-        # Get expected features from YAML
+        # Get expected features from YAML (source of truth)
         expected_features = self.get_affected_features(store, project)
+        expected_set = set(expected_features)
 
         # Get actual status from database
         summary = storage.get_migration_summary(
             self.migration_id, project, expected_features
         )
 
+        # Filter completed/failed features to only include those in current YAML
+        # This handles the case where YAML was modified to remove features
+        completed_features = [
+            fk for fk in summary["completed_features"] if fk in expected_set
+        ]
+        failed_features = {
+            fk: msg
+            for fk, msg in summary["failed_features"].items()
+            if fk in expected_set
+        }
+
         # Compute pending features
-        completed_set = set(summary["completed_features"])
-        failed_set = set(summary["failed_features"].keys())
+        completed_set = set(completed_features)
+        failed_set = set(failed_features.keys())
         pending_features = [
             fk
             for fk in expected_features
@@ -160,8 +174,8 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
             migration_id=self.migration_id,
             status=summary["status"],
             expected_features=expected_features,
-            completed_features=summary["completed_features"],
-            failed_features=summary["failed_features"],
+            completed_features=completed_features,
+            failed_features=failed_features,
             pending_features=pending_features,
         )
 
@@ -458,6 +472,8 @@ class FullGraphMigration(Migration):
 class MigrationStatusInfo(pydantic.BaseModel):
     """Status information for a migration computed from events and YAML definition."""
 
+    model_config = pydantic.ConfigDict(extra="forbid")
+
     migration_id: str
     status: Any  # MigrationStatus enum
     expected_features: list[str]  # All features from YAML
@@ -478,6 +494,8 @@ class MigrationStatusInfo(pydantic.BaseModel):
 
 class MigrationResult(pydantic.BaseModel):
     """Result of executing a migration."""
+
+    model_config = pydantic.ConfigDict(extra="forbid")
 
     migration_id: str
     status: str  # "completed", "failed", "skipped"

@@ -1,15 +1,19 @@
-"""Comprehensive tests for FeatureGraph.topological_sort_features() method.
+"""Comprehensive tests for FeatureGraph methods.
 
 Tests cover:
-- Basic topological sorting (linear chains, diamonds, no dependencies)
-- Subset sorting (sorting specific features from larger graph)
-- All features sorting (feature_keys=None)
-- Deterministic ordering (alphabetical ordering for same-level features)
-- Edge cases (empty graph, single feature, disconnected components)
-- Complex graphs (multi-level, wide graphs, multiple roots)
+- add_feature: Feature registration and replacement behavior
+- topological_sort_features:
+  - Basic topological sorting (linear chains, diamonds, no dependencies)
+  - Subset sorting (sorting specific features from larger graph)
+  - All features sorting (feature_keys=None)
+  - Deterministic ordering (alphabetical ordering for same-level features)
+  - Edge cases (empty graph, single feature, disconnected components)
+  - Complex graphs (multi-level, wide graphs, multiple roots)
 """
 
 from __future__ import annotations
+
+import pytest
 
 from metaxy import (
     BaseFeature,
@@ -20,6 +24,102 @@ from metaxy import (
     FieldSpec,
 )
 from metaxy._testing.models import SampleFeatureSpec
+
+
+class TestAddFeature:
+    """Test FeatureGraph.add_feature() behavior."""
+
+    def test_add_feature_same_import_path_replaces_quietly(self, graph: FeatureGraph):
+        """Test that re-registering the same class (same import path) replaces quietly."""
+
+        class MyFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "my_feature"]),
+                fields=[FieldSpec(key=FieldKey(["x"]))],
+            ),
+        ):
+            pass
+
+        # Feature is already registered via metaclass
+        assert MyFeature.spec().key in graph.features_by_key
+
+        # Re-adding the same class should not raise an error
+        graph.add_feature(MyFeature)
+
+        # Should still be registered
+        assert graph.features_by_key[MyFeature.spec().key] is MyFeature
+
+    def test_add_feature_different_class_same_key_raises_during_definition(
+        self, graph: FeatureGraph
+    ):
+        """Test that defining a different class with the same key raises ValueError."""
+
+        class FeatureV1(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "shared_key"]),
+                fields=[FieldSpec(key=FieldKey(["x"]))],
+            ),
+        ):
+            pass
+
+        # Defining a different class with the same key should raise during class definition
+        with pytest.raises(ValueError, match="already registered"):
+
+            class FeatureV2(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["test", "shared_key"]),
+                    fields=[FieldSpec(key=FieldKey(["y"]))],
+                ),
+            ):
+                pass
+
+    def test_add_feature_different_module_same_key_raises_error(
+        self, graph: FeatureGraph
+    ):
+        """Test that different classes with same key from different modules raise ValueError."""
+
+        class OriginalFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "unique_key"]),
+                fields=[FieldSpec(key=FieldKey(["x"]))],
+            ),
+        ):
+            pass
+
+        # Remove the feature so we can test manual registration
+        graph.remove_feature(OriginalFeature.spec().key)
+
+        # Re-add original
+        graph.add_feature(OriginalFeature)
+
+        # Create a mock class that simulates a class from a different module
+        # by modifying __module__ before calling add_feature
+        class ConflictingFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(
+                    ["test", "conflict_key"]
+                ),  # Use different key for definition
+                fields=[FieldSpec(key=FieldKey(["y"]))],
+            ),
+        ):
+            pass
+
+        # Remove and modify to simulate different module
+        graph.remove_feature(ConflictingFeature.spec().key)
+        ConflictingFeature.__module__ = "some.other.module"
+        # Override the spec key to conflict with OriginalFeature
+        ConflictingFeature._spec = SampleFeatureSpec(
+            key=FeatureKey(["test", "unique_key"]),
+            fields=[FieldSpec(key=FieldKey(["y"]))],
+        )
+
+        with pytest.raises(ValueError, match="already registered"):
+            graph.add_feature(ConflictingFeature)
 
 
 class TestBasicTopologicalSorting:
@@ -549,8 +649,8 @@ class TestDeterministicOrdering:
         assert a_idx < m2_idx
         assert z_idx < b2_idx
 
-    def test_case_insensitive_alphabetical_ordering(self, graph: FeatureGraph):
-        """Test that alphabetical ordering is case-insensitive."""
+    def test_alphabetical_ordering(self, graph: FeatureGraph):
+        """Test that same-level features are sorted alphabetically."""
 
         class FeatureParent(
             BaseFeature,
@@ -561,31 +661,31 @@ class TestDeterministicOrdering:
         ):
             pass
 
-        # Create children with mixed case names
-        class FeatureZ(
+        # Create children with names that test alphabetical ordering
+        class FeatureZulu(
             BaseFeature,
             spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "Z"]),
+                key=FeatureKey(["test", "zulu"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
                 deps=[FeatureDep(feature=FeatureParent)],
             ),
         ):
             pass
 
-        class Featurea(
+        class FeatureAlpha(
             BaseFeature,
             spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "a"]),
+                key=FeatureKey(["test", "alpha"]),
                 fields=[FieldSpec(key=FieldKey(["a"]))],
                 deps=[FeatureDep(feature=FeatureParent)],
             ),
         ):
             pass
 
-        class FeatureM(
+        class FeatureMike(
             BaseFeature,
             spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "M"]),
+                key=FeatureKey(["test", "mike"]),
                 fields=[FieldSpec(key=FieldKey(["m"]))],
                 deps=[FeatureDep(feature=FeatureParent)],
             ),
@@ -597,11 +697,11 @@ class TestDeterministicOrdering:
         # Parent should be first
         assert sorted_keys[0] == FeatureParent.spec().key
 
-        # Children should be in case-insensitive alphabetical order
-        # a < M < Z (case-insensitive)
-        assert sorted_keys[1] == Featurea.spec().key
-        assert sorted_keys[2] == FeatureM.spec().key
-        assert sorted_keys[3] == FeatureZ.spec().key
+        # Children should be in alphabetical order
+        # alpha < mike < zulu
+        assert sorted_keys[1] == FeatureAlpha.spec().key
+        assert sorted_keys[2] == FeatureMike.spec().key
+        assert sorted_keys[3] == FeatureZulu.spec().key
 
 
 class TestEdgeCases:

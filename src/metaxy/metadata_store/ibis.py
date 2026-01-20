@@ -9,7 +9,7 @@ Supports any SQL database that Ibis supports:
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import narwhals as nw
 from narwhals.typing import Frame
@@ -22,7 +22,9 @@ from metaxy.metadata_store.base import (
     VersioningEngineOptions,
 )
 from metaxy.metadata_store.exceptions import (
+    FeatureNotFoundError,
     HashAlgorithmNotSupportedError,
+    StoreNotOpenError,
     TableNotFoundError,
 )
 from metaxy.metadata_store.types import AccessMode
@@ -34,6 +36,7 @@ from metaxy.versioning.types import HashAlgorithm
 if TYPE_CHECKING:
     import ibis
     import ibis.expr.types
+    from ibis.backends.sql import SQLBackend
 
 
 class IbisMetadataStoreConfig(MetadataStoreConfig):
@@ -111,6 +114,8 @@ class IbisMetadataStore(MetadataStore, ABC):
         ```
     """
 
+    versioning_engine_cls = IbisVersioningEngine
+
     def __init__(
         self,
         versioning_engine: VersioningEngineOptions = "auto",
@@ -157,18 +162,17 @@ class IbisMetadataStore(MetadataStore, ABC):
                 )
             ```
         """
-        import ibis
+        from ibis.backends.sql import SQLBackend
 
         self.connection_string = connection_string
         self.backend = backend
         self.connection_params = connection_params or {}
-        self._conn: ibis.BaseBackend | None = None
+        self._conn: SQLBackend | None = None
         self._table_prefix = table_prefix or ""
 
         super().__init__(
             **kwargs,
             versioning_engine=versioning_engine,
-            versioning_engine_cls=IbisVersioningEngine,
         )
 
     def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
@@ -228,8 +232,8 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Create hash functions for Ibis expressions
         hash_functions = self._create_hash_functions()
 
-        # Create engine (only accepts plan and hash_functions)
-        engine = IbisVersioningEngine(
+        # Create engine using the configured class (allows subclass override)
+        engine = self.versioning_engine_cls(
             plan=plan,
             hash_functions=hash_functions,
         )
@@ -269,7 +273,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             )
 
     @property
-    def ibis_conn(self) -> "ibis.BaseBackend":
+    def conn(self) -> "SQLBackend":
         """Get Ibis backend connection.
 
         Returns:
@@ -278,25 +282,13 @@ class IbisMetadataStore(MetadataStore, ABC):
         Raises:
             StoreNotOpenError: If store is not open
         """
-        from metaxy.metadata_store.exceptions import StoreNotOpenError
 
         if self._conn is None:
             raise StoreNotOpenError(
                 "Ibis connection is not open. Store must be used as a context manager."
             )
-        return self._conn
-
-    @property
-    def conn(self) -> "ibis.BaseBackend":
-        """Get connection (alias for ibis_conn for consistency).
-
-        Returns:
-            Active Ibis backend connection
-
-        Raises:
-            StoreNotOpenError: If store is not open
-        """
-        return self.ibis_conn
+        else:
+            return self._conn  # ty: ignore[invalid-return-type]
 
     @contextmanager
     def open(self, mode: AccessMode = "read") -> Iterator[Self]:
@@ -398,6 +390,11 @@ class IbisMetadataStore(MetadataStore, ABC):
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
+        table_name = self.get_table_name(feature_key)
+
+        # Apply backend-specific transformations before writing
+        df = self.transform_before_write(df, feature_key, table_name)
+
         if df.implementation == nw.Implementation.IBIS:
             df_to_insert = df.to_native()  # Ibis expression
         else:
@@ -405,10 +402,8 @@ class IbisMetadataStore(MetadataStore, ABC):
 
             df_to_insert = collect_to_polars(df)  # Polars DataFrame
 
-        table_name = self.get_table_name(feature_key)
-
         try:
-            self.conn.insert(table_name, obj=df_to_insert)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+            self.conn.insert(table_name, obj=df_to_insert)  # ty: ignore[invalid-argument-type]
         except Exception as e:
             import ibis.common.exceptions
 
@@ -449,6 +444,69 @@ class IbisMetadataStore(MetadataStore, ABC):
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
 
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr] | None,
+        *,
+        current_only: bool,  # noqa: ARG002 - version filtering handled by base class
+    ) -> None:
+        """Backend-specific hard delete implementation for SQL databases.
+
+        Translates Narwhals filter expression to Ibis and executes DELETE in database.
+
+        Args:
+            feature_key: Feature to delete from
+            filters: Narwhals expressions to filter records
+            current_only: Not used here - version filtering handled by base class
+        """
+        from metaxy.metadata_store.utils import (
+            _extract_where_expression,
+            _strip_table_qualifiers,
+        )
+
+        table_name = self.get_table_name(feature_key)
+        filter_list = list(filters or [])
+
+        # Handle empty filters - truncate entire table
+        if not filter_list:
+            if table_name not in self.conn.list_tables():
+                raise TableNotFoundError(
+                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}."
+                )
+            self.conn.truncate_table(table_name)  # ty: ignore[unresolved-attribute]
+            return
+
+        # Read and filter using store's lazy path to build WHERE clause
+        filtered = self.read_metadata_in_store(feature_key, filters=filter_list)
+        if filtered is None:
+            raise FeatureNotFoundError(
+                f"Feature {feature_key.to_string()} not found in store"
+            )
+
+        # Extract WHERE clause from compiled SELECT statement
+        ibis_filtered = cast("ibis.expr.types.Table", filtered.to_native())
+        select_sql = str(ibis_filtered.compile())
+
+        dialect = self._sql_dialect
+        predicate = _extract_where_expression(select_sql, dialect=dialect)
+        if predicate is None:
+            raise ValueError(
+                f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}"
+            )
+
+        # Generate and execute DELETE statement
+        predicate = predicate.transform(_strip_table_qualifiers())
+        where_clause = predicate.sql(dialect=dialect) if dialect else predicate.sql()
+
+        delete_stmt = f"DELETE FROM {table_name} WHERE {where_clause}"
+        self.conn.raw_sql(delete_stmt)  # ty: ignore[unresolved-attribute]
+
+    @property
+    def _sql_dialect(self) -> str | None:
+        """Extract SQL dialect from the active backend connection."""
+        return self.conn.name
+
     def read_metadata_in_store(
         self,
         feature: CoercibleToFeatureKey,
@@ -482,8 +540,12 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Get Ibis table reference
         table = self.conn.table(table_name)
 
+        # Apply backend-specific transformations (e.g., cast JSON columns for ClickHouse)
+        table = self.transform_after_read(table, feature_key)
+
         # Wrap Ibis table with Narwhals (stays lazy in SQL)
-        nw_lazy: nw.LazyFrame[Any] = nw.from_native(table, eager_only=False)
+        native_frame = nw.from_native(table, eager_only=False)
+        nw_lazy: nw.LazyFrame[Any] = cast(nw.LazyFrame[Any], cast(object, native_frame))
 
         # Apply feature_version filter (stays in SQL via Narwhals)
         if feature_version is not None:
@@ -502,6 +564,47 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
         return nw_lazy
+
+    def transform_after_read(
+        self, table: "ibis.Table", feature_key: "FeatureKey"
+    ) -> "ibis.Table":
+        """Transform Ibis table before wrapping with Narwhals.
+
+        Override in subclasses to apply backend-specific transformations.
+
+        !!! example
+            ClickHouse needs to cast JSON columns to Struct for
+            PyArrow compatibility.
+
+        Args:
+            table: Ibis table reference
+            feature_key: The feature key being read (use to get field names)
+
+        Returns:
+            Transformed Ibis table (default: unchanged)
+        """
+        return table
+
+    def transform_before_write(
+        self, df: Frame, feature_key: "FeatureKey", table_name: str
+    ) -> Frame:
+        """Transform DataFrame before writing to the store.
+
+        Override in subclasses to apply backend-specific transformations.
+
+        !!! example
+            ClickHouse needs to convert Polars Struct columns to
+            Map-compatible format when the table has Map columns.
+
+        Args:
+            df: Narwhals DataFrame to be written
+            feature_key: The feature key being written to
+            table_name: The target table name
+
+        Returns:
+            Transformed DataFrame (default: unchanged)
+        """
+        return df
 
     def _can_compute_native(self) -> bool:
         """
@@ -525,7 +628,9 @@ class IbisMetadataStore(MetadataStore, ABC):
         sanitized_info = sanitize_uri(backend_info)
         return f"{self.__class__.__name__}(backend={sanitized_info})"
 
-    def get_store_metadata(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
+    def _get_store_metadata_impl(
+        self, feature_key: CoercibleToFeatureKey
+    ) -> dict[str, Any]:
         """Return store metadata including table name.
 
         Args:
@@ -538,5 +643,5 @@ class IbisMetadataStore(MetadataStore, ABC):
         return {"table_name": self.get_table_name(resolved_key)}
 
     @classmethod
-    def config_model(cls) -> type[IbisMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def config_model(cls) -> type[IbisMetadataStoreConfig]:
         return IbisMetadataStoreConfig

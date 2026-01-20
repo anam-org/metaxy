@@ -25,10 +25,12 @@ class MetaxyColumnMissingWarning(Warning):
 
     @classmethod
     def warn_on_missing_column(cls, expected: str, df: Frame, message: str = ""):
-        if expected in df.columns:
+        # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
+        columns = df.collect_schema().names()
+        if expected in columns:
             return
         else:
-            warning = f"Metaxy column missing: expected {expected}, got {df.columns}."
+            warning = f"Metaxy column missing: expected {expected}, got {columns}."
 
             if message:
                 warning += f" {message}"

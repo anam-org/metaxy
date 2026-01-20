@@ -1,3 +1,8 @@
+---
+title: "DuckDB API Reference"
+description: "API reference for DuckDBMetadataStore."
+---
+
 # DuckDB Metadata Store API
 
 ::: metaxy.metadata_store.duckdb

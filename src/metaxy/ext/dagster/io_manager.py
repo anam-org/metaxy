@@ -9,10 +9,11 @@ import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
+    DAGSTER_METAXY_PARTITION_METADATA_KEY,
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 from metaxy.ext.dagster.utils import (
-    build_partition_filter,
+    build_partition_filter_from_input_context,
     build_runtime_feature_metadata,
 )
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
@@ -77,16 +78,18 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
     def metadata_store(
         self,
     ) -> mx.MetadataStore:  # this property mostly exists to fix the type annotation
-        return self.store  # pyright: ignore[reportReturnType]
+        return self.store  # ty: ignore[invalid-return-type]
 
     def _feature_key_from_context(
         self, context: dg.InputContext | dg.OutputContext
     ) -> ValidatedFeatureKey:
         if isinstance(context, dg.InputContext):
             assert context.upstream_output is not None
-            assert context.upstream_output.metadata is not None
+            assert context.upstream_output.definition_metadata is not None
             return mx.ValidatedFeatureKeyAdapter.validate_python(
-                context.upstream_output.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY]
+                context.upstream_output.definition_metadata[
+                    DAGSTER_METAXY_FEATURE_METADATA_KEY
+                ]
             )
         elif isinstance(context, dg.OutputContext):
             return mx.ValidatedFeatureKeyAdapter.validate_python(
@@ -109,26 +112,41 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             A narwhals LazyFrame with the feature metadata.
         """
         with self.metadata_store:
-            context.log.debug(
-                f"Reading metadata for Metaxy feature {self._feature_key_from_context(context).to_string()} from {self.metadata_store.display()}"
-            )
+            feature_key = self._feature_key_from_context(context)
+            store_metadata = self.metadata_store.get_store_metadata(feature_key)
 
-            # Build partition filter if applicable
-            partition_col = (
-                context.definition_metadata.get(DAGSTER_METAXY_PARTITION_KEY)
-                if context.has_asset_partitions
-                else None
+            # Build input metadata, transforming special keys to dagster standard format
+            input_metadata: dict[str, Any] = {}
+            for key, value in store_metadata.items():
+                if key == "display":
+                    input_metadata["metaxy/store"] = value
+                elif key == "table_name":
+                    input_metadata["dagster/table_name"] = value
+                elif key == "uri":
+                    input_metadata["dagster/uri"] = dg.MetadataValue.path(value)
+                else:
+                    input_metadata[key] = value
+
+            # Only add input metadata if we have exactly one partition key
+            # (add_input_metadata internally uses asset_partition_key which fails with multiple)
+            # TODO: raise an issue in Dagter
+            # or implement our own observation logging for multiple partition keys
+            has_single_partition = (
+                context.has_asset_partitions
+                and len(list(context.asset_partition_keys)) == 1
             )
-            partition_key = (
-                context.asset_partition_key if context.has_asset_partitions else None
-            )
-            filters = build_partition_filter(
-                partition_col,  # pyright: ignore[reportArgumentType]
-                partition_key,
-            )
+            if input_metadata and (
+                not context.has_asset_partitions or has_single_partition
+            ):
+                context.add_input_metadata(
+                    input_metadata, description="Metadata Store Info"
+                )
+
+            # Build partition filters from context (handles partition_by and metaxy/partition)
+            filters = build_partition_filter_from_input_context(context)
 
             return self.metadata_store.read_metadata(
-                feature=self._feature_key_from_context(context),
+                feature=feature_key,
                 filters=filters,
             )
 
@@ -168,21 +186,44 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         self._log_output_metadata(context)
 
     def _log_output_metadata(self, context: dg.OutputContext):
+        # Check if expensive runtime metadata was already logged (e.g., via generate_materialize_results)
+        # dagster/row_count requires database reads and is always set by build_runtime_feature_metadata,
+        # so we use it as a sentinel to detect if metadata was already computed
+        # Using step_context.get_output_metadata() to check for existing metadata
+        # See: https://github.com/dagster-io/dagster/issues/17923
+        existing_metadata = context.step_context.get_output_metadata(context.name)
+        if existing_metadata and "dagster/row_count" in existing_metadata:
+            context.log.debug(
+                "Skipping runtime metadata logging - already logged via MaterializeResult"
+            )
+            return
+
         with self.metadata_store:
             key = self._feature_key_from_context(context)
 
             try:
                 feature = mx.get_feature_by_key(key)
 
-                # Build runtime metadata from data (includes metaxy/feature, metaxy/info,
-                # metaxy/store, row count, table preview, etc.)
-                lazy_df = self.metadata_store.read_metadata(feature)
-                runtime_metadata = build_runtime_feature_metadata(
-                    key, self.metadata_store, lazy_df, context
+                # Get partition column from metadata (for Dagster partitions)
+                partition_col = context.definition_metadata.get(
+                    DAGSTER_METAXY_PARTITION_KEY
+                )
+
+                # Get metaxy partition from metadata (for multi-asset logical partitions)
+                metaxy_partition = context.definition_metadata.get(
+                    DAGSTER_METAXY_PARTITION_METADATA_KEY
+                )
+
+                # Build runtime metadata (handles reading and filtering internally)
+                runtime_metadata, _ = build_runtime_feature_metadata(
+                    key,
+                    self.metadata_store,
+                    context,
+                    partition_col=partition_col,
+                    metaxy_partition=metaxy_partition,
                 )
                 context.add_output_metadata(runtime_metadata)
 
-                # Get materialized-in-run count
                 mat_lazy_df = self.metadata_store.read_metadata(
                     feature,
                     filters=[nw.col(METAXY_MATERIALIZATION_ID) == context.run_id],

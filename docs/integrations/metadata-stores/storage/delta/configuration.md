@@ -1,3 +1,8 @@
+---
+title: "Delta Lake Configuration"
+description: "Configuration options for DeltaMetadataStore."
+---
+
 # Delta Lake Configuration
 
 <!-- dprint-ignore-start -->

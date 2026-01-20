@@ -287,7 +287,7 @@ def test_multi_project_dependency_graph(
     # Verify dependency is tracked
     downstream_spec = graph.feature_specs_by_key[FeatureKey(["downstream"])]
     assert len(downstream_spec.deps or []) == 1
-    assert downstream_spec.deps is not None  # Type assertion for basedpyright
+    assert downstream_spec.deps is not None  # Type assertion for type checker
     assert downstream_spec.deps[0].feature == FeatureKey(["upstream"])
 
     # Snapshot the structure

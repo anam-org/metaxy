@@ -3,7 +3,7 @@ entrypoints = ["example_migration.__entrypoint__"]
 auto_create_tables = true # Enable for development/examples
 
 [stores.dev]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
 
 [stores.dev.config]
-database = "/tmp/example_migration.db"
+root_path = "/tmp/example_migration"
