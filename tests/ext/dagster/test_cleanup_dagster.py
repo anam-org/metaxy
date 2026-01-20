@@ -8,6 +8,7 @@ import dagster as dg
 import polars as pl
 import pytest
 
+import metaxy as mx
 import metaxy.ext.dagster as mxd
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
@@ -259,7 +260,7 @@ def test_delete_metadata_cascade_invalid_option():
         mxd.delete_metadata(ctx)
 
 
-def test_delete_metadata_cascade_integration():
+def test_delete_metadata_cascade_integration(tmp_path):
     """Integration test for cascade deletion."""
 
     # Create dependent features
@@ -292,32 +293,34 @@ def test_delete_metadata_cascade_integration():
         chunk_id: str
         frames: bytes | None = None
 
-    # Create an in-memory store
-    store = mx.InMemoryMetadataStore()
+    # Create a delta store
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     # Define a job with the delete op
-    @dg.job(
-        resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)}
-    )
+    @dg.job(resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)})
     def cascade_cleanup_job():
         mxd.delete_metadata()
 
     # Write test data
-    video_data = pl.DataFrame({
-        "video_id": ["v1"],
-        "frames": [b"frame_data"],
-        METAXY_PROVENANCE_BY_FIELD: [{"frames": "p1"}],
-    })
+    video_data = pl.DataFrame(
+        {
+            "video_id": ["v1"],
+            "frames": [b"frame_data"],
+            METAXY_PROVENANCE_BY_FIELD: [{"frames": "p1"}],
+        }
+    )
 
-    chunk_data = pl.DataFrame({
-        "video_id": ["v1", "v1"],
-        "chunk_id": ["c1", "c2"],
-        "frames": [b"f1", b"f2"],
-        METAXY_PROVENANCE_BY_FIELD: [
-            {"frames": "p1"},
-            {"frames": "p1"},
-        ],
-    })
+    chunk_data = pl.DataFrame(
+        {
+            "video_id": ["v1", "v1"],
+            "chunk_id": ["c1", "c2"],
+            "frames": [b"f1", b"f2"],
+            METAXY_PROVENANCE_BY_FIELD: [
+                {"frames": "p1"},
+                {"frames": "p1"},
+            ],
+        }
+    )
 
     with store.open("write"):
         store.write_metadata(VideoRaw, video_data)
@@ -354,20 +357,8 @@ def test_delete_metadata_cascade_integration():
         assert store.read_metadata(VideoChunk).collect().to_polars().height == 0
 
         # Data still exists with include_soft_deleted
-        assert (
-            store.read_metadata(VideoRaw, include_soft_deleted=True)
-            .collect()
-            .to_polars()
-            .height
-            == 1
-        )
-        assert (
-            store.read_metadata(VideoChunk, include_soft_deleted=True)
-            .collect()
-            .to_polars()
-            .height
-            == 2
-        )
+        assert store.read_metadata(VideoRaw, include_soft_deleted=True).collect().to_polars().height == 1
+        assert store.read_metadata(VideoChunk, include_soft_deleted=True).collect().to_polars().height == 2
 
 
 def test_delete_metadata_no_cascade_default():
