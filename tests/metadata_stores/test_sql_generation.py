@@ -16,6 +16,7 @@ from metaxy.metadata_store.utils import (
     _strip_table_qualifiers,
     generate_sql,
     narwhals_expr_to_sql_predicate,
+    unquote_identifiers,
 )
 
 PREDICATE_CASES = predicate_cases()
@@ -288,3 +289,179 @@ def test_narwhals_expr_to_sql_predicate_rejects_window_expressions(
         match="Could not extract WHERE clause|not supported",
     ):
         narwhals_expr_to_sql_predicate(expr, schema, dialect="duckdb")
+
+
+# ===== Tests for unquote_identifiers transform =====
+
+
+def test_unquote_identifiers_removes_quotes_from_columns() -> None:
+    """Test that unquote_identifiers removes quotes from column identifiers."""
+    sql = "\"status\" = 'active'"
+    parsed = parse_one(sql, read="duckdb")
+    transformed = parsed.transform(unquote_identifiers())
+    result = transformed.sql(dialect="duckdb")
+
+    # Should not have quotes around column name
+    assert result == "status = 'active'"
+
+
+def test_unquote_identifiers_handles_multiple_columns() -> None:
+    """Test that unquote_identifiers works with multiple quoted columns."""
+    sql = '"price" > 5 AND "status" = \'active\''
+    parsed = parse_one(sql, read="duckdb")
+    transformed = parsed.transform(unquote_identifiers())
+    result = transformed.sql(dialect="duckdb")
+
+    # Neither column should be quoted
+    assert '"price"' not in result
+    assert '"status"' not in result
+    assert "price" in result
+    assert "status" in result
+
+
+def test_unquote_identifiers_preserves_unquoted_columns() -> None:
+    """Test that already unquoted columns remain unchanged."""
+    sql = "status = 'active'"
+    parsed = parse_one(sql, read="duckdb")
+    transformed = parsed.transform(unquote_identifiers())
+    result = transformed.sql(dialect="duckdb")
+
+    # Should remain unchanged
+    assert result == "status = 'active'"
+
+
+def test_unquote_identifiers_preserves_string_literals() -> None:
+    """Test that string literals are not affected by unquote_identifiers."""
+    sql = "\"status\" = 'active'"
+    parsed = parse_one(sql, read="duckdb")
+    transformed = parsed.transform(unquote_identifiers())
+    result = transformed.sql(dialect="duckdb")
+
+    # String literal should keep its quotes
+    assert "'active'" in result
+
+
+def test_unquote_identifiers_handles_complex_expressions() -> None:
+    """Test unquote_identifiers with more complex SQL predicates."""
+    sql = '("price" > 5 AND "status" IN (\'active\', \'pending\')) OR "value" IS NULL'
+    parsed = parse_one(sql, read="duckdb")
+    transformed = parsed.transform(unquote_identifiers())
+    result = transformed.sql(dialect="duckdb")
+
+    # All column names should be unquoted
+    assert '"price"' not in result
+    assert '"status"' not in result
+    assert '"value"' not in result
+
+
+# ===== Tests for extra_transforms parameter =====
+
+
+def test_extra_transforms_single_transform() -> None:
+    """Test passing a single transform to extra_transforms."""
+    schema = nw.from_native(pl.DataFrame(schema={"status": pl.Utf8})).collect_schema()
+
+    predicate = narwhals_expr_to_sql_predicate(
+        nw.col("status") == "active",
+        schema,
+        dialect="datafusion",
+        extra_transforms=unquote_identifiers(),
+    )
+
+    # Column name should be unquoted
+    assert '"status"' not in predicate
+    assert "status" in predicate
+
+
+def test_extra_transforms_multiple_transforms() -> None:
+    """Test passing multiple transforms as a sequence."""
+    schema = nw.from_native(
+        pl.DataFrame(schema={"status": pl.Utf8, "price": pl.Float64})
+    ).collect_schema()
+
+    # Create a custom transform that uppercases column names (for testing)
+    def uppercase_columns():
+        def _uppercase(node: exp.Expression) -> exp.Expression:
+            if isinstance(node, exp.Column) and isinstance(node.this, exp.Identifier):
+                uppercased = node.copy()
+                uppercased.this.set("this", node.this.this.upper())
+                return uppercased
+            return node
+
+        return _uppercase
+
+    predicate = narwhals_expr_to_sql_predicate(
+        [nw.col("status") == "active", nw.col("price") > 5],
+        schema,
+        dialect="datafusion",
+        extra_transforms=[unquote_identifiers(), uppercase_columns()],
+    )
+
+    # Columns should be unquoted and uppercased
+    assert '"status"' not in predicate
+    assert '"price"' not in predicate
+    assert "STATUS" in predicate
+    assert "PRICE" in predicate
+
+
+def test_extra_transforms_none_uses_default_behavior() -> None:
+    """Test that None extra_transforms behaves the same as before."""
+    schema = nw.from_native(pl.DataFrame(schema={"status": pl.Utf8})).collect_schema()
+
+    # Without extra_transforms
+    predicate_default = narwhals_expr_to_sql_predicate(
+        nw.col("status") == "active",
+        schema,
+        dialect="duckdb",
+    )
+
+    # With extra_transforms=None
+    predicate_explicit_none = narwhals_expr_to_sql_predicate(
+        nw.col("status") == "active",
+        schema,
+        dialect="duckdb",
+        extra_transforms=None,
+    )
+
+    # Should be identical
+    assert predicate_default == predicate_explicit_none
+
+
+def test_extra_transforms_applied_after_strip_table_qualifiers() -> None:
+    """Test that extra transforms are applied after table qualifiers are stripped."""
+    schema = nw.from_native(pl.DataFrame(schema={"status": pl.Utf8})).collect_schema()
+
+    predicate = narwhals_expr_to_sql_predicate(
+        nw.col("status") == "active",
+        schema,
+        dialect="datafusion",
+        extra_transforms=unquote_identifiers(),
+    )
+
+    # Should have no table qualifiers and no quotes
+    assert "_metaxy_temp" not in predicate
+    assert '"status"' not in predicate
+    assert "status" in predicate
+
+
+def test_extra_transforms_executes_in_datafusion() -> None:
+    """Integration test: unquoted predicate executes correctly in DataFusion."""
+    ctx = datafusion.SessionContext()
+    batch = pa.record_batch(
+        [pa.array(["active", "pending", "inactive"])],
+        names=["status"],
+    )
+    ctx.register_record_batches("statuses", [[batch]])
+
+    schema = nw.from_native(pl.DataFrame(schema={"status": pl.Utf8})).collect_schema()
+    predicate = narwhals_expr_to_sql_predicate(
+        nw.col("status") == "active",
+        schema,
+        dialect="datafusion",
+        extra_transforms=unquote_identifiers(),
+    )
+
+    # Execute in DataFusion (which requires unquoted identifiers)
+    df = ctx.sql(f"SELECT * FROM statuses WHERE {predicate}")
+    batches = df.collect()
+    assert sum(batch.num_rows for batch in batches) == 1

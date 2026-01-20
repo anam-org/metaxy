@@ -317,10 +317,41 @@ class LanceDBMetadataStore(MetadataStore):
         *,
         current_only: bool,
     ) -> None:
-        """Hard delete not yet supported for LanceDB backend."""
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not yet implement hard delete"
+        """Hard deletion for LanceDB. Calls the delete method on the Lance table.
+
+        Args:
+            feature_key: Feature to delete from
+            filter_expr: Narwhals expression to select rows to delete
+        """
+        table_name = self._table_name(feature_key)
+        table = self._get_table(table_name)
+
+        # If no filters provided, delete all rows
+        if not filters:
+            table.delete()
+            return
+
+        # LanceDB's delete() API requires a single SQL WHERE clause string,
+        # so combine multiple filter expressions into one using all_horizontal
+        combined_filter = nw.all_horizontal(list(filters), ignore_nulls=False)
+
+        # Convert Narwhals expression to SQL WHERE clause for LanceDB.
+        # LanceDB requires unquoted identifiers, so we use the unquote_identifiers transform.
+        from metaxy.metadata_store.utils import (
+            narwhals_expr_to_sql_predicate,
+            unquote_identifiers,
         )
+
+        schema = self.read_feature_schema_from_store(feature_key)
+        filter_str = narwhals_expr_to_sql_predicate(
+            combined_filter,
+            schema,
+            dialect="datafusion",
+            extra_transforms=unquote_identifiers(),
+        )
+
+        # Use native LanceDB delete for efficient in-place deletion
+        table.delete(filter_str)
 
     def read_metadata_in_store(
         self,

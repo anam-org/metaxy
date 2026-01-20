@@ -135,6 +135,11 @@ def narwhals_expr_to_sql_predicate(
     schema: nw.Schema,
     *,
     dialect: str,
+    extra_transforms: (
+        Callable[[exp.Expression], exp.Expression]
+        | Sequence[Callable[[exp.Expression], exp.Expression]]
+        | None
+    ) = None,
 ) -> str:
     """Convert Narwhals filter expressions to a SQL WHERE clause predicate.
 
@@ -143,11 +148,15 @@ def narwhals_expr_to_sql_predicate(
     2. Applying the Narwhals filters to generate SQL
     3. Extracting the WHERE clause predicate
     4. Stripping any table qualifiers (single-table only; not safe for joins)
+    5. Applying any extra transforms provided
 
     Args:
         filters: Narwhals filter expression or sequence of expressions to convert
         schema: Narwhals schema to build the Ibis table
         dialect: SQL dialect to use when generating SQL
+        extra_transforms: Optional sqlglot expression transformer(s) to apply after
+            stripping table qualifiers. Can be a single callable or sequence of callables.
+            Each callable should take an `exp.Expression` and return an `exp.Expression`.
 
     Returns:
         SQL WHERE clause predicate string (without the "WHERE" keyword)
@@ -164,6 +173,20 @@ def narwhals_expr_to_sql_predicate(
         filters = nw.col("status") == "active"
         narwhals_expr_to_sql_predicate(filters, df, dialect="duckdb")
         # '"status" = \'active\''
+        ```
+
+    Example: With extra transforms
+        ```py
+        from metaxy.metadata_store.utils import unquote_identifiers
+
+        # Generate unquoted SQL for LanceDB
+        sql = narwhals_expr_to_sql_predicate(
+            filters,
+            schema,
+            dialect="datafusion",
+            extra_transforms=unquote_identifiers(),
+        )
+        # 'status = \'active\''  (no quotes around column name)
         ```
     """
     filter_list = (
@@ -186,7 +209,16 @@ def narwhals_expr_to_sql_predicate(
 
     predicate_expr = simplify(predicate_expr)
 
+    # Apply table qualifier stripping first
     predicate_expr = predicate_expr.transform(_strip_table_qualifiers())
+
+    # Apply extra transforms if provided
+    if extra_transforms is not None:
+        transform_list = (
+            [extra_transforms] if callable(extra_transforms) else list(extra_transforms)
+        )
+        for transform in transform_list:
+            predicate_expr = predicate_expr.transform(transform)
 
     return predicate_expr.sql(dialect=dialect)
 
@@ -210,6 +242,37 @@ def _strip_table_qualifiers() -> Callable[[exp.Expression], exp.Expression]:
         return cleaned
 
     return _strip
+
+
+def unquote_identifiers() -> Callable[[exp.Expression], exp.Expression]:
+    """Return a transformer function that removes quotes from column identifiers.
+
+    LanceDB (and some other systems) require unquoted identifiers in SQL predicates.
+    This transformer removes the `quoted` flag from identifier nodes.
+
+    Returns:
+        A transformer function that unquotes column identifiers
+
+    Example:
+        ```py
+        import sqlglot
+        from sqlglot import exp
+
+        sql = '"status" = \'active\''
+        parsed = sqlglot.parse_one(sql)
+        transformed = parsed.transform(unquote_identifiers())
+        # Result: status = 'active'
+        ```
+    """
+
+    def _unquote(node: exp.Expression) -> exp.Expression:
+        if isinstance(node, exp.Column) and isinstance(node.this, exp.Identifier):
+            unquoted = node.copy()
+            unquoted.this.set("quoted", False)
+            return unquoted
+        return node
+
+    return _unquote
 
 
 def _extract_where_expression(
