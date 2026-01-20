@@ -1,0 +1,59 @@
+definitions:
+  - &color "#ffffff"
+  - &color_transparent "#ffffff99"
+  - &font_family Roboto
+
+size: { width: 1200, height: 630 }
+
+layers:
+  # Background
+  - background:
+      color: "#4051b5"
+
+  # Logo
+  - size: { width: 160, height: 160 }
+    offset: { x: 960, y: 64 }
+    icon:
+      value: custom/metaxy
+
+  # Site name
+  - size: { width: 880, height: 56 }
+    offset: { x: 64, y: 68 }
+    typography:
+      content: "{{ config.site_name }}"
+      align: start
+      color: *color
+      line:
+        amount: 1
+        height: 1.0
+      font:
+        family: *font_family
+        style: Bold
+
+  # Title
+  - size: { width: 1072, height: 256 }
+    offset: { x: 64, y: 192 }
+    typography:
+      content: "{{ page.meta.title or page.title }}"
+      align: start
+      color: *color
+      line:
+        amount: 3
+        height: 1.25
+      font:
+        family: *font_family
+        style: Bold
+
+  # Description
+  - size: { width: 1072, height: 80 }
+    offset: { x: 64, y: 464 }
+    typography:
+      content: "{{ page.meta.description or config.site_description }}"
+      align: start
+      color: *color_transparent
+      line:
+        amount: 2
+        height: 1.5
+      font:
+        family: *font_family
+        style: Regular
