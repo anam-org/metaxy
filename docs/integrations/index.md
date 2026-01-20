@@ -1,6 +1,6 @@
 ---
 title: "Integrations"
-description: "Connect Metaxy with orchestrators, metadata stores, and plugins."
+description: "Integrate Metaxy with other tooling, databases, external services, Python libraries, and more."
 ---
 
 # Metaxy Integrations
