@@ -15,22 +15,22 @@ repos:
     hooks:
     - id: ruff-check
       name: Ruff Check
-      entry: uv run ruff check --fix
+      entry: .git-hooks/with-direnv.sh uv run ruff check --fix
       language: system
       pass_filenames: false
     - id: format
       name: Dprint Format
-      entry: uv run dprint fmt
+      entry: .git-hooks/with-direnv.sh uv run dprint fmt
       language: system
       pass_filenames: false
     - id: typecheck
       name: Typecheck
-      entry: uv run ty check
+      entry: .git-hooks/with-direnv.sh uv run ty check
       language: system
       pass_filenames: false
     - id: build-docs
       name: Build Docs
-      entry: uv run --group docs mkdocs build --strict
+      entry: .git-hooks/with-direnv.sh uv run --group docs mkdocs build --strict
       language: system
       pass_filenames: false
       files: ^(src/|docs/|pyproject\.toml|uv\.lock|mkdocs\.yml|\.pre-commit-config\.yaml)
