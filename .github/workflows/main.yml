@@ -1,6 +1,5 @@
-name: Deploy Documentation
+name: CI/CD (main)
 
-# Trigger on push to main branch or manual dispatch
 on:
   push:
     branches:
@@ -8,16 +7,32 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: true  # Cancel previous deployments when new one starts
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
+  pull-requests: write
+  issues: write
+  checks: write
   pages: write
   id-token: write
 
 jobs:
+  qa:
+    uses: ./.github/workflows/_qa.yml
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      checks: write
+    with:
+      python-versions: '["3.10", "3.11", "3.12", "3.13"]'
+      run-windows: true
+      run-macos: true
+
   deploy-docs:
+    needs: qa
     runs-on: depot-ubuntu-latest
 
     # GitHub Pages deployment environment
