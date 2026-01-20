@@ -396,7 +396,7 @@ def delete(
 
         if missing_keys:
             missing = ", ".join(k.to_string() for k in missing_keys)
-            console.print(f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {missing}")
+            data_console.print(f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {missing}")
         if not valid_keys:
             exit_with_error(
                 CLIError(
@@ -433,7 +433,7 @@ def delete(
                     error_console.print(f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}")
 
         mode_str = "soft" if soft else "hard"
-        console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete)")
+        data_console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete)")
 
         if errors:
             raise SystemExit(1)
@@ -532,11 +532,11 @@ def drop(
                     )
                 )
             else:
-                console.print("[yellow]Warning:[/yellow] No features found in active graph.")
+                data_console.print("[yellow]Warning:[/yellow] No features found in active graph.")
             return
 
         if format == "plain":
-            console.print(f"\n[bold]Dropping metadata for {len(valid_keys)} feature(s)...[/bold]\n")
+            data_console.print(f"\n[bold]Dropping metadata for {len(valid_keys)} feature(s)...[/bold]\n")
 
         # Drop each feature
         dropped: list[str] = []
@@ -548,13 +548,13 @@ def drop(
                 metadata_store.drop_feature_metadata(feature_key)
                 dropped.append(key_str)
                 if format == "plain":
-                    console.print(f"[green]✓[/green] Dropped: {key_str}")
+                    data_console.print(f"[green]✓[/green] Dropped: {key_str}")
             except Exception as e:
                 failed.append({"feature": key_str, "error": str(e)})
                 if format == "plain":
                     from metaxy.cli.utils import print_error_item
 
-                    print_error_item(console, key_str, e, prefix="[red]✗[/red] Failed to drop")
+                    print_error_item(error_console, key_str, e, prefix="[red]✗[/red] Failed to drop")
 
         # Output result
         if format == "json":
@@ -567,7 +567,7 @@ def drop(
                 result["failed"] = failed
             print(json.dumps(result, indent=2))
         else:
-            console.print(f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped")
+            data_console.print(f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped")
 
 
 @app.command()
