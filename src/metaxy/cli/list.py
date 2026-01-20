@@ -77,9 +77,7 @@ def features(
         # Build field info
         fields_info: list[dict[str, Any]] = []
         for field_key, field_spec in feature_spec.fields_by_key.items():
-            field_version = graph.get_field_version(
-                FQFieldKey(feature=feature_key, field=field_key)
-            )
+            field_version = graph.get_field_version(FQFieldKey(feature=feature_key, field=field_key))
             field_data: dict[str, Any] = {
                 "key": field_spec.key.to_string(),
                 "code_version": field_spec.code_version,
@@ -114,9 +112,7 @@ def features(
         }
 
         if verbose and feature_spec.deps:
-            feature_data["deps"] = [
-                dep.feature.to_string() for dep in feature_spec.deps
-            ]
+            feature_data["deps"] = [dep.feature.to_string() for dep in feature_spec.deps]
 
         features_data.append(feature_data)
 
@@ -180,8 +176,7 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
     root_count = sum(1 for f in features_data if f["is_root"])
     dependent_count = len(features_data) - root_count
     data_console.print(
-        f"[dim]Total: {len(features_data)} feature(s) "
-        f"({root_count} root, {dependent_count} dependent)[/dim]"
+        f"[dim]Total: {len(features_data)} feature(s) ({root_count} root, {dependent_count} dependent)[/dim]"
     )
 
     # Verbose: show field details for each feature
@@ -189,9 +184,7 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
         data_console.print()
         for feature in features_data:
             data_console.print(
-                f"[bold cyan]{feature['key']}[/bold cyan] "
-                f"[dim]({feature['project']})[/dim] "
-                f"{feature['import_path']}"
+                f"[bold cyan]{feature['key']}[/bold cyan] [dim]({feature['project']})[/dim] {feature['import_path']}"
             )
 
             field_table = Table(show_header=True, header_style="bold dim")
@@ -202,9 +195,7 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
 
             for field in feature["fields"]:
                 field_version_display = (
-                    field["version"][:12] + "..."
-                    if len(field["version"]) > 12
-                    else field["version"]
+                    field["version"][:12] + "..." if len(field["version"]) > 12 else field["version"]
                 )
                 deps_str = "-"
                 if "deps" in field:

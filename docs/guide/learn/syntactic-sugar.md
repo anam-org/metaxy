@@ -70,9 +70,7 @@ spec = FeatureSpec(
 `fields` elements can omit the full `FieldsSpec` and be strings (field keys) instead:
 
 ```python
-spec = FeatureSpec(
-    ..., fields=["my/field", FieldSpec(key="field/with/version", code_version="v1.2.3")]
-)
+spec = FeatureSpec(..., fields=["my/field", FieldSpec(key="field/with/version", code_version="v1.2.3")])
 ```
 
 ### Fields Mapping

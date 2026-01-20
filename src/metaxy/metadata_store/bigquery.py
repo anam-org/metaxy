@@ -26,18 +26,10 @@ class BigQueryMetadataStoreConfig(IbisMetadataStoreConfig):
         ```
     """
 
-    project_id: str | None = Field(
-        default=None, description="Google Cloud project ID containing the dataset."
-    )
-    dataset_id: str | None = Field(
-        default=None, description="BigQuery dataset name for storing metadata tables."
-    )
-    credentials_path: str | None = Field(
-        default=None, description="Path to service account JSON file."
-    )
-    credentials: Any | None = Field(
-        default=None, description="Google Cloud credentials object."
-    )
+    project_id: str | None = Field(default=None, description="Google Cloud project ID containing the dataset.")
+    dataset_id: str | None = Field(default=None, description="BigQuery dataset name for storing metadata tables.")
+    credentials_path: str | None = Field(default=None, description="Path to service account JSON file.")
+    credentials: Any | None = Field(default=None, description="Google Cloud credentials object.")
     location: str | None = Field(
         default=None,
         description="Default location for BigQuery resources (e.g., 'US', 'EU').",
@@ -176,8 +168,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
         # Validate we have minimum required parameters
         if "project_id" not in connection_params and project_id is None:
             raise ValueError(
-                "Must provide either project_id or connection_params with project_id. "
-                "Example: project_id='my-project'"
+                "Must provide either project_id or connection_params with project_id. Example: project_id='my-project'"
             )
 
         # Store parameters for display
@@ -229,9 +220,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
 
         # Handle authentication - prioritize explicit credentials
         if credentials_path is not None:
-            connection_params["credentials"] = self._load_service_account_credentials(
-                credentials_path
-            )
+            connection_params["credentials"] = self._load_service_account_credentials(credentials_path)
         elif credentials is not None:
             connection_params["credentials"] = credentials
         # Otherwise, Ibis will automatically use Application Default Credentials
@@ -272,9 +261,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
                 scopes=["https://www.googleapis.com/auth/bigquery"],
             )
         except FileNotFoundError as e:
-            raise FileNotFoundError(
-                f"Service account credentials file not found: {credentials_path}"
-            ) from e
+            raise FileNotFoundError(f"Service account credentials file not found: {credentials_path}") from e
         except Exception as e:
             # Catch JSON decode errors and other credential format issues
             raise ValueError(

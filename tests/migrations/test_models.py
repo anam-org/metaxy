@@ -43,9 +43,7 @@ def test_migration_to_storage_dict():
     assert storage_dict["parent"] == "initial"
     assert storage_dict["from_snapshot_version"] == "snap1"
     assert storage_dict["to_snapshot_version"] == "snap2"
-    assert storage_dict["ops"] == [
-        {"type": "metaxy.migrations.ops.DataVersionReconciliation"}
-    ]
+    assert storage_dict["ops"] == [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}]
 
 
 def test_migration_from_storage_dict():
@@ -172,9 +170,7 @@ def test_custom_migration(tmp_path):
     from metaxy.metadata_store.delta import DeltaMetadataStore
 
     with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
-        assert (
-            migration.get_affected_features(store, "default") == []
-        )  # Default implementation
+        assert migration.get_affected_features(store, "default") == []  # Default implementation
 
 
 def test_custom_migration_serialization():
@@ -305,11 +301,7 @@ def test_operation_config_roundtrip():
     restored = OperationConfig.model_validate(dict_form)
 
     # type is now a string (lazy loading)
-    assert (
-        restored.type
-        == original.type
-        == "metaxy.migrations.ops.DataVersionReconciliation"
-    )
+    assert restored.type == original.type == "metaxy.migrations.ops.DataVersionReconciliation"
     assert restored.features == original.features
     # Extra fields are preserved
     assert dict_form["custom_field"] == "value"
@@ -343,9 +335,7 @@ def test_operation_with_basesettings_env_vars():
 
     try:
         # Instantiate from config dict (mimics YAML loading)
-        op = TestOperation(
-            database_url="postgresql://localhost:5432/test", api_key="secret123"
-        )
+        op = TestOperation(database_url="postgresql://localhost:5432/test", api_key="secret123")
 
         assert op.database_url == "postgresql://localhost:5432/test"
         assert op.api_key == "secret123"
@@ -453,50 +443,30 @@ def test_get_failed_features_with_retry(store):
         # Feature 1: fails then succeeds
         storage.write_event(Event.migration_started(project, migration_id))
         storage.write_event(Event.feature_started(project, migration_id, "feature_1"))
-        storage.write_event(
-            Event.feature_failed(project, migration_id, "feature_1", "First error")
-        )
+        storage.write_event(Event.feature_failed(project, migration_id, "feature_1", "First error"))
         # Retry - now succeeds
         storage.write_event(Event.feature_started(project, migration_id, "feature_1"))
-        storage.write_event(
-            Event.feature_completed(
-                project, migration_id, "feature_1", rows_affected=100
-            )
-        )
+        storage.write_event(Event.feature_completed(project, migration_id, "feature_1", rows_affected=100))
 
         # Feature 2: fails and stays failed
         storage.write_event(Event.feature_started(project, migration_id, "feature_2"))
-        storage.write_event(
-            Event.feature_failed(project, migration_id, "feature_2", "Permanent error")
-        )
+        storage.write_event(Event.feature_failed(project, migration_id, "feature_2", "Permanent error"))
 
         # Feature 3: succeeds on first try
         storage.write_event(Event.feature_started(project, migration_id, "feature_3"))
-        storage.write_event(
-            Event.feature_completed(
-                project, migration_id, "feature_3", rows_affected=50
-            )
-        )
+        storage.write_event(Event.feature_completed(project, migration_id, "feature_3", rows_affected=50))
 
         # Get completed and failed features
         completed = storage.get_completed_features(migration_id, project)
         failed = storage.get_failed_features(migration_id, project)
 
         # Assertions
-        assert "feature_1" in completed, (
-            "Feature that succeeded after retry should be in completed"
-        )
-        assert "feature_3" in completed, (
-            "Feature that succeeded first try should be in completed"
-        )
-        assert "feature_1" not in failed, (
-            "Feature that succeeded after retry should NOT be in failed"
-        )
+        assert "feature_1" in completed, "Feature that succeeded after retry should be in completed"
+        assert "feature_3" in completed, "Feature that succeeded first try should be in completed"
+        assert "feature_1" not in failed, "Feature that succeeded after retry should NOT be in failed"
         assert "feature_2" in failed, "Feature that never succeeded should be in failed"
         assert failed["feature_2"] == "Permanent error"
-        assert "feature_3" not in failed, (
-            "Feature that succeeded should NOT be in failed"
-        )
+        assert "feature_3" not in failed, "Feature that succeeded should NOT be in failed"
 
         # Check migration summary
         summary = storage.get_migration_summary(migration_id, project)
@@ -630,9 +600,7 @@ def test_full_graph_migration_get_status_info(store):
         assert status_info.features_remaining == 3
 
         # Start migration and complete some features
-        storage.write_event(
-            Event.migration_started(project="test", migration_id=migration.migration_id)
-        )
+        storage.write_event(Event.migration_started(project="test", migration_id=migration.migration_id))
         storage.write_event(
             Event.feature_completed(
                 project="test",

@@ -30,9 +30,7 @@ def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject
         metaxy_project.write_sample_metadata("video/files")
 
         # Try to drop without specifying features
-        result = metaxy_project.run_cli(
-            ["metadata", "drop", "--confirm", "--format", "json"], check=False
-        )
+        result = metaxy_project.run_cli(["metadata", "drop", "--confirm", "--format", "json"], check=False)
 
         assert result.returncode == 1
         error = json.loads(result.stdout)
@@ -217,9 +215,7 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
         metaxy_project.write_sample_metadata("audio/files")
 
         # Drop all features
-        result = metaxy_project.run_cli(
-            ["metadata", "drop", "--all-features", "--confirm"]
-        )
+        result = metaxy_project.run_cli(["metadata", "drop", "--all-features", "--confirm"])
 
     with metaxy_project.with_features(features):
         # Write actual metadata for both features
@@ -227,9 +223,7 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
         metaxy_project.write_sample_metadata("audio/files")
 
         # Drop all features
-        result = metaxy_project.run_cli(
-            ["metadata", "drop", "--all-features", "--confirm", "--format", "json"]
-        )
+        result = metaxy_project.run_cli(["metadata", "drop", "--all-features", "--confirm", "--format", "json"])
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -258,9 +252,7 @@ def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
         # Don't write any metadata - store is empty
 
         # Drop all features from empty store - should succeed (idempotent)
-        result = metaxy_project.run_cli(
-            ["metadata", "drop", "--all-features", "--confirm", "--format", "json"]
-        )
+        result = metaxy_project.run_cli(["metadata", "drop", "--all-features", "--confirm", "--format", "json"])
 
         # Should succeed - drop is idempotent even if no metadata exists
         assert result.returncode == 0
@@ -348,9 +340,7 @@ def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_up_to_date(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_up_to_date(metaxy_project: TempMetaxyProject, output_format: str):
     """Status command when metadata is up-to-date for both formats."""
 
     def features():
@@ -426,9 +416,7 @@ def test_metadata_status_up_to_date(
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_missing_metadata(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_missing_metadata(metaxy_project: TempMetaxyProject, output_format: str):
     """Status command when metadata is missing."""
 
     def features():
@@ -527,9 +515,7 @@ def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject)
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_multiple_features(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_multiple_features(metaxy_project: TempMetaxyProject, output_format: str):
     """Status command with multiple features."""
 
     def features():
@@ -595,9 +581,7 @@ def test_metadata_status_multiple_features(
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_invalid_feature_key(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_invalid_feature_key(metaxy_project: TempMetaxyProject, output_format: str):
     """Status command with a feature missing from the graph."""
 
     def features():
@@ -648,9 +632,7 @@ def test_metadata_status_invalid_feature_key(
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_verbose(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_with_verbose(metaxy_project: TempMetaxyProject, output_format: str):
     """Status command with --verbose flag."""
 
     def features():
@@ -705,9 +687,7 @@ def test_metadata_status_with_verbose(
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_explicit_store(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_with_explicit_store(metaxy_project: TempMetaxyProject, output_format: str):
     """Status command with explicit --store flag."""
 
     def features():
@@ -796,9 +776,7 @@ def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProje
 
     with metaxy_project.with_features(features):
         # Try to check status without specifying features
-        result = metaxy_project.run_cli(
-            ["metadata", "status", "--format", "json"], check=False
-        )
+        result = metaxy_project.run_cli(["metadata", "status", "--format", "json"], check=False)
 
         assert result.returncode == 1
         error = json.loads(result.stdout)
@@ -844,9 +822,7 @@ def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyPro
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_all_features(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_all_features(metaxy_project: TempMetaxyProject, output_format: str):
     """Test status command with --all-features flag."""
 
     def features():
@@ -887,9 +863,7 @@ def test_metadata_status_all_features(
         metaxy_project.write_sample_metadata("files_root")
 
         # Check status for all features
-        result = metaxy_project.run_cli(
-            ["metadata", "status", "--all-features", "--format", output_format]
-        )
+        result = metaxy_project.run_cli(["metadata", "status", "--all-features", "--format", output_format])
 
         assert result.returncode == 0
         if output_format == "json":
@@ -911,9 +885,7 @@ def test_metadata_status_all_features(
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_root_feature(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_root_feature(metaxy_project: TempMetaxyProject, output_format: str):
     """Test status command for a root feature (no upstream dependencies)."""
 
     def features():
@@ -965,9 +937,7 @@ def test_metadata_status_root_feature(
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_root_feature_missing_metadata(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_root_feature_missing_metadata(metaxy_project: TempMetaxyProject, output_format: str):
     """Test status command for a root feature with no metadata."""
 
     def features():
@@ -1015,9 +985,7 @@ def test_metadata_status_root_feature_missing_metadata(
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_filter(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_with_filter(metaxy_project: TempMetaxyProject, output_format: str):
     """Test status command with --filter flag to filter metadata by column value."""
 
     def features():
@@ -1055,9 +1023,7 @@ def test_metadata_status_with_filter(
                 "sample_uid": [1, 2, 3, 4, 5],
                 "value": ["val_1", "val_2", "val_3", "val_4", "val_5"],
                 "category": ["A", "A", "B", "B", "A"],
-                "metaxy_provenance_by_field": [
-                    {"default": f"hash{i}"} for i in range(1, 6)
-                ],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in range(1, 6)],
             }
         )
 
@@ -1175,9 +1141,7 @@ def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_multiple_filters(
-    metaxy_project: TempMetaxyProject, output_format: str
-):
+def test_metadata_status_with_multiple_filters(metaxy_project: TempMetaxyProject, output_format: str):
     """Test status command with multiple --filter flags (combined with AND)."""
 
     def features():
@@ -1216,9 +1180,7 @@ def test_metadata_status_with_multiple_filters(
                 "value": ["val_1", "val_2", "val_3", "val_4", "val_5"],
                 "category": ["A", "A", "B", "B", "A"],
                 "status": ["active", "inactive", "active", "inactive", "active"],
-                "metaxy_provenance_by_field": [
-                    {"default": f"hash{i}"} for i in range(1, 6)
-                ],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in range(1, 6)],
             }
         )
 
@@ -1343,9 +1305,7 @@ def test_metadata_status_with_progress_flag(
         store = metaxy_project.stores["dev"]
 
         # Write upstream metadata (5 samples)
-        metaxy_project.write_sample_metadata(
-            "video/files_root", id_values={"sample_uid": [1, 2, 3, 4, 5]}
-        )
+        metaxy_project.write_sample_metadata("video/files_root", id_values={"sample_uid": [1, 2, 3, 4, 5]})
 
         # Write downstream metadata for only 2 out of 5 samples (40% processed)
         with graph.use(), store:
@@ -1463,9 +1423,7 @@ def test_metadata_status_verbose_includes_progress(
             assert "33%" in result.stdout or "33.3%" in result.stdout
 
 
-def test_metadata_status_progress_for_root_feature(
-    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch
-):
+def test_metadata_status_progress_for_root_feature(metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch):
     """Test that root features show no progress (None) since they have no upstream input."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
@@ -1505,15 +1463,10 @@ def test_metadata_status_progress_for_root_feature(
         feature = data["features"]["root_feature"]
         assert feature["is_root_feature"] is True
         # Root features should have no progress (None excluded from JSON or null)
-        assert (
-            "progress_percentage" not in feature
-            or feature["progress_percentage"] is None
-        )
+        assert "progress_percentage" not in feature or feature["progress_percentage"] is None
 
 
-def test_metadata_status_progress_100_percent(
-    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch
-):
+def test_metadata_status_progress_100_percent(metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch):
     """Test that fully processed features show 100% progress."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
@@ -1682,11 +1635,7 @@ def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProje
             assert set(remaining["level"]) == {"info", "warn"}
 
             # Check soft deleted is still in store when including deleted
-            all_data = (
-                store.read_metadata(feature_cls, include_soft_deleted=True)
-                .collect()
-                .to_polars()
-            )
+            all_data = store.read_metadata(feature_cls, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 3
 
 
@@ -1757,11 +1706,7 @@ def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProje
             assert set(remaining["level"]) == {"info", "warn"}
 
             # Check that hard-deleted row is NOT in store even when including deleted
-            all_data = (
-                store.read_metadata(feature_cls, include_soft_deleted=True)
-                .collect()
-                .to_polars()
-            )
+            all_data = store.read_metadata(feature_cls, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 2
 
 
@@ -1926,9 +1871,7 @@ def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject
                 "sample_uid": ["s1", "s2", "s3", "s4"],
                 "level": ["debug", "debug", "info", "warn"],
                 "status": ["old", "new", "old", "new"],
-                METAXY_PROVENANCE_BY_FIELD: [
-                    {"level": f"p{i}", "status": f"p{i}"} for i in range(1, 5)
-                ],
+                METAXY_PROVENANCE_BY_FIELD: [{"level": f"p{i}", "status": f"p{i}"} for i in range(1, 5)],
             }
         )
 
@@ -2098,11 +2041,7 @@ def test_metadata_delete_soft_delete_without_filter_no_yes_required(
             assert remaining.height == 0
 
             # Check soft deleted rows still exist
-            all_data = (
-                store.read_metadata(feature_cls, include_soft_deleted=True)
-                .collect()
-                .to_polars()
-            )
+            all_data = store.read_metadata(feature_cls, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 3
 
 
@@ -2135,9 +2074,7 @@ def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProje
 # ============================================================================
 
 
-def test_metadata_status_progress_no_input_display(
-    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch
-):
+def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch):
     """Test that non-root features with no upstream input show '(no input)' in plain format."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
@@ -2167,9 +2104,7 @@ def test_metadata_status_progress_no_input_display(
 
     with metaxy_project.with_features(features):
         # Write upstream metadata with sample_uids
-        metaxy_project.write_sample_metadata(
-            "video/files_root", id_values={"sample_uid": [1, 2, 3]}
-        )
+        metaxy_project.write_sample_metadata("video/files_root", id_values={"sample_uid": [1, 2, 3]})
 
         # Check status with --progress flag and a filter that excludes all rows
         # This simulates the "no input" scenario when all upstream data is filtered out
@@ -2290,9 +2225,7 @@ root_path = "{prod_path}"
             {
                 "sample_uid": [1, 2, 3],
                 "value": ["val_1", "val_2", "val_3"],
-                "metaxy_provenance_by_field": [
-                    {"default": f"hash{i}"} for i in [1, 2, 3]
-                ],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in [1, 2, 3]],
             }
         )
 
@@ -2313,9 +2246,7 @@ root_path = "{prod_path}"
             dev_store.write_metadata(downstream_cls, increment.added.to_polars())
 
         # Run CLI status command - should use fallback stores by default
-        result = project.run_cli(
-            ["metadata", "status", "--feature", "downstream", "--format", output_format]
-        )
+        result = project.run_cli(["metadata", "status", "--feature", "downstream", "--format", output_format])
 
         assert result.returncode == 0
 
@@ -2407,9 +2338,7 @@ root_path = "{prod_path}"
             {
                 "sample_uid": [1, 2, 3],
                 "value": ["val_1", "val_2", "val_3"],
-                "metaxy_provenance_by_field": [
-                    {"default": f"hash{i}"} for i in [1, 2, 3]
-                ],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in [1, 2, 3]],
             }
         )
 
@@ -2576,9 +2505,7 @@ root_path = "{prod_path}"
         project.write_sample_metadata("video/files", store_name="dev")
 
         # Copy from dev to prod (positional args before keyword args)
-        result = project.run_cli(
-            ["metadata", "copy", "video/files", "--from", "dev", "--to", "prod"]
-        )
+        result = project.run_cli(["metadata", "copy", "video/files", "--from", "dev", "--to", "prod"])
 
         assert result.returncode == 0
         assert "Copy complete" in result.stdout
@@ -2694,9 +2621,7 @@ root_path = "{prod_path}"
 
     with project.with_features(features):
         # Write metadata with more samples
-        project.write_sample_metadata(
-            "video/files", store_name="dev", id_values={"sample_uid": [1, 2, 3, 4, 5]}
-        )
+        project.write_sample_metadata("video/files", store_name="dev", id_values={"sample_uid": [1, 2, 3, 4, 5]})
 
         # Copy with filter - only sample_uid <= 2
         result = project.run_cli(

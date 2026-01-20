@@ -73,33 +73,22 @@ def main():
         changed_df = diff.changed.to_polars()
 
         speakers_to_process = (
-            pl.concat([added_df, changed_df])
-            .select("speaker_id")
-            .unique()
-            .sort("speaker_id")
-            .to_series()
-            .to_list()
+            pl.concat([added_df, changed_df]).select("speaker_id").unique().sort("speaker_id").to_series().to_list()
         )
 
-        print(
-            f"Found {len(speakers_to_process)} speakers that need embedding computation"
-        )
+        print(f"Found {len(speakers_to_process)} speakers that need embedding computation")
 
         if speakers_to_process:
             embedding_data = []
 
             for speaker_id in speakers_to_process:
-                speaker_rows = pl.concat([added_df, changed_df]).filter(
-                    pl.col("speaker_id") == speaker_id
-                )
+                speaker_rows = pl.concat([added_df, changed_df]).filter(pl.col("speaker_id") == speaker_id)
 
                 provenance_by_field = speaker_rows["metaxy_provenance_by_field"][0]
                 provenance = speaker_rows["metaxy_provenance"][0]
 
                 n_audio = len(speaker_rows)
-                print(
-                    f"  Computing embedding for speaker {speaker_id} from {n_audio} audio recordings"
-                )
+                print(f"  Computing embedding for speaker {speaker_id} from {n_audio} audio recordings")
 
                 embedding_data.append(
                     {

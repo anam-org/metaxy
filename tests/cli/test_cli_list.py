@@ -179,9 +179,7 @@ def test_list_features_with_dependencies(metaxy_project: TempMetaxyProject):
 
             # Find features by key
             video_files = next(f for f in data["features"] if f["key"] == "video/files")
-            video_processing = next(
-                f for f in data["features"] if f["key"] == "video/processing"
-            )
+            video_processing = next(f for f in data["features"] if f["key"] == "video/processing")
 
             # video/files is root
             assert video_files["is_root"] is True
@@ -241,17 +239,13 @@ def test_list_features_verbose_mode(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
             # Test verbose with JSON format
-            result = metaxy_project.run_cli(
-                ["list", "features", "--verbose", "--format", "json"]
-            )
+            result = metaxy_project.run_cli(["list", "features", "--verbose", "--format", "json"])
 
             assert result.returncode == 0
             data = json.loads(result.stdout)
 
             # Find dependent feature
-            video_processing = next(
-                f for f in data["features"] if f["key"] == "video/processing"
-            )
+            video_processing = next(f for f in data["features"] if f["key"] == "video/processing")
 
             # Verbose mode includes deps list
             assert "deps" in video_processing, f"No deps in {video_processing}"
@@ -515,17 +509,13 @@ def test_list_features_verbose_auto_field_mapping(metaxy_project: TempMetaxyProj
 
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli(
-                ["list", "features", "--verbose", "--format", "json"]
-            )
+            result = metaxy_project.run_cli(["list", "features", "--verbose", "--format", "json"])
 
             assert result.returncode == 0
             data = json.loads(result.stdout)
 
             # Find dependent feature
-            video_processing = next(
-                f for f in data["features"] if f["key"] == "video/processing"
-            )
+            video_processing = next(f for f in data["features"] if f["key"] == "video/processing")
 
             # Auto-mapped field deps should be present
             frames_field = video_processing["fields"][0]
@@ -579,9 +569,7 @@ def test_list_features_long_names_not_truncated(metaxy_project: TempMetaxyProjec
         class CroppedSceneChunk720x480FaceLandmarksEyeFeatures(
             BaseFeature,
             spec=SampleFeatureSpec(
-                key=FeatureKey(
-                    ["chunk", "crop", "face_landmarks", "eye_features", "extended"]
-                ),
+                key=FeatureKey(["chunk", "crop", "face_landmarks", "eye_features", "extended"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):

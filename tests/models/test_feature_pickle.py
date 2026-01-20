@@ -93,9 +93,7 @@ def test_base_feature_instance_with_optional_fields_can_be_pickled():
 def test_base_feature_instance_with_complex_types_can_be_pickled():
     """Test that BaseFeature instances with complex types can be pickled."""
     # Create instance with complex types
-    instance = ComplexTypesFeature(
-        sample_uid="123", tags=["tag1", "tag2"], metadata={"key1": 1, "key2": 2}
-    )
+    instance = ComplexTypesFeature(sample_uid="123", tags=["tag1", "tag2"], metadata={"key1": 1, "key2": 2})
 
     # Pickle and unpickle
     unpickled = pickle.loads(pickle.dumps(instance))

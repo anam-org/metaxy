@@ -85,9 +85,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
                     ],
                 }
             )
-            user_samples = add_metaxy_provenance_column(
-                user_samples, VideoEmbeddingsFeature
-            )
+            user_samples = add_metaxy_provenance_column(user_samples, VideoEmbeddingsFeature)
 
             # Call resolve_update with skip_comparison=True
             result = store.resolve_update(
@@ -123,9 +121,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
             # Verify data_version equals provenance for root features
             for row in added_df.iter_rows(named=True):
                 assert row[METAXY_DATA_VERSION] == row[METAXY_PROVENANCE]
-                assert (
-                    row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
-                )
+                assert row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
 
     @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_skip_comparison_ignores_existing_metadata_root(
@@ -169,9 +165,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
                     ],
                 }
             )
-            initial_metadata = add_metaxy_provenance_column(
-                initial_metadata, VideoEmbeddingsFeature
-            )
+            initial_metadata = add_metaxy_provenance_column(initial_metadata, VideoEmbeddingsFeature)
             store.write_metadata(VideoEmbeddingsFeature, initial_metadata)
 
             # Now resolve_update with skip_comparison=True
@@ -186,9 +180,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
                     ],
                 }
             )
-            user_samples = add_metaxy_provenance_column(
-                user_samples, VideoEmbeddingsFeature
-            )
+            user_samples = add_metaxy_provenance_column(user_samples, VideoEmbeddingsFeature)
 
             result = store.resolve_update(
                 VideoEmbeddingsFeature,
@@ -348,9 +340,7 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
                     ],
                 }
             )
-            existing_downstream = add_metaxy_provenance_column(
-                existing_downstream, DownstreamFeature
-            )
+            existing_downstream = add_metaxy_provenance_column(existing_downstream, DownstreamFeature)
             store.write_metadata(DownstreamFeature, existing_downstream)
 
             # Call resolve_update with skip_comparison=True
@@ -490,9 +480,7 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
                     ],
                 }
             )
-            initial_metadata = add_metaxy_provenance_column(
-                initial_metadata, RootFeature
-            )
+            initial_metadata = add_metaxy_provenance_column(initial_metadata, RootFeature)
             store.write_metadata(RootFeature, initial_metadata)
 
             # Provide samples with skip_comparison=False (explicit, but it's the default)
@@ -562,9 +550,7 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
                     ],
                 }
             )
-            initial_metadata = add_metaxy_provenance_column(
-                initial_metadata, RootFeature
-            )
+            initial_metadata = add_metaxy_provenance_column(initial_metadata, RootFeature)
             store.write_metadata(RootFeature, initial_metadata)
 
             # Provide samples with explicit skip_comparison=False
@@ -634,9 +620,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                     key=FeatureKey(["intermediate"]),
                     deps=[FeatureDep(feature=RootFeature)],
                     fields=[
-                        FieldSpec(
-                            key=FieldKey(["intermediate_result"]), code_version="1"
-                        ),
+                        FieldSpec(key=FieldKey(["intermediate_result"]), code_version="1"),
                     ],
                 ),
             ):
@@ -680,9 +664,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                     ],
                 }
             )
-            intermediate_data = add_metaxy_provenance_column(
-                intermediate_data, IntermediateFeature
-            )
+            intermediate_data = add_metaxy_provenance_column(intermediate_data, IntermediateFeature)
             store.write_metadata(IntermediateFeature, intermediate_data)
 
             # Call resolve_update on leaf with skip_comparison=True

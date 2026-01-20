@@ -92,9 +92,7 @@ class UpstreamPreparer(Generic[FrameT]):
     ) -> dict[FeatureKey, RenamedDataFrame[FrameT]]:
         """Transform each upstream dependency using its FeatureDepTransformer."""
         return {
-            k: self.engine.feature_transformers_by_key[k].transform(
-                df, filters=(filters or {}).get(k)
-            )
+            k: self.engine.feature_transformers_by_key[k].transform(df, filters=(filters or {}).get(k))
             for k, df in upstream.items()
         }
 
@@ -112,9 +110,7 @@ class UpstreamPreparer(Generic[FrameT]):
             dep = self.plan.feature.deps_by_key.get(feature_key)
             if dep is not None:
                 dep_transformer = self.engine.feature_transformers_by_key[feature_key]
-                handler = create_lineage_handler(
-                    dep, self.plan, self.engine, dep_transformer
-                )
+                handler = create_lineage_handler(dep, self.plan, self.engine, dep_transformer)
                 transformed_df = handler.transform_upstream(
                     renamed_df.df,  # ty: ignore[invalid-argument-type]
                     hash_algorithm,
@@ -177,9 +173,7 @@ class UpstreamPreparer(Generic[FrameT]):
         colliding_columns = [
             col
             for col, features in all_columns.items()
-            if len(features) > 1
-            and col not in id_cols
-            and col not in allowed_system_columns
+            if len(features) > 1 and col not in id_cols and col not in allowed_system_columns
         ]
 
         if colliding_columns:

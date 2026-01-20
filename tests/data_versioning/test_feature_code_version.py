@@ -141,9 +141,7 @@ def test_code_version_independence_from_dependencies() -> None:
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["independence_test", "child_v1"]),
-                deps=[
-                    FeatureDep(feature=FeatureKey(["independence_test", "parent_v1"]))
-                ],
+                deps=[FeatureDep(feature=FeatureKey(["independence_test", "parent_v1"]))],
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
@@ -169,13 +167,9 @@ def test_code_version_independence_from_dependencies() -> None:
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["independence_test", "child_v2"]),
-                deps=[
-                    FeatureDep(feature=FeatureKey(["independence_test", "parent_v2"]))
-                ],
+                deps=[FeatureDep(feature=FeatureKey(["independence_test", "parent_v2"]))],
                 fields=[
-                    FieldSpec(
-                        key=FieldKey(["default"]), code_version="1"
-                    ),  # Same as ChildV1!
+                    FieldSpec(key=FieldKey(["default"]), code_version="1"),  # Same as ChildV1!
                 ],
             ),
         ):
@@ -228,9 +222,7 @@ def test_code_version_field_order_invariance() -> None:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["order_test", "feature1"]),
                 fields=[
-                    FieldSpec(
-                        key=FieldKey(["frames"]), code_version="1"
-                    ),  # alphabetically first
+                    FieldSpec(key=FieldKey(["frames"]), code_version="1"),  # alphabetically first
                     FieldSpec(key=FieldKey(["audio"]), code_version="2"),
                 ],
             ),
@@ -244,9 +236,7 @@ def test_code_version_field_order_invariance() -> None:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["order_test", "feature2"]),
                 fields=[
-                    FieldSpec(
-                        key=FieldKey(["frames"]), code_version="1"
-                    ),  # Different order
+                    FieldSpec(key=FieldKey(["frames"]), code_version="1"),  # Different order
                     FieldSpec(key=FieldKey(["audio"]), code_version="2"),
                 ],
             ),
@@ -372,9 +362,7 @@ def test_property_code_version_deterministic(code_version: str) -> None:
     code_version1=st.integers(min_value=1, max_value=1000).map(str),
     code_version2=st.integers(min_value=1, max_value=1000).map(str),
 )
-def test_property_code_version_changes_with_code(
-    code_version1: str, code_version2: str
-) -> None:
+def test_property_code_version_changes_with_code(code_version1: str, code_version2: str) -> None:
     """Property test: different code versions produce different hashes (or same if same input)."""
     graph1 = FeatureGraph()
     graph2 = FeatureGraph()
@@ -424,10 +412,7 @@ def test_property_code_version_multiple_fields(num_fields: int) -> None:
     graph = FeatureGraph()
 
     # Generate fields with unique keys
-    fields = [
-        FieldSpec(key=FieldKey([f"field_{i}"]), code_version=str(i + 1))
-        for i in range(num_fields)
-    ]
+    fields = [FieldSpec(key=FieldKey([f"field_{i}"]), code_version=str(i + 1)) for i in range(num_fields)]
 
     with graph.use():
 
@@ -454,9 +439,7 @@ def test_property_code_version_multiple_fields(num_fields: int) -> None:
     field_names=st.lists(
         # Generate valid field names: start with lowercase letter, followed by lowercase/digits/underscores
         # but avoid double underscores which are now invalid
-        st.from_regex(r"[a-z](?:[a-z0-9]|(?:_(?!_))){0,9}", fullmatch=True).filter(
-            lambda s: "__" not in s
-        ),
+        st.from_regex(r"[a-z](?:[a-z0-9]|(?:_(?!_))){0,9}", fullmatch=True).filter(lambda s: "__" not in s),
         min_size=1,
         max_size=5,
         unique=True,
@@ -470,15 +453,10 @@ def test_property_code_version_field_names_dont_affect_hash_if_sorted(
     graph2 = FeatureGraph()
 
     # Create fields in original order
-    fields1 = [
-        FieldSpec(key=FieldKey([name]), code_version="1") for name in field_names
-    ]
+    fields1 = [FieldSpec(key=FieldKey([name]), code_version="1") for name in field_names]
 
     # Create fields in reversed order
-    fields2 = [
-        FieldSpec(key=FieldKey([name]), code_version="1")
-        for name in reversed(field_names)
-    ]
+    fields2 = [FieldSpec(key=FieldKey([name]), code_version="1") for name in reversed(field_names)]
 
     with graph1.use():
 
@@ -510,9 +488,7 @@ def test_property_code_version_field_names_dont_affect_hash_if_sorted(
     parent_code_version=st.integers(min_value=1, max_value=1000).map(str),
     child_code_version=st.integers(min_value=1, max_value=1000).map(str),
 )
-def test_property_code_version_independent_of_parent(
-    parent_code_version: str, child_code_version: str
-) -> None:
+def test_property_code_version_independent_of_parent(parent_code_version: str, child_code_version: str) -> None:
     """Property test: child's code_version is independent of parent's code_version."""
     graph = FeatureGraph()
 
@@ -523,9 +499,7 @@ def test_property_code_version_independent_of_parent(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "parent"]),
                 fields=[
-                    FieldSpec(
-                        key=FieldKey(["default"]), code_version=parent_code_version
-                    ),
+                    FieldSpec(key=FieldKey(["default"]), code_version=parent_code_version),
                 ],
             ),
         ):
@@ -537,9 +511,7 @@ def test_property_code_version_independent_of_parent(
                 key=FeatureKey(["property_test", "child"]),
                 deps=[FeatureDep(feature=FeatureKey(["property_test", "parent"]))],
                 fields=[
-                    FieldSpec(
-                        key=FieldKey(["default"]), code_version=child_code_version
-                    ),
+                    FieldSpec(key=FieldKey(["default"]), code_version=child_code_version),
                 ],
             ),
         ):
@@ -560,9 +532,7 @@ def test_property_code_version_independent_of_parent(
                 fields=[
                     FieldSpec(
                         key=FieldKey(["default"]),
-                        code_version=str(
-                            int(parent_code_version) + 100
-                        ),  # Different from parent!
+                        code_version=str(int(parent_code_version) + 100),  # Different from parent!
                     ),
                 ],
             ),

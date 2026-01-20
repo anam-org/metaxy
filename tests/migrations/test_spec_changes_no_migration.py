@@ -69,9 +69,7 @@ def test_feature_spec_version_exists_and_differs_from_feature_version():
     temp_module.cleanup()
 
 
-def test_migration_detector_uses_feature_version_not_feature_spec_version(
-    tmp_path: Path, snapshot: SnapshotAssertion
-):
+def test_migration_detector_uses_feature_version_not_feature_spec_version(tmp_path: Path, snapshot: SnapshotAssertion):
     """Test that migration detection compares feature_version, not feature_spec_version.
 
     This verifies the core architectural decision:
@@ -116,18 +114,14 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
 
     # Store the versions for comparison
     v1_feature_version: str = snapshot_data["test/simple"]["metaxy_feature_version"]
-    v1_feature_spec_version: str = snapshot_data["test/simple"][
-        "metaxy_feature_spec_version"
-    ]
+    v1_feature_spec_version: str = snapshot_data["test/simple"]["metaxy_feature_spec_version"]
 
     # Create v2: Change code_version (affects feature_version)
     temp_v2 = TempFeatureModule("test_migration_detector_v2")
 
     spec_v2 = SampleFeatureSpec(
         key=FeatureKey(["test", "simple"]),
-        fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version="2")
-        ],  # Changed! This affects feature_version
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],  # Changed! This affects feature_version
     )
 
     temp_v2.write_features({"Simple": spec_v2})
@@ -139,9 +133,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     v2_feature_spec_version = SimpleV2.feature_spec_version()
 
     assert v1_feature_version != v2_feature_version  # Changed!
-    assert (
-        v1_feature_spec_version != v2_feature_spec_version
-    )  # Also changed (includes code_version)
+    assert v1_feature_spec_version != v2_feature_spec_version  # Also changed (includes code_version)
 
     # Test migration detection
     # DeltaMetadataStore persists data to disk, so we reuse the same path
@@ -233,9 +225,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path: Pa
     temp_module.cleanup()
 
 
-def test_computational_property_changes_trigger_migrations(
-    tmp_path, snapshot: SnapshotAssertion
-):
+def test_computational_property_changes_trigger_migrations(tmp_path, snapshot: SnapshotAssertion):
     """Test that all computational property changes trigger migrations.
 
     Computational properties are those that affect feature_version:
@@ -262,12 +252,8 @@ def test_computational_property_changes_trigger_migrations(
     )
     temp_cv2.write_features({"Feature": spec_cv2})
 
-    fv1_cv = temp_cv1.graph.features_by_key[
-        FeatureKey(["test", "cv"])
-    ].feature_version()
-    fv2_cv = temp_cv2.graph.features_by_key[
-        FeatureKey(["test", "cv"])
-    ].feature_version()
+    fv1_cv = temp_cv1.graph.features_by_key[FeatureKey(["test", "cv"])].feature_version()
+    fv2_cv = temp_cv2.graph.features_by_key[FeatureKey(["test", "cv"])].feature_version()
 
     test_cases.append(
         {
@@ -294,12 +280,8 @@ def test_computational_property_changes_trigger_migrations(
     )
     temp_f2.write_features({"Feature": spec_f2})
 
-    fv1_f = temp_f1.graph.features_by_key[
-        FeatureKey(["test", "field"])
-    ].feature_version()
-    fv2_f = temp_f2.graph.features_by_key[
-        FeatureKey(["test", "field"])
-    ].feature_version()
+    fv1_f = temp_f1.graph.features_by_key[FeatureKey(["test", "field"])].feature_version()
+    fv2_f = temp_f2.graph.features_by_key[FeatureKey(["test", "field"])].feature_version()
 
     test_cases.append(
         {
@@ -322,9 +304,7 @@ def test_computational_property_changes_trigger_migrations(
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
-    temp_d1.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_v1_spec}
-    )
+    temp_d1.write_features({"Upstream": upstream_spec, "Downstream": downstream_v1_spec})
 
     temp_d2 = TempFeatureModule("test_dep_v2")
 
@@ -334,16 +314,10 @@ def test_computational_property_changes_trigger_migrations(
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
-    temp_d2.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_v2_spec}
-    )
+    temp_d2.write_features({"Upstream": upstream_spec, "Downstream": downstream_v2_spec})
 
-    fv1_d = temp_d1.graph.features_by_key[
-        FeatureKey(["test", "downstream"])
-    ].feature_version()
-    fv2_d = temp_d2.graph.features_by_key[
-        FeatureKey(["test", "downstream"])
-    ].feature_version()
+    fv1_d = temp_d1.graph.features_by_key[FeatureKey(["test", "downstream"])].feature_version()
+    fv2_d = temp_d2.graph.features_by_key[FeatureKey(["test", "downstream"])].feature_version()
 
     test_cases.append(
         {
@@ -411,10 +385,7 @@ def test_snapshot_stores_both_versions(tmp_path: Path):
 
         # Check that they match the class methods
         assert feature_data["metaxy_feature_version"] == TestFeature.feature_version()
-        assert (
-            feature_data["metaxy_feature_spec_version"]
-            == TestFeature.feature_spec_version()
-        )
+        assert feature_data["metaxy_feature_spec_version"] == TestFeature.feature_spec_version()
 
     temp_module.cleanup()
 
@@ -477,9 +448,7 @@ def test_graph_differ_compares_feature_version_not_feature_spec_version():
             "feature_spec": {
                 "key": ["test", "feature"],
                 "deps": None,
-                "fields": [
-                    {"key": ["default"], "code_version": 2}
-                ],  # code_version changed
+                "fields": [{"key": ["default"], "code_version": 2}],  # code_version changed
             },
             "fields": {"default": "field_v2"},
         }

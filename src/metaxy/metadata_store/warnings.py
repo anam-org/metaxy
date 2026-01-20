@@ -8,9 +8,7 @@ class PolarsMaterializationWarning(Warning):
     pass
 
     @classmethod
-    def warn_on_implementation_mismatch(
-        cls, expected: nw.Implementation, actual: nw.Implementation, message: str = ""
-    ):
+    def warn_on_implementation_mismatch(cls, expected: nw.Implementation, actual: nw.Implementation, message: str = ""):
         if expected != actual:
             warning = f"Narwhals implementation mismatch: native is {expected}, got {actual}. This will lead to materialization into an eager Polars frame."
 

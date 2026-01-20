@@ -229,9 +229,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
     assert provenance_data == snapshot
 
 
-def test_multi_upstream_join_on_common_id_columns(
-    graph: FeatureGraph, snapshot
-) -> None:
+def test_multi_upstream_join_on_common_id_columns(graph: FeatureGraph, snapshot) -> None:
     """Test that multiple upstreams are joined on common ID columns."""
 
     class UpstreamA(
@@ -406,12 +404,8 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
             {
                 "sample_uid": [1, 2, 3, 4, 5],
                 "value": [10, 20, 30, 40, 50],
-                "metaxy_provenance_by_field": [
-                    {"value": f"hash_{i}"} for i in range(1, 6)
-                ],
-                "metaxy_data_version_by_field": [
-                    {"value": f"hash_{i}"} for i in range(1, 6)
-                ],
+                "metaxy_provenance_by_field": [{"value": f"hash_{i}"} for i in range(1, 6)],
+                "metaxy_data_version_by_field": [{"value": f"hash_{i}"} for i in range(1, 6)],
                 "metaxy_provenance": [f"prov_{i}" for i in range(1, 6)],
                 "metaxy_data_version": [f"prov_{i}" for i in range(1, 6)],
             }
@@ -423,12 +417,8 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
             {
                 "sample_uid": [1, 2, 3, 4, 5],
                 "value": [15, 25, 35, 45, 55],
-                "metaxy_provenance_by_field": [
-                    {"value": f"hash_{i}"} for i in range(1, 6)
-                ],
-                "metaxy_data_version_by_field": [
-                    {"value": f"hash_{i}"} for i in range(1, 6)
-                ],
+                "metaxy_provenance_by_field": [{"value": f"hash_{i}"} for i in range(1, 6)],
+                "metaxy_data_version_by_field": [{"value": f"hash_{i}"} for i in range(1, 6)],
                 "metaxy_provenance": [f"prov_{i}" for i in range(1, 6)],
                 "metaxy_data_version": [f"prov_{i}" for i in range(1, 6)],
             }
@@ -750,9 +740,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
         )
 
 
-def test_feature_graph_integration_with_provenance_by_field(
-    graph: FeatureGraph, snapshot
-) -> None:
+def test_feature_graph_integration_with_provenance_by_field(graph: FeatureGraph, snapshot) -> None:
     """Test integration with FeatureGraph's provenance_by_field() method."""
     # This test verifies that engines work correctly with the Feature.provenance_by_field()
     # class method that returns the expected field provenance structure

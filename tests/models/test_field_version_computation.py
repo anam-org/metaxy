@@ -113,9 +113,7 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
 
         # Verify field versions are computed correctly (captured via snapshot)
         assert feature_data["fields"] == snapshot(name="field_versions")
-        assert feature_data["metaxy_feature_version"] == snapshot(
-            name="feature_version"
-        )
+        assert feature_data["metaxy_feature_version"] == snapshot(name="feature_version")
 
 
 def test_field_key_normalization(graph: FeatureGraph, tmp_path: Path):

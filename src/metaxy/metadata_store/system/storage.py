@@ -83,13 +83,7 @@ class SystemTableStorage:
         if project is not None:
             events = events.filter(nw.col(COL_PROJECT) == project)
 
-        return (
-            events.select(COL_EXECUTION_ID)
-            .unique()
-            .collect()
-            .to_polars()[COL_EXECUTION_ID]
-            .to_list()
-        )
+        return events.select(COL_EXECUTION_ID).unique().collect().to_polars()[COL_EXECUTION_ID].to_list()
 
     def write_event(self, event: Event) -> None:
         """Write migration event to system table using typed event models.
@@ -121,9 +115,7 @@ class SystemTableStorage:
         record = event.to_polars()
         self.store.write_metadata(EVENTS_KEY, record)
 
-    def get_migration_events(
-        self, migration_id: str, project: str | None = None
-    ) -> pl.DataFrame:
+    def get_migration_events(self, migration_id: str, project: str | None = None) -> pl.DataFrame:
         """Get all events for a migration.
 
         Args:
@@ -220,9 +212,7 @@ class SystemTableStorage:
 
         return MigrationStatus.NOT_STARTED
 
-    def is_feature_completed(
-        self, migration_id: str, feature_key: str, project: str | None = None
-    ) -> bool:
+    def is_feature_completed(self, migration_id: str, feature_key: str, project: str | None = None) -> bool:
         """Check if a specific feature completed successfully in a migration.
 
         Args:
@@ -239,25 +229,16 @@ class SystemTableStorage:
         events_df = (
             events_df.filter(
                 (pl.col(COL_FEATURE_KEY) == feature_key)
-                & (
-                    pl.col(COL_EVENT_TYPE)
-                    == EventType.FEATURE_MIGRATION_COMPLETED.value
-                )
+                & (pl.col(COL_EVENT_TYPE) == EventType.FEATURE_MIGRATION_COMPLETED.value)
             )
-            .with_columns(
-                pl.col(COL_PAYLOAD)
-                .str.json_path_match("$.error_message")
-                .alias("error_message")
-            )
+            .with_columns(pl.col(COL_PAYLOAD).str.json_path_match("$.error_message").alias("error_message"))
             .filter(pl.col("error_message").is_null() | (pl.col("error_message") == ""))
         )
 
         # Check if any completed event has no error
         return events_df.height > 0
 
-    def get_completed_features(
-        self, migration_id: str, project: str | None = None
-    ) -> list[str]:
+    def get_completed_features(self, migration_id: str, project: str | None = None) -> list[str]:
         """Get list of features that completed successfully in a migration.
 
         Args:
@@ -271,14 +252,8 @@ class SystemTableStorage:
 
         # Filter and extract completed features
         events_df = (
-            events_df.filter(
-                pl.col(COL_EVENT_TYPE) == EventType.FEATURE_MIGRATION_COMPLETED.value
-            )
-            .with_columns(
-                pl.col(COL_PAYLOAD)
-                .str.json_path_match("$.error_message")
-                .alias("error_message")
-            )
+            events_df.filter(pl.col(COL_EVENT_TYPE) == EventType.FEATURE_MIGRATION_COMPLETED.value)
+            .with_columns(pl.col(COL_PAYLOAD).str.json_path_match("$.error_message").alias("error_message"))
             .filter(pl.col("error_message").is_null() | (pl.col("error_message") == ""))
             .select(COL_FEATURE_KEY)
             .unique()
@@ -286,9 +261,7 @@ class SystemTableStorage:
 
         return events_df[COL_FEATURE_KEY].to_list()
 
-    def get_failed_features(
-        self, migration_id: str, project: str | None = None
-    ) -> dict[str, str]:
+    def get_failed_features(self, migration_id: str, project: str | None = None) -> dict[str, str]:
         """Get features that failed in a migration with error messages.
 
         Only returns features whose LATEST event is a failure. If a feature
@@ -311,14 +284,8 @@ class SystemTableStorage:
 
         # Filter for failed events, excluding features that later completed
         failed_events = (
-            events_df.filter(
-                pl.col(COL_EVENT_TYPE) == EventType.FEATURE_MIGRATION_FAILED.value
-            )
-            .with_columns(
-                pl.col(COL_PAYLOAD)
-                .str.json_path_match("$.error_message")
-                .alias("error_message")
-            )
+            events_df.filter(pl.col(COL_EVENT_TYPE) == EventType.FEATURE_MIGRATION_FAILED.value)
+            .with_columns(pl.col(COL_PAYLOAD).str.json_path_match("$.error_message").alias("error_message"))
             # Get latest failed event per feature
             .sort(COL_TIMESTAMP, descending=True)
             .group_by(COL_FEATURE_KEY, maintain_order=True)
@@ -373,9 +340,7 @@ class SystemTableStorage:
 
     # ========== Convenience Methods for Reading Migration Data ==========
 
-    def read_migration_events(
-        self, project: str | None = None, migration_id: str | None = None
-    ) -> pl.DataFrame:
+    def read_migration_events(self, project: str | None = None, migration_id: str | None = None) -> pl.DataFrame:
         """Read all migration events, optionally filtered by project and/or migration ID.
 
         Args:
@@ -397,9 +362,7 @@ class SystemTableStorage:
         # Convert to Polars DataFrame
         return lazy.sort(COL_TIMESTAMP, descending=False).collect().to_polars()
 
-    def read_migration_progress(
-        self, project: str | None = None
-    ) -> dict[str, dict[str, Any]]:
+    def read_migration_progress(self, project: str | None = None) -> dict[str, dict[str, Any]]:
         """Read migration progress across all migrations.
 
         Args:
@@ -444,9 +407,7 @@ class SystemTableStorage:
                 events_df[COL_EVENT_TYPE] == EventType.FEATURE_MIGRATION_COMPLETED.value
             ).with_columns(
                 [
-                    pl.col(COL_PAYLOAD)
-                    .str.json_path_match("$.error_message")
-                    .alias("error_message"),
+                    pl.col(COL_PAYLOAD).str.json_path_match("$.error_message").alias("error_message"),
                     pl.col(COL_PAYLOAD)
                     .str.json_path_match("$.rows_affected")
                     .cast(pl.Int64)
@@ -456,12 +417,8 @@ class SystemTableStorage:
             )
 
             # Split into completed and failed
-            completed_df = feature_events.filter(
-                pl.col("error_message").is_null() | (pl.col("error_message") == "")
-            )
-            failed_df = feature_events.filter(
-                pl.col("error_message").is_not_null() & (pl.col("error_message") != "")
-            )
+            completed_df = feature_events.filter(pl.col("error_message").is_null() | (pl.col("error_message") == ""))
+            failed_df = feature_events.filter(pl.col("error_message").is_not_null() & (pl.col("error_message") != ""))
 
             completed_features = completed_df[COL_FEATURE_KEY].unique().to_list()
             failed_features = dict(
@@ -481,9 +438,7 @@ class SystemTableStorage:
 
         return progress
 
-    def read_applied_migrations(
-        self, project: str | None = None
-    ) -> list[dict[str, Any]]:
+    def read_applied_migrations(self, project: str | None = None) -> list[dict[str, Any]]:
         """Read all applied (completed) migrations with their details.
 
         Args:
@@ -539,9 +494,7 @@ class SystemTableStorage:
         )
 
         # Join with completed events to get project and timestamp
-        result_df = completed_df.join(
-            migration_stats, on=COL_EXECUTION_ID, how="left"
-        ).select(
+        result_df = completed_df.join(migration_stats, on=COL_EXECUTION_ID, how="left").select(
             [
                 COL_EXECUTION_ID,
                 COL_PROJECT,
@@ -554,9 +507,7 @@ class SystemTableStorage:
         # Convert to list of dicts
         return result_df.to_dicts()
 
-    def push_graph_snapshot(
-        self, tags: dict[str, Any] | None = None
-    ) -> SnapshotPushResult:
+    def push_graph_snapshot(self, tags: dict[str, Any] | None = None) -> SnapshotPushResult:
         """Record all features in graph with a graph snapshot version.
 
         This should be called during CD (Continuous Deployment) to record what
@@ -602,11 +553,7 @@ class SystemTableStorage:
                     {
                         "feature_key": k,
                         **{
-                            field: (
-                                json.dumps(val)
-                                if field in ("feature_spec", "feature_schema")
-                                else val
-                            )
+                            field: (json.dumps(val) if field in ("feature_spec", "feature_schema") else val)
                             for field, val in v.items()
                         },
                         METAXY_SNAPSHOT_VERSION: graph.snapshot_version,
@@ -639,9 +586,7 @@ class SystemTableStorage:
             pushed_with_current = current_snapshot.join(
                 latest_pushed_snapshot.select(
                     "feature_key",
-                    pl.col(METAXY_FULL_DEFINITION_VERSION).alias(
-                        f"{METAXY_FULL_DEFINITION_VERSION}_pushed"
-                    ),
+                    pl.col(METAXY_FULL_DEFINITION_VERSION).alias(f"{METAXY_FULL_DEFINITION_VERSION}_pushed"),
                 ),
                 on=["feature_key"],
                 how="left",
@@ -650,15 +595,10 @@ class SystemTableStorage:
             to_push = pl.concat(
                 [
                     # these are records that for some reason have not been pushed previously
-                    pushed_with_current.filter(
-                        pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed").is_null()
-                    ),
+                    pushed_with_current.filter(pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed").is_null()),
                     # these are the records with actual changes
-                    pushed_with_current.filter(
-                        pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed").is_not_null()
-                    ).filter(
-                        pl.col(METAXY_FULL_DEFINITION_VERSION)
-                        != pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed")
+                    pushed_with_current.filter(pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed").is_not_null()).filter(
+                        pl.col(METAXY_FULL_DEFINITION_VERSION) != pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed")
                     ),
                 ]
             ).drop(f"{METAXY_FULL_DEFINITION_VERSION}_pushed")
@@ -668,9 +608,7 @@ class SystemTableStorage:
 
         # updated_features only populated when updating existing features
         updated_features = (
-            to_push["feature_key"].to_list()
-            if len(latest_pushed_snapshot) != 0 and len(to_push) > 0
-            else []
+            to_push["feature_key"].to_list() if len(latest_pushed_snapshot) != 0 and len(to_push) > 0 else []
         )
 
         return SnapshotPushResult(
@@ -724,10 +662,7 @@ class SystemTableStorage:
 
         # Deduplicate using Polars (collect and use native operations)
         return (
-            lazy.collect()
-            .to_polars()
-            .sort("recorded_at", descending=True)
-            .unique(subset=["feature_key"], keep="first")
+            lazy.collect().to_polars().sort("recorded_at", descending=True).unique(subset=["feature_key"], keep="first")
         )
 
     def read_graph_snapshots(self, project: str | None = None) -> pl.DataFrame:
@@ -933,8 +868,7 @@ class SystemTableStorage:
 
         if features_df.height == 0:
             raise ValueError(
-                f"No features recorded for snapshot {snapshot_version}"
-                + (f" in project {project}" if project else "")
+                f"No features recorded for snapshot {snapshot_version}" + (f" in project {project}" if project else "")
             )
 
         # Build snapshot data dict for FeatureGraph.from_snapshot()

@@ -42,9 +42,7 @@ class FullFeatureMetadataRepresentation(BaseModel):
     progress_percentage: float | None = None
 
 
-StatusCategory = Literal[
-    "missing", "needs_update", "up_to_date", "root_feature", "error"
-]
+StatusCategory = Literal["missing", "needs_update", "up_to_date", "root_feature", "error"]
 
 # Status display configuration
 _STATUS_ICONS: dict[StatusCategory, str] = {
@@ -77,18 +75,10 @@ class FeatureMetadataStatus(BaseModel):
     feature_key: FeatureKey = Field(description="The feature key being inspected")
     target_version: str = Field(description="The feature version from code")
     metadata_exists: bool = Field(description="Whether metadata exists in the store")
-    store_row_count: int = Field(
-        description="Number of metadata rows currently in store (0 if none exist)"
-    )
-    missing_count: int = Field(
-        description="Number of new samples from upstream not yet in metadata"
-    )
-    stale_count: int = Field(
-        description="Number of samples with stale provenance needing update"
-    )
-    orphaned_count: int = Field(
-        description="Number of samples in store but removed from upstream"
-    )
+    store_row_count: int = Field(description="Number of metadata rows currently in store (0 if none exist)")
+    missing_count: int = Field(description="Number of new samples from upstream not yet in metadata")
+    stale_count: int = Field(description="Number of samples with stale provenance needing update")
+    orphaned_count: int = Field(description="Number of samples in store but removed from upstream")
     needs_update: bool = Field(description="Whether updates are needed")
     is_root_feature: bool = Field(
         default=False,
@@ -173,9 +163,7 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
         verbose: bool,
     ) -> FullFeatureMetadataRepresentation:
         """Convert status to the full JSON representation used by the CLI."""
-        sample_details = (
-            self.sample_details() if verbose and self.lazy_increment else None
-        )
+        sample_details = self.sample_details() if verbose and self.lazy_increment else None
         # For root features, missing/stale/orphaned are not meaningful
         missing = None if self.status.is_root_feature else self.status.missing_count
         stale = None if self.status.is_root_feature else self.status.stale_count
@@ -353,9 +341,7 @@ def get_feature_metadata_status(
     # Calculate progress if requested
     progress_percentage: float | None = None
     if compute_progress:
-        progress_percentage = metadata_store.calculate_input_progress(
-            lazy_increment, key
-        )
+        progress_percentage = metadata_store.calculate_input_progress(lazy_increment, key)
 
     status = FeatureMetadataStatus(
         feature_key=key,
@@ -369,6 +355,4 @@ def get_feature_metadata_status(
         store_metadata=store_metadata,
         progress_percentage=progress_percentage,
     )
-    return FeatureMetadataStatusWithIncrement(
-        status=status, lazy_increment=lazy_increment
-    )
+    return FeatureMetadataStatusWithIncrement(status=status, lazy_increment=lazy_increment)

@@ -23,9 +23,7 @@ class TestFeatureDepOptional:
         dep = FeatureDep(feature=FeatureKey(["test", "feature"]))
         assert dep.optional is False
 
-    def test_optional_true_serializes_correctly(
-        self, snapshot: SnapshotAssertion
-    ) -> None:
+    def test_optional_true_serializes_correctly(self, snapshot: SnapshotAssertion) -> None:
         """Test that optional=True serializes and deserializes correctly."""
         dep = FeatureDep(
             feature=FeatureKey(["test", "feature"]),
@@ -42,9 +40,7 @@ class TestFeatureDepOptional:
         assert deserialized.optional is True
         assert deserialized.feature == FeatureKey(["test", "feature"])
 
-    def test_optional_false_serializes_correctly(
-        self, snapshot: SnapshotAssertion
-    ) -> None:
+    def test_optional_false_serializes_correctly(self, snapshot: SnapshotAssertion) -> None:
         """Test that optional=False serializes correctly (default behavior)."""
         dep = FeatureDep(
             feature=FeatureKey(["test", "feature"]),
@@ -55,9 +51,7 @@ class TestFeatureDepOptional:
         serialized = dep.model_dump(mode="json")
         assert serialized == snapshot
 
-    def test_feature_spec_version_changes_when_optional_changes(
-        self, snapshot: SnapshotAssertion
-    ) -> None:
+    def test_feature_spec_version_changes_when_optional_changes(self, snapshot: SnapshotAssertion) -> None:
         """Test that feature_spec_version changes when optional changes."""
         # Create two specs - one with optional=False, one with optional=True
         spec_required = SampleFeatureSpec(
@@ -91,9 +85,7 @@ class TestFeatureDepOptional:
 class TestFeatureSpecValidation:
     """Test FeatureSpec validation for optional dependencies."""
 
-    def test_mixed_required_and_optional_is_valid(
-        self, upstream_features: dict[str, type[BaseFeature]]
-    ) -> None:
+    def test_mixed_required_and_optional_is_valid(self, upstream_features: dict[str, type[BaseFeature]]) -> None:
         """Test that mixed required and optional deps is valid."""
         # Use upstream features from fixture
         _ = upstream_features["upstream1"]
@@ -113,9 +105,7 @@ class TestFeatureSpecValidation:
         assert spec.deps[0].optional is False
         assert spec.deps[1].optional is True
 
-    def test_all_deps_required_is_valid(
-        self, upstream_features: dict[str, type[BaseFeature]]
-    ) -> None:
+    def test_all_deps_required_is_valid(self, upstream_features: dict[str, type[BaseFeature]]) -> None:
         """Test that all deps being required (optional=False) is valid."""
         # Use upstream features from fixture
         _ = upstream_features["upstream1"]
@@ -134,9 +124,7 @@ class TestFeatureSpecValidation:
         assert len(spec.deps) == 2
         assert all(not dep.optional for dep in spec.deps)
 
-    def test_all_deps_optional_is_valid(
-        self, upstream_features: dict[str, type[BaseFeature]]
-    ) -> None:
+    def test_all_deps_optional_is_valid(self, upstream_features: dict[str, type[BaseFeature]]) -> None:
         """Test that all deps being optional is valid (uses outer joins)."""
         # Use upstream features from fixture
         _ = upstream_features["upstream1"]
@@ -155,9 +143,7 @@ class TestFeatureSpecValidation:
         assert len(spec.deps) == 2
         assert all(dep.optional for dep in spec.deps)
 
-    def test_single_optional_dependency_is_valid(
-        self, upstream_features: dict[str, type[BaseFeature]]
-    ) -> None:
+    def test_single_optional_dependency_is_valid(self, upstream_features: dict[str, type[BaseFeature]]) -> None:
         """Test that a single optional dependency is valid."""
         # Use upstream1 from fixture
         _ = upstream_features["upstream1"]
@@ -205,15 +191,9 @@ class TestFeaturePlanHelpers:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
-                    FeatureDep(
-                        feature=FeatureKey(["test", "upstream1"]), optional=False
-                    ),
-                    FeatureDep(
-                        feature=FeatureKey(["test", "upstream2"]), optional=True
-                    ),
-                    FeatureDep(
-                        feature=FeatureKey(["test", "upstream3"]), optional=True
-                    ),
+                    FeatureDep(feature=FeatureKey(["test", "upstream1"]), optional=False),
+                    FeatureDep(feature=FeatureKey(["test", "upstream2"]), optional=True),
+                    FeatureDep(feature=FeatureKey(["test", "upstream3"]), optional=True),
                 ],
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -248,15 +228,9 @@ class TestFeaturePlanHelpers:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
-                    FeatureDep(
-                        feature=FeatureKey(["test", "upstream1"]), optional=False
-                    ),
-                    FeatureDep(
-                        feature=FeatureKey(["test", "upstream2"]), optional=True
-                    ),
-                    FeatureDep(
-                        feature=FeatureKey(["test", "upstream3"]), optional=False
-                    ),
+                    FeatureDep(feature=FeatureKey(["test", "upstream1"]), optional=False),
+                    FeatureDep(feature=FeatureKey(["test", "upstream2"]), optional=True),
+                    FeatureDep(feature=FeatureKey(["test", "upstream3"]), optional=False),
                 ],
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -290,12 +264,8 @@ class TestFeaturePlanHelpers:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
-                    FeatureDep(
-                        feature=FeatureKey(["test", "upstream1"]), optional=False
-                    ),
-                    FeatureDep(
-                        feature=FeatureKey(["test", "upstream2"]), optional=False
-                    ),
+                    FeatureDep(feature=FeatureKey(["test", "upstream1"]), optional=False),
+                    FeatureDep(feature=FeatureKey(["test", "upstream2"]), optional=False),
                 ],
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -324,12 +294,8 @@ class TestFeaturePlanHelpers:
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
-                    FeatureDep(
-                        feature=FeatureKey(["test", "upstream1"]), optional=True
-                    ),
-                    FeatureDep(
-                        feature=FeatureKey(["test", "upstream2"]), optional=True
-                    ),
+                    FeatureDep(feature=FeatureKey(["test", "upstream1"]), optional=True),
+                    FeatureDep(feature=FeatureKey(["test", "upstream2"]), optional=True),
                 ],
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),

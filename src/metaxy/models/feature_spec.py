@@ -114,13 +114,9 @@ class FeatureDep(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
 
     feature: ValidatedFeatureKey
-    columns: tuple[str, ...] | None = (
-        None  # None = all columns, () = only system columns
-    )
+    columns: tuple[str, ...] | None = None  # None = all columns, () = only system columns
     rename: dict[str, str] | None = None  # Column renaming mapping
-    fields_mapping: FieldsMapping = pydantic.Field(
-        default_factory=FieldsMapping.default
-    )
+    fields_mapping: FieldsMapping = pydantic.Field(default_factory=FieldsMapping.default)
     sql_filters: tuple[str, ...] | None = pydantic.Field(
         default=None,
         description="SQL-like filter strings applied to this dependency.",
@@ -164,13 +160,9 @@ class FeatureDep(pydantic.BaseModel):
         return self.feature.table_name
 
 
-IDColumns: TypeAlias = Sequence[
-    str
-]  # non-bound, should be used for feature specs with arbitrary id columns
+IDColumns: TypeAlias = Sequence[str]  # non-bound, should be used for feature specs with arbitrary id columns
 
-CoercibleToFeatureDep: TypeAlias = (
-    FeatureDep | type["BaseFeature"] | str | Sequence[str] | FeatureKey
-)
+CoercibleToFeatureDep: TypeAlias = FeatureDep | type["BaseFeature"] | str | Sequence[str] | FeatureKey
 
 
 def _validate_id_columns(value: Any) -> tuple[str, ...]:
@@ -208,15 +200,11 @@ def _validate_deps(value: Any) -> list[FeatureDep]:
 
 class FeatureSpec(FrozenBaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
-    id_columns: Annotated[tuple[str, ...], BeforeValidator(_validate_id_columns)] = (
-        pydantic.Field(
-            ...,
-            description="Columns that uniquely identify a sample in this feature.",
-        )
+    id_columns: Annotated[tuple[str, ...], BeforeValidator(_validate_id_columns)] = pydantic.Field(
+        ...,
+        description="Columns that uniquely identify a sample in this feature.",
     )
-    deps: Annotated[list[FeatureDep], BeforeValidator(_validate_deps)] = pydantic.Field(
-        default_factory=list
-    )
+    deps: Annotated[list[FeatureDep], BeforeValidator(_validate_deps)] = pydantic.Field(default_factory=list)
     fields: Annotated[
         list[FieldSpec],
         BeforeValidator(CoersibleToFieldSpecsTypeAdapter.validate_python),
@@ -303,10 +291,7 @@ class FeatureSpec(FrozenBaseModel):
             # Convert to tuple for hashability in case it's a plain list
             key_tuple = tuple(field.key)
             if key_tuple in seen_keys:
-                raise ValueError(
-                    f"Duplicate field key found: {field.key}. "
-                    f"All fields must have unique keys."
-                )
+                raise ValueError(f"Duplicate field key found: {field.key}. All fields must have unique keys.")
             seen_keys.add(key_tuple)
         return self
 
@@ -314,9 +299,7 @@ class FeatureSpec(FrozenBaseModel):
     def validate_id_columns(self) -> Self:
         """Validate that id_columns is non-empty if specified."""
         if self.id_columns is not None and len(self.id_columns) == 0:
-            raise ValueError(
-                "id_columns must be non-empty if specified. Use None for default."
-            )
+            raise ValueError("id_columns must be non-empty if specified. Use None for default.")
         return self
 
     @property

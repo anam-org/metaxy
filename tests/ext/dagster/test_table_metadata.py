@@ -26,9 +26,7 @@ def basic_schema() -> dg.TableSchema:
     )
 
 
-def test_build_table_preview_basic_types(
-    basic_schema: dg.TableSchema, snapshot: SnapshotAssertion
-) -> None:
+def test_build_table_preview_basic_types(basic_schema: dg.TableSchema, snapshot: SnapshotAssertion) -> None:
     """Test basic functionality with primitive types (int, str, float, bool).
 
     Primitive types should be preserved as-is in the table records.
@@ -81,9 +79,7 @@ def test_build_table_preview_empty_dataframe(
     assert len(result.records) == 0
 
 
-def test_build_table_preview_fewer_rows_than_n_rows(
-    basic_schema: dg.TableSchema, snapshot: SnapshotAssertion
-) -> None:
+def test_build_table_preview_fewer_rows_than_n_rows(basic_schema: dg.TableSchema, snapshot: SnapshotAssertion) -> None:
     """Test DataFrame with fewer rows than n_rows returns all rows."""
     # Create a DataFrame with 3 rows
     df = pl.LazyFrame(
@@ -105,9 +101,7 @@ def test_build_table_preview_fewer_rows_than_n_rows(
     assert records_data == snapshot
 
 
-def test_build_table_preview_more_rows_than_n_rows(
-    basic_schema: dg.TableSchema, snapshot: SnapshotAssertion
-) -> None:
+def test_build_table_preview_more_rows_than_n_rows(basic_schema: dg.TableSchema, snapshot: SnapshotAssertion) -> None:
     """Test DataFrame with more rows than n_rows returns only last n_rows."""
     # Create a DataFrame with 10 rows
     df = pl.LazyFrame(
@@ -133,9 +127,7 @@ def test_build_table_preview_more_rows_than_n_rows(
     assert ids == [6, 7, 8, 9, 10]
 
 
-def test_build_table_preview_custom_n_rows(
-    basic_schema: dg.TableSchema, snapshot: SnapshotAssertion
-) -> None:
+def test_build_table_preview_custom_n_rows(basic_schema: dg.TableSchema, snapshot: SnapshotAssertion) -> None:
     """Test custom n_rows parameter with different value."""
     # Create a DataFrame with 10 rows
     df = pl.LazyFrame(

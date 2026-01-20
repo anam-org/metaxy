@@ -141,9 +141,7 @@ import metaxy.ext.dagster as mxd
 
 
 # Define a job with the delete op
-@dg.job(
-    resource_defs={"metaxy_store": mxd.MetaxyStoreFromConfigResource(name="default")}
-)
+@dg.job(resource_defs={"metaxy_store": mxd.MetaxyStoreFromConfigResource(name="default")})
 def cleanup_job():
     mxd.delete_metadata()
 

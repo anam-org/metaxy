@@ -5,8 +5,6 @@ from test_metaxy_project.features import (  # ty: ignore[unresolved-import]
 )
 
 # Verify Feature.project is detected from entry points
-assert TestFeature.project == "test-metaxy-project", (
-    f"Expected 'test-metaxy-project', got {TestFeature.project}"
-)
+assert TestFeature.project == "test-metaxy-project", f"Expected 'test-metaxy-project', got {TestFeature.project}"
 
 print("SUCCESS: Detected project from entry points")

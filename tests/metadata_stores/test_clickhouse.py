@@ -16,9 +16,7 @@ from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 
 
-def test_clickhouse_table_naming(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
-) -> None:
+def test_clickhouse_table_naming(clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]) -> None:
     """Test that feature keys are converted to table names correctly.
 
     Args:
@@ -87,9 +85,7 @@ def test_clickhouse_conn_property_enforcement(
         assert conn is not None
 
 
-def test_clickhouse_persistence(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
-) -> None:
+def test_clickhouse_persistence(clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]) -> None:
     """Test that data persists across different store instances.
 
     Args:
@@ -114,9 +110,7 @@ def test_clickhouse_persistence(
 
     # Read data in second instance
     with ClickHouseMetadataStore(clickhouse_db) as store2:
-        result = collect_to_polars(
-            store2.read_metadata(test_features["UpstreamFeatureA"])
-        )
+        result = collect_to_polars(store2.read_metadata(test_features["UpstreamFeatureA"]))
 
         assert len(result) == 3
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
@@ -157,9 +151,7 @@ def test_clickhouse_hash_algorithms(
             )
             store.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
-            result = collect_to_polars(
-                store.read_metadata(test_features["UpstreamFeatureA"])
-            )
+            result = collect_to_polars(store.read_metadata(test_features["UpstreamFeatureA"]))
             assert len(result) == 2
 
 
@@ -188,9 +180,7 @@ def test_clickhouse_config_instantiation(
         assert store._is_open
 
 
-def test_clickhouse_config_with_connection_params(
-    test_graph, test_features: dict[str, type[SampleFeature]]
-) -> None:
+def test_clickhouse_config_with_connection_params(test_graph, test_features: dict[str, type[SampleFeature]]) -> None:
     """Test ClickHouse store config with connection_params."""
     from metaxy.config import MetaxyConfig, StoreConfig
 
@@ -676,9 +666,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
 
         # Use the store's versioning engine to build the struct column
         # This is exactly how resolve_update builds metaxy_provenance_by_field
-        with store.create_versioning_engine(
-            plan, implementation=nw.Implementation.IBIS
-        ) as engine:
+        with store.create_versioning_engine(plan, implementation=nw.Implementation.IBIS) as engine:
             # Build struct using the engine's method (same as production code)
             nw_df = engine.build_struct_column(
                 nw_df,
@@ -813,9 +801,7 @@ def test_clickhouse_user_defined_map_column(
         # This is the Arrow Map representation - NOT converted to dict
         user_meta = result["user_metadata"][0]
         # In Polars, each row's Map value is a Series of struct{key, value}
-        assert isinstance(user_meta, pl.Series), (
-            f"Expected pl.Series, got {type(user_meta)}"
-        )
+        assert isinstance(user_meta, pl.Series), f"Expected pl.Series, got {type(user_meta)}"
         # Verify we can access the data
         assert len(user_meta) == 2  # Two key-value pairs: source, quality
 
@@ -893,9 +879,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
 
         # Verify user_tags Map data is readable (as List[Struct{key,value}] in Polars)
         user_tags = result["user_tags"][0]
-        assert isinstance(user_tags, pl.Series), (
-            f"Expected pl.Series, got {type(user_tags)}"
-        )
+        assert isinstance(user_tags, pl.Series), f"Expected pl.Series, got {type(user_tags)}"
         # Convert to dict for easier assertion
         tags_dict = {row["key"]: row["value"] for row in user_tags.to_list()}
         assert tags_dict["env"] == "prod"
@@ -917,9 +901,7 @@ def test_clickhouse_auto_cast_struct_for_map_false(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec().key
 
-    with ClickHouseMetadataStore(
-        clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=False
-    ) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=False) as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1023,9 +1005,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
 
         # Build struct columns using ibis.struct()
         ibis_table = ibis_table.mutate(
-            user_tags=ibis.struct(
-                {"env": ibis_table["_tag_env"], "team": ibis_table["_tag_team"]}
-            ),
+            user_tags=ibis.struct({"env": ibis_table["_tag_env"], "team": ibis_table["_tag_team"]}),
             metaxy_provenance_by_field=ibis.struct(
                 {
                     "frames": ibis_table["_prov_frames"],
@@ -1033,9 +1013,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
                 }
             ),
         )
-        ibis_table = ibis_table.drop(
-            "_tag_env", "_tag_team", "_prov_frames", "_prov_audio"
-        )
+        ibis_table = ibis_table.drop("_tag_env", "_tag_team", "_prov_frames", "_prov_audio")
 
         # Wrap in Narwhals
         nw_df = nw.from_native(ibis_table, eager_only=False)
@@ -1056,9 +1034,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
 
         # Verify user_tags Map data is readable
         user_tags = result["user_tags"][0]
-        assert isinstance(user_tags, pl.Series), (
-            f"Expected pl.Series, got {type(user_tags)}"
-        )
+        assert isinstance(user_tags, pl.Series), f"Expected pl.Series, got {type(user_tags)}"
         tags_dict = {row["key"]: row["value"] for row in user_tags.to_list()}
         assert tags_dict["env"] == "prod"
         assert tags_dict["team"] == "ml"
@@ -1139,9 +1115,7 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
 
         # Verify field_counts Map data has correct integer values
         field_counts = result["field_counts"][0]
-        assert isinstance(field_counts, pl.Series), (
-            f"Expected pl.Series, got {type(field_counts)}"
-        )
+        assert isinstance(field_counts, pl.Series), f"Expected pl.Series, got {type(field_counts)}"
         counts_dict = {row["key"]: row["value"] for row in field_counts.to_list()}
         assert counts_dict["frames_count"] == 10
         assert counts_dict["audio_count"] == 5
@@ -1240,9 +1214,7 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec().key
 
-    with ClickHouseMetadataStore(
-        clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=True
-    ) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=True) as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 

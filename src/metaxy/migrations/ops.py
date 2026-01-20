@@ -167,9 +167,7 @@ class DataVersionReconciliation(BaseOperation):
             ValueError: If feature has no upstream dependencies (root feature) or from_snapshot_version not provided
         """
         if from_snapshot_version is None:
-            raise ValueError(
-                f"DataVersionReconciliation requires from_snapshot_version for feature {feature_key}"
-            )
+            raise ValueError(f"DataVersionReconciliation requires from_snapshot_version for feature {feature_key}")
 
         to_snapshot_version = snapshot_version
         import narwhals as nw
@@ -246,13 +244,9 @@ class DataVersionReconciliation(BaseOperation):
                 to_version_data = None
 
         if from_version_data is None:
-            raise ValueError(
-                f"Feature {feature_key_str} not found in from_snapshot {from_snapshot_version}"
-            )
+            raise ValueError(f"Feature {feature_key_str} not found in from_snapshot {from_snapshot_version}")
         if to_version_data is None:
-            raise ValueError(
-                f"Feature {feature_key_str} not found in to_snapshot {to_snapshot_version}"
-            )
+            raise ValueError(f"Feature {feature_key_str} not found in to_snapshot {to_snapshot_version}")
 
         assert from_feature_version is not None
         assert to_feature_version is not None
@@ -303,12 +297,8 @@ class DataVersionReconciliation(BaseOperation):
         # Convert results to Polars for consistent joining
         if len(diff_result.changed) > 0:
             changed_pl = nw.from_native(diff_result.changed.to_native()).to_polars()
-            new_provenance = changed_pl.select(
-                ["sample_uid", "metaxy_provenance_by_field"]
-            )
-            df_to_write = sample_metadata_pl.join(
-                new_provenance, on="sample_uid", how="inner"
-            )
+            new_provenance = changed_pl.select(["sample_uid", "metaxy_provenance_by_field"])
+            df_to_write = sample_metadata_pl.join(new_provenance, on="sample_uid", how="inner")
         elif len(diff_result.added) > 0:
             df_to_write = nw.from_native(diff_result.added.to_native()).to_polars()
         else:

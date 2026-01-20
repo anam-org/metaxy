@@ -79,8 +79,7 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
         "feature_version_a": FeatureInA.feature_version(),
         "feature_version_b": FeatureInB.feature_version(),
         "tracking_versions_differ": tracking_version_a != tracking_version_b,
-        "feature_versions_same": FeatureInA.feature_version()
-        == FeatureInB.feature_version(),
+        "feature_versions_same": FeatureInA.feature_version() == FeatureInB.feature_version(),
     } == snapshot
 
     MetaxyConfig.reset()

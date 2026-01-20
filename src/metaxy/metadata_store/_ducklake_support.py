@@ -33,9 +33,7 @@ DuckLakeBackendInput = Mapping[str, Any] | SupportsDuckLakeParts | SupportsModel
 DuckLakeBackend = SupportsDuckLakeParts | dict[str, Any]
 
 
-def coerce_backend_config(
-    backend: DuckLakeBackendInput, *, role: str
-) -> DuckLakeBackend:
+def coerce_backend_config(backend: DuckLakeBackendInput, *, role: str) -> DuckLakeBackend:
     """Normalize metadata/storage backend configuration."""
     if isinstance(backend, SupportsDuckLakeParts):
         return backend
@@ -44,8 +42,7 @@ def coerce_backend_config(
     if isinstance(backend, Mapping):
         return dict(backend)
     raise TypeError(
-        f"DuckLake {role} must be a mapping or expose get_ducklake_sql_parts()/model_dump(), "
-        f"got {type(backend)!r}."
+        f"DuckLake {role} must be a mapping or expose get_ducklake_sql_parts()/model_dump(), got {type(backend)!r}."
     )
 
 
@@ -63,19 +60,14 @@ def resolve_storage_backend(backend: DuckLakeBackend, alias: str) -> tuple[str, 
     return _storage_sql_from_mapping(backend, alias)
 
 
-def _metadata_sql_from_mapping(
-    config: Mapping[str, Any], alias: str
-) -> tuple[str, str]:
+def _metadata_sql_from_mapping(config: Mapping[str, Any], alias: str) -> tuple[str, str]:
     backend_type = str(config.get("type", "")).lower()
     if backend_type == "postgres":
         return _metadata_postgres_sql(config, alias)
     if backend_type in {"sqlite", "duckdb"}:
         path = config.get("path")
         if not path:
-            raise ValueError(
-                "DuckLake metadata backend of type "
-                f"'{backend_type}' requires a 'path' entry."
-            )
+            raise ValueError(f"DuckLake metadata backend of type '{backend_type}' requires a 'path' entry.")
         literal_path = _stringify_scalar(path)
         return "", f"METADATA_PATH {literal_path}"
     raise ValueError(f"Unsupported DuckLake metadata backend type: {backend_type!r}")
@@ -86,17 +78,13 @@ def _metadata_postgres_sql(config: Mapping[str, Any], alias: str) -> tuple[str, 
     user = config.get("user")
     password = config.get("password")
     if database is None or user is None or password is None:
-        raise ValueError(
-            "DuckLake postgres metadata backend requires 'database', 'user', and 'password'."
-        )
+        raise ValueError("DuckLake postgres metadata backend requires 'database', 'user', and 'password'.")
     host = config.get("host") or os.getenv("DUCKLAKE_PG_HOST", "localhost")
     port_value = config.get("port", 5432)
     try:
         port = int(port_value)
     except (TypeError, ValueError) as exc:
-        raise ValueError(
-            "DuckLake postgres metadata backend requires 'port' to be an integer."
-        ) from exc
+        raise ValueError("DuckLake postgres metadata backend requires 'port' to be an integer.") from exc
     secret_params: dict[str, Any] = {
         "HOST": host,
         "PORT": port,
@@ -112,10 +100,7 @@ def _metadata_postgres_sql(config: Mapping[str, Any], alias: str) -> tuple[str, 
 
     secret_name = f"secret_catalog_{alias}"
     secret_sql = build_secret_sql(secret_name, "postgres", secret_params)
-    metadata_params = (
-        "METADATA_PATH '', "
-        f"METADATA_PARAMETERS MAP {{'TYPE': 'postgres', 'SECRET': '{secret_name}'}}"
-    )
+    metadata_params = f"METADATA_PATH '', METADATA_PARAMETERS MAP {{'TYPE': 'postgres', 'SECRET': '{secret_name}'}}"
     return secret_sql, metadata_params
 
 
@@ -149,9 +134,7 @@ def _storage_s3_sql(config: Mapping[str, Any], alias: str) -> tuple[str, str]:
         if missing:
             raise ValueError(
                 "DuckLake S3 storage backend expects either a 'secret' mapping "
-                "or the legacy keys: "
-                + ", ".join(required_keys)
-                + f". Missing: {missing}"
+                "or the legacy keys: " + ", ".join(required_keys) + f". Missing: {missing}"
             )
         secret_params = {
             "KEY_ID": config["aws_access_key_id"],
@@ -171,9 +154,7 @@ def _storage_s3_sql(config: Mapping[str, Any], alias: str) -> tuple[str, str]:
         if bucket:
             clean_prefix = str(prefix or "").strip("/")
             base_path = f"s3://{bucket}"
-            data_path = (
-                f"{base_path}/{clean_prefix}/" if clean_prefix else f"{base_path}/"
-            )
+            data_path = f"{base_path}/{clean_prefix}/" if clean_prefix else f"{base_path}/"
         else:
             scope = secret_params.get("SCOPE")
             if isinstance(scope, str) and scope.startswith("s3://"):
@@ -188,15 +169,11 @@ def _storage_s3_sql(config: Mapping[str, Any], alias: str) -> tuple[str, str]:
     return secret_sql, data_path_sql
 
 
-def build_secret_sql(
-    secret_name: str, secret_type: str, parameters: Mapping[str, Any]
-) -> str:
+def build_secret_sql(secret_name: str, secret_type: str, parameters: Mapping[str, Any]) -> str:
     """Construct DuckDB secret creation SQL."""
     formatted_params = _format_secret_parameters(parameters)
     extra_clause = f", {', '.join(formatted_params)}" if formatted_params else ""
-    return (
-        f"CREATE OR REPLACE SECRET {secret_name} ( TYPE {secret_type}{extra_clause} );"
-    )
+    return f"CREATE OR REPLACE SECRET {secret_name} ( TYPE {secret_type}{extra_clause} );"
 
 
 def _format_secret_parameters(parameters: Mapping[str, Any]) -> list[str]:
@@ -248,9 +225,7 @@ class DuckLakeAttachmentConfig(BaseModel):
 
     @field_validator("metadata_backend", "storage_backend", mode="before")
     @classmethod
-    def _coerce_backends(
-        cls, value: DuckLakeBackendInput, info: ValidationInfo
-    ) -> DuckLakeBackend:
+    def _coerce_backends(cls, value: DuckLakeBackendInput, info: ValidationInfo) -> DuckLakeBackend:
         field_name = info.field_name or "backend"
         return coerce_backend_config(value, role=field_name.replace("_", " "))
 
@@ -273,9 +248,7 @@ class DuckLakeAttachmentConfig(BaseModel):
             try:
                 return tuple(str(item) for item in value)
             except TypeError as exc:  # pragma: no cover - defensive guard
-                raise TypeError(
-                    "DuckLake plugins must be a string or sequence of strings."
-                ) from exc
+                raise TypeError("DuckLake plugins must be a string or sequence of strings.") from exc
         raise TypeError("DuckLake plugins must be a string or sequence of strings.")
 
     @field_validator("attach_options", mode="before")
@@ -352,9 +325,7 @@ class DuckLakeAttachmentManager:
             )
 
             options_clause = format_attach_options(self._config.attach_options)
-            cursor.execute(
-                f"ATTACH 'ducklake:{ducklake_secret}' AS {self._config.alias}{options_clause};"
-            )
+            cursor.execute(f"ATTACH 'ducklake:{ducklake_secret}' AS {self._config.alias}{options_clause};")
             cursor.execute(f"USE {self._config.alias};")
         finally:
             cursor.close()
@@ -378,18 +349,14 @@ def build_ducklake_attachment(
     elif isinstance(config, Mapping):
         attachment_config = DuckLakeAttachmentConfig.model_validate(config)
     else:  # pragma: no cover - defensive programming
-        raise TypeError(
-            "DuckLake configuration must be a DuckLakeAttachmentConfig or mapping."
-        )
+        raise TypeError("DuckLake configuration must be a DuckLakeAttachmentConfig or mapping.")
 
     manager = DuckLakeAttachmentManager(attachment_config)
     return attachment_config, manager
 
 
 def ensure_extensions_with_plugins(
-    extensions: list[
-        str | Any
-    ],  # list[str | ExtensionSpec] - ExtensionSpec from duckdb.py
+    extensions: list[str | Any],  # list[str | ExtensionSpec] - ExtensionSpec from duckdb.py
     plugins: Sequence[str],
 ) -> None:
     """Ensure DuckLake plugins are present in the extensions list.
@@ -405,9 +372,7 @@ def ensure_extensions_with_plugins(
         elif isinstance(ext, Mapping):
             name = ext.get("name")
             if not name:
-                raise ValueError(
-                    f"DuckDB extension mapping must have a non-empty 'name' key, got: {ext!r}"
-                )
+                raise ValueError(f"DuckDB extension mapping must have a non-empty 'name' key, got: {ext!r}")
             existing_names.add(str(name))
         else:
             # Must be ExtensionSpec with 'name' attribute

@@ -46,9 +46,7 @@ class RenderConfig:
     # Display options
     hash_length: int = field(
         default=8,
-        metadata={
-            "help": "Number of characters to show for version hashes (0 for full)"
-        },
+        metadata={"help": "Number of characters to show for version hashes (0 for full)"},
     )
 
     direction: str = field(
@@ -59,30 +57,22 @@ class RenderConfig:
     # Filtering options
     feature: str | None = field(
         default=None,
-        metadata={
-            "help": "Focus on a specific feature (e.g., 'video/files' or 'video__files')"
-        },
+        metadata={"help": "Focus on a specific feature (e.g., 'video/files' or 'video__files')"},
     )
 
     up: int | None = field(
         default=None,
-        metadata={
-            "help": "Number of dependency levels to render upstream (default: all)"
-        },
+        metadata={"help": "Number of dependency levels to render upstream (default: all)"},
     )
 
     down: int | None = field(
         default=None,
-        metadata={
-            "help": "Number of dependency levels to render downstream (default: all)"
-        },
+        metadata={"help": "Number of dependency levels to render downstream (default: all)"},
     )
 
     project: str | None = field(
         default=None,
-        metadata={
-            "help": "Filter nodes by project (show only features from this project)"
-        },
+        metadata={"help": "Filter nodes by project (show only features from this project)"},
     )
 
     show_projects: bool = field(
@@ -224,9 +214,7 @@ class BaseRenderer:
         else:
             return self.theme.feature_color
 
-    def _format_version_transition(
-        self, old_version: str | None, new_version: str | None
-    ) -> str:
+    def _format_version_transition(self, old_version: str | None, new_version: str | None) -> str:
         """Format version transition for diff display.
 
         Args:
@@ -285,10 +273,7 @@ class BaseRenderer:
                 else:
                     # Check if this node is a parent of any node in the project
                     for other_node in graph_data.nodes.values():
-                        if (
-                            other_node.project == self.config.project
-                            and node.key in other_node.dependencies
-                        ):
+                        if other_node.project == self.config.project and node.key in other_node.dependencies:
                             filtered_nodes[key] = node
                             break
 

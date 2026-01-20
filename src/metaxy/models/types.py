@@ -104,11 +104,7 @@ class _Key(RootModel[tuple[str, ...]]):
             # Legacy "parts" key for backward compatibility
             elif "parts" in data:
                 parts = data["parts"]
-                if (
-                    isinstance(parts, (list, tuple))
-                    and parts
-                    and isinstance(parts[0], dict)
-                ):
+                if isinstance(parts, (list, tuple)) and parts and isinstance(parts[0], dict):
                     # Handle incorrectly nested structure like {'parts': [{'parts': [...]}]}
                     if "parts" in parts[0]:
                         return tuple(parts[0]["parts"])
@@ -154,9 +150,7 @@ class _Key(RootModel[tuple[str, ...]]):
 
         for i, part in enumerate(value):
             if not isinstance(part, str):
-                raise ValueError(
-                    f"{cls.__name__} parts must be strings, got {type(part).__name__}"
-                )
+                raise ValueError(f"{cls.__name__} parts must be strings, got {type(part).__name__}")
             if not part:
                 raise ValueError(f"{cls.__name__} parts cannot be empty strings")
             if "/" in part:
@@ -392,9 +386,7 @@ _CoercibleToFeatureKey: TypeAlias = _CoercibleToKey | FeatureKey
 FeatureKeyAdapter = TypeAdapter(
     FeatureKey
 )  # can call .validate_python() to transform acceptable types into a FeatureKey
-FieldKeyAdapter = TypeAdapter(
-    FieldKey
-)  # can call .validate_python() to transform acceptable types into a FieldKey
+FieldKeyAdapter = TypeAdapter(FieldKey)  # can call .validate_python() to transform acceptable types into a FieldKey
 
 
 def _coerce_to_feature_key(value: Any) -> FeatureKey:
@@ -464,9 +456,7 @@ if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
 
 # Type unions - what inputs are accepted
-CoercibleToFeatureKey: TypeAlias = (
-    str | Sequence[str] | FeatureKey | type["BaseFeature"]
-)
+CoercibleToFeatureKey: TypeAlias = str | Sequence[str] | FeatureKey | type["BaseFeature"]
 CoercibleToFieldKey: TypeAlias = str | Sequence[str] | FieldKey
 
 # Annotated types for Pydantic field annotations - automatically validate
@@ -482,18 +472,12 @@ ValidatedFeatureKey: TypeAlias = Annotated[
 ValidatedFieldKey: TypeAlias = Annotated[
     FieldKey,
     BeforeValidator(_coerce_to_field_key),
-    Field(
-        description="Field key. Accepts a slashed string ('a/b/c'), a sequence of strings, or a FieldKey instance."
-    ),
+    Field(description="Field key. Accepts a slashed string ('a/b/c'), a sequence of strings, or a FieldKey instance."),
 ]
 
 # TypeAdapters for non-Pydantic usage (e.g., in metadata_store/base.py)
-ValidatedFeatureKeyAdapter: TypeAdapter[ValidatedFeatureKey] = TypeAdapter(
-    ValidatedFeatureKey
-)
-ValidatedFieldKeyAdapter: TypeAdapter[ValidatedFieldKey] = TypeAdapter(
-    ValidatedFieldKey
-)
+ValidatedFeatureKeyAdapter: TypeAdapter[ValidatedFeatureKey] = TypeAdapter(ValidatedFeatureKey)
+ValidatedFieldKeyAdapter: TypeAdapter[ValidatedFieldKey] = TypeAdapter(ValidatedFieldKey)
 
 
 # Dagster-compatible version: validates FeatureKey semantics but stores as list[str]
@@ -507,9 +491,7 @@ def _coerce_to_feature_key_list(value: Any) -> list[str]:
 ValidatedFeatureKeyList: TypeAlias = Annotated[
     list[str],
     BeforeValidator(_coerce_to_feature_key_list),
-    Field(
-        description="Feature key as list of strings (e.g., ['user', 'profile']). Validates using FeatureKey rules."
-    ),
+    Field(description="Feature key as list of strings (e.g., ['user', 'profile']). Validates using FeatureKey rules."),
 ]
 
 
@@ -526,11 +508,7 @@ ValidatedFieldKeySequence: TypeAlias = Annotated[
 ]
 
 # TypeAdapters for non-Pydantic usage
-ValidatedFeatureKeySequenceAdapter: TypeAdapter[ValidatedFeatureKeySequence] = (
-    TypeAdapter(ValidatedFeatureKeySequence)
-)
-ValidatedFieldKeySequenceAdapter: TypeAdapter[ValidatedFieldKeySequence] = TypeAdapter(
-    ValidatedFieldKeySequence
-)
+ValidatedFeatureKeySequenceAdapter: TypeAdapter[ValidatedFeatureKeySequence] = TypeAdapter(ValidatedFeatureKeySequence)
+ValidatedFieldKeySequenceAdapter: TypeAdapter[ValidatedFieldKeySequence] = TypeAdapter(ValidatedFieldKeySequence)
 
 FeatureDepMetadata: TypeAlias = dict[str, Any]

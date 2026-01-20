@@ -55,9 +55,7 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
         migration_yaml = {
             "migration_type": "metaxy.migrations.models.FullGraphMigration",
             "migration_id": "test_migration_001",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
             "snapshot_version": "b" * 64,
             "ops": [
@@ -114,9 +112,7 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
         migration1_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_001",
-            "created_at": datetime(
-                2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
             "from_snapshot_version": "a" * 64,
             "to_snapshot_version": "b" * 64,
@@ -131,9 +127,7 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
         migration2_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_002",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "migration_001",
             "from_snapshot_version": "b" * 64,
             "to_snapshot_version": "c" * 64,
@@ -187,9 +181,7 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
         migration_yaml = {
             "migration_type": "metaxy.migrations.models.FullGraphMigration",
             "migration_id": "multi_op_migration",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
             "snapshot_version": "b" * 64,
             "ops": [
@@ -247,9 +239,7 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
         migration1_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_001",
-            "created_at": datetime(
-                2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
             "from_snapshot_version": "a" * 64,
             "to_snapshot_version": "b" * 64,
@@ -264,9 +254,7 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
         migration2_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_002",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
             "from_snapshot_version": "b" * 64,
             "to_snapshot_version": "c" * 64,

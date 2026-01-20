@@ -89,9 +89,7 @@ def _normalise_extensions(
             except ValidationError as exc:
                 raise ValueError(f"Invalid DuckDB extension spec: {ext!r}") from exc
         else:
-            raise TypeError(
-                "DuckDB extensions must be strings or mapping-like objects with a 'name'."
-            )
+            raise TypeError("DuckDB extensions must be strings or mapping-like objects with a 'name'.")
     return normalised
 
 
@@ -180,9 +178,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
             connection_params.update(config)
 
         self.database = database_str
-        base_extensions: list[NormalisedExtension] = _normalise_extensions(
-            extensions or []
-        )
+        base_extensions: list[NormalisedExtension] = _normalise_extensions(extensions or [])
 
         self._ducklake_config: DuckLakeAttachmentConfig | None = None
         self._ducklake_attachment: DuckLakeAttachmentManager | None = None
@@ -205,9 +201,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
             else:
                 # After _normalise_extensions, this should not happen
                 # But keep defensive check for type safety
-                raise TypeError(
-                    f"Extension must be str or ExtensionSpec after normalization; got {type(ext)}"
-                )
+                raise TypeError(f"Extension must be str or ExtensionSpec after normalization; got {type(ext)}")
         if "hashfuncs" not in extension_names:
             self.extensions.append("hashfuncs")
 
@@ -287,9 +281,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
                 ext_name = ext_spec.name
                 ext_repo = ext_spec.repository or "community"
             else:
-                raise TypeError(
-                    f"Extension must be str or ExtensionSpec; got {type(ext_spec)}"
-                )
+                raise TypeError(f"Extension must be str or ExtensionSpec; got {type(ext_spec)}")
 
             # Install and load the extension
             if ext_repo == "community":
@@ -434,10 +426,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         candidate = self._conn.con  # ty: ignore[possibly-missing-attribute]
 
         if not isinstance(candidate, DuckDBPyConnection):
-            raise TypeError(
-                f"Expected DuckDB backend 'con' to be DuckDBPyConnection, "
-                f"got {type(candidate).__name__}"
-            )
+            raise TypeError(f"Expected DuckDB backend 'con' to be DuckDBPyConnection, got {type(candidate).__name__}")
 
         return candidate
 

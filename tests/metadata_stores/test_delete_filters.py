@@ -155,13 +155,7 @@ def test_delete_metadata_with_none_filters(
         remaining = any_store.read_metadata(delete_filter_feature).collect().to_polars()
         if soft:
             # Soft delete: records still exist when include_soft_deleted=True
-            all_data = (
-                any_store.read_metadata(
-                    delete_filter_feature, include_soft_deleted=True
-                )
-                .collect()
-                .to_polars()
-            )
+            all_data = any_store.read_metadata(delete_filter_feature, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 10
             # But not returned by default
             assert remaining.height == 0

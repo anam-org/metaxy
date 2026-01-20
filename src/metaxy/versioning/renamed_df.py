@@ -37,9 +37,7 @@ class RenamedDataFrame(Generic[FrameT]):
         """
         return self.id_column_tracker.output
 
-    def with_id_tracker(
-        self, id_column_tracker: IdColumnTracker
-    ) -> RenamedDataFrame[FrameT]:
+    def with_id_tracker(self, id_column_tracker: IdColumnTracker) -> RenamedDataFrame[FrameT]:
         """Return a new RenamedDataFrame with an updated ID column tracker.
 
         Used by lineage handlers to update output ID columns after transformation.
@@ -59,9 +57,7 @@ class RenamedDataFrame(Generic[FrameT]):
         # Update the tracker with renamed columns
         from metaxy.versioning.feature_dep_transformer import IdColumnTracker
 
-        new_renamed = tuple(
-            mapping.get(col, col) for col in self.id_column_tracker.original
-        )
+        new_renamed = tuple(mapping.get(col, col) for col in self.id_column_tracker.original)
         # After rename, selected and output are same as renamed until selection
         new_tracker = IdColumnTracker(
             original=self.id_column_tracker.original,
@@ -86,9 +82,7 @@ class RenamedDataFrame(Generic[FrameT]):
 
             # Update selected ID columns based on what's in the selection
             columns_set = set(columns)
-            new_selected = tuple(
-                col for col in self.id_column_tracker.renamed if col in columns_set
-            )
+            new_selected = tuple(col for col in self.id_column_tracker.renamed if col in columns_set)
 
             from metaxy.versioning.feature_dep_transformer import IdColumnTracker
 

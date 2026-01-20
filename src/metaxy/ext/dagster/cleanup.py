@@ -79,9 +79,7 @@ def delete_metadata(
     # Parse filter strings into Narwhals expressions
     filter_exprs = [parse_filter_string(f) for f in config.filters]
 
-    context.log.info(
-        f"Executing {'soft' if config.soft else 'hard'} delete for {feature_key.to_string()}"
-    )
+    context.log.info(f"Executing {'soft' if config.soft else 'hard'} delete for {feature_key.to_string()}")
 
     with store.open("write"):
         store.delete_metadata(feature_key, filters=filter_exprs, soft=config.soft)

@@ -300,9 +300,7 @@ class TestProjectValidationComprehensive:
                 BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["child_feature_v2"]),
-                    fields=[
-                        FieldSpec(key=FieldKey(["field2"]), code_version="2")
-                    ],  # Changed version
+                    fields=[FieldSpec(key=FieldKey(["field2"]), code_version="2")],  # Changed version
                     deps=[FeatureDep(feature=RootFeatureV2.spec().key)],
                 ),
             ):

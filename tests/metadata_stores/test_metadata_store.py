@@ -147,12 +147,8 @@ def multi_env_stores(
 ) -> Iterator[dict[str, DeltaMetadataStore]]:
     """Multi-environment store setup (prod, staging, dev)."""
     prod = DeltaMetadataStore(root_path=tmp_path / "delta_prod")
-    staging = DeltaMetadataStore(
-        root_path=tmp_path / "delta_staging", fallback_stores=[prod]
-    )
-    dev = DeltaMetadataStore(
-        root_path=tmp_path / "delta_dev", fallback_stores=[staging]
-    )
+    staging = DeltaMetadataStore(root_path=tmp_path / "delta_staging", fallback_stores=[prod])
+    dev = DeltaMetadataStore(root_path=tmp_path / "delta_dev", fallback_stores=[staging])
 
     with prod:
         # Populate prod with upstream data
@@ -170,9 +166,7 @@ def multi_env_stores(
 # Basic CRUD Tests
 
 
-def test_write_and_read_metadata(
-    empty_store: DeltaMetadataStore, UpstreamFeatureA, make_upstream_a_data
-) -> None:
+def test_write_and_read_metadata(empty_store: DeltaMetadataStore, UpstreamFeatureA, make_upstream_a_data) -> None:
     """Test basic write and read operations."""
     with empty_store.open("write"):
         metadata = make_upstream_a_data(
@@ -190,9 +184,7 @@ def test_write_and_read_metadata(
         assert "metaxy_provenance_by_field" in result.columns
 
 
-def test_write_invalid_schema(
-    empty_store: DeltaMetadataStore, UpstreamFeatureA
-) -> None:
+def test_write_invalid_schema(empty_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test that writing without provenance_by_field column raises error."""
     with empty_store.open("write"):
         invalid_df = pl.DataFrame(
@@ -234,39 +226,27 @@ def test_write_append(
         assert set(result["sample_uid"].to_list()) == {1, 2, 3, 4}
 
 
-def test_read_with_filters(
-    populated_store: DeltaMetadataStore, UpstreamFeatureA
-) -> None:
+def test_read_with_filters(populated_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test reading with Polars filter expressions."""
     with populated_store.open("write"):
-        result = collect_to_polars(
-            populated_store.read_metadata(
-                UpstreamFeatureA, filters=[nw.col("sample_uid") > 1]
-            )
-        )
+        result = collect_to_polars(populated_store.read_metadata(UpstreamFeatureA, filters=[nw.col("sample_uid") > 1]))
 
         assert len(result) == 2
         assert set(result["sample_uid"].to_list()) == {2, 3}
 
 
-def test_read_with_column_selection(
-    populated_store: DeltaMetadataStore, UpstreamFeatureA
-) -> None:
+def test_read_with_column_selection(populated_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test reading specific columns."""
     with populated_store.open("write"):
         result = collect_to_polars(
-            populated_store.read_metadata(
-                UpstreamFeatureA, columns=["sample_uid", "metaxy_provenance_by_field"]
-            )
+            populated_store.read_metadata(UpstreamFeatureA, columns=["sample_uid", "metaxy_provenance_by_field"])
         )
 
         assert set(result.columns) == {"sample_uid", "metaxy_provenance_by_field"}
         assert "path" not in result.columns
 
 
-def test_read_nonexistent_feature(
-    empty_store: DeltaMetadataStore, UpstreamFeatureA
-) -> None:
+def test_read_nonexistent_feature(empty_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test that reading nonexistent feature raises error."""
     with empty_store.open("write"):
         with pytest.raises(FeatureNotFoundError):
@@ -276,9 +256,7 @@ def test_read_nonexistent_feature(
 # Feature Existence Tests
 
 
-def test_has_feature_local(
-    populated_store: DeltaMetadataStore, UpstreamFeatureA, UpstreamFeatureB
-) -> None:
+def test_has_feature_local(populated_store: DeltaMetadataStore, UpstreamFeatureA, UpstreamFeatureB) -> None:
     """Test has_feature for local store."""
     with populated_store.open("write"):
         assert populated_store.has_feature(UpstreamFeatureA, check_fallback=False)
@@ -304,9 +282,7 @@ def test_has_feature_with_fallback(
 # Fallback Store Tests
 
 
-def test_read_from_fallback(
-    multi_env_stores: dict[str, DeltaMetadataStore], UpstreamFeatureA
-) -> None:
+def test_read_from_fallback(multi_env_stores: dict[str, DeltaMetadataStore], UpstreamFeatureA) -> None:
     """Test reading from fallback store."""
     dev = multi_env_stores["dev"]
     staging = multi_env_stores["staging"]
@@ -314,15 +290,11 @@ def test_read_from_fallback(
 
     with dev, staging, prod:
         # Read from prod via fallback chain
-        result = collect_to_polars(
-            dev.read_metadata(UpstreamFeatureA, allow_fallback=True)
-        )
+        result = collect_to_polars(dev.read_metadata(UpstreamFeatureA, allow_fallback=True))
         assert len(result) == 3
 
 
-def test_read_no_fallback(
-    multi_env_stores: dict[str, DeltaMetadataStore], UpstreamFeatureA
-) -> None:
+def test_read_no_fallback(multi_env_stores: dict[str, DeltaMetadataStore], UpstreamFeatureA) -> None:
     """Test that allow_fallback=False doesn't check fallback stores."""
     dev = multi_env_stores["dev"]
 
@@ -403,9 +375,7 @@ def test_write_to_dev_not_prod(
 # Store Open/Close Tests
 
 
-def test_store_not_open_write_raises(
-    empty_store: DeltaMetadataStore, UpstreamFeatureA
-) -> None:
+def test_store_not_open_write_raises(empty_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test that writing to a closed store raises StoreNotOpenError."""
     metadata = pl.DataFrame(
         {
@@ -422,18 +392,14 @@ def test_store_not_open_write_raises(
         empty_store.write_metadata(UpstreamFeatureA, metadata)
 
 
-def test_store_not_open_read_raises(
-    populated_store: DeltaMetadataStore, UpstreamFeatureA
-) -> None:
+def test_store_not_open_read_raises(populated_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test that reading from a closed store raises StoreNotOpenError."""
     # Store is already closed after fixture setup
     with pytest.raises(StoreNotOpenError, match="must be opened before use"):
         populated_store.read_metadata(UpstreamFeatureA)
 
 
-def test_store_not_open_has_feature_raises(
-    populated_store: DeltaMetadataStore, UpstreamFeatureA
-) -> None:
+def test_store_not_open_has_feature_raises(populated_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test that has_feature on a closed store raises StoreNotOpenError."""
     with pytest.raises(StoreNotOpenError, match="must be opened before use"):
         populated_store.has_feature(UpstreamFeatureA)
@@ -454,9 +420,7 @@ def test_store_context_manager_opens_and_closes(
     assert not empty_store._is_open
 
 
-def test_write_metadata_casts_null_typed_system_columns(
-    empty_store: DeltaMetadataStore, UpstreamFeatureA
-) -> None:
+def test_write_metadata_casts_null_typed_system_columns(empty_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test that system columns with Null dtype are cast to correct types."""
     # Create a DataFrame with Null-typed system columns
     # This can happen with empty frames or certain Polars operations

@@ -81,9 +81,7 @@ def test_hash_algorithm_produces_consistent_hashes(
     parent_df = upstream_data["parent"]
 
     # Create store with specific hash algorithm
-    store = DeltaMetadataStore(
-        root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm
-    )
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm)
 
     with store, graph.use():
         # Write parent metadata
@@ -115,9 +113,7 @@ def test_hash_algorithm_produces_consistent_hashes(
         pl_testing.assert_frame_equal(result1_sorted, result2_sorted)
 
         # Verify all hashes are non-null
-        assert result1["metaxy_provenance"].null_count() == 0, (
-            f"Hash algorithm {hash_algorithm} produced null hashes"
-        )
+        assert result1["metaxy_provenance"].null_count() == 0, f"Hash algorithm {hash_algorithm} produced null hashes"
 
 
 # ============= TEST: HASH TRUNCATION =============
@@ -143,9 +139,7 @@ def test_hash_truncation(
         HashAlgorithm.MD5: 32,
     }
 
-    if truncation_length is not None and truncation_length > max_hash_lengths.get(
-        hash_algorithm, 64
-    ):
+    if truncation_length is not None and truncation_length > max_hash_lengths.get(hash_algorithm, 64):
         pytest.skip(
             f"Truncation length {truncation_length} exceeds max hash length "
             f"{max_hash_lengths.get(hash_algorithm, 64)} for {hash_algorithm}"
@@ -188,9 +182,7 @@ def test_hash_truncation(
 
     parent_df = upstream_data["parent"]
 
-    store = DeltaMetadataStore(
-        root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm
-    )
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm)
 
     with store, graph.use():
         # Write parent metadata
@@ -255,9 +247,7 @@ def test_field_level_provenance_structure(
         "child": ChildFeature.feature_version(),
     }
 
-    store = DeltaMetadataStore(
-        root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm
-    )
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm)
 
     with store, graph.use():
         # Generate test data
@@ -286,9 +276,7 @@ def test_field_level_provenance_structure(
         provenance_by_field = result["metaxy_provenance_by_field"]
 
         # Verify it's a struct column
-        assert provenance_by_field.dtype == pl.Struct, (
-            "provenance_by_field should be a Struct column"
-        )
+        assert provenance_by_field.dtype == pl.Struct, "provenance_by_field should be a Struct column"
 
         # Unnest to check field structure
         unnested = result.unnest("metaxy_provenance_by_field")
@@ -297,24 +285,18 @@ def test_field_level_provenance_structure(
         expected_fields = {"result_x", "result_y"}
         actual_fields = {col for col in unnested.columns if col in expected_fields}
 
-        assert actual_fields == expected_fields, (
-            f"Expected fields {expected_fields}, got {actual_fields}"
-        )
+        assert actual_fields == expected_fields, f"Expected fields {expected_fields}, got {actual_fields}"
 
         # Verify all field hashes are non-null
         for field in expected_fields:
-            assert unnested[field].null_count() == 0, (
-                f"Field {field} has null provenance hashes"
-            )
+            assert unnested[field].null_count() == 0, f"Field {field} has null provenance hashes"
 
 
 # ============= TEST: HASH TRUNCATION ACROSS ALL STORES =============
 
 
 @pytest.mark.parametrize("truncation_length", [16])
-def test_hash_truncation_any_store(
-    config_with_truncation, any_store: MetadataStore, graph: FeatureGraph
-):
+def test_hash_truncation_any_store(config_with_truncation, any_store: MetadataStore, graph: FeatureGraph):
     """Test that hash truncation is applied correctly across store types."""
 
     class ParentFeature(

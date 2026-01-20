@@ -192,9 +192,7 @@ root_path = "{prod_path}"
     assert config.stores["staging"].config["fallback_stores"] == ["prod"]
 
 
-def test_load_from_metaxy_config_env_var(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_load_from_metaxy_config_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that METAXY_CONFIG env var is respected for config file location."""
     from metaxy.metadata_store.delta import DeltaMetadataStore
 
@@ -228,9 +226,7 @@ root_path = "{custom_path}"
     assert config.config_file == config_file.resolve()
 
 
-def test_init_metaxy_respects_metaxy_config_env_var(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_init_metaxy_respects_metaxy_config_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that init_metaxy respects METAXY_CONFIG env var."""
     from metaxy import init_metaxy
 
@@ -375,9 +371,7 @@ root_path = "{dev_path}"
     monkeypatch.setenv("METAXY_STORE", "prod")
 
     # Also add prod store via env var (pydantic-settings supports this!)
-    monkeypatch.setenv(
-        "METAXY_STORES__PROD__TYPE", "metaxy.metadata_store.delta.DeltaMetadataStore"
-    )
+    monkeypatch.setenv("METAXY_STORES__PROD__TYPE", "metaxy.metadata_store.delta.DeltaMetadataStore")
     monkeypatch.setenv("METAXY_STORES__PROD__CONFIG__ROOT_PATH", str(prod_path))
 
     config = MetaxyConfig.load(config_file)
@@ -415,9 +409,7 @@ root_path = "{dev_path}"
 """)
 
     # Set partial config for prod store (config but no type)
-    monkeypatch.setenv(
-        "METAXY_STORES__PROD__CONFIG__CONNECTION_STRING", "clickhouse://localhost"
-    )
+    monkeypatch.setenv("METAXY_STORES__PROD__CONFIG__CONNECTION_STRING", "clickhouse://localhost")
 
     # Config should load successfully but emit a warning with field hints
     with pytest.warns(
@@ -427,18 +419,13 @@ root_path = "{dev_path}"
         config = MetaxyConfig.load(config_file)
 
     # dev store should work
-    assert (
-        config.stores["dev"].type_path
-        == "metaxy.metadata_store.delta.DeltaMetadataStore"
-    )
+    assert config.stores["dev"].type_path == "metaxy.metadata_store.delta.DeltaMetadataStore"
 
     # prod store should be filtered out (not present) since it lacks 'type'
     assert "prod" not in config.stores
 
 
-def test_incomplete_store_warning_shows_all_fields(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_incomplete_store_warning_shows_all_fields(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that the warning for incomplete stores lists all fields that were set."""
     # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
     dev_path = (tmp_path / "delta_dev").as_posix()
@@ -455,9 +442,7 @@ root_path = "{dev_path}"
 """)
 
     # Set multiple fields for an incomplete store
-    monkeypatch.setenv(
-        "METAXY_STORES__PROD__CONFIG__CONNECTION_STRING", "clickhouse://localhost"
-    )
+    monkeypatch.setenv("METAXY_STORES__PROD__CONFIG__CONNECTION_STRING", "clickhouse://localhost")
     monkeypatch.setenv("METAXY_STORES__PROD__CONFIG__DATABASE", "mydb")
 
     with pytest.warns(UserWarning) as record:
@@ -600,9 +585,7 @@ def test_store_respects_configured_hash_algorithm(tmp_path: Path) -> None:
     assert store.hash_algorithm == HashAlgorithm.MD5
 
 
-def test_env_var_expansion_in_toml_config(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_env_var_expansion_in_toml_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that ${VAR} syntax expands environment variables in TOML config."""
     # Set environment variables
     monkeypatch.setenv("DAGSTER_CLOUD_GIT_BRANCH", "feature-branch")
@@ -630,9 +613,7 @@ branch = "${{DAGSTER_CLOUD_GIT_BRANCH}}"
     assert config.stores["dev"].config["branch"] == "feature-branch"
 
 
-def test_env_var_expansion_with_default_value(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_env_var_expansion_with_default_value(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that ${VAR:-default} syntax uses default when env var is not set."""
     # Ensure the variable is NOT set
     monkeypatch.delenv("UNSET_VAR", raising=False)
@@ -663,9 +644,7 @@ unset_with_default = "${{ANOTHER_UNSET:-my-default}}"
     assert config.stores["dev"].config["unset_with_default"] == "my-default"
 
 
-def test_env_var_expansion_unset_becomes_empty_string(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_env_var_expansion_unset_becomes_empty_string(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that ${VAR} without default becomes empty string when unset."""
     monkeypatch.delenv("UNSET_VAR", raising=False)
 
@@ -689,9 +668,7 @@ root_path = "{dev_path}"
     assert config.migrations_dir == "prefix--suffix"
 
 
-def test_env_var_expansion_in_nested_structures(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_env_var_expansion_in_nested_structures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that env vars are expanded in nested dicts and lists."""
     monkeypatch.setenv("STORE_PATH", "/data/metadata")
     monkeypatch.setenv("FALLBACK_STORE", "prod")
@@ -871,9 +848,7 @@ root_path = "{dev_path}"
         os.chdir(original_cwd)
 
 
-def test_config_file_attribute_none_when_no_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_config_file_attribute_none_when_no_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that config_file attribute is None when no config file is used."""
     import os
 
@@ -1113,9 +1088,7 @@ def test_store_config_type_is_lazy() -> None:
     )
 
     # Creating the config should succeed (no import yet)
-    assert (
-        metaxy_config.stores["bad_store"].type_path == "non_existent_package.BadClass"
-    )
+    assert metaxy_config.stores["bad_store"].type_path == "non_existent_package.BadClass"
 
     # Accessing the store should fail with an error that includes the store name
     with pytest.raises(InvalidConfigError, match="bad_store") as exc_info:
@@ -1207,7 +1180,5 @@ print("SUCCESS: Plugin correctly loaded config from METAXY_CONFIG")
         text=True,
     )
 
-    assert result.returncode == 0, (
-        f"Script failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
-    )
+    assert result.returncode == 0, f"Script failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
     assert "SUCCESS" in result.stdout

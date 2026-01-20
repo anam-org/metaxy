@@ -61,13 +61,8 @@ def test_push_graph_snapshot_stores_feature_schema(tmp_path: Path):
             assert "another_field" in schema["properties"]
 
             # Verify field descriptions are preserved
-            assert (
-                schema["properties"]["custom_field"]["description"] == "A custom field"
-            )
-            assert (
-                schema["properties"]["another_field"]["description"]
-                == "An integer field"
-            )
+            assert schema["properties"]["custom_field"]["description"] == "A custom field"
+            assert schema["properties"]["another_field"]["description"] == "An integer field"
 
             # Verify field types
             assert schema["properties"]["custom_field"]["type"] == "string"

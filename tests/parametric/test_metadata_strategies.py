@@ -78,9 +78,7 @@ def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:
             for field_name in field_names:
                 assert field_name in provenance
                 assert isinstance(provenance[field_name], str)
-                assert len(provenance[field_name]) > 0, (
-                    f"Field '{field_name}' should not be empty"
-                )
+                assert len(provenance[field_name]) > 0, f"Field '{field_name}' should not be empty"
 
     property_test()
 
@@ -178,17 +176,11 @@ def test_upstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> None
         assert EXPECTED_SYSTEM_COLUMNS.issubset(set(parent_df.columns))
 
         # Check provenance structure
-        assert parent_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct(
-            [pl.Field("parent_field", pl.String)]
-        )
+        assert parent_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct([pl.Field("parent_field", pl.String)])
 
         # Check versions are correct
-        assert parent_df[METAXY_FEATURE_VERSION].unique().to_list() == [
-            feature_versions["parent"]
-        ]
-        assert parent_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [
-            snapshot_version
-        ]
+        assert parent_df[METAXY_FEATURE_VERSION].unique().to_list() == [feature_versions["parent"]]
+        assert parent_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [snapshot_version]
 
     property_test()
 
@@ -258,33 +250,19 @@ def test_upstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) -> N
         assert 5 <= len(parent_a_df) <= 10
 
         # Both should have matching sample_uid values (for joins)
-        assert (
-            parent_a_df["sample_uid"].to_list() == parent_b_df["sample_uid"].to_list()
-        )
+        assert parent_a_df["sample_uid"].to_list() == parent_b_df["sample_uid"].to_list()
 
         # Check provenance structures are different
-        assert parent_a_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct(
-            [pl.Field("field_a", pl.String)]
-        )
-        assert parent_b_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct(
-            [pl.Field("field_b", pl.String)]
-        )
+        assert parent_a_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct([pl.Field("field_a", pl.String)])
+        assert parent_b_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct([pl.Field("field_b", pl.String)])
 
         # Check versions
-        assert parent_a_df[METAXY_FEATURE_VERSION].unique().to_list() == [
-            feature_versions["parent_a"]
-        ]
-        assert parent_b_df[METAXY_FEATURE_VERSION].unique().to_list() == [
-            feature_versions["parent_b"]
-        ]
+        assert parent_a_df[METAXY_FEATURE_VERSION].unique().to_list() == [feature_versions["parent_a"]]
+        assert parent_b_df[METAXY_FEATURE_VERSION].unique().to_list() == [feature_versions["parent_b"]]
 
         # Both should have same snapshot version
-        assert parent_a_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [
-            snapshot_version
-        ]
-        assert parent_b_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [
-            snapshot_version
-        ]
+        assert parent_a_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [snapshot_version]
+        assert parent_b_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [snapshot_version]
 
     property_test()
 
@@ -451,12 +429,8 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
             assert len(provenance["child_field"]) > 0, "Hash should not be empty"
 
         # Check version columns
-        assert downstream_df[METAXY_FEATURE_VERSION].unique().to_list() == [
-            feature_versions["child"]
-        ]
-        assert downstream_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [
-            snapshot_version
-        ]
+        assert downstream_df[METAXY_FEATURE_VERSION].unique().to_list() == [feature_versions["child"]]
+        assert downstream_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [snapshot_version]
 
     property_test()
 

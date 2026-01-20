@@ -29,9 +29,7 @@ class AppContext:
     all_projects: bool = False  # some CLI commands can work with all projects
 
     @classmethod
-    def set(
-        cls, config: "MetaxyConfig", cli_project: str | None, all_projects: bool = False
-    ) -> None:
+    def set(cls, config: "MetaxyConfig", cli_project: str | None, all_projects: bool = False) -> None:
         """Initialize the app context.
 
         Should be called at CLI startup.
@@ -42,9 +40,7 @@ class AppContext:
             all_projects: Whether to include all projects
         """
         if _app_context.get() is not None:
-            raise RuntimeError(
-                "AppContext already initialized. It is not allowed to call AppContext.set() again."
-            )
+            raise RuntimeError("AppContext already initialized. It is not allowed to call AppContext.set() again.")
         else:
             from metaxy import load_features
             from metaxy.config import MetaxyConfig
@@ -65,9 +61,7 @@ class AppContext:
         """
         ctx = _app_context.get()
         if ctx is None:
-            raise RuntimeError(
-                "CLI context not initialized. AppContext.set(config) should be called at CLI startup."
-            )
+            raise RuntimeError("CLI context not initialized. AppContext.set(config) should be called at CLI startup.")
         else:
             return ctx
 
@@ -79,9 +73,7 @@ class AppContext:
         """
         ctx = _app_context.get()
         if ctx is None:
-            raise RuntimeError(
-                "CLI context not initialized. AppContext.set(config) should be called at CLI startup."
-            )
+            raise RuntimeError("CLI context not initialized. AppContext.set(config) should be called at CLI startup.")
         else:
             _app_context.set(None)
 
@@ -137,9 +129,7 @@ class AppContext:
         Returns:
             Project name or None if not set
         """
-        return (
-            (self.cli_project or self.config.project) if not self.all_projects else None
-        )
+        return (self.cli_project or self.config.project) if not self.all_projects else None
 
     def get_required_project(self) -> str:
         """Get the project for commands that require a specific project.
@@ -157,8 +147,7 @@ class AppContext:
             from metaxy.cli.console import console
 
             console.print(
-                "[red]Error:[/red] This command requires a specific project. "
-                "Cannot use --all-projects flag.",
+                "[red]Error:[/red] This command requires a specific project. Cannot use --all-projects flag.",
                 style="bold",
             )
             raise SystemExit(1)

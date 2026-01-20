@@ -122,10 +122,7 @@ def calculate_provenance_by_field_polars(
         ```
     """
     if hash_algorithm not in _HASH_FUNCTION_MAP:
-        raise ValueError(
-            f"Hash algorithm {hash_algorithm} not supported. "
-            f"Supported: {list(_HASH_FUNCTION_MAP.keys())}"
-        )
+        raise ValueError(f"Hash algorithm {hash_algorithm} not supported. Supported: {list(_HASH_FUNCTION_MAP.keys())}")
 
     hash_fn = _HASH_FUNCTION_MAP[hash_algorithm]
 
@@ -148,17 +145,13 @@ def calculate_provenance_by_field_polars(
             upstream_fields = field_deps[upstream_feature_key]
             upstream_key_str = upstream_feature_key.to_string()
 
-            provenance_col_name = upstream_column_mapping.get(
-                upstream_key_str, METAXY_PROVENANCE_BY_FIELD
-            )
+            provenance_col_name = upstream_column_mapping.get(upstream_key_str, METAXY_PROVENANCE_BY_FIELD)
 
             for upstream_field in sorted(upstream_fields):
                 upstream_field_str = upstream_field.to_struct_key()
 
                 components.append(pl.lit(f"{upstream_key_str}/{upstream_field_str}"))
-                components.append(
-                    pl.col(provenance_col_name).struct.field(upstream_field_str)
-                )
+                components.append(pl.col(provenance_col_name).struct.field(upstream_field_str))
 
         # Concatenate and hash
         concat_expr = plh.concat_str(*components, separator="|")
@@ -173,9 +166,7 @@ def calculate_provenance_by_field_polars(
     # Create provenance struct
     provenance_expr = pl.struct(**field_exprs)
 
-    return joined_upstream_df.with_columns(
-        provenance_expr.alias(METAXY_PROVENANCE_BY_FIELD)
-    )
+    return joined_upstream_df.with_columns(provenance_expr.alias(METAXY_PROVENANCE_BY_FIELD))
 
 
 @composite
@@ -264,10 +255,7 @@ def feature_metadata_strategy(
 
     # Add provenance_by_field struct column
     # Use a custom strategy to ensure non-empty strings (hash values shouldn't be empty)
-    struct_fields = [
-        pl.Field(field_spec.key.to_struct_key(), pl.String)
-        for field_spec in feature_spec.fields
-    ]
+    struct_fields = [pl.Field(field_spec.key.to_struct_key(), pl.String) for field_spec in feature_spec.fields]
 
     # Create strategy that generates non-empty hash-like strings
     # Read hash truncation length from global config
@@ -287,9 +275,7 @@ def feature_metadata_strategy(
         column(
             name=METAXY_PROVENANCE_BY_FIELD,
             dtype=pl.Struct(struct_fields),
-            strategy=st.builds(
-                dict, **{field.name: hash_string_strategy for field in struct_fields}
-            ),
+            strategy=st.builds(dict, **{field.name: hash_string_strategy for field in struct_fields}),
             allow_null=False,
         )
     )
@@ -314,10 +300,7 @@ def feature_metadata_strategy(
     field_names = sorted([f.key.to_struct_key() for f in feature_spec.fields])
 
     # Concatenate all field hashes with separator
-    sample_components = [
-        pl.col(METAXY_PROVENANCE_BY_FIELD).struct.field(field_name)
-        for field_name in field_names
-    ]
+    sample_components = [pl.col(METAXY_PROVENANCE_BY_FIELD).struct.field(field_name) for field_name in field_names]
     sample_concat = plh.concat_str(*sample_components, separator="|")
 
     # Hash the concatenation using the same algorithm as the test
@@ -350,9 +333,7 @@ def feature_metadata_strategy(
     # If id_columns_df was provided, replace the generated ID columns with provided ones
     if id_columns_df is not None:
         # Drop the generated ID columns and add the provided ones
-        non_id_columns = [
-            col for col in df.columns if col not in feature_spec.id_columns
-        ]
+        non_id_columns = [col for col in df.columns if col not in feature_spec.id_columns]
         df = df.select(non_id_columns)
 
         # Add the provided ID columns
@@ -469,15 +450,11 @@ def upstream_metadata_strategy(
     num_base_rows = draw(st.integers(min_value=min_rows, max_value=max_rows))
 
     # Build a mapping from feature_dep.feature to FeatureDep for lineage info
-    feature_deps_by_key = {
-        dep.feature: dep for dep in (feature_plan.feature_deps or [])
-    }
+    feature_deps_by_key = {dep.feature: dep for dep in (feature_plan.feature_deps or [])}
 
     # Determine the shared ID columns (the columns after lineage transformation)
     # This is the input_id_columns from the plan
-    shared_id_columns = feature_plan.input_id_columns or list(
-        feature_plan.feature.id_columns
-    )
+    shared_id_columns = feature_plan.input_id_columns or list(feature_plan.feature.id_columns)
 
     # Generate a DataFrame with shared ID columns using Polars parametric testing
     shared_id_cols = [
@@ -516,11 +493,7 @@ def upstream_metadata_strategy(
 
         # Get the FeatureDep for this upstream to check lineage
         feature_dep = feature_deps_by_key.get(upstream_spec.key)
-        lineage_type = (
-            feature_dep.lineage.relationship.type
-            if feature_dep
-            else LineageRelationshipType.IDENTITY
-        )
+        lineage_type = feature_dep.lineage.relationship.type if feature_dep else LineageRelationshipType.IDENTITY
 
         # Get the columns shared between upstream and downstream
         # For aggregation: the aggregation columns (a subset of upstream ID columns)
@@ -532,9 +505,7 @@ def upstream_metadata_strategy(
             input_cols_for_dep = list(upstream_spec.id_columns)
 
         # Determine which shared columns exist in this upstream
-        cols_to_use = [
-            col for col in input_cols_for_dep if col in shared_id_columns_df.columns
-        ]
+        cols_to_use = [col for col in input_cols_for_dep if col in shared_id_columns_df.columns]
 
         if lineage_type == LineageRelationshipType.AGGREGATION:
             # For aggregation: need to generate multiple rows per shared ID group
@@ -549,14 +520,10 @@ def upstream_metadata_strategy(
             # Expand the shared ID columns by repeating each row
             base_shared_df = shared_id_columns_df.select(cols_to_use)
             # Use Polars native repeat to preserve types
-            expanded_shared_df = pl.concat(
-                [base_shared_df] * aggregation_multiplier, how="vertical"
-            ).sort(cols_to_use)
+            expanded_shared_df = pl.concat([base_shared_df] * aggregation_multiplier, how="vertical").sort(cols_to_use)
 
             # Generate extra ID columns that the upstream has but aren't shared
-            extra_id_columns = [
-                col for col in upstream_spec.id_columns if col not in cols_to_use
-            ]
+            extra_id_columns = [col for col in upstream_spec.id_columns if col not in cols_to_use]
 
             if extra_id_columns:
                 # Generate unique values for extra ID columns
@@ -578,9 +545,7 @@ def upstream_metadata_strategy(
                 extra_id_df = cast(pl.DataFrame, draw(extra_id_df_strategy))
 
                 # Combine shared and extra ID columns
-                upstream_id_df = pl.concat(
-                    [expanded_shared_df, extra_id_df], how="horizontal"
-                )
+                upstream_id_df = pl.concat([expanded_shared_df, extra_id_df], how="horizontal")
             else:
                 upstream_id_df = expanded_shared_df
 
@@ -590,9 +555,7 @@ def upstream_metadata_strategy(
             upstream_id_df = shared_id_columns_df.select(cols_to_use)
 
             # For upstreams with additional ID columns not in shared, generate them
-            extra_id_columns = [
-                col for col in upstream_spec.id_columns if col not in cols_to_use
-            ]
+            extra_id_columns = [col for col in upstream_spec.id_columns if col not in cols_to_use]
 
             if extra_id_columns:
                 extra_id_cols = [
@@ -612,9 +575,7 @@ def upstream_metadata_strategy(
                 )
                 extra_id_df = cast(pl.DataFrame, draw(extra_id_df_strategy))
 
-                upstream_id_df = pl.concat(
-                    [upstream_id_df, extra_id_df], how="horizontal"
-                )
+                upstream_id_df = pl.concat([upstream_id_df, extra_id_df], how="horizontal")
 
         df = draw(
             feature_metadata_strategy(
@@ -708,11 +669,7 @@ def downstream_metadata_strategy(
     upstream_data = draw(
         upstream_metadata_strategy(
             feature_plan,
-            feature_versions={
-                k: v
-                for k, v in feature_versions.items()
-                if k != feature_plan.feature.key.to_string()
-            },
+            feature_versions={k: v for k, v in feature_versions.items() if k != feature_plan.feature.key.to_string()},
             snapshot_version=snapshot_version,
             min_rows=min_rows,
             max_rows=max_rows,
@@ -769,9 +726,7 @@ def downstream_metadata_strategy(
     # Convert upstream_data keys from strings to FeatureKey objects and wrap in Narwhals
     # Keys are simple strings like "parent", "child" that need to be wrapped in a list
     # DataFrames need to be converted to LazyFrames and wrapped in Narwhals
-    upstream_dict = {
-        FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
-    }
+    upstream_dict = {FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()}
 
     # Load upstream with provenance calculation
     # Note: hash_length is read from MetaxyConfig.get().hash_truncation_length internally
@@ -795,9 +750,7 @@ def downstream_metadata_strategy(
     downstream_df = downstream_df.with_columns(
         nw.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
         nw.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
-        nw.lit(feature_plan.feature.feature_spec_version).alias(
-            METAXY_FEATURE_SPEC_VERSION
-        ),
+        nw.lit(feature_plan.feature.feature_spec_version).alias(METAXY_FEATURE_SPEC_VERSION),
         # Add data_version columns (default to provenance)
         nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
         nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),

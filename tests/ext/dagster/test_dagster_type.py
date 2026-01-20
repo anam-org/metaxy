@@ -120,9 +120,7 @@ class TestFeatureToDagsterType:
         dagster_type = feature_to_dagster_type(simple_feature)
         assert dagster_type.description == "A simple test feature."
 
-    def test_description_fallback_no_docstring(
-        self, feature_no_docstring: type[mx.BaseFeature]
-    ):
+    def test_description_fallback_no_docstring(self, feature_no_docstring: type[mx.BaseFeature]):
         """Test fallback description when feature has no docstring."""
         dagster_type = feature_to_dagster_type(feature_no_docstring)
         assert dagster_type.description is not None
@@ -131,9 +129,7 @@ class TestFeatureToDagsterType:
 
     def test_custom_description(self, simple_feature: type[mx.BaseFeature]):
         """Test that a custom description can be provided."""
-        dagster_type = feature_to_dagster_type(
-            simple_feature, description="Custom description"
-        )
+        dagster_type = feature_to_dagster_type(simple_feature, description="Custom description")
         assert dagster_type.description == "Custom description"
 
     def test_column_schema_metadata(self, simple_feature: type[mx.BaseFeature]):
@@ -152,16 +148,12 @@ class TestFeatureToDagsterType:
 
     def test_column_schema_disabled(self, simple_feature: type[mx.BaseFeature]):
         """Test that column schema can be disabled."""
-        dagster_type = feature_to_dagster_type(
-            simple_feature, inject_column_schema=False
-        )
+        dagster_type = feature_to_dagster_type(simple_feature, inject_column_schema=False)
         # metaxy/info is always present, but column schema should not be
         assert dagster_type.metadata is not None
         assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY not in dagster_type.metadata
 
-    def test_type_check_valid_polars_dataframe(
-        self, simple_feature: type[mx.BaseFeature]
-    ):
+    def test_type_check_valid_polars_dataframe(self, simple_feature: type[mx.BaseFeature]):
         """Test type check passes for Polars DataFrame."""
         dagster_type = feature_to_dagster_type(simple_feature)
         df = pl.DataFrame({"id": [1, 2], "name": ["a", "b"], "value": [1.0, 2.0]})
@@ -169,9 +161,7 @@ class TestFeatureToDagsterType:
         result = dagster_type.type_check(cast(Any, None), df)
         assert result.success is True
 
-    def test_type_check_valid_polars_lazyframe(
-        self, simple_feature: type[mx.BaseFeature]
-    ):
+    def test_type_check_valid_polars_lazyframe(self, simple_feature: type[mx.BaseFeature]):
         """Test type check passes for Polars LazyFrame."""
         dagster_type = feature_to_dagster_type(simple_feature)
         lf = pl.LazyFrame({"id": [1, 2], "name": ["a", "b"], "value": [1.0, 2.0]})
@@ -179,9 +169,7 @@ class TestFeatureToDagsterType:
         result = dagster_type.type_check(cast(Any, None), lf)
         assert result.success is True
 
-    def test_type_check_valid_pandas_dataframe(
-        self, simple_feature: type[mx.BaseFeature]
-    ):
+    def test_type_check_valid_pandas_dataframe(self, simple_feature: type[mx.BaseFeature]):
         """Test type check passes for Pandas DataFrame."""
         dagster_type = feature_to_dagster_type(simple_feature)
         df = pd.DataFrame({"id": [1, 2], "name": ["a", "b"], "value": [1.0, 2.0]})
@@ -296,17 +284,13 @@ class TestBuildColumnLineage:
         lineage = build_column_lineage(simple_feature)
         assert lineage is None
 
-    def test_builds_lineage_for_downstream(
-        self, downstream_feature: type[mx.BaseFeature]
-    ):
+    def test_builds_lineage_for_downstream(self, downstream_feature: type[mx.BaseFeature]):
         """Test that lineage is built for downstream features."""
         lineage = build_column_lineage(downstream_feature)
         assert lineage is not None
         assert isinstance(lineage, dg.TableColumnLineage)
 
-    def test_includes_pass_through_columns(
-        self, downstream_feature: type[mx.BaseFeature]
-    ):
+    def test_includes_pass_through_columns(self, downstream_feature: type[mx.BaseFeature]):
         """Test that pass-through columns are tracked."""
         lineage = build_column_lineage(downstream_feature)
         assert lineage is not None
@@ -320,9 +304,7 @@ class TestBuildColumnLineage:
         # 'id' is an ID column in both
         assert "id" in lineage.deps_by_column
 
-    def test_includes_system_columns_with_lineage(
-        self, downstream_feature: type[mx.BaseFeature]
-    ):
+    def test_includes_system_columns_with_lineage(self, downstream_feature: type[mx.BaseFeature]):
         """Test that system columns with lineage are tracked."""
         lineage = build_column_lineage(downstream_feature)
         assert lineage is not None
@@ -342,9 +324,7 @@ class TestColumnLineageInDagsterType:
         assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY in dagster_type.metadata
         assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY not in dagster_type.metadata
 
-    def test_lineage_for_downstream_feature(
-        self, downstream_feature: type[mx.BaseFeature]
-    ):
+    def test_lineage_for_downstream_feature(self, downstream_feature: type[mx.BaseFeature]):
         """Test that downstream features have lineage metadata."""
         dagster_type = feature_to_dagster_type(downstream_feature)
         assert dagster_type.metadata is not None
@@ -352,9 +332,7 @@ class TestColumnLineageInDagsterType:
 
     def test_lineage_disabled(self, downstream_feature: type[mx.BaseFeature]):
         """Test that column lineage can be disabled."""
-        dagster_type = feature_to_dagster_type(
-            downstream_feature, inject_column_lineage=False
-        )
+        dagster_type = feature_to_dagster_type(downstream_feature, inject_column_lineage=False)
         assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY not in (dagster_type.metadata or {})
 
 

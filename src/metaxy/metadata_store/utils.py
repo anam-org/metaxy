@@ -16,9 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 # Context variable for suppressing feature_version warning in migrations
-_suppress_feature_version_warning: ContextVar[bool] = ContextVar(
-    "_suppress_feature_version_warning", default=False
-)
+_suppress_feature_version_warning: ContextVar[bool] = ContextVar("_suppress_feature_version_warning", default=False)
 
 
 def is_local_path(path: str) -> bool:
@@ -136,9 +134,7 @@ def narwhals_expr_to_sql_predicate(
     *,
     dialect: str,
     extra_transforms: (
-        Callable[[exp.Expression], exp.Expression]
-        | Sequence[Callable[[exp.Expression], exp.Expression]]
-        | None
+        Callable[[exp.Expression], exp.Expression] | Sequence[Callable[[exp.Expression], exp.Expression]] | None
     ) = None,
 ) -> str:
     """Convert Narwhals filter expressions to a SQL WHERE clause predicate.
@@ -189,11 +185,7 @@ def narwhals_expr_to_sql_predicate(
         # 'status = \'active\''  (no quotes around column name)
         ```
     """
-    filter_list = (
-        list(filters)
-        if isinstance(filters, Sequence) and not isinstance(filters, nw.Expr)
-        else [filters]
-    )
+    filter_list = list(filters) if isinstance(filters, Sequence) and not isinstance(filters, nw.Expr) else [filters]
     if not filter_list:
         raise ValueError("narwhals_expr_to_sql_predicate expects at least one filter")
     sql = generate_sql(lambda lf: lf.filter(*filter_list), schema, dialect=dialect)
@@ -203,8 +195,7 @@ def narwhals_expr_to_sql_predicate(
     predicate_expr = _extract_where_expression(sql, dialect=dialect)
     if predicate_expr is None:
         raise RuntimeError(
-            f"Could not extract WHERE clause from generated SQL for filters: {filters}\n"
-            f"Generated SQL: {sql}"
+            f"Could not extract WHERE clause from generated SQL for filters: {filters}\nGenerated SQL: {sql}"
         )
 
     predicate_expr = simplify(predicate_expr)
@@ -214,9 +205,7 @@ def narwhals_expr_to_sql_predicate(
 
     # Apply extra transforms if provided
     if extra_transforms is not None:
-        transform_list = (
-            [extra_transforms] if callable(extra_transforms) else list(extra_transforms)
-        )
+        transform_list = [extra_transforms] if callable(extra_transforms) else list(extra_transforms)
         for transform in transform_list:
             predicate_expr = predicate_expr.transform(transform)
 

@@ -67,13 +67,9 @@ def load_module_entrypoint(
         with target_graph.use():
             importlib.import_module(module_path)
     except ImportError as e:
-        raise EntrypointLoadError(
-            f"Failed to import entrypoint module '{module_path}': {e}"
-        ) from e
+        raise EntrypointLoadError(f"Failed to import entrypoint module '{module_path}': {e}") from e
     except Exception as e:
-        raise EntrypointLoadError(
-            f"Error loading entrypoint module '{module_path}': {e}"
-        ) from e
+        raise EntrypointLoadError(f"Error loading entrypoint module '{module_path}': {e}") from e
 
 
 def load_entrypoints(
@@ -174,9 +170,7 @@ def load_package_entrypoints(
                 if callable(loaded):
                     loaded()
         except Exception as e:
-            raise EntrypointLoadError(
-                f"Failed to load package entrypoint '{ep.name}' ({ep.value}): {e}"
-            ) from e
+            raise EntrypointLoadError(f"Failed to load package entrypoint '{ep.name}' ({ep.value}): {e}") from e
 
 
 def load_env_entrypoints() -> None:
@@ -206,11 +200,7 @@ def load_env_entrypoints() -> None:
     """
 
     # Find all environment variables matching METAXY_ENTRYPOINT*
-    env_vars = {
-        key: value
-        for key, value in os.environ.items()
-        if key.startswith("METAXY_ENTRYPOINT")
-    }
+    env_vars = {key: value for key, value in os.environ.items() if key.startswith("METAXY_ENTRYPOINT")}
 
     if not env_vars:
         return

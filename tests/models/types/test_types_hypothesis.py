@@ -56,17 +56,13 @@ def key_parts_list(draw: st.DrawFn) -> list[str]:
     if n_parts == 1:
         return [first_part]
     # Remaining parts can start with letter, digit, or underscore
-    other_parts = draw(
-        st.lists(valid_other_key_part(), min_size=n_parts - 1, max_size=n_parts - 1)
-    )
+    other_parts = draw(st.lists(valid_other_key_part(), min_size=n_parts - 1, max_size=n_parts - 1))
     return [first_part] + other_parts
 
 
 # Strategy for generating unique lists of key parts
 @st.composite
-def unique_key_parts_lists(
-    draw: st.DrawFn, min_size: int = 1, max_size: int = 3
-) -> list[list[str]]:
+def unique_key_parts_lists(draw: st.DrawFn, min_size: int = 1, max_size: int = 3) -> list[list[str]]:
     """Generate a list of unique key parts lists."""
     n_keys = draw(st.integers(min_value=min_size, max_value=max_size))
 
@@ -408,9 +404,7 @@ class TestFeatureSpecProperties:
         unique_parts=unique_key_parts_lists(min_size=1, max_size=3),
     )
     @settings(max_examples=50)
-    def test_feature_spec_with_fields(
-        self, key_data: Any, unique_parts: list[list[str]]
-    ):
+    def test_feature_spec_with_fields(self, key_data: Any, unique_parts: list[list[str]]):
         """Test SampleFeatureSpec with fields using coercible keys."""
         # Convert unique parts to various formats
         fields = []
@@ -423,9 +417,7 @@ class TestFeatureSpecProperties:
             else:
                 field_key = FieldKey(parts)  # FieldKey instance
 
-            fields.append(
-                FieldSpec(key=field_key, code_version="1", deps=SpecialFieldDep.ALL)
-            )
+            fields.append(FieldSpec(key=field_key, code_version="1", deps=SpecialFieldDep.ALL))
 
         spec = SampleFeatureSpec(key=key_data, fields=fields)
 
@@ -485,9 +477,7 @@ class TestFeatureDepProperties:
         ),
     )
     @settings(max_examples=50)
-    def test_feature_dep_with_columns(
-        self, key_data: Any, columns: tuple[str, ...] | None
-    ):
+    def test_feature_dep_with_columns(self, key_data: Any, columns: tuple[str, ...] | None):
         """Test FeatureDep with column selection."""
         dep = FeatureDep(feature=key_data, columns=columns)
 
@@ -505,9 +495,7 @@ class TestFeatureDepProperties:
         ),
     )
     @settings(max_examples=50)
-    def test_feature_dep_with_rename(
-        self, key_data: Any, rename_pairs: list[tuple[str, str]]
-    ):
+    def test_feature_dep_with_rename(self, key_data: Any, rename_pairs: list[tuple[str, str]]):
         """Test FeatureDep with column renaming."""
         rename = dict(rename_pairs) if rename_pairs else None
 
@@ -520,9 +508,7 @@ class TestFeatureDepProperties:
     @settings(max_examples=50)
     def test_feature_dep_json_serialization(self, key_data: Any):
         """Test FeatureDep JSON serialization."""
-        dep = FeatureDep(
-            feature=key_data, columns=("col1", "col2"), rename={"col1": "new_col1"}
-        )
+        dep = FeatureDep(feature=key_data, columns=("col1", "col2"), rename={"col1": "new_col1"})
 
         # Serialize to JSON
         json_data = dep.model_dump(mode="json")

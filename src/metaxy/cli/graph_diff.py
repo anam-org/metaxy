@@ -121,9 +121,7 @@ def render(
     # Validate format
     valid_formats = ["terminal", "cards", "mermaid", "graphviz", "json", "yaml"]
     if format not in valid_formats:
-        console.print(
-            f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}"
-        )
+        console.print(f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}")
         raise SystemExit(1)
 
     # Resolve configuration from presets
@@ -153,9 +151,7 @@ def render(
 
     # Validate filtering options
     if (config.up is not None or config.down is not None) and config.feature is None:
-        console.print(
-            "[red]Error:[/red] --up and --down require --feature to be specified"
-        )
+        console.print("[red]Error:[/red] --up and --down require --feature to be specified")
         raise SystemExit(1)
 
     from metaxy.cli.context import AppContext
@@ -169,12 +165,8 @@ def render(
         # Resolve snapshot versions
         resolver = SnapshotResolver()
         try:
-            from_snapshot_version = resolver.resolve_snapshot(
-                from_snapshot, metadata_store, graph
-            )
-            to_snapshot_version = resolver.resolve_snapshot(
-                to_snapshot, metadata_store, graph
-            )
+            from_snapshot_version = resolver.resolve_snapshot(from_snapshot, metadata_store, graph)
+            to_snapshot_version = resolver.resolve_snapshot(to_snapshot, metadata_store, graph)
         except ValueError as e:
             console.print(f"[red]Error:[/red] {e}")
             raise SystemExit(1)
@@ -203,9 +195,7 @@ def render(
         graph_diff = differ.diff(from_snapshot_data, to_snapshot_data)
 
         # Create merged graph data
-        merged_data = differ.create_merged_graph_data(
-            from_snapshot_data, to_snapshot_data, graph_diff
-        )
+        merged_data = differ.create_merged_graph_data(from_snapshot_data, to_snapshot_data, graph_diff)
 
         # Apply graph slicing if requested
         if config.feature is not None:
@@ -256,13 +246,9 @@ def render(
             graph_data = GraphData.from_merged_diff(merged_data)
 
             if format == "cards":
-                renderer = CardsRenderer(
-                    graph_data=graph_data, config=config, theme=theme
-                )
+                renderer = CardsRenderer(graph_data=graph_data, config=config, theme=theme)
             elif format == "graphviz":
-                renderer = GraphvizRenderer(
-                    graph_data=graph_data, config=config, theme=theme
-                )
+                renderer = GraphvizRenderer(graph_data=graph_data, config=config, theme=theme)
             else:
                 console.print(f"[red]Error:[/red] Unknown format: {format}")
                 raise SystemExit(1)
@@ -287,9 +273,7 @@ def render(
             except Exception as e:
                 from metaxy.cli.utils import print_error
 
-                print_error(
-                    console, "Failed to write to file", e, prefix="[red]Error:[/red]"
-                )
+                print_error(console, "Failed to write to file", e, prefix="[red]Error:[/red]")
                 raise SystemExit(1)
         else:
             # Print to stdout using data_console

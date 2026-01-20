@@ -68,10 +68,7 @@ def test_pipeline(tmp_path, snapshot):
     # After the stream separation changes, stdout contains ONLY the raw snapshot ID hash
     v1_snapshot = result.stdout.strip()
     # v1_snapshot should be the expected hash from the snapshot data
-    assert (
-        v1_snapshot
-        == "d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82"
-    )
+    assert v1_snapshot == "d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82"
 
     # Step 2: Run pipeline with STAGE=1
     result = subprocess.run(
@@ -82,9 +79,7 @@ def test_pipeline(tmp_path, snapshot):
         env={**base_env, "STAGE": "1"},
         cwd=example_dir,
     )
-    assert result.returncode == 0, (
-        f"Stage 1 failed: {result.stderr}\nstdout: {result.stdout}"
-    )
+    assert result.returncode == 0, f"Stage 1 failed: {result.stderr}\nstdout: {result.stdout}"
     print(result.stdout)
     assert "Pipeline STAGE=1" in result.stdout
     assert "[OK] Stage 1 pipeline complete!" in result.stdout
@@ -107,9 +102,7 @@ def test_pipeline(tmp_path, snapshot):
 
     # Copy reference migration to temp test location
     reference_migration_path = example_dir / ".metaxy/migrations/example_migration.yaml"
-    assert reference_migration_path.exists(), (
-        f"Reference migration not found at {reference_migration_path}"
-    )
+    assert reference_migration_path.exists(), f"Reference migration not found at {reference_migration_path}"
 
     # Copy to test migrations dir for apply command
     test_migration_path = test_migrations_dir / "example_migration.yaml"
@@ -123,9 +116,7 @@ def test_pipeline(tmp_path, snapshot):
     print(yaml.safe_dump(reference_yaml, sort_keys=False))
 
     # Snapshot test for deterministic fields (exclude id, created_at which have timestamps)
-    snapshot_migration = {
-        k: v for k, v in reference_yaml.items() if k not in ["id", "created_at"]
-    }
+    snapshot_migration = {k: v for k, v in reference_yaml.items() if k not in ["id", "created_at"]}
 
     assert snapshot_migration == snapshot
 
@@ -134,15 +125,13 @@ def test_pipeline(tmp_path, snapshot):
         ["migrations", "apply"],
         env={**base_env, "STAGE": "2"},
     )
-    assert result.returncode == 0, (
-        f"Migration apply failed: {result.stderr}\nstdout: {result.stdout}"
-    )
+    assert result.returncode == 0, f"Migration apply failed: {result.stderr}\nstdout: {result.stdout}"
     print(result.stderr)  # Migration status messages go to stderr now
 
     # Verify migration was applied successfully (check stderr for status messages)
-    assert (
-        "Migration completed" in result.stderr or "completed" in result.stderr.lower()
-    ), f"Expected migration completion message in stderr, got: {result.stderr}"
+    assert "Migration completed" in result.stderr or "completed" in result.stderr.lower(), (
+        f"Expected migration completion message in stderr, got: {result.stderr}"
+    )
 
     # Step 6: Run pipeline with STAGE=2 after migration
     # This should show NO recomputes because migration reconciled the field_provenance
@@ -154,9 +143,7 @@ def test_pipeline(tmp_path, snapshot):
         env={**base_env, "STAGE": "2"},
         cwd=example_dir,
     )
-    assert result.returncode == 0, (
-        f"Stage 2 (after migration) failed: {result.stderr}\nstdout: {result.stdout}"
-    )
+    assert result.returncode == 0, f"Stage 2 (after migration) failed: {result.stderr}\nstdout: {result.stdout}"
     print("\n--- Stage 2 after migration ---")
     print(result.stdout)
     assert "Pipeline STAGE=2" in result.stdout
@@ -164,7 +151,6 @@ def test_pipeline(tmp_path, snapshot):
 
     # The migration should have reconciled the child feature's field_provenance,
     # so no recomputation should be needed
-    assert (
-        "No changes detected (idempotent or migration worked correctly)"
-        in result.stdout
-    ), "Migration should have reconciled field_provenance, but child was recomputed"
+    assert "No changes detected (idempotent or migration worked correctly)" in result.stdout, (
+        "Migration should have reconciled field_provenance, but child was recomputed"
+    )

@@ -139,9 +139,7 @@ def build_column_lineage(
     for dep in feature_spec.deps:
         upstream_feature_cls = mx.get_feature_by_key(dep.feature)
         upstream_feature_spec = upstream_feature_cls.spec()
-        upstream_asset_key = get_asset_key_for_metaxy_feature_spec(
-            upstream_feature_spec
-        )
+        upstream_asset_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
         upstream_columns = set(upstream_feature_cls.model_fields.keys())
 
         # Build reverse rename map: downstream_name -> upstream_name
@@ -175,10 +173,7 @@ def build_column_lineage(
 
         # Process renamed columns (that aren't ID columns)
         for downstream_col, upstream_col in reverse_rename.items():
-            if (
-                downstream_col in downstream_columns
-                and downstream_col not in id_column_mapping
-            ):
+            if downstream_col in downstream_columns and downstream_col not in id_column_mapping:
                 if upstream_col in upstream_columns:
                     if downstream_col not in deps_by_column:
                         deps_by_column[downstream_col] = []
@@ -191,11 +186,7 @@ def build_column_lineage(
 
         # Process direct pass-through columns (same name in both, not renamed, ID, or system)
         # System columns are handled separately below since only some have lineage
-        handled_columns = (
-            set(id_column_mapping.keys())
-            | set(reverse_rename.keys())
-            | ALL_SYSTEM_COLUMNS
-        )
+        handled_columns = set(id_column_mapping.keys()) | set(reverse_rename.keys()) | ALL_SYSTEM_COLUMNS
         for col in downstream_columns - handled_columns:
             if col in upstream_columns:
                 if col not in deps_by_column:
@@ -301,9 +292,7 @@ def _collect_tail(lazy_df: nw.LazyFrame[Any], n_rows: int) -> pl.DataFrame:
     Returns:
         A Polars DataFrame containing the last n_rows.
     """
-    if hasattr(
-        lazy_df._compliant_frame, "tail"
-    ):  # there is no better way to check whether .tail is supported :)
+    if hasattr(lazy_df._compliant_frame, "tail"):  # there is no better way to check whether .tail is supported :)
         # Polars and other backends that support tail()
         return lazy_df.tail(n_rows).collect().to_polars()
     else:
@@ -311,11 +300,7 @@ def _collect_tail(lazy_df: nw.LazyFrame[Any], n_rows: int) -> pl.DataFrame:
         # Sort descending by metaxy_created_at (latest first), take head(n_rows),
         # then sort ascending to restore chronological order
         return (
-            lazy_df.sort(METAXY_CREATED_AT, descending=True)
-            .head(n_rows)
-            .sort(METAXY_CREATED_AT)
-            .collect()
-            .to_polars()
+            lazy_df.sort(METAXY_CREATED_AT, descending=True).head(n_rows).sort(METAXY_CREATED_AT).collect().to_polars()
         )
 
 
@@ -392,9 +377,7 @@ def _prepare_dataframe_for_table_record(df: pl.DataFrame) -> pl.DataFrame:
             exprs.append(_truncate_list_expr(pl.col(col_name), alias=col_name))
         elif isinstance(dtype, pl.Array):
             # Array types: convert to list first, then truncate
-            exprs.append(
-                _truncate_list_expr(pl.col(col_name).arr.to_list(), alias=col_name)
-            )
+            exprs.append(_truncate_list_expr(pl.col(col_name).arr.to_list(), alias=col_name))
         elif dtype in (pl.Datetime, pl.Date, pl.Time, pl.Duration) or isinstance(
             dtype, (pl.Datetime, pl.Date, pl.Time, pl.Duration)
         ):
@@ -432,11 +415,7 @@ def _truncate_list_expr(list_expr: pl.Expr, alias: str, max_items: int = 2) -> p
 
     # Convert to JSON string via struct wrapper
     def to_json(expr: pl.Expr) -> pl.Expr:
-        return (
-            pl.struct(expr.alias("_"))
-            .struct.json_encode()
-            .str.extract(r'\{"_":(.*)\}', 1)
-        )
+        return pl.struct(expr.alias("_")).struct.json_encode().str.extract(r'\{"_":(.*)\}', 1)
 
     short_result = to_json(list_expr)
     # For truncated: insert ".." after the first half elements
@@ -450,9 +429,4 @@ def _truncate_list_expr(list_expr: pl.Expr, alias: str, max_items: int = 2) -> p
         "$1,..,",
     )
 
-    return (
-        pl.when(list_len <= max_items)
-        .then(short_result)
-        .otherwise(long_result)
-        .alias(alias)
-    )
+    return pl.when(list_len <= max_items).then(short_result).otherwise(long_result).alias(alias)

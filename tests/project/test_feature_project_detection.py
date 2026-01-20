@@ -99,17 +99,13 @@ def test_project_name_validation_empty() -> None:
 
 def test_project_name_validation_forward_slash() -> None:
     """Test that project names cannot contain forward slashes."""
-    with pytest.raises(
-        ValueError, match="project name .* cannot contain forward slashes"
-    ):
+    with pytest.raises(ValueError, match="project name .* cannot contain forward slashes"):
         MetaxyConfig(project="my/project")
 
 
 def test_project_name_validation_double_underscore() -> None:
     """Test that project names cannot contain double underscores."""
-    with pytest.raises(
-        ValueError, match="project name .* cannot contain double underscores"
-    ):
+    with pytest.raises(ValueError, match="project name .* cannot contain double underscores"):
         MetaxyConfig(project="my__project")
 
 
@@ -211,9 +207,7 @@ root_path = "{delta_path}"
     MetaxyConfig.reset()
 
 
-def test_project_override_via_env_var(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_project_override_via_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that METAXY_PROJECT env var overrides config file."""
     # Create config file with one project
     config_file = tmp_path / "metaxy.toml"
@@ -314,9 +308,7 @@ def test_feature_project_persists_across_graph_operations(
 
         # Store snapshot data for verification
         snapshot_project = snapshot_data[feature_key_str]["project"]
-        snapshot_tracking = snapshot_data[feature_key_str][
-            "metaxy_full_definition_version"
-        ]
+        snapshot_tracking = snapshot_data[feature_key_str]["metaxy_full_definition_version"]
 
         # For a proper test, we would need the feature to be importable,
         # but we can at least verify the snapshot data is correct

@@ -43,9 +43,7 @@ class CardsRenderer(BaseRenderer):
         edges_text = Text()
         if self.config.show_snapshot_version:
             snapshot_version = self._format_hash(filtered_graph.snapshot_version)
-            edges_text.append(
-                f"📊 Graph (snapshot: {snapshot_version})\n\n", style="bold"
-            )
+            edges_text.append(f"📊 Graph (snapshot: {snapshot_version})\n\n", style="bold")
         else:
             edges_text.append("📊 Graph\n\n", style="bold")
 
@@ -58,11 +56,7 @@ class CardsRenderer(BaseRenderer):
                 for dep_key in node.dependencies:
                     dep_node = filtered_graph.get_node(dep_key)
                     target_label = self._format_feature_key(dep_key)
-                    target_color = (
-                        self._get_status_color(dep_node.status)
-                        if dep_node
-                        else source_color
-                    )
+                    target_color = self._get_status_color(dep_node.status) if dep_node else source_color
                     edges_text.append(f"  {target_label} ", style=target_color)
                     edges_text.append("→", style="yellow bold")
                     edges_text.append(f" {source_label}\n", style=source_color)
@@ -145,10 +139,7 @@ class CardsRenderer(BaseRenderer):
 
         # Show version info
         if self.config.show_field_versions:
-            if (
-                field_node.status == NodeStatus.CHANGED
-                and field_node.old_version is not None
-            ):
+            if field_node.status == NodeStatus.CHANGED and field_node.old_version is not None:
                 # Show version transition for changed fields
                 old_v = self._format_hash(field_node.old_version)
                 new_v = self._format_hash(field_node.version)

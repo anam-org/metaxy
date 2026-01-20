@@ -64,9 +64,7 @@ def _write_feature_data(
         return pl.DataFrame(
             {
                 "id": rows,
-                "metaxy_provenance_by_field": [
-                    {"value": f"v{i}"} for i in range(len(rows))
-                ],
+                "metaxy_provenance_by_field": [{"value": f"v{i}"} for i in range(len(rows))],
             }
         )
 
@@ -103,9 +101,7 @@ class TestBuildMetaxyObservationJob:
         assert result.success
 
         # Check observation events - asset key is feature key due to metaxify
-        obs = instance.fetch_observations(
-            dg.AssetKey(["test", "obs_job", "a"]), limit=1
-        )
+        obs = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "a"]), limit=1)
         assert len(obs.records) == 1
         obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
         assert obs_meta["dagster/row_count"].value == 3
@@ -190,9 +186,7 @@ class TestBuildMetaxyObservationJob:
         )
         assert len(jobs) == 1
 
-        result = jobs[0].execute_in_process(
-            resources=custom_resources, instance=instance
-        )
+        result = jobs[0].execute_in_process(resources=custom_resources, instance=instance)
         assert result.success
 
     def test_handles_missing_feature(
@@ -215,9 +209,7 @@ class TestBuildMetaxyObservationJob:
         result = jobs[0].execute_in_process(resources=resources, instance=instance)
         assert result.success
 
-        obs = instance.fetch_observations(
-            dg.AssetKey(["test", "obs_job", "a"]), limit=1
-        )
+        obs = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "a"]), limit=1)
         assert len(obs.records) == 1
         obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
         assert obs_meta["dagster/row_count"].value == 0
@@ -306,8 +298,7 @@ class TestPartitionedObservationJob:
                     "id": rows,
                     "partition_date": [context.partition_key] * len(rows),
                     "metaxy_provenance_by_field": [
-                        {"value": f"v{i}", "partition_date": context.partition_key}
-                        for i in range(len(rows))
+                        {"value": f"v{i}", "partition_date": context.partition_key} for i in range(len(rows))
                     ],
                 }
             )
@@ -367,9 +358,7 @@ class TestPartitionedObservationJob:
         )
         assert result.success
 
-        obs = instance.fetch_observations(
-            dg.AssetKey(["test", "obs_job", "partitioned"]), limit=1
-        )
+        obs = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "partitioned"]), limit=1)
         assert len(obs.records) == 1
         obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
         # Total count across all partitions
@@ -419,16 +408,12 @@ class TestBuildMetaxyMultiObservationJob:
         assert result.success
 
         # Check observations for both features
-        obs_a_records = instance.fetch_observations(
-            dg.AssetKey(["test", "obs_job", "a"]), limit=1
-        )
+        obs_a_records = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "a"]), limit=1)
         assert len(obs_a_records.records) == 1
         obs_a_meta = obs_a_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
         assert obs_a_meta["dagster/row_count"].value == 3
 
-        obs_b_records = instance.fetch_observations(
-            dg.AssetKey(["test", "obs_job", "b"]), limit=1
-        )
+        obs_b_records = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "b"]), limit=1)
         assert len(obs_b_records.records) == 1
         obs_b_meta = obs_b_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
         assert obs_b_meta["dagster/row_count"].value == 2
@@ -529,9 +514,7 @@ class TestBuildMetaxyMultiObservationJob:
         result = job.execute_in_process(resources=resources, instance=instance)
         assert result.success
 
-        obs = instance.fetch_observations(
-            dg.AssetKey(["test", "obs_job", "a"]), limit=1
-        )
+        obs = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "a"]), limit=1)
         assert len(obs.records) == 1
         obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
         assert obs_meta["dagster/row_count"].value == 0
@@ -593,28 +576,18 @@ class TestBuildMetaxyMultiObservationJob:
         result = job.execute_in_process(
             resources=resources,
             instance=instance,
-            run_config={
-                "ops": {
-                    "observe_filtered_fanout": {
-                        "config": {"asset_keys": ["test/obs_job/a"]}
-                    }
-                }
-            },
+            run_config={"ops": {"observe_filtered_fanout": {"config": {"asset_keys": ["test/obs_job/a"]}}}},
         )
         assert result.success
 
         # Should have observation for feature_a
-        obs_a_records = instance.fetch_observations(
-            dg.AssetKey(["test", "obs_job", "a"]), limit=1
-        )
+        obs_a_records = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "a"]), limit=1)
         assert len(obs_a_records.records) == 1
         obs_a_meta = obs_a_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
         assert obs_a_meta["dagster/row_count"].value == 3
 
         # Should NOT have observation for feature_b (it was filtered out)
-        obs_b_records = instance.fetch_observations(
-            dg.AssetKey(["test", "obs_job", "b"]), limit=1
-        )
+        obs_b_records = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "b"]), limit=1)
         assert len(obs_b_records.records) == 0
 
     def test_runtime_config_with_invalid_asset_key_raises(
@@ -640,13 +613,7 @@ class TestBuildMetaxyMultiObservationJob:
         result = job.execute_in_process(
             resources=resources,
             instance=instance,
-            run_config={
-                "ops": {
-                    "observe_invalid_fanout": {
-                        "config": {"asset_keys": ["nonexistent/asset"]}
-                    }
-                }
-            },
+            run_config={"ops": {"observe_invalid_fanout": {"config": {"asset_keys": ["nonexistent/asset"]}}}},
             raise_on_error=False,
         )
         assert not result.success
@@ -928,8 +895,7 @@ class TestMultiObservationJobWithMetaxyPartition:
         # obs_us should see only US region rows (2 rows)
         obs_us_meta = obs_us_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
         assert obs_us_meta["dagster/row_count"].value == 2, (
-            f"Expected obs_us to see 2 rows (US region only), "
-            f"but got {obs_us_meta['dagster/row_count'].value}"
+            f"Expected obs_us to see 2 rows (US region only), but got {obs_us_meta['dagster/row_count'].value}"
         )
 
         obs_eu_records = instance.fetch_observations(dg.AssetKey("obs_eu"), limit=10)
@@ -939,8 +905,7 @@ class TestMultiObservationJobWithMetaxyPartition:
         # obs_eu should see only EU region rows (3 rows)
         obs_eu_meta = obs_eu_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
         assert obs_eu_meta["dagster/row_count"].value == 3, (
-            f"Expected obs_eu to see 3 rows (EU region only), "
-            f"but got {obs_eu_meta['dagster/row_count'].value}"
+            f"Expected obs_eu to see 3 rows (EU region only), but got {obs_eu_meta['dagster/row_count'].value}"
         )
 
     def test_multi_observation_job_metadata_shows_both_assets(

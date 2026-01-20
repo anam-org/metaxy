@@ -92,14 +92,10 @@ def test_default_fields_mapping_suffix_match():
 
     # Check fields have no explicit deps (will be resolved via FeatureDep.fields_mapping with suffix matching)
     french_field = DownstreamFeature.spec().fields_by_key[FieldKey(["french"])]
-    assert (
-        french_field.deps == []
-    )  # Uses default mapping with suffix matching from FeatureDep
+    assert french_field.deps == []  # Uses default mapping with suffix matching from FeatureDep
 
     frames_field = DownstreamFeature.spec().fields_by_key[FieldKey(["frames"])]
-    assert (
-        frames_field.deps == []
-    )  # Uses default mapping with suffix matching from FeatureDep
+    assert frames_field.deps == []  # Uses default mapping with suffix matching from FeatureDep
 
 
 def test_default_fields_mapping_no_match():
@@ -136,9 +132,7 @@ def test_default_fields_mapping_no_match():
 
     # Field should have no explicit deps (will be resolved at runtime)
     video_field = DownstreamFeature.spec().fields_by_key[FieldKey(["video"])]
-    assert (
-        video_field.deps == []
-    )  # Will fall back to ALL at runtime when no matches found
+    assert video_field.deps == []  # Will fall back to ALL at runtime when no matches found
 
 
 def test_default_fields_mapping_multiple_upstreams():

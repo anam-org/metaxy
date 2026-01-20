@@ -51,9 +51,7 @@ def _validate_field_dep_fields(
         if value == SpecialFieldDep.ALL.value:
             return SpecialFieldDep.ALL
         # Invalid string value - will be caught by Pydantic validation
-        raise ValueError(
-            f"String value must be {SpecialFieldDep.ALL.value}, got {value}"
-        )
+        raise ValueError(f"String value must be {SpecialFieldDep.ALL.value}, got {value}")
     # Validate as list of FieldKeys
     return TypeAdapter(list[FieldKey]).validate_python(value)
 
@@ -72,13 +70,8 @@ class FieldDep(BaseModel):
         def __init__(
             self,
             *,
-            feature: str
-            | Sequence[str]
-            | FeatureKey
-            | "FeatureSpec"
-            | type["BaseFeature"],
-            fields: list[CoercibleToFieldKey]
-            | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
+            feature: str | Sequence[str] | FeatureKey | "FeatureSpec" | type["BaseFeature"],
+            fields: list[CoercibleToFieldKey] | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
         ) -> None: ...
 
 

@@ -94,9 +94,7 @@ def observable_metaxy_asset(
             store: mx.MetadataStore = getattr(context.resources, store_resource_key)
 
             # Check for metaxy/partition metadata to apply filtering
-            metaxy_partition = enriched.metadata.get(
-                DAGSTER_METAXY_PARTITION_METADATA_KEY
-            )
+            metaxy_partition = enriched.metadata.get(DAGSTER_METAXY_PARTITION_METADATA_KEY)
             filters = build_metaxy_partition_filter(metaxy_partition)
 
             with store:

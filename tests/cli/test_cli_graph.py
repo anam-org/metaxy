@@ -250,14 +250,10 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
 
         # Extract snapshot version from stdout (just the raw hash)
         snapshot_version = push_result.stdout.strip()
-        assert snapshot_version, (
-            f"Could not find snapshot version in push output. Output: {push_result.stdout}"
-        )
+        assert snapshot_version, f"Could not find snapshot version in push output. Output: {push_result.stdout}"
 
         # Describe specific snapshot
-        result = metaxy_project.run_cli(
-            ["graph", "describe", "--snapshot", snapshot_version]
-        )
+        result = metaxy_project.run_cli(["graph", "describe", "--snapshot", snapshot_version])
 
         assert result.returncode == 0
         # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
@@ -336,9 +332,7 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
         assert "2" in describe_result.stderr
 
         # Step 4: Describe historical snapshot
-        describe_historical = metaxy_project.run_cli(
-            ["graph", "describe", "--snapshot", snapshot_version]
-        )
+        describe_historical = metaxy_project.run_cli(["graph", "describe", "--snapshot", snapshot_version])
         # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
         assert "Describing snapshot" in describe_historical.stderr
         assert snapshot_version in describe_historical.stderr
@@ -452,9 +446,7 @@ def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
             assert "depends on" in result.stdout
 
             # Test cards format shows edges
-            result_cards = metaxy_project.run_cli(
-                ["graph", "render", "--type", "cards"]
-            )
+            result_cards = metaxy_project.run_cli(["graph", "render", "--type", "cards"])
             assert result_cards.returncode == 0
             assert "video/files" in result_cards.stdout
             assert "video/processing" in result_cards.stdout
@@ -686,11 +678,7 @@ def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
             # Should show field dependency
             assert "frames" in result.stdout
             # Check for dependency indicator (emoji arrow or legacy arrow)
-            assert (
-                "video/files.path" in result.stdout
-                or "⬅️" in result.stdout
-                or "←" in result.stdout
-            )
+            assert "video/files.path" in result.stdout or "⬅️" in result.stdout or "←" in result.stdout
 
 
 def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject):
@@ -711,9 +699,7 @@ def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Test with no fields shown
-        result = metaxy_project.run_cli(
-            ["graph", "render", "--no-show-fields", "--no-show-snapshot-version"]
-        )
+        result = metaxy_project.run_cli(["graph", "render", "--no-show-fields", "--no-show-snapshot-version"])
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
@@ -1055,11 +1041,7 @@ def test_graph_push_multiple_features_metadata_changes(
             SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_b"]),
-                deps=[
-                    FeatureDep(
-                        feature=FeatureKey(["feature_a"]), rename={"value": "renamed_b"}
-                    )
-                ],
+                deps=[FeatureDep(feature=FeatureKey(["feature_a"]), rename={"value": "renamed_b"})],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
             ),
         ):
@@ -1070,9 +1052,7 @@ def test_graph_push_multiple_features_metadata_changes(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_c"]),
                 deps=[
-                    FeatureDep(
-                        feature=FeatureKey(["feature_a"]), columns=("value",)
-                    )  # Changed
+                    FeatureDep(feature=FeatureKey(["feature_a"]), columns=("value",))  # Changed
                 ],
                 fields=[FieldSpec(key=FieldKey(["output"]), code_version="1")],
             ),

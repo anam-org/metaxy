@@ -413,8 +413,6 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
 
     # Verify that different fields have different versions
     z_versions = versions["z"]
-    assert len(set(z_versions.values())) == 3, (
-        "All fields should have different versions"
-    )
+    assert len(set(z_versions.values())) == 3, "All fields should have different versions"
 
     assert versions == snapshot

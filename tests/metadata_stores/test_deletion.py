@@ -99,11 +99,7 @@ def test_soft_deleted_rows_filtered_by_default(
         assert active.filter(pl.col("sample_uid") == "a").is_empty()
         assert active[METAXY_DELETED_AT].is_null().all()
 
-        with_deleted = (
-            any_store.read_metadata(SoftDeleteFeature, include_soft_deleted=True)
-            .collect()
-            .to_polars()
-        )
+        with_deleted = any_store.read_metadata(SoftDeleteFeature, include_soft_deleted=True).collect().to_polars()
         assert set(with_deleted["sample_uid"]) == {"a", "b"}
         deleted_row = with_deleted.filter(pl.col("sample_uid") == "a")
         assert deleted_row[METAXY_DELETED_AT].is_null().any() is False
@@ -224,17 +220,11 @@ def test_write_delete_write_delete_sequence(
         any_store.write_metadata(WriteDeleteWriteDeleteFeature, write2_df)
         any_store.write_metadata(WriteDeleteWriteDeleteFeature, delete2_df)
 
-        active = (
-            any_store.read_metadata(WriteDeleteWriteDeleteFeature).collect().to_polars()
-        )
+        active = any_store.read_metadata(WriteDeleteWriteDeleteFeature).collect().to_polars()
         assert active.is_empty()
 
         with_deleted = (
-            any_store.read_metadata(
-                WriteDeleteWriteDeleteFeature, include_soft_deleted=True
-            )
-            .collect()
-            .to_polars()
+            any_store.read_metadata(WriteDeleteWriteDeleteFeature, include_soft_deleted=True).collect().to_polars()
         )
         assert len(with_deleted) == 1
         assert with_deleted["sample_uid"][0] == "y"
@@ -288,22 +278,13 @@ def test_soft_delete_historical_version_preserves_latest(
         assert active.is_empty()
 
         with_deleted = (
-            any_store.read_metadata(
-                VersionedFeature, include_soft_deleted=True, latest_only=False
-            )
+            any_store.read_metadata(VersionedFeature, include_soft_deleted=True, latest_only=False)
             .collect()
             .to_polars()
         )
-        non_deleted_values = with_deleted.filter(pl.col(METAXY_DELETED_AT).is_null())[
-            "value"
-        ].to_list()
+        non_deleted_values = with_deleted.filter(pl.col(METAXY_DELETED_AT).is_null())["value"].to_list()
         assert 2 in non_deleted_values
-        assert (
-            with_deleted.filter(pl.col(METAXY_DELETED_AT).is_not_null())
-            .filter(pl.col("value") == 1)
-            .height
-            >= 1
-        )
+        assert with_deleted.filter(pl.col(METAXY_DELETED_AT).is_not_null()).filter(pl.col("value") == 1).height >= 1
 
 
 def test_soft_delete_then_overwrite_restores_row(
@@ -351,22 +332,11 @@ def test_soft_delete_then_overwrite_restores_row(
         assert active[METAXY_DELETED_AT].is_null().all()
 
         with_deleted = (
-            any_store.read_metadata(
-                RestoreFeature, include_soft_deleted=True, latest_only=False
-            )
-            .collect()
-            .to_polars()
+            any_store.read_metadata(RestoreFeature, include_soft_deleted=True, latest_only=False).collect().to_polars()
         )
         assert 2 in set(with_deleted["value"])
-        assert (
-            with_deleted.filter(pl.col("value") == 1)
-            .filter(pl.col(METAXY_DELETED_AT).is_not_null())
-            .height
-            >= 1
-        )
-        assert (
-            with_deleted.filter(pl.col("value") == 2)[METAXY_DELETED_AT].is_null().all()
-        )
+        assert with_deleted.filter(pl.col("value") == 1).filter(pl.col(METAXY_DELETED_AT).is_not_null()).height >= 1
+        assert with_deleted.filter(pl.col("value") == 2)[METAXY_DELETED_AT].is_null().all()
 
 
 def test_hard_delete_memory_store_only(
@@ -397,11 +367,7 @@ def test_hard_delete_memory_store_only(
         remaining = any_store.read_metadata(UserProfile).collect().to_polars()
         assert set(remaining["sample_uid"]) == {"u1", "u2"}
 
-        with_deleted = (
-            any_store.read_metadata(UserProfile, include_soft_deleted=True)
-            .collect()
-            .to_polars()
-        )
+        with_deleted = any_store.read_metadata(UserProfile, include_soft_deleted=True).collect().to_polars()
         assert set(with_deleted["sample_uid"]) == {"u1", "u2", "u3"}
 
 
@@ -479,15 +445,10 @@ def test_hard_delete_historical_version_preserves_latest(
             latest_only=False,
         )
 
-        remaining = (
-            any_store.read_metadata(VersionedHardDeleteFeature).collect().to_polars()
-        )
+        remaining = any_store.read_metadata(VersionedHardDeleteFeature).collect().to_polars()
         assert remaining.height == 1
         assert remaining["value"].to_list() == [2]
-        assert (
-            METAXY_DELETED_AT not in remaining.columns
-            or remaining[METAXY_DELETED_AT].is_null().all()
-        )
+        assert METAXY_DELETED_AT not in remaining.columns or remaining[METAXY_DELETED_AT].is_null().all()
 
 
 def test_hard_delete_then_overwrite_restores_row(
@@ -522,9 +483,7 @@ def test_hard_delete_then_overwrite_restores_row(
             current_only=False,
         )
 
-        after_delete = (
-            any_store.read_metadata(RestoreHardDeleteFeature).collect().to_polars()
-        )
+        after_delete = any_store.read_metadata(RestoreHardDeleteFeature).collect().to_polars()
         assert after_delete.is_empty()
 
         replacement = make_value_df(
@@ -538,7 +497,4 @@ def test_hard_delete_then_overwrite_restores_row(
         active = any_store.read_metadata(RestoreHardDeleteFeature).collect().to_polars()
         assert active.height == 1
         assert active["value"].to_list() == [2]
-        assert (
-            METAXY_DELETED_AT not in active.columns
-            or active[METAXY_DELETED_AT].is_null().all()
-        )
+        assert METAXY_DELETED_AT not in active.columns or active[METAXY_DELETED_AT].is_null().all()

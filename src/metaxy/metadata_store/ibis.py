@@ -208,9 +208,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         return HashAlgorithm.MD5
 
     @contextmanager
-    def _create_versioning_engine(
-        self, plan: FeaturePlan
-    ) -> Iterator[IbisVersioningEngine]:
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[IbisVersioningEngine]:
         """Create provenance engine for Ibis backend as a context manager.
 
         Args:
@@ -225,8 +223,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         if self._conn is None:
             raise RuntimeError(
-                "Cannot create provenance engine: store is not open. "
-                "Ensure store is used as context manager."
+                "Cannot create provenance engine: store is not open. Ensure store is used as context manager."
             )
 
         # Create hash functions for Ibis expressions
@@ -284,9 +281,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
 
         if self._conn is None:
-            raise StoreNotOpenError(
-                "Ibis connection is not open. Store must be used as a context manager."
-            )
+            raise StoreNotOpenError("Ibis connection is not open. Store must be used as a context manager.")
         else:
             return self._conn  # ty: ignore[invalid-return-type]
 
@@ -319,9 +314,7 @@ class IbisMetadataStore(MetadataStore, ABC):
                 else:
                     # Use backend + params
                     # Get backend-specific connect function
-                    assert self.backend is not None, (
-                        "backend must be set if connection_string is None"
-                    )
+                    assert self.backend is not None, "backend must be set if connection_string is None"
                     backend_module = getattr(ibis, self.backend)
                     self._conn = backend_module.connect(**self.connection_params)
 
@@ -471,18 +464,14 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Handle empty filters - truncate entire table
         if not filter_list:
             if table_name not in self.conn.list_tables():
-                raise TableNotFoundError(
-                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}."
-                )
+                raise TableNotFoundError(f"Table '{table_name}' does not exist for feature {feature_key.to_string()}.")
             self.conn.truncate_table(table_name)  # ty: ignore[unresolved-attribute]
             return
 
         # Read and filter using store's lazy path to build WHERE clause
         filtered = self.read_metadata_in_store(feature_key, filters=filter_list)
         if filtered is None:
-            raise FeatureNotFoundError(
-                f"Feature {feature_key.to_string()} not found in store"
-            )
+            raise FeatureNotFoundError(f"Feature {feature_key.to_string()} not found in store")
 
         # Extract WHERE clause from compiled SELECT statement
         ibis_filtered = cast("ibis.expr.types.Table", filtered.to_native())
@@ -491,9 +480,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         dialect = self._sql_dialect
         predicate = _extract_where_expression(select_sql, dialect=dialect)
         if predicate is None:
-            raise ValueError(
-                f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}"
-            )
+            raise ValueError(f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}")
 
         # Generate and execute DELETE statement
         predicate = predicate.transform(_strip_table_qualifiers())
@@ -549,9 +536,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         # Apply feature_version filter (stays in SQL via Narwhals)
         if feature_version is not None:
-            nw_lazy = nw_lazy.filter(
-                nw.col("metaxy_feature_version") == feature_version
-            )
+            nw_lazy = nw_lazy.filter(nw.col("metaxy_feature_version") == feature_version)
 
         # Apply generic Narwhals filters (stays in SQL)
         if filters is not None:
@@ -565,9 +550,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
         return nw_lazy
 
-    def transform_after_read(
-        self, table: "ibis.Table", feature_key: "FeatureKey"
-    ) -> "ibis.Table":
+    def transform_after_read(self, table: "ibis.Table", feature_key: "FeatureKey") -> "ibis.Table":
         """Transform Ibis table before wrapping with Narwhals.
 
         Override in subclasses to apply backend-specific transformations.
@@ -585,9 +568,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         return table
 
-    def transform_before_write(
-        self, df: Frame, feature_key: "FeatureKey", table_name: str
-    ) -> Frame:
+    def transform_before_write(self, df: Frame, feature_key: "FeatureKey", table_name: str) -> Frame:
         """Transform DataFrame before writing to the store.
 
         Override in subclasses to apply backend-specific transformations.
@@ -628,9 +609,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         sanitized_info = sanitize_uri(backend_info)
         return f"{self.__class__.__name__}(backend={sanitized_info})"
 
-    def _get_store_metadata_impl(
-        self, feature_key: CoercibleToFeatureKey
-    ) -> dict[str, Any]:
+    def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
         """Return store metadata including table name.
 
         Args:

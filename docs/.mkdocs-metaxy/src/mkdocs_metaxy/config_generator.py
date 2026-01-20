@@ -167,9 +167,7 @@ def extract_field_info(
                             break
 
             # Check if it's a Pydantic model
-            if isinstance(field_type, type) and issubclass(
-                field_type, (BaseSettings, BaseModel)
-            ):
+            if isinstance(field_type, type) and issubclass(field_type, (BaseSettings, BaseModel)):
                 is_nested_model = True
         except (TypeError, AttributeError):
             pass
@@ -183,9 +181,7 @@ def extract_field_info(
         # Check for Pydantic sentinel values indicating no default
         from pydantic_core import PydanticUndefined
 
-        if (
-            default is Ellipsis or default is PydanticUndefined
-        ):  # Required field or no default
+        if default is Ellipsis or default is PydanticUndefined:  # Required field or no default
             default = None
             required = default is Ellipsis  # Only Ellipsis means required
         else:
@@ -440,9 +436,7 @@ def _generate_toml_field_lines(
     # Handle section header for nested fields
     if len(field["path"]) > 1:
         section_path = ".".join(field["path"][:-1])
-        full_section = (
-            f"{section_prefix}.{section_path}" if section_prefix else section_path
-        )
+        full_section = f"{section_prefix}.{section_path}" if section_prefix else section_path
         lines.append(f"{indent}[{full_section}]")
     elif section_prefix:
         # Top-level field with section prefix
@@ -526,9 +520,7 @@ def generate_env_var_section(
         Markdown string with environment variable documentation
     """
     lines = ["## Environment Variables", ""]
-    lines.append(
-        "All configuration options can be set via environment variables using the `METAXY_` prefix."
-    )
+    lines.append("All configuration options can be set via environment variables using the `METAXY_` prefix.")
     lines.append("For nested fields, use double underscores (`__`) as delimiters.")
     lines.append("")
 
@@ -663,9 +655,7 @@ def generate_individual_field_doc(
     lines.append("")
     lines.append("    ```toml")
     lines.append("")  # CRITICAL: Blank line after opening fence for proper rendering
-    lines.extend(
-        _generate_toml_field_lines(field, section_prefix="tool.metaxy", indent="    ")
-    )
+    lines.extend(_generate_toml_field_lines(field, section_prefix="tool.metaxy", indent="    "))
     lines.append("    ```")
     lines.append("")
 

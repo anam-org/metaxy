@@ -109,9 +109,7 @@ def ensure_hash_compatibility(hash1: str, hash2: str) -> bool:
 
 
 @nw.narwhalify
-def truncate_string_column(
-    df: nw.DataFrame[Any], column_name: str
-) -> nw.DataFrame[Any]:
+def truncate_string_column(df: nw.DataFrame[Any], column_name: str) -> nw.DataFrame[Any]:
     """Truncate hash values in a DataFrame column.
 
     Uses the global hash truncation setting from MetaxyConfig.
@@ -153,9 +151,7 @@ def truncate_struct_column(df: pl.DataFrame, struct_column: str) -> pl.DataFrame
 def truncate_struct_column(df: pl.LazyFrame, struct_column: str) -> pl.LazyFrame: ...
 
 
-def truncate_struct_column(
-    df: pl.DataFrame | pl.LazyFrame, struct_column: str
-) -> pl.DataFrame | pl.LazyFrame:
+def truncate_struct_column(df: pl.DataFrame | pl.LazyFrame, struct_column: str) -> pl.DataFrame | pl.LazyFrame:
     """Truncate hash values within a struct column.
 
     Uses the global hash truncation setting from MetaxyConfig.
@@ -188,9 +184,7 @@ def truncate_struct_column(
 
     # Only handle Polars DataFrames and LazyFrames (structs are Polars-only)
     if not isinstance(df, (pl.DataFrame, pl.LazyFrame)):
-        raise TypeError(
-            f"truncate_struct_column only supports Polars DataFrame/LazyFrame, got {type(df)}"
-        )
+        raise TypeError(f"truncate_struct_column only supports Polars DataFrame/LazyFrame, got {type(df)}")
 
     # For LazyFrame, we need to collect once to get field names
     if isinstance(df, pl.LazyFrame):
@@ -211,12 +205,7 @@ def truncate_struct_column(
     # Create expressions to extract and truncate each field
     field_exprs = []
     for field_name in field_names:
-        field_exprs.append(
-            pl.col(struct_column)
-            .struct.field(field_name)
-            .str.slice(0, length)
-            .alias(field_name)
-        )
+        field_exprs.append(pl.col(struct_column).struct.field(field_name).str.slice(0, length).alias(field_name))
 
     # Extract and truncate fields as separate columns
     df_with_fields = df.with_columns(field_exprs)

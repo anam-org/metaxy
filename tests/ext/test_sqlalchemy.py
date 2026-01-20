@@ -257,9 +257,7 @@ def test_get_features_sqlalchemy_metadata_explicit_project(config_project_a):
 
     # Get metadata for project_b even though current project is project_a
     store = config_project_a.get_store()
-    url, metadata = filter_feature_sqla_metadata(
-        store, SQLModel.metadata, project="project_b"
-    )
+    url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata, project="project_b")
 
     assert "project_b__feature" in metadata.tables
     assert "project_a__feature" not in metadata.tables
@@ -270,9 +268,7 @@ def test_get_features_sqlalchemy_metadata_no_filter(config_no_filter):
     from sqlmodel import SQLModel
 
     store = config_no_filter.get_store()
-    url, metadata = filter_feature_sqla_metadata(
-        store, SQLModel.metadata, filter_by_project=False
-    )
+    url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata, filter_by_project=False)
 
     # Should contain all features when filtering is disabled
     assert "project_a__feature" in metadata.tables
@@ -323,9 +319,7 @@ def test_get_store_sqlalchemy_url_named_store():
         assert url2 == "duckdb:///store2.db"
 
 
-@pytest.mark.skip(
-    reason="Function now requires IbisMetadataStore - non-Ibis stores are not supported"
-)
+@pytest.mark.skip(reason="Function now requires IbisMetadataStore - non-Ibis stores are not supported")
 def test_get_store_sqlalchemy_url_error_no_property():
     """Test error when store doesn't support sqlalchemy_url."""
     config = MetaxyConfig(
@@ -340,9 +334,7 @@ def test_get_store_sqlalchemy_url_error_no_property():
 
     with config.use():
         store = config.get_store("delta_store", expected_type=IbisMetadataStore)
-        with pytest.raises(
-            AttributeError, match="does not have a `sqlalchemy_url` property"
-        ):
+        with pytest.raises(AttributeError, match="does not have a `sqlalchemy_url` property"):
             get_system_slqa_metadata(store)
 
 
@@ -378,9 +370,7 @@ class TestProtocolParameter:
             assert url_default == "duckdb:///test.db"
 
             # With protocol override
-            url_override, _ = get_system_slqa_metadata(
-                store, protocol="clickhouse+native"
-            )
+            url_override, _ = get_system_slqa_metadata(store, protocol="clickhouse+native")
             assert url_override == "clickhouse+native:///test.db"
 
     def test_get_system_slqa_metadata_protocol_none_preserves_original(self):
@@ -412,9 +402,7 @@ class TestProtocolParameter:
         assert url_default.startswith("duckdb://")
 
         # With protocol override
-        url_override, metadata = filter_feature_sqla_metadata(
-            store, SQLModel.metadata, protocol="postgresql+psycopg2"
-        )
+        url_override, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata, protocol="postgresql+psycopg2")
         assert url_override.startswith("postgresql+psycopg2://")
         # Metadata should still be filtered correctly
         assert "project_a__feature" in metadata.tables
@@ -427,9 +415,7 @@ class TestProtocolParameter:
 
         # Create a mock store with a complex URL
         mock_store = MagicMock(spec=IbisMetadataStore)
-        mock_store.sqlalchemy_url = (
-            "clickhouse://user:pass@localhost:9000/mydb?secure=true"
-        )
+        mock_store.sqlalchemy_url = "clickhouse://user:pass@localhost:9000/mydb?secure=true"
 
         # Test protocol replacement preserves everything after ://
         url = _get_store_sqlalchemy_url(mock_store, protocol="clickhouse+native")
@@ -490,9 +476,7 @@ class TestProtocolParameter:
         mock_store.sqlalchemy_url = "clickhouse://user:pass@localhost:8443/mydb"
 
         # Test both protocol and port replacement
-        url = _get_store_sqlalchemy_url(
-            mock_store, protocol="clickhouse+native", port=9000
-        )
+        url = _get_store_sqlalchemy_url(mock_store, protocol="clickhouse+native", port=9000)
         assert url == "clickhouse+native://user:pass@localhost:9000/mydb"
 
     def test_port_override_preserves_other_components(self):
@@ -502,9 +486,7 @@ class TestProtocolParameter:
         from metaxy.ext.sqlalchemy.plugin import _get_store_sqlalchemy_url
 
         mock_store = MagicMock(spec=IbisMetadataStore)
-        mock_store.sqlalchemy_url = (
-            "clickhouse://user:pass@localhost:8443/mydb?secure=true"
-        )
+        mock_store.sqlalchemy_url = "clickhouse://user:pass@localhost:8443/mydb?secure=true"
 
         url = _get_store_sqlalchemy_url(mock_store, port=9000)
         assert url == "clickhouse://user:pass@localhost:9000/mydb?secure=true"

@@ -224,8 +224,7 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
             {
                 "sample_uid": sample_uids,
                 "metaxy_provenance_by_field": [
-                    {"frames": f"hash_frames_{i}", "audio": f"hash_audio_{i}"}
-                    for i in sample_uids
+                    {"frames": f"hash_frames_{i}", "audio": f"hash_audio_{i}"} for i in sample_uids
                 ],
             }
         )
@@ -239,16 +238,12 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
         with store:
             store.write_metadata(feature, payload)
             result = collect_to_polars(store.read_metadata(feature))
-            actual = result.sort("sample_uid").select(
-                ["sample_uid", "metaxy_provenance_by_field"]
-            )
+            actual = result.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"])
             expected = payload.sort("sample_uid")
             assert_frame_equal(actual, expected)
 
         assert _test_recorded_commands[:2] == ["INSTALL ducklake;", "LOAD ducklake;"]
-        assert any(
-            cmd.startswith("ATTACH 'ducklake:") for cmd in _test_recorded_commands
-        )
+        assert any(cmd.startswith("ATTACH 'ducklake:") for cmd in _test_recorded_commands)
         assert _test_recorded_commands[-1] == "USE lake;"
 
 
@@ -313,8 +308,7 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
                 {
                     "sample_uid": sample_uids,
                     "metaxy_provenance_by_field": [
-                        {"frames": f"hash_frames_{i}", "audio": f"hash_audio_{i}"}
-                        for i in sample_uids
+                        {"frames": f"hash_frames_{i}", "audio": f"hash_audio_{i}"} for i in sample_uids
                     ],
                 }
             )
@@ -322,9 +316,7 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
             upstream_b_data = pl.DataFrame(
                 {
                     "sample_uid": sample_uids,
-                    "metaxy_provenance_by_field": [
-                        {"default": f"hash_b_{i}"} for i in sample_uids
-                    ],
+                    "metaxy_provenance_by_field": [{"default": f"hash_b_{i}"} for i in sample_uids],
                 }
             )
 
@@ -338,15 +330,11 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
                 result_b = collect_to_polars(store.read_metadata(upstream_b))
 
                 assert_frame_equal(
-                    result_a.sort("sample_uid").select(
-                        ["sample_uid", "metaxy_provenance_by_field"]
-                    ),
+                    result_a.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"]),
                     upstream_a_data.sort("sample_uid"),
                 )
                 assert_frame_equal(
-                    result_b.sort("sample_uid").select(
-                        ["sample_uid", "metaxy_provenance_by_field"]
-                    ),
+                    result_b.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"]),
                     upstream_b_data.sort("sample_uid"),
                 )
 
@@ -354,9 +342,7 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
                 downstream_data = pl.DataFrame(
                     {
                         "sample_uid": sample_uids,
-                        "metaxy_provenance_by_field": [
-                            {"default": f"hash_d_{i}"} for i in sample_uids
-                        ],
+                        "metaxy_provenance_by_field": [{"default": f"hash_d_{i}"} for i in sample_uids],
                     }
                 )
 
@@ -365,9 +351,7 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
                 # Verify downstream feature can be read back
                 result_d = collect_to_polars(store.read_metadata(downstream))
                 assert_frame_equal(
-                    result_d.sort("sample_uid").select(
-                        ["sample_uid", "metaxy_provenance_by_field"]
-                    ),
+                    result_d.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"]),
                     downstream_data.sort("sample_uid"),
                 )
 
@@ -399,9 +383,7 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
                 # Verify updated metadata - should have num_samples + 1 total
                 result_updated = collect_to_polars(store.read_metadata(upstream_a))
                 assert len(result_updated) == num_samples + 1
-                assert set(result_updated["sample_uid"].to_list()) == set(
-                    range(1, num_samples + 2)
-                )
+                assert set(result_updated["sample_uid"].to_list()) == set(range(1, num_samples + 2))
 
             # Test 5: Verify persistence by reopening the store
             # Reopen store and verify data persisted through DuckLake
@@ -414,12 +396,8 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
             with store2:
                 # Verify we can still read all features after reopening
                 result_a2 = collect_to_polars(store2.read_metadata(upstream_a))
-                assert (
-                    len(result_a2) == num_samples + 1
-                )  # Original samples + 1 appended
-                assert set(result_a2["sample_uid"].to_list()) == set(
-                    range(1, num_samples + 2)
-                )
+                assert len(result_a2) == num_samples + 1  # Original samples + 1 appended
+                assert set(result_a2["sample_uid"].to_list()) == set(range(1, num_samples + 2))
 
                 result_b2 = collect_to_polars(store2.read_metadata(upstream_b))
                 assert len(result_b2) == num_samples

@@ -46,9 +46,7 @@ class MetaxyConfigPreprocessor(Preprocessor):
         #     key: value
         #     ...
         # (no closing ::: required - captures all indented lines after directive)
-        self.directive_pattern = re.compile(
-            r"^:::\s+metaxy-config\s*\n((?:[ \t]+.+\n)*)", re.MULTILINE
-        )
+        self.directive_pattern = re.compile(r"^:::\s+metaxy-config\s*\n((?:[ \t]+.+\n)*)", re.MULTILINE)
 
     def run(self, lines: list[str]) -> list[str]:
         """Process markdown lines.
@@ -75,12 +73,9 @@ class MetaxyConfigPreprocessor(Preprocessor):
             # Filter out empty lines for indentation calculation
             non_empty_lines = [line for line in lines_content if line.strip()]
             if non_empty_lines:
-                min_indent = min(
-                    len(line) - len(line.lstrip()) for line in non_empty_lines
-                )
+                min_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
                 directive_content = "\n".join(
-                    line[min_indent:] if len(line) >= min_indent else line
-                    for line in lines_content
+                    line[min_indent:] if len(line) >= min_indent else line for line in lines_content
                 ).strip()
             else:
                 directive_content = ""
@@ -96,10 +91,7 @@ class MetaxyConfigPreprocessor(Preprocessor):
                 # Log warning so strict mode fails
                 log.warning(f"Failed to process metaxy-config directive: {e}")
                 # Render error as admonition
-                error_msg = (
-                    f'!!! error "Failed to process metaxy-config directive"\n\n'
-                    f"    {str(e)}\n\n"
-                )
+                error_msg = f'!!! error "Failed to process metaxy-config directive"\n\n    {str(e)}\n\n'
                 result_lines.append(error_msg)
 
         # Add remaining text
@@ -128,9 +120,7 @@ class MetaxyConfigPreprocessor(Preprocessor):
             raise ValueError(f"Invalid YAML in directive: {e}") from e
 
         if not isinstance(params, dict):
-            raise ValueError(
-                f"Directive content must be a YAML dictionary, got {type(params)}"
-            )
+            raise ValueError(f"Directive content must be a YAML dictionary, got {type(params)}")
 
         class_path = params.get("class")
         if not class_path:
@@ -172,32 +162,23 @@ class MetaxyConfigPreprocessor(Preprocessor):
             env_nested_delimiter = model_config.get("env_nested_delimiter") or "__"
         else:
             env_prefix = getattr(model_config, "env_prefix", None) or "METAXY_"
-            env_nested_delimiter = (
-                getattr(model_config, "env_nested_delimiter", None) or "__"
-            )
+            env_nested_delimiter = getattr(model_config, "env_nested_delimiter", None) or "__"
 
         # Extract field information
         try:
             fields = extract_field_info(config_class)
         except Exception as e:
-            raise ValueError(
-                f"Failed to extract field info from {class_path}: {e}"
-            ) from e
+            raise ValueError(f"Failed to extract field info from {class_path}: {e}") from e
 
         # Helper to check if a nested field has children
-        def has_children(
-            field: dict[str, Any], all_fields: list[dict[str, Any]]
-        ) -> bool:
+        def has_children(field: dict[str, Any], all_fields: list[dict[str, Any]]) -> bool:
             """Check if a nested model field has child fields."""
             field_path = field["path"]
             for other in all_fields:
                 if other is field:
                     continue
                 # Check if other field is a child (starts with this field's path)
-                if (
-                    len(other["path"]) > len(field_path)
-                    and other["path"][: len(field_path)] == field_path
-                ):
+                if len(other["path"]) > len(field_path) and other["path"][: len(field_path)] == field_path:
                     return True
             return False
 
@@ -225,11 +206,7 @@ class MetaxyConfigPreprocessor(Preprocessor):
                 filtered_fields.append(field)
 
         # Build a map of nested model paths for depth calculation
-        nested_model_paths = {
-            tuple(field["path"]): field
-            for field in filtered_fields
-            if field["is_nested"]
-        }
+        nested_model_paths = {tuple(field["path"]): field for field in filtered_fields if field["is_nested"]}
 
         # Generate documentation for each field
         field_docs = []

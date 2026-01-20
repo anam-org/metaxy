@@ -73,9 +73,7 @@ def create_store_for_fallback(
     if store_type == "duckdb":
         db_path = tmp_path / f"fallback_test_{suffix}_{hash_algorithm.value}.duckdb"
         extensions: list[str] = (
-            ["hashfuncs"]
-            if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64]
-            else []
+            ["hashfuncs"] if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64] else []
         )
         return DuckDBMetadataStore(
             db_path,
@@ -225,11 +223,9 @@ def test_fallback_store_warning_issued(
                     result = primary_store.resolve_update(DownstreamFeature)
 
             # Collect field provenances for comparison
-            added_sorted = (
-                result.added.to_polars()
-                if isinstance(result.added, nw.DataFrame)
-                else result.added
-            ).sort("sample_uid")
+            added_sorted = (result.added.to_polars() if isinstance(result.added, nw.DataFrame) else result.added).sort(
+                "sample_uid"
+            )
             versions = added_sorted["metaxy_provenance_by_field"].to_list()
 
             results[(primary_store_type, fallback_store_type, versioning_engine)] = {
@@ -362,13 +358,9 @@ def test_fallback_store_switches_to_polars_components(
 
         # Collect field provenances from result
         added_local = (
-            result_local.added.to_polars()
-            if isinstance(result_local.added, nw.DataFrame)
-            else result_local.added
+            result_local.added.to_polars() if isinstance(result_local.added, nw.DataFrame) else result_local.added
         )
-        versions_local = added_local.sort("sample_uid")[
-            "metaxy_provenance_by_field"
-        ].to_list()
+        versions_local = added_local.sort("sample_uid")["metaxy_provenance_by_field"].to_list()
 
         results[(primary_store_type, fallback_store_type, "all_local")] = {
             "added": len(result_local.added),
@@ -412,9 +404,7 @@ def test_fallback_store_switches_to_polars_components(
             if isinstance(result_fallback.added, nw.DataFrame)
             else result_fallback.added
         )
-        versions_fallback = added_fallback.sort("sample_uid")[
-            "metaxy_provenance_by_field"
-        ].to_list()
+        versions_fallback = added_fallback.sort("sample_uid")["metaxy_provenance_by_field"].to_list()
 
         results[(primary_store_type, fallback_store_type, "with_fallback")] = {
             "added": len(result_fallback.added),
@@ -611,9 +601,7 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
 #    implementation check, and creating native (Ibis) samples in tests is non-trivial
 
 
-def test_fallback_stores_opened_on_demand_when_reading(
-    tmp_path, graph: FeatureGraph
-) -> None:
+def test_fallback_stores_opened_on_demand_when_reading(tmp_path, graph: FeatureGraph) -> None:
     """Test that fallback stores are opened on demand when reading metadata.
 
     This tests the fix for a bug where fallback stores were not opened when
@@ -663,9 +651,7 @@ def test_fallback_stores_opened_on_demand_when_reading(
         assert len(collected) == 3
 
 
-def test_get_store_metadata_respects_fallback_stores(
-    tmp_path, graph: FeatureGraph
-) -> None:
+def test_get_store_metadata_respects_fallback_stores(tmp_path, graph: FeatureGraph) -> None:
     """Test that get_store_metadata returns metadata from fallback store when feature is only there.
 
     This tests the fix for issue #549: MetadataStore.get_store_metadata should respect
@@ -690,9 +676,7 @@ def test_get_store_metadata_respects_fallback_stores(
 
     # Create stores with fallback chain
     fallback_store = DeltaMetadataStore(root_path=fallback_path)
-    primary_store = DeltaMetadataStore(
-        root_path=primary_path, fallback_stores=[fallback_store]
-    )
+    primary_store = DeltaMetadataStore(root_path=primary_path, fallback_stores=[fallback_store])
 
     # Write data to the fallback store only
     with fallback_store.open(mode="write"):
@@ -723,15 +707,11 @@ def test_get_store_metadata_respects_fallback_stores(
 
     # Test check_fallback=False - should return empty dict when feature not in primary
     with primary_store:
-        store_metadata_no_fallback = primary_store.get_store_metadata(
-            TestFeature, check_fallback=False
-        )
+        store_metadata_no_fallback = primary_store.get_store_metadata(TestFeature, check_fallback=False)
         assert store_metadata_no_fallback == {}
 
 
-def test_get_store_metadata_prefers_current_store(
-    tmp_path, graph: FeatureGraph
-) -> None:
+def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph) -> None:
     """Test that get_store_metadata returns metadata from current store when feature exists there.
 
     Even when a fallback store has the same feature, get_store_metadata should return
@@ -755,9 +735,7 @@ def test_get_store_metadata_prefers_current_store(
 
     # Create stores with fallback chain
     fallback_store = DeltaMetadataStore(root_path=fallback_path)
-    primary_store = DeltaMetadataStore(
-        root_path=primary_path, fallback_stores=[fallback_store]
-    )
+    primary_store = DeltaMetadataStore(root_path=primary_path, fallback_stores=[fallback_store])
 
     metadata = pl.DataFrame(
         {

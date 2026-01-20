@@ -38,9 +38,7 @@ def test_explicit_write_mode(tmp_path: Path) -> None:
         assert store._is_open
 
 
-def test_write_metadata_in_write_mode(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_write_metadata_in_write_mode(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test that write_metadata works when opened in WRITE mode."""
     db_path = tmp_path / "test.duckdb"
     store = DuckDBMetadataStore(db_path, auto_create_tables=True)
@@ -63,9 +61,7 @@ def test_write_metadata_in_write_mode(
         assert result.height == 1
 
 
-def test_read_in_read_mode(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_read_in_read_mode(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test that read operations work in READ mode."""
     db_path = tmp_path / "test.duckdb"
 
@@ -98,9 +94,7 @@ def _read_from_store(db_path: Path, result_queue: Any) -> None:
         result_queue.put(("error", str(e)))
 
 
-def test_concurrent_read_access_duckdb(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_concurrent_read_access_duckdb(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test that multiple processes can read concurrently in READ mode."""
     db_path = tmp_path / "test.duckdb"
 
@@ -183,9 +177,7 @@ def _write_to_store(db_path: Path, sample_id: str, result_queue: Any) -> None:
         result_queue.put(("error", str(e)))
 
 
-def test_write_mode_exclusive_lock_duckdb(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_write_mode_exclusive_lock_duckdb(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test that WRITE mode prevents concurrent writes (exclusive lock).
 
     Note: This is a simplified test that just verifies WRITE mode opens successfully.
@@ -234,15 +226,10 @@ def test_mode_parameter_passed_to_open(tmp_path: Path) -> None:
     with store2.open("write"):
         # Check that read_only flag is not set (WRITE mode)
         # Note: the flag may be removed by open() or set to False
-        assert (
-            "read_only" not in store2.connection_params
-            or store2.connection_params.get("read_only") is False
-        )
+        assert "read_only" not in store2.connection_params or store2.connection_params.get("read_only") is False
 
 
-def test_delta_store_modes(
-    test_graph, test_features: dict[str, Any], tmp_path: Path
-) -> None:
+def test_delta_store_modes(test_graph, test_features: dict[str, Any], tmp_path: Path) -> None:
     """Test that DeltaMetadataStore works with explicit modes."""
     store_read = DeltaMetadataStore(root_path=tmp_path / "delta_read")
     store_write = DeltaMetadataStore(root_path=tmp_path / "delta_write")
@@ -289,9 +276,7 @@ def test_mode_reset_between_opens(tmp_path: Path) -> None:
     assert not store._is_open
 
 
-def test_record_feature_graph_snapshot_uses_write_mode(
-    tmp_path: Path, test_graph
-) -> None:
+def test_record_feature_graph_snapshot_uses_write_mode(tmp_path: Path, test_graph) -> None:
     """Test that push_graph_snapshot works in WRITE mode."""
     db_path = tmp_path / "test.duckdb"
 
@@ -303,9 +288,7 @@ def test_record_feature_graph_snapshot_uses_write_mode(
         assert result.snapshot_version is not None
 
 
-def test_drop_feature_metadata_in_write_mode(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_drop_feature_metadata_in_write_mode(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test that drop_feature_metadata works in WRITE mode."""
     db_path = tmp_path / "test.duckdb"
 

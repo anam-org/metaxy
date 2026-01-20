@@ -52,9 +52,7 @@ class VideoAnalysis(
         id_columns=["video_id"],
         deps=[
             FeatureDep(feature=RawVideo),  # Required - defines sample universe
-            FeatureDep(
-                feature=AudioTranscription, optional=True
-            ),  # Optional enrichment
+            FeatureDep(feature=AudioTranscription, optional=True),  # Optional enrichment
             FeatureDep(feature=ManualAnnotations, optional=True),  # Optional enrichment
         ],
         fields=["analysis"],

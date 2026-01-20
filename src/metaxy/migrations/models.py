@@ -77,9 +77,7 @@ class Migration(pydantic.BaseModel, ABC):
     model_config = pydantic.ConfigDict(extra="forbid")
 
     # Use AliasChoices to accept both "id" (from generated YAML) and "migration_id" (from tests/manual YAML)
-    migration_id: str = PydanticField(
-        validation_alias=AliasChoices("id", "migration_id"), serialization_alias="id"
-    )
+    migration_id: str = PydanticField(validation_alias=AliasChoices("id", "migration_id"), serialization_alias="id")
     parent: str  # Parent migration ID or "initial"
     created_at: AwareDatetime
 
@@ -107,9 +105,7 @@ class Migration(pydantic.BaseModel, ABC):
         pass
 
     @abstractmethod
-    def get_affected_features(
-        self, store: "MetadataStore", project: str | None
-    ) -> list[str]:
+    def get_affected_features(self, store: "MetadataStore", project: str | None) -> list[str]:
         """Get list of affected feature keys in topological order.
 
         Args:
@@ -121,9 +117,7 @@ class Migration(pydantic.BaseModel, ABC):
         """
         pass
 
-    def get_status_info(
-        self, store: "MetadataStore", project: str | None
-    ) -> "MigrationStatusInfo":
+    def get_status_info(self, store: "MetadataStore", project: str | None) -> "MigrationStatusInfo":
         """Get comprehensive status information for this migration.
 
         This is a convenience method that combines information from:
@@ -146,29 +140,17 @@ class Migration(pydantic.BaseModel, ABC):
         expected_set = set(expected_features)
 
         # Get actual status from database
-        summary = storage.get_migration_summary(
-            self.migration_id, project, expected_features
-        )
+        summary = storage.get_migration_summary(self.migration_id, project, expected_features)
 
         # Filter completed/failed features to only include those in current YAML
         # This handles the case where YAML was modified to remove features
-        completed_features = [
-            fk for fk in summary["completed_features"] if fk in expected_set
-        ]
-        failed_features = {
-            fk: msg
-            for fk, msg in summary["failed_features"].items()
-            if fk in expected_set
-        }
+        completed_features = [fk for fk in summary["completed_features"] if fk in expected_set]
+        failed_features = {fk: msg for fk, msg in summary["failed_features"].items() if fk in expected_set}
 
         # Compute pending features
         completed_set = set(completed_features)
         failed_set = set(failed_features.keys())
-        pending_features = [
-            fk
-            for fk in expected_features
-            if fk not in completed_set and fk not in failed_set
-        ]
+        pending_features = [fk for fk in expected_features if fk not in completed_set and fk not in failed_set]
 
         return MigrationStatusInfo(
             migration_id=self.migration_id,
@@ -212,9 +194,7 @@ class Migration(pydantic.BaseModel, ABC):
                 module = importlib.import_module(module_path)
                 op_cls = getattr(module, class_name)
             except (ImportError, AttributeError) as e:
-                raise ValueError(
-                    f"Failed to import operation class '{op_config.type}': {e}"
-                ) from e
+                raise ValueError(f"Failed to import operation class '{op_config.type}': {e}") from e
 
             # Pass the entire dict to the operation class (which inherits from BaseSettings)
             # BaseSettings will extract the fields it needs and read from env vars
@@ -265,9 +245,7 @@ class DiffMigration(Migration):
     """
 
     # Discriminator field for polymorphic deserialization
-    migration_type: Literal["metaxy.migrations.models.DiffMigration"] = (
-        "metaxy.migrations.models.DiffMigration"
-    )
+    migration_type: Literal["metaxy.migrations.models.DiffMigration"] = "metaxy.migrations.models.DiffMigration"
 
     # Stored fields - persisted to YAML in git
     from_snapshot_version: str
@@ -277,9 +255,7 @@ class DiffMigration(Migration):
     # Private attribute for caching computed graph diff
     _graph_diff_cache: "GraphDiff | None" = pydantic.PrivateAttr(default=None)
 
-    def _get_graph_diff(
-        self, store: "MetadataStore", project: str | None
-    ) -> "GraphDiff":
+    def _get_graph_diff(self, store: "MetadataStore", project: str | None) -> "GraphDiff":
         """Get or compute graph diff (cached).
 
         Args:
@@ -293,9 +269,7 @@ class DiffMigration(Migration):
             self._graph_diff_cache = self.compute_graph_diff(store, project)
         return self._graph_diff_cache
 
-    def get_affected_features(
-        self, store: "MetadataStore", project: str | None
-    ) -> list[str]:
+    def get_affected_features(self, store: "MetadataStore", project: str | None) -> list[str]:
         """Get affected features in topological order (computed on-demand).
 
         Args:
@@ -330,9 +304,7 @@ class DiffMigration(Migration):
 
         return [key.to_string() for key in sorted_keys]
 
-    def compute_graph_diff(
-        self, store: "MetadataStore", project: str | None
-    ) -> "GraphDiff":
+    def compute_graph_diff(self, store: "MetadataStore", project: str | None) -> "GraphDiff":
         """Compute GraphDiff on-demand from snapshot versions.
 
         Args:
@@ -351,15 +323,11 @@ class DiffMigration(Migration):
         differ = GraphDiffer()
 
         # Load from_snapshot data from store
-        from_snapshot_data = differ.load_snapshot_data(
-            store, self.from_snapshot_version
-        )
+        from_snapshot_data = differ.load_snapshot_data(store, self.from_snapshot_version)
 
         # Try to load to_snapshot from store, if it doesn't exist use active graph
         try:
-            to_snapshot_data = differ.load_snapshot_data(
-                store, self.to_snapshot_version
-            )
+            to_snapshot_data = differ.load_snapshot_data(store, self.to_snapshot_version)
         except ValueError:
             # Snapshot not recorded yet, use active graph
             active_graph = FeatureGraph.get_active()
@@ -424,9 +392,7 @@ class FullGraphMigration(Migration):
     from_snapshot_version: str | None = None  # Optional for cross-snapshot operations
     ops: list[dict[str, Any]]  # List of OperationConfig dicts
 
-    def get_affected_features(
-        self, store: "MetadataStore", project: str | None
-    ) -> list[str]:
+    def get_affected_features(self, store: "MetadataStore", project: str | None) -> list[str]:
         """Get all affected features from all operations (deduplicated).
 
         Args:

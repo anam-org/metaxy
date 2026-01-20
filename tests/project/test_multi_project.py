@@ -96,9 +96,7 @@ class TestProjectDetection:
                 # Create a feature with generic module name (no entry points for this module)
                 class TestFeature(
                     SampleFeature,
-                    spec=SampleFeatureSpec(
-                        key="test_feature", fields=[FieldSpec(key="field1")]
-                    ),
+                    spec=SampleFeatureSpec(key="test_feature", fields=[FieldSpec(key="field1")]),
                 ):
                     pass
 
@@ -231,10 +229,7 @@ class TestFeatureTrackingVersion:
 
             # Verify tracking version is computed correctly
             expected_tracking_version = TestFeature.full_definition_version()
-            assert (
-                feature_data["metaxy_full_definition_version"]
-                == expected_tracking_version
-            )
+            assert feature_data["metaxy_full_definition_version"] == expected_tracking_version
 
 
 class TestMultiProjectIsolation:
@@ -275,9 +270,7 @@ class TestMultiProjectIsolation:
             assert FeatureA.project != FeatureB.project
 
             # Verify they have different tracking versions
-            assert (
-                FeatureA.full_definition_version() != FeatureB.full_definition_version()
-            )
+            assert FeatureA.full_definition_version() != FeatureB.full_definition_version()
 
             # Verify snapshot includes both with correct projects
             snapshot = test_graph.to_snapshot()
@@ -314,9 +307,7 @@ class TestMultiProjectIsolation:
                 SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),  # Same key
-                    fields=[
-                        FieldSpec(key=FieldKey(["value"]), code_version="1")
-                    ],  # Same spec
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],  # Same spec
                 ),
             ):
                 pass
@@ -331,8 +322,7 @@ class TestMultiProjectIsolation:
 
         # Verify feature versions are the same (no computational change)
         assert (
-            snapshot1["test/feature"]["metaxy_feature_version"]
-            == snapshot2["test/feature"]["metaxy_feature_version"]
+            snapshot1["test/feature"]["metaxy_feature_version"] == snapshot2["test/feature"]["metaxy_feature_version"]
         )
 
 
@@ -366,23 +356,16 @@ class TestSystemTableRecording:
                 snapshot_version = result.snapshot_version
 
                 # Read the recorded features
-                features_df = storage.read_features(
-                    current=False, snapshot_version=snapshot_version
-                )
+                features_df = storage.read_features(current=False, snapshot_version=snapshot_version)
 
                 # Verify tracking version is recorded
                 assert "metaxy_full_definition_version" in features_df.columns
 
                 # Verify the recorded tracking version matches the computed one
-                rows = features_df.filter(
-                    features_df["feature_key"] == "test/feature"
-                ).to_dicts()
+                rows = features_df.filter(features_df["feature_key"] == "test/feature").to_dicts()
                 assert len(rows) == 1, f"Expected 1 row, got {len(rows)}: {rows}"
                 row = rows[0]
-                assert (
-                    row["metaxy_full_definition_version"]
-                    == TestFeature.full_definition_version()
-                )
+                assert row["metaxy_full_definition_version"] == TestFeature.full_definition_version()
                 assert row["project"] == "test_project"
 
 
@@ -427,9 +410,7 @@ class TestProjectValidation:
 
                 # Should raise error when writing to feature with different project
                 with patch("metaxy.config.MetaxyConfig.get", return_value=config):
-                    with pytest.raises(
-                        ValueError, match="Cannot write to feature .* from project"
-                    ):
+                    with pytest.raises(ValueError, match="Cannot write to feature .* from project"):
                         store.write_metadata(TestFeature, test_df)
 
                 # Should work with allow_cross_project_writes context

@@ -80,16 +80,12 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
     ) -> mx.MetadataStore:  # this property mostly exists to fix the type annotation
         return self.store  # ty: ignore[invalid-return-type]
 
-    def _feature_key_from_context(
-        self, context: dg.InputContext | dg.OutputContext
-    ) -> ValidatedFeatureKey:
+    def _feature_key_from_context(self, context: dg.InputContext | dg.OutputContext) -> ValidatedFeatureKey:
         if isinstance(context, dg.InputContext):
             assert context.upstream_output is not None
             assert context.upstream_output.definition_metadata is not None
             return mx.ValidatedFeatureKeyAdapter.validate_python(
-                context.upstream_output.definition_metadata[
-                    DAGSTER_METAXY_FEATURE_METADATA_KEY
-                ]
+                context.upstream_output.definition_metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY]
             )
         elif isinstance(context, dg.OutputContext):
             return mx.ValidatedFeatureKeyAdapter.validate_python(
@@ -131,16 +127,9 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             # (add_input_metadata internally uses asset_partition_key which fails with multiple)
             # TODO: raise an issue in Dagter
             # or implement our own observation logging for multiple partition keys
-            has_single_partition = (
-                context.has_asset_partitions
-                and len(list(context.asset_partition_keys)) == 1
-            )
-            if input_metadata and (
-                not context.has_asset_partitions or has_single_partition
-            ):
-                context.add_input_metadata(
-                    input_metadata, description="Metadata Store Info"
-                )
+            has_single_partition = context.has_asset_partitions and len(list(context.asset_partition_keys)) == 1
+            if input_metadata and (not context.has_asset_partitions or has_single_partition):
+                context.add_input_metadata(input_metadata, description="Metadata Store Info")
 
             # Build partition filters from context (handles partition_by and metaxy/partition)
             filters = build_partition_filter_from_input_context(context)
@@ -193,9 +182,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         # See: https://github.com/dagster-io/dagster/issues/17923
         existing_metadata = context.step_context.get_output_metadata(context.name)
         if existing_metadata and "dagster/row_count" in existing_metadata:
-            context.log.debug(
-                "Skipping runtime metadata logging - already logged via MaterializeResult"
-            )
+            context.log.debug("Skipping runtime metadata logging - already logged via MaterializeResult")
             return
 
         with self.metadata_store:
@@ -205,14 +192,10 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
                 feature = mx.get_feature_by_key(key)
 
                 # Get partition column from metadata (for Dagster partitions)
-                partition_col = context.definition_metadata.get(
-                    DAGSTER_METAXY_PARTITION_KEY
-                )
+                partition_col = context.definition_metadata.get(DAGSTER_METAXY_PARTITION_KEY)
 
                 # Get metaxy partition from metadata (for multi-asset logical partitions)
-                metaxy_partition = context.definition_metadata.get(
-                    DAGSTER_METAXY_PARTITION_METADATA_KEY
-                )
+                metaxy_partition = context.definition_metadata.get(DAGSTER_METAXY_PARTITION_METADATA_KEY)
 
                 # Build runtime metadata (handles reading and filtering internally)
                 runtime_metadata, _ = build_runtime_feature_metadata(
@@ -228,14 +211,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
                     feature,
                     filters=[nw.col(METAXY_MATERIALIZATION_ID) == context.run_id],
                 )
-                materialized_in_run = (
-                    mat_lazy_df.select(feature.spec().id_columns)
-                    .unique()
-                    .collect()
-                    .to_native()
-                )
-                context.add_output_metadata(
-                    {"metaxy/materialized_in_run": len(materialized_in_run)}
-                )
+                materialized_in_run = mat_lazy_df.select(feature.spec().id_columns).unique().collect().to_native()
+                context.add_output_metadata({"metaxy/materialized_in_run": len(materialized_in_run)})
             except FeatureNotFoundError:
                 pass

@@ -52,11 +52,7 @@ def pytest_runtest_setup(item):
 
     # Also clear any dynamically loaded feature modules from sys.modules
     # This prevents feature classes from previous tests persisting
-    modules_to_remove = [
-        name
-        for name in sys.modules.keys()
-        if name.startswith("features.") or name == "features"
-    ]
+    modules_to_remove = [name for name in sys.modules.keys() if name.startswith("features.") or name == "features"]
     for name in modules_to_remove:
         del sys.modules[name]
 
@@ -190,15 +186,9 @@ def test_graph_and_features():
 
     # Create features dict for easy access
     features = {
-        "UpstreamFeatureA": graph.features_by_key[
-            FeatureKey(["test_stores", "upstream_a"])
-        ],
-        "UpstreamFeatureB": graph.features_by_key[
-            FeatureKey(["test_stores", "upstream_b"])
-        ],
-        "DownstreamFeature": graph.features_by_key[
-            FeatureKey(["test_stores", "downstream"])
-        ],
+        "UpstreamFeatureA": graph.features_by_key[FeatureKey(["test_stores", "upstream_a"])],
+        "UpstreamFeatureB": graph.features_by_key[FeatureKey(["test_stores", "upstream_b"])],
+        "DownstreamFeature": graph.features_by_key[FeatureKey(["test_stores", "downstream"])],
     }
 
     yield graph, features
@@ -326,9 +316,7 @@ def clickhouse_server(tmp_path_factory):
         if process.poll() is not None:
             # Process died - get stderr output
             _, stderr = process.communicate()
-            pytest.skip(
-                f"ClickHouse server process terminated unexpectedly: {stderr.decode()[:500]}"
-            )
+            pytest.skip(f"ClickHouse server process terminated unexpectedly: {stderr.decode()[:500]}")
 
         # Try to connect to the port
         try:
@@ -348,9 +336,7 @@ def clickhouse_server(tmp_path_factory):
             error_msg = stderr.decode()[:500]
         except Exception:
             error_msg = "Could not get error output"
-        pytest.skip(
-            f"ClickHouse server port not ready. Last error: {last_error}. Stderr: {error_msg}"
-        )
+        pytest.skip(f"ClickHouse server port not ready. Last error: {last_error}. Stderr: {error_msg}")
 
     connection_string = f"clickhouse://localhost:{http_port}/default"
     try:

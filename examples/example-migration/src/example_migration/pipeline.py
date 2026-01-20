@@ -46,10 +46,7 @@ print(result.stdout)
 if "Identified: 0 new samples, 0 samples with new provenance_by_field" in result.stdout:
     print("No changes detected (idempotent or migration worked correctly)")
 
-if (
-    "changed samples" in result.stdout
-    and "0 samples with new provenance_by_field" not in result.stdout
-):
+if "changed samples" in result.stdout and "0 samples with new provenance_by_field" not in result.stdout:
     print("Note: Recomputation occurred (expected if algorithm changed)")
 
 print(f"\n[OK] Stage {stage} pipeline complete!")

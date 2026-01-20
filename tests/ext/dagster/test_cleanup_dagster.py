@@ -96,9 +96,7 @@ def test_delete_metadata_integration(feature_cls, tmp_path):
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     # Define a job with the delete op
-    @dg.job(
-        resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)}
-    )
+    @dg.job(resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)})
     def cleanup_job():
         mxd.delete_metadata()
 
@@ -148,11 +146,7 @@ def test_delete_metadata_integration(feature_cls, tmp_path):
         assert set(remaining_data["level"]) == {"info", "warn"}
 
         # Verify soft-deleted row is still in store when including deleted
-        all_data = (
-            store.read_metadata(feature_cls, include_soft_deleted=True)
-            .collect()
-            .to_polars()
-        )
+        all_data = store.read_metadata(feature_cls, include_soft_deleted=True).collect().to_polars()
         assert all_data.height == 3
 
 
@@ -163,9 +157,7 @@ def test_delete_metadata_integration_hard_delete(feature_cls, tmp_path):
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     # Define a job with the delete op
-    @dg.job(
-        resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)}
-    )
+    @dg.job(resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)})
     def hard_cleanup_job():
         mxd.delete_metadata()
 
@@ -210,9 +202,5 @@ def test_delete_metadata_integration_hard_delete(feature_cls, tmp_path):
         assert set(remaining_data["level"]) == {"info", "warn"}
 
         # Verify hard-deleted row is NOT in store even when including deleted
-        all_data = (
-            store.read_metadata(feature_cls, include_soft_deleted=True)
-            .collect()
-            .to_polars()
-        )
+        all_data = store.read_metadata(feature_cls, include_soft_deleted=True).collect().to_polars()
         assert all_data.height == 2  # Hard delete means it's gone

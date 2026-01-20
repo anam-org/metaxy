@@ -20,9 +20,7 @@ def test_ducklake_demo_preview():
         cwd=example_dir,
     )
 
-    assert result.returncode == 0, (
-        f"Demo failed: {result.stderr}\nstdout: {result.stdout}"
-    )
+    assert result.returncode == 0, f"Demo failed: {result.stderr}\nstdout: {result.stdout}"
     print(result.stdout)
 
     assert "DuckLake store initialised" in result.stdout

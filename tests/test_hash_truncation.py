@@ -156,9 +156,7 @@ class TestNarwhalsFunctions:
     def test_truncate_string_column(self):
         """Test truncating a string column containing hashes."""
         # Create test data with hash-like strings
-        df = pl.DataFrame(
-            {"hash_column": ["a" * 64, "b" * 64, "c" * 64], "other_column": [1, 2, 3]}
-        )
+        df = pl.DataFrame({"hash_column": ["a" * 64, "b" * 64, "c" * 64], "other_column": [1, 2, 3]})
 
         # No truncation when config is None
         MetaxyConfig.reset()
@@ -222,13 +220,7 @@ class TestNarwhalsFunctions:
             assert result_pl.height == 0
 
             # Empty DataFrame with struct column
-            df = pl.DataFrame(
-                {
-                    "metaxy_provenance_by_field": pl.Series(
-                        [], dtype=pl.Struct({"field1": pl.Utf8})
-                    )
-                }
-            )
+            df = pl.DataFrame({"metaxy_provenance_by_field": pl.Series([], dtype=pl.Struct({"field1": pl.Utf8}))})
 
             result_pl = truncate_struct_column(df, "metaxy_provenance_by_field")
             assert result_pl.height == 0
@@ -505,9 +497,7 @@ class TestMigrationCompatibility:
                     SampleFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["test", "feature"]),
-                        fields=[
-                            FieldSpec(key=FieldKey(["field1"]), code_version="2")
-                        ],  # Changed
+                        fields=[FieldSpec(key=FieldKey(["field1"]), code_version="2")],  # Changed
                     ),
                 ):
                     pass

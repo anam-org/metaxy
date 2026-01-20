@@ -55,9 +55,7 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
         migration_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "test_migration_001",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
             "from_snapshot_version": "a" * 64,
             "to_snapshot_version": "b" * 64,
@@ -110,9 +108,7 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
         migration1_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_001",
-            "created_at": datetime(
-                2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
             "from_snapshot_version": "a" * 64,
             "to_snapshot_version": "b" * 64,
@@ -127,9 +123,7 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
         migration2_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_002",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "migration_001",
             "from_snapshot_version": "b" * 64,
             "to_snapshot_version": "c" * 64,
@@ -183,9 +177,7 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
         migration_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "multi_op_migration",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
             "from_snapshot_version": "a" * 64,
             "to_snapshot_version": "b" * 64,
@@ -238,9 +230,7 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
         migration1_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_001",
-            "created_at": datetime(
-                2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
             "from_snapshot_version": "a" * 64,
             "to_snapshot_version": "b" * 64,
@@ -255,9 +245,7 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
         migration2_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_002",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
             "from_snapshot_version": "b" * 64,
             "to_snapshot_version": "c" * 64,
@@ -316,9 +304,7 @@ def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
             yaml.dump(migration_yaml, f)
 
         # Apply migration (will fail because snapshots don't exist)
-        result = metaxy_project.run_cli(
-            ["migrations", "apply", "--dry-run"], check=False
-        )
+        result = metaxy_project.run_cli(["migrations", "apply", "--dry-run"], check=False)
 
         # This particular error causes fatal exit before feature processing
         assert result.returncode == 1
@@ -329,9 +315,7 @@ def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
         # Verify actual error details are shown (snapshot-related errors)
         # Error message is "No features recorded for snapshot <hash>"
         assert "snapshot" in output.lower()
-        assert (
-            "no features recorded" in output.lower() or "cannot load" in output.lower()
-        )
+        assert "no features recorded" in output.lower() or "cannot load" in output.lower()
         # Should show file paths and line numbers from traceback
         assert ".py" in output and "line " in output
 
@@ -412,9 +396,7 @@ def test_migrations_apply_rerun_displays_reprocessing_message(
         assert result.returncode == 0
 
         # Apply with --rerun and --dry-run to see the message without executing
-        result = metaxy_project.run_cli(
-            ["migrations", "apply", "--rerun", "--dry-run"], check=False
-        )
+        result = metaxy_project.run_cli(["migrations", "apply", "--rerun", "--dry-run"], check=False)
 
         # Should show RERUN MODE banner
         assert "RERUN MODE" in result.stderr

@@ -106,9 +106,7 @@ import this_module_does_not_exist
 
     sys.path.insert(0, str(tmp_path))
     try:
-        with pytest.raises(
-            EntrypointLoadError, match="Failed to import entrypoint module"
-        ):
+        with pytest.raises(EntrypointLoadError, match="Failed to import entrypoint module"):
             load_module_entrypoint("test_bad_module.bad", graph=graph)
     finally:
         sys.path.remove(str(tmp_path))
@@ -302,9 +300,7 @@ def test_load_package_entrypoints_load_failure_raises(graph: FeatureGraph):
         mock_eps.select.return_value = [mock_ep]
         mock_entry_points.return_value = mock_eps
 
-        with pytest.raises(
-            EntrypointLoadError, match="Failed to load package entrypoint"
-        ):
+        with pytest.raises(EntrypointLoadError, match="Failed to load package entrypoint"):
             load_package_entrypoints(graph=graph)
 
 

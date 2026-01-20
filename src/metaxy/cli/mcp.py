@@ -22,8 +22,7 @@ def serve():
         from metaxy.ext.mcp import run_server
     except ImportError as e:
         console.print(
-            "[red]Error:[/red] MCP dependencies not installed. "
-            "Install with: [cyan]pip install metaxy[mcp][/cyan]"
+            "[red]Error:[/red] MCP dependencies not installed. Install with: [cyan]pip install metaxy[mcp][/cyan]"
         )
         raise SystemExit(1) from e
 

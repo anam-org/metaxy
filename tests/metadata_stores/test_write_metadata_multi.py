@@ -242,9 +242,7 @@ class TestReverseTopologicalOrder:
         # All features should have been written
         assert len(write_order) == 4
 
-    def test_writes_linear_chain_in_reverse_order(
-        self, store: DeltaMetadataStore, graph: FeatureGraph
-    ):
+    def test_writes_linear_chain_in_reverse_order(self, store: DeltaMetadataStore, graph: FeatureGraph):
         """Test a simple linear chain is written in reverse order: C -> B -> A for A -> B -> C."""
 
         class FeatureA(
@@ -277,15 +275,9 @@ class TestReverseTopologicalOrder:
             pass
 
         metadata = {
-            FeatureA: pl.DataFrame(
-                {"sample_uid": [1], "metaxy_provenance_by_field": [{"x": "hash1"}]}
-            ),
-            FeatureB: pl.DataFrame(
-                {"sample_uid": [2], "metaxy_provenance_by_field": [{"y": "hash2"}]}
-            ),
-            FeatureC: pl.DataFrame(
-                {"sample_uid": [3], "metaxy_provenance_by_field": [{"z": "hash3"}]}
-            ),
+            FeatureA: pl.DataFrame({"sample_uid": [1], "metaxy_provenance_by_field": [{"x": "hash1"}]}),
+            FeatureB: pl.DataFrame({"sample_uid": [2], "metaxy_provenance_by_field": [{"y": "hash2"}]}),
+            FeatureC: pl.DataFrame({"sample_uid": [3], "metaxy_provenance_by_field": [{"z": "hash3"}]}),
         }
 
         # Track write order
@@ -445,9 +437,7 @@ class TestMaterializationId:
 
         with patch.object(store, "write_metadata", side_effect=tracked_write):
             with store.allow_cross_project_writes():
-                store.write_metadata_multi(
-                    metadata, materialization_id=materialization_id
-                )
+                store.write_metadata_multi(metadata, materialization_id=materialization_id)
 
         # Verify materialization_id was passed
         assert len(write_calls) == 1
@@ -489,9 +479,7 @@ class TestMaterializationId:
 
         with patch.object(store, "write_metadata", side_effect=tracked_write):
             with store.allow_cross_project_writes():
-                store.write_metadata_multi(
-                    metadata, materialization_id=materialization_id
-                )
+                store.write_metadata_multi(metadata, materialization_id=materialization_id)
 
         # Verify materialization_id was passed to all writes
         assert len(write_calls) == 2
@@ -553,9 +541,7 @@ class TestDataIntegrity:
 class TestErrorHandling:
     """Test error handling for write_metadata_multi."""
 
-    def test_store_not_open_raises(
-        self, features_with_deps: dict[str, type[BaseFeature]], tmp_path
-    ):
+    def test_store_not_open_raises(self, features_with_deps: dict[str, type[BaseFeature]], tmp_path):
         """Test that calling write_metadata_multi on a closed store raises StoreNotOpenError."""
         from metaxy.metadata_store import StoreNotOpenError
 

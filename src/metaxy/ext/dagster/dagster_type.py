@@ -132,9 +132,7 @@ def feature_to_dagster_type(
 
     # Build metadata - start with custom metadata if provided
     final_metadata: dict[str, Any] = dict(metadata) if metadata else {}
-    final_metadata[DAGSTER_METAXY_INFO_METADATA_KEY] = build_feature_info_metadata(
-        feature_key
-    )
+    final_metadata[DAGSTER_METAXY_INFO_METADATA_KEY] = build_feature_info_metadata(feature_key)
     if inject_column_schema:
         column_schema = build_column_schema(feature_cls)
         if column_schema is not None:

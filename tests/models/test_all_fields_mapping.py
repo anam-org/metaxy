@@ -27,9 +27,7 @@ def test_all_fields_mapping_returns_all():
         BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
-            deps=[
-                FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())
-            ],
+            deps=[FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())],
             fields=[
                 FieldSpec(
                     key=FieldKey(["combined"]),
@@ -67,9 +65,7 @@ def test_fields_mapping_all_classmethod():
         BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
-            deps=[
-                FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())
-            ],
+            deps=[FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())],
             fields=[
                 FieldSpec(
                     key=FieldKey(["combined"]),
@@ -187,9 +183,7 @@ def test_all_fields_mapping_vs_explicit_all():
         BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "with_mapping"]),
-            deps=[
-                FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())
-            ],
+            deps=[FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())],
             fields=[
                 FieldSpec(
                     key=FieldKey(["field1"]),

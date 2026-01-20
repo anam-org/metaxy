@@ -52,9 +52,7 @@ It's a [Pydantic](https://docs.pydantic.dev/latest/) model.
 from metaxy import BaseFeature, FeatureSpec
 
 
-class VideoFeature(
-    BaseFeature, spec=FeatureSpec(key="/raw/video", id_columns=["video_id"])
-):
+class VideoFeature(BaseFeature, spec=FeatureSpec(key="/raw/video", id_columns=["video_id"])):
     path: str
 ```
 
@@ -71,9 +69,7 @@ Now let's define a child feature.
 ```py
 class Transcript(
     BaseFeature,
-    spec=FeatureSpec(
-        key="/processed/transcript", id_columns=["video_id"], deps=[VideoFeature]
-    ),
+    spec=FeatureSpec(key="/processed/transcript", id_columns=["video_id"], deps=[VideoFeature]),
 ):
     transcript_path: str
     speakers_json_path: str

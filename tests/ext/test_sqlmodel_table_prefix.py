@@ -344,9 +344,7 @@ class TestProtocolParameter:
                 value: str
 
             store = config.get_store(expected_type=IbisMetadataStore)
-            url, _ = filter_feature_sqlmodel_metadata(
-                store, SQLModel.metadata, protocol=None
-            )
+            url, _ = filter_feature_sqlmodel_metadata(store, SQLModel.metadata, protocol=None)
             assert url == "duckdb:///mydb.db"
 
     def test_protocol_override_with_table_prefix(self):
@@ -383,9 +381,7 @@ class TestProtocolParameter:
             store = config.get_store(expected_type=IbisMetadataStore)
 
             # With protocol override
-            url, metadata = filter_feature_sqlmodel_metadata(
-                store, SQLModel.metadata, protocol="postgresql+psycopg2"
-            )
+            url, metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata, protocol="postgresql+psycopg2")
 
             # Protocol should be replaced
             assert url.startswith("postgresql+psycopg2://")

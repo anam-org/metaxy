@@ -40,9 +40,7 @@ def find_free_port() -> int:
 class StoreCases:
     """Store configuration cases for parametrization."""
 
-    def case_duckdb(
-        self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict[str, Any]]:
+    def case_duckdb(self, tmp_path: Path, test_graph: FeatureGraph) -> tuple[type[MetadataStore], dict[str, Any]]:
         db_path = tmp_path / "test.duckdb"
         return (DuckDBMetadataStore, {"database": db_path})
 
@@ -207,9 +205,7 @@ def hash_algorithm(algo):
 
 
 @fixture
-def store_with_hash_algo_native(
-    any_store: MetadataStore, hash_algorithm: HashAlgorithm
-) -> MetadataStore:
+def store_with_hash_algo_native(any_store: MetadataStore, hash_algorithm: HashAlgorithm) -> MetadataStore:
     """Parametrized store with parametrized hash algorithm.
 
     Use with @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -220,9 +216,7 @@ def store_with_hash_algo_native(
     try:
         any_store.validate_hash_algorithm()
     except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {hash_algorithm} not supported by store {any_store.display()}"
-        )
+        pytest.skip(f"Hash algorithm {hash_algorithm} not supported by store {any_store.display()}")
     return any_store
 
 
@@ -238,9 +232,7 @@ def config_with_truncation(truncation_length):
             # Config is already set with the truncation length from the parameter
             pass
     """
-    config = MetaxyConfig.get().model_copy(
-        update={"hash_truncation_length": truncation_length}
-    )
+    config = MetaxyConfig.get().model_copy(update={"hash_truncation_length": truncation_length})
 
     with config.use():
         yield config

@@ -116,9 +116,7 @@ def upstream_downstream_v1():
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     yield temp_module.graph
     temp_module.cleanup()
 
@@ -152,9 +150,7 @@ def upstream_downstream_v2():
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     yield temp_module.graph
     temp_module.cleanup()
 
@@ -168,9 +164,7 @@ def test_basic_migration_flow(
     """Test basic end-to-end migration flow: detect → execute → verify."""
     # Step 1: Setup v1 data
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    SimpleV1 = simple_graph_v1.features_by_key[
-        FeatureKey(["test_integration", "simple"])
-    ]
+    SimpleV1 = simple_graph_v1.features_by_key[FeatureKey(["test_integration", "simple"])]
 
     with simple_graph_v1.use(), store_v1:
         # Write data
@@ -192,9 +186,7 @@ def test_basic_migration_flow(
 
     # Step 2: Migrate to v2 graph
     store_v2 = migrate_store_to_graph(store_v1, simple_graph_v2)
-    SimpleV2 = simple_graph_v2.features_by_key[
-        FeatureKey(["test_integration", "simple"])
-    ]
+    SimpleV2 = simple_graph_v2.features_by_key[FeatureKey(["test_integration", "simple"])]
 
     with simple_graph_v2.use(), store_v2.open("write"):
         # Step 3: Detect migration (BEFORE recording v2 snapshot)
@@ -233,10 +225,7 @@ def test_basic_migration_flow(
         assert result.features_completed == 0
         assert result.features_failed == 1
         assert "test_integration/simple" in result.errors
-        assert (
-            "Root features have user-defined field_provenance"
-            in result.errors["test_integration/simple"]
-        )
+        assert "Root features have user-defined field_provenance" in result.errors["test_integration/simple"]
 
         # Snapshot result
         result_summary = {
@@ -248,9 +237,7 @@ def test_basic_migration_flow(
         assert result_summary == snapshot(name="migration_result")
 
         # Step 6: Verify data unchanged (root feature cannot be reconciled)
-        final_data = collect_to_polars(
-            store_v2.read_metadata(SimpleV2, current_only=False)
-        )
+        final_data = collect_to_polars(store_v2.read_metadata(SimpleV2, current_only=False))
 
         # Should still have v1 data (root features can't auto-reconcile)
         assert len(final_data) == 3
@@ -266,12 +253,8 @@ def test_upstream_downstream_migration(
     """Test migration with upstream/downstream dependency chain."""
     # Step 1: Setup v1 data
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    UpstreamV1 = upstream_downstream_v1.features_by_key[
-        FeatureKey(["test_integration", "upstream"])
-    ]
-    DownstreamV1 = upstream_downstream_v1.features_by_key[
-        FeatureKey(["test_integration", "downstream"])
-    ]
+    UpstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "upstream"])]
+    DownstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v1.use(), store_v1:
         # Write upstream (root feature)
@@ -300,12 +283,8 @@ def test_upstream_downstream_migration(
 
     # Step 2: Migrate to v2 graph
     store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
-    UpstreamV2 = upstream_downstream_v2.features_by_key[
-        FeatureKey(["test_integration", "upstream"])
-    ]
-    upstream_downstream_v2.features_by_key[
-        FeatureKey(["test_integration", "downstream"])
-    ]
+    UpstreamV2 = upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "upstream"])]
+    upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v2.use(), store_v2.open("write"):
         # Step 3: Detect migration (before recording v2 snapshot)
@@ -353,10 +332,7 @@ def test_upstream_downstream_migration(
         # Upstream will fail (root feature), downstream should succeed
         assert result.status == "failed"  # Because upstream is root
         assert "test_integration/upstream" in result.errors
-        assert (
-            "Root features have user-defined field_provenance"
-            in result.errors["test_integration/upstream"]
-        )
+        assert "Root features have user-defined field_provenance" in result.errors["test_integration/upstream"]
 
         # Note: With the new minimal migration API, we can't manually select features to reconcile
         # The migration will try to reconcile ALL affected features (both upstream and downstream)
@@ -375,12 +351,8 @@ def test_migration_idempotency(
     """Test that migrations can be re-run safely (idempotent)."""
     # Setup v1 data with downstream
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    UpstreamV1 = upstream_downstream_v1.features_by_key[
-        FeatureKey(["test_integration", "upstream"])
-    ]
-    DownstreamV1 = upstream_downstream_v1.features_by_key[
-        FeatureKey(["test_integration", "downstream"])
-    ]
+    UpstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "upstream"])]
+    DownstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v1.use(), store_v1:
         upstream_data = pl.DataFrame(
@@ -401,12 +373,8 @@ def test_migration_idempotency(
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
-    UpstreamV2 = upstream_downstream_v2.features_by_key[
-        FeatureKey(["test_integration", "upstream"])
-    ]
-    upstream_downstream_v2.features_by_key[
-        FeatureKey(["test_integration", "downstream"])
-    ]
+    UpstreamV2 = upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "upstream"])]
+    upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v2.use(), store_v2.open("write"):
         # Update upstream manually
@@ -439,28 +407,17 @@ def test_migration_idempotency(
         executor = MigrationExecutor(storage)
 
         # Execute first time - will fail on upstream (root feature) and skip downstream due to dependency
-        result1 = executor.execute(
-            migration, store_v2, project="default", dry_run=False
-        )
+        result1 = executor.execute(migration, store_v2, project="default", dry_run=False)
         assert result1.status == "failed"  # Upstream will fail
-        assert (
-            result1.features_completed == 0
-        )  # Downstream skipped due to failed upstream
+        assert result1.features_completed == 0  # Downstream skipped due to failed upstream
         assert result1.features_failed == 1  # Only upstream failed
-        assert (
-            result1.features_skipped == 1
-        )  # Downstream skipped due to failed dependency
+        assert result1.features_skipped == 1  # Downstream skipped due to failed dependency
         assert "test_integration/upstream" in result1.errors
         assert "test_integration/downstream" in result1.errors
-        assert (
-            "Skipped due to failed dependencies"
-            in result1.errors["test_integration/downstream"]
-        )
+        assert "Skipped due to failed dependencies" in result1.errors["test_integration/downstream"]
 
         # Execute second time - same result since upstream still fails
-        result2 = executor.execute(
-            migration, store_v2, project="default", dry_run=False
-        )
+        result2 = executor.execute(migration, store_v2, project="default", dry_run=False)
         assert result2.status == "failed"  # Still fails on upstream
         assert result2.features_completed == 0  # Downstream still skipped
         assert result2.features_failed == 1  # Only upstream failed
@@ -475,12 +432,8 @@ def test_migration_dry_run(
     """Test dry-run mode doesn't modify data."""
     # Setup v1 data
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    UpstreamV1 = upstream_downstream_v1.features_by_key[
-        FeatureKey(["test_integration", "upstream"])
-    ]
-    DownstreamV1 = upstream_downstream_v1.features_by_key[
-        FeatureKey(["test_integration", "downstream"])
-    ]
+    UpstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "upstream"])]
+    DownstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v1.use(), store_v1:
         upstream_data = pl.DataFrame(
@@ -501,12 +454,8 @@ def test_migration_dry_run(
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
-    UpstreamV2 = upstream_downstream_v2.features_by_key[
-        FeatureKey(["test_integration", "upstream"])
-    ]
-    DownstreamV2 = upstream_downstream_v2.features_by_key[
-        FeatureKey(["test_integration", "downstream"])
-    ]
+    UpstreamV2 = upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "upstream"])]
+    DownstreamV2 = upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v2.use(), store_v2.open("write"):
         # Update upstream
@@ -535,9 +484,7 @@ def test_migration_dry_run(
         SystemTableStorage(store_v2).push_graph_snapshot()
 
         # Get initial downstream data AFTER upstream write and snapshot, BEFORE migration
-        initial_data = collect_to_polars(
-            store_v2.read_metadata(DownstreamV2, current_only=False)
-        )
+        initial_data = collect_to_polars(store_v2.read_metadata(DownstreamV2, current_only=False))
 
         # Test dry-run mode
         storage = SystemTableStorage(store_v2)
@@ -553,9 +500,7 @@ def test_migration_dry_run(
         assert result.features_skipped == 1  # Downstream skipped
 
         # Verify data unchanged - read in same context
-        final_data = collect_to_polars(
-            store_v2.read_metadata(DownstreamV2, current_only=False)
-        )
+        final_data = collect_to_polars(store_v2.read_metadata(DownstreamV2, current_only=False))
 
         assert len(final_data) == len(initial_data)
 
@@ -564,10 +509,7 @@ def test_migration_dry_run(
         final_sorted = final_data.sort("sample_uid")
 
         # Compare sample_uids
-        assert (
-            initial_sorted["sample_uid"].to_list()
-            == final_sorted["sample_uid"].to_list()
-        )
+        assert initial_sorted["sample_uid"].to_list() == final_sorted["sample_uid"].to_list()
 
         # Compare field_provenance (now sorted, so order-independent)
         initial_dvs = initial_sorted["metaxy_provenance_by_field"].to_list()
@@ -605,9 +547,7 @@ def test_field_dependency_change(tmp_path):
         ],
     )
 
-    temp_v1.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_v1_spec}
-    )
+    temp_v1.write_features({"Upstream": upstream_spec, "Downstream": downstream_v1_spec})
     graph_v1 = temp_v1.graph
 
     # Create v2: Downstream only depends on frames
@@ -630,9 +570,7 @@ def test_field_dependency_change(tmp_path):
         ],
     )
 
-    temp_v2.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_v2_spec}
-    )
+    temp_v2.write_features({"Upstream": upstream_spec, "Downstream": downstream_v2_spec})
     graph_v2 = temp_v2.graph
 
     # Setup v1 data
@@ -765,15 +703,11 @@ def test_feature_dependency_swap(tmp_path):
 
     with graph_v1.use(), store_v1:
         # Write both upstreams
-        data_a = pl.DataFrame(
-            {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "ha"}]}
-        )
+        data_a = pl.DataFrame({"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "ha"}]})
         data_a = add_metaxy_provenance_column(data_a, upstream_a_v1)
         store_v1.write_metadata(upstream_a_v1, data_a)
 
-        data_b = pl.DataFrame(
-            {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "hb"}]}
-        )
+        data_b = pl.DataFrame({"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "hb"}]})
         data_b = add_metaxy_provenance_column(data_b, upstream_b_v1)
         store_v1.write_metadata(upstream_b_v1, data_b)
 
@@ -812,9 +746,7 @@ def test_feature_dependency_swap(tmp_path):
 def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
     """Test that no migration is generated when nothing changed."""
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    SimpleV1 = simple_graph_v1.features_by_key[
-        FeatureKey(["test_integration", "simple"])
-    ]
+    SimpleV1 = simple_graph_v1.features_by_key[FeatureKey(["test_integration", "simple"])]
 
     with simple_graph_v1.use(), store:
         # Write data and record snapshot
@@ -843,9 +775,7 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
     """Test that adding a new feature doesn't trigger migration for it."""
     # Setup v1 data
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    SimpleV1 = simple_graph_v1.features_by_key[
-        FeatureKey(["test_integration", "simple"])
-    ]
+    SimpleV1 = simple_graph_v1.features_by_key[FeatureKey(["test_integration", "simple"])]
 
     with simple_graph_v1.use(), store_v1:
         data = pl.DataFrame(
@@ -932,9 +862,7 @@ def test_full_graph_migration_integration(tmp_path):
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
@@ -1062,9 +990,7 @@ def test_migration_rerun_flag(tmp_path):
         assert result2.rows_affected == 0  # But no new work done (skipped)
 
         # Execute third time with rerun=True - should re-process
-        result3 = executor.execute(
-            migration, store, "default", dry_run=False, rerun=True
-        )
+        result3 = executor.execute(migration, store, "default", dry_run=False, rerun=True)
         assert result3.status == "completed"
         assert result3.features_completed == 1
         assert result3.rows_affected == 5  # Work done again

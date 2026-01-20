@@ -5,9 +5,7 @@ from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 
 
-def test_push_graph_snapshot_stability(
-    store: MetadataStore, test_graph: FeatureGraph
-) -> None:
+def test_push_graph_snapshot_stability(store: MetadataStore, test_graph: FeatureGraph) -> None:
     """Test that push_graph_snapshot produces consistent snapshot_versions.
 
     Verifies that:
@@ -30,9 +28,7 @@ def test_push_graph_snapshot_stability(
             was_already_pushed_1 = result_1.already_pushed
 
             # Should not be recorded yet (first time)
-            assert not was_already_pushed_1, (
-                "First serialization should not be marked as already recorded"
-            )
+            assert not was_already_pushed_1, "First serialization should not be marked as already recorded"
 
             # Should match the graph's snapshot_version
             assert snapshot_version_1 == original_snapshot_version, (
@@ -45,9 +41,7 @@ def test_push_graph_snapshot_stability(
             was_already_pushed_2 = result_2.already_pushed
 
             # Should be marked as already recorded
-            assert was_already_pushed_2, (
-                "Second serialization should be marked as already recorded"
-            )
+            assert was_already_pushed_2, "Second serialization should be marked as already recorded"
 
             # Should produce the same snapshot_version
             assert snapshot_version_2 == snapshot_version_1, (
@@ -67,9 +61,7 @@ def test_push_graph_snapshot_stability(
             )
 
 
-def test_serialize_uses_to_snapshot(
-    store: MetadataStore, test_graph: FeatureGraph
-) -> None:
+def test_serialize_uses_to_snapshot(store: MetadataStore, test_graph: FeatureGraph) -> None:
     """Test that push_graph_snapshot correctly uses to_snapshot().
 
     Verifies that the serialization format matches what to_snapshot() produces.
@@ -100,9 +92,7 @@ def test_serialize_uses_to_snapshot(
             # Verify all features from snapshot_dict were recorded
             for feature_key_str, feature_data in snapshot_dict.items():
                 # Find matching record in versions_df
-                matching_rows = versions_df.filter(
-                    versions_df["feature_key"] == feature_key_str
-                )
+                matching_rows = versions_df.filter(versions_df["feature_key"] == feature_key_str)
 
                 assert matching_rows.height == 1, (
                     f"Expected exactly one record for {feature_key_str}, found {matching_rows.height}"
@@ -111,13 +101,12 @@ def test_serialize_uses_to_snapshot(
                 row = matching_rows.to_dicts()[0]
 
                 # Verify the data matches
-                assert (
-                    row["metaxy_feature_version"]
-                    == feature_data["metaxy_feature_version"]
-                ), f"Feature version mismatch for {feature_key_str}"
-                assert (
-                    row["feature_class_path"] == feature_data["feature_class_path"]
-                ), f"Feature class path mismatch for {feature_key_str}"
+                assert row["metaxy_feature_version"] == feature_data["metaxy_feature_version"], (
+                    f"Feature version mismatch for {feature_key_str}"
+                )
+                assert row["feature_class_path"] == feature_data["feature_class_path"], (
+                    f"Feature class path mismatch for {feature_key_str}"
+                )
                 assert row["metaxy_snapshot_version"] == snapshot_version, (
                     f"Snapshot version mismatch for {feature_key_str}"
                 )
@@ -140,9 +129,7 @@ def test_snapshot_version_deterministic_across_stores(
     snapshot_version_2 = graph.snapshot_version
 
     # Should be identical
-    assert snapshot_version_1 == snapshot_version_2, (
-        "snapshot_version should be deterministic"
-    )
+    assert snapshot_version_1 == snapshot_version_2, "snapshot_version should be deterministic"
 
     # Get snapshot dict and reconstruct
     snapshot_dict = graph.to_snapshot()
@@ -150,6 +137,4 @@ def test_snapshot_version_deterministic_across_stores(
     snapshot_version_3 = reconstructed_graph.snapshot_version
 
     # Should still be identical
-    assert snapshot_version_3 == snapshot_version_1, (
-        "Reconstructed graph should have same snapshot_version"
-    )
+    assert snapshot_version_3 == snapshot_version_1, "Reconstructed graph should have same snapshot_version"
