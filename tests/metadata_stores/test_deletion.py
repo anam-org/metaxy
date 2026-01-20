@@ -9,7 +9,6 @@ import polars as pl
 import pytest
 
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.pytest_helpers import skip_exception
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.constants import (
     METAXY_CREATED_AT,
@@ -243,7 +242,6 @@ def test_write_delete_write_delete_sequence(
         assert with_deleted[METAXY_DELETED_AT].is_not_null().all()
 
 
-@skip_exception(NotImplementedError, "unsupported delete store")
 def test_soft_delete_historical_version_preserves_latest(
     any_store: MetadataStore,
     base_time: datetime,
@@ -308,7 +306,6 @@ def test_soft_delete_historical_version_preserves_latest(
         )
 
 
-@skip_exception(NotImplementedError, "unsupported delete store")
 def test_soft_delete_then_overwrite_restores_row(
     any_store: MetadataStore,
     base_time: datetime,
@@ -372,7 +369,6 @@ def test_soft_delete_then_overwrite_restores_row(
         )
 
 
-@skip_exception(NotImplementedError, "unsupported delete store")
 def test_hard_delete_memory_store_only(
     any_store: MetadataStore,
     user_profile_df: pl.DataFrame,
@@ -409,7 +405,6 @@ def test_hard_delete_memory_store_only(
         assert set(with_deleted["sample_uid"]) == {"u1", "u2", "u3"}
 
 
-@skip_exception(NotImplementedError, "unsupported delete store")
 def test_hard_delete(
     any_store: MetadataStore,
     user_profile_df: pl.DataFrame,
@@ -441,7 +436,6 @@ def test_hard_delete(
         assert set(remaining["sample_uid"]) == {"u1", "u2"}
 
 
-@skip_exception(NotImplementedError, "unsupported delete store")
 def test_hard_delete_historical_version_preserves_latest(
     any_store: MetadataStore,
     base_time: datetime,
@@ -496,7 +490,6 @@ def test_hard_delete_historical_version_preserves_latest(
         )
 
 
-@skip_exception(NotImplementedError, "unsupported delete store")
 def test_hard_delete_then_overwrite_restores_row(
     any_store: MetadataStore,
     base_time: datetime,
