@@ -32,7 +32,7 @@ class DagsterStoreConfigCases:
         )
 
 
-@fixture(autouse=True)
+@fixture
 @parametrize_with_cases("store_config", cases=DagsterStoreConfigCases)
 def metaxy_config(store_config: mx.StoreConfig) -> Iterator[mx.MetaxyConfig]:
     """Parametrized metaxy config fixture.
@@ -41,7 +41,7 @@ def metaxy_config(store_config: mx.StoreConfig) -> Iterator[mx.MetaxyConfig]:
     - DeltaMetadataStore (file-based)
     - ClickHouseMetadataStore (SQL-based, requires clickhouse binary)
     """
-    with mx.MetaxyConfig(stores={"dev": store_config}).use() as config:
+    with mx.MetaxyConfig(project="test", stores={"dev": store_config}).use() as config:
         yield config
 
 

@@ -496,6 +496,23 @@ ValidatedFieldKeyAdapter: TypeAdapter[ValidatedFieldKey] = TypeAdapter(
 )
 
 
+# Dagster-compatible version: validates FeatureKey semantics but stores as list[str]
+# This is necessary because Dagster resolves types at import time and can't handle FeatureKey
+def _coerce_to_feature_key_list(value: Any) -> list[str]:
+    """Coerce to FeatureKey, validate, and return as list[str] for Dagster compatibility."""
+    feature_key = _coerce_to_feature_key(value)
+    return list(feature_key.parts)
+
+
+ValidatedFeatureKeyList: TypeAlias = Annotated[
+    list[str],
+    BeforeValidator(_coerce_to_feature_key_list),
+    Field(
+        description="Feature key as list of strings (e.g., ['user', 'profile']). Validates using FeatureKey rules."
+    ),
+]
+
+
 # Collection types for common patterns - automatically validate sequences
 # Pydantic will validate each element using ValidatedFeatureKey/ValidatedFieldKey
 ValidatedFeatureKeySequence: TypeAlias = Annotated[
