@@ -108,14 +108,10 @@ def test_push_graph_snapshot_tags_persist_across_pushes(tmp_path: Path):
 
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # First push
-            SystemTableStorage(store).push_graph_snapshot(
-                tags={"environment": "staging"}
-            )
+            SystemTableStorage(store).push_graph_snapshot(tags={"environment": "staging"})
 
             # Second push (no changes, shouldn't write new rows)
-            SystemTableStorage(store).push_graph_snapshot(
-                tags={"environment": "production"}
-            )
+            SystemTableStorage(store).push_graph_snapshot(tags={"environment": "production"})
 
             # Read and verify - should only have one row (no changes)
             versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
@@ -152,9 +148,7 @@ def test_push_graph_snapshot_tags_updated_with_feature_changes(tmp_path: Path):
 
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # First push
-            SystemTableStorage(store).push_graph_snapshot(
-                tags={"environment": "staging", "build": "123"}
-            )
+            SystemTableStorage(store).push_graph_snapshot(tags={"environment": "staging", "build": "123"})
 
             # Change feature (metadata-only change)
             graph_v2 = FeatureGraph()
@@ -171,9 +165,7 @@ def test_push_graph_snapshot_tags_updated_with_feature_changes(tmp_path: Path):
                     pass
 
                 # Second push with different tags
-                SystemTableStorage(store).push_graph_snapshot(
-                    tags={"environment": "production", "build": "124"}
-                )
+                SystemTableStorage(store).push_graph_snapshot(tags={"environment": "production", "build": "124"})
 
                 # Read and verify - should have two rows
                 versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)

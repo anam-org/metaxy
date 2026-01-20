@@ -107,9 +107,7 @@ def status(
 
     with metadata_store:
         # Load graph (from snapshot or current)
-        graph = load_graph_for_command(
-            context, snapshot_version, metadata_store, format
-        )
+        graph = load_graph_for_command(context, snapshot_version, metadata_store, format)
 
         # Resolve feature keys
         valid_keys, missing_keys = selector.resolve_keys(graph, format)
@@ -132,9 +130,7 @@ def status(
                 )
             elif format == "plain":
                 formatted = ", ".join(k.to_string() for k in missing_keys)
-                data_console.print(
-                    f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}"
-                )
+                data_console.print(f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}")
 
         # If no valid features remain
         if not valid_keys:
@@ -143,20 +139,14 @@ def status(
 
         # Print header for plain format only when using a snapshot
         if format == "plain" and snapshot_version:
-            data_console.print(
-                f"\n[bold]Metadata status (snapshot {snapshot_version})[/bold]"
-            )
+            data_console.print(f"\n[bold]Metadata status (snapshot {snapshot_version})[/bold]")
 
         # Collect status for all features
         needs_update = False
         feature_reps: dict[str, Any] = {}
         # Each item is (feature_cls, status_with_increment, error_msg)
         # error_msg is None for success, or a string for errors
-        collected_statuses: list[
-            tuple[
-                type[BaseFeature], FeatureMetadataStatusWithIncrement | None, str | None
-            ]
-        ] = []
+        collected_statuses: list[tuple[type[BaseFeature], FeatureMetadataStatusWithIncrement | None, str | None]] = []
 
         errors: list[tuple[str, str, Exception]] = []
 
@@ -178,13 +168,9 @@ def status(
                     needs_update = True
 
                 if format == "json":
-                    feature_reps[feature_key.to_string()] = (
-                        status_with_increment.to_representation(verbose=verbose)
-                    )
+                    feature_reps[feature_key.to_string()] = status_with_increment.to_representation(verbose=verbose)
                 else:
-                    collected_statuses.append(
-                        (feature_cls, status_with_increment, None)
-                    )
+                    collected_statuses.append((feature_cls, status_with_increment, None))
             except Exception as e:
                 # Log the error and continue with other features
                 error_msg = str(e)
@@ -193,20 +179,18 @@ def status(
                 if format == "json":
                     from metaxy.graph.status import FullFeatureMetadataRepresentation
 
-                    feature_reps[feature_key.to_string()] = (
-                        FullFeatureMetadataRepresentation(
-                            feature_key=feature_key.to_string(),
-                            status="error",
-                            needs_update=False,
-                            metadata_exists=False,
-                            store_rows=0,
-                            missing=None,
-                            stale=None,
-                            orphaned=None,
-                            target_version="",
-                            is_root_feature=False,
-                            error_message=error_msg,
-                        )
+                    feature_reps[feature_key.to_string()] = FullFeatureMetadataRepresentation(
+                        feature_key=feature_key.to_string(),
+                        status="error",
+                        needs_update=False,
+                        metadata_exists=False,
+                        store_rows=0,
+                        missing=None,
+                        stale=None,
+                        orphaned=None,
+                        target_version="",
+                        is_root_feature=False,
+                        error_message=error_msg,
                     )
                 else:
                     # For plain format, store (feature_cls, None, error_msg)
@@ -221,12 +205,8 @@ def status(
             # Print rich tracebacks for any errors before the table
             if errors:
                 for feat, _, exc in errors:
-                    error_console.print(
-                        f"\n[bold red]Error processing feature:[/bold red] {feat}"
-                    )
-                    error_console.print(
-                        Traceback.from_exception(type(exc), exc, exc.__traceback__)
-                    )
+                    error_console.print(f"\n[bold red]Error processing feature:[/bold red] {feat}")
+                    error_console.print(Traceback.from_exception(type(exc), exc, exc.__traceback__))
 
             table = Table(show_header=True, header_style="bold")
             table.add_column("Status", justify="center", no_wrap=True)
@@ -245,9 +225,7 @@ def status(
                     icon = _STATUS_ICONS["error"]
                     feature_key_str = feature_cls.spec().key.to_string()
                     # Truncate error message for display
-                    truncated_error = (
-                        error_msg[:60] + "..." if len(error_msg) > 60 else error_msg
-                    )
+                    truncated_error = error_msg[:60] + "..." if len(error_msg) > 60 else error_msg
                     table.add_row(
                         icon,
                         feature_key_str,
@@ -266,11 +244,7 @@ def status(
                 feature_key_str = status.feature_key.to_string()
 
                 # Determine if this is a "no input" case
-                no_input = (
-                    compute_progress
-                    and not status.is_root_feature
-                    and status.progress_percentage is None
-                )
+                no_input = compute_progress and not status.is_root_feature and status.progress_percentage is None
 
                 # Format status column with progress if available
                 if status.progress_percentage is not None:
@@ -320,9 +294,7 @@ def status(
             if verbose and verbose_details:
                 for feature_key_str, details in verbose_details:
                     data_console.print()  # Blank line before each feature
-                    data_console.print(
-                        f"[bold cyan]`{feature_key_str}` preview[/bold cyan]"
-                    )
+                    data_console.print(f"[bold cyan]`{feature_key_str}` preview[/bold cyan]")
                     data_console.print()  # Blank line after title
                     for line in details:
                         data_console.print(line)
@@ -344,20 +316,14 @@ def status(
             adapter = TypeAdapter(dict[str, FullFeatureMetadataRepresentation])
             output: dict[str, Any] = {
                 "snapshot_version": snapshot_version,
-                "features": json.loads(
-                    adapter.dump_json(feature_reps, exclude_none=True)
-                ),
+                "features": json.loads(adapter.dump_json(feature_reps, exclude_none=True)),
                 "needs_update": needs_update,
             }
             warnings_dict: dict[str, Any] = {}
             if missing_keys:
-                warnings_dict["missing_in_graph"] = [
-                    k.to_string() for k in missing_keys
-                ]
+                warnings_dict["missing_in_graph"] = [k.to_string() for k in missing_keys]
             if errors:
-                warnings_dict["errors"] = [
-                    {"feature": feat, "error": err} for feat, err, _ in errors
-                ]
+                warnings_dict["errors"] = [{"feature": feat, "error": err} for feat, err, _ in errors]
             if warnings_dict:
                 output["warnings"] = warnings_dict
             print(json.dumps(output, indent=2))
@@ -430,9 +396,7 @@ def delete(
 
         if missing_keys:
             missing = ", ".join(k.to_string() for k in missing_keys)
-            console.print(
-                f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {missing}"
-            )
+            console.print(f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {missing}")
         if not valid_keys:
             exit_with_error(
                 CLIError(
@@ -446,9 +410,7 @@ def delete(
         combined_filter: nw.Expr | list[nw.Expr]
         if filters:
             combined_filter = (
-                reduce(lambda acc, expr: acc & expr, filters[1:], filters[0])
-                if len(filters) > 1
-                else filters[0]
+                reduce(lambda acc, expr: acc & expr, filters[1:], filters[0]) if len(filters) > 1 else filters[0]
             )
         else:
             # No filters means "delete all" - pass empty list to allow optimized paths
@@ -468,9 +430,7 @@ def delete(
                 except Exception as e:  # pragma: no cover - CLI surface
                     error_msg = str(e)
                     errors[feature_key.to_string()] = error_msg
-                    error_console.print(
-                        f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}"
-                    )
+                    error_console.print(f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}")
 
         mode_str = "soft" if soft else "hard"
         console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete)")
@@ -479,9 +439,7 @@ def delete(
             raise SystemExit(1)
 
 
-def _output_no_features_warning(
-    format: OutputFormat, snapshot_version: str | None
-) -> None:
+def _output_no_features_warning(format: OutputFormat, snapshot_version: str | None) -> None:
     """Output warning when no features are found to check."""
     if format == "json":
         print(
@@ -574,15 +532,11 @@ def drop(
                     )
                 )
             else:
-                console.print(
-                    "[yellow]Warning:[/yellow] No features found in active graph."
-                )
+                console.print("[yellow]Warning:[/yellow] No features found in active graph.")
             return
 
         if format == "plain":
-            console.print(
-                f"\n[bold]Dropping metadata for {len(valid_keys)} feature(s)...[/bold]\n"
-            )
+            console.print(f"\n[bold]Dropping metadata for {len(valid_keys)} feature(s)...[/bold]\n")
 
         # Drop each feature
         dropped: list[str] = []
@@ -600,9 +554,7 @@ def drop(
                 if format == "plain":
                     from metaxy.cli.utils import print_error_item
 
-                    print_error_item(
-                        console, key_str, e, prefix="[red]✗[/red] Failed to drop"
-                    )
+                    print_error_item(console, key_str, e, prefix="[red]✗[/red] Failed to drop")
 
         # Output result
         if format == "json":
@@ -615,9 +567,7 @@ def drop(
                 result["failed"] = failed
             print(json.dumps(result, indent=2))
         else:
-            console.print(
-                f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped"
-            )
+            console.print(f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped")
 
 
 @app.command()
@@ -703,17 +653,13 @@ def copy(
             else:
                 missing_keys.append(key)
         except ValidationError as exc:
-            error_console.print(
-                f"[red]Error:[/red] Invalid feature key '{raw_key}': {exc}"
-            )
+            error_console.print(f"[red]Error:[/red] Invalid feature key '{raw_key}': {exc}")
             raise SystemExit(1)
 
     # Handle missing features
     if missing_keys:
         formatted = ", ".join(k.to_string() for k in missing_keys)
-        data_console.print(
-            f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}"
-        )
+        data_console.print(f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}")
 
     # Handle no valid features
     if not valid_keys:

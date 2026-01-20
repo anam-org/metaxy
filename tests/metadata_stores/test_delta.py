@@ -34,8 +34,7 @@ def test_delta_local_absolute_path(tmp_path, test_features) -> None:
         # Verify the table was created under the store path, not current directory
         expected_path = store_path / "test_stores" / "upstream_a.delta"
         assert expected_path.exists(), (
-            f"Expected table at {expected_path}, but it doesn't exist. "
-            f"Store root: {store._root_uri}"
+            f"Expected table at {expected_path}, but it doesn't exist. Store root: {store._root_uri}"
         )
 
         # Verify we can read the data back
@@ -63,10 +62,7 @@ def test_delta_feature_uri_generation(tmp_path) -> None:
         key = FeatureKey(key_str)
         uri = store._feature_uri(key)
         expected_uri = f"{store._root_uri}/{expected_suffix}"
-        assert uri == expected_uri, (
-            f"For key '{key_str}' (parts={key.parts}), "
-            f"expected '{expected_uri}', got '{uri}'"
-        )
+        assert uri == expected_uri, f"For key '{key_str}' (parts={key.parts}), expected '{expected_uri}', got '{uri}'"
 
 
 def test_delta_feature_key_validation_rejects_empty_parts(tmp_path) -> None:
@@ -91,9 +87,7 @@ def test_delta_feature_key_validation_rejects_empty_parts(tmp_path) -> None:
             FeatureKey(key_str)
 
 
-def test_delta_s3_storage_options_passed(
-    s3_bucket_and_storage_options, test_features
-) -> None:
+def test_delta_s3_storage_options_passed(s3_bucket_and_storage_options, test_features) -> None:
     """Verify storage_options are passed to Delta operations with S3.
 
     This ensures object store credentials are correctly forwarded to delta-rs.

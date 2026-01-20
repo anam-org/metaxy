@@ -387,9 +387,7 @@ def test_graph_diff_render_format_yaml(metaxy_project: TempMetaxyProject):
         assert snapshot2
 
         # Compare with YAML format
-        result = metaxy_project.run_cli(
-            ["graph-diff", "render", snapshot1, snapshot2, "--format", "yaml"]
-        )
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--format", "yaml"])
 
         assert result.returncode == 0
         # Just check that output looks like YAML (don't parse it - PyYAML has issues with long strings)
@@ -443,9 +441,7 @@ def test_graph_diff_render_format_mermaid(metaxy_project: TempMetaxyProject):
         assert snapshot2
 
         # Compare with Mermaid format
-        result = metaxy_project.run_cli(
-            ["graph-diff", "render", snapshot1, snapshot2, "--format", "mermaid"]
-        )
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--format", "mermaid"])
 
         assert result.returncode == 0
         assert "flowchart TB" in result.stdout
@@ -498,9 +494,7 @@ def test_graph_diff_render_format_cards(metaxy_project: TempMetaxyProject):
         assert snapshot2
 
         # Compare with cards format
-        result = metaxy_project.run_cli(
-            ["graph-diff", "render", snapshot1, snapshot2, "--format", "cards"]
-        )
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--format", "cards"])
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
@@ -552,9 +546,7 @@ def test_graph_diff_render_format_graphviz(metaxy_project: TempMetaxyProject):
         assert snapshot2
 
         # Compare with Graphviz format
-        result = metaxy_project.run_cli(
-            ["graph-diff", "render", snapshot1, snapshot2, "--format", "graphviz"]
-        )
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--format", "graphviz"])
 
         assert result.returncode == 0
         assert "digraph" in result.stdout
@@ -743,9 +735,7 @@ def test_graph_diff_render_with_store_flag(metaxy_project: TempMetaxyProject):
         metaxy_project.run_cli(["graph", "push", "--store", "dev"])
 
         # Diff with explicit store
-        result = metaxy_project.run_cli(
-            ["graph-diff", "render", "latest", "current", "--store", "dev"]
-        )
+        result = metaxy_project.run_cli(["graph-diff", "render", "latest", "current", "--store", "dev"])
 
         assert result.returncode == 0
         assert "merged view" in result.stdout or "video/files" in result.stdout
@@ -768,9 +758,7 @@ def test_graph_diff_render_invalid_snapshot(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(
-            ["graph-diff", "render", "nonexistent_snapshot", "current"], check=False
-        )
+        result = metaxy_project.run_cli(["graph-diff", "render", "nonexistent_snapshot", "current"], check=False)
 
         assert result.returncode == 1
         assert "Error:" in result.stderr
@@ -793,9 +781,7 @@ def test_graph_diff_render_latest_empty_store(metaxy_project: TempMetaxyProject)
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(
-            ["graph-diff", "render", "latest", "current"], check=False
-        )
+        result = metaxy_project.run_cli(["graph-diff", "render", "latest", "current"], check=False)
 
         assert result.returncode == 1
         assert "Error:" in result.stderr
@@ -846,9 +832,7 @@ def test_graph_diff_render_verbose_mode(metaxy_project: TempMetaxyProject):
         assert snapshot2
 
         # Compare with verbose mode
-        result = metaxy_project.run_cli(
-            ["graph-diff", "render", snapshot1, snapshot2, "--verbose"]
-        )
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--verbose"])
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
@@ -898,9 +882,7 @@ def test_graph_diff_render_minimal_mode(metaxy_project: TempMetaxyProject):
         assert snapshot2
 
         # Compare with minimal mode
-        result = metaxy_project.run_cli(
-            ["graph-diff", "render", snapshot1, snapshot2, "--minimal"]
-        )
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--minimal"])
 
         assert result.returncode == 0
         assert "video/files" in result.stdout

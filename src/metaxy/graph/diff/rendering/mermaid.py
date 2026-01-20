@@ -143,9 +143,7 @@ class MermaidRenderer(BaseRenderer):
         Returns:
             True if any node has non-NORMAL status
         """
-        return any(
-            node.status != NodeStatus.NORMAL for node in graph_data.nodes.values()
-        )
+        return any(node.status != NodeStatus.NORMAL for node in graph_data.nodes.values())
 
     def _add_diff_styling(self, script: str, graph_data) -> str:
         """Add color styling for diff nodes.
@@ -173,24 +171,16 @@ class MermaidRenderer(BaseRenderer):
 
             if node.status == NodeStatus.ADDED:
                 # Only color the border, no fill
-                style_lines.append(
-                    f"    style {node_id} stroke:{self.theme.added_color},stroke-width:2px"
-                )
+                style_lines.append(f"    style {node_id} stroke:{self.theme.added_color},stroke-width:2px")
             elif node.status == NodeStatus.REMOVED:
                 # Only color the border, no fill
-                style_lines.append(
-                    f"    style {node_id} stroke:{self.theme.removed_color},stroke-width:2px"
-                )
+                style_lines.append(f"    style {node_id} stroke:{self.theme.removed_color},stroke-width:2px")
             elif node.status == NodeStatus.CHANGED:
                 # Only color the border, no fill
-                style_lines.append(
-                    f"    style {node_id} stroke:{self.theme.changed_color},stroke-width:2px"
-                )
+                style_lines.append(f"    style {node_id} stroke:{self.theme.changed_color},stroke-width:2px")
             elif node.status == NodeStatus.UNCHANGED:
                 # Only color the border, no fill
-                style_lines.append(
-                    f"    style {node_id} stroke:{self.theme.unchanged_color}"
-                )
+                style_lines.append(f"    style {node_id} stroke:{self.theme.unchanged_color}")
 
         # Insert style lines before the end
         if style_lines:
@@ -220,9 +210,7 @@ class MermaidRenderer(BaseRenderer):
 
         # Add project info if configured
         if self.config.show_projects and node.project:
-            lines.append(
-                f'<small><font color="#666">Project: {node.project}</font></small>'
-            )
+            lines.append(f'<small><font color="#666">Project: {node.project}</font></small>')
 
         # Feature version info with colored diffs
         if self.config.show_feature_versions or self.config.show_code_versions:
@@ -301,17 +289,11 @@ class MermaidRenderer(BaseRenderer):
 
         # Highlight changed field names in orange
         if field_node.status == NodeStatus.CHANGED:
-            field_display = (
-                f'<font color="{self.theme.changed_color}">{field_name}</font>'
-            )
+            field_display = f'<font color="{self.theme.changed_color}">{field_name}</font>'
         elif field_node.status == NodeStatus.ADDED:
-            field_display = (
-                f'<font color="{self.theme.added_color}">{field_name}</font>'
-            )
+            field_display = f'<font color="{self.theme.added_color}">{field_name}</font>'
         elif field_node.status == NodeStatus.REMOVED:
-            field_display = (
-                f'<font color="{self.theme.removed_color}">{field_name}</font>'
-            )
+            field_display = f'<font color="{self.theme.removed_color}">{field_name}</font>'
         else:
             field_display = field_name
 
@@ -321,10 +303,7 @@ class MermaidRenderer(BaseRenderer):
             version_parts = []
 
             if self.config.show_field_versions:
-                if (
-                    field_node.status == NodeStatus.CHANGED
-                    and field_node.old_version is not None
-                ):
+                if field_node.status == NodeStatus.CHANGED and field_node.old_version is not None:
                     # Show colored version transition
                     old_v = self._format_hash(field_node.old_version)
                     new_v = self._format_hash(field_node.version)

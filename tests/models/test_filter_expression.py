@@ -166,9 +166,7 @@ def test_parsed_expression_equals_narwhals_expression_compound() -> None:
     parsed = parse_filter_string("age > 25 AND status = 'active'")
     expected = (nw.col("age") > 25) & (nw.col("status") == "active")
 
-    df = pl.DataFrame(
-        {"age": [20, 30, 30, 40], "status": ["active", "active", "inactive", "active"]}
-    )
+    df = pl.DataFrame({"age": [20, 30, 30, 40], "status": ["active", "active", "inactive", "active"]})
     lf = nw.from_native(df.lazy())
 
     parsed_result = lf.filter(parsed).collect().to_native()["age"].to_list()
@@ -213,12 +211,8 @@ def test_parsed_expression_equals_narwhals_expression_null() -> None:
     df = pl.DataFrame({"deleted_at": [None, "2024-01-01", None, "2024-02-01"]})
     lf = nw.from_native(df.lazy())
 
-    parsed_result = (
-        lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
-    )
-    expected_result = (
-        lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
-    )
+    parsed_result = lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
+    expected_result = lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
 
     assert parsed_result == expected_result == [True, True]
 
@@ -231,12 +225,8 @@ def test_parsed_expression_equals_narwhals_expression_is_null_operator() -> None
     df = pl.DataFrame({"deleted_at": [None, "2024-01-01", None, "2024-02-01"]})
     lf = nw.from_native(df.lazy())
 
-    parsed_result = (
-        lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
-    )
-    expected_result = (
-        lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
-    )
+    parsed_result = lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
+    expected_result = lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
 
     assert parsed_result == expected_result == [True, True]
 
@@ -249,12 +239,8 @@ def test_parsed_expression_equals_narwhals_expression_is_not_null_operator() -> 
     df = pl.DataFrame({"deleted_at": [None, "2024-01-01", None, "2024-02-01"]})
     lf = nw.from_native(df.lazy())
 
-    parsed_result = (
-        lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
-    )
-    expected_result = (
-        lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
-    )
+    parsed_result = lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
+    expected_result = lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
 
     assert parsed_result == expected_result == [False, False]
 
@@ -291,29 +277,19 @@ def test_parsed_expression_equals_narwhals_expression_all_comparisons(
     ("filter_string", "expected_expr"),
     [
         (
-            "((age >= 25 AND (status = 'active' OR status = 'inactive')) "
-            "OR NOT is_active) AND deleted_at = NULL",
+            "((age >= 25 AND (status = 'active' OR status = 'inactive')) OR NOT is_active) AND deleted_at = NULL",
             (
                 (
                     (nw.col("age") >= nw.lit(25))
-                    & (
-                        (nw.col("status") == nw.lit("active"))
-                        | (nw.col("status") == nw.lit("inactive"))
-                    )
+                    & ((nw.col("status") == nw.lit("active")) | (nw.col("status") == nw.lit("inactive")))
                 )
                 | (~nw.col("is_active"))
             )
             & nw.col("deleted_at").is_null(),
         ),
         (
-            "NOT (status = 'deleted' OR deleted_at != NULL) "
-            "AND (age < 30 OR NOT is_active)",
-            (
-                ~(
-                    (nw.col("status") == nw.lit("deleted"))
-                    | (~nw.col("deleted_at").is_null())
-                )
-            )
+            "NOT (status = 'deleted' OR deleted_at != NULL) AND (age < 30 OR NOT is_active)",
+            (~((nw.col("status") == nw.lit("deleted")) | (~nw.col("deleted_at").is_null())))
             & ((nw.col("age") < nw.lit(30)) | (~nw.col("is_active"))),
         ),
     ],
@@ -330,9 +306,7 @@ def test_parse_deeply_nested_expressions(
 def test_feature_dep_filters_parsing(sample_lazy_frame: nw.LazyFrame[Any]) -> None:
     dep = FeatureDep(feature="upstream", filters=["age >= 25", "status = 'active'"])
     assert dep.filters is not None  # Type guard for type checker
-    filtered_ids = (
-        sample_lazy_frame.filter(*dep.filters).collect().to_native().sort("id")["id"]
-    )
+    filtered_ids = sample_lazy_frame.filter(*dep.filters).collect().to_native().sort("id")["id"]
     assert filtered_ids.to_list() == [2]
 
 

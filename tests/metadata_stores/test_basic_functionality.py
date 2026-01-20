@@ -43,9 +43,7 @@ def test_has_feature(store: MetadataStore):
 
         store.write_metadata(
             key,
-            pl.DataFrame(
-                [{"id": "1", "metaxy_provenance_by_field": {"default": "asd"}}]
-            ),
+            pl.DataFrame([{"id": "1", "metaxy_provenance_by_field": {"default": "asd"}}]),
         )
 
         assert store.has_feature(key)
@@ -79,9 +77,7 @@ def test_write_metadata_raises_store_not_open(store: MetadataStore):
     ):
         id: str
 
-    metadata = pl.DataFrame(
-        [{"id": "1", "metaxy_provenance_by_field": {"default": "hash1"}}]
-    )
+    metadata = pl.DataFrame([{"id": "1", "metaxy_provenance_by_field": {"default": "hash1"}}])
 
     # Store is not open - should raise StoreNotOpenError
     with pytest.raises(StoreNotOpenError, match="must be opened before use"):

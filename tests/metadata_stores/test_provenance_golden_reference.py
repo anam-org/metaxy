@@ -51,9 +51,7 @@ from metaxy.versioning.types import HashAlgorithm, Increment
 if TYPE_CHECKING:
     pass
 
-FeaturePlanOutput: TypeAlias = tuple[
-    FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan
-]
+FeaturePlanOutput: TypeAlias = tuple[FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan]
 
 # A sequence of plans to test in order (for definition change scenarios)
 FeaturePlanSequence: TypeAlias = list[FeaturePlanOutput]
@@ -142,9 +140,7 @@ class FeaturePlanCases:
 
         return [(graph, upstream_features, child_plan)]
 
-    def case_aggregation_plus_identity(
-        self, graph: FeatureGraph
-    ) -> FeaturePlanSequence:
+    def case_aggregation_plus_identity(self, graph: FeatureGraph) -> FeaturePlanSequence:
         """Feature plan with aggregation + identity dependencies.
 
         Scenario:
@@ -271,9 +267,7 @@ class FeaturePlanCases:
 
         return [(graph, upstream_features, child_plan)]
 
-    def case_aggregation_plus_expansion(
-        self, graph: FeatureGraph
-    ) -> FeaturePlanSequence:
+    def case_aggregation_plus_expansion(self, graph: FeatureGraph) -> FeaturePlanSequence:
         """Feature plan with aggregation + expansion dependencies.
 
         Scenario:
@@ -381,9 +375,7 @@ class FeaturePlanCases:
                 BaseFeature,
                 spec=SampleFeatureSpec(
                     key="parent_defn_change",
-                    fields=[
-                        FieldSpec(key=FieldKey(["value"]), code_version="2")
-                    ],  # Changed!
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="2")],  # Changed!
                 ),
             ):
                 sample_uid: str
@@ -528,18 +520,14 @@ def generate_plan_data(
             updated_df = base_df.with_columns(
                 pl.lit(new_feature_version).alias(METAXY_FEATURE_VERSION),
                 # Update timestamp to be newer so keep_latest_by_group picks this version
-                (pl.col(METAXY_CREATED_AT) + timedelta(hours=1)).alias(
-                    METAXY_CREATED_AT
-                ),
+                (pl.col(METAXY_CREATED_AT) + timedelta(hours=1)).alias(METAXY_CREATED_AT),
             )
 
             upstream_data[key_str] = updated_df
 
         # Calculate golden downstream using PolarsVersioningEngine
         engine = PolarsVersioningEngine(plan=child_feature_plan)
-        upstream_dict = {
-            FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
-        }
+        upstream_dict = {FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()}
 
         downstream_nw = engine.load_upstream_with_provenance(
             upstream=upstream_dict,
@@ -551,9 +539,7 @@ def generate_plan_data(
         downstream_df = downstream_nw.with_columns(
             nw.lit(child_version).alias(METAXY_FEATURE_VERSION),
             nw.lit(graph.snapshot_version).alias("metaxy_snapshot_version"),
-            nw.lit(child_feature_plan.feature.feature_spec_version).alias(
-                "metaxy_feature_spec_version"
-            ),
+            nw.lit(child_feature_plan.feature.feature_spec_version).alias("metaxy_feature_spec_version"),
             nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
         )
 
@@ -579,9 +565,7 @@ def setup_store_with_data(
 ) -> tuple[MetadataStore, FeaturePlanOutput, pl.DataFrame]:
     """Legacy helper for single-plan setup. Wraps the new helpers."""
     graph, upstream_features, child_feature_plan = feature_plan_config
-    upstream_data, golden_downstream = generate_plan_data(
-        empty_store, feature_plan_config
-    )
+    upstream_data, golden_downstream = generate_plan_data(empty_store, feature_plan_config)
 
     try:
         with empty_store:
@@ -589,9 +573,7 @@ def setup_store_with_data(
             with graph.use():
                 write_upstream_to_store(empty_store, feature_plan_config, upstream_data)
     except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {empty_store.hash_algorithm} not supported by {empty_store}"
-        )
+        pytest.skip(f"Hash algorithm {empty_store.hash_algorithm} not supported by {empty_store}")
 
     return empty_store, feature_plan_config, golden_downstream
 
@@ -621,19 +603,13 @@ def assert_increment_matches_golden(
         """Compare two DataFrames, excluding timestamp columns."""
         # Sort by all comparable columns to ensure deterministic ordering
         # (id_columns alone may not be unique for aggregation lineage)
-        sort_columns = [
-            col
-            for col in actual_df.columns
-            if col in golden_df.columns and col != METAXY_CREATED_AT
-        ]
+        sort_columns = [col for col in actual_df.columns if col in golden_df.columns and col != METAXY_CREATED_AT]
         actual_sorted = actual_df.sort(sort_columns)
         golden_sorted = golden_df.sort(sort_columns)
 
         # Select only common columns, excluding timestamps
         common_columns = [
-            col
-            for col in actual_sorted.columns
-            if col in golden_sorted.columns and col != METAXY_CREATED_AT
+            col for col in actual_sorted.columns if col in golden_sorted.columns and col != METAXY_CREATED_AT
         ]
         actual_selected = actual_sorted.select(common_columns)
         golden_selected = golden_sorted.select(common_columns)
@@ -727,9 +703,7 @@ def assert_resolve_update_matches_golden(
         added_df = golden_increment.added.lazy().collect().to_polars()
 
         # Select ID columns and provenance columns that exist
-        available_cols = [
-            c for c in id_columns + provenance_cols if c in added_df.columns
-        ]
+        available_cols = [c for c in id_columns + provenance_cols if c in added_df.columns]
         if available_cols:
             # Sort by all columns for deterministic output
             provenance_df = added_df.select(available_cols).sort(available_cols)
@@ -769,16 +743,10 @@ def compute_golden_increment(
     engine = PolarsVersioningEngine(plan=child_feature_plan)
 
     # Convert upstream data to Narwhals LazyFrames with FeatureKey keys
-    upstream_nw = {
-        FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
-    }
+    upstream_nw = {FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()}
 
     # Convert current downstream to Narwhals if present
-    current_nw = (
-        nw.from_native(current_downstream.lazy())
-        if current_downstream is not None
-        else None
-    )
+    current_nw = nw.from_native(current_downstream.lazy()) if current_downstream is not None else None
 
     # Use the engine to compute the increment
     added, changed, removed, _ = engine.resolve_increment_with_provenance(
@@ -847,9 +815,7 @@ def test_store_resolve_update_matches_golden_provenance(
                     base_upstream_data = upstream_data
                 else:
                     # Use base upstream data to ensure same IDs
-                    upstream_data, _ = generate_plan_data(
-                        any_store, plan_config, base_upstream_data=base_upstream_data
-                    )
+                    upstream_data, _ = generate_plan_data(any_store, plan_config, base_upstream_data=base_upstream_data)
 
                 # Get current downstream for THIS feature version (like the store does)
                 current_downstream = current_downstream_by_version.get(child_version)
@@ -867,9 +833,7 @@ def test_store_resolve_update_matches_golden_provenance(
                     write_upstream_to_store(any_store, plan_config, upstream_data)
 
                 # Assert store's resolve_update matches golden increment
-                assert_resolve_update_matches_golden(
-                    any_store, plan_config, golden_increment
-                )
+                assert_resolve_update_matches_golden(any_store, plan_config, golden_increment)
 
                 # Update current downstream for this feature version
                 # Use the golden added/changed to build current state
@@ -886,9 +850,7 @@ def test_store_resolve_update_matches_golden_provenance(
                     any_store.write_metadata(ChildFeature, new_downstream)
 
     except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
-        )
+        pytest.skip(f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}")
 
 
 # ============= TEST: DEDUPLICATION WITH DUPLICATES =============
@@ -907,11 +869,9 @@ def test_golden_reference_with_duplicate_timestamps(
     empty_store = any_store
     feature_plan_config = feature_plan_sequence[0]  # Use first plan only
     # Setup store with upstream data and get golden reference
-    store, (graph, upstream_features, child_feature_plan), golden_downstream = (
-        setup_store_with_data(
-            empty_store,
-            feature_plan_config,
-        )
+    store, (graph, upstream_features, child_feature_plan), golden_downstream = setup_store_with_data(
+        empty_store,
+        feature_plan_config,
     )
 
     # Get the child feature from the graph
@@ -930,25 +890,19 @@ def test_golden_reference_with_duplicate_timestamps(
             # Add older duplicates to upstream metadata
             for feature_key, upstream_feature in upstream_features.items():
                 # Read existing upstream data
-                existing_df = (
-                    store.read_metadata(upstream_feature).lazy().collect().to_polars()
-                )
+                existing_df = store.read_metadata(upstream_feature).lazy().collect().to_polars()
 
                 # Create older duplicates (same IDs, older timestamps)
                 older_df = existing_df.clone()
                 older_df = older_df.with_columns(
-                    (pl.col(METAXY_CREATED_AT) - timedelta(hours=2)).alias(
-                        METAXY_CREATED_AT
-                    )
+                    (pl.col(METAXY_CREATED_AT) - timedelta(hours=2)).alias(METAXY_CREATED_AT)
                 )
 
                 # Modify a field value to ensure different provenance
                 # This tests that older version is NOT used
                 upstream_id_cols = set(upstream_feature.spec().id_columns)
                 user_fields = [
-                    col
-                    for col in older_df.columns
-                    if not col.startswith("metaxy_") and col not in upstream_id_cols
+                    col for col in older_df.columns if not col.startswith("metaxy_") and col not in upstream_id_cols
                 ]
                 if user_fields:
                     field = user_fields[0]
@@ -974,17 +928,13 @@ def test_golden_reference_with_duplicate_timestamps(
             )
 
         except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
-            )
+            pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
         added_df = increment.added.lazy().collect().to_polars()
 
         # Exclude metaxy_created_at since it's a timestamp
         common_columns = [
-            col
-            for col in added_df.columns
-            if col in golden_downstream.columns and col != METAXY_CREATED_AT
+            col for col in added_df.columns if col in golden_downstream.columns and col != METAXY_CREATED_AT
         ]
 
         # Sort both DataFrames by all comparable columns for deterministic comparison
@@ -1065,9 +1015,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
             same_timestamp = datetime.now(timezone.utc)
 
             # Write first version
-            version1 = parent_df.with_columns(
-                pl.lit(same_timestamp).alias(METAXY_CREATED_AT)
-            )
+            version1 = parent_df.with_columns(pl.lit(same_timestamp).alias(METAXY_CREATED_AT))
             empty_store.write_metadata(ParentFeature, version1)
 
             # Create second version with same timestamp but different provenance
@@ -1075,9 +1023,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
             version2 = parent_df.with_columns(
                 pl.lit(same_timestamp).alias(METAXY_CREATED_AT),
                 # Modify provenance to make it different (simulate different underlying data)
-                (pl.col("metaxy_provenance").cast(pl.Utf8) + "_DUP").alias(
-                    "metaxy_provenance"
-                ),
+                (pl.col("metaxy_provenance").cast(pl.Utf8) + "_DUP").alias("metaxy_provenance"),
             )
 
             # Write duplicates with same timestamp
@@ -1093,9 +1039,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
 
             # Verify we got results (deterministic even with same timestamps)
             added_df = increment.added.lazy().collect().to_polars()
-            assert len(added_df) > 0, (
-                "Expected at least some samples after deduplication"
-            )
+            assert len(added_df) > 0, "Expected at least some samples after deduplication"
 
             # With duplicates at same timestamp, we should still get the original count
             # (deduplication picks one version per sample)
@@ -1104,9 +1048,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
             )
 
     except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {empty_store.hash_algorithm} not supported by {empty_store}"
-        )
+        pytest.skip(f"Hash algorithm {empty_store.hash_algorithm} not supported by {empty_store}")
 
 
 @parametrize_with_cases("feature_plan_sequence", cases=FeaturePlanCases)
@@ -1122,11 +1064,9 @@ def test_golden_reference_partial_duplicates(
     empty_store = any_store
     feature_plan_config = feature_plan_sequence[0]  # Use first plan only
     # Setup store with upstream data
-    store, (graph, upstream_features, child_feature_plan), golden_downstream = (
-        setup_store_with_data(
-            empty_store,
-            feature_plan_config,
-        )
+    store, (graph, upstream_features, child_feature_plan), golden_downstream = setup_store_with_data(
+        empty_store,
+        feature_plan_config,
     )
 
     child_key = child_feature_plan.feature.key
@@ -1143,9 +1083,7 @@ def test_golden_reference_partial_duplicates(
 
             # Add older duplicates for only HALF of the samples in each upstream
             for feature_key, upstream_feature in upstream_features.items():
-                existing_df = (
-                    store.read_metadata(upstream_feature).lazy().collect().to_polars()
-                )
+                existing_df = store.read_metadata(upstream_feature).lazy().collect().to_polars()
 
                 # Get half of samples
                 num_samples = len(existing_df)
@@ -1157,9 +1095,7 @@ def test_golden_reference_partial_duplicates(
 
                     # Create older version
                     older_df = samples_to_duplicate.with_columns(
-                        (pl.col(METAXY_CREATED_AT) - timedelta(hours=1)).alias(
-                            METAXY_CREATED_AT
-                        )
+                        (pl.col(METAXY_CREATED_AT) - timedelta(hours=1)).alias(METAXY_CREATED_AT)
                     )
 
                     # Write older duplicates
@@ -1180,9 +1116,7 @@ def test_golden_reference_partial_duplicates(
 
             # Exclude timestamp
             common_columns = [
-                col
-                for col in added_df.columns
-                if col in golden_downstream.columns and col != METAXY_CREATED_AT
+                col for col in added_df.columns if col in golden_downstream.columns and col != METAXY_CREATED_AT
             ]
 
             # Sort both by all comparable columns for deterministic comparison
@@ -1267,9 +1201,7 @@ def test_keep_latest_by_group(keep_latest_test_data):
         {
             "sample_uid": ["sample1"] * 5,
             "value": [10, 20, 30, 40, 50],  # Different values per version
-            "timestamp": [
-                base_time + timedelta(hours=i) for i in range(5)
-            ],  # Increasing timestamps
+            "timestamp": [base_time + timedelta(hours=i) for i in range(5)],  # Increasing timestamps
         }
     )
 
@@ -1293,9 +1225,7 @@ def test_keep_latest_by_group(keep_latest_test_data):
     assert len(result) == 1, f"Expected 1 row, got {len(result)}"
 
     # Verify it's the latest version (value=50)
-    assert result["value"][0] == 50, (
-        f"Expected value=50 (latest), got {result['value'][0]}"
-    )
+    assert result["value"][0] == 50, f"Expected value=50 (latest), got {result['value'][0]}"
 
     # Verify the timestamp is the latest
     expected_timestamp = base_time + timedelta(hours=4)
@@ -1338,9 +1268,7 @@ def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
                 22.0,
                 22.5,
             ],  # Different values
-            "timestamp": [
-                base_time + timedelta(hours=i) for i in range(8)
-            ],  # Increasing timestamps
+            "timestamp": [base_time + timedelta(hours=i) for i in range(8)],  # Increasing timestamps
         }
     )
 
@@ -1385,9 +1313,7 @@ def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
             "video_id": ["v1", "v1", "v1", "v2", "v2"],  # Duplicates for each video
             "resolution": ["720p", "1080p", "4K", "720p", "1080p"],  # Different values
             "fps": [30, 30, 60, 30, 60],  # Different values
-            "timestamp": [
-                base_time + timedelta(hours=i) for i in range(5)
-            ],  # Increasing timestamps
+            "timestamp": [base_time + timedelta(hours=i) for i in range(5)],  # Increasing timestamps
         }
     )
 
@@ -1415,9 +1341,7 @@ def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
 
     # v1's latest version is "4K" (3rd occurrence, timestamp +2 hours)
     # v2's latest version is "1080p" (2nd occurrence, timestamp +4 hours)
-    assert result_sorted["resolution"].to_list() == ["4K", "1080p"], (
-        "Expected latest versions: v1=4K, v2=1080p"
-    )
+    assert result_sorted["resolution"].to_list() == ["4K", "1080p"], "Expected latest versions: v1=4K, v2=1080p"
     assert result_sorted["fps"].to_list() == [60, 60], "Expected latest fps values"
 
 
@@ -1517,12 +1441,8 @@ def test_expansion_changed_rows_not_duplicated(
             any_store.write_metadata(VideoFrames, expanded_df)
 
             # Verify 6 rows stored (2 videos × 3 frames)
-            stored_df = (
-                any_store.read_metadata(VideoFrames).lazy().collect().to_polars()
-            )
-            assert len(stored_df) == 6, (
-                f"Expected 6 expanded rows, got {len(stored_df)}"
-            )
+            stored_df = any_store.read_metadata(VideoFrames).lazy().collect().to_polars()
+            assert len(stored_df) == 6, f"Expected 6 expanded rows, got {len(stored_df)}"
 
             # === CHANGE UPSTREAM ===
             # Update video v1's content (change provenance)
@@ -1561,17 +1481,11 @@ def test_expansion_changed_rows_not_duplicated(
             )
 
             # Verify added is empty (no new videos)
-            added_after_change = (
-                increment_after_change.added.lazy().collect().to_polars()
-            )
-            assert len(added_after_change) == 0, (
-                f"Expected 0 added rows, got {len(added_after_change)}"
-            )
+            added_after_change = increment_after_change.added.lazy().collect().to_polars()
+            assert len(added_after_change) == 0, f"Expected 0 added rows, got {len(added_after_change)}"
 
     except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
-        )
+        pytest.skip(f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}")
 
 
 # ============= SNAPSHOT TESTS FOR PROVENANCE VALUES =============
@@ -1810,9 +1724,7 @@ def test_provenance_snapshot(
         engine = PolarsVersioningEngine(plan=child_plan)
 
         # Convert upstream data to Narwhals LazyFrames
-        upstream_nw = {
-            FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
-        }
+        upstream_nw = {FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()}
 
         # Compute provenance
         added, changed, removed, _ = engine.resolve_increment_with_provenance(
@@ -1834,9 +1746,7 @@ def test_provenance_snapshot(
             METAXY_PROVENANCE_BY_FIELD,
         ]
         id_columns = list(child_plan.feature.id_columns)
-        available_cols = [
-            c for c in id_columns + provenance_cols if c in added_df.columns
-        ]
+        available_cols = [c for c in id_columns + provenance_cols if c in added_df.columns]
 
         # Sort for deterministic output and convert to dicts
         result_df = added_df.select(available_cols).sort(available_cols)

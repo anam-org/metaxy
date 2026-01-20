@@ -291,9 +291,7 @@ class TestMultiAssetPartitionObservation:
             resources=resources,
         )
         job = defs.get_implicit_global_asset_job_def()
-        result = job.execute_in_process(
-            instance=instance, asset_selection=[dg.AssetKey("asset_c")]
-        )
+        result = job.execute_in_process(instance=instance, asset_selection=[dg.AssetKey("asset_c")])
         assert result.success
 
         # Check observation event
@@ -405,9 +403,7 @@ class TestCompleteScenario:
             resources=resources,
         )
         job = defs.get_implicit_global_asset_job_def()
-        result_c = job.execute_in_process(
-            instance=instance, asset_selection=[dg.AssetKey("asset_c")]
-        )
+        result_c = job.execute_in_process(instance=instance, asset_selection=[dg.AssetKey("asset_c")])
         assert result_c.success
 
         # Verify Asset C observation sees all 5 records
@@ -501,9 +497,7 @@ class TestMetaxyPartitionWithMultipleColumns:
         dg.materialize([asset_eu_basic], resources=resources, instance=instance)
 
         # Verify each asset sees only its partition
-        mat_us = instance.fetch_materializations(
-            dg.AssetKey("asset_us_premium"), limit=1
-        )
+        mat_us = instance.fetch_materializations(dg.AssetKey("asset_us_premium"), limit=1)
         mat_eu = instance.fetch_materializations(dg.AssetKey("asset_eu_basic"), limit=1)
 
         assert (

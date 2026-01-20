@@ -118,9 +118,7 @@ def _generate_tool_doc(tool: Any, header_level: int = 3) -> str:
                 if param_match:
                     # Save previous parameter
                     if current_param:
-                        param_descriptions[current_param] = " ".join(
-                            current_desc_lines
-                        ).strip()
+                        param_descriptions[current_param] = " ".join(current_desc_lines).strip()
 
                     current_param = param_match.group(1)
                     current_desc_lines = [param_match.group(2)]
@@ -156,8 +154,7 @@ def _generate_tool_doc(tool: Any, header_level: int = 3) -> str:
             param_desc = re.sub(r"\s*\(default:.*?\)\s*$", "", param_desc)
 
             lines.append(
-                f"| `{param_name}` | `{param_type}` | "
-                f"{'Yes' if is_required else 'No'} | {default} | {param_desc} |"
+                f"| `{param_name}` | `{param_type}` | {'Yes' if is_required else 'No'} | {default} | {param_desc} |"
             )
 
         lines.append("")
@@ -234,9 +231,7 @@ class MetaxyMCPPreprocessor(Preprocessor):
         # Pattern to match directive blocks:
         # ::: metaxy-mcp-tools
         #     key: value (optional)
-        self.directive_pattern = re.compile(
-            r"^:::\s+metaxy-mcp-tools\s*\n?((?:[ \t]+.+\n)*)?", re.MULTILINE
-        )
+        self.directive_pattern = re.compile(r"^:::\s+metaxy-mcp-tools\s*\n?((?:[ \t]+.+\n)*)?", re.MULTILINE)
 
     def run(self, lines: list[str]) -> list[str]:
         """Process markdown lines."""
@@ -256,12 +251,9 @@ class MetaxyMCPPreprocessor(Preprocessor):
                 lines_content = directive_content.split("\n")
                 non_empty_lines = [line for line in lines_content if line.strip()]
                 if non_empty_lines:
-                    min_indent = min(
-                        len(line) - len(line.lstrip()) for line in non_empty_lines
-                    )
+                    min_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
                     directive_content = "\n".join(
-                        line[min_indent:] if len(line) >= min_indent else line
-                        for line in lines_content
+                        line[min_indent:] if len(line) >= min_indent else line for line in lines_content
                     ).strip()
 
             pos = match.end()
@@ -271,10 +263,7 @@ class MetaxyMCPPreprocessor(Preprocessor):
                 result_lines.append(markdown)
             except Exception as e:
                 log.warning(f"Failed to process metaxy-mcp-tools directive: {e}")
-                error_msg = (
-                    f'!!! error "Failed to process metaxy-mcp-tools directive"\n\n'
-                    f"    {str(e)}\n\n"
-                )
+                error_msg = f'!!! error "Failed to process metaxy-mcp-tools directive"\n\n    {str(e)}\n\n'
                 result_lines.append(error_msg)
 
         result_lines.append(text[pos:])

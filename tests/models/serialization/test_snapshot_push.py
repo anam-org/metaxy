@@ -163,17 +163,13 @@ def test_record_snapshot_metadata_only_changes(tmp_path: Path):
                 spec_version_v2 = Downstream2.feature_spec_version()
 
                 # Verify: snapshot_version and feature_version are SAME
-                assert snapshot_v2 == snapshot_v1, (
-                    "Snapshot version should be unchanged (metadata-only change)"
-                )
+                assert snapshot_v2 == snapshot_v1, "Snapshot version should be unchanged (metadata-only change)"
                 assert feature_version_v2 == feature_version_v1, (
                     "Feature version should be unchanged (metadata-only change)"
                 )
 
                 # But spec_version is DIFFERENT
-                assert spec_version_v2 != spec_version_v1, (
-                    "Spec version should change (metadata changed)"
-                )
+                assert spec_version_v2 != spec_version_v1, "Spec version should change (metadata changed)"
 
                 # Second push - should detect metadata-only change
                 result2 = SystemTableStorage(store).push_graph_snapshot()
@@ -193,17 +189,11 @@ def test_record_snapshot_metadata_only_changes(tmp_path: Path):
                 assert versions_df_after.height == 4
 
                 # Verify both have new rows
-                downstream_rows = versions_df_after.filter(
-                    pl.col("feature_key") == "downstream"
-                )
+                downstream_rows = versions_df_after.filter(pl.col("feature_key") == "downstream")
                 assert downstream_rows.height == 2  # Two versions of downstream
 
-                upstream_rows = versions_df_after.filter(
-                    pl.col("feature_key") == "upstream"
-                )
-                assert (
-                    upstream_rows.height == 2
-                )  # Two versions of upstream (class name changed)
+                upstream_rows = versions_df_after.filter(pl.col("feature_key") == "upstream")
+                assert upstream_rows.height == 2  # Two versions of upstream (class name changed)
 
 
 def test_record_snapshot_no_changes(tmp_path: Path):
@@ -390,9 +380,7 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
             versions_df_v1 = versions_lazy_v1.collect().to_polars()
             assert versions_df_v1.height == 2  # upstream + my_feature
 
-            my_feature_rows_v1 = versions_df_v1.filter(
-                pl.col("feature_key") == "my_feature"
-            )
+            my_feature_rows_v1 = versions_df_v1.filter(pl.col("feature_key") == "my_feature")
             assert my_feature_rows_v1.height == 1
             timestamp_v1 = my_feature_rows_v1["recorded_at"][0]
             my_feature_rows_v1["metaxy_feature_spec_version"][0]
@@ -426,9 +414,7 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
                     pass
 
                 snapshot_v2 = graph_v2.snapshot_version
-                assert snapshot_v2 == snapshot_v1, (
-                    "Metadata-only change should keep same snapshot_version"
-                )
+                assert snapshot_v2 == snapshot_v1, "Metadata-only change should keep same snapshot_version"
 
                 SystemTableStorage(store).push_graph_snapshot()
 
@@ -442,29 +428,21 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
                 assert versions_df_v2.height == 4
 
                 # Find my_feature rows
-                my_feature_rows = versions_df_v2.filter(
-                    pl.col("feature_key") == "my_feature"
-                )
+                my_feature_rows = versions_df_v2.filter(pl.col("feature_key") == "my_feature")
 
                 # Should have 2 rows: old + new
                 assert my_feature_rows.height == 2
 
                 # All rows have same snapshot_version
-                assert my_feature_rows[
-                    "metaxy_snapshot_version"
-                ].unique().to_list() == [snapshot_v1]
+                assert my_feature_rows["metaxy_snapshot_version"].unique().to_list() == [snapshot_v1]
 
                 # But different spec_versions
-                spec_versions = sorted(
-                    my_feature_rows["metaxy_feature_spec_version"].to_list()
-                )
+                spec_versions = sorted(my_feature_rows["metaxy_feature_spec_version"].to_list())
                 assert len(spec_versions) == 2
                 assert spec_versions[0] != spec_versions[1]
 
                 # Timestamps are different (new row has later timestamp)
-                timestamps = my_feature_rows.sort("recorded_at")[
-                    "recorded_at"
-                ].to_list()
+                timestamps = my_feature_rows.sort("recorded_at")["recorded_at"].to_list()
                 assert timestamps[0] == timestamp_v1  # Old row preserved
                 assert timestamps[1] > timestamp_v1  # New row has later timestamp
 
@@ -500,9 +478,7 @@ def test_record_snapshot_computational_change(tmp_path: Path):
                     BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["my_feature"]),
-                        fields=[
-                            FieldSpec(key=FieldKey(["value"]), code_version="2")
-                        ],  # Changed
+                        fields=[FieldSpec(key=FieldKey(["value"]), code_version="2")],  # Changed
                     ),
                 ):
                     pass
@@ -510,9 +486,7 @@ def test_record_snapshot_computational_change(tmp_path: Path):
                 snapshot_v2 = graph_v2.snapshot_version
 
                 # Verify snapshot_version changed
-                assert snapshot_v2 != snapshot_v1, (
-                    "Computational change should create new snapshot_version"
-                )
+                assert snapshot_v2 != snapshot_v1, "Computational change should create new snapshot_version"
 
                 result2 = SystemTableStorage(store).push_graph_snapshot()
 
@@ -521,9 +495,7 @@ def test_record_snapshot_computational_change(tmp_path: Path):
                 assert result2.snapshot_version == snapshot_v2
 
 
-def test_snapshot_push_result_snapshot_comparison(
-    snapshot: SnapshotAssertion, tmp_path: Path
-):
+def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion, tmp_path: Path):
     """Test complete flow with snapshot for regression testing."""
     from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
@@ -706,9 +678,7 @@ def test_feature_info_changes_trigger_repush(tmp_path: Path):
 
                 # Verify result
                 assert result2.already_pushed is True  # Same snapshot_version
-                assert (
-                    "test_feature" in result2.updated_features
-                )  # Feature info updated
+                assert "test_feature" in result2.updated_features  # Feature info updated
                 assert result2.snapshot_version == snapshot_v2
 
                 # Verify new row was appended with updated recorded_at
@@ -718,9 +688,7 @@ def test_feature_info_changes_trigger_repush(tmp_path: Path):
                 assert versions_df2.height == 2  # Original + updated
 
                 # Get both recorded_at timestamps
-                feature_rows = versions_df2.filter(
-                    pl.col("feature_key") == "test_feature"
-                ).sort("recorded_at")
+                feature_rows = versions_df2.filter(pl.col("feature_key") == "test_feature").sort("recorded_at")
                 assert feature_rows.height == 2
 
                 recorded_at_old = feature_rows["recorded_at"][0]

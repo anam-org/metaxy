@@ -42,9 +42,7 @@ with config.get_store() as store:
 
     diff = store.resolve_update(ChildFeature)
 
-    print(
-        f"Identified: {len(diff.added)} new samples, {len(diff.changed)} samples with new provenance_by_field"
-    )
+    print(f"Identified: {len(diff.added)} new samples, {len(diff.changed)} samples with new provenance_by_field")
 
     if len(diff.added) > 0:
         # diff.added is a Narwhals DataFrame - can pass directly to write_metadata

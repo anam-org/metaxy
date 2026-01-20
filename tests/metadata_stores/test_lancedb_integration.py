@@ -8,17 +8,13 @@ from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.lancedb import LanceDBMetadataStore
 
 
-def test_lancedb_s3_roundtrip_with_moto(
-    s3_bucket_and_storage_options, test_features
-) -> None:
+def test_lancedb_s3_roundtrip_with_moto(s3_bucket_and_storage_options, test_features) -> None:
     """Ensure LanceDB works end-to-end against moto-backed S3."""
     bucket_name, storage_options = s3_bucket_and_storage_options
     store_uri = f"s3://{bucket_name}/lancedb_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
-    with LanceDBMetadataStore(
-        store_uri, connect_kwargs={"storage_options": storage_options}
-    ) as store:
+    with LanceDBMetadataStore(store_uri, connect_kwargs={"storage_options": storage_options}) as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2],

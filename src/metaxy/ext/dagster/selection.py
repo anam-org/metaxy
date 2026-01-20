@@ -66,8 +66,6 @@ def select_metaxy_assets(
 
     if feature is not None:
         feature_key = mx.coerce_to_feature_key(feature)
-        selection = selection & dg.AssetSelection.tag(
-            DAGSTER_METAXY_FEATURE_METADATA_KEY, str(feature_key)
-        )
+        selection = selection & dg.AssetSelection.tag(DAGSTER_METAXY_FEATURE_METADATA_KEY, str(feature_key))
 
     return selection

@@ -94,9 +94,7 @@ def test_lancedb_remote_uri_no_mkdir(tmp_path, monkeypatch) -> None:
         with monkeypatch.context() as m:
             m.setattr("lancedb.connect", mock_lancedb.connect)
             with store.open():
-                assert len(mkdir_called) == 0, (
-                    f"mkdir should not be called for remote URI: {uri}"
-                )
+                assert len(mkdir_called) == 0, f"mkdir should not be called for remote URI: {uri}"
                 assert store._conn is not None
 
     monkeypatch.setattr(Path, "mkdir", original_mkdir)
@@ -178,10 +176,7 @@ def test_lancedb_sanitize_path() -> None:
 
     # URIs with credentials should mask them
     assert sanitize_uri("db://user:pass@host/db") == "db://***:***@host/db"
-    assert (
-        sanitize_uri("https://admin:secret@host:8000/api")
-        == "https://***:***@host:8000/api"
-    )
+    assert sanitize_uri("https://admin:secret@host:8000/api") == "https://***:***@host:8000/api"
     assert sanitize_uri("s3://key:secret@bucket/path") == "s3://***:***@bucket/path"
 
     # Username only (no password)
@@ -236,9 +231,7 @@ def test_lancedb_has_feature_without_listing_tables(tmp_path, test_features) -> 
         table_names_mock.assert_not_called()
 
 
-def test_lancedb_s3_storage_options_passed(
-    s3_bucket_and_storage_options, test_features
-) -> None:
+def test_lancedb_s3_storage_options_passed(s3_bucket_and_storage_options, test_features) -> None:
     """Verify storage_options are passed to LanceDB operations with moto-backed S3.
 
     This ensures object store credentials are correctly forwarded to lance-rs.
@@ -248,9 +241,7 @@ def test_lancedb_s3_storage_options_passed(
     store_uri = f"s3://{bucket_name}/lancedb_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
-    with LanceDBMetadataStore(
-        store_uri, connect_kwargs={"storage_options": storage_options}
-    ) as store:
+    with LanceDBMetadataStore(store_uri, connect_kwargs={"storage_options": storage_options}) as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2],

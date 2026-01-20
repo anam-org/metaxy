@@ -38,9 +38,7 @@ class ClickHouseVersioningEngine(IbisVersioningEngine):
         import ibis.expr.datatypes as dt
         import ibis.expr.types
 
-        assert df.implementation == nw.Implementation.IBIS, (
-            "Only Ibis DataFrames are accepted"
-        )
+        assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
         # Define ClickHouse arrayStringConcat function

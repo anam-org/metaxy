@@ -107,9 +107,7 @@ def test_all_fields_mapping_json_serialization():
 def test_fields_mapping_classmethod_serialization():
     """Test serialization of mappings created via classmethods."""
     # Test FieldsMapping.default()
-    default_mapping = FieldsMapping.default(
-        match_suffix=True, exclude_fields=[FieldKey(["metadata"])]
-    )
+    default_mapping = FieldsMapping.default(match_suffix=True, exclude_fields=[FieldKey(["metadata"])])
 
     serialized = default_mapping.model_dump(mode="json")
     # The mapping field contains the actual DefaultFieldsMapping

@@ -110,9 +110,7 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
         BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test_deps", "downstream", "with_deps"]),
-            deps=[
-                FeatureDep(feature=FeatureKey(["test_deps", "upstream"]))
-            ],  # Added dependency!
+            deps=[FeatureDep(feature=FeatureKey(["test_deps", "upstream"]))],  # Added dependency!
             fields=[
                 FieldSpec(key=FieldKey(["default"]), code_version="1"),
             ],

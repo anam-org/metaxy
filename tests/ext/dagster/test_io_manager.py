@@ -206,9 +206,7 @@ class TestMetaxyIOManagerHandleOutput:
         @dg.asset(deps=[my_asset])
         def verify_asset(store: dg.ResourceParam[mx.MetadataStore]):
             with store:
-                captured_data["rows"] = len(
-                    store.read_metadata(upstream_feature).collect()
-                )
+                captured_data["rows"] = len(store.read_metadata(upstream_feature).collect())
 
         result2 = dg.materialize(
             [verify_asset],
@@ -273,9 +271,7 @@ class TestMetaxyIOManagerLoadInput:
             },
         )
 
-        with mx.MetaxyConfig(
-            stores={"dev": primary_store_config, "fallback": fallback_store_config}
-        ).use():
+        with mx.MetaxyConfig(stores={"dev": primary_store_config, "fallback": fallback_store_config}).use():
             store_resource = mxd.MetaxyStoreFromConfigResource(name="dev")
             resources = {
                 "store": store_resource,
@@ -326,9 +322,7 @@ class TestMetaxyIOManagerLoadInput:
             assert captured_data["ids"] == {"f1", "f2"}
 
             # Find the LOADED_INPUT event for the upstream_asset input
-            loaded_input_events = [
-                e for e in result2.all_events if e.event_type_value == "LOADED_INPUT"
-            ]
+            loaded_input_events = [e for e in result2.all_events if e.event_type_value == "LOADED_INPUT"]
             assert len(loaded_input_events) == 1
 
             # Check the input metadata shows the fallback store
@@ -651,8 +645,7 @@ class TestMetaxyIOManagerPartitions:
         # Verify downstream received ONLY partition "b" data via IO manager
         assert captured_data["partition"] == "b"
         assert captured_data["row_count"] == 2, (
-            f"Expected 2 rows for partition 'b', got {captured_data['row_count']}. "
-            f"IDs received: {captured_data['ids']}"
+            f"Expected 2 rows for partition 'b', got {captured_data['row_count']}. IDs received: {captured_data['ids']}"
         )
         assert captured_data["ids"] == {"b_1", "b_2"}
         assert captured_data["partitions"] == {"b"}
@@ -714,11 +707,7 @@ class TestMetaxyIOManagerPartitions:
         @dg.asset(
             metadata={"metaxy/feature": "features/downstream_unpart"},
             io_manager_key="metaxy_io_manager",
-            ins={
-                "upstream_partitioned": dg.AssetIn(
-                    partition_mapping=dg.AllPartitionMapping()
-                )
-            },
+            ins={"upstream_partitioned": dg.AssetIn(partition_mapping=dg.AllPartitionMapping())},
         )
         def downstream_unpartitioned(
             upstream_partitioned: nw.LazyFrame,
@@ -758,8 +747,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify downstream received ALL data via IO manager
         assert captured_data["row_count"] == 6, (
-            f"Expected 6 rows (all partitions), got {captured_data['row_count']}. "
-            f"IDs received: {captured_data['ids']}"
+            f"Expected 6 rows (all partitions), got {captured_data['row_count']}. IDs received: {captured_data['ids']}"
         )
         assert captured_data["ids"] == {"a_1", "a_2", "b_1", "b_2", "c_1", "c_2"}
         assert captured_data["partitions"] == {"a", "b", "c"}
@@ -822,11 +810,7 @@ class TestMetaxyIOManagerPartitions:
             },
             io_manager_key="metaxy_io_manager",
             partitions_def=partitions_def,
-            ins={
-                "upstream_unpartitioned": dg.AssetIn(
-                    partition_mapping=dg.AllPartitionMapping()
-                )
-            },
+            ins={"upstream_unpartitioned": dg.AssetIn(partition_mapping=dg.AllPartitionMapping())},
         )
         def downstream_partitioned(
             context: dg.AssetExecutionContext,
@@ -904,9 +888,7 @@ class TestMetaxyIOManagerPartitions:
             id: str
 
         # Use different partition schemes
-        upstream_partitions = dg.StaticPartitionsDefinition(
-            ["2024-01", "2024-02", "2024-03"]
-        )
+        upstream_partitions = dg.StaticPartitionsDefinition(["2024-01", "2024-02", "2024-03"])
         downstream_partitions = dg.StaticPartitionsDefinition(["q1"])
 
         captured_data: dict[str, Any] = {}
@@ -987,8 +969,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify downstream received only data from 2024-01 and 2024-02
         assert captured_data["row_count"] == 4, (
-            f"Expected 4 rows (Jan + Feb), got {captured_data['row_count']}. "
-            f"IDs received: {captured_data['ids']}"
+            f"Expected 4 rows (Jan + Feb), got {captured_data['row_count']}. IDs received: {captured_data['ids']}"
         )
         assert captured_data["ids"] == {
             "2024-01_1",
@@ -1033,9 +1014,7 @@ class TestMetaxyIOManagerPartitions:
                 {
                     "id": [f"{partition}_{i}" for i in range(count)],
                     "partition": [partition] * count,
-                    "metaxy_provenance_by_field": [
-                        {"value": f"v{i}"} for i in range(count)
-                    ],
+                    "metaxy_provenance_by_field": [{"value": f"v{i}"} for i in range(count)],
                 }
             )
 
@@ -1058,10 +1037,7 @@ class TestMetaxyIOManagerPartitions:
             metadata = event.step_materialization_data.materialization.metadata
 
             assert metadata["dagster/row_count"].value == expected_totals[partition]
-            assert (
-                metadata["dagster/partition_row_count"].value
-                == expected_partition_counts[partition]
-            )
+            assert metadata["dagster/partition_row_count"].value == expected_partition_counts[partition]
 
 
 class TestMultipleAssetsPerFeature:

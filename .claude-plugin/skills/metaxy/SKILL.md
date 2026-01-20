@@ -47,9 +47,7 @@ fields = [
 To configure a metadata store, create a `metaxy.toml` file or use programmatic configuration:
 
 ```python
-with mx.MetaxyConfig(
-    stores={"dev": mx.DeltaMetadataStore(root_path="/tmp/metaxy")}
-).use() as config:
+with mx.MetaxyConfig(stores={"dev": mx.DeltaMetadataStore(root_path="/tmp/metaxy")}).use() as config:
     store = config.get_store("dev")
 ```
 

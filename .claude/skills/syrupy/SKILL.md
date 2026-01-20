@@ -125,9 +125,7 @@ Match specific paths in data structures to types:
 from syrupy.matchers import path_type
 import datetime
 
-matcher = path_type(
-    {"date_created": (datetime,), "user.id": (int,), "nested.*.timestamp": (datetime,)}
-)
+matcher = path_type({"date_created": (datetime,), "user.id": (int,), "nested.*.timestamp": (datetime,)})
 ```
 
 ### path_value

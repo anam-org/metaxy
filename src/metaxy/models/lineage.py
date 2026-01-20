@@ -94,9 +94,7 @@ class AggregationRelationship(BaseLineageRelationship):
         >>> LineageRelationship.aggregation(on=["user_id", "session_id"])
     """
 
-    type: Literal[LineageRelationshipType.AGGREGATION] = (
-        LineageRelationshipType.AGGREGATION
-    )
+    type: Literal[LineageRelationshipType.AGGREGATION] = LineageRelationshipType.AGGREGATION
     on: Sequence[str] | None = PydanticField(
         default=None,
         description="Columns to group by for aggregation. Defaults to all target ID columns.",
@@ -171,9 +169,7 @@ class ExpansionRelationship(BaseLineageRelationship):
 
 
 # Discriminated union type for all lineage relationships
-LineageRelationshipUnion = (
-    IdentityRelationship | AggregationRelationship | ExpansionRelationship
-)
+LineageRelationshipUnion = IdentityRelationship | AggregationRelationship | ExpansionRelationship
 
 
 class LineageRelationship(BaseModel):
@@ -265,15 +261,9 @@ class LineageRelationship(BaseModel):
             ...     lineage=LineageRelationship.expansion(on=["doc_id"])
             ... )
         """
-        return cls(
-            relationship=ExpansionRelationship(
-                on=on, id_generation_pattern=id_generation_pattern
-            )
-        )
+        return cls(relationship=ExpansionRelationship(on=on, id_generation_pattern=id_generation_pattern))
 
-    def get_aggregation_columns(
-        self, target_id_columns: Sequence[str]
-    ) -> Sequence[str] | None:
+    def get_aggregation_columns(self, target_id_columns: Sequence[str]) -> Sequence[str] | None:
         """Get columns to aggregate on for this relationship.
 
         Args:

@@ -44,9 +44,7 @@ def _convert_filters(type_: type, tokens: Sequence[cyclopts.Token]) -> list[nw.E
 
 # Type alias for filter arguments with custom converter
 FilterArgs = Annotated[
-    list[
-        nw.Expr
-    ],  # Actually list[nw.Expr], but using Any to avoid import at module level
+    list[nw.Expr],  # Actually list[nw.Expr], but using Any to avoid import at module level
     cyclopts.Parameter(
         name=["--filter"],
         help="SQL WHERE clause [filter](https://docs.metaxy.io/main/guide/learn/filters/) applied to all features. Can be repeated.",

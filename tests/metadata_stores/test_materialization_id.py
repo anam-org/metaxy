@@ -129,9 +129,7 @@ def test_filter_by_materialization_id(store: MetadataStore):
 
     # Filter by run-1
     with store.open(mode="read"):
-        df = store.read_metadata(
-            key, filters=[nw.col(METAXY_MATERIALIZATION_ID) == "run-1"]
-        )
+        df = store.read_metadata(key, filters=[nw.col(METAXY_MATERIALIZATION_ID) == "run-1"])
         assert df is not None
         df_collected = df.collect()
         assert len(df_collected) == 2
@@ -139,9 +137,7 @@ def test_filter_by_materialization_id(store: MetadataStore):
 
     # Filter by run-2
     with store.open(mode="read"):
-        df = store.read_metadata(
-            key, filters=[nw.col(METAXY_MATERIALIZATION_ID) == "run-2"]
-        )
+        df = store.read_metadata(key, filters=[nw.col(METAXY_MATERIALIZATION_ID) == "run-2"])
         assert df is not None
         df_collected = df.collect()
         assert len(df_collected) == 1

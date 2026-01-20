@@ -56,9 +56,7 @@ class TestExpansionRelationships:
         lineage = dep.lineage
         assert lineage is not None
         aggregation_cols = lineage.get_aggregation_columns(["video_id", "frame_id"])
-        assert aggregation_cols is None, (
-            f"Expected None for expansion relationships, got {aggregation_cols}"
-        )
+        assert aggregation_cols is None, f"Expected None for expansion relationships, got {aggregation_cols}"
 
         # Test with metadata store
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
@@ -185,9 +183,7 @@ class TestExpansionRelationships:
         from metaxy.models.lineage import ExpansionRelationship
 
         # With explicit 'on' parameter
-        rel1 = ExpansionRelationship(
-            on=["video_id"], id_generation_pattern="sequential"
-        )
+        rel1 = ExpansionRelationship(on=["video_id"], id_generation_pattern="sequential")
         result1 = rel1.get_aggregation_columns(["video_id", "frame_id"])
         assert result1 is None  # Expansion relationships don't aggregate during join
 

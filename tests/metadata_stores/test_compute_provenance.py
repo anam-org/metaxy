@@ -76,9 +76,7 @@ class TestComputeProvenance:
         joined_df = upstream_df.rename({METAXY_DATA_VERSION_BY_FIELD: renamed_col})
 
         with store:
-            result = store.compute_provenance(
-                DownstreamFeature, nw.from_native(joined_df)
-            )
+            result = store.compute_provenance(DownstreamFeature, nw.from_native(joined_df))
 
         # Verify provenance columns were added
         result_pl = result.to_polars()
@@ -147,9 +145,7 @@ class TestComputeProvenance:
         )
 
         with store:
-            result = store.compute_provenance(
-                DownstreamFeature, nw.from_native(joined_df)
-            )
+            result = store.compute_provenance(DownstreamFeature, nw.from_native(joined_df))
 
         result_pl = result.to_polars()
 
@@ -166,9 +162,7 @@ class TestComputeProvenance:
         assert result_pl["a"].to_list() == [1, 2]
         assert result_pl["b"].to_list() == [10, 20]
 
-    def test_compute_provenance_missing_column_raises_error(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_compute_provenance_missing_column_raises_error(self, graph: FeatureGraph, tmp_path):
         """Test that missing upstream columns raise a clear error."""
 
         class UpstreamFeature(
@@ -204,9 +198,7 @@ class TestComputeProvenance:
             with pytest.raises(ValueError, match="missing required upstream columns"):
                 store.compute_provenance(DownstreamFeature, nw.from_native(df))
 
-    def test_compute_provenance_returns_eager_for_eager_input(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_compute_provenance_returns_eager_for_eager_input(self, graph: FeatureGraph, tmp_path):
         """Test that compute_provenance returns eager DataFrame for eager input."""
 
         class UpstreamFeature(
@@ -250,9 +242,7 @@ class TestComputeProvenance:
         result_pl = result.to_polars()
         assert isinstance(result_pl, pl.DataFrame)
 
-    def test_compute_provenance_returns_lazy_for_lazy_input(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_compute_provenance_returns_lazy_for_lazy_input(self, graph: FeatureGraph, tmp_path):
         """Test that compute_provenance returns LazyFrame for lazy input."""
 
         class UpstreamFeature(
@@ -294,9 +284,7 @@ class TestComputeProvenance:
         # Should return lazy
         assert isinstance(result, nw.LazyFrame)
 
-    def test_compute_provenance_integration_with_resolve_update(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_compute_provenance_integration_with_resolve_update(self, graph: FeatureGraph, tmp_path):
         """Test that compute_provenance output works with resolve_update."""
 
         class UpstreamFeature(
@@ -334,9 +322,7 @@ class TestComputeProvenance:
 
         with store:
             # Compute provenance
-            with_provenance = store.compute_provenance(
-                DownstreamFeature, nw.from_native(joined_df)
-            )
+            with_provenance = store.compute_provenance(DownstreamFeature, nw.from_native(joined_df))
 
             # Use with resolve_update
             increment = store.resolve_update(

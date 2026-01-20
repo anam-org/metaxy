@@ -104,9 +104,7 @@ def DownstreamFeature(features: dict[str, type[BaseFeature]]):
 class TestProperDataframeWrite:
     """Test that writing proper dataframes does not emit warnings."""
 
-    def test_root_feature_with_provenance_by_field_only(
-        self, any_store: MetadataStore, RootFeature
-    ):
+    def test_root_feature_with_provenance_by_field_only(self, any_store: MetadataStore, RootFeature):
         """Root features should only require metaxy_provenance_by_field.
 
         When writing a root feature (no dependencies) with only
@@ -136,11 +134,7 @@ class TestProperDataframeWrite:
                 assert len(result) == 3
 
             # Check for MetaxyColumnMissingWarning
-            metaxy_warnings = [
-                warning
-                for warning in w
-                if issubclass(warning.category, MetaxyColumnMissingWarning)
-            ]
+            metaxy_warnings = [warning for warning in w if issubclass(warning.category, MetaxyColumnMissingWarning)]
             assert len(metaxy_warnings) == 0, (
                 f"Unexpected MetaxyColumnMissingWarning: {[str(warning.message) for warning in metaxy_warnings]}"
             )
@@ -191,11 +185,7 @@ class TestProperDataframeWrite:
                 assert len(result) == 3
 
             # Check for MetaxyColumnMissingWarning
-            metaxy_warnings = [
-                warning
-                for warning in w
-                if issubclass(warning.category, MetaxyColumnMissingWarning)
-            ]
+            metaxy_warnings = [warning for warning in w if issubclass(warning.category, MetaxyColumnMissingWarning)]
             # Filter to only warnings about the downstream feature write
             # (the root feature write may also emit warnings that we'll test separately)
             assert len(metaxy_warnings) == 0, (

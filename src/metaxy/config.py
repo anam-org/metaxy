@@ -65,9 +65,7 @@ class InvalidConfigError(Exception):
         if config_file:
             parts.append(f"Config file: {config_file}")
 
-        parts.append(
-            "Note: METAXY_* environment variables can override config file settings "
-        )
+        parts.append("Note: METAXY_* environment variables can override config file settings ")
 
         super().__init__("\n".join(parts))
 
@@ -254,9 +252,7 @@ class StoreConfig(BaseSettings):
                 try:
                     importlib.import_module(module_path)
                 except ImportError as import_err:
-                    raise ImportError(
-                        f"Cannot import '{self.type_path}': {import_err}"
-                    ) from import_err
+                    raise ImportError(f"Cannot import '{self.type_path}': {import_err}") from import_err
             raise
 
 
@@ -274,9 +270,7 @@ class PluginConfig(BaseSettings):
 PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
 
 # Context variable for storing the app context
-_metaxy_config: ContextVar["MetaxyConfig | None"] = ContextVar(
-    "_metaxy_config", default=None
-)
+_metaxy_config: ContextVar["MetaxyConfig | None"] = ContextVar("_metaxy_config", default=None)
 
 
 BUILTIN_PLUGINS = {
@@ -456,9 +450,7 @@ class MetaxyConfig(BaseSettings):
         import re
 
         if not re.match(r"^[a-zA-Z0-9_-]+$", v):
-            raise ValueError(
-                f"project name '{v}' must contain only alphanumeric characters, underscores, and hyphens"
-            )
+            raise ValueError(f"project name '{v}' must contain only alphanumeric characters, underscores, and hyphens")
         return v
 
     @property
@@ -494,9 +486,7 @@ class MetaxyConfig(BaseSettings):
     def validate_hash_truncation_length(cls, v: int | None) -> int | None:
         """Validate hash truncation length is at least 8 if set."""
         if v is not None and v < 8:
-            raise ValueError(
-                f"hash_truncation_length must be at least 8 characters, got {v}"
-            )
+            raise ValueError(f"hash_truncation_length must be at least 8 characters, got {v}")
         return v
 
     @classmethod
@@ -519,9 +509,7 @@ class MetaxyConfig(BaseSettings):
         return (init_settings, env_settings, toml_settings)
 
     @classmethod
-    def get(
-        cls, *, load: bool = False, _allow_default_config: bool = False
-    ) -> "MetaxyConfig":
+    def get(cls, *, load: bool = False, _allow_default_config: bool = False) -> "MetaxyConfig":
         """Get the current Metaxy configuration.
 
         Args:
@@ -856,10 +844,7 @@ class MetaxyConfig(BaseSettings):
         # Verify the store actually uses the hash algorithm we configured
         # (in case a store subclass overrides the default or ignores the parameter)
         # Only check if we explicitly configured a hash algorithm
-        if (
-            configured_hash_algorithm is not None
-            and store.hash_algorithm != configured_hash_algorithm
-        ):
+        if configured_hash_algorithm is not None and store.hash_algorithm != configured_hash_algorithm:
             raise InvalidConfigError.from_config(
                 self,
                 f"Store '{name}' ({store_class.__name__}) was configured with "

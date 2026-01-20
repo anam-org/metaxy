@@ -85,9 +85,7 @@ def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
     return ValidatedFeatureKeyAdapter.validate_python(value)
 
 
-def init_metaxy(
-    config_file: Path | None = None, search_parents: bool = True
-) -> MetaxyConfig:
+def init_metaxy(config_file: Path | None = None, search_parents: bool = True) -> MetaxyConfig:
     """Main user-facing initialization function for Metaxy. It loads the configuration and features.
 
     Features are [discovered](../../guide/learn/feature-discovery.md) from installed Python packages metadata.

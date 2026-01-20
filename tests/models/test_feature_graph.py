@@ -50,9 +50,7 @@ class TestAddFeature:
         # Should still be registered
         assert graph.features_by_key[MyFeature.spec().key] is MyFeature
 
-    def test_add_feature_different_class_same_key_raises_during_definition(
-        self, graph: FeatureGraph
-    ):
+    def test_add_feature_different_class_same_key_raises_during_definition(self, graph: FeatureGraph):
         """Test that defining a different class with the same key raises ValueError."""
 
         class FeatureV1(
@@ -76,9 +74,7 @@ class TestAddFeature:
             ):
                 pass
 
-    def test_add_feature_different_module_same_key_raises_error(
-        self, graph: FeatureGraph
-    ):
+    def test_add_feature_different_module_same_key_raises_error(self, graph: FeatureGraph):
         """Test that different classes with same key from different modules raise ValueError."""
 
         class OriginalFeature(
@@ -101,9 +97,7 @@ class TestAddFeature:
         class ConflictingFeature(
             BaseFeature,
             spec=SampleFeatureSpec(
-                key=FeatureKey(
-                    ["test", "conflict_key"]
-                ),  # Use different key for definition
+                key=FeatureKey(["test", "conflict_key"]),  # Use different key for definition
                 fields=[FieldSpec(key=FieldKey(["y"]))],
             ),
         ):

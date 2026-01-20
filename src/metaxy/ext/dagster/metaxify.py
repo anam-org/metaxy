@@ -149,9 +149,7 @@ class metaxify:
     ) -> None:
         # Actual initialization happens in __new__, but we set defaults here for type checkers
         self.key = dg.AssetKey.from_coercible(key) if key is not None else None
-        self.key_prefix = (
-            dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
-        )
+        self.key_prefix = dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
         self.inject_metaxy_kind = inject_metaxy_kind
         self.inject_code_version = inject_code_version
         self.set_description = set_description
@@ -191,9 +189,7 @@ class metaxify:
             raise ValueError("Cannot specify both `key` and `key_prefix`")
 
         coerced_key = dg.AssetKey.from_coercible(key) if key is not None else None
-        coerced_key_prefix = (
-            dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
-        )
+        coerced_key_prefix = dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
 
         if _asset is not None:
             # Called as @metaxify without parentheses
@@ -323,12 +319,9 @@ def _replace_specs_on_assets_definition(
     # If there are key replacements, also update keys_by_output_name and selected_asset_keys
     if keys_to_replace:
         attrs["keys_by_output_name"] = {
-            output_name: keys_to_replace.get(key, key)
-            for output_name, key in attrs["keys_by_output_name"].items()
+            output_name: keys_to_replace.get(key, key) for output_name, key in attrs["keys_by_output_name"].items()
         }
-        attrs["selected_asset_keys"] = {
-            keys_to_replace.get(key, key) for key in attrs["selected_asset_keys"]
-        }
+        attrs["selected_asset_keys"] = {keys_to_replace.get(key, key) for key in attrs["selected_asset_keys"]}
 
     # Create a new AssetsDefinition with the updated attributes
     # This bypasses the buggy code path in Dagster's replace_specs_on_asset
@@ -500,15 +493,11 @@ def _metaxify_spec(
                 else:
                     merged_deps_by_column[col] = deps
             # Sort columns alphabetically
-            sorted_deps = {
-                k: merged_deps_by_column[k] for k in sorted(merged_deps_by_column)
-            }
+            sorted_deps = {k: merged_deps_by_column[k] for k in sorted(merged_deps_by_column)}
             column_lineage = dg.TableColumnLineage(deps_by_column=sorted_deps)
         elif existing_deps_by_column:
             # Sort columns alphabetically
-            sorted_deps = {
-                k: existing_deps_by_column[k] for k in sorted(existing_deps_by_column)
-            }
+            sorted_deps = {k: existing_deps_by_column[k] for k in sorted(existing_deps_by_column)}
             column_lineage = dg.TableColumnLineage(deps_by_column=sorted_deps)
 
     # Build the replacement attributes

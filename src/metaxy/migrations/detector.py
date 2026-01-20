@@ -214,9 +214,7 @@ def generate_full_graph_migration(
         raise ValueError("No features in active graph")
 
     # Get all feature keys in topological order
-    all_feature_keys = active_graph.topological_sort_features(
-        list(active_graph.features_by_key.keys())
-    )
+    all_feature_keys = active_graph.topological_sort_features(list(active_graph.features_by_key.keys()))
     feature_key_strings = [key.to_string() for key in all_feature_keys]
 
     # ops is required

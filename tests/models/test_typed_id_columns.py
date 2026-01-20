@@ -39,9 +39,7 @@ class TestJoiner:
             empty_df = pl.DataFrame({col: [] for col in feature_spec.id_columns})
             empty_df = empty_df.with_columns(
                 [
-                    pl.lit(None)
-                    .alias(METAXY_PROVENANCE_BY_FIELD)
-                    .cast(pl.Struct({"default": pl.String})),
+                    pl.lit(None).alias(METAXY_PROVENANCE_BY_FIELD).cast(pl.Struct({"default": pl.String})),
                 ]
             )
             return nw.from_native(empty_df.lazy(), eager_only=False), {}
@@ -59,9 +57,7 @@ class TestJoiner:
         mapping = {}
         for upstream_key_str in upstream_refs.keys():
             upstream_key = FeatureKey(upstream_key_str)
-            provenance_col_name = (
-                f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
-            )
+            provenance_col_name = f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
             mapping[upstream_key_str] = provenance_col_name
 
         return joined, mapping  # ty: ignore[invalid-return-type]
@@ -310,6 +306,4 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph, tmp_path: Pa
         assert "uuid" in result.columns
         assert len(result) == 3
         assert set(result["uuid"].to_list()) == {"uuid-123", "uuid-456", "uuid-789"}
-        assert (
-            str(result.schema["uuid"]) == "String"
-        )  # Type preserved even without explicit type spec
+        assert str(result.schema["uuid"]) == "String"  # Type preserved even without explicit type spec

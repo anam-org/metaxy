@@ -169,9 +169,7 @@ def test_full_graph_migration_single_operation_single_feature(tmp_path: Path):
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
@@ -345,9 +343,7 @@ def test_full_graph_migration_topological_sorting(tmp_path: Path):
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
@@ -502,9 +498,7 @@ def test_full_graph_migration_dry_run(tmp_path: Path):
         # Status should be skipped
         assert result.status == "skipped"
         assert result.features_completed == 1
-        assert (
-            result.rows_affected == 10
-        )  # _TestBackfillOperation returns 10 in dry run
+        assert result.rows_affected == 10  # _TestBackfillOperation returns 10 in dry run
 
         # Verify no events were written
         storage = SystemTableStorage(store)
@@ -539,9 +533,7 @@ def test_full_graph_migration_resume_after_partial_failure(tmp_path: Path):
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
@@ -708,9 +700,7 @@ def test_data_version_reconciliation_requires_from_snapshot(tmp_path: Path):
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
@@ -719,9 +709,7 @@ def test_data_version_reconciliation_requires_from_snapshot(tmp_path: Path):
         op = DataVersionReconciliation()
 
         # Should raise error without from_snapshot_version
-        with pytest.raises(
-            ValueError, match="DataVersionReconciliation requires from_snapshot_version"
-        ):
+        with pytest.raises(ValueError, match="DataVersionReconciliation requires from_snapshot_version"):
             op.execute_for_feature(
                 store,
                 "test/downstream",

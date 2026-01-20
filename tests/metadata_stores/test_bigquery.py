@@ -43,9 +43,7 @@ def test_bigquery_initialization_with_project_dataset():
 
 def test_bigquery_initialization_with_credentials_path():
     """Test BigQuery store initialization with credentials path."""
-    with patch(
-        "google.oauth2.service_account.Credentials.from_service_account_file"
-    ) as mock_creds:
+    with patch("google.oauth2.service_account.Credentials.from_service_account_file") as mock_creds:
         mock_creds_instance = Mock()
         mock_creds.return_value = mock_creds_instance
 
@@ -64,15 +62,11 @@ def test_bigquery_initialization_with_credentials_path():
 
 def test_bigquery_initialization_with_invalid_credentials_path():
     """Test BigQuery store initialization with invalid credentials path."""
-    with patch(
-        "google.oauth2.service_account.Credentials.from_service_account_file"
-    ) as mock_creds:
+    with patch("google.oauth2.service_account.Credentials.from_service_account_file") as mock_creds:
         # Simulate file not found
         mock_creds.side_effect = FileNotFoundError("File not found")
 
-        with pytest.raises(
-            FileNotFoundError, match="Service account credentials file not found"
-        ):
+        with pytest.raises(FileNotFoundError, match="Service account credentials file not found"):
             BigQueryMetadataStore(
                 project_id="test-project",
                 dataset_id="test_dataset",
@@ -82,9 +76,7 @@ def test_bigquery_initialization_with_invalid_credentials_path():
         # Simulate invalid JSON format
         mock_creds.side_effect = ValueError("Invalid JSON")
 
-        with pytest.raises(
-            ValueError, match="Invalid service account credentials file"
-        ):
+        with pytest.raises(ValueError, match="Invalid service account credentials file"):
             BigQueryMetadataStore(
                 project_id="test-project",
                 dataset_id="test_dataset",
@@ -259,9 +251,7 @@ def test_bigquery_config_with_fallback_stores():
 
 
 @pytest.mark.integration
-def test_bigquery_table_operations(
-    mock_bigquery_connection, test_graph, test_features: dict[str, type[SampleFeature]]
-):
+def test_bigquery_table_operations(mock_bigquery_connection, test_graph, test_features: dict[str, type[SampleFeature]]):
     """Test BigQuery table operations with mocked connection.
 
     This test would require actual BigQuery connection in integration tests.

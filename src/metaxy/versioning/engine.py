@@ -60,10 +60,7 @@ class VersioningEngine(ABC):
     @cached_property
     def feature_transformers_by_key(self) -> dict[FeatureKey, FeatureDepTransformer]:
         """Build transformers for each upstream dependency."""
-        return {
-            dep.feature: FeatureDepTransformer(dep=dep, plan=self.plan)
-            for dep in (self.plan.feature_deps or [])
-        }
+        return {dep.feature: FeatureDepTransformer(dep=dep, plan=self.plan) for dep in (self.plan.feature_deps or [])}
 
     @cached_property
     def shared_id_columns(self) -> list[str]:
@@ -165,9 +162,7 @@ class VersioningEngine(ABC):
                             df = cast(
                                 FrameT,
                                 df.with_columns(  # ty: ignore[invalid-argument-type]
-                                    nw.coalesce(
-                                        nw.col(id_col), nw.col(right_col)
-                                    ).alias(id_col)
+                                    nw.coalesce(nw.col(id_col), nw.col(right_col)).alias(id_col)
                                 ).drop(right_col),
                             )
 
@@ -326,11 +321,7 @@ class VersioningEngine(ABC):
             extracted_col = f"__extract_{field_name}"
             extracted_cols[field_name] = extracted_col
 
-            extract_expr = (
-                nw.col(renamed_data_version_by_field_col)
-                .struct.field(field_name)
-                .cast(nw.String)
-            )
+            extract_expr = nw.col(renamed_data_version_by_field_col).struct.field(field_name).cast(nw.String)
             df = df.with_columns(extract_expr.alias(extracted_col))  # ty: ignore[invalid-argument-type]
 
         # Step 2: Use window function to aggregate within groups
@@ -411,9 +402,7 @@ class VersioningEngine(ABC):
 
     def get_renamed_data_version_by_field_col(self, feature_key: FeatureKey) -> str:
         """Get the renamed data_version_by_field column name for an upstream feature."""
-        return self.feature_transformers_by_key[
-            feature_key
-        ].renamed_data_version_by_field_col
+        return self.feature_transformers_by_key[feature_key].renamed_data_version_by_field_col
 
     def get_field_provenance_exprs(
         self,
@@ -430,14 +419,12 @@ class VersioningEngine(ABC):
         res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
         for field_spec in self.plan.feature.fields:
             field_provenance: dict[FQFieldKey, nw.Expr] = {}
-            for fq_key, parent_field_spec in self.plan.get_parent_fields_for_field(
-                field_spec.key
-            ).items():
+            for fq_key, parent_field_spec in self.plan.get_parent_fields_for_field(field_spec.key).items():
                 # Read from data_version_by_field instead of provenance_by_field
                 # This enables user-defined versioning control
-                base_expr = nw.col(
-                    self.get_renamed_data_version_by_field_col(fq_key.feature)
-                ).struct.field(parent_field_spec.key.to_struct_key())
+                base_expr = nw.col(self.get_renamed_data_version_by_field_col(fq_key.feature)).struct.field(
+                    parent_field_spec.key.to_struct_key()
+                )
 
                 # Check if this is from an optional dependency
                 transformer = self.feature_transformers_by_key.get(fq_key.feature)
@@ -510,9 +497,7 @@ class VersioningEngine(ABC):
         df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)  # ty: ignore[invalid-assignment]
 
         # Drop all temporary columns
-        temp_columns_to_drop = list(temp_concat_cols.values()) + list(
-            temp_hash_cols.values()
-        )
+        temp_columns_to_drop = list(temp_concat_cols.values()) + list(temp_hash_cols.values())
         df = df.drop(*temp_columns_to_drop)  # ty: ignore[invalid-argument-type]
 
         # Drop renamed upstream system columns
@@ -521,9 +506,7 @@ class VersioningEngine(ABC):
         for transformer in self.feature_transformers_by_key.values():
             renamed_prov_col = transformer.renamed_provenance_col
             renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
-            renamed_data_version_by_field_col = (
-                transformer.renamed_data_version_by_field_col
-            )
+            renamed_data_version_by_field_col = transformer.renamed_data_version_by_field_col
             if renamed_prov_col in current_columns:
                 columns_to_drop.append(renamed_prov_col)
             if renamed_prov_by_field_col in current_columns:
@@ -634,15 +617,10 @@ class VersioningEngine(ABC):
             DataFrame with the sample-level hash column added.
         """
         if field_names is None:
-            field_names = sorted(
-                [f.key.to_struct_key() for f in self.plan.feature.fields]
-            )
+            field_names = sorted([f.key.to_struct_key() for f in self.plan.feature.fields])
 
         # Concatenate all field hashes with separator
-        sample_components = [
-            nw.col(struct_column).struct.field(field_name)
-            for field_name in sorted(field_names)
-        ]
+        sample_components = [nw.col(struct_column).struct.field(field_name) for field_name in sorted(field_names)]
         sample_concat = nw.concat_str(sample_components, separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
 
@@ -718,9 +696,7 @@ class VersioningEngine(ABC):
         """Prepare the expected dataframe from sample (root features) or upstream."""
         if sample is not None:
             # Root features: sample is user-provided with provenance columns already
-            assert len(upstream) == 0, (
-                "Root features should have no upstream dependencies"
-            )
+            assert len(upstream) == 0, "Root features should have no upstream dependencies"
             expected = sample
             input_df: FrameT | None = None
 

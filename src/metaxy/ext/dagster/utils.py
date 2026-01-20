@@ -63,9 +63,7 @@ def build_partition_filter_from_input_context(
     filters: list[nw.Expr] = []
 
     # Get upstream asset's metadata
-    upstream_metadata = (
-        context.upstream_output.definition_metadata if context.upstream_output else None
-    )
+    upstream_metadata = context.upstream_output.definition_metadata if context.upstream_output else None
 
     if upstream_metadata is None:
         return filters
@@ -160,12 +158,8 @@ def build_feature_event_tags(feature: mx.CoercibleToFeatureKey) -> dict[str, str
         # Use table_name format since Dagster tags don't allow '/' in values
         DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.table_name,
         # Truncate version hashes to 63 chars (Dagster tag value limit)
-        DAGSTER_METAXY_FEATURE_VERSION_TAG_KEY: feature_cls.feature_version()[
-            :_DAGSTER_TAG_VALUE_MAX_LENGTH
-        ],
-        DAGSTER_METAXY_FEATURE_CODE_VERSION_TAG_KEY: feature_spec.code_version[
-            :_DAGSTER_TAG_VALUE_MAX_LENGTH
-        ],
+        DAGSTER_METAXY_FEATURE_VERSION_TAG_KEY: feature_cls.feature_version()[:_DAGSTER_TAG_VALUE_MAX_LENGTH],
+        DAGSTER_METAXY_FEATURE_CODE_VERSION_TAG_KEY: feature_spec.code_version[:_DAGSTER_TAG_VALUE_MAX_LENGTH],
     }
 
 
@@ -269,9 +263,7 @@ def get_asset_key_for_metaxy_feature_spec(
     """
     # If dagster/attributes.asset_key is set, use it as-is
     dagster_attrs = feature_spec.metadata.get(METAXY_DAGSTER_METADATA_KEY)
-    if isinstance(dagster_attrs, dict) and (
-        custom_asset_key := dagster_attrs.get("asset_key")
-    ):
+    if isinstance(dagster_attrs, dict) and (custom_asset_key := dagster_attrs.get("asset_key")):
         return dg.AssetKey(custom_asset_key)
 
     # Use the feature key as the asset key
@@ -343,9 +335,7 @@ def generate_materialize_results(
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
         partition_col = asset_spec.metadata.get(DAGSTER_METAXY_PARTITION_KEY)
-        metaxy_partition = asset_spec.metadata.get(
-            DAGSTER_METAXY_PARTITION_METADATA_KEY
-        )
+        metaxy_partition = asset_spec.metadata.get(DAGSTER_METAXY_PARTITION_METADATA_KEY)
 
         with store:  # ty: ignore[invalid-context-manager]
             try:
@@ -358,9 +348,7 @@ def generate_materialize_results(
                     metaxy_partition=metaxy_partition,
                 )
             except FeatureNotFoundError:
-                context.log.exception(
-                    f"Feature {key.to_string()} not found in store, skipping materialization result"
-                )
+                context.log.exception(f"Feature {key.to_string()} not found in store, skipping materialization result")
                 continue
 
             # Get materialized-in-run count if materialization_id is set
@@ -371,9 +359,7 @@ def generate_materialize_results(
                         nw.col(METAXY_MATERIALIZATION_ID) == store.materialization_id  # ty: ignore[possibly-missing-attribute]
                     ],
                 )
-                metadata["metaxy/materialized_in_run"] = (
-                    mat_df.select(nw.len()).collect().item(0, 0)
-                )
+                metadata["metaxy/materialized_in_run"] = mat_df.select(nw.len()).collect().item(0, 0)
 
         yield dg.MaterializeResult(
             value=None,
@@ -567,9 +553,7 @@ def build_runtime_feature_metadata(
     except FeatureNotFoundError:
         raise
     except Exception:
-        context.log.exception(
-            f"Failed to build runtime metadata for feature {feature_key.to_string()}"
-        )
+        context.log.exception(f"Failed to build runtime metadata for feature {feature_key.to_string()}")
         return {}, FeatureStats(row_count=0, data_version=dg.DataVersion("empty"))
 
 
@@ -637,9 +621,7 @@ def generate_observe_results(
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
         partition_col = asset_spec.metadata.get(DAGSTER_METAXY_PARTITION_KEY)
-        metaxy_partition = asset_spec.metadata.get(
-            DAGSTER_METAXY_PARTITION_METADATA_KEY
-        )
+        metaxy_partition = asset_spec.metadata.get(DAGSTER_METAXY_PARTITION_METADATA_KEY)
 
         with store:  # ty: ignore[invalid-context-manager]
             try:
@@ -653,9 +635,7 @@ def generate_observe_results(
                     metaxy_partition=metaxy_partition,
                 )
             except FeatureNotFoundError:
-                context.log.exception(
-                    f"Feature {key.to_string()} not found in store, skipping observation result"
-                )
+                context.log.exception(f"Feature {key.to_string()} not found in store, skipping observation result")
                 continue
 
         yield dg.ObserveResult(

@@ -105,9 +105,7 @@ class TestResolveUpdateRootFeatures:
             )
             user_samples = add_metaxy_provenance_column(user_samples, video_feature)
 
-            result = store.resolve_update(
-                video_feature, samples=nw.from_native(user_samples)
-            )
+            result = store.resolve_update(video_feature, samples=nw.from_native(user_samples))
 
             # All samples should be added
             assert len(result.added) == 3
@@ -146,9 +144,7 @@ class TestResolveUpdateRootFeatures:
                     ],
                 }
             )
-            initial_metadata = add_metaxy_provenance_column(
-                initial_metadata, video_feature
-            )
+            initial_metadata = add_metaxy_provenance_column(initial_metadata, video_feature)
             store.write_metadata(video_feature, initial_metadata)
 
             # User provides updated samples
@@ -166,9 +162,7 @@ class TestResolveUpdateRootFeatures:
             )
             user_samples = add_metaxy_provenance_column(user_samples, video_feature)
 
-            result = store.resolve_update(
-                video_feature, samples=nw.from_native(user_samples)
-            )
+            result = store.resolve_update(video_feature, samples=nw.from_native(user_samples))
 
             # Should detect changes correctly
             assert len(result.added) == 1
@@ -219,9 +213,7 @@ class TestResolveUpdateRootFeatures:
             )
             user_samples = add_metaxy_provenance_column(user_samples, video_feature)
 
-            result = store.resolve_update(
-                video_feature, samples=nw.from_native(user_samples)
-            )
+            result = store.resolve_update(video_feature, samples=nw.from_native(user_samples))
 
             # Verify data_version columns are present in added samples
             assert METAXY_DATA_VERSION in result.added.columns
@@ -231,9 +223,7 @@ class TestResolveUpdateRootFeatures:
             added_df = result.added.to_polars()
             for row in added_df.iter_rows(named=True):
                 assert row[METAXY_DATA_VERSION] == row[METAXY_PROVENANCE]
-                assert (
-                    row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
-                )
+                assert row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
 
     @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_root_feature_preserves_custom_data_version(
@@ -277,13 +267,9 @@ class TestResolveUpdateRootFeatures:
             )
             user_samples = add_metaxy_provenance_column(user_samples, video_feature)
             # Add data_version hash column
-            user_samples = user_samples.with_columns(
-                pl.concat_str([pl.lit("custom_v1")]).alias(METAXY_DATA_VERSION)
-            )
+            user_samples = user_samples.with_columns(pl.concat_str([pl.lit("custom_v1")]).alias(METAXY_DATA_VERSION))
 
-            result = store.resolve_update(
-                video_feature, samples=nw.from_native(user_samples)
-            )
+            result = store.resolve_update(video_feature, samples=nw.from_native(user_samples))
 
             # Verify custom data_version columns are preserved
             assert METAXY_DATA_VERSION in result.added.columns
@@ -350,9 +336,7 @@ class TestResolveUpdateRootFeatures:
             added_df = result.added.to_polars()
             for row in added_df.iter_rows(named=True):
                 assert row[METAXY_DATA_VERSION] == row[METAXY_PROVENANCE]
-                assert (
-                    row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
-                )
+                assert row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
 
     @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_accepts_polars_frame_directly(

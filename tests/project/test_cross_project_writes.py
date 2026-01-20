@@ -19,9 +19,7 @@ from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 
-def test_write_to_same_project_succeeds(
-    snapshot: SnapshotAssertion, tmp_path: Path
-) -> None:
+def test_write_to_same_project_succeeds(snapshot: SnapshotAssertion, tmp_path: Path) -> None:
     """Test that writing to a feature from the same project succeeds."""
     config = MetaxyConfig(project="test_project")
     MetaxyConfig.set(config)

@@ -39,11 +39,7 @@ if TYPE_CHECKING:
 
 RESERVED_SQLMODEL_FIELD_NAMES = frozenset(
     set(ALL_SYSTEM_COLUMNS)
-    | {
-        name.removeprefix(SYSTEM_COLUMN_PREFIX)
-        for name in ALL_SYSTEM_COLUMNS
-        if name.startswith(SYSTEM_COLUMN_PREFIX)
-    }
+    | {name.removeprefix(SYSTEM_COLUMN_PREFIX) for name in ALL_SYSTEM_COLUMNS if name.startswith(SYSTEM_COLUMN_PREFIX)}
 )
 
 
@@ -103,11 +99,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                 )
 
             # Prevent user-defined fields from shadowing system-managed columns
-            conflicts = {
-                attr_name
-                for attr_name in namespace
-                if attr_name in RESERVED_SQLMODEL_FIELD_NAMES
-            }
+            conflicts = {attr_name for attr_name in namespace if attr_name in RESERVED_SQLMODEL_FIELD_NAMES}
 
             # Also guard against explicit sa_column_kwargs targeting system columns
             for attr_name, attr_value in namespace.items():
@@ -130,15 +122,11 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
             namespace["__tablename__"] = spec.key.table_name
 
             # Inject table args (info metadata + optional constraints)
-            cls._inject_table_args(
-                namespace, spec, cls_name, inject_primary_key, inject_index
-            )
+            cls._inject_table_args(namespace, spec, cls_name, inject_primary_key, inject_index)
 
         # Call super().__new__ which follows MRO: MetaxyMeta -> SQLModelMetaclass -> ...
         # MetaxyMeta will consume the spec parameter and pass remaining kwargs to SQLModelMetaclass
-        new_class = super().__new__(
-            cls, cls_name, bases, namespace, spec=spec, **kwargs
-        )
+        new_class = super().__new__(cls, cls_name, bases, namespace, spec=spec, **kwargs)
 
         return new_class
 
@@ -169,9 +157,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
         from sqlalchemy import Index, PrimaryKeyConstraint
 
         # Prepare info dict with Metaxy metadata (always added)
-        metaxy_info = {
-            "metaxy-system": MetaxyTableInfo(feature_key=spec.key).model_dump()
-        }
+        metaxy_info = {"metaxy-system": MetaxyTableInfo(feature_key=spec.key).model_dump()}
 
         # Base table kwargs that are always applied
         base_table_kwargs = {"extend_existing": True}
@@ -227,13 +213,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                     table_kwargs.setdefault(key, value)
 
                 # Combine: existing constraints + new constraints + table kwargs
-                namespace["__table_args__"] = (
-                    existing_constraints + tuple(constraints) + (table_kwargs,)
-                )
+                namespace["__table_args__"] = existing_constraints + tuple(constraints) + (table_kwargs,)
             else:
-                raise ValueError(
-                    f"Invalid __table_args__ type in {cls_name}: {type(existing_args)}"
-                )
+                raise ValueError(f"Invalid __table_args__ type in {cls_name}: {type(existing_args)}")
         else:
             # No existing __table_args__
             table_kwargs = {**base_table_kwargs, "info": metaxy_info}
@@ -245,9 +227,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                 namespace["__table_args__"] = table_kwargs
 
 
-class BaseSQLModelFeature(
-    SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None
-):
+class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None):
     """Base class for `Metaxy` features that are also `SQLModel` tables.
 
     !!! example

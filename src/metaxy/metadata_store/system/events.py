@@ -95,12 +95,8 @@ class Event(BaseModel):
     project: str
     execution_id: str  # Generic ID for the execution (migration, job, etc.)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    feature_key: str | None = (
-        None  # Feature key for feature-level events, empty for execution-level events
-    )
-    payload: Annotated[
-        Payload, Field(default_factory=EmptyPayload, discriminator="type")
-    ]
+    feature_key: str | None = None  # Feature key for feature-level events, empty for execution-level events
+    payload: Annotated[Payload, Field(default_factory=EmptyPayload, discriminator="type")]
 
     def to_polars(self) -> pl.DataFrame:
         """Convert this model instance to a single-row Polars DataFrame.
@@ -177,15 +173,11 @@ class Event(BaseModel):
             project=project,
             execution_id=migration_id,
             event_type=EventType.MIGRATION_FAILED,
-            payload=ErrorPayload(
-                error_message=error_message, rows_affected=rows_affected
-            ),
+            payload=ErrorPayload(error_message=error_message, rows_affected=rows_affected),
         )
 
     @classmethod
-    def feature_migration_started(
-        cls, project: str, migration_id: str, feature_key: str
-    ) -> Event:
+    def feature_migration_started(cls, project: str, migration_id: str, feature_key: str) -> Event:
         """Create a feature started event.
 
         Args:
@@ -253,9 +245,7 @@ class Event(BaseModel):
             execution_id=migration_id,
             event_type=EventType.FEATURE_MIGRATION_FAILED,
             feature_key=feature_key,
-            payload=ErrorPayload(
-                error_message=error_message, rows_affected=rows_affected
-            ),
+            payload=ErrorPayload(error_message=error_message, rows_affected=rows_affected),
         )
 
     # Shorter aliases for convenience

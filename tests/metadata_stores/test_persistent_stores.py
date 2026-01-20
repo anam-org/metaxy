@@ -21,9 +21,7 @@ from metaxy.metadata_store.system import SystemTableStorage
 # Context Manager Tests
 
 
-def test_store_requires_context_manager(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_store_requires_context_manager(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that operations outside context manager raise error."""
     data = pl.DataFrame(
         {
@@ -44,9 +42,7 @@ def test_store_requires_context_manager(
         persistent_store.read_metadata(test_features["UpstreamFeatureA"])
 
 
-def test_store_context_manager(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_store_context_manager(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that store works as a context manager."""
     with persistent_store.open("write") as store:
         # Store should be open
@@ -68,9 +64,7 @@ def test_store_context_manager(
 # Basic CRUD Tests
 
 
-def test_write_and_read_metadata(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_write_and_read_metadata(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test basic write and read operations."""
     with persistent_store.open("write") as store:
         metadata = pl.DataFrame(
@@ -86,9 +80,7 @@ def test_write_and_read_metadata(
         )
 
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
-        result = collect_to_polars(
-            store.read_metadata(test_features["UpstreamFeatureA"])
-        )
+        result = collect_to_polars(store.read_metadata(test_features["UpstreamFeatureA"]))
 
         assert len(result) == 3
         assert "sample_uid" in result.columns
@@ -96,9 +88,7 @@ def test_write_and_read_metadata(
         assert "path" in result.columns
 
 
-def test_write_invalid_schema(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_write_invalid_schema(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that writing without provenance_by_field column raises error."""
     with persistent_store.open("write") as store:
         invalid_df = pl.DataFrame(
@@ -112,9 +102,7 @@ def test_write_invalid_schema(
             store.write_metadata(test_features["UpstreamFeatureA"], invalid_df)
 
 
-def test_write_append(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_write_append(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that writes are append-only."""
     with persistent_store.open("write") as store:
         df1 = pl.DataFrame(
@@ -140,16 +128,12 @@ def test_write_append(
         store.write_metadata(test_features["UpstreamFeatureA"], df1)
         store.write_metadata(test_features["UpstreamFeatureA"], df2)
 
-        result = collect_to_polars(
-            store.read_metadata(test_features["UpstreamFeatureA"])
-        )
+        result = collect_to_polars(store.read_metadata(test_features["UpstreamFeatureA"]))
         assert len(result) == 4
         assert set(result["sample_uid"].to_list()) == {1, 2, 3, 4}
 
 
-def test_read_with_filters(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_read_with_filters(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test reading with Polars filter expressions."""
     with persistent_store.open("write") as store:
         metadata = pl.DataFrame(
@@ -175,9 +159,7 @@ def test_read_with_filters(
         assert set(result["sample_uid"].to_list()) == {2, 3}
 
 
-def test_read_with_column_selection(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_read_with_column_selection(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test reading specific columns."""
     with persistent_store.open("write") as store:
         metadata = pl.DataFrame(
@@ -204,9 +186,7 @@ def test_read_with_column_selection(
         assert "path" not in result.columns
 
 
-def test_read_nonexistent_feature(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_read_nonexistent_feature(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that reading nonexistent feature raises error."""
     with persistent_store.open("write") as store:
         with pytest.raises(FeatureNotFoundError):
@@ -216,14 +196,10 @@ def test_read_nonexistent_feature(
 # Feature Existence Tests
 
 
-def test_has_feature_local(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_has_feature_local(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test has_feature for local store."""
     with persistent_store.open("write") as store:
-        assert not store.has_feature(
-            test_features["UpstreamFeatureA"], check_fallback=False
-        )
+        assert not store.has_feature(test_features["UpstreamFeatureA"], check_fallback=False)
 
         metadata = pl.DataFrame(
             {
@@ -233,12 +209,8 @@ def test_has_feature_local(
         )
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
-        assert store.has_feature(
-            test_features["UpstreamFeatureA"], check_fallback=False
-        )
-        assert not store.has_feature(
-            test_features["UpstreamFeatureB"], check_fallback=False
-        )
+        assert store.has_feature(test_features["UpstreamFeatureA"], check_fallback=False)
+        assert not store.has_feature(test_features["UpstreamFeatureB"], check_fallback=False)
 
 
 # System Tables Tests
@@ -268,9 +240,7 @@ def test_system_tables(persistent_store, test_features: dict[str, Any]) -> None:
         SystemTableStorage(store).push_graph_snapshot()
 
         # Read system table
-        version_history = collect_to_polars(
-            store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
-        )
+        version_history = collect_to_polars(store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False))
 
         assert len(version_history) > 0
         assert "feature_key" in version_history.columns
@@ -303,9 +273,7 @@ def test_repr(persistent_store) -> None:
 # Nested Context Manager Tests
 
 
-def test_nested_context_managers(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_nested_context_managers(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that nested context managers work correctly.
 
     Args:
@@ -328,9 +296,7 @@ def test_nested_context_managers(
 
         # Should still be open after inner context exits
         assert store1._is_open
-        result = collect_to_polars(
-            store1.read_metadata(test_features["UpstreamFeatureA"])
-        )
+        result = collect_to_polars(store1.read_metadata(test_features["UpstreamFeatureA"]))
         assert len(result) == 1
 
     # Now should be closed after outer context exits
@@ -340,9 +306,7 @@ def test_nested_context_managers(
 # Multiple Features Tests
 
 
-def test_multiple_features(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_multiple_features(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test storing multiple features in same store.
 
     Args:
@@ -376,12 +340,8 @@ def test_multiple_features(
         store.write_metadata(test_features["UpstreamFeatureB"], data_b)
 
         # Read both
-        result_a = collect_to_polars(
-            store.read_metadata(test_features["UpstreamFeatureA"])
-        )
-        result_b = collect_to_polars(
-            store.read_metadata(test_features["UpstreamFeatureB"])
-        )
+        result_a = collect_to_polars(store.read_metadata(test_features["UpstreamFeatureA"]))
+        result_b = collect_to_polars(store.read_metadata(test_features["UpstreamFeatureB"]))
 
         assert len(result_a) == 2
         assert len(result_b) == 3

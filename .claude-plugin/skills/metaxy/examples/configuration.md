@@ -64,9 +64,7 @@ store = config.get_store("dev")
 import metaxy as mx
 
 with mx.MetaxyConfig(
-    stores={
-        "dev": mx.DeltaMetadataStore(root_path="/tmp/metaxy", auto_create_tables=True)
-    }
+    stores={"dev": mx.DeltaMetadataStore(root_path="/tmp/metaxy", auto_create_tables=True)}
 ).use() as config:
     store = config.get_store("dev")
 ```

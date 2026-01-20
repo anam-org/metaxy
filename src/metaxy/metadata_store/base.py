@@ -210,9 +210,7 @@ class MetadataStore(ABC):
         self._versioning_engine = versioning_engine
         self._allow_cross_project_writes = False
         self._materialization_id = materialization_id
-        self._open_cm: AbstractContextManager[Self] | None = (
-            None  # Track the open() context manager
-        )
+        self._open_cm: AbstractContextManager[Self] | None = None  # Track the open() context manager
 
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
@@ -341,9 +339,7 @@ class MetadataStore(ABC):
 
         feature_key = self._resolve_feature_key(feature)
         if self._is_system_table(feature_key):
-            raise NotImplementedError(
-                "Delete operations are not yet supported for system tables."
-            )
+            raise NotImplementedError("Delete operations are not yet supported for system tables.")
         graph = current_graph()
         plan = graph.get_feature_plan(feature_key)
 
@@ -398,9 +394,7 @@ class MetadataStore(ABC):
             # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
             if METAXY_DATA_VERSION_BY_FIELD not in samples_nw.collect_schema().names():
                 samples_nw = samples_nw.with_columns(
-                    nw.col(METAXY_PROVENANCE_BY_FIELD).alias(
-                        METAXY_DATA_VERSION_BY_FIELD
-                    ),
+                    nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
                     nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
                 )
         else:
@@ -422,11 +416,7 @@ class MetadataStore(ABC):
         # (2) if samples have native implementation
 
         # Use parameter if provided, otherwise use store default
-        engine_mode = (
-            versioning_engine
-            if versioning_engine is not None
-            else self._versioning_engine
-        )
+        engine_mode = versioning_engine if versioning_engine is not None else self._versioning_engine
 
         # If "polars" mode, force Polars immediately
         if engine_mode == "polars":
@@ -448,9 +438,7 @@ class MetadataStore(ABC):
                             f"versioning_engine='native' but upstream feature `{upstream_key.to_string()}` "
                             f"has implementation {df.implementation}, expected {self.native_implementation()}"
                         )
-                    elif engine_mode == "auto" or (
-                        engine_mode == "native" and self.fallback_stores
-                    ):
+                    elif engine_mode == "auto" or (engine_mode == "native" and self.fallback_stores):
                         PolarsMaterializationWarning.warn_on_implementation_mismatch(
                             expected=self.native_implementation(),
                             actual=df.implementation,
@@ -459,10 +447,7 @@ class MetadataStore(ABC):
                     implementation = nw.Implementation.POLARS
                     break
 
-            if (
-                samples_nw is not None
-                and samples_nw.implementation != self.native_implementation()
-            ):
+            if samples_nw is not None and samples_nw.implementation != self.native_implementation():
                 if not switched_to_polars:
                     if engine_mode == "native":
                         # Always raise error for samples with wrong implementation, regardless
@@ -488,9 +473,7 @@ class MetadataStore(ABC):
             for upstream_key, df in upstream_by_key.items():
                 upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
 
-        with self.create_versioning_engine(
-            plan=plan, implementation=implementation
-        ) as engine:
+        with self.create_versioning_engine(plan=plan, implementation=implementation) as engine:
             if skip_comparison:
                 # Skip comparison: return all upstream samples as added
                 if samples_nw is not None:
@@ -505,20 +488,16 @@ class MetadataStore(ABC):
                         hash_algo=self.hash_algorithm,
                         filters=filters_by_key,
                     )
-                    input_df = (
-                        added  # Input is the same as added when skipping comparison
-                    )
+                    input_df = added  # Input is the same as added when skipping comparison
                 changed = None
                 removed = None
             else:
-                added, changed, removed, input_df = (
-                    engine.resolve_increment_with_provenance(
-                        current=current_metadata,
-                        upstream=upstream_by_key,
-                        hash_algorithm=self.hash_algorithm,
-                        filters=filters_by_key,
-                        sample=samples_nw.lazy() if samples_nw is not None else None,
-                    )
+                added, changed, removed, input_df = engine.resolve_increment_with_provenance(
+                    current=current_metadata,
+                    upstream=upstream_by_key,
+                    hash_algorithm=self.hash_algorithm,
+                    filters=filters_by_key,
+                    sample=samples_nw.lazy() if samples_nw is not None else None,
                 )
 
         # Convert None to empty DataFrames
@@ -529,28 +508,16 @@ class MetadataStore(ABC):
 
         if lazy:
             return LazyIncrement(
-                added=added
-                if isinstance(added, nw.LazyFrame)
-                else nw.from_native(added),
-                changed=changed
-                if isinstance(changed, nw.LazyFrame)
-                else nw.from_native(changed),
-                removed=removed
-                if isinstance(removed, nw.LazyFrame)
-                else nw.from_native(removed),
-                input=input_df
-                if input_df is None or isinstance(input_df, nw.LazyFrame)
-                else nw.from_native(input_df),
+                added=added if isinstance(added, nw.LazyFrame) else nw.from_native(added),
+                changed=changed if isinstance(changed, nw.LazyFrame) else nw.from_native(changed),
+                removed=removed if isinstance(removed, nw.LazyFrame) else nw.from_native(removed),
+                input=input_df if input_df is None or isinstance(input_df, nw.LazyFrame) else nw.from_native(input_df),
             )
         else:
             return Increment(
                 added=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                changed=changed.collect()
-                if isinstance(changed, nw.LazyFrame)
-                else changed,
-                removed=removed.collect()
-                if isinstance(removed, nw.LazyFrame)
-                else removed,
+                changed=changed.collect() if isinstance(changed, nw.LazyFrame) else changed,
+                removed=removed.collect() if isinstance(removed, nw.LazyFrame) else removed,
             )
 
     def compute_provenance(
@@ -627,9 +594,7 @@ class MetadataStore(ABC):
             implementation = nw.Implementation.POLARS
             df = switch_implementation_to_polars(df)  # ty: ignore[no-matching-overload]
 
-        with self.create_versioning_engine(
-            plan=plan, implementation=implementation
-        ) as engine:
+        with self.create_versioning_engine(plan=plan, implementation=implementation) as engine:
             # Validate required upstream columns exist
             expected_columns = {
                 dep.feature: engine.get_renamed_data_version_by_field_col(dep.feature)
@@ -720,27 +685,21 @@ class MetadataStore(ABC):
         # Add feature_version filter only when needed
         if current_only or feature_version is not None and not is_system_table:
             version_filter = nw.col(METAXY_FEATURE_VERSION) == (
-                current_graph().get_feature_version(feature_key)
-                if current_only
-                else feature_version
+                current_graph().get_feature_version(feature_key) if current_only else feature_version
             )
             filters = [version_filter, *filters]
 
         if columns and not is_system_table:
             # Add only system columns that aren't already in the user's columns list
             columns_set = set(columns)
-            missing_system_cols = [
-                c for c in ALL_SYSTEM_COLUMNS if c not in columns_set
-            ]
+            missing_system_cols = [c for c in ALL_SYSTEM_COLUMNS if c not in columns_set]
             read_columns = [*columns, *missing_system_cols]
         else:
             read_columns = None
 
         lazy_frame = None
         try:
-            lazy_frame = self.read_metadata_in_store(
-                feature, filters=filters, columns=read_columns
-            )
+            lazy_frame = self.read_metadata_in_store(feature, filters=filters, columns=read_columns)
         except FeatureNotFoundError as e:
             # do not read system features from fallback stores
             if is_system_table:
@@ -757,9 +716,7 @@ class MetadataStore(ABC):
         if lazy_frame is not None and not is_system_table:
             # Deduplicate first, then filter soft-deleted rows
             if latest_only:
-                id_cols = list(
-                    self._resolve_feature_plan(feature_key).feature.id_columns
-                )
+                id_cols = list(self._resolve_feature_plan(feature_key).feature.id_columns)
                 # Treat soft-deletes like hard deletes by ordering on the
                 # most recent lifecycle timestamp.
                 lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
@@ -801,8 +758,7 @@ class MetadataStore(ABC):
 
         # Not found anywhere
         raise FeatureNotFoundError(
-            f"Feature {feature_key.to_string()} not found in store"
-            + (" or fallback stores" if allow_fallback else "")
+            f"Feature {feature_key.to_string()} not found in store" + (" or fallback stores" if allow_fallback else "")
         )
 
     def write_metadata(
@@ -853,9 +809,7 @@ class MetadataStore(ABC):
         # if isinstance(df_nw, (pl.DataFrame, pl.LazyFrame)):
         df_nw = nw.from_native(df)
 
-        assert isinstance(df_nw, (nw.DataFrame, nw.LazyFrame)), (
-            f"df must be a Narwhals DataFrame, got {type(df_nw)}"
-        )
+        assert isinstance(df_nw, (nw.DataFrame, nw.LazyFrame)), f"df must be a Narwhals DataFrame, got {type(df_nw)}"
 
         # For system tables, write directly without feature_version tracking
         if is_system_table:
@@ -867,17 +821,13 @@ class MetadataStore(ABC):
         if METAXY_PROVENANCE_BY_FIELD not in df_nw.collect_schema().names():
             from metaxy.metadata_store.exceptions import MetadataSchemaError
 
-            raise MetadataSchemaError(
-                f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column"
-            )
+            raise MetadataSchemaError(f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column")
 
         # Add all required system columns
         # warning: for dataframes that do not match the native MetadataStore implementation
         # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
         # while calculating the missing METAXY_DATA_VERSION column
-        df_nw = self._add_system_columns(
-            df_nw, feature, materialization_id=materialization_id
-        )
+        df_nw = self._add_system_columns(df_nw, feature, materialization_id=materialization_id)
 
         self._validate_schema(df_nw)
         self.write_metadata_to_store(feature_key, df_nw)
@@ -930,15 +880,11 @@ class MetadataStore(ABC):
             return
 
         # Build mapping from resolved keys to dataframes in one pass
-        resolved_metadata = {
-            self._resolve_feature_key(key): df for key, df in metadata.items()
-        }
+        resolved_metadata = {self._resolve_feature_key(key): df for key, df in metadata.items()}
 
         # Get reverse topological order (dependents first)
         graph = current_graph()
-        sorted_keys = graph.topological_sort_features(
-            list(resolved_metadata.keys()), descending=True
-        )
+        sorted_keys = graph.topological_sort_features(list(resolved_metadata.keys()), descending=True)
 
         # Write metadata in reverse topological order
         for feature_key in sorted_keys:
@@ -1002,9 +948,7 @@ class MetadataStore(ABC):
 
         # Pop and resolve fallback store names to actual store instances
         fallback_store_names = config_dict.pop("fallback_stores", [])
-        fallback_stores = [
-            MetaxyConfig.get().get_store(name) for name in fallback_store_names
-        ]
+        fallback_stores = [MetaxyConfig.get().get_store(name) for name in fallback_store_names]
 
         # Create store with resolved fallback stores, config, and extra kwargs
         return cls(fallback_stores=fallback_stores, **config_dict, **kwargs)
@@ -1037,9 +981,7 @@ class MetadataStore(ABC):
 
     @abstractmethod
     @contextmanager
-    def _create_versioning_engine(
-        self, plan: FeaturePlan
-    ) -> Iterator[VersioningEngine]:
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[VersioningEngine]:
         """Create provenance engine for this store as a context manager.
 
         Args:
@@ -1062,9 +1004,7 @@ class MetadataStore(ABC):
         ...
 
     @contextmanager
-    def _create_polars_versioning_engine(
-        self, plan: FeaturePlan
-    ) -> Iterator[PolarsVersioningEngine]:
+    def _create_polars_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:
         yield PolarsVersioningEngine(plan=plan)
 
     @contextmanager
@@ -1102,10 +1042,7 @@ class MetadataStore(ABC):
         hash_column: str,
     ) -> Frame:
         with self.create_versioning_engine(plan, df.implementation) as engine:
-            if (
-                isinstance(engine, PolarsVersioningEngine)
-                and df.implementation != nw.Implementation.POLARS
-            ):
+            if isinstance(engine, PolarsVersioningEngine) and df.implementation != nw.Implementation.POLARS:
                 PolarsMaterializationWarning.warn_on_implementation_mismatch(
                     self.native_implementation(),
                     df.implementation,
@@ -1405,11 +1342,7 @@ class MetadataStore(ABC):
 
             # Get current feature version, feature_spec_version, and snapshot_version from code
             # Use duck typing to avoid Ray serialization issues with issubclass
-            if (
-                isinstance(feature, type)
-                and hasattr(feature, "feature_version")
-                and callable(feature.feature_version)
-            ):
+            if isinstance(feature, type) and hasattr(feature, "feature_version") and callable(feature.feature_version):
                 current_feature_version = feature.feature_version()  # ty: ignore[call-top-callable]
                 current_feature_spec_version = feature.feature_spec_version()  # ty: ignore[possibly-missing-attribute]
             else:
@@ -1429,9 +1362,7 @@ class MetadataStore(ABC):
                 [
                     nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),  # ty: ignore[invalid-argument-type]
                     nw.lit(current_snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
-                    nw.lit(current_feature_spec_version).alias(
-                        METAXY_FEATURE_SPEC_VERSION
-                    ),
+                    nw.lit(current_feature_spec_version).alias(METAXY_FEATURE_SPEC_VERSION),
                 ]
             )
 
@@ -1476,24 +1407,16 @@ class MetadataStore(ABC):
         if METAXY_CREATED_AT not in columns:
             from datetime import datetime, timezone
 
-            df = df.with_columns(
-                nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT)
-            )
+            df = df.with_columns(nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT))
 
         if METAXY_DELETED_AT not in columns:
-            df = df.with_columns(
-                nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(
-                    METAXY_DELETED_AT
-                )
-            )
+            df = df.with_columns(nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT))
 
         # Add materialization_id if not already present
         from metaxy.models.constants import METAXY_MATERIALIZATION_ID
 
         df = df.with_columns(
-            nw.lit(
-                materialization_id or self._materialization_id, dtype=nw.String
-            ).alias(METAXY_MATERIALIZATION_ID)
+            nw.lit(materialization_id or self._materialization_id, dtype=nw.String).alias(METAXY_MATERIALIZATION_ID)
         )
 
         # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)
@@ -1501,9 +1424,7 @@ class MetadataStore(ABC):
         columns = df.collect_schema().names()
 
         if METAXY_DATA_VERSION_BY_FIELD not in columns:
-            df = df.with_columns(
-                nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD)
-            )
+            df = df.with_columns(nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD))
             df = df.with_columns(nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION))
         elif METAXY_DATA_VERSION not in columns:
             df = self.hash_struct_version_column(
@@ -1536,30 +1457,22 @@ class MetadataStore(ABC):
 
         # Check for metaxy_provenance_by_field column
         if METAXY_PROVENANCE_BY_FIELD not in schema.names():
-            raise MetadataSchemaError(
-                f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column"
-            )
+            raise MetadataSchemaError(f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column")
 
         # Check that metaxy_provenance_by_field is a struct
         provenance_dtype = schema[METAXY_PROVENANCE_BY_FIELD]
         if not isinstance(provenance_dtype, nw.Struct):
-            raise MetadataSchemaError(
-                f"'{METAXY_PROVENANCE_BY_FIELD}' column must be a Struct, got {provenance_dtype}"
-            )
+            raise MetadataSchemaError(f"'{METAXY_PROVENANCE_BY_FIELD}' column must be a Struct, got {provenance_dtype}")
 
         # Note: metaxy_provenance is auto-computed if missing, so we don't validate it here
 
         # Check for feature_version column
         if METAXY_FEATURE_VERSION not in schema.names():
-            raise MetadataSchemaError(
-                f"DataFrame must have '{METAXY_FEATURE_VERSION}' column"
-            )
+            raise MetadataSchemaError(f"DataFrame must have '{METAXY_FEATURE_VERSION}' column")
 
         # Check for snapshot_version column
         if METAXY_SNAPSHOT_VERSION not in schema.names():
-            raise MetadataSchemaError(
-                f"DataFrame must have '{METAXY_SNAPSHOT_VERSION}' column"
-            )
+            raise MetadataSchemaError(f"DataFrame must have '{METAXY_SNAPSHOT_VERSION}' column")
 
     def _validate_schema_system_table(self, df: Frame) -> None:
         """Validate schema for system tables (minimal validation).
@@ -1596,9 +1509,7 @@ class MetadataStore(ABC):
             filters: Optional Narwhals expressions to filter records; None or empty deletes all
             current_only: Whether to only affect the records with the current feature version
         """
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not yet support hard delete."
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} does not yet support hard delete.")
 
     def drop_feature_metadata(self, feature: CoercibleToFeatureKey) -> None:
         """Drop all metadata for a feature.
@@ -1621,9 +1532,7 @@ class MetadataStore(ABC):
         self._check_open()
         feature_key = self._resolve_feature_key(feature)
         if self._is_system_table(feature_key):
-            raise NotImplementedError(
-                f"{self.__class__.__name__} does not support deletes for system tables"
-            )
+            raise NotImplementedError(f"{self.__class__.__name__} does not support deletes for system tables")
         self._drop_feature_metadata_impl(feature_key)
 
     def delete_metadata(
@@ -1674,21 +1583,15 @@ class MetadataStore(ABC):
                 latest_only=latest_only,
                 allow_fallback=True,
             )
-            soft_deletion_marked = lazy.with_columns(
-                nw.lit(datetime.now(timezone.utc)).alias(METAXY_DELETED_AT)
-            )
+            soft_deletion_marked = lazy.with_columns(nw.lit(datetime.now(timezone.utc)).alias(METAXY_DELETED_AT))
             self.write_metadata(feature_key, soft_deletion_marked.to_native())
         else:
             # Hard delete: add version filter if needed, then delegate to backend
             if current_only and not self._is_system_table(feature_key):
-                version_filter = nw.col(
-                    METAXY_FEATURE_VERSION
-                ) == current_graph().get_feature_version(feature_key)
+                version_filter = nw.col(METAXY_FEATURE_VERSION) == current_graph().get_feature_version(feature_key)
                 filter_list = [version_filter, *filter_list]
 
-            self._delete_metadata_impl(
-                feature_key, filter_list, current_only=current_only
-            )
+            self._delete_metadata_impl(feature_key, filter_list, current_only=current_only)
 
     @abstractmethod
     def read_metadata_in_store(
@@ -1816,9 +1719,7 @@ class MetadataStore(ABC):
         if check_fallback:
             for store in self.fallback_stores:
                 with store:
-                    found = store.find_store_for_feature(
-                        feature_key, check_fallback=True
-                    )
+                    found = store.find_store_for_feature(feature_key, check_fallback=True)
                     if found is not None:
                         return found
 
@@ -1850,9 +1751,7 @@ class MetadataStore(ABC):
             **store._get_store_metadata_impl(feature_key),
         }
 
-    def _get_store_metadata_impl(
-        self, feature_key: CoercibleToFeatureKey
-    ) -> dict[str, Any]:
+    def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
         """Implementation of get_store_metadata for this specific store type.
 
         Override in subclasses to return store-specific metadata.
@@ -1900,24 +1799,12 @@ class MetadataStore(ABC):
         # Count distinct input units using two separate queries
         # We can't use concat because input and added may have different schemas
         # (e.g., nullable vs non-nullable columns)
-        total_units: int = (
-            lazy_increment.input.select(input_id_columns)
-            .unique()
-            .select(nw.len())
-            .collect()
-            .item()
-        )
+        total_units: int = lazy_increment.input.select(input_id_columns).unique().select(nw.len()).collect().item()
 
         if total_units == 0:
             return None  # No input available from upstream
 
-        missing_units: int = (
-            lazy_increment.added.select(input_id_columns)
-            .unique()
-            .select(nw.len())
-            .collect()
-            .item()
-        )
+        missing_units: int = lazy_increment.added.select(input_id_columns).unique().select(nw.len()).collect().item()
 
         processed_units = total_units - missing_units
         return (processed_units / total_units) * 100
@@ -2007,13 +1894,9 @@ class MetadataStore(ABC):
 
         # Validate both stores are open
         if not self._is_open:
-            raise ValueError(
-                'Destination store must be opened with store.open("write") before use'
-            )
+            raise ValueError('Destination store must be opened with store.open("write") before use')
         if not from_store._is_open:
-            raise ValueError(
-                'Source store must be opened with store.open("read") before use'
-            )
+            raise ValueError('Source store must be opened with store.open("read") before use')
 
         return self._copy_metadata_impl(
             from_store=from_store,
@@ -2044,9 +1927,7 @@ class MetadataStore(ABC):
 
             graph = FeatureGraph.get_active()
             features_to_copy = graph.list_features(only_current_project=True)
-            logger.info(
-                f"Copying all features from active graph: {len(features_to_copy)} features"
-            )
+            logger.info(f"Copying all features from active graph: {len(features_to_copy)} features")
         else:
             # Convert all to FeatureKey using the adapter
             features_to_copy = [self._resolve_feature_key(item) for item in features]
@@ -2086,9 +1967,7 @@ class MetadataStore(ABC):
                     row_count = len(source_df)
 
                     if row_count == 0:
-                        logger.warning(
-                            f"No rows found for {feature_key.to_string()}, skipping"
-                        )
+                        logger.warning(f"No rows found for {feature_key.to_string()}, skipping")
                         continue
 
                     # Write to destination (preserving snapshot_version and feature_version)
@@ -2096,23 +1975,15 @@ class MetadataStore(ABC):
 
                     features_copied += 1
                     total_rows += row_count
-                    logger.info(
-                        f"Copied {row_count} rows for {feature_key.to_string()}"
-                    )
+                    logger.info(f"Copied {row_count} rows for {feature_key.to_string()}")
 
                 except FeatureNotFoundError:
-                    logger.warning(
-                        f"Feature {feature_key.to_string()} not found in source store, skipping"
-                    )
+                    logger.warning(f"Feature {feature_key.to_string()} not found in source store, skipping")
                     continue
                 except Exception as e:
-                    logger.error(
-                        f"Error copying {feature_key.to_string()}: {e}", exc_info=True
-                    )
+                    logger.error(f"Error copying {feature_key.to_string()}: {e}", exc_info=True)
                     raise
 
-        logger.info(
-            f"Copy complete: {features_copied} features, {total_rows} total rows"
-        )
+        logger.info(f"Copy complete: {features_copied} features, {total_rows} total rows")
 
         return {"features_copied": features_copied, "rows_copied": total_rows}

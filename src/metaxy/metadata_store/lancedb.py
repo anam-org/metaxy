@@ -218,9 +218,7 @@ class LanceDBMetadataStore(MetadataStore):
         from metaxy.metadata_store.exceptions import StoreNotOpenError
 
         if self._conn is None:
-            raise StoreNotOpenError(
-                "LanceDB connection is not open. Store must be used as a context manager."
-            )
+            raise StoreNotOpenError("LanceDB connection is not open. Store must be used as a context manager.")
         return self._conn
 
     # Helpers -----------------------------------------------------------------

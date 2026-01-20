@@ -49,8 +49,7 @@ class RunbookLoader:
 
         if not example_dir.exists():
             raise FileNotFoundError(
-                f"Example directory not found: {example_dir}. "
-                f"Available examples: {self.list_examples()}"
+                f"Example directory not found: {example_dir}. Available examples: {self.list_examples()}"
             )
 
         return example_dir
@@ -93,9 +92,7 @@ class RunbookLoader:
         self._runbook_cache[example_name] = runbook
         return runbook
 
-    def read_file(
-        self, example_name: str, file_path: str, patches: list[str] | None = None
-    ) -> str:
+    def read_file(self, example_name: str, file_path: str, patches: list[str] | None = None) -> str:
         """Read a source file, optionally applying patches.
 
         Args:
@@ -114,9 +111,7 @@ class RunbookLoader:
         source_file = example_dir / file_path
 
         if not source_file.exists():
-            raise FileNotFoundError(
-                f"File not found: {source_file} (resolved from {file_path})"
-            )
+            raise FileNotFoundError(f"File not found: {source_file} (resolved from {file_path})")
 
         # If no patches, just read the file directly
         if not patches:
@@ -125,9 +120,7 @@ class RunbookLoader:
         # Apply patches in a temporary directory
         return self._apply_patches_and_read(example_dir, file_path, patches)
 
-    def _apply_patches_and_read(
-        self, example_dir: Path, file_path: str, patches: list[str]
-    ) -> str:
+    def _apply_patches_and_read(self, example_dir: Path, file_path: str, patches: list[str]) -> str:
         """Apply patches in a temporary copy and read the result.
 
         Args:
@@ -172,16 +165,12 @@ class RunbookLoader:
                 )
 
                 if result.returncode != 0:
-                    raise RuntimeError(
-                        f"Failed to apply patch {patch_path}: {result.stderr}"
-                    )
+                    raise RuntimeError(f"Failed to apply patch {patch_path}: {result.stderr}")
 
             # Read the modified file
             modified_file = tmp_example / file_path
             if not modified_file.exists():
-                raise FileNotFoundError(
-                    f"File not found after applying patches: {modified_file}"
-                )
+                raise FileNotFoundError(f"File not found after applying patches: {modified_file}")
 
             return modified_file.read_text()
 
@@ -247,9 +236,7 @@ class RunbookLoader:
 
         return patches_by_scenario
 
-    def get_patch_snapshots(
-        self, example_name: str
-    ) -> dict[str, tuple[str | None, str | None]]:
+    def get_patch_snapshots(self, example_name: str) -> dict[str, tuple[str | None, str | None]]:
         """Get patch snapshot information from the runbook's execution state.
 
         Args:

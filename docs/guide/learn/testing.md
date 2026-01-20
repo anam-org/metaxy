@@ -115,9 +115,7 @@ import pytest
 
 
 def test_auto_create_tables_warning():
-    with pytest.warns(
-        UserWarning, match=r"AUTO_CREATE_TABLES is enabled.*do not use in production"
-    ):
+    with pytest.warns(UserWarning, match=r"AUTO_CREATE_TABLES is enabled.*do not use in production"):
         with DuckDBMetadataStore(":memory:", auto_create_tables=True) as store:
             pass  # Warning is emitted and captured
 ```

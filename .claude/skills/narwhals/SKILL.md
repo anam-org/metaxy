@@ -64,9 +64,7 @@ import narwhals as nw
 df_nw = nw.from_native(df)  # Works with pandas, Polars, PyArrow, etc.
 
 # 2. Perform operations using Polars-like API
-result = df_nw.select(
-    a_sum=nw.col("a").sum(), a_mean=nw.col("a").mean(), b_std=nw.col("b").std()
-)
+result = df_nw.select(a_sum=nw.col("a").sum(), a_mean=nw.col("a").mean(), b_std=nw.col("b").std())
 
 # 3. Convert back to original library
 result_native = result.to_native()
@@ -411,11 +409,7 @@ result = df.group_by("category").agg(
 ### Conditional Operations
 
 ```python
-result = df.with_columns(
-    category=nw.when(nw.col("value") > 100)
-    .then(nw.lit("high"))
-    .otherwise(nw.lit("low"))
-)
+result = df.with_columns(category=nw.when(nw.col("value") > 100).then(nw.lit("high")).otherwise(nw.lit("low")))
 ```
 
 ### Joins

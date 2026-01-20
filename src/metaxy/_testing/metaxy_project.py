@@ -110,9 +110,7 @@ class TempFeatureModule:
             # Generate the spec definition
             spec_dict = spec.model_dump(mode="python")
             spec_class_name = spec.__class__.__name__
-            spec_repr = self._generate_spec_repr(
-                spec_dict, spec_class_name=spec_class_name
-            )
+            spec_repr = self._generate_spec_repr(spec_dict, spec_class_name=spec_class_name)
 
             code_lines.extend(
                 [
@@ -134,9 +132,7 @@ class TempFeatureModule:
         if self.module_name in sys.modules:
             importlib.reload(sys.modules[self.module_name])
 
-    def _generate_spec_repr(
-        self, spec_dict: dict[str, Any], spec_class_name: str = "FeatureSpec"
-    ) -> str:
+    def _generate_spec_repr(self, spec_dict: dict[str, Any], spec_class_name: str = "FeatureSpec") -> str:
         """Generate FeatureSpec constructor call from dict.
 
         Args:
@@ -175,9 +171,7 @@ class TempFeatureModule:
                     for cd in deps_val:
                         fields_val = cd.get("fields")
                         if fields_val == "__METAXY_ALL_DEP__":
-                            cdeps.append(
-                                f"FieldDep(feature=FeatureKey({cd['feature']!r}), fields=SpecialFieldDep.ALL)"
-                            )
+                            cdeps.append(f"FieldDep(feature=FeatureKey({cd['feature']!r}), fields=SpecialFieldDep.ALL)")
                         else:
                             # Build list of FieldKey objects
                             field_keys = [f"FieldKey({k!r})" for k in fields_val]
@@ -247,9 +241,7 @@ def assert_all_results_equal(results: dict[str, Any], snapshot=None) -> None:
     # Compare each result to the reference
     for key, result in all_results[1:]:
         assert result == reference_result, (
-            f"{key} produced different results than {reference_key}:\n"
-            f"Expected: {reference_result}\n"
-            f"Got: {result}"
+            f"{key} produced different results than {reference_key}:\nExpected: {reference_result}\nGot: {result}"
         )
 
     # Snapshot ALL results if snapshot provided
@@ -432,9 +424,7 @@ class ExternalMetaxyProject(MetaxyProject):
         import subprocess
 
         # Create venv using uv
-        subprocess.run(
-            ["uv", "venv", str(venv_path), "--python", str(sys.executable)], check=True
-        )
+        subprocess.run(["uv", "venv", str(venv_path), "--python", str(sys.executable)], check=True)
 
         # Install metaxy using the venv's pip directly
         if install_metaxy_from is None:
@@ -469,9 +459,7 @@ class ExternalMetaxyProject(MetaxyProject):
         )
         if result.returncode != 0:
             raise RuntimeError(
-                f"Failed to install metaxy from {install_metaxy_from}\n"
-                f"STDOUT: {result.stdout}\n"
-                f"STDERR: {result.stderr}"
+                f"Failed to install metaxy from {install_metaxy_from}\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
             )
 
         # Install the project itself using uv pip
@@ -490,16 +478,12 @@ class ExternalMetaxyProject(MetaxyProject):
         )
         if result.returncode != 0:
             raise RuntimeError(
-                f"Failed to install project from {self.project_dir}\n"
-                f"STDOUT: {result.stdout}\n"
-                f"STDERR: {result.stderr}"
+                f"Failed to install project from {self.project_dir}\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
             )
 
         self._venv_path = venv_path
 
-    def run_in_venv(
-        self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs
-    ):
+    def run_in_venv(self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs):
         """Run a command in the configured venv.
 
         Args:
@@ -570,10 +554,7 @@ class ExternalMetaxyProject(MetaxyProject):
         """
         pyproject_path = self.project_dir / "pyproject.toml"
         if not pyproject_path.exists():
-            raise FileNotFoundError(
-                f"No pyproject.toml found in {self.project_dir}. "
-                "Cannot determine package name."
-            )
+            raise FileNotFoundError(f"No pyproject.toml found in {self.project_dir}. Cannot determine package name.")
 
         # Parse TOML to get project name
         import tomli
@@ -583,10 +564,7 @@ class ExternalMetaxyProject(MetaxyProject):
 
         project_name = pyproject.get("project", {}).get("name")
         if not project_name:
-            raise ValueError(
-                f"No project.name found in {pyproject_path}. "
-                "Cannot determine package name."
-            )
+            raise ValueError(f"No project.name found in {pyproject_path}. Cannot determine package name.")
 
         # Convert project name to valid Python package name (replace hyphens with underscores)
         return project_name.replace("-", "_")
@@ -642,9 +620,7 @@ class ExternalMetaxyProject(MetaxyProject):
         # Prepend Python executable's directory to PATH so "python" resolves correctly
         python_dir = str(Path(sys.executable).parent)
         current_path = cmd_env.get("PATH", "")
-        cmd_env["PATH"] = (
-            f"{python_dir}{os.pathsep}{current_path}" if current_path else python_dir
-        )
+        cmd_env["PATH"] = f"{python_dir}{os.pathsep}{current_path}" if current_path else python_dir
 
         # Apply additional env overrides
         if env:
@@ -662,9 +638,7 @@ class ExternalMetaxyProject(MetaxyProject):
             check=check,
         )
 
-    def push_graph(
-        self, env: dict[str, str] | None = None
-    ) -> subprocess.CompletedProcess[str]:
+    def push_graph(self, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
         """Push the current graph snapshot.
 
         Args:

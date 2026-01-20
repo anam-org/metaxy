@@ -55,9 +55,7 @@ class FeaturePlan(FrozenBaseModel):
 
     feature: pydantic.SkipValidation[FeatureSpec]
     deps: pydantic.SkipValidation[list[FeatureSpec] | None]
-    feature_deps: list[FeatureDep] | None = (
-        None  # The actual dependency specifications with field mappings
-    )
+    feature_deps: list[FeatureDep] | None = None  # The actual dependency specifications with field mappings
 
     @cached_property
     def parent_features_by_key(
@@ -94,9 +92,7 @@ class FeaturePlan(FrozenBaseModel):
 
         return res
 
-    def get_parent_fields_for_field(
-        self, key: CoercibleToFieldKey
-    ) -> Mapping[FQFieldKey, FieldSpec]:
+    def get_parent_fields_for_field(self, key: CoercibleToFieldKey) -> Mapping[FQFieldKey, FieldSpec]:
         """Get parent fields for a given field key.
 
         Args:
@@ -118,9 +114,7 @@ class FeaturePlan(FrozenBaseModel):
         for field_dep in resolved_deps:
             if field_dep.fields == SpecialFieldDep.ALL:
                 # we depend on all fields of the corresponding upstream feature
-                for parent_field in self.parent_features_by_key[
-                    field_dep.feature
-                ].fields:
+                for parent_field in self.parent_features_by_key[field_dep.feature].fields:
                     res[
                         FQFieldKey(
                             field=parent_field.key,
@@ -154,10 +148,7 @@ class FeaturePlan(FrozenBaseModel):
         if field.deps and field.deps != []:  # Check for non-empty list
             if isinstance(field.deps, SpecialFieldDep):
                 # If it's SpecialFieldDep.ALL, return ALL for all upstream features
-                return [
-                    FieldDep(feature=dep.key, fields=SpecialFieldDep.ALL)
-                    for dep in (self.deps or [])
-                ]
+                return [FieldDep(feature=dep.key, fields=SpecialFieldDep.ALL) for dep in (self.deps or [])]
             else:
                 # Use only the explicit deps, no automatic mapping
                 return field.deps
@@ -173,17 +164,13 @@ class FeaturePlan(FrozenBaseModel):
                 continue
 
             # Create resolution context
-            context = FieldsMappingResolutionContext(
-                field_key=field.key, upstream_feature=upstream_feature
-            )
+            context = FieldsMappingResolutionContext(field_key=field.key, upstream_feature=upstream_feature)
 
             mapped_deps = feature_dep.fields_mapping.resolve_field_deps(context)
 
             if mapped_deps:
                 # Add a single FieldDep with all mapped fields
-                field_deps.append(
-                    FieldDep(feature=feature_dep.feature, fields=list(mapped_deps))
-                )
+                field_deps.append(FieldDep(feature=feature_dep.feature, fields=list(mapped_deps)))
             # Note: If mapped_deps is empty (e.g., feature excluded),
             # we don't add any dependency for this feature
 
@@ -225,9 +212,7 @@ class FeaturePlan(FrozenBaseModel):
                 if field_dep.fields == SpecialFieldDep.ALL:
                     # All fields from this upstream feature
                     upstream_feature_spec = self.parent_features_by_key[feature_key]
-                    field_deps[feature_key] = [
-                        c.key for c in upstream_feature_spec.fields
-                    ]
+                    field_deps[feature_key] = [c.key for c in upstream_feature_spec.fields]
                 elif isinstance(field_dep.fields, list):
                     # Specific fields
                     field_deps[feature_key] = field_dep.fields
@@ -291,21 +276,15 @@ class FeaturePlan(FrozenBaseModel):
 
         # Apply renames to upstream ID columns
         renames = feature_dep.rename or {}
-        renamed_upstream_id_cols = [
-            renames.get(col, col) for col in upstream_spec.id_columns
-        ]
+        renamed_upstream_id_cols = [renames.get(col, col) for col in upstream_spec.id_columns]
 
         if relationship_type == LineageRelationshipType.IDENTITY:
             return renamed_upstream_id_cols
 
         elif relationship_type == LineageRelationshipType.AGGREGATION:
             assert isinstance(relationship, AggregationRelationship)
-            agg_result = relationship.get_aggregation_columns(
-                list(self.feature.id_columns)
-            )
-            assert agg_result is not None, (
-                "Aggregation relationship must have aggregation columns"
-            )
+            agg_result = relationship.get_aggregation_columns(list(self.feature.id_columns))
+            assert agg_result is not None, "Aggregation relationship must have aggregation columns"
             return list(agg_result)
 
         elif relationship_type == LineageRelationshipType.EXPANSION:

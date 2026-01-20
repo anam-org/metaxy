@@ -32,9 +32,7 @@ def another_upstream_spec() -> FeatureSpec:
 class TestRenameToSystemColumn:
     """Test that renaming to system column names is rejected."""
 
-    def test_rename_to_metaxy_provenance_rejected(
-        self, upstream_spec: FeatureSpec
-    ) -> None:
+    def test_rename_to_metaxy_provenance_rejected(self, upstream_spec: FeatureSpec) -> None:
         downstream_spec = FeatureSpec(
             key=FeatureKey(["downstream"]),
             id_columns=("id",),
@@ -54,9 +52,7 @@ class TestRenameToSystemColumn:
                 feature_deps=downstream_spec.deps,
             )
 
-    def test_rename_to_metaxy_data_version_rejected(
-        self, upstream_spec: FeatureSpec
-    ) -> None:
+    def test_rename_to_metaxy_data_version_rejected(self, upstream_spec: FeatureSpec) -> None:
         downstream_spec = FeatureSpec(
             key=FeatureKey(["downstream"]),
             id_columns=("id",),
@@ -80,9 +76,7 @@ class TestRenameToSystemColumn:
 class TestRenameToUpstreamIdColumn:
     """Test that renaming to upstream ID column names is rejected."""
 
-    def test_rename_to_upstream_id_column_rejected(
-        self, upstream_spec: FeatureSpec
-    ) -> None:
+    def test_rename_to_upstream_id_column_rejected(self, upstream_spec: FeatureSpec) -> None:
         downstream_spec = FeatureSpec(
             key=FeatureKey(["downstream"]),
             id_columns=("id",),

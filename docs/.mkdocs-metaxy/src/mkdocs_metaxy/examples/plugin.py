@@ -122,16 +122,13 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
             if non_empty:
                 min_indent = min(len(line) - len(line.lstrip()) for line in non_empty)
                 directive_content = "\n".join(
-                    line[min_indent:] if len(line) >= min_indent else line
-                    for line in lines
+                    line[min_indent:] if len(line) >= min_indent else line for line in lines
                 ).strip()
 
             params = yaml.safe_load(directive_content) or {}
             example_name = params.get("example")
             if not example_name:
-                raise ValueError(
-                    f"Missing required 'example' parameter in {directive_type} directive"
-                )
+                raise ValueError(f"Missing required 'example' parameter in {directive_type} directive")
 
             # Process based on directive type
             if directive_type == "scenarios":
@@ -141,9 +138,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                 # Render GitHub source link
                 button_style = params.get("button", True)
                 text = params.get("text", None)
-                return self.renderer.render_source_link(
-                    example_name, button_style=button_style, text=text
-                )
+                return self.renderer.render_source_link(example_name, button_style=button_style, text=text)
             elif directive_type == "file":
                 return self._render_file(example_name, params)
             elif directive_type == "patch":
@@ -241,11 +236,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         patches = params.get("patches", [])
         show_linenos = params.get("linenos", True)
 
-        example_name_full = (
-            example_name
-            if example_name.startswith("example-")
-            else f"example-{example_name}"
-        )
+        example_name_full = example_name if example_name.startswith("example-") else f"example-{example_name}"
 
         hl_lines = None
         snippets_path = f"{example_name_full}/{file_path}"
@@ -258,27 +249,21 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
             content = self.loader.read_file(example_name, file_path, patches)
 
             # Extract changed line numbers by comparing patch additions with actual content
-            hl_lines = self._extract_changed_lines_from_patches(
-                example_name, patches, content
-            )
+            hl_lines = self._extract_changed_lines_from_patches(example_name, patches, content)
 
             # Write patched file to generated directory, preserving directory structure
             file_path_obj = Path(file_path)
             # Create versioned filename: dir/file_v2.ext
             if file_path_obj.parent != Path("."):
                 # Preserve directory structure
-                versioned_name = (
-                    f"{file_path_obj.stem}_v{version_num}{file_path_obj.suffix}"
-                )
+                versioned_name = f"{file_path_obj.stem}_v{version_num}{file_path_obj.suffix}"
                 versioned_path = file_path_obj.parent / versioned_name
                 generated_file = self.generated_dir / versioned_path
                 generated_file.parent.mkdir(parents=True, exist_ok=True)
                 snippets_path = f".generated/{versioned_path}"
             else:
                 # No directory structure
-                versioned_name = (
-                    f"{file_path_obj.stem}_v{version_num}{file_path_obj.suffix}"
-                )
+                versioned_name = f"{file_path_obj.stem}_v{version_num}{file_path_obj.suffix}"
                 generated_file = self.generated_dir / versioned_name
                 snippets_path = f".generated/{versioned_name}"
 
@@ -316,9 +301,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         if snapshots and snapshots[0] and snapshots[1] and snapshots[0] != snapshots[1]:
             # Create tabbed output with patch and graph diff
             example_dir = self.loader.get_example_dir(example_name)
-            graph_diff = self.renderer.render_graph_diff(
-                snapshots[0], snapshots[1], example_name, example_dir
-            )
+            graph_diff = self.renderer.render_graph_diff(snapshots[0], snapshots[1], example_name, example_dir)
 
             if graph_diff:
                 # For tabs, render the patch without collapsible wrapper
@@ -330,14 +313,10 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                 )
                 # Indent the content for proper tab rendering
                 patch_lines = patch_render.strip().split("\n")
-                patch_indented = "\n".join(
-                    f"    {line}" if line else "" for line in patch_lines
-                )
+                patch_indented = "\n".join(f"    {line}" if line else "" for line in patch_lines)
 
                 graph_lines = graph_diff.strip().split("\n")
-                graph_indented = "\n".join(
-                    f"    {line}" if line else "" for line in graph_lines
-                )
+                graph_indented = "\n".join(f"    {line}" if line else "" for line in graph_lines)
 
                 return f"""
 === "Patch"
@@ -374,9 +353,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         patch_path = params.get("path")
         if not patch_path:
-            raise ValueError(
-                "Missing required parameter for patch-with-diff directive: path"
-            )
+            raise ValueError("Missing required parameter for patch-with-diff directive: path")
 
         scenario_name = params.get("scenario")
         step_name = params.get("step")
@@ -414,8 +391,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         if matching_event is None:
             raise ValueError(
-                f"No PatchApplied event found for patch '{patch_path}' "
-                f"(scenario={scenario_name}, step={step_name})"
+                f"No PatchApplied event found for patch '{patch_path}' (scenario={scenario_name}, step={step_name})"
             )
 
         if not matching_event.before_graph or not matching_event.after_graph:
@@ -424,20 +400,14 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                 f"Re-run the example tests to regenerate the execution result."
             )
 
-        graph_diff_md = self._render_graph_diff_from_snapshots(
-            matching_event.before_graph, matching_event.after_graph
-        )
+        graph_diff_md = self._render_graph_diff_from_snapshots(matching_event.before_graph, matching_event.after_graph)
 
         # Build tabbed content using pymdownx.tabbed syntax
         patch_lines = patch_md.strip().split("\n")
-        patch_indented = "\n".join(
-            f"    {line}" if line else "" for line in patch_lines
-        )
+        patch_indented = "\n".join(f"    {line}" if line else "" for line in patch_lines)
 
         graph_lines = graph_diff_md.strip().split("\n")
-        graph_indented = "\n".join(
-            f"    {line}" if line else "" for line in graph_lines
-        )
+        graph_indented = "\n".join(f"    {line}" if line else "" for line in graph_lines)
 
         return f"""
 === "Patch"
@@ -484,21 +454,14 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         for event in events:
             if isinstance(event, CommandExecuted):
                 show_command = params.get("show_command", True)
-                md_parts.append(
-                    self.renderer.render_command_output(event, show_command)
-                )
+                md_parts.append(self.renderer.render_command_output(event, show_command))
 
         if not md_parts:
-            raise ValueError(
-                f"No events matched the specified criteria: "
-                f"scenario={scenario_name}, step={step_name}"
-            )
+            raise ValueError(f"No events matched the specified criteria: scenario={scenario_name}, step={step_name}")
 
         return "\n".join(md_parts)
 
-    def _render_graph_diff_from_snapshots(
-        self, before_graph: dict, after_graph: dict, direction: str = "TB"
-    ) -> str:
+    def _render_graph_diff_from_snapshots(self, before_graph: dict, after_graph: dict, direction: str = "TB") -> str:
         """Render graph diff as mermaid from saved graph snapshots.
 
         Args:
@@ -570,13 +533,9 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
             return self._render_graph_from_snapshot(event.graph, direction=direction)
 
-        raise ValueError(
-            f"No GraphPushed event found for scenario={scenario_name}, step={step_name}"
-        )
+        raise ValueError(f"No GraphPushed event found for scenario={scenario_name}, step={step_name}")
 
-    def _render_graph_from_snapshot(
-        self, graph_data: dict, direction: str = "TB"
-    ) -> str:
+    def _render_graph_from_snapshot(self, graph_data: dict, direction: str = "TB") -> str:
         """Render graph as mermaid from saved graph snapshot.
 
         Args:
@@ -639,10 +598,6 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                     "Re-run the example tests to regenerate the execution result."
                 )
 
-            return self._render_graph_diff_from_snapshots(
-                event.before_graph, event.after_graph, direction=direction
-            )
+            return self._render_graph_diff_from_snapshots(event.before_graph, event.after_graph, direction=direction)
 
-        raise ValueError(
-            f"No PatchApplied event found for scenario={scenario_name}, step={step_name}"
-        )
+        raise ValueError(f"No PatchApplied event found for scenario={scenario_name}, step={step_name}")

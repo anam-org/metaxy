@@ -12,9 +12,7 @@ from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 
-def test_polars_engine_initialization(
-    graph: FeatureGraph, simple_features: dict[str, type[SampleFeature]]
-) -> None:
+def test_polars_engine_initialization(graph: FeatureGraph, simple_features: dict[str, type[SampleFeature]]) -> None:
     """Test PolarsVersioningEngine can be initialized."""
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
@@ -189,14 +187,12 @@ def test_resolve_increment_no_current(
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=None,
-            upstream=upstream,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=None,
+        upstream=upstream,
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     # Materialize lazy frames
@@ -259,14 +255,12 @@ def test_resolve_increment_with_changes(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current,
-            upstream=upstream,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current,
+        upstream=upstream,
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     # Materialize lazy frames
@@ -311,14 +305,12 @@ def test_resolve_increment_all_unchanged(
     # Current is same as expected (use lazy version for consistency)
     current = expected
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current,
-            upstream=upstream,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current,
+        upstream=upstream,
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     # Materialize lazy frames
@@ -364,10 +356,7 @@ def test_compute_provenance_different_algorithms_snapshot(
     result_df = result.collect()
 
     # Extract field hashes for snapshot
-    field_hashes = [
-        result_df["metaxy_provenance_by_field"][i]["default"]
-        for i in range(len(result_df))
-    ]
+    field_hashes = [result_df["metaxy_provenance_by_field"][i]["default"] for i in range(len(result_df))]
 
     assert field_hashes == snapshot
 

@@ -225,9 +225,7 @@ class TestInputIdColumns:
                 deps=[
                     FeatureDep(
                         feature=SensorReadings,
-                        lineage=LineageRelationship.aggregation(
-                            on=["sensor_id", "hour"]
-                        ),
+                        lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
                     )
                 ],
                 fields=[FieldSpec(key=FieldKey(["avg_temp"]), code_version="1")],
@@ -309,9 +307,7 @@ class TestInputIdColumns:
                 deps=[
                     FeatureDep(
                         feature=UpstreamA,
-                        lineage=LineageRelationship.aggregation(
-                            on=["sensor_id", "hour"]
-                        ),
+                        lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
                     ),
                     # UpstreamB has identity lineage (default) - its input columns are its ID columns
                     FeatureDep(feature=UpstreamB),

@@ -53,9 +53,7 @@ class TestJoiner:
         for upstream_key_str in upstream_refs.keys():
             upstream_key = FeatureKey(upstream_key_str)
             # The provenance_by_field column is renamed using to_column_suffix()
-            provenance_col_name = (
-                f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
-            )
+            provenance_col_name = f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
             mapping[upstream_key_str] = provenance_col_name
 
         return joined, mapping  # ty: ignore[invalid-return-type]
@@ -107,9 +105,7 @@ class TestColumnSelection:
 
         # Join upstream
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, mapping = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -168,9 +164,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -228,9 +222,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -240,9 +232,7 @@ class TestColumnSelection:
         # to avoid conflicts when joining multiple upstream features
         assert "sample_uid" in joined_df.columns
         assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
-        assert (
-            "metaxy_feature_version" not in joined_df.columns
-        )  # Not essential, dropped to avoid conflicts
+        assert "metaxy_feature_version" not in joined_df.columns  # Not essential, dropped to avoid conflicts
         assert "custom_col1" not in joined_df.columns
         assert "custom_col2" not in joined_df.columns
 
@@ -294,9 +284,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -358,9 +346,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -581,9 +567,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -624,9 +608,7 @@ class TestColumnSelection:
                     deps=[
                         FeatureDep(
                             feature=FeatureKey(["test", "upstream"]),
-                            rename={
-                                "old_col": "metaxy_provenance_by_field"
-                            },  # Not allowed
+                            rename={"old_col": "metaxy_provenance_by_field"},  # Not allowed
                         )
                     ],
                 ),
@@ -666,9 +648,7 @@ class TestColumnSelection:
                     deps=[
                         FeatureDep(
                             feature=FeatureKey(["test", "upstream"]),
-                            rename={
-                                "old_col": "sample_uid"
-                            },  # Not allowed - it's upstream's ID column
+                            rename={"old_col": "sample_uid"},  # Not allowed - it's upstream's ID column
                         )
                     ],
                 ),
@@ -738,9 +718,7 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        rename={
-                            "some_col": "user_id_renamed"
-                        },  # Allowed - not renaming to actual ID column name
+                        rename={"some_col": "user_id_renamed"},  # Allowed - not renaming to actual ID column name
                     )
                 ],
                 id_columns=[
@@ -770,9 +748,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         # This should now work without raising an error
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
@@ -1027,9 +1003,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, mapping = CustomFilterFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -1050,9 +1024,7 @@ class TestColumnSelection:
         # Verify mapping
         assert mapping["test/upstream"] == "metaxy_provenance_by_field__test_upstream"
 
-    def test_columns_and_rename_serialized_to_snapshot(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_columns_and_rename_serialized_to_snapshot(self, graph: FeatureGraph, tmp_path):
         """Test that columns and rename fields are properly serialized when pushing graph snapshot."""
         import json
 
@@ -1088,16 +1060,10 @@ class TestColumnSelection:
             _ = SystemTableStorage(store).push_graph_snapshot()
 
             # Read the snapshot from feature_versions table
-            versions = (
-                store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
-                .collect()
-                .to_polars()
-            )
+            versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False).collect().to_polars()
 
             # Find the downstream feature record
-            downstream_record = versions.filter(
-                pl.col("feature_key") == "test/downstream"
-            )
+            downstream_record = versions.filter(pl.col("feature_key") == "test/downstream")
             assert len(downstream_record) == 1
 
             # Parse the feature_spec JSON
@@ -1272,9 +1238,7 @@ class TestColumnSelection:
             pass
 
         # Renaming to upstream's ID column should raise an error
-        with pytest.raises(
-            ValueError, match="Cannot rename column.*to ID column.*user_id"
-        ):
+        with pytest.raises(ValueError, match="Cannot rename column.*to ID column.*user_id"):
 
             class BadFeature1(
                 BaseFeature,
@@ -1294,9 +1258,7 @@ class TestColumnSelection:
                 pass
 
         # Renaming to another upstream ID column should also raise an error
-        with pytest.raises(
-            ValueError, match="Cannot rename column.*to ID column.*session_id"
-        ):
+        with pytest.raises(ValueError, match="Cannot rename column.*to ID column.*session_id"):
 
             class BadFeature2(
                 BaseFeature,
@@ -1350,9 +1312,7 @@ class TestColumnSelection:
                 pass
 
         # Renaming to ID column sample_uid should raise an error
-        with pytest.raises(
-            ValueError, match="Cannot rename column.*to ID column.*sample_uid"
-        ):
+        with pytest.raises(ValueError, match="Cannot rename column.*to ID column.*sample_uid"):
 
             class DownstreamFeature2(
                 BaseFeature,
@@ -1411,16 +1371,12 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream1"]),
-                        columns=(
-                            "col1",
-                        ),  # Only select col1, group_id comes from aggregation
+                        columns=("col1",),  # Only select col1, group_id comes from aggregation
                         lineage=LineageRelationship.aggregation(on=["group_id"]),
                     ),
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream2"]),
-                        columns=(
-                            "col2",
-                        ),  # Only select col2, group_id comes from aggregation
+                        columns=("col2",),  # Only select col2, group_id comes from aggregation
                         lineage=LineageRelationship.aggregation(on=["group_id"]),
                     ),
                 ],

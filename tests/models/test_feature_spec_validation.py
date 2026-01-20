@@ -28,9 +28,7 @@ def test_duplicate_field_keys_with_different_code_versions_still_fails():
             key="test/feature",
             fields=[
                 FieldSpec(key=FieldKey(["analysis"]), code_version="v1"),
-                FieldSpec(
-                    key=FieldKey(["analysis"]), code_version="v2"
-                ),  # Still duplicate!
+                FieldSpec(key=FieldKey(["analysis"]), code_version="v2"),  # Still duplicate!
             ],
         )
 
@@ -128,9 +126,7 @@ def test_feature_spec_requires_id_columns():
 
     # This should fail - id_columns is required
     with pytest.raises(ValidationError, match="id_columns"):
-        FeatureSpec(
-            key="test/feature"
-        )  # Missing id_columns  # ty: ignore[no-matching-overload]
+        FeatureSpec(key="test/feature")  # Missing id_columns  # ty: ignore[no-matching-overload]
 
     # This should work
     spec = FeatureSpec(key="test/feature", id_columns=["sample_uid"])

@@ -52,9 +52,7 @@ class TestCalculateInputProgress:
                     ],
                 }
             )
-            lazy_increment = store.resolve_update(
-                RootFeature, samples=nw.from_native(samples), lazy=True
-            )
+            lazy_increment = store.resolve_update(RootFeature, samples=nw.from_native(samples), lazy=True)
 
             # Root features have no input
             assert lazy_increment.input is None
@@ -110,9 +108,7 @@ class TestCalculateInputProgress:
             progress = store.calculate_input_progress(lazy_increment, Downstream)
             assert progress == 100.0
 
-    def test_returns_correct_percentage_when_partially_processed(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_returns_correct_percentage_when_partially_processed(self, graph: FeatureGraph, tmp_path):
         """Returns correct percentage when some input samples are missing."""
 
         class Upstream(
@@ -142,9 +138,7 @@ class TestCalculateInputProgress:
                 {
                     "sample_uid": list(range(1, 11)),
                     "value": [f"val_{i}" for i in range(1, 11)],
-                    "metaxy_provenance_by_field": [
-                        {"value": f"hash{i}"} for i in range(1, 11)
-                    ],
+                    "metaxy_provenance_by_field": [{"value": f"hash{i}"} for i in range(1, 11)],
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
@@ -190,9 +184,7 @@ class TestCalculateInputProgress:
                 {
                     "sample_uid": pl.Series([], dtype=pl.Int64),
                     "value": pl.Series([], dtype=pl.String),
-                    "metaxy_provenance_by_field": pl.Series(
-                        [], dtype=pl.Struct({"value": pl.String})
-                    ),
+                    "metaxy_provenance_by_field": pl.Series([], dtype=pl.Struct({"value": pl.String})),
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
@@ -203,9 +195,7 @@ class TestCalculateInputProgress:
             progress = store.calculate_input_progress(lazy_increment, Downstream)
             assert progress is None  # No input available
 
-    def test_identity_lineage_uses_upstream_id_columns(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_identity_lineage_uses_upstream_id_columns(self, graph: FeatureGraph, tmp_path):
         """Identity (1:1) lineage uses upstream_id_columns for progress."""
 
         class Upstream(
@@ -257,9 +247,7 @@ class TestCalculateInputProgress:
             assert progress is not None
             assert abs(progress - 66.67) < 0.1
 
-    def test_aggregation_lineage_uses_aggregation_columns(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_aggregation_lineage_uses_aggregation_columns(self, graph: FeatureGraph, tmp_path):
         """Aggregation (N:1) lineage uses aggregation columns for progress."""
 
         class SensorReadings(
@@ -280,9 +268,7 @@ class TestCalculateInputProgress:
                 deps=[
                     FeatureDep(
                         feature=SensorReadings,
-                        lineage=LineageRelationship.aggregation(
-                            on=["sensor_id", "hour"]
-                        ),
+                        lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
                     )
                 ],
                 fields=[FieldSpec(key=FieldKey(["avg_temp"]), code_version="1")],
@@ -313,9 +299,7 @@ class TestCalculateInputProgress:
                         "2024-01-01T11",
                     ],
                     "temperature": [20.0, 21.0, 22.0, 23.0, 24.0, 25.0],
-                    "metaxy_provenance_by_field": [
-                        {"temperature": f"hash{i}"} for i in range(1, 7)
-                    ],
+                    "metaxy_provenance_by_field": [{"temperature": f"hash{i}"} for i in range(1, 7)],
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, SensorReadings)
@@ -367,9 +351,7 @@ class TestCalculateInputProgress:
                 {
                     "video_id": ["v1", "v2", "v3"],
                     "resolution": ["1080p", "720p", "4K"],
-                    "metaxy_provenance_by_field": [
-                        {"resolution": f"hash{i}"} for i in range(1, 4)
-                    ],
+                    "metaxy_provenance_by_field": [{"resolution": f"hash{i}"} for i in range(1, 4)],
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, Video)
@@ -398,9 +380,7 @@ class TestCalculateInputProgress:
                 on="video_id",
             )
             # Compute provenance for VideoFrames
-            frames_with_prov = store.compute_provenance(
-                VideoFrames, nw.from_native(frames_with_upstream)
-            )
+            frames_with_prov = store.compute_provenance(VideoFrames, nw.from_native(frames_with_upstream))
             store.write_metadata(VideoFrames, frames_with_prov)
 
             # Progress should count by parent videos, not individual frames
@@ -445,9 +425,7 @@ class TestCalculateInputProgress:
                 {
                     "original_id": [1, 2, 3, 4],
                     "value": ["a", "b", "c", "d"],
-                    "metaxy_provenance_by_field": [
-                        {"value": f"hash{i}"} for i in range(1, 5)
-                    ],
+                    "metaxy_provenance_by_field": [{"value": f"hash{i}"} for i in range(1, 5)],
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
@@ -503,9 +481,7 @@ class TestCalculateInputProgress:
                 {
                     "sample_uid": [1, 2, 3],
                     "value_a": ["va1", "va2", "va3"],
-                    "metaxy_provenance_by_field": [
-                        {"value_a": f"hash_a{i}"} for i in range(1, 4)
-                    ],
+                    "metaxy_provenance_by_field": [{"value_a": f"hash_a{i}"} for i in range(1, 4)],
                 }
             )
             upstream_a_data = add_metaxy_provenance_column(upstream_a_data, UpstreamA)
@@ -516,9 +492,7 @@ class TestCalculateInputProgress:
                 {
                     "sample_uid": [1, 2, 3],
                     "value_b": ["vb1", "vb2", "vb3"],
-                    "metaxy_provenance_by_field": [
-                        {"value_b": f"hash_b{i}"} for i in range(1, 4)
-                    ],
+                    "metaxy_provenance_by_field": [{"value_b": f"hash_b{i}"} for i in range(1, 4)],
                 }
             )
             upstream_b_data = add_metaxy_provenance_column(upstream_b_data, UpstreamB)

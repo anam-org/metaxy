@@ -149,9 +149,7 @@ class GraphData(FrozenBaseModel):
                 )
 
             if node.code_version is None:
-                raise MetaxyEmptyCodeVersionError(
-                    f"Feature {node.key.to_string()} has empty code_version."
-                )
+                raise MetaxyEmptyCodeVersionError(f"Feature {node.key.to_string()} has empty code_version.")
             nodes_list.append(
                 {
                     "key": node.key.to_string(),
@@ -212,9 +210,7 @@ class GraphData(FrozenBaseModel):
                 fields.append(
                     FieldNode(
                         key=FieldKey(field_data["key"].split("/")),
-                        version=field_data["version"]
-                        if field_data["version"]
-                        else None,
+                        version=field_data["version"] if field_data["version"] else None,
                         code_version=field_data["code_version"],
                     )
                 )
@@ -224,17 +220,13 @@ class GraphData(FrozenBaseModel):
                 or node_data["code_version"] is None
                 or node_data["code_version"] == DEFAULT_CODE_VERSION
             ):
-                raise MetaxyEmptyCodeVersionError(
-                    f"Feature {node_data['key']} has empty code_version."
-                )
+                raise MetaxyEmptyCodeVersionError(f"Feature {node_data['key']} has empty code_version.")
             node = GraphNode(
                 key=FeatureKey(node_data["key"].split("/")),
                 version=node_data["version"] if node_data["version"] else None,
                 code_version=node_data["code_version"],
                 fields=fields,
-                dependencies=[
-                    FeatureKey(dep.split("/")) for dep in node_data["dependencies"]
-                ],
+                dependencies=[FeatureKey(dep.split("/")) for dep in node_data["dependencies"]],
                 project=node_data.get("project") if node_data.get("project") else None,
             )
             nodes[node_data["key"]] = node
@@ -478,10 +470,7 @@ class GraphData(FrozenBaseModel):
                 field_nodes.append(field_node)
 
             # Parse dependencies
-            dependencies = [
-                FeatureKey(dep_str.split("/"))
-                for dep_str in node_data.get("dependencies", [])
-            ]
+            dependencies = [FeatureKey(dep_str.split("/")) for dep_str in node_data.get("dependencies", [])]
 
             # Create node
             node = GraphNode(

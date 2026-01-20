@@ -84,30 +84,20 @@ def test_generate_toml_code_block_exact_output() -> None:
     # Verify structure more explicitly
     assert len(lines) == 6, f"Expected 6 lines, got {len(lines)}: {lines}"
     assert lines[0] == "", f"Line 0 should be empty, got: {repr(lines[0])}"
-    assert lines[1] == "    ```toml", (
-        f"Line 1 should be '    ```toml', got: {repr(lines[1])}"
-    )
-    assert lines[2] == "", (
-        f"Line 2 should be empty (blank after fence), got: {repr(lines[2])}"
-    )
-    assert lines[3] == '    store = "dev"', (
-        f"Line 3 should be content, got: {repr(lines[3])}"
-    )
+    assert lines[1] == "    ```toml", f"Line 1 should be '    ```toml', got: {repr(lines[1])}"
+    assert lines[2] == "", f"Line 2 should be empty (blank after fence), got: {repr(lines[2])}"
+    assert lines[3] == '    store = "dev"', f"Line 3 should be content, got: {repr(lines[3])}"
     assert lines[4] == "    ```", f"Line 4 should be '    ```', got: {repr(lines[4])}"
     assert lines[5] == "", f"Line 5 should be empty, got: {repr(lines[5])}"
 
     # Verify no content on same line as fence marker
     for i, line in enumerate(lines):
         if "```toml" in line:
-            assert line.strip() == "```toml", (
-                f"Line {i} has content after fence marker: {repr(line)}"
-            )
+            assert line.strip() == "```toml", f"Line {i} has content after fence marker: {repr(line)}"
 
     # Verify blank line immediately after opening fence
     fence_idx = next(i for i, line in enumerate(lines) if "```toml" in line)
-    assert lines[fence_idx + 1] == "", (
-        f"Line after opening fence should be blank, got: {repr(lines[fence_idx + 1])}"
-    )
+    assert lines[fence_idx + 1] == "", f"Line after opening fence should be blank, got: {repr(lines[fence_idx + 1])}"
 
 
 def test_generate_toml_code_block_multiline_exact_output() -> None:
@@ -130,15 +120,11 @@ def test_generate_toml_code_block_multiline_exact_output() -> None:
     assert result == expected, f"Got:\n{repr(result)}\n\nExpected:\n{repr(expected)}"
 
     # Verify blank line after opening fence
-    assert lines[2] == "", (
-        f"Line 2 should be blank after opening fence, got: {repr(lines[2])}"
-    )
+    assert lines[2] == "", f"Line 2 should be blank after opening fence, got: {repr(lines[2])}"
 
     # Verify [tool.metaxy] is not on same line as fence
     fence_line = next(line for line in lines if "```toml" in line)
-    assert "[tool.metaxy]" not in fence_line, (
-        "Section header should not be on same line as fence"
-    )
+    assert "[tool.metaxy]" not in fence_line, "Section header should not be on same line as fence"
 
 
 def test_full_field_doc_exact_toml_blocks() -> None:
@@ -154,27 +140,22 @@ def test_full_field_doc_exact_toml_blocks() -> None:
     doc = generate_individual_field_doc(enable_field, header_level=3)
 
     # Check that metaxy.toml tab has exact format WITH blank line after opening fence
-    assert (
-        '=== "metaxy.toml"\n\n    ```toml\n\n    enable = false\n    ```\n\n' in doc
-    ), f"metaxy.toml block not formatted correctly. Full doc:\n{doc}"
+    assert '=== "metaxy.toml"\n\n    ```toml\n\n    enable = false\n    ```\n\n' in doc, (
+        f"metaxy.toml block not formatted correctly. Full doc:\n{doc}"
+    )
 
     # Check that pyproject.toml tab has exact format WITH blank line after opening fence
-    assert (
-        '=== "pyproject.toml"\n\n    ```toml\n\n    [tool.metaxy]\n    enable = false\n    ```\n\n'
-        in doc
-    ), f"pyproject.toml block not formatted correctly. Full doc:\n{doc}"
+    assert '=== "pyproject.toml"\n\n    ```toml\n\n    [tool.metaxy]\n    enable = false\n    ```\n\n' in doc, (
+        f"pyproject.toml block not formatted correctly. Full doc:\n{doc}"
+    )
 
     # Should NOT have any literal backslash-n sequences
     assert r"\n" not in doc
     assert "\\n" not in doc
 
     # Verify content is NOT on same line as fence
-    assert "```toml\n    [tool.metaxy]" not in doc, (
-        "Content should not be on same line as opening fence"
-    )
-    assert "```toml\n    enable" not in doc, (
-        "Content should not be on same line as opening fence"
-    )
+    assert "```toml\n    [tool.metaxy]" not in doc, "Content should not be on same line as opening fence"
+    assert "```toml\n    enable" not in doc, "Content should not be on same line as opening fence"
 
 
 def test_extract_field_info_metaxy_config() -> None:
@@ -313,9 +294,7 @@ def test_no_literal_backslash_n_in_output() -> None:
         doc = generate_individual_field_doc(field, header_level=2)
 
         # Should not have literal newlines
-        assert literal_backslash_n not in doc, (
-            f"Field {field['name']} has literal backslash-n in output"
-        )
+        assert literal_backslash_n not in doc, f"Field {field['name']} has literal backslash-n in output"
 
         # Should not have triple blank lines
         assert "\n\n\n" not in doc, f"Field {field['name']} has triple newlines"
@@ -503,9 +482,7 @@ def test_markdown_ast_has_valid_toml_code_blocks() -> None:
     code_blocks = [token for token in tokens if token.get("type") == "block_code"]
 
     # Should have at least 2 code blocks (metaxy.toml and pyproject.toml tabs)
-    assert len(code_blocks) >= 2, (
-        f"Expected at least 2 code blocks, got {len(code_blocks)}"
-    )
+    assert len(code_blocks) >= 2, f"Expected at least 2 code blocks, got {len(code_blocks)}"
 
     # Check that code blocks contain TOML-like content
     for block in code_blocks:
@@ -516,9 +493,7 @@ def test_markdown_ast_has_valid_toml_code_blocks() -> None:
         # With 4-space indent (pymdownx.tabbed), mistune treats fenced blocks as indented
         # The raw content will include the fence markers and actual content
         # or just the content if truly indented. Either way, check for TOML-like content.
-        assert "=" in raw or "```toml" in raw, (
-            f"Code block doesn't look TOML-related: {raw[:100]}"
-        )
+        assert "=" in raw or "```toml" in raw, f"Code block doesn't look TOML-related: {raw[:100]}"
 
 
 def test_markdown_ast_headers_at_correct_level() -> None:
@@ -548,13 +523,9 @@ def test_markdown_ast_headers_at_correct_level() -> None:
     heading_children = first_heading.get("children", [])
     assert len(heading_children) > 0, "Heading has no children"
     heading_text = "".join(
-        child.get("raw", "")
-        for child in heading_children
-        if child.get("type") in ("text", "codespan")
+        child.get("raw", "") for child in heading_children if child.get("type") in ("text", "codespan")
     )
-    assert "enable" in heading_text.lower(), (
-        f"Heading doesn't contain field name: {heading_text}"
-    )
+    assert "enable" in heading_text.lower(), f"Heading doesn't contain field name: {heading_text}"
 
     # Test h2
     doc_h2 = generate_individual_field_doc(enable_field, header_level=2)
@@ -624,9 +595,7 @@ def test_markdown_ast_full_document_structure() -> None:
 
     # Should have multiple TOML code blocks (at least one per field)
     # With 4-space indent for pymdownx.tabbed, these become indented code blocks
-    assert len(code_blocks) >= 5, (
-        f"Expected at least 5 code blocks (one per field), got {len(code_blocks)}"
-    )
+    assert len(code_blocks) >= 5, f"Expected at least 5 code blocks (one per field), got {len(code_blocks)}"
 
     # Check blocks contain TOML-like content
     for block in code_blocks:
@@ -661,12 +630,8 @@ def test_markdown_ast_no_literal_code_fence_in_text() -> None:
             if child.get("type") == "text":
                 text = child.get("raw", "")
                 # Should NOT contain literal code fence markers
-                assert "```toml" not in text, (
-                    f"Found literal '```toml' in paragraph text: {text}"
-                )
-                assert "```" not in text or text.strip() == "```", (
-                    f"Found literal code fence in text: {text}"
-                )
+                assert "```toml" not in text, f"Found literal '```toml' in paragraph text: {text}"
+                assert "```" not in text or text.strip() == "```", f"Found literal code fence in text: {text}"
 
 
 def test_generate_toml_code_block_no_content_on_fence_line() -> None:
@@ -681,23 +646,17 @@ def test_generate_toml_code_block_no_content_on_fence_line() -> None:
 
     # The fence line should ONLY contain the fence marker (and indentation)
     fence_line = lines[fence_line_idx]
-    assert fence_line.strip() == "```toml", (
-        f"Opening fence has content on same line: {repr(fence_line)}"
-    )
+    assert fence_line.strip() == "```toml", f"Opening fence has content on same line: {repr(fence_line)}"
 
     # The line after the fence should be blank (critical for rendering)
     if fence_line_idx + 1 < len(lines):
         next_line = lines[fence_line_idx + 1]
-        assert next_line == "", (
-            f"Expected blank line after opening fence for proper rendering, got: {repr(next_line)}"
-        )
+        assert next_line == "", f"Expected blank line after opening fence for proper rendering, got: {repr(next_line)}"
 
     # The content should be on the line after the blank line
     if fence_line_idx + 2 < len(lines):
         content_line = lines[fence_line_idx + 2]
-        assert "[tool.metaxy]" in content_line, (
-            f"Expected content after blank line, got: {repr(content_line)}"
-        )
+        assert "[tool.metaxy]" in content_line, f"Expected content after blank line, got: {repr(content_line)}"
 
 
 def test_generate_toml_code_block_no_extra_blank_lines() -> None:
@@ -709,16 +668,10 @@ def test_generate_toml_code_block_no_extra_blank_lines() -> None:
 
     # Find fence positions
     opening_fence_idx = next(i for i, line in enumerate(lines) if "```toml" in line)
-    closing_fence_idx = next(
-        i for i in range(opening_fence_idx + 1, len(lines)) if lines[i].strip() == "```"
-    )
+    closing_fence_idx = next(i for i in range(opening_fence_idx + 1, len(lines)) if lines[i].strip() == "```")
 
     # Count blank lines between fences (these are INSIDE the code block)
-    blank_lines_inside = [
-        i
-        for i in range(opening_fence_idx + 1, closing_fence_idx)
-        if lines[i].strip() == ""
-    ]
+    blank_lines_inside = [i for i in range(opening_fence_idx + 1, closing_fence_idx) if lines[i].strip() == ""]
 
     # There should be EXACTLY ONE blank line immediately after opening fence (required for rendering)
     # (content has no blank lines in it, so only the one after fence)
@@ -750,17 +703,13 @@ def test_generate_toml_code_block_exactly_one_blank_before_and_after() -> None:
     assert lines[-1] == "", f"Last line should be blank, got: {repr(lines[-1])}"
 
     # Second line should be opening fence
-    assert lines[1] == "    ```toml", (
-        f"Second line should be fence, got: {repr(lines[1])}"
-    )
+    assert lines[1] == "    ```toml", f"Second line should be fence, got: {repr(lines[1])}"
 
     # Third line should be blank (after opening fence)
     assert lines[2] == "", f"Third line should be blank, got: {repr(lines[2])}"
 
     # Second-to-last line should be closing fence
-    assert lines[-2] == "    ```", (
-        f"Second-to-last line should be fence, got: {repr(lines[-2])}"
-    )
+    assert lines[-2] == "    ```", f"Second-to-last line should be fence, got: {repr(lines[-2])}"
 
 
 def test_generate_toml_code_block_no_duplicate_blank_lines() -> None:
@@ -774,9 +723,7 @@ def test_generate_toml_code_block_no_duplicate_blank_lines() -> None:
     result = "\n".join(lines)
 
     # Should not have triple newlines anywhere (which would be duplicate blank lines)
-    assert "\n\n\n" not in result, (
-        "Found triple newlines (duplicate blank lines) in output"
-    )
+    assert "\n\n\n" not in result, "Found triple newlines (duplicate blank lines) in output"
 
     # Count total blank lines
     blank_count = sum(1 for line in lines if line == "")
@@ -797,18 +744,12 @@ def test_generate_toml_code_block_multiline_no_internal_blanks() -> None:
 
     # Expected output: ["", "    ```toml", "", "    [tool.metaxy]", "    store = \"dev\"", "    stores = {}", "    ```", ""]
     # (note the blank line after opening fence for proper rendering)
-    expected_length = (
-        8  # 1 blank + 1 fence + 1 blank (after fence) + 3 content + 1 fence + 1 blank
-    )
-    assert len(lines) == expected_length, (
-        f"Expected {expected_length} lines, got {len(lines)}: {lines}"
-    )
+    expected_length = 8  # 1 blank + 1 fence + 1 blank (after fence) + 3 content + 1 fence + 1 blank
+    assert len(lines) == expected_length, f"Expected {expected_length} lines, got {len(lines)}: {lines}"
 
     # Find the content lines (between fences)
     opening_fence_idx = next(i for i, line in enumerate(lines) if "```toml" in line)
-    closing_fence_idx = next(
-        i for i in range(opening_fence_idx + 1, len(lines)) if lines[i].strip() == "```"
-    )
+    closing_fence_idx = next(i for i in range(opening_fence_idx + 1, len(lines)) if lines[i].strip() == "```")
 
     content_lines = lines[opening_fence_idx + 1 : closing_fence_idx]
 
@@ -817,9 +758,5 @@ def test_generate_toml_code_block_multiline_no_internal_blanks() -> None:
 
     # All other content lines should be non-empty (properly indented)
     for i, line in enumerate(content_lines[1:], start=1):
-        assert line.strip() != "", (
-            f"Content line {i} is blank, should have content: {repr(line)}"
-        )
-        assert line.startswith("    "), (
-            f"Content line {i} doesn't have proper indentation: {repr(line)}"
-        )
+        assert line.strip() != "", f"Content line {i} is blank, should have content: {repr(line)}"
+        assert line.startswith("    "), f"Content line {i} doesn't have proper indentation: {repr(line)}"

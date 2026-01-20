@@ -18,9 +18,7 @@ with store.open("write"):
 with store:
     active = store.read_metadata(PredictionFeature).collect()  # soft-deleted hidden
     all_rows = store.read_metadata(PredictionFeature, include_deleted=True).collect()
-    only_deleted = store.read_metadata(
-        PredictionFeature, with_soft_deleted=True
-    ).collect()
+    only_deleted = store.read_metadata(PredictionFeature, with_soft_deleted=True).collect()
 ```
 
 If you track custom deletion flags in your feature schema, filter them through `read_metadata` filters.

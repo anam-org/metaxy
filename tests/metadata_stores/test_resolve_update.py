@@ -48,9 +48,7 @@ if TYPE_CHECKING:
     pass
 
 # Type alias for feature plan output
-FeaturePlanOutput = tuple[
-    FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan
-]
+FeaturePlanOutput = tuple[FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan]
 
 
 # ============= FEATURE GRAPH CONFIGURATIONS =============
@@ -288,13 +286,9 @@ def test_resolve_update_root_feature_with_samples(
     # Call resolve_update with samples - pass native Polars LazyFrame, not Narwhals-wrapped
     with store, graph.use():
         try:
-            increment = store.resolve_update(
-                root_feature, samples=samples_df.lazy(), lazy=True
-            ).collect()
+            increment = store.resolve_update(root_feature, samples=samples_df.lazy(), lazy=True).collect()
         except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
-            )
+            pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
         # Verify all samples are added (first write)
         assert len(increment.added) == len(samples_df)
@@ -330,8 +324,7 @@ def test_resolve_update_downstream_feature(
     child_version = ChildFeature.feature_version()
 
     feature_versions = {
-        feat_key.to_string(): feat_class.feature_version()
-        for feat_key, feat_class in upstream_features.items()
+        feat_key.to_string(): feat_class.feature_version() for feat_key, feat_class in upstream_features.items()
     }
     feature_versions[child_key.to_string()] = child_version
 
@@ -363,9 +356,7 @@ def test_resolve_update_downstream_feature(
                 snapshot_version=graph.snapshot_version,
             )
         except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
-            )
+            pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
         # Get computed metadata
         added_df = increment.added.lazy().collect().to_polars()
@@ -379,9 +370,7 @@ def test_resolve_update_downstream_feature(
         from metaxy.models.constants import METAXY_CREATED_AT
 
         common_columns = [
-            col
-            for col in added_sorted.columns
-            if col in golden_sorted.columns and col != METAXY_CREATED_AT
+            col for col in added_sorted.columns if col in golden_sorted.columns and col != METAXY_CREATED_AT
         ]
         added_selected = added_sorted.select(common_columns)
         golden_selected = golden_sorted.select(common_columns)
@@ -412,8 +401,7 @@ def test_resolve_update_detects_changes(
     child_version = ChildFeature.feature_version()
 
     feature_versions = {
-        feat_key.to_string(): feat_class.feature_version()
-        for feat_key, feat_class in upstream_features.items()
+        feat_key.to_string(): feat_class.feature_version() for feat_key, feat_class in upstream_features.items()
     }
     feature_versions[child_key.to_string()] = child_version
 
@@ -466,9 +454,7 @@ def test_resolve_update_detects_changes(
             )
 
         except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
-            )
+            pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
         # Verify changes were detected
         # With completely new data (8 samples vs 10 initial), we expect:
@@ -476,12 +462,8 @@ def test_resolve_update_detects_changes(
         # - Some samples removed (old ones not in new data)
         # - Possibly some changed (if IDs overlap but provenance differs)
 
-        total_changes = (
-            len(increment.added) + len(increment.changed) + len(increment.removed)
-        )
-        assert total_changes > 0, (
-            "Expected resolve_update to detect some changes when upstream data changes"
-        )
+        total_changes = len(increment.added) + len(increment.changed) + len(increment.removed)
+        assert total_changes > 0, "Expected resolve_update to detect some changes when upstream data changes"
 
 
 # ============= TEST: LAZY EXECUTION =============
@@ -597,22 +579,13 @@ def test_resolve_update_lazy_execution(
             id_columns = list(child_plan.feature.id_columns)
 
             # Compare added frames
-            lazy_added = (
-                eager_increment.added.lazy().collect().to_polars().sort(id_columns)
-            )
-            eager_added = (
-                eager_increment_direct.added.lazy()
-                .collect()
-                .to_polars()
-                .sort(id_columns)
-            )
+            lazy_added = eager_increment.added.lazy().collect().to_polars().sort(id_columns)
+            eager_added = eager_increment_direct.added.lazy().collect().to_polars().sort(id_columns)
 
             pl_testing.assert_frame_equal(lazy_added, eager_added)
 
         except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
-            )
+            pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
 
 # ============= TEST: IDEMPOTENCY =============
@@ -632,8 +605,7 @@ def test_resolve_update_idempotency(
     child_version = ChildFeature.feature_version()
 
     feature_versions = {
-        feat_key.to_string(): feat_class.feature_version()
-        for feat_key, feat_class in upstream_features.items()
+        feat_key.to_string(): feat_class.feature_version() for feat_key, feat_class in upstream_features.items()
     }
     feature_versions[child_key.to_string()] = child_version
 
@@ -664,9 +636,7 @@ def test_resolve_update_idempotency(
                 snapshot_version=graph.snapshot_version,
             )
 
-            assert len(increment1.added) > 0, (
-                "Expected resolve_update to detect added samples"
-            )
+            assert len(increment1.added) > 0, "Expected resolve_update to detect added samples"
 
             # Write the increment
             added_df = increment1.added.lazy().collect().to_polars()
@@ -680,20 +650,12 @@ def test_resolve_update_idempotency(
             )
 
         except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
-            )
+            pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
         # Verify second call is idempotent
-        assert len(increment2.added) == 0, (
-            "Second resolve_update should have no added samples"
-        )
-        assert len(increment2.changed) == 0, (
-            "Second resolve_update should have no changed samples"
-        )
-        assert len(increment2.removed) == 0, (
-            "Second resolve_update should have no removed samples"
-        )
+        assert len(increment2.added) == 0, "Second resolve_update should have no added samples"
+        assert len(increment2.changed) == 0, "Second resolve_update should have no changed samples"
+        assert len(increment2.removed) == 0, "Second resolve_update should have no removed samples"
 
 
 # ============= TEST: FILTER KEY TYPES =============
@@ -1022,9 +984,7 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
         # Join with upstream to get proper data_version columns
         upstream_df = store.read_metadata(Video).collect().to_polars()
         first_batch_joined = first_batch.join(
-            upstream_df.select(
-                ["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]
-            ).rename(
+            upstream_df.select(["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
                     "metaxy_data_version_by_field": "metaxy_data_version_by_field__video",
                     "metaxy_provenance": "__upstream_provenance",
@@ -1033,9 +993,7 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
             on="video_id",
         )
         # Use compute_provenance to get proper provenance from upstream
-        first_batch_with_prov = store.compute_provenance(
-            VideoFrames, nw.from_native(first_batch_joined)
-        )
+        first_batch_with_prov = store.compute_provenance(VideoFrames, nw.from_native(first_batch_joined))
         store.write_metadata(VideoFrames, first_batch_with_prov)
 
         # Second write: add more frames (simulating re-running the pipeline)
@@ -1047,9 +1005,7 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
             }
         )
         second_batch_joined = second_batch.join(
-            upstream_df.select(
-                ["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]
-            ).rename(
+            upstream_df.select(["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
                     "metaxy_data_version_by_field": "metaxy_data_version_by_field__video",
                     "metaxy_provenance": "__upstream_provenance",
@@ -1057,9 +1013,7 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
             ),
             on="video_id",
         )
-        second_batch_with_prov = store.compute_provenance(
-            VideoFrames, nw.from_native(second_batch_joined)
-        )
+        second_batch_with_prov = store.compute_provenance(VideoFrames, nw.from_native(second_batch_joined))
         store.write_metadata(VideoFrames, second_batch_with_prov)
 
         # Now we have 7 total frames in the store:
@@ -1147,9 +1101,7 @@ def test_expansion_lineage_orphaned_when_upstream_removed(
             {
                 "video_id": ["v1", "v2", "v3", "v4", "v5"],
                 "resolution": ["1080p", "720p", "4K", "1080p", "720p"],
-                "metaxy_provenance_by_field": [
-                    {"resolution": f"res_hash_{i}"} for i in range(1, 6)
-                ],
+                "metaxy_provenance_by_field": [{"resolution": f"res_hash_{i}"} for i in range(1, 6)],
                 "metaxy_provenance": [f"video_prov_{i}" for i in range(1, 6)],
             }
         )
@@ -1171,9 +1123,7 @@ def test_expansion_lineage_orphaned_when_upstream_removed(
         # Join with upstream to compute proper provenance
         upstream_df = store.read_metadata(Video).collect().to_polars()
         frames_joined = frames_df.join(
-            upstream_df.select(
-                ["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]
-            ).rename(
+            upstream_df.select(["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
                     "metaxy_data_version_by_field": "metaxy_data_version_by_field__video",
                     "metaxy_provenance": "__upstream_provenance",
@@ -1181,9 +1131,7 @@ def test_expansion_lineage_orphaned_when_upstream_removed(
             ),
             on="video_id",
         )
-        frames_with_prov = store.compute_provenance(
-            VideoFrames, nw.from_native(frames_joined)
-        )
+        frames_with_prov = store.compute_provenance(VideoFrames, nw.from_native(frames_joined))
         store.write_metadata(VideoFrames, frames_with_prov)
 
         # Now REMOVE 3 videos from upstream (simulating upstream data change)
@@ -1300,9 +1248,7 @@ def test_expansion_lineage_orphaned_with_duplicate_writes(
         )
         upstream_df = store.read_metadata(Video).collect().to_polars()
         first_batch_joined = first_batch.join(
-            upstream_df.select(
-                ["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]
-            ).rename(
+            upstream_df.select(["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
                     "metaxy_data_version_by_field": "metaxy_data_version_by_field__video",
                     "metaxy_provenance": "__upstream_provenance",
@@ -1310,9 +1256,7 @@ def test_expansion_lineage_orphaned_with_duplicate_writes(
             ),
             on="video_id",
         )
-        first_batch_with_prov = store.compute_provenance(
-            VideoFrames, nw.from_native(first_batch_joined)
-        )
+        first_batch_with_prov = store.compute_provenance(VideoFrames, nw.from_native(first_batch_joined))
         store.write_metadata(VideoFrames, first_batch_with_prov)
 
         # Write SAME frames again - SECOND WRITE (duplicate rows)
@@ -1328,12 +1272,8 @@ def test_expansion_lineage_orphaned_with_duplicate_writes(
         current_deduplicated = store.read_metadata(VideoFrames).collect()
         current_all = store.read_metadata(VideoFrames, latest_only=False).collect()
 
-        assert len(current_deduplicated) == 4, (
-            f"Expected 4 deduplicated rows, got {len(current_deduplicated)}"
-        )
-        assert len(current_all) == 12, (
-            f"Expected 12 total rows (with duplicates), got {len(current_all)}"
-        )
+        assert len(current_deduplicated) == 4, f"Expected 4 deduplicated rows, got {len(current_deduplicated)}"
+        assert len(current_all) == 12, f"Expected 12 total rows (with duplicates), got {len(current_all)}"
 
         # Now check resolve_update - it uses read_metadata_in_store (no dedup)
         # So it might see more rows than expected
@@ -1412,9 +1352,7 @@ def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
             {
                 "chunk_id": [f"chunk_{i}" for i in range(10)],
                 "video_path": [f"/path/to/video_{i}.mp4" for i in range(10)],
-                "metaxy_provenance_by_field": [
-                    {"video_path": f"path_hash_{i}"} for i in range(10)
-                ],
+                "metaxy_provenance_by_field": [{"video_path": f"path_hash_{i}"} for i in range(10)],
                 "metaxy_provenance": [f"upstream_prov_{i}" for i in range(10)],
             }
         )
@@ -1429,9 +1367,7 @@ def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
         )
         upstream_df = store.read_metadata(Upstream).collect().to_polars()
         downstream_joined = downstream_batch.join(
-            upstream_df.select(
-                ["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]
-            ).rename(
+            upstream_df.select(["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
                     "metaxy_data_version_by_field": "metaxy_data_version_by_field__upstream",
                     "metaxy_provenance": "__upstream_provenance",
@@ -1439,9 +1375,7 @@ def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
             ),
             on="chunk_id",
         )
-        downstream_with_prov = store.compute_provenance(
-            Downstream, nw.from_native(downstream_joined)
-        )
+        downstream_with_prov = store.compute_provenance(Downstream, nw.from_native(downstream_joined))
         store.write_metadata(Downstream, downstream_with_prov)
 
         # Write SAME data 4 more times (5 total writes, like the user scenario)
@@ -1453,12 +1387,8 @@ def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
         current_deduplicated = store.read_metadata(Downstream).collect()
         current_all = store.read_metadata(Downstream, latest_only=False).collect()
 
-        assert len(current_deduplicated) == 10, (
-            f"Expected 10 deduplicated rows, got {len(current_deduplicated)}"
-        )
-        assert len(current_all) == 50, (
-            f"Expected 50 total rows (with duplicates), got {len(current_all)}"
-        )
+        assert len(current_deduplicated) == 10, f"Expected 10 deduplicated rows, got {len(current_deduplicated)}"
+        assert len(current_all) == 50, f"Expected 50 total rows (with duplicates), got {len(current_all)}"
 
         # Now check resolve_update
         increment = store.resolve_update(Downstream, lazy=False)
@@ -1538,9 +1468,7 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
             {
                 "chunk_id": [f"chunk_{i}" for i in range(10)],
                 "video_path": [f"/path/to/video_{i}.mp4" for i in range(10)],
-                "metaxy_provenance_by_field": [
-                    {"video_path": f"path_hash_{i}"} for i in range(10)
-                ],
+                "metaxy_provenance_by_field": [{"video_path": f"path_hash_{i}"} for i in range(10)],
                 "metaxy_provenance": [f"upstream_prov_{i}" for i in range(10)],
             }
         )
@@ -1555,9 +1483,7 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
         )
         upstream_df = store.read_metadata(Upstream).collect().to_polars()
         downstream_joined = downstream_batch.join(
-            upstream_df.select(
-                ["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]
-            ).rename(
+            upstream_df.select(["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
                     # table_name uses underscores, not slashes
                     "metaxy_data_version_by_field": "metaxy_data_version_by_field__delta_dedup_test_upstream",
@@ -1566,9 +1492,7 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
             ),
             on="chunk_id",
         )
-        downstream_with_prov = store.compute_provenance(
-            Downstream, nw.from_native(downstream_joined)
-        )
+        downstream_with_prov = store.compute_provenance(Downstream, nw.from_native(downstream_joined))
         store.write_metadata(Downstream, downstream_with_prov)
 
         # Write SAME data 4 more times (5 total writes, like the user scenario)
@@ -1593,9 +1517,7 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
         print(f"DEBUG: read_metadata_in_store rows: {raw_count}")
 
         assert len(current_all) == 50, f"Expected 50 total rows, got {len(current_all)}"
-        assert len(current_dedup) == 10, (
-            f"Expected 10 deduplicated rows, got {len(current_dedup)}"
-        )
+        assert len(current_dedup) == 10, f"Expected 10 deduplicated rows, got {len(current_dedup)}"
 
         # THE KEY TEST: resolve_update should see only 10 rows (deduplicated)
         # and report 0 orphaned (all chunks exist in upstream)
@@ -1663,9 +1585,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
     # Create fallback store with MORE upstream data
     fallback_store = DeltaMetadataStore(root_path=tmp_path / "delta_fallback")
     # Create local store that reads upstream from fallback
-    local_store = DeltaMetadataStore(
-        root_path=tmp_path / "delta_local", fallback_stores=[fallback_store]
-    )
+    local_store = DeltaMetadataStore(root_path=tmp_path / "delta_local", fallback_stores=[fallback_store])
 
     with fallback_store, local_store, graph.use():
         import narwhals as nw
@@ -1675,9 +1595,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
             {
                 "chunk_id": [f"chunk_{i}" for i in range(100)],
                 "video_path": [f"/path/to/video_{i}.mp4" for i in range(100)],
-                "metaxy_provenance_by_field": [
-                    {"video_path": f"path_hash_{i}"} for i in range(100)
-                ],
+                "metaxy_provenance_by_field": [{"video_path": f"path_hash_{i}"} for i in range(100)],
                 "metaxy_provenance": [f"upstream_prov_{i}" for i in range(100)],
             }
         )
@@ -1686,9 +1604,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
         # User reads upstream from fallback (via local_store) and materializes downstream
         # This should read 100 chunks from fallback
         upstream_df = local_store.read_metadata(Upstream).collect().to_polars()
-        assert len(upstream_df) == 100, (
-            f"Expected 100 upstream rows from fallback, got {len(upstream_df)}"
-        )
+        assert len(upstream_df) == 100, f"Expected 100 upstream rows from fallback, got {len(upstream_df)}"
 
         # User computes and writes downstream for all 100 chunks
         downstream_batch = pl.DataFrame(
@@ -1698,9 +1614,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
             }
         )
         downstream_joined = downstream_batch.join(
-            upstream_df.select(
-                ["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]
-            ).rename(
+            upstream_df.select(["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
                     "metaxy_data_version_by_field": "metaxy_data_version_by_field__upstream",
                     "metaxy_provenance": "__upstream_provenance",
@@ -1708,9 +1622,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
             ),
             on="chunk_id",
         )
-        downstream_with_prov = local_store.compute_provenance(
-            Downstream, nw.from_native(downstream_joined)
-        )
+        downstream_with_prov = local_store.compute_provenance(Downstream, nw.from_native(downstream_joined))
         local_store.write_metadata(Downstream, downstream_with_prov)
 
         # Now write LOCAL upstream with FEWER samples (only 20 chunks)
@@ -1719,9 +1631,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
             {
                 "chunk_id": [f"chunk_{i}" for i in range(20)],
                 "video_path": [f"/path/to/video_{i}.mp4" for i in range(20)],
-                "metaxy_provenance_by_field": [
-                    {"video_path": f"path_hash_{i}"} for i in range(20)
-                ],
+                "metaxy_provenance_by_field": [{"video_path": f"path_hash_{i}"} for i in range(20)],
                 "metaxy_provenance": [f"upstream_prov_{i}" for i in range(20)],
             }
         )
@@ -1749,15 +1659,11 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
             added_count = len(increment.added)
 
             # Expected: 80 orphaned (chunks 20-99 have no upstream)
-            assert removed_count == 80, (
-                f"Expected 80 orphaned (100 downstream - 20 upstream), "
-                f"but got {removed_count}."
-            )
+            assert removed_count == 80, f"Expected 80 orphaned (100 downstream - 20 upstream), but got {removed_count}."
 
             # Also check added: 0 because all local upstream (20 chunks) are in downstream
             assert added_count == 0, (
-                f"Expected 0 added (all 20 local upstream chunks are in downstream), "
-                f"but got {added_count}."
+                f"Expected 0 added (all 20 local upstream chunks are in downstream), but got {added_count}."
             )
 
 
@@ -1830,9 +1736,7 @@ def _compute_golden_increment_for_optional_deps(
     engine = PolarsVersioningEngine(plan=child_plan)
 
     # Convert upstream data to Narwhals LazyFrames with FeatureKey keys
-    upstream_nw = {
-        FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
-    }
+    upstream_nw = {FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()}
 
     # Compute increment with provenance (no current downstream for first run)
     added, changed, removed, _ = engine.resolve_increment_with_provenance(
@@ -1845,12 +1749,8 @@ def _compute_golden_increment_for_optional_deps(
 
     # Collect lazy frames and convert to Increment
     added_collected = added.collect()
-    changed_collected = (
-        changed.collect() if changed is not None else added_collected.head(0)
-    )
-    removed_collected = (
-        removed.collect() if removed is not None else added_collected.head(0)
-    )
+    changed_collected = changed.collect() if changed is not None else added_collected.head(0)
+    removed_collected = removed.collect() if removed is not None else added_collected.head(0)
 
     return Increment(
         added=added_collected,
@@ -1878,8 +1778,7 @@ def test_resolve_update_optional_dependencies(
     ChildFeature = graph.features_by_key[child_key]
 
     feature_versions = {
-        feat_key.to_string(): feat_class.feature_version()
-        for feat_key, feat_class in upstream_features.items()
+        feat_key.to_string(): feat_class.feature_version() for feat_key, feat_class in upstream_features.items()
     }
     feature_versions[child_key.to_string()] = ChildFeature.feature_version()
 
@@ -1916,9 +1815,7 @@ def test_resolve_update_optional_dependencies(
 
             # Get common columns for comparison
             common_columns = [
-                col
-                for col in actual_added.columns
-                if col in golden_added.columns and col != METAXY_CREATED_AT
+                col for col in actual_added.columns if col in golden_added.columns and col != METAXY_CREATED_AT
             ]
 
             # Sort by all comparable columns for deterministic comparison
@@ -2064,14 +1961,11 @@ def test_optional_dependency_null_handling_and_provenance_stability(
             # Sort for consistent comparison
             initial_downstream = initial_downstream.sort("sample_uid")
             sample_uids = initial_downstream["sample_uid"].to_list()
-            assert sample_uids == ["s1", "s2", "s3"], (
-                f"Expected samples ['s1', 's2', 's3'], got {sample_uids}"
-            )
+            assert sample_uids == ["s1", "s2", "s3"], f"Expected samples ['s1', 's2', 's3'], got {sample_uids}"
 
             # Store initial provenance for comparison
             initial_provenance = {
-                row["sample_uid"]: row["metaxy_provenance_by_field"]
-                for row in initial_downstream.iter_rows(named=True)
+                row["sample_uid"]: row["metaxy_provenance_by_field"] for row in initial_downstream.iter_rows(named=True)
             }
 
             # Write initial downstream
@@ -2114,39 +2008,30 @@ def test_optional_dependency_null_handling_and_provenance_stability(
             )
 
             # s1 and s3 SHOULD be in changed (they have actual optional dep values)
-            assert "s1" in changed_uids, (
-                "s1 should be in changed because it has actual optional dep values"
-            )
-            assert "s3" in changed_uids, (
-                "s3 should be in changed because it has actual optional dep values"
-            )
+            assert "s1" in changed_uids, "s1 should be in changed because it has actual optional dep values"
+            assert "s3" in changed_uids, "s3 should be in changed because it has actual optional dep values"
 
             # === VERIFY PROVENANCE ACTUALLY CHANGED FOR s1, s3 ===
             changed_provenance = {
-                row["sample_uid"]: row["metaxy_provenance_by_field"]
-                for row in changed_downstream.iter_rows(named=True)
+                row["sample_uid"]: row["metaxy_provenance_by_field"] for row in changed_downstream.iter_rows(named=True)
             }
 
             # s1's computed field provenance should have changed
-            assert (
-                changed_provenance["s1"]["computed"]
-                != initial_provenance["s1"]["computed"]
-            ), "s1's computed field provenance should change when optional dep changes"
+            assert changed_provenance["s1"]["computed"] != initial_provenance["s1"]["computed"], (
+                "s1's computed field provenance should change when optional dep changes"
+            )
 
             # s3's computed field provenance should have changed
-            assert (
-                changed_provenance["s3"]["computed"]
-                != initial_provenance["s3"]["computed"]
-            ), "s3's computed field provenance should change when optional dep changes"
+            assert changed_provenance["s3"]["computed"] != initial_provenance["s3"]["computed"], (
+                "s3's computed field provenance should change when optional dep changes"
+            )
 
             # Added should be empty (no new samples)
             added_df = increment_v2.added.lazy().collect().to_polars()
             assert len(added_df) == 0, f"Expected 0 added rows, got {len(added_df)}"
 
     except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
-        )
+        pytest.skip(f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}")
 
 
 def test_all_optional_deps_outer_join_behavior(
@@ -2262,9 +2147,7 @@ def test_all_optional_deps_outer_join_behavior(
             )
 
     except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
-        )
+        pytest.skip(f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}")
 
 
 # ============= TEST: AGGREGATION LINEAGE FIELD-LEVEL ISOLATION =============
@@ -2401,9 +2284,7 @@ def test_aggregation_lineage_field_level_provenance_isolation(
             changed_df = increment_v2.changed
             assert changed_df is not None, "Expected changed to not be None"
             changed_downstream = changed_df.lazy().collect().to_polars()
-            assert len(changed_downstream) == 2, (
-                "Expected 2 changed rows (one per reading in aggregation group)"
-            )
+            assert len(changed_downstream) == 2, "Expected 2 changed rows (one per reading in aggregation group)"
 
             # All rows in the aggregation group have identical provenance
             # Pick the first row to check the provenance values
@@ -2432,9 +2313,7 @@ def test_aggregation_lineage_field_level_provenance_isolation(
             )
 
     except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
-        )
+        pytest.skip(f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}")
 
 
 def test_aggregation_lineage_field_level_provenance_definition_change(
@@ -2539,9 +2418,7 @@ def test_aggregation_lineage_field_level_provenance_definition_change(
                 v1_avg_humidity = v1_prov_by_field["avg_humidity"]
 
         except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
-            )
+            pytest.skip(f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}")
 
     # === Version 2: Temperature code_version changes to "2" ===
     with FeatureGraph().use():
@@ -2552,12 +2429,8 @@ def test_aggregation_lineage_field_level_provenance_definition_change(
                 key="sensor_readings_defn_store",
                 id_columns=("sensor_id", "reading_id"),
                 fields=[
-                    FieldSpec(
-                        key=FieldKey(["temperature"]), code_version="2"
-                    ),  # Changed!
-                    FieldSpec(
-                        key=FieldKey(["humidity"]), code_version="1"
-                    ),  # Unchanged
+                    FieldSpec(key=FieldKey(["temperature"]), code_version="2"),  # Changed!
+                    FieldSpec(key=FieldKey(["humidity"]), code_version="1"),  # Unchanged
                 ],
             ),
         ):
@@ -2646,9 +2519,7 @@ def test_aggregation_lineage_field_level_provenance_definition_change(
                 )
 
         except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}"
-            )
+            pytest.skip(f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}")
 
 
 def test_aggregation_lineage_preserves_user_columns(
@@ -2767,8 +2638,7 @@ def test_aggregation_lineage_preserves_user_columns(
         actual_columns = set(added_df.columns)
         missing_columns = expected_columns - actual_columns
         assert not missing_columns, (
-            f"Missing columns in aggregation result: {missing_columns}. "
-            f"Got columns: {actual_columns}"
+            f"Missing columns in aggregation result: {missing_columns}. Got columns: {actual_columns}"
         )
 
 
@@ -2833,9 +2703,7 @@ def test_aggregation_lineage_preserves_columns_with_global_filter(
                 "item_id": ["i1", "i2", "i3", "i4", "i5", "i6"],
                 "dataset": ["ds_a", "ds_a", "ds_a", "ds_b", "ds_b", "ds_b"],
                 "group_id": ["g1", "g1", "g2", "g1", "g2", "g2"],
-                "metaxy_provenance_by_field": [
-                    {"value": f"hash{i}"} for i in range(1, 7)
-                ],
+                "metaxy_provenance_by_field": [{"value": f"hash{i}"} for i in range(1, 7)],
             }
         )
         store.write_metadata(UpstreamWithDataset, upstream_df)
@@ -2860,9 +2728,7 @@ def test_aggregation_lineage_preserves_columns_with_global_filter(
 
         # Verify only ds_a rows were included (filter worked)
         datasets = added_df["dataset"].unique().to_list()
-        assert datasets == ["ds_a"], (
-            f"Expected only 'ds_a' dataset after filtering. Got: {datasets}"
-        )
+        assert datasets == ["ds_a"], f"Expected only 'ds_a' dataset after filtering. Got: {datasets}"
 
         # Verify correct groups were returned
         groups = set(added_df["group_id"].to_list())

@@ -218,9 +218,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             self._ch_schema_cache[table_name] = self.conn.table(table_name).schema()
         return self._ch_schema_cache[table_name]
 
-    def transform_after_read(
-        self, table: "ibis.Table", feature_key: "FeatureKey"
-    ) -> "ibis.Table":
+    def transform_after_read(self, table: "ibis.Table", feature_key: "FeatureKey") -> "ibis.Table":
         """Transform ClickHouse-specific column types for PyArrow compatibility.
 
         Handles:
@@ -257,9 +255,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             elif isinstance(dtype, dt.Map) and col_name in metaxy_map_columns:
                 # Only convert metaxy system Map(String, String) columns to Struct
                 # User-defined Map columns are left as-is
-                mutations[col_name] = self._map_to_struct_expr(
-                    table, col_name, dtype, feature_key
-                )
+                mutations[col_name] = self._map_to_struct_expr(table, col_name, dtype, feature_key)
 
         if not mutations:
             return table
@@ -313,9 +309,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         return ibis.struct(struct_dict)
 
-    def transform_before_write(
-        self, df: Frame, feature_key: "FeatureKey", table_name: str
-    ) -> Frame:
+    def transform_before_write(self, df: Frame, feature_key: "FeatureKey", table_name: str) -> Frame:
         """Transform Polars Struct columns to Map format for ClickHouse.
 
         If the ClickHouse table has Map(K,V) columns but the DataFrame has Struct
@@ -365,15 +359,11 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         # Find Map columns in ClickHouse schema
         if self.auto_cast_struct_for_map:
             # Transform ALL Struct columns that have corresponding Map columns in CH
-            map_columns = {
-                name for name, dtype in ch_schema.items() if isinstance(dtype, dt.Map)
-            }
+            map_columns = {name for name, dtype in ch_schema.items() if isinstance(dtype, dt.Map)}
         else:
             # Only transform metaxy system columns
             map_columns = {
-                name
-                for name, dtype in ch_schema.items()
-                if isinstance(dtype, dt.Map) and name in metaxy_struct_columns
+                name for name, dtype in ch_schema.items() if isinstance(dtype, dt.Map) and name in metaxy_struct_columns
             }
 
         if not map_columns:
@@ -386,9 +376,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         # All other backends: collect to Polars and transform
         return self._transform_polars_struct_to_map(df, map_columns, ch_schema)
 
-    def _transform_ibis_struct_to_map(
-        self, df: Frame, map_columns: set[str], ch_schema: "IbisSchema"
-    ) -> Frame:
+    def _transform_ibis_struct_to_map(self, df: Frame, map_columns: set[str], ch_schema: "IbisSchema") -> Frame:
         """Transform Ibis Struct columns to Map format for ClickHouse.
 
         Args:
@@ -437,12 +425,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             # ibis.map() takes two arrays: keys and values
             # Cast values to match ClickHouse Map value type
             keys = ibis.array([ibis.literal(name) for name in field_names])
-            values = ibis.array(
-                [
-                    ibis_table[col_name][name].cast(target_value_type)
-                    for name in field_names
-                ]
-            )
+            values = ibis.array([ibis_table[col_name][name].cast(target_value_type) for name in field_names])
             mutations[col_name] = ibis.map(keys, values)
 
         if not mutations:
@@ -451,9 +434,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         result_table = ibis_table.mutate(**mutations)  # ty: ignore[invalid-argument-type]
         return nw.from_native(result_table, eager_only=False)
 
-    def _transform_polars_struct_to_map(
-        self, df: Frame, map_columns: set[str], ch_schema: "IbisSchema"
-    ) -> Frame:
+    def _transform_polars_struct_to_map(self, df: Frame, map_columns: set[str], ch_schema: "IbisSchema") -> Frame:
         """Transform Polars Struct columns to Map-compatible format for ClickHouse.
 
         Args:
@@ -498,12 +479,8 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             # Handle empty structs (no fields) - convert to empty List
             if not field_names:
                 # Create empty list with correct Map-compatible struct type
-                empty_list_type = pl.List(
-                    pl.Struct({"key": pl.Utf8, "value": target_type})
-                )
-                transformations.append(
-                    pl.lit([], dtype=empty_list_type).alias(col_name)
-                )
+                empty_list_type = pl.List(pl.Struct({"key": pl.Utf8, "value": target_type}))
+                transformations.append(pl.lit([], dtype=empty_list_type).alias(col_name))
                 continue
 
             # Build list of {key: field_name, value: field_value} structs
@@ -515,10 +492,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
                     pl.struct(
                         [
                             pl.lit(field_name).alias("key"),
-                            pl.col(col_name)
-                            .struct.field(field_name)
-                            .cast(target_type)
-                            .alias("value"),
+                            pl.col(col_name).struct.field(field_name).cast(target_type).alias("value"),
                         ]
                     )
                 )
@@ -526,9 +500,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
                 for field_name in field_names
             ]
             # Concat and drop nulls to exclude entries with NULL values
-            transformations.append(
-                pl.concat_list(key_value_structs).list.drop_nulls().alias(col_name)
-            )
+            transformations.append(pl.concat_list(key_value_structs).list.drop_nulls().alias(col_name))
 
         pl_df = pl_df.with_columns(transformations)
 
@@ -604,9 +576,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         url = make_url(base_url)
 
         # Determine if secure based on port or existing secure param
-        is_secure = url.port == 8443 or (
-            url.query and url.query.get("secure") == "True"
-        )
+        is_secure = url.port == 8443 or (url.query and url.query.get("secure") == "True")
 
         # Map HTTP ports to native ports
         if url.port == 8443:

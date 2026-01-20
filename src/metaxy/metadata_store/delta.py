@@ -161,9 +161,7 @@ class DeltaMetadataStore(MetadataStore):
         return HashAlgorithm.XXHASH64
 
     @contextmanager
-    def _create_versioning_engine(
-        self, plan: FeaturePlan
-    ) -> Iterator[PolarsVersioningEngine]:
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:
         """Create Polars versioning engine for Delta store."""
         with self._create_polars_versioning_engine(plan) as engine:
             yield engine
@@ -253,15 +251,11 @@ class DeltaMetadataStore(MetadataStore):
     @overload
     def _cast_enum_to_string(self, frame: pl.LazyFrame) -> pl.LazyFrame: ...
 
-    def _cast_enum_to_string(
-        self, frame: pl.DataFrame | pl.LazyFrame
-    ) -> pl.DataFrame | pl.LazyFrame:
+    def _cast_enum_to_string(self, frame: pl.DataFrame | pl.LazyFrame) -> pl.DataFrame | pl.LazyFrame:
         """Cast Enum columns to String to avoid delta-rs Utf8View incompatibility."""
         return frame.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
 
-    def _open_delta_table(
-        self, feature: CoercibleToFeatureKey, *, without_files: bool = False
-    ) -> deltalake.DeltaTable:
+    def _open_delta_table(self, feature: CoercibleToFeatureKey, *, without_files: bool = False) -> deltalake.DeltaTable:
         feature_key = self._resolve_feature_key(feature)
         table_uri = self._feature_uri(feature_key)
         return deltalake.DeltaTable(
@@ -425,9 +419,7 @@ class DeltaMetadataStore(MetadataStore):
         details.append(f"layout={self.layout}")
         return f"DeltaMetadataStore({', '.join(details)})"
 
-    def _get_store_metadata_impl(
-        self, feature_key: CoercibleToFeatureKey
-    ) -> dict[str, Any]:
+    def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
         return {"uri": self._feature_uri(self._resolve_feature_key(feature_key))}
 
     @classmethod

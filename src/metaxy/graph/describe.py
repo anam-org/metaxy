@@ -44,11 +44,7 @@ def describe_graph(
     """
     # Get all features, optionally filtered by project
     if project is not None:
-        filtered_features = {
-            key: cls
-            for key, cls in graph.features_by_key.items()
-            if cls.project == project
-        }
+        filtered_features = {key: cls for key, cls in graph.features_by_key.items() if cls.project == project}
     else:
         filtered_features = graph.features_by_key
 
@@ -88,9 +84,7 @@ def describe_graph(
         max_depth = max(max_depth, depth)
 
     # Find root features (no dependencies) in filtered set
-    root_features = [
-        key.to_string() for key, cls in filtered_features.items() if not cls.spec().deps
-    ]
+    root_features = [key.to_string() for key, cls in filtered_features.items() if not cls.spec().deps]
 
     # Find leaf features (no dependents) in filtered set
     leaf_features = []

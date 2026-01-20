@@ -51,27 +51,13 @@ class FeatureVersionsModel(BaseModel):
         ...,
         description="Hash of versioned feature topology (combined versions of fields on this feature)",
     )
-    metaxy_feature_spec_version: str = Field(
-        ..., description="Hash of complete FeatureSpec (all properties)"
-    )
-    metaxy_full_definition_version: str = Field(
-        ..., description="Hash of feature_spec_version + project"
-    )
-    recorded_at: datetime = Field(
-        ..., description="Timestamp when feature version was recorded"
-    )
-    feature_spec: str = Field(
-        ..., description="Full serialized FeatureSpec as JSON string"
-    )
-    feature_schema: str = Field(
-        ..., description="Full Pydantic model schema as JSON string"
-    )
-    feature_class_path: str = Field(
-        ..., description="Python import path to Feature class"
-    )
-    metaxy_snapshot_version: str = Field(
-        ..., description="Deterministic hash of entire Metaxy project"
-    )
+    metaxy_feature_spec_version: str = Field(..., description="Hash of complete FeatureSpec (all properties)")
+    metaxy_full_definition_version: str = Field(..., description="Hash of feature_spec_version + project")
+    recorded_at: datetime = Field(..., description="Timestamp when feature version was recorded")
+    feature_spec: str = Field(..., description="Full serialized FeatureSpec as JSON string")
+    feature_schema: str = Field(..., description="Full Pydantic model schema as JSON string")
+    feature_class_path: str = Field(..., description="Python import path to Feature class")
+    metaxy_snapshot_version: str = Field(..., description="Deterministic hash of entire Metaxy project")
     tags: dict[str, str] | str = Field(
         default="{}",
         description="Snapshot tags as JSON string (key-value pairs). The metaxy tag is reserved for internal use.",
@@ -99,16 +85,10 @@ class FeatureVersionsModel(BaseModel):
         from metaxy._version import __version__
 
         metaxy_tag_value = tags_dict.get(METAXY_TAG, "{}")
-        metaxy_tag_dict = (
-            json.loads(metaxy_tag_value)
-            if isinstance(metaxy_tag_value, str)
-            else metaxy_tag_value
-        )
+        metaxy_tag_dict = json.loads(metaxy_tag_value) if isinstance(metaxy_tag_value, str) else metaxy_tag_value
         if not isinstance(metaxy_tag_dict, dict):
             metaxy_tag_dict = {}
-        metaxy_tag_dict[METAXY_VERSION_KEY] = metaxy_tag_dict.get(
-            METAXY_VERSION_KEY, __version__
-        )
+        metaxy_tag_dict[METAXY_VERSION_KEY] = metaxy_tag_dict.get(METAXY_VERSION_KEY, __version__)
         tags_dict[METAXY_TAG] = json.dumps(metaxy_tag_dict)
 
         return json.dumps(tags_dict)

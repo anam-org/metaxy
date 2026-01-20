@@ -58,9 +58,7 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
         spec=SampleFeatureSpec(
             key=FeatureKey(["video"]),
             fields=[
-                FieldSpec(
-                    key=FieldKey(["frames"]), code_version="1"
-                ),  # Logical data component
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),  # Logical data component
             ],
         ),
     ):
@@ -462,9 +460,7 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
             inject_primary_key=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "v2"]),
-                fields=[
-                    FieldSpec(key=FieldKey(["data"]), code_version="2")
-                ],  # Changed!
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="2")],  # Changed!
             ),
         ):
             uid: str = Field(primary_key=True)
@@ -632,9 +628,7 @@ def test_duplicate_key_raises() -> None:
         uid: str = Field(primary_key=True)
 
     # Try to create another with same key
-    with pytest.raises(
-        ValueError, match="Feature with key duplicate already registered"
-    ):
+    with pytest.raises(ValueError, match="Feature with key duplicate already registered"):
 
         class Feature2(
             SQLModelFeature,
@@ -685,9 +679,7 @@ def test_inheritance_chain() -> None:
 # DuckDB Metadata Store Integration Test
 
 
-def test_sqlmodel_feature_with_duckdb_store(
-    tmp_path: Path, snapshot: SnapshotAssertion
-) -> None:
+def test_sqlmodel_feature_with_duckdb_store(tmp_path: Path, snapshot: SnapshotAssertion) -> None:
     """Test SQLModelFeature with DuckDB metadata store.
 
     This is a practical integration test showing that SQLModelFeature works
@@ -748,10 +740,7 @@ def test_sqlmodel_feature_with_duckdb_store(
 
         # Check feature_version column
         assert "metaxy_feature_version" in result_df.columns
-        assert all(
-            v == VideoFeature.feature_version()
-            for v in result_df["metaxy_feature_version"].to_list()
-        )
+        assert all(v == VideoFeature.feature_version() for v in result_df["metaxy_feature_version"].to_list())
 
         # Snapshot result (exclude timestamp which varies between runs)
         result_for_snapshot = result_df.drop("metaxy_created_at").to_dicts()
@@ -799,9 +788,7 @@ def test_basic_custom_id_columns() -> None:
     assert UserSessionFeature.spec().id_columns == ["user_id", "session_id"]
 
 
-def test_sqlmodel_duckdb_custom_id_columns(
-    tmp_path: Path, snapshot: SnapshotAssertion
-) -> None:
+def test_sqlmodel_duckdb_custom_id_columns(tmp_path: Path, snapshot: SnapshotAssertion) -> None:
     """Test SQLModelFeature with DuckDB store using custom id_columns.
 
     Verifies that:
@@ -948,12 +935,8 @@ def test_sqlmodel_duckdb_custom_id_columns(
 
         # Snapshot results (exclude timestamp which varies between runs)
         assert {
-            "parent": parent_result_df.drop("metaxy_created_at")
-            .sort(["user_id", "session_id"])
-            .to_dicts(),
-            "child": child_result_df.drop("metaxy_created_at")
-            .sort(["user_id", "session_id"])
-            .to_dicts(),
+            "parent": parent_result_df.drop("metaxy_created_at").sort(["user_id", "session_id"]).to_dicts(),
+            "child": child_result_df.drop("metaxy_created_at").sort(["user_id", "session_id"]).to_dicts(),
         } == snapshot
 
 
@@ -1068,9 +1051,7 @@ def test_parent_child_different_id_columns() -> None:
     assert deps[0].feature == FeatureKey(["detailed", "parent"])
 
 
-def test_sqlmodel_feature_id_columns_with_joins(
-    tmp_path: Path, snapshot: SnapshotAssertion
-) -> None:
+def test_sqlmodel_feature_id_columns_with_joins(tmp_path: Path, snapshot: SnapshotAssertion) -> None:
     """Test that joins work correctly with custom ID columns in SQLModelFeature.
 
     Verifies that:
@@ -1595,9 +1576,7 @@ def test_sqlmodel_empty_column_selection() -> None:
     assert dep.columns == ()  # Empty tuple, not None
 
 
-def test_sqlmodel_rename_validation_with_store(
-    tmp_path: Path, snapshot: SnapshotAssertion
-) -> None:
+def test_sqlmodel_rename_validation_with_store(tmp_path: Path, snapshot: SnapshotAssertion) -> None:
     """Test that column renaming works correctly with actual metadata store operations.
 
     Verifies that:
@@ -1730,9 +1709,7 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
     # Find the PrimaryKeyConstraint
     from sqlalchemy import PrimaryKeyConstraint
 
-    pk_constraints = [
-        arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
-    ]
+    pk_constraints = [arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)]
     assert len(pk_constraints) == 1
 
     pk_constraint = pk_constraints[0]
@@ -1771,9 +1748,7 @@ def test_inject_primary_key_false_skips_composite_pk() -> None:
 
         table_args = NoPKFeature.__table_args__
         if isinstance(table_args, tuple):
-            pk_constraints = [
-                arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
-            ]
+            pk_constraints = [arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)]
             # Should have no composite PK constraint named 'metaxy_pk'
             for pk in pk_constraints:
                 assert pk.name != "metaxy_pk"
@@ -1810,9 +1785,7 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
     # Find the PrimaryKeyConstraint
     from sqlalchemy import PrimaryKeyConstraint
 
-    pk_constraints = [
-        arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
-    ]
+    pk_constraints = [arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)]
     assert len(pk_constraints) == 1
 
     pk_constraint = pk_constraints[0]

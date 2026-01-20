@@ -50,9 +50,7 @@ def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:
         if METAXY_PROVENANCE not in columns:
             columns_to_add.append(nw.lit("test_provenance").alias(METAXY_PROVENANCE))
         if METAXY_DATA_VERSION not in columns:
-            columns_to_add.append(
-                nw.lit("test_data_version").alias(METAXY_DATA_VERSION)
-            )
+            columns_to_add.append(nw.lit("test_data_version").alias(METAXY_DATA_VERSION))
         # Can't add metaxy_data_version_by_field without knowing the struct schema
     else:
         # metaxy_provenance_by_field exists, derive others from it
@@ -61,20 +59,14 @@ def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:
 
         if METAXY_DATA_VERSION_BY_FIELD not in columns:
             # Copy provenance_by_field to data_version_by_field
-            columns_to_add.append(
-                nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD)
-            )
+            columns_to_add.append(nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD))
 
         if METAXY_DATA_VERSION not in columns:
             # If provenance exists, copy it; otherwise use placeholder
             if METAXY_PROVENANCE in columns:
-                columns_to_add.append(
-                    nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION)
-                )
+                columns_to_add.append(nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION))
             else:
-                columns_to_add.append(
-                    nw.lit("test_data_version").alias(METAXY_DATA_VERSION)
-                )
+                columns_to_add.append(nw.lit("test_data_version").alias(METAXY_DATA_VERSION))
 
     if columns_to_add:
         df_nw = df_nw.with_columns(columns_to_add)  # ty: ignore[possibly-missing-attribute]
@@ -116,9 +108,7 @@ def add_metaxy_provenance_column(
     result_df = df_nw.collect().to_native()
 
     # Apply hash truncation if specified
-    result_df = result_df.with_columns(
-        pl.col("metaxy_provenance").str.slice(0, get_hash_truncation_length())
-    )
+    result_df = result_df.with_columns(pl.col("metaxy_provenance").str.slice(0, get_hash_truncation_length()))
 
     return result_df
 

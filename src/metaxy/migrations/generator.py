@@ -17,9 +17,7 @@ if TYPE_CHECKING:
     from metaxy.models.feature import FeatureGraph
 
 
-def _is_upstream_of(
-    upstream_key: FeatureKey, downstream_key: FeatureKey, graph: "FeatureGraph"
-) -> bool:
+def _is_upstream_of(upstream_key: FeatureKey, downstream_key: FeatureKey, graph: "FeatureGraph") -> bool:
     """Check if upstream_key is in the dependency chain of downstream_key.
 
     Args:
@@ -110,13 +108,9 @@ def generate_migration(
         from metaxy.metadata_store.system.keys import FEATURE_VERSIONS_KEY
 
         try:
-            feature_versions = store.read_metadata(
-                FEATURE_VERSIONS_KEY, current_only=False
-            )
+            feature_versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
             # Get most recent snapshot - only collect the top row
-            latest_snapshot = nw.from_native(
-                feature_versions.sort("recorded_at", descending=True).head(1).collect()
-            )
+            latest_snapshot = nw.from_native(feature_versions.sort("recorded_at", descending=True).head(1).collect())
             if latest_snapshot.shape[0] > 0:
                 from_snapshot_version = latest_snapshot["metaxy_snapshot_version"][0]
                 print(f"From: latest snapshot {from_snapshot_version}...")
@@ -127,8 +121,7 @@ def generate_migration(
                 )
         except FeatureNotFoundError:
             raise ValueError(
-                "No feature versions recorded yet. "
-                "Run 'metaxy graph push' first to record the feature graph snapshot."
+                "No feature versions recorded yet. Run 'metaxy graph push' first to record the feature graph snapshot."
             )
     else:
         print(f"From: snapshot {from_snapshot_version}...")
@@ -142,13 +135,9 @@ def generate_migration(
         was_already_pushed = snapshot_result.already_pushed
         to_graph = FeatureGraph.get_active()
         if was_already_pushed:
-            print(
-                f"To: current active graph (snapshot {to_snapshot_version}... already pushed)"
-            )
+            print(f"To: current active graph (snapshot {to_snapshot_version}... already pushed)")
         else:
-            print(
-                f"To: current active graph (snapshot {to_snapshot_version}... pushed)"
-            )
+            print(f"To: current active graph (snapshot {to_snapshot_version}... pushed)")
 
     else:
         # Historical mode: load from snapshot with force_reload
@@ -224,9 +213,7 @@ def generate_migration(
     downstream_operations = []
 
     if downstream_keys:
-        print(
-            f"\nGenerating explicit operations for {len(downstream_keys)} downstream feature(s):"
-        )
+        print(f"\nGenerating explicit operations for {len(downstream_keys)} downstream feature(s):")
 
     for downstream_key in downstream_keys:
         feature_key_str = downstream_key.to_string()
@@ -289,9 +276,7 @@ def generate_migration(
     try:
         existing_migrations = store.read_metadata(EVENTS_KEY, current_only=False)
         # Get most recent migration by timestamp - only collect the top row
-        latest = nw.from_native(
-            existing_migrations.sort("timestamp", descending=True).head(1).collect()
-        )
+        latest = nw.from_native(existing_migrations.sort("timestamp", descending=True).head(1).collect())
         if latest.shape[0] > 0:
             parent_migration_id = latest["migration_id"][0]
     except FeatureNotFoundError:

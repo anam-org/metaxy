@@ -54,9 +54,7 @@ class GraphvizRenderer(BaseRenderer):
             shape = self._get_node_shape(node)
             color = self._get_node_color(node)
 
-            lines.append(
-                f'    "{node_id}" [label="{label}", shape={shape}, color="{color}"];'
-            )
+            lines.append(f'    "{node_id}" [label="{label}", shape={shape}, color="{color}"];')
 
         lines.append("")
 
@@ -85,15 +83,10 @@ class GraphvizRenderer(BaseRenderer):
                     # Get field color based on status
                     color = self._get_field_color(field_node)
 
-                    lines.append(
-                        f'    "{field_id}" [label="{label}", shape=ellipse, '
-                        f'color="{color}", fontsize=10];'
-                    )
+                    lines.append(f'    "{field_id}" [label="{label}", shape=ellipse, color="{color}", fontsize=10];')
 
                     # Connect field to feature with dashed line
-                    lines.append(
-                        f'    "{parent_id}" -> "{field_id}" [style=dashed, arrowhead=none];'
-                    )
+                    lines.append(f'    "{parent_id}" -> "{field_id}" [style=dashed, arrowhead=none];')
 
         lines.append("}")
 
@@ -208,10 +201,7 @@ class GraphvizRenderer(BaseRenderer):
             parts.append(f"\\n{badge}")
 
         if self.config.show_field_versions:
-            if (
-                field_node.status == NodeStatus.CHANGED
-                and field_node.old_version is not None
-            ):
+            if field_node.status == NodeStatus.CHANGED and field_node.old_version is not None:
                 # Show version transition
                 old_v = self._format_hash(field_node.old_version)
                 new_v = self._format_hash(field_node.version)

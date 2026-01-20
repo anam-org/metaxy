@@ -14,9 +14,7 @@ from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
 
 
-def test_graph_contains_features_from_multiple_projects(
-    snapshot: SnapshotAssertion, graph: FeatureGraph
-) -> None:
+def test_graph_contains_features_from_multiple_projects(snapshot: SnapshotAssertion, graph: FeatureGraph) -> None:
     """Test that a single FeatureGraph can contain features from different projects."""
     # Create features from project_a
     config_a = MetaxyConfig(project="project_a")
@@ -72,18 +70,14 @@ def test_graph_contains_features_from_multiple_projects(
     assert FeatureB2.project == "project_b"
 
     # Snapshot the graph structure
-    projects_by_feature = {
-        key.to_string(): feat.project for key, feat in graph.features_by_key.items()
-    }
+    projects_by_feature = {key.to_string(): feat.project for key, feat in graph.features_by_key.items()}
 
     assert projects_by_feature == snapshot
 
     MetaxyConfig.reset()
 
 
-def test_graph_snapshot_includes_all_projects(
-    snapshot: SnapshotAssertion, graph: FeatureGraph
-) -> None:
+def test_graph_snapshot_includes_all_projects(snapshot: SnapshotAssertion, graph: FeatureGraph) -> None:
     """Test that graph.to_snapshot() includes features from all projects."""
     # Project A
     config_a = MetaxyConfig(project="snapshot_a")
@@ -125,9 +119,7 @@ def test_graph_snapshot_includes_all_projects(
     MetaxyConfig.reset()
 
 
-def test_graph_snapshot_version_includes_all_projects(
-    snapshot: SnapshotAssertion, graph: FeatureGraph
-) -> None:
+def test_graph_snapshot_version_includes_all_projects(snapshot: SnapshotAssertion, graph: FeatureGraph) -> None:
     """Test that graph.snapshot_version is computed from all features regardless of project."""
     # Add features from multiple projects
     config_a = MetaxyConfig(project="version_a")
@@ -218,10 +210,7 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
             pass
 
     # Get original projects
-    original_projects = {
-        key.to_string(): feat.project
-        for key, feat in original_graph.features_by_key.items()
-    }
+    original_projects = {key.to_string(): feat.project for key, feat in original_graph.features_by_key.items()}
 
     # Create snapshot
     snapshot_data = original_graph.to_snapshot()
@@ -246,9 +235,7 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
     MetaxyConfig.reset()
 
 
-def test_multi_project_dependency_graph(
-    snapshot: SnapshotAssertion, graph: FeatureGraph
-) -> None:
+def test_multi_project_dependency_graph(snapshot: SnapshotAssertion, graph: FeatureGraph) -> None:
     """Test that features can depend on features from other projects."""
     # Project A: upstream feature
     config_a = MetaxyConfig(project="upstream_project")
@@ -300,9 +287,7 @@ def test_multi_project_dependency_graph(
     MetaxyConfig.reset()
 
 
-def test_get_downstream_features_across_projects(
-    snapshot: SnapshotAssertion, graph: FeatureGraph
-) -> None:
+def test_get_downstream_features_across_projects(snapshot: SnapshotAssertion, graph: FeatureGraph) -> None:
     """Test that get_downstream_features works with multi-project graphs."""
     # Root feature in project A
     config_a = MetaxyConfig(project="project_a")

@@ -59,13 +59,10 @@ class PolarsVersioningEngine(VersioningEngine):
         """
         if hash_algo not in self._HASH_FUNCTION_MAP:
             raise ValueError(
-                f"Hash algorithm {hash_algo} not supported. "
-                f"Supported: {list(self._HASH_FUNCTION_MAP.keys())}"
+                f"Hash algorithm {hash_algo} not supported. Supported: {list(self._HASH_FUNCTION_MAP.keys())}"
             )
 
-        assert df.implementation == nw.Implementation.POLARS, (
-            "Only Polars DataFrames are accepted"
-        )
+        assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
         # Apply hash
@@ -99,18 +96,11 @@ class PolarsVersioningEngine(VersioningEngine):
             Narwhals DataFrame with new struct column added, backed by Polars.
             The source columns remain unchanged.
         """
-        assert df.implementation == nw.Implementation.POLARS, (
-            "Only Polars DataFrames are accepted"
-        )
+        assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
         # Build struct expression
-        struct_expr = pl.struct(
-            [
-                pl.col(col_name).alias(field_name)
-                for field_name, col_name in field_columns.items()
-            ]
-        )
+        struct_expr = pl.struct([pl.col(col_name).alias(field_name) for field_name, col_name in field_columns.items()])
 
         # Add struct column
         df_pl = df_pl.with_columns(struct_expr.alias(struct_name))
@@ -132,21 +122,14 @@ class PolarsVersioningEngine(VersioningEngine):
         Uses sort_by + str.join over window to concatenate values in deterministic order.
         All rows in the same group receive identical concatenated values.
         """
-        assert df.implementation == nw.Implementation.POLARS, (
-            "Only Polars DataFrames are accepted"
-        )
+        assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
         # Use sort_by within the window to ensure deterministic ordering
         # then join all values with the separator
         # Fall back to group_by columns for ordering if no explicit order_by columns
         effective_order_by = order_by_columns if order_by_columns else group_by_columns
-        concat_expr = (
-            pl.col(source_column)
-            .sort_by(*effective_order_by)
-            .str.join(separator)
-            .over(group_by_columns)
-        )
+        concat_expr = pl.col(source_column).sort_by(*effective_order_by).str.join(separator).over(group_by_columns)
         df_pl = df_pl.with_columns(concat_expr.alias(target_column))
 
         return cast(FrameT, nw.from_native(df_pl))
@@ -167,9 +150,7 @@ class PolarsVersioningEngine(VersioningEngine):
         Returns:
             Narwhals DataFrame/LazyFrame with only the latest row per group
         """
-        assert df.implementation == nw.Implementation.POLARS, (
-            "Only Polars DataFrames are accepted"
-        )
+        assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
 
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
 
@@ -177,9 +158,7 @@ class PolarsVersioningEngine(VersioningEngine):
         ordering_expr = pl.coalesce([pl.col(col) for col in timestamp_columns])
         df_pl = df_pl.with_columns(ordering_expr.alias(TEMP_TABLE_NAME))
 
-        result = df_pl.group_by(group_columns).agg(
-            pl.col("*").sort_by(TEMP_TABLE_NAME).last()
-        )
+        result = df_pl.group_by(group_columns).agg(pl.col("*").sort_by(TEMP_TABLE_NAME).last())
         result = result.drop(TEMP_TABLE_NAME)
 
         # Convert back to Narwhals

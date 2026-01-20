@@ -22,9 +22,7 @@ def test_graphdata_to_struct():
                 key=FeatureKey(["feature", "a"]),
                 version="v1",
                 code_version="1",
-                fields=[
-                    FieldNode(key=FieldKey(["field1"]), version="f1", code_version="1")
-                ],
+                fields=[FieldNode(key=FieldKey(["field1"]), version="f1", code_version="1")],
                 dependencies=[FeatureKey(["feature", "b"])],
             )
         },

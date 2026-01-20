@@ -89,10 +89,7 @@ class IncrementResolver(Generic[FrameT]):
             )
             .filter(
                 nw.col(f"__current_{METAXY_PROVENANCE}").is_null()
-                | (
-                    nw.col(METAXY_PROVENANCE)
-                    != nw.col(f"__current_{METAXY_PROVENANCE}")
-                )
+                | (nw.col(METAXY_PROVENANCE) != nw.col(f"__current_{METAXY_PROVENANCE}"))
             )
             .drop(f"__current_{METAXY_PROVENANCE}"),
         )
@@ -124,9 +121,7 @@ class IncrementResolver(Generic[FrameT]):
 
         for dep in self.plan.feature_deps or []:
             dep_transformer = self.engine.feature_transformers_by_key[dep.feature]
-            lineage_handler = create_lineage_handler(
-                dep, self.plan, self.engine, dep_transformer
-            )
+            lineage_handler = create_lineage_handler(dep, self.plan, self.engine, dep_transformer)
             current = lineage_handler.transform_current_for_comparison(
                 current,  # ty: ignore[invalid-argument-type]
                 join_columns,

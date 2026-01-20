@@ -40,9 +40,7 @@ if TYPE_CHECKING:
     # from metaxy.data_versioning.joiners import UpstreamJoiner
 
 # Context variable for active graph (module-level)
-_active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
-    "_active_graph", default=None
-)
+_active_graph: ContextVar["FeatureGraph | None"] = ContextVar("_active_graph", default=None)
 
 
 def get_feature_by_key(key: CoercibleToFeatureKey) -> type["BaseFeature"]:
@@ -142,8 +140,7 @@ class FeatureGraph:
             # Only warn if it's a different spec (by comparing feature_spec_version)
             if existing.feature_spec_version != spec.feature_spec_version:
                 raise ValueError(
-                    f"Standalone spec for key {spec.key.to_string()} already exists "
-                    f"with a different version."
+                    f"Standalone spec for key {spec.key.to_string()} already exists with a different version."
                 )
 
         # Validation happens automatically when FeaturePlan is constructed
@@ -172,9 +169,7 @@ class FeatureGraph:
                 parent_specs.append(upstream_spec)
 
         # Skip if any upstream spec is missing (will be validated later)
-        feature_dep_count = len(
-            [d for d in (spec.deps or []) if isinstance(d, FeatureDep)]
-        )
+        feature_dep_count = len([d for d in (spec.deps or []) if isinstance(d, FeatureDep)])
         if len(parent_specs) != feature_dep_count:
             return
 
@@ -309,11 +304,7 @@ class FeatureGraph:
             project_list = projects
 
         # Filter by project(s) using Feature.project attribute
-        return [
-            key
-            for key in self.features_by_key.keys()
-            if self.features_by_key[key].project in project_list
-        ]
+        return [key for key in self.features_by_key.keys() if self.features_by_key[key].project in project_list]
 
     def get_feature_plan(self, key: CoercibleToFeatureKey) -> FeaturePlan:
         """Get a feature plan for a given feature key.
@@ -331,8 +322,7 @@ class FeatureGraph:
 
         return FeaturePlan(
             feature=spec,
-            deps=[self.feature_specs_by_key[dep.feature] for dep in spec.deps or []]
-            or None,
+            deps=[self.feature_specs_by_key[dep.feature] for dep in spec.deps or []] or None,
             feature_deps=spec.deps,  # Pass the actual FeatureDep objects with field mappings
         )
 
@@ -350,9 +340,7 @@ class FeatureGraph:
 
         return truncate_hash(hasher.hexdigest())
 
-    def get_feature_version_by_field(
-        self, key: CoercibleToFeatureKey
-    ) -> dict[str, str]:
+    def get_feature_version_by_field(self, key: CoercibleToFeatureKey) -> dict[str, str]:
         """Computes the field provenance map for a feature.
 
         Hash together field provenance entries with the feature code version.
@@ -372,9 +360,7 @@ class FeatureGraph:
         plan = self.get_feature_plan(validated_key)
 
         for k, v in plan.feature.fields_by_key.items():
-            res[k.to_string()] = self.get_field_version(
-                FQFieldKey(field=k, feature=validated_key)
-            )
+            res[k.to_string()] = self.get_field_version(FQFieldKey(field=k, feature=validated_key))
 
         return res
 
@@ -398,9 +384,7 @@ class FeatureGraph:
 
         return truncate_hash(hasher.hexdigest())
 
-    def get_downstream_features(
-        self, sources: Sequence[CoercibleToFeatureKey]
-    ) -> list[FeatureKey]:
+    def get_downstream_features(self, sources: Sequence[CoercibleToFeatureKey]) -> list[FeatureKey]:
         """Get all features downstream of sources, topologically sorted.
 
         Performs a depth-first traversal of the dependency graph to find all
@@ -508,9 +492,7 @@ class FeatureGraph:
             keys_to_sort = set(self.feature_specs_by_key.keys())
         else:
             # Validate and coerce the feature keys
-            validated_keys = ValidatedFeatureKeySequenceAdapter.validate_python(
-                feature_keys
-            )
+            validated_keys = ValidatedFeatureKeySequenceAdapter.validate_python(feature_keys)
             keys_to_sort = set(validated_keys)
 
         visited = set()
@@ -662,9 +644,7 @@ class FeatureGraph:
         modules_to_reload = set()
         if force_reload:
             for feature_key_str, feature_data in snapshot_data.items():
-                class_path = class_path_overrides.get(
-                    feature_key_str
-                ) or feature_data.get("feature_class_path")
+                class_path = class_path_overrides.get(feature_key_str) or feature_data.get("feature_class_path")
                 if class_path:
                     module_path, _ = class_path.rsplit(".", 1)
                     if module_path in sys.modules:
@@ -702,9 +682,7 @@ class FeatureGraph:
                         if module_path in modules_to_reload:
                             # Find all features from this module in snapshot and remove them
                             for fk_str, fd in snapshot_data.items():
-                                fcp = class_path_overrides.get(fk_str) or fd.get(
-                                    "feature_class_path"
-                                )
+                                fcp = class_path_overrides.get(fk_str) or fd.get("feature_class_path")
                                 if fcp and fcp.rsplit(".", 1)[0] == module_path:
                                     fspec_dict = fd["feature_spec"]
                                     fspec = FeatureSpec.model_validate(fspec_dict)
@@ -738,8 +716,7 @@ class FeatureGraph:
                 # Validate the imported class matches the stored spec
                 if not hasattr(feature_cls, "spec"):
                     raise TypeError(
-                        f"Imported class '{class_path}' is not a valid Feature class "
-                        f"(missing 'spec' attribute)"
+                        f"Imported class '{class_path}' is not a valid Feature class (missing 'spec' attribute)"
                     )
 
                 # Register the imported feature to this graph if not already present
@@ -904,9 +881,7 @@ class MetaxyMeta(ModelMetaclass):
 
             # Attempt to auto-load config from metaxy.toml or pyproject.toml
             # starting from the feature's directory
-            config = MetaxyConfig.load(
-                search_parents=True, auto_discovery_start=feature_dir
-            )
+            config = MetaxyConfig.load(search_parents=True, auto_discovery_start=feature_dir)
             return config.project
         else:
             # Config already set, use it

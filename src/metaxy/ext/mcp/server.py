@@ -85,16 +85,12 @@ def _register_tools(server: FastMCP) -> None:
         config_dict = config.model_dump(mode="json")
 
         # Add config_file which is a private attr not included in model_dump
-        config_dict["config_file"] = (
-            str(config.config_file) if config.config_file else None
-        )
+        config_dict["config_file"] = str(config.config_file) if config.config_file else None
 
         return config_dict
 
     @server.tool()
-    def list_features(
-        project: str | None = None, verbose: bool = False
-    ) -> dict[str, Any]:
+    def list_features(project: str | None = None, verbose: bool = False) -> dict[str, Any]:
         """List all registered features with their metadata.
 
         Matches the output format of `mx list features --format json`.
@@ -133,9 +129,7 @@ def _register_tools(server: FastMCP) -> None:
             # Build field info
             fields_info: list[dict[str, Any]] = []
             for field_key, field_spec in feature_spec.fields_by_key.items():
-                field_version = graph.get_field_version(
-                    FQFieldKey(feature=feature_key, field=field_key)
-                )
+                field_version = graph.get_field_version(FQFieldKey(feature=feature_key, field=field_key))
                 field_data: dict[str, Any] = {
                     "key": field_spec.key.to_string(),
                     "code_version": field_spec.code_version,
@@ -170,9 +164,7 @@ def _register_tools(server: FastMCP) -> None:
             }
 
             if verbose and feature_spec.deps:
-                feature_data["deps"] = [
-                    dep.feature.to_string() for dep in feature_spec.deps
-                ]
+                feature_data["deps"] = [dep.feature.to_string() for dep in feature_spec.deps]
 
             features_data.append(feature_data)
 

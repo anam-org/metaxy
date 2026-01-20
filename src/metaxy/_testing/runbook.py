@@ -333,9 +333,7 @@ class RunbookRunner:
         result = self.project.push_graph(env=self.env_overrides)
 
         if result.returncode != 0:
-            raise RuntimeError(
-                f"Failed to push graph snapshot:\nstdout: {result.stdout}\nstderr: {result.stderr}"
-            )
+            raise RuntimeError(f"Failed to push graph snapshot:\nstdout: {result.stdout}\nstderr: {result.stderr}")
 
         snapshot_version = result.stdout.strip()
 
@@ -420,9 +418,7 @@ class RunbookRunner:
         return self.last_result
 
     @contextmanager
-    def apply_patch(
-        self, patch_path: str, *, push_graph: bool = True
-    ) -> Iterator[None]:
+    def apply_patch(self, patch_path: str, *, push_graph: bool = True) -> Iterator[None]:
         """Apply a patch file as a context manager.
 
         The patch is reverted when exiting the context.
@@ -430,9 +426,7 @@ class RunbookRunner:
         patch_path_abs = self.example_dir / patch_path
 
         if not patch_path_abs.exists():
-            raise FileNotFoundError(
-                f"Patch file not found: {patch_path_abs} (resolved from {patch_path})"
-            )
+            raise FileNotFoundError(f"Patch file not found: {patch_path_abs} (resolved from {patch_path})")
 
         before_snapshot = self._last_pushed_snapshot
 
@@ -495,9 +489,7 @@ class RunbookRunner:
             )
         elif isinstance(step, ApplyPatchStep):
             # For runbook execution, patches stack (don't revert until run completes)
-            self._patch_stack.enter_context(
-                self.apply_patch(step.patch_path, push_graph=step.push_graph)
-            )
+            self._patch_stack.enter_context(self.apply_patch(step.patch_path, push_graph=step.push_graph))
         elif isinstance(step, AssertOutputStep):
             self._assert_output(step)
         else:
@@ -521,21 +513,18 @@ class RunbookRunner:
         if step.contains:
             for substring in step.contains:
                 assert substring in self.last_result.stdout, (
-                    f"Expected substring not found in stdout: {substring!r}\n"
-                    f"stdout: {self.last_result.stdout}"
+                    f"Expected substring not found in stdout: {substring!r}\nstdout: {self.last_result.stdout}"
                 )
 
         if step.not_contains:
             for substring in step.not_contains:
                 assert substring not in self.last_result.stdout, (
-                    f"Unexpected substring found in stdout: {substring!r}\n"
-                    f"stdout: {self.last_result.stdout}"
+                    f"Unexpected substring found in stdout: {substring!r}\nstdout: {self.last_result.stdout}"
                 )
 
         if step.matches_regex:
             assert re.search(step.matches_regex, self.last_result.stdout), (
-                f"Regex pattern not matched: {step.matches_regex!r}\n"
-                f"stdout: {self.last_result.stdout}"
+                f"Regex pattern not matched: {step.matches_regex!r}\nstdout: {self.last_result.stdout}"
             )
 
     def run_scenario(self, scenario: Scenario) -> None:
@@ -596,15 +585,9 @@ class RunbookRunner:
         try:
 
             def ignore_patterns(directory, files):
-                return [
-                    f
-                    for f in files
-                    if f in ("__pycache__", ".venv") or f.endswith(".pyc")
-                ]
+                return [f for f in files if f in ("__pycache__", ".venv") or f.endswith(".pyc")]
 
-            shutil.copytree(
-                example_dir, work_dir, dirs_exist_ok=True, ignore=ignore_patterns
-            )
+            shutil.copytree(example_dir, work_dir, dirs_exist_ok=True, ignore=ignore_patterns)
 
             yaml_path = work_dir / ".example.yaml"
             runner = cls.from_yaml_file(

@@ -87,9 +87,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         #     key: value
         #     ...
         # :::
-        self.directive_pattern = re.compile(
-            r"^:::\s+metaxy-example\s+(\w+)\s*$", re.MULTILINE
-        )
+        self.directive_pattern = re.compile(r"^:::\s+metaxy-example\s+(\w+)\s*$", re.MULTILINE)
         self.end_pattern = re.compile(r"^:::\s*$", re.MULTILINE)
 
     def run(self, lines: list[str]) -> list[str]:
@@ -128,12 +126,9 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             # Filter out empty lines for indentation calculation
             non_empty_lines = [line for line in lines_content if line.strip()]
             if non_empty_lines:
-                min_indent = min(
-                    len(line) - len(line.lstrip()) for line in non_empty_lines
-                )
+                min_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
                 directive_content = "\n".join(
-                    line[min_indent:] if len(line) >= min_indent else line
-                    for line in lines_content
+                    line[min_indent:] if len(line) >= min_indent else line for line in lines_content
                 ).strip()
             else:
                 directive_content = ""
@@ -202,9 +197,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             raise ValueError(f"Invalid YAML in directive: {e}") from e
 
         if not isinstance(params, dict):
-            raise ValueError(
-                f"Directive content must be a YAML dictionary, got {type(params)}"
-            )
+            raise ValueError(f"Directive content must be a YAML dictionary, got {type(params)}")
 
         example_name = params.get("example")
         if not example_name:
@@ -261,11 +254,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         show_linenos = params.get("linenos", True)
 
         # Construct example name with prefix
-        example_name_full = (
-            example_name
-            if example_name.startswith("example-")
-            else f"example-{example_name}"
-        )
+        example_name_full = example_name if example_name.startswith("example-") else f"example-{example_name}"
 
         # Calculate highlight lines and snippet path
         hl_lines = None
@@ -283,17 +272,13 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             content = self.loader.read_file(example_name, file_path, patches)
 
             # Read original file to calculate changed lines
-            original_content = self.loader.read_file(
-                example_name, file_path, patches=None
-            )
+            original_content = self.loader.read_file(example_name, file_path, patches=None)
 
             # Compare line by line to find changes
             original_lines = original_content.split("\n")
             patched_lines = content.split("\n")
             hl_lines = []
-            for i, (orig, patched) in enumerate(
-                zip(original_lines, patched_lines), start=1
-            ):
+            for i, (orig, patched) in enumerate(zip(original_lines, patched_lines), start=1):
                 if orig != patched:
                     hl_lines.append(i)
 
@@ -381,19 +366,13 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         for event in events:
             if isinstance(event, CommandExecuted):
                 show_command = params.get("show_command", True)
-                md_parts.append(
-                    self.renderer.render_command_output(event, show_command)
-                )
+                md_parts.append(self.renderer.render_command_output(event, show_command))
             elif isinstance(event, PatchApplied):
                 # Render graph diff from saved graph snapshots
                 graph_diff_md = None
                 if event.before_graph and event.after_graph:
-                    graph_diff_md = self._render_graph_diff_from_snapshots(
-                        event.before_graph, event.after_graph
-                    )
-                md_parts.append(
-                    self.renderer.render_patch_applied(event, graph_diff_md)
-                )
+                    graph_diff_md = self._render_graph_diff_from_snapshots(event.before_graph, event.after_graph)
+                md_parts.append(self.renderer.render_patch_applied(event, graph_diff_md))
             elif isinstance(event, GraphPushed):
                 md_parts.append(self.renderer.render_graph_pushed(event))
 
@@ -419,9 +398,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
 
         patch_path = params.get("path")
         if not patch_path:
-            raise ValueError(
-                "Missing required parameter for patch-with-diff directive: path"
-            )
+            raise ValueError("Missing required parameter for patch-with-diff directive: path")
 
         scenario_name = params.get("scenario")
         step_name = params.get("step")
@@ -447,8 +424,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
 
         if matching_event is None:
             raise ValueError(
-                f"No PatchApplied event found for patch '{patch_path}' "
-                f"(scenario={scenario_name}, step={step_name})"
+                f"No PatchApplied event found for patch '{patch_path}' (scenario={scenario_name}, step={step_name})"
             )
 
         if not matching_event.before_graph or not matching_event.after_graph:
@@ -457,9 +433,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
                 f"Re-run the example tests to regenerate the execution result."
             )
 
-        graph_diff_md = self._render_graph_diff_from_snapshots(
-            matching_event.before_graph, matching_event.after_graph
-        )
+        graph_diff_md = self._render_graph_diff_from_snapshots(matching_event.before_graph, matching_event.after_graph)
 
         # Build tabbed content using pymdownx.tabbed syntax
         md_parts = []
@@ -479,9 +453,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
 
         return "\n".join(md_parts)
 
-    def _render_graph_diff_from_snapshots(
-        self, before_graph: dict, after_graph: dict
-    ) -> str:
+    def _render_graph_diff_from_snapshots(self, before_graph: dict, after_graph: dict) -> str:
         """Render graph diff from saved graph snapshots.
 
         Args:
@@ -540,9 +512,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             if event.stdout:
                 return f"```mermaid\n{event.stdout.strip()}\n```"
 
-        raise ValueError(
-            f"No CommandExecuted event found for scenario={scenario_name}, step={step_name}"
-        )
+        raise ValueError(f"No CommandExecuted event found for scenario={scenario_name}, step={step_name}")
 
     def _render_graph_diff(self, example_name: str, params: dict[str, Any]) -> str:
         """Render graph diff from PatchApplied event as mermaid diagram.
@@ -580,13 +550,9 @@ class MetaxyExamplesPreprocessor(Preprocessor):
                     "Re-run the example tests to regenerate the execution result."
                 )
 
-            return self._render_graph_diff_from_snapshots(
-                event.before_graph, event.after_graph
-            )
+            return self._render_graph_diff_from_snapshots(event.before_graph, event.after_graph)
 
-        raise ValueError(
-            f"No PatchApplied event found for scenario={scenario_name}, step={step_name}"
-        )
+        raise ValueError(f"No PatchApplied event found for scenario={scenario_name}, step={step_name}")
 
 
 class MetaxyExamplesExtension(Extension):
@@ -614,9 +580,7 @@ class MetaxyExamplesExtension(Extension):
             md: Markdown instance.
         """
         examples_dir = self.getConfig("examples_dir")
-        preprocessor = MetaxyExamplesPreprocessor(
-            md, examples_dir=examples_dir, docs_dir=self._docs_dir
-        )
+        preprocessor = MetaxyExamplesPreprocessor(md, examples_dir=examples_dir, docs_dir=self._docs_dir)
         # Register with priority < 32 to run BEFORE pymdownx.snippets (priority 32)
         # This allows snippets to process our generated --8<-- directives
         md.preprocessors.register(preprocessor, "metaxy_examples", 20)
