@@ -4,7 +4,7 @@ import dagster as dg
 from pydantic import Field
 
 import metaxy as mx
-from metaxy.models.types import FeatureKey, ValidatedFeatureKeyList
+from metaxy.models.types import CascadeMode, FeatureKey, ValidatedFeatureKeyList
 
 
 class DeleteMetadataConfig(dg.Config):
@@ -26,8 +26,8 @@ class DeleteMetadataConfig(dg.Config):
         default=True,
         description="Whether to use soft deletes or hard deletes.",
     )
-    cascade: str = Field(
-        default="none",
+    cascade: CascadeMode = Field(
+        default=CascadeMode.NONE,
         description="Cascade deletion to dependent/dependency features. Options: none, downstream, upstream, both.",
     )
 
@@ -67,7 +67,7 @@ def delete_metadata(
                             "feature_key": ["customer", "segment"],
                             "filters": ["status = 'inactive'"],
                             "soft": True,
-                            "cascade": "none",  # or "downstream", "upstream", "both"
+                            "cascade": "NONE",  # or "DOWNSTREAM", "UPSTREAM", "BOTH"
                         }
                     }
                 }
@@ -86,79 +86,21 @@ def delete_metadata(
     # Parse filter strings into Narwhals expressions
     filter_exprs = [parse_filter_string(f) for f in config.filters]
 
-    # Validate cascade parameter
-    valid_cascade_options = ("none", "downstream", "upstream", "both")
-    if config.cascade not in valid_cascade_options:
-        raise ValueError(f"Invalid cascade option: {config.cascade}. Valid options: {', '.join(valid_cascade_options)}")
-
     context.log.info(f"Executing {'soft' if config.soft else 'hard'} delete for {feature_key.to_string()}")
 
     # Determine features to delete (with or without cascading)
-    if config.cascade != "none":
+    if config.cascade != CascadeMode.NONE:
+        # Get the FeatureGraph to determine cascade order
         from metaxy.models.feature import FeatureGraph
 
-        with store.open("read"):
-            graph = FeatureGraph.get_active()
-            features_in_cascade: list[FeatureKey] = []
+        graph = FeatureGraph.get_active()
 
-            if config.cascade == "downstream":
-                # Get all downstream features (dependents) using FeatureGraph
-                downstream = graph.get_downstream_features([feature_key])
-                # Order: dependents first, then self (leaf-first for hard delete)
-                features_in_cascade = downstream + [feature_key]
-                features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=True)
-
-            elif config.cascade == "upstream":
-                # Get all upstream features (dependencies) recursively
-                upstream: list[FeatureKey] = []
-                visited = set()
-
-                def get_upstream_recursive(fk: FeatureKey):
-                    if fk in visited:
-                        return
-                    visited.add(fk)
-
-                    feature_spec = graph.feature_specs_by_key.get(fk)
-                    if feature_spec and feature_spec.deps:
-                        for dep in feature_spec.deps:
-                            get_upstream_recursive(dep.feature)
-                            if dep.feature not in upstream:
-                                upstream.append(dep.feature)
-
-                get_upstream_recursive(feature_key)
-                # Order: dependencies first, then self (root-first)
-                features_in_cascade = upstream + [feature_key]
-                features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=False)
-
-            elif config.cascade == "both":
-                # Get both upstream and downstream
-                upstream_keys: list[FeatureKey] = []
-                visited = set()
-
-                def get_upstream_recursive(fk: FeatureKey):
-                    if fk in visited:
-                        return
-                    visited.add(fk)
-
-                    feature_spec = graph.feature_specs_by_key.get(fk)
-                    if feature_spec and feature_spec.deps:
-                        for dep in feature_spec.deps:
-                            get_upstream_recursive(dep.feature)
-                            if dep.feature not in upstream_keys:
-                                upstream_keys.append(dep.feature)
-
-                get_upstream_recursive(feature_key)
-                downstream_keys = graph.get_downstream_features([feature_key])
-
-                # Combine: deps -> self -> dependents
-                features_in_cascade = upstream_keys + [feature_key] + downstream_keys
-                features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=False)
-
-            features_to_delete = features_in_cascade
+        # Get cascade deletion order using FeatureGraph method
+        features_to_delete: list[FeatureKey] = graph.get_cascade_deletion_order(feature_key, config.cascade)
 
         context.log.info(
             f"Cascading {'soft' if config.soft else 'hard'} delete "
-            f"for {feature_key.to_string()} in {config.cascade} direction"
+            f"for {feature_key.to_string()} in {config.cascade.value} direction"
         )
         context.log.info(
             f"Will delete {len(features_to_delete)} features in order: "
@@ -166,7 +108,6 @@ def delete_metadata(
         )
     else:
         features_to_delete = [feature_key]
-        context.log.info(f"Executing {'soft' if config.soft else 'hard'} delete for {feature_key.to_string()}")
 
     # Execute deletions in order
     with store.open("write"):
@@ -174,5 +115,5 @@ def delete_metadata(
             context.log.info(f"Deleting {fk.to_string()}...")
             store.delete_metadata(fk, filters=filter_exprs, soft=config.soft)
 
-    cascade_info = f" ({config.cascade} cascade)" if config.cascade != "none" else ""
+    cascade_info = f" ({config.cascade.value} cascade)" if config.cascade != CascadeMode.NONE else ""
     context.log.info(f"Successfully completed delete for {feature_key.to_string()}{cascade_info}")

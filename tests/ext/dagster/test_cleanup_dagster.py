@@ -204,3 +204,107 @@ def test_delete_metadata_integration_hard_delete(feature_cls, tmp_path):
         # Verify hard-deleted row is NOT in store even when including deleted
         all_data = store.read_metadata(feature_cls, include_soft_deleted=True).collect().to_polars()
         assert all_data.height == 2  # Hard delete means it's gone
+
+
+def test_delete_metadata_cascade_downstream(tmp_path):
+    """Test cascade deletion downstream in Dagster op."""
+    from metaxy import FeatureDep, FeatureSpec
+
+    # Create features with dependency relationship
+    class VideoRaw(
+        BaseFeature,
+        spec=FeatureSpec(
+            key=["video", "raw"],
+            id_columns=["video_id"],
+            fields=[FieldSpec(key=FieldKey(["frames"]), code_version="1")],
+        ),
+    ):
+        video_id: str
+        frames: str | None = None
+
+    class VideoChunk(
+        BaseFeature,
+        spec=FeatureSpec(
+            key=["video", "chunk"],
+            id_columns=["chunk_id"],
+            fields=[FieldSpec(key=FieldKey(["frames"]), code_version="1")],
+            deps=[FeatureDep(feature=VideoRaw)],
+        ),
+    ):
+        chunk_id: str
+        frames: str | None = None
+
+    # Create a delta store
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+
+    # Define a job with the delete op
+    @dg.job(resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)})
+    def cascade_cleanup_job():
+        mxd.delete_metadata()
+
+    # Write test data for both features
+    raw_data = pl.DataFrame(
+        {
+            "video_id": ["v1", "v2"],
+            "frames": ["f1", "f2"],
+            METAXY_PROVENANCE_BY_FIELD: [
+                {"frames": "p1"},
+                {"frames": "p2"},
+            ],
+        }
+    )
+
+    chunk_data = pl.DataFrame(
+        {
+            "chunk_id": ["c1", "c2", "c3"],
+            "frames": ["cf1", "cf2", "cf3"],
+            METAXY_PROVENANCE_BY_FIELD: [
+                {"frames": "p1"},
+                {"frames": "p2"},
+                {"frames": "p3"},
+            ],
+        }
+    )
+
+    with store.open("write"):
+        store.write_metadata(VideoRaw, raw_data)
+        store.write_metadata(VideoChunk, chunk_data)
+
+    # Verify data was written
+    with store:
+        assert store.read_metadata(VideoRaw).collect().to_polars().height == 2
+        assert store.read_metadata(VideoChunk).collect().to_polars().height == 3
+
+    # Execute the job with downstream cascade from video/raw
+    result = cascade_cleanup_job.execute_in_process(
+        run_config={
+            "ops": {
+                "delete_metadata": {
+                    "config": {
+                        "feature_key": ["video", "raw"],
+                        "filters": [],
+                        "soft": True,
+                        "cascade": "DOWNSTREAM",  # Dagster expects enum names, not values
+                    }
+                }
+            }
+        }
+    )
+
+    # Verify the job succeeded
+    assert result.success
+
+    # Verify both features were soft-deleted (0 rows remain)
+    with store:
+        raw_remaining = store.read_metadata(VideoRaw).collect().to_polars()
+        assert raw_remaining.height == 0
+
+        chunk_remaining = store.read_metadata(VideoChunk).collect().to_polars()
+        assert chunk_remaining.height == 0
+
+        # Verify soft-deleted rows are still in store when including deleted
+        raw_all = store.read_metadata(VideoRaw, include_soft_deleted=True).collect().to_polars()
+        assert raw_all.height == 2
+
+        chunk_all = store.read_metadata(VideoChunk, include_soft_deleted=True).collect().to_polars()
+        assert chunk_all.height == 3

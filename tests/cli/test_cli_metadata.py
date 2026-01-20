@@ -2771,7 +2771,7 @@ def test_metadata_delete_cascade_dry_run(metaxy_project: TempMetaxyProject):
     def features():
         from metaxy import BaseFeature, FeatureDep, FeatureSpec, LineageRelationship
 
-        class VideoRaw(
+        class VideoRaw(  # noqa: F841
             BaseFeature,
             spec=FeatureSpec(
                 key=["video", "raw"],
@@ -2782,7 +2782,7 @@ def test_metadata_delete_cascade_dry_run(metaxy_project: TempMetaxyProject):
             video_id: str
             frames: bytes | None = None
 
-        class VideoChunk(
+        class VideoChunk(  # noqa: F841
             BaseFeature,
             spec=FeatureSpec(
                 key=["video", "chunk"],
@@ -2831,7 +2831,7 @@ def test_metadata_delete_cascade_downstream(metaxy_project: TempMetaxyProject):
     def features():
         from metaxy import BaseFeature, FeatureDep, FeatureSpec, LineageRelationship
 
-        class VideoRaw(
+        class VideoRaw(  # noqa: F841
             BaseFeature,
             spec=FeatureSpec(
                 key=["video", "raw"],
@@ -2842,7 +2842,7 @@ def test_metadata_delete_cascade_downstream(metaxy_project: TempMetaxyProject):
             video_id: str
             frames: bytes | None = None
 
-        class VideoChunk(
+        class VideoChunk(  # noqa: F841
             BaseFeature,
             spec=FeatureSpec(
                 key=["video", "chunk"],
@@ -2888,14 +2888,21 @@ def test_metadata_delete_cascade_downstream(metaxy_project: TempMetaxyProject):
         # After soft delete, feature should have no active metadata (store_rows should be 0)
         assert status_data["features"]["video/raw"]["store_rows"] == 0
 
+        # Verify dependent feature (video/chunk) was also deleted
+        chunk_status_result = metaxy_project.run_cli(
+            ["metadata", "status", "--feature", "video/chunk", "--format", "json"]
+        )
+        chunk_status_data = json.loads(chunk_status_result.stdout)
+        assert chunk_status_data["features"]["video/chunk"]["store_rows"] == 0
+
 
 def test_metadata_delete_cascade_invalid_option(metaxy_project: TempMetaxyProject):
-    """Test that invalid --cascade option raises error."""
+    """Test that invalid --cascade option raises error (validated by cyclopts)."""
 
     def features():
         from metaxy import BaseFeature, FeatureSpec
 
-        class VideoRaw(
+        class VideoRaw(  # noqa: F841
             BaseFeature,
             spec=FeatureSpec(
                 key=["video", "raw"],
@@ -2914,17 +2921,15 @@ def test_metadata_delete_cascade_invalid_option(metaxy_project: TempMetaxyProjec
                 "video/raw",
                 "--cascade",
                 "invalid",
-                "--format",
-                "json",
             ],
             check=False,
         )
 
-        assert result.returncode == 1
-        # Error messages in JSON format go to stdout
-        error = json.loads(result.stdout)
-        assert error["error"] == "INVALID_CASCADE"
-        assert error["valid_options"] == ["none", "downstream", "upstream", "both"]
+        # Cyclopts validates enum values and exits with non-zero code
+        assert result.returncode != 0
+        # Error message should mention the invalid value or available options
+        error_output = result.stderr + result.stdout
+        assert "invalid" in error_output.lower() or "cascade" in error_output.lower()
 
 
 def test_metadata_delete_cascade_upstream(metaxy_project: TempMetaxyProject):
@@ -2933,7 +2938,7 @@ def test_metadata_delete_cascade_upstream(metaxy_project: TempMetaxyProject):
     def features():
         from metaxy import BaseFeature, FeatureDep, FeatureSpec
 
-        class VideoRaw(
+        class VideoRaw(  # noqa: F841
             BaseFeature,
             spec=FeatureSpec(
                 key=["video", "raw"],
@@ -2944,7 +2949,7 @@ def test_metadata_delete_cascade_upstream(metaxy_project: TempMetaxyProject):
             video_id: str
             frames: bytes | None = None
 
-        class VideoChunk(
+        class VideoChunk(  # noqa: F841
             BaseFeature,
             spec=FeatureSpec(
                 key=["video", "chunk"],
@@ -2963,7 +2968,7 @@ def test_metadata_delete_cascade_upstream(metaxy_project: TempMetaxyProject):
         metaxy_project.write_sample_metadata("video/chunk")
 
         # Test dry-run with upstream cascade from chunk
-        result = metaxy_project.run_cli(
+        dry_run_result = metaxy_project.run_cli(
             [
                 "metadata",
                 "delete",
@@ -2975,7 +2980,36 @@ def test_metadata_delete_cascade_upstream(metaxy_project: TempMetaxyProject):
             ]
         )
 
-        assert result.returncode == 0
+        assert dry_run_result.returncode == 0
         # CLI writes user-facing messages to stdout
-        assert "video/raw" in result.stdout
-        assert "video/chunk" in result.stdout
+        assert "video/raw" in dry_run_result.stdout
+        assert "video/chunk" in dry_run_result.stdout
+
+        # Execute cascade deletion (soft delete by default)
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "video/chunk",
+                "--cascade",
+                "upstream",
+            ]
+        )
+
+        assert result.returncode == 0
+        assert "complete" in result.stdout.lower() or "deleted" in result.stdout.lower()
+        assert "upstream" in result.stdout.lower() or "cascade" in result.stdout.lower()
+
+        # Verify both features are soft deleted (check via metadata status)
+        chunk_status_result = metaxy_project.run_cli(
+            ["metadata", "status", "--feature", "video/chunk", "--format", "json"]
+        )
+        chunk_status_data = json.loads(chunk_status_result.stdout)
+        # After soft delete, feature should have no active metadata (store_rows should be 0)
+        assert chunk_status_data["features"]["video/chunk"]["store_rows"] == 0
+
+        # Verify dependency feature (video/raw) was also deleted
+        raw_status_result = metaxy_project.run_cli(["metadata", "status", "--feature", "video/raw", "--format", "json"])
+        raw_status_data = json.loads(raw_status_result.stdout)
+        assert raw_status_data["features"]["video/raw"]["store_rows"] == 0
