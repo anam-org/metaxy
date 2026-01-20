@@ -95,66 +95,66 @@ def delete_metadata(
 
     # Determine features to delete (with or without cascading)
     if config.cascade != "none":
+        # Get the FeatureGraph to determine cascade order
         from metaxy.models.feature import FeatureGraph
 
-        with store.open("read"):
-            graph = FeatureGraph.get_active()
-            features_in_cascade: list[FeatureKey] = []
+        graph = FeatureGraph.get_active()
 
-            if config.cascade == "downstream":
-                # Get all downstream features (dependents) using FeatureGraph
-                downstream = graph.get_downstream_features([feature_key])
-                # Order: dependents first, then self (leaf-first for hard delete)
-                features_in_cascade = downstream + [feature_key]
-                features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=True)
+        # Get upstream and/or downstream features using FeatureGraph
+        features_to_delete: list[FeatureKey] = []
 
-            elif config.cascade == "upstream":
-                # Get all upstream features (dependencies) recursively
-                upstream: list[FeatureKey] = []
-                visited = set()
+        if config.cascade == "downstream":
+            # Get all downstream features (dependents) using FeatureGraph
+            downstream = graph.get_downstream_features([feature_key])
+            # Order: dependents first, then self (leaf-first for hard delete)
+            features_to_delete = downstream + [feature_key]
+            features_to_delete = graph.topological_sort_features(features_to_delete, descending=True)
 
-                def get_upstream_recursive(fk: FeatureKey):
-                    if fk in visited:
-                        return
-                    visited.add(fk)
+        elif config.cascade == "upstream":
+            # Get all upstream features (dependencies) recursively
+            upstream: list[FeatureKey] = []
+            visited = set()
 
-                    feature_spec = graph.feature_specs_by_key.get(fk)
-                    if feature_spec and feature_spec.deps:
-                        for dep in feature_spec.deps:
-                            get_upstream_recursive(dep.feature)
-                            if dep.feature not in upstream:
-                                upstream.append(dep.feature)
+            def get_upstream_recursive(fk: FeatureKey):
+                if fk in visited:
+                    return
+                visited.add(fk)
 
-                get_upstream_recursive(feature_key)
-                # Order: dependencies first, then self (root-first)
-                features_in_cascade = upstream + [feature_key]
-                features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=False)
+                feature_spec = graph.feature_specs_by_key.get(fk)
+                if feature_spec and feature_spec.deps:
+                    for dep in feature_spec.deps:
+                        get_upstream_recursive(dep.feature)
+                        if dep.feature not in upstream:
+                            upstream.append(dep.feature)
 
-            elif config.cascade == "both":
-                # Get both upstream and downstream
-                upstream_keys: list[FeatureKey] = []
-                visited = set()
+            get_upstream_recursive(feature_key)
+            # Order: dependencies first, then self (root-first)
+            features_to_delete = upstream + [feature_key]
+            features_to_delete = graph.topological_sort_features(features_to_delete, descending=False)
 
-                def get_upstream_recursive(fk: FeatureKey):
-                    if fk in visited:
-                        return
-                    visited.add(fk)
+        elif config.cascade == "both":
+            # Get both upstream and downstream
+            upstream_keys: list[FeatureKey] = []
+            visited = set()
 
-                    feature_spec = graph.feature_specs_by_key.get(fk)
-                    if feature_spec and feature_spec.deps:
-                        for dep in feature_spec.deps:
-                            get_upstream_recursive(dep.feature)
-                            if dep.feature not in upstream_keys:
-                                upstream_keys.append(dep.feature)
+            def get_upstream_recursive(fk: FeatureKey):
+                if fk in visited:
+                    return
+                visited.add(fk)
 
-                get_upstream_recursive(feature_key)
-                downstream_keys = graph.get_downstream_features([feature_key])
+                feature_spec = graph.feature_specs_by_key.get(fk)
+                if feature_spec and feature_spec.deps:
+                    for dep in feature_spec.deps:
+                        get_upstream_recursive(dep.feature)
+                        if dep.feature not in upstream_keys:
+                            upstream_keys.append(dep.feature)
 
-                # Combine: deps -> self -> dependents
-                features_in_cascade = upstream_keys + [feature_key] + downstream_keys
-                features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=False)
+            get_upstream_recursive(feature_key)
+            downstream_keys = graph.get_downstream_features([feature_key])
 
-            features_to_delete = features_in_cascade
+            # Combine: deps -> self -> dependents
+            features_to_delete = upstream_keys + [feature_key] + downstream_keys
+            features_to_delete = graph.topological_sort_features(features_to_delete, descending=False)
 
         context.log.info(
             f"Cascading {'soft' if config.soft else 'hard'} delete "
