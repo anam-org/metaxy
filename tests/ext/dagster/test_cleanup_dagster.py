@@ -9,7 +9,7 @@ import polars as pl
 import pytest
 
 import metaxy.ext.dagster as mxd
-from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FeatureSpec, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
@@ -208,7 +208,6 @@ def test_delete_metadata_integration_hard_delete(feature_cls, tmp_path):
 
 def test_delete_metadata_cascade_downstream(tmp_path):
     """Test cascade deletion downstream in Dagster op."""
-    from metaxy import FeatureDep, FeatureSpec
 
     # Create features with dependency relationship
     class VideoRaw(

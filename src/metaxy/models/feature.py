@@ -413,13 +413,10 @@ class FeatureGraph:
         validated_sources = ValidatedFeatureKeySequenceAdapter.validate_python(sources)
 
         source_set = set(validated_sources)
-        visited = set()
-        post_order = []
-        source_set = set(sources)
-        visited = set()
-        post_order = []  # Reverse topological order
+        visited: set[FeatureKey] = set()
+        post_order: list[FeatureKey] = []
 
-        def visit(key: FeatureKey):
+        def visit(key: FeatureKey) -> None:
             """DFS traversal."""
             if key in visited:
                 return
@@ -442,6 +439,111 @@ class FeatureGraph:
         # Remove sources from result, reverse to get topological order
         result = [k for k in reversed(post_order) if k not in source_set]
         return result
+
+    def get_upstream_features(self, sources: Sequence[CoercibleToFeatureKey]) -> list[FeatureKey]:
+        """Get all features upstream of sources (dependencies).
+
+        Performs a depth-first traversal of the dependency graph to find all
+        features that the source features transitively depend on.
+
+        Args:
+            sources: List of source feature keys. Each element can be string, sequence, FeatureKey, or BaseFeature class.
+
+        Returns:
+            List of upstream feature keys (dependencies).
+            Does not include the source features themselves.
+
+        Example:
+            ```py
+            # DAG: A -> B -> D
+            #      A -> C -> D
+            graph.get_upstream_features([FeatureKey(["D"])])
+            # [FeatureKey(["A"]), FeatureKey(["B"]), FeatureKey(["C"])]
+
+            # Or use string notation
+            graph.get_upstream_features(["D"])
+            ```
+        """
+        # Validate and coerce the source keys
+        validated_sources = ValidatedFeatureKeySequenceAdapter.validate_python(sources)
+
+        visited: set[FeatureKey] = set()
+        upstream: list[FeatureKey] = []
+
+        def visit(key: FeatureKey) -> None:
+            """DFS traversal of dependencies."""
+            if key in visited:
+                return
+            visited.add(key)
+
+            feature_spec = self.feature_specs_by_key.get(key)
+            if feature_spec and feature_spec.deps:
+                for dep in feature_spec.deps:
+                    visit(dep.feature)
+                    if dep.feature not in upstream:
+                        upstream.append(dep.feature)
+
+        # Visit all sources
+        for source in validated_sources:
+            visit(source)
+
+        return upstream
+
+    def get_cascade_features(
+        self,
+        source: CoercibleToFeatureKey,
+        cascade: str,
+    ) -> list[FeatureKey]:
+        """Get features to process for cascade operations.
+
+        Determines the ordered list of features based on cascade direction.
+
+        Args:
+            source: Source feature key. Can be string, sequence, FeatureKey, or BaseFeature class.
+            cascade: Cascade direction. One of:
+                - "downstream": Get dependents, order leaf-first (for deletion)
+                - "upstream": Get dependencies, order root-first
+                - "both": Get both upstream and downstream
+
+        Returns:
+            List of feature keys in topological order appropriate for the cascade direction.
+            Includes the source feature.
+
+        Raises:
+            ValueError: If cascade is not a valid option.
+
+        Example:
+            ```py
+            # DAG: A -> B -> C
+            graph.get_cascade_features("B", "downstream")
+            # [FeatureKey(["C"]), FeatureKey(["B"])]  # dependents first
+
+            graph.get_cascade_features("B", "upstream")
+            # [FeatureKey(["A"]), FeatureKey(["B"])]  # dependencies first
+            ```
+        """
+        valid_options = ("downstream", "upstream", "both")
+        if cascade not in valid_options:
+            raise ValueError(f"Invalid cascade option: '{cascade}'. Valid options: {', '.join(valid_options)}")
+
+        # Validate and coerce the source key
+        validated_source = ValidatedFeatureKeyAdapter.validate_python(source)
+
+        if cascade == "downstream":
+            downstream = self.get_downstream_features([validated_source])
+            features = downstream + [validated_source]
+            return self.topological_sort_features(features, descending=True)
+
+        if cascade == "upstream":
+            upstream = self.get_upstream_features([validated_source])
+            features = upstream + [validated_source]
+            return self.topological_sort_features(features, descending=False)
+
+        # cascade == "both"
+        upstream = self.get_upstream_features([validated_source])
+        downstream = self.get_downstream_features([validated_source])
+        features = upstream + [validated_source] + downstream
+        return self.topological_sort_features(features, descending=False)
 
     def topological_sort_features(
         self,
@@ -668,7 +770,7 @@ class FeatureGraph:
             # Get class import path (module.ClassName)
             class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
 
-            snapshot[feature_key_str] = {  # ty: ignore[invalid-assignment]
+            snapshot[feature_key_str] = {  # type: ignore[assignment]
                 "feature_spec": feature_spec_dict,
                 "feature_schema": feature_schema_dict,
                 FEATURE_VERSION_COL: feature_version,
