@@ -18,6 +18,10 @@ on:
         description: 'Run macOS tests'
         type: boolean
         default: false
+      run-all-checks:
+        description: 'Run all checks regardless of path filters'
+        type: boolean
+        default: false
 
 jobs:
   filter:
@@ -72,7 +76,7 @@ jobs:
 
   test-linux:
     needs: filter
-    if: ${{ needs.filter.outputs.test == 'true' }}
+    if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
     permissions:
       contents: read
       pull-requests: write
@@ -145,7 +149,7 @@ jobs:
 
   test-windows:
     needs: filter
-    if: ${{ inputs.run-windows && needs.filter.outputs.test == 'true' }}
+    if: ${{ inputs.run-windows && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
     permissions:
       contents: read
     runs-on: windows-latest
@@ -175,7 +179,7 @@ jobs:
           uv sync --group dev --all-extras --no-extra clickhouse --no-extra graphviz
 
       - name: Run Tests
-        run: |
+        run: >
           uv run pytest
           -k "not clickhouse"
           --ignore=tests/docs
@@ -184,7 +188,7 @@ jobs:
 
   test-macos:
     needs: filter
-    if: ${{ inputs.run-macos && needs.filter.outputs.test == 'true' }}
+    if: ${{ inputs.run-macos && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
     permissions:
       contents: read
     runs-on: macos-latest
@@ -214,7 +218,7 @@ jobs:
           uv sync --group dev --all-extras --no-extra clickhouse --no-extra graphviz
 
       - name: Run Tests
-        run: |
+        run: >
           uv run pytest
           -k "not clickhouse"
           --ignore=tests/docs
@@ -227,7 +231,7 @@ jobs:
     runs-on: depot-ubuntu-latest
     needs:
       - filter
-    if: ${{ needs.filter.outputs.test == 'true' || needs.filter.outputs.docs == 'true' }}
+    if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' || needs.filter.outputs.docs == 'true' }}
     env:
       UV_PYTHON_PREFERENCE: only-system
     steps:
