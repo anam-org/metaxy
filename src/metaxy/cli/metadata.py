@@ -12,6 +12,7 @@ from rich.table import Table
 
 from metaxy.cli.console import console, data_console, error_console
 from metaxy.cli.utils import FeatureSelector, FilterArgs, OutputFormat
+from metaxy.models.types import CascadeMode
 
 if TYPE_CHECKING:
     from metaxy import BaseFeature
@@ -353,12 +354,12 @@ def delete(
         ),
     ] = True,
     cascade: Annotated[
-        str,
+        CascadeMode,
         cyclopts.Parameter(
             name=["--cascade"],
             help="Cascade deletion to dependent/dependency features. Options: none, downstream (dependents first), upstream (dependencies first), both.",
         ),
-    ] = "none",
+    ] = CascadeMode.NONE,
     dry_run: Annotated[
         bool,
         cyclopts.Parameter(
@@ -395,19 +396,6 @@ def delete(
 
     filters = filters or []
     selector.validate(format)
-
-    # Validate cascade option
-    valid_cascade_options = ["none", "downstream", "upstream", "both"]
-    if cascade not in valid_cascade_options:
-        exit_with_error(
-            CLIError(
-                code="INVALID_CASCADE",
-                message=f"Invalid cascade option: '{cascade}'",
-                details={"valid_options": valid_cascade_options},
-                hint=f"Valid options: {', '.join(valid_cascade_options)}",
-            ),
-            format,
-        )
 
     # Require --yes confirmation for hard deletes when no filters provided
     if not soft and not filters and not yes and not dry_run:
@@ -458,7 +446,7 @@ def delete(
         from metaxy.models.types import FeatureKey
 
         features_to_delete: list[FeatureKey] = []
-        if cascade != "none":
+        if cascade != CascadeMode.NONE:
             # Cascade deletion: get deletion order for each selected feature
             if len(valid_keys) > 1 and format == "plain":
                 data_console.print(
@@ -468,61 +456,8 @@ def delete(
 
             for feature_key in valid_keys:
                 try:
-                    # Get upstream and/or downstream features using FeatureGraph
-                    features_in_cascade: list[FeatureKey] = []
-
-                    if cascade == "downstream":
-                        # Get all downstream features (dependents) using FeatureGraph
-                        downstream = graph.get_downstream_features([feature_key])
-                        # Order: dependents first, then self (leaf-first for hard delete)
-                        features_in_cascade = downstream + [feature_key]
-                        features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=True)
-
-                    elif cascade == "upstream":
-                        # Get all upstream features (dependencies) recursively
-                        upstream: list[FeatureKey] = []
-                        visited = set()
-
-                        def get_upstream_recursive(fk: FeatureKey):
-                            if fk in visited:
-                                return
-                            visited.add(fk)
-
-                            feature_spec = graph.feature_specs_by_key.get(fk)
-                            if feature_spec and feature_spec.deps:
-                                for dep in feature_spec.deps:
-                                    get_upstream_recursive(dep.feature)
-                                    if dep.feature not in upstream:
-                                        upstream.append(dep.feature)
-
-                        get_upstream_recursive(feature_key)
-                        # Order: dependencies first, then self (root-first)
-                        features_in_cascade = upstream + [feature_key]
-                        features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=False)
-
-                    elif cascade == "both":
-                        # Get both upstream and downstream
-                        upstream_keys: list[FeatureKey] = []
-                        visited = set()
-
-                        def get_upstream_recursive(fk: FeatureKey):
-                            if fk in visited:
-                                return
-                            visited.add(fk)
-
-                            feature_spec = graph.feature_specs_by_key.get(fk)
-                            if feature_spec and feature_spec.deps:
-                                for dep in feature_spec.deps:
-                                    get_upstream_recursive(dep.feature)
-                                    if dep.feature not in upstream_keys:
-                                        upstream_keys.append(dep.feature)
-
-                        get_upstream_recursive(feature_key)
-                        downstream_keys = graph.get_downstream_features([feature_key])
-
-                        # Combine: deps -> self -> dependents
-                        features_in_cascade = upstream_keys + [feature_key] + downstream_keys
-                        features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=False)
+                    # Get cascade deletion order using FeatureGraph method
+                    features_in_cascade = graph.get_cascade_deletion_order(feature_key, cascade)
 
                     # Add features not already in the list (preserve order)
                     for fk in features_in_cascade:
@@ -548,7 +483,7 @@ def delete(
             if format == "plain":
                 data_console.print(f"[bold]Dry run: Would {mode_str} delete features in order:[/bold]")
                 for i, fk in enumerate(features_to_delete, 1):
-                    marker = "→" if cascade != "none" else "•"
+                    marker = "→" if cascade != CascadeMode.NONE else "•"
                     data_console.print(f"  {marker} [{i}] {fk.to_string()}")
 
                 if filters:
@@ -559,17 +494,14 @@ def delete(
                 data_console.print("\n[yellow]Note:[/yellow] This is a preview. Use without --dry-run to execute.")
             else:
                 # JSON output for dry run
-                print(
-                    json.dumps(
-                        {
-                            "dry_run": True,
-                            "mode": mode_str,
-                            "cascade": cascade,
-                            "features": [fk.to_string() for fk in features_to_delete],
-                        },
-                        indent=2,
-                    )
-                )
+                result_json = {
+                    "dry_run": True,
+                    "mode": mode_str,
+                    "cascade": cascade.value,
+                    "features": [fk.to_string() for fk in features_to_delete],
+                    "filters": [str(f) for f in filters] if filters else None,
+                }
+                print(json.dumps(result_json, indent=2))
             return
 
         errors: dict[str, str] = {}
@@ -590,7 +522,7 @@ def delete(
                         error_console.print(f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}")
 
         mode_str = "soft" if soft else "hard"
-        cascade_info = f" ({cascade} cascade)" if cascade != "none" else ""
+        cascade_info = f" ({cascade.value} cascade)" if cascade != CascadeMode.NONE else ""
 
         if format == "plain":
             data_console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete{cascade_info})")
@@ -599,8 +531,9 @@ def delete(
             result: dict[str, Any] = {
                 "success": True,
                 "mode": mode_str,
-                "cascade": cascade,
+                "cascade": cascade.value,
                 "features_deleted": [fk.to_string() for fk in features_to_delete],
+                "filters": [str(f) for f in filters] if filters else None,
             }
             if errors:
                 result["errors"] = errors

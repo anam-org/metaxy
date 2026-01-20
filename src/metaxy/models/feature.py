@@ -19,6 +19,7 @@ from metaxy.models.feature_spec import (
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import (
+    CascadeMode,
     CoercibleToFeatureKey,
     FeatureKey,
     ValidatedFeatureKeyAdapter,
@@ -527,6 +528,93 @@ class FeatureGraph:
         if descending:
             return list(reversed(result))
         return result
+
+    def get_cascade_deletion_order(
+        self,
+        feature_key: FeatureKey,
+        cascade: CascadeMode,
+    ) -> list[FeatureKey]:
+        """Get features to delete in cascade order.
+
+        Determines which features to delete based on cascade mode and returns them
+        in the correct deletion order (dependents before dependencies for safe deletion).
+
+        Args:
+            feature_key: The primary feature to delete
+            cascade: Cascade mode determining which related features to include
+
+        Returns:
+            List of features in deletion order (dependents first, dependencies last)
+
+        Example:
+            ```py
+            graph = FeatureGraph.get_active()
+            # Get deletion order for downstream cascade
+            features = graph.get_cascade_deletion_order(
+                FeatureKey(["video", "raw"]),
+                CascadeMode.DOWNSTREAM
+            )
+            ```
+        """
+        features_to_delete: list[FeatureKey] = []
+
+        if cascade == CascadeMode.DOWNSTREAM:
+            # Get all downstream features (dependents)
+            downstream = self.get_downstream_features([feature_key])
+            # Include self
+            features_to_delete = downstream + [feature_key]
+            # Sort in reverse topological order for safe deletion (dependents before dependencies)
+            features_to_delete = self.topological_sort_features(features_to_delete, descending=True)
+
+        elif cascade == CascadeMode.UPSTREAM:
+            # Get all upstream features (dependencies) recursively
+            upstream = self._collect_upstream_features(feature_key)
+            # Include self
+            features_to_delete = upstream + [feature_key]
+            # Sort in reverse topological order for safe deletion (dependents before dependencies)
+            features_to_delete = self.topological_sort_features(features_to_delete, descending=True)
+
+        elif cascade == CascadeMode.BOTH:
+            # Get both upstream and downstream
+            upstream_keys = self._collect_upstream_features(feature_key)
+            downstream_keys = self.get_downstream_features([feature_key])
+
+            # Combine: dependents -> self -> deps
+            features_to_delete = downstream_keys + [feature_key] + upstream_keys
+            # Sort in reverse topological order for safe deletion (dependents before dependencies)
+            features_to_delete = self.topological_sort_features(features_to_delete, descending=True)
+
+        else:  # CascadeMode.NONE
+            features_to_delete = [feature_key]
+
+        return features_to_delete
+
+    def _collect_upstream_features(self, feature_key: FeatureKey) -> list[FeatureKey]:
+        """Recursively collect all upstream features (dependencies).
+
+        Args:
+            feature_key: The feature to start collecting dependencies from
+
+        Returns:
+            List of upstream feature keys (dependencies)
+        """
+        upstream: list[FeatureKey] = []
+        visited: set[FeatureKey] = set()
+
+        def get_upstream_recursive(fk: FeatureKey) -> None:
+            if fk in visited:
+                return
+            visited.add(fk)
+
+            feature_spec = self.feature_specs_by_key.get(fk)
+            if feature_spec and feature_spec.deps:
+                for dep in feature_spec.deps:
+                    get_upstream_recursive(dep.feature)
+                    if dep.feature not in upstream:
+                        upstream.append(dep.feature)
+
+        get_upstream_recursive(feature_key)
+        return upstream
 
     @property
     def snapshot_version(self) -> str:
