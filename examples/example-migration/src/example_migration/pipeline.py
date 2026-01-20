@@ -23,7 +23,7 @@ result = subprocess.run(
     env=os.environ.copy(),
 )
 if result.returncode != 0:
-    print("✗ Parent computation failed")
+    print("[FAIL] Parent computation failed")
     sys.exit(1)
 
 # Step 2: Compute child feature
@@ -35,7 +35,7 @@ result = subprocess.run(
     env=os.environ.copy(),
 )
 if result.returncode != 0:
-    print("✗ Child computation failed")
+    print("[FAIL] Child computation failed")
     print(result.stderr)
     sys.exit(1)
 
@@ -52,4 +52,4 @@ if (
 ):
     print("Note: Recomputation occurred (expected if algorithm changed)")
 
-print(f"\n✅ Stage {stage} pipeline complete!")
+print(f"\n[OK] Stage {stage} pipeline complete!")

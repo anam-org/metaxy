@@ -3,18 +3,19 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import polars as pl
 from pydantic import Field
 
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 
 
-def test_push_graph_snapshot_stores_feature_schema():
+def test_push_graph_snapshot_stores_feature_schema(tmp_path: Path):
     """Test that push_graph_snapshot() stores the Pydantic model schema."""
     graph = FeatureGraph()
 
@@ -32,7 +33,7 @@ def test_push_graph_snapshot_stores_feature_schema():
             custom_field: str = Field(description="A custom field")
             another_field: int = Field(default=42, description="An integer field")
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Push snapshot
             SystemTableStorage(store).push_graph_snapshot()
 
@@ -76,7 +77,7 @@ def test_push_graph_snapshot_stores_feature_schema():
             assert schema["properties"]["another_field"]["default"] == 42
 
 
-def test_feature_schema_differs_between_features():
+def test_feature_schema_differs_between_features(tmp_path: Path):
     """Test that different features have different schemas."""
     graph = FeatureGraph()
 
@@ -105,7 +106,7 @@ def test_feature_schema_differs_between_features():
             field_b: int
             field_c: bool = Field(default=True)
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Push snapshot
             SystemTableStorage(store).push_graph_snapshot()
 
@@ -220,7 +221,7 @@ def test_feature_versions_model_has_feature_schema():
     assert df["feature_schema"][0] == '{"type": "object", "properties": {}}'
 
 
-def test_feature_schema_for_feature_without_custom_fields():
+def test_feature_schema_for_feature_without_custom_fields(tmp_path: Path):
     """Test that features without custom fields still have a schema."""
     graph = FeatureGraph()
 
@@ -237,7 +238,7 @@ def test_feature_schema_for_feature_without_custom_fields():
 
             pass  # No custom fields, just inherits from Feature
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Push snapshot
             SystemTableStorage(store).push_graph_snapshot()
 

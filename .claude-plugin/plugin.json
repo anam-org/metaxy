@@ -1,7 +1,7 @@
 {
   "name": "metaxy",
   "description": "Provides the /metaxy skill for guidance on feature definitions, versioning, and metadata stores, plus MCP tools for exploring feature graphs and querying metadata.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Anam"
   }

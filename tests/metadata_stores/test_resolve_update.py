@@ -1494,8 +1494,7 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
     The fix: resolve_update now uses read_metadata() with latest_only=True
     instead of read_metadata_in_store() which doesn't deduplicate.
 
-    This test MUST use DeltaMetadataStore (not InMemory) because:
-    - InMemoryMetadataStore uses dict storage which naturally deduplicates
+    This test MUST use DeltaMetadataStore because:
     - DeltaMetadataStore uses append mode, preserving duplicates
     """
     import polars as pl
@@ -1613,6 +1612,7 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
 
 def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
     graph: FeatureGraph,
+    tmp_path,
 ):
     """Test orphaned count when upstream data differs between fallback and local store.
 
@@ -1633,7 +1633,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
     import polars as pl
 
     from metaxy import FieldKey, FieldSpec
-    from metaxy.metadata_store.memory import InMemoryMetadataStore
+    from metaxy.metadata_store.delta import DeltaMetadataStore
 
     class Upstream(
         SampleFeature,
@@ -1661,9 +1661,11 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
         pass
 
     # Create fallback store with MORE upstream data
-    fallback_store = InMemoryMetadataStore()
+    fallback_store = DeltaMetadataStore(root_path=tmp_path / "delta_fallback")
     # Create local store that reads upstream from fallback
-    local_store = InMemoryMetadataStore(fallback_stores=[fallback_store])
+    local_store = DeltaMetadataStore(
+        root_path=tmp_path / "delta_local", fallback_stores=[fallback_store]
+    )
 
     with fallback_store, local_store, graph.use():
         import narwhals as nw
@@ -1727,7 +1729,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
 
         # Now check status WITHOUT fallback
         # Create a new store without fallback to simulate checking local-only status
-        local_only_store = InMemoryMetadataStore()
+        local_only_store = DeltaMetadataStore(root_path=tmp_path / "delta_local_only")
         with local_only_store:
             # Copy upstream and downstream from local_store to local_only_store
             upstream_data = local_store.read_metadata_in_store(Upstream)

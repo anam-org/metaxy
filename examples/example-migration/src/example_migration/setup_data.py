@@ -1,11 +1,12 @@
 """Setup upstream data for migration example."""
 
+import tempfile
 from pathlib import Path
 
 import polars as pl
 
-# Create data directory
-data_dir = Path("/tmp/migration_example_data")
+# Create data directory (use system temp dir for cross-platform compatibility)
+data_dir = Path(tempfile.gettempdir()) / "migration_example_data"
 data_dir.mkdir(exist_ok=True)
 
 # Create upstream data
@@ -23,5 +24,5 @@ upstream_data = pl.DataFrame(
 # Save to parquet
 upstream_data.write_parquet(data_dir / "upstream_data.parquet")
 
-print(f"✓ Created upstream data: {len(upstream_data)} samples")
+print(f"[OK] Created upstream data: {len(upstream_data)} samples")
 print(f"  Saved to: {data_dir / 'upstream_data.parquet'}")

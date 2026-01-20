@@ -2233,8 +2233,8 @@ def test_metadata_status_with_fallback_stores(
     and work well together without Ibis backend conflicts.
     """
     # Create config with dev store that has prod as fallback (both Delta)
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
@@ -2359,8 +2359,8 @@ def test_metadata_status_fallback_disabled_shows_missing_row_count(
     NOTE: This test verifies the flag works for reading the CURRENT feature's metadata count.
     """
     # Create config with dev store that has prod as fallback (both Delta)
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
@@ -2537,8 +2537,8 @@ def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
 def test_metadata_copy_single_feature(tmp_path: Path):
     """Test copying metadata for a single feature between stores."""
     # Create config with two stores
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
@@ -2588,8 +2588,8 @@ root_path = "{prod_path}"
 
 def test_metadata_copy_multiple_features(tmp_path: Path):
     """Test copying metadata for multiple features."""
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
@@ -2658,8 +2658,8 @@ root_path = "{prod_path}"
 
 def test_metadata_copy_with_filter(tmp_path: Path):
     """Test copying metadata with filter applied."""
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
@@ -2721,8 +2721,8 @@ root_path = "{prod_path}"
 
 def test_metadata_copy_missing_feature_warning(tmp_path: Path):
     """Test that copy warns about missing features but continues."""
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
@@ -2784,8 +2784,8 @@ root_path = "{prod_path}"
 
 def test_metadata_copy_no_features_to_copy(tmp_path: Path):
     """Test that copy handles case when all specified features are missing."""
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"

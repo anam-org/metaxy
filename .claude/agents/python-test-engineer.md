@@ -41,7 +41,7 @@ This is the Metaxy project - a feature metadata management system. Key testing p
 
 - **Use metadata store context managers**:
   ```python
-  with InMemoryMetadataStore() as store:
+  with DeltaMetadataStore() as store:
       store.write_metadata(MyFeature, df)
   ```
 
@@ -141,7 +141,7 @@ When creating or fixing tests:
 ```python
 @pytest.fixture
 def store():
-    with InMemoryMetadataStore() as s:
+    with DeltaMetadataStore() as s:
         yield s
 
 
@@ -173,7 +173,7 @@ def test_cli_command(tmp_path: Path):
 @pytest.mark.parametrize(
     "store_factory",
     [
-        InMemoryMetadataStore,
+        DeltaMetadataStore,
         DuckDBMetadataStore,
     ],
     ids=["memory", "duckdb"],

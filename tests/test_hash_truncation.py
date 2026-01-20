@@ -2,13 +2,14 @@
 
 import hashlib
 from contextvars import copy_context
+from pathlib import Path
 
 import polars as pl
 import pytest
 
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature_spec import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -357,11 +358,16 @@ class TestConfigIntegration:
         """Test that MetaxyConfig stores truncation length."""
         # Create config with truncation
         config_file = tmp_path / "metaxy.toml"
-        config_file.write_text("""
+        # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+        delta_path = (tmp_path / "delta_dev").as_posix()
+        config_file.write_text(f"""
 hash_truncation_length = 16
 
 [stores.dev]
-type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{delta_path}"
 """)
 
         # Load config - should store truncation setting
@@ -403,26 +409,26 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
 class TestMetadataStoreTruncation:
     """Test hash truncation in metadata stores."""
 
-    def test_store_truncation_property(self):
+    def test_store_truncation_property(self, tmp_path: Path):
         """Test that stores have hash_truncation_length property that pulls from config."""
         # Default truncation (64)
         MetaxyConfig.reset()
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             assert store.hash_truncation_length == 64
 
         # With global truncation
         config = MetaxyConfig(hash_truncation_length=16)
         with config.use():
-            with InMemoryMetadataStore() as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
                 assert store.hash_truncation_length == 16
 
         # Different config value
         config = MetaxyConfig(hash_truncation_length=20)
         with config.use():
-            with InMemoryMetadataStore() as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
                 assert store.hash_truncation_length == 20
 
-    def test_provenance_truncation(self, graph):
+    def test_provenance_truncation(self, graph, tmp_path: Path):
         """Test that field provenances are truncated in stores."""
 
         # Create feature
@@ -439,7 +445,7 @@ class TestMetadataStoreTruncation:
         config = MetaxyConfig(project="test", hash_truncation_length=16)
         with config.use():
             # Store should use truncated field provenances
-            with InMemoryMetadataStore() as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
                 # Write some dummy metadata with provenance_by_field
                 metadata = pl.DataFrame(
                     {
@@ -467,7 +473,7 @@ class TestMetadataStoreTruncation:
 class TestMigrationCompatibility:
     """Test migration detection with hash truncation."""
 
-    def test_migration_with_truncation(self, graph):
+    def test_migration_with_truncation(self, graph, tmp_path: Path):
         """Test that migration detection works with truncated hashes."""
         from metaxy.migrations.detector import detect_diff_migration
 
@@ -485,7 +491,7 @@ class TestMigrationCompatibility:
                 pass
 
             # Record snapshot
-            with InMemoryMetadataStore() as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
                 result = SystemTableStorage(store).push_graph_snapshot()
 
                 snapshot_v1 = result.snapshot_version
@@ -536,7 +542,7 @@ class TestMigrationCompatibility:
 class TestEndToEnd:
     """End-to-end tests with hash truncation."""
 
-    def test_full_workflow_with_truncation(self, graph):
+    def test_full_workflow_with_truncation(self, graph, tmp_path: Path):
         """Test complete workflow with hash truncation enabled."""
         # Enable truncation globally (preserve project from test setup)
         config = MetaxyConfig(project="test", hash_truncation_length=16)
@@ -569,7 +575,7 @@ class TestEndToEnd:
             assert len(graph.snapshot_version) == 16
 
             # Store metadata
-            with InMemoryMetadataStore() as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
                 # Record snapshot
                 result = SystemTableStorage(store).push_graph_snapshot()
 

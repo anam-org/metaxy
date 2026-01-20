@@ -2,11 +2,13 @@
 
 import hashlib
 import json
+from pathlib import Path
 
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 
 
@@ -314,12 +316,11 @@ def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) ->
 
 
 def test_feature_spec_version_recorded_in_metadata_store(
-    snapshot: SnapshotAssertion,
+    snapshot: SnapshotAssertion, tmp_path: Path
 ) -> None:
     """Test that feature_spec_version is recorded when pushing to metadata store."""
 
     from metaxy import BaseFeature, FeatureGraph
-    from metaxy.metadata_store import InMemoryMetadataStore
 
     graph = FeatureGraph()
 
@@ -336,7 +337,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
         ):
             pass
 
-        store = InMemoryMetadataStore()
+        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
         with store:
             # Record the feature graph snapshot
@@ -385,10 +386,9 @@ def test_feature_spec_version_recorded_in_metadata_store(
             } == snapshot
 
 
-def test_feature_spec_version_idempotent_snapshot_recording() -> None:
+def test_feature_spec_version_idempotent_snapshot_recording(tmp_path: Path) -> None:
     """Test that recording the same snapshot twice preserves feature_spec_version."""
     from metaxy import BaseFeature, FeatureGraph
-    from metaxy.metadata_store import InMemoryMetadataStore
 
     graph = FeatureGraph()
 
@@ -405,7 +405,7 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
         ):
             pass
 
-        store = InMemoryMetadataStore()
+        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
         with store:
             # First push

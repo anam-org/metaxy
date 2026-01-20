@@ -10,7 +10,6 @@ import pytest
 
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.predicate_cases import predicate_cases
-from metaxy._testing.pytest_helpers import skip_exception
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
@@ -98,7 +97,6 @@ def base_delete_filter_df() -> pl.DataFrame:
     ids=[case.name for case in PREDICATE_CASES],
 )
 @pytest.mark.parametrize("soft", [True, False], ids=["soft", "hard"])
-@skip_exception(NotImplementedError, "hard delete not implemented")
 def test_delete_metadata_accepts_predicate_cases(
     any_store: MetadataStore,
     case,
@@ -116,7 +114,6 @@ def test_delete_metadata_accepts_predicate_cases(
         )
 
 
-@skip_exception(NotImplementedError, "unsupported delete store")
 def test_delete_metadata_datetime_filter_hard_delete(
     any_store: MetadataStore,
     delete_filter_feature,
@@ -138,7 +135,6 @@ def test_delete_metadata_datetime_filter_hard_delete(
 
 
 @pytest.mark.parametrize("soft", [True, False], ids=["soft", "hard"])
-@skip_exception(NotImplementedError, "hard delete not implemented")
 def test_delete_metadata_with_none_filters(
     any_store: MetadataStore,
     delete_filter_feature,

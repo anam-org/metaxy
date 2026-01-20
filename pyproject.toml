@@ -110,7 +110,7 @@ dev = [
   "deltalake>=1.2.1",
   "mistune>=3.1.4",
   "dagster>=1.12.3",
-  "ty>=0.0.4",
+  "ty==0.0.10",
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
 ]
@@ -248,7 +248,6 @@ filterwarnings = [
   "ignore::metaxy.metadata_store.warnings.PolarsMaterializationWarning",
 ]
 markers = [
-  "inmemory: InMemory store tests",
   "duckdb: DuckDB store tests",
   "clickhouse: ClickHouse store tests",
   "ibis: Ibis-based store tests (DuckDB, ClickHouse)",

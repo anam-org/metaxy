@@ -161,12 +161,17 @@ def test_project_from_metaxy_toml(tmp_path: Path) -> None:
     """Test loading project from metaxy.toml."""
     # Create metaxy.toml with project setting
     config_file = tmp_path / "metaxy.toml"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    delta_path = (tmp_path / "delta_dev").as_posix()
     config_file.write_text(
-        """
+        f"""
 project = "my_metaxy_project"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{delta_path}"
 """
     )
 
@@ -181,8 +186,10 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
 def test_project_from_pyproject_toml(tmp_path: Path) -> None:
     """Test loading project from pyproject.toml [tool.metaxy] section."""
     config_file = tmp_path / "pyproject.toml"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    delta_path = (tmp_path / "delta_dev").as_posix()
     config_file.write_text(
-        """
+        f"""
 [project]
 name = "test"
 
@@ -190,7 +197,10 @@ name = "test"
 project = "pyproject_metaxy"
 
 [tool.metaxy.stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[tool.metaxy.stores.dev.config]
+root_path = "{delta_path}"
 """
     )
 
@@ -207,12 +217,17 @@ def test_project_override_via_env_var(
     """Test that METAXY_PROJECT env var overrides config file."""
     # Create config file with one project
     config_file = tmp_path / "metaxy.toml"
+    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
+    delta_path = (tmp_path / "delta_dev").as_posix()
     config_file.write_text(
-        """
+        f"""
 project = "file_project"
 
 [stores.dev]
-type = "metaxy.metadata_store.InMemoryMetadataStore"
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{delta_path}"
 """
     )
 

@@ -5,6 +5,7 @@ based on whether upstream features are in fallback stores, and that appropriate
 warnings are issued.
 """
 
+from pathlib import Path
 from typing import Any, Literal
 
 import narwhals as nw
@@ -29,9 +30,9 @@ from metaxy._testing.models import SampleFeatureSpec
 from metaxy._testing.pytest_helpers import skip_exception
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
-    InMemoryMetadataStore,
     MetadataStore,
 )
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.warnings import PolarsMaterializationWarning
 from metaxy.models.feature import FeatureGraph
@@ -55,7 +56,7 @@ def create_store_for_fallback(
     store_type: str,
     versioning_engine: Literal["auto", "native", "polars"],
     hash_algorithm: HashAlgorithm,
-    params: dict[str, Any],
+    tmp_path: Path,
     suffix: str = "",
     fallback_stores: list[MetadataStore] | None = None,
 ) -> MetadataStore:
@@ -65,13 +66,10 @@ def create_store_for_fallback(
         store_type: "duckdb"
         versioning_engine: Versioning engine mode ("auto", "native", or "polars")
         hash_algorithm: Hash algorithm to use
-        params: Store-specific parameters
+        tmp_path: Temporary directory for database files
         suffix: Suffix to add to database filename (for creating distinct stores)
         fallback_stores: Optional list of fallback stores to configure
     """
-    tmp_path = params.get("tmp_path")
-    assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
-
     if store_type == "duckdb":
         db_path = tmp_path / f"fallback_test_{suffix}_{hash_algorithm.value}.duckdb"
         extensions: list[str] = (
@@ -147,14 +145,16 @@ def DownstreamFeature(features):
     return features["DownstreamFeature"]
 
 
+@pytest.fixture
+def fallback_store_type():
+    return "deltalake"
+
+
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("primary_store_type", get_available_store_types_for_fallback())
-@pytest.mark.parametrize(
-    "fallback_store_type", ["inmemory"]
-)  # Parametrized for future expansion
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_fallback_store_warning_issued(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     primary_store_type: str,
     fallback_store_type: str,
@@ -165,13 +165,15 @@ def test_fallback_store_warning_issued(
     """Test that warning IS issued when upstream feature is in fallback store.
 
     This tests the core fallback scenario:
-    - Root feature is in fallback_store (InMemory - no native components)
+    - Root feature is in fallback_store
     - Downstream feature will be written to primary_store (DuckDB - has native)
     - resolve_update() should switch to Polars components and issue warning
     - Results should match snapshot across different configurations
     """
-    # Create fallback store (InMemory - simple, no native components)
-    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    fallback_store = DeltaMetadataStore(
+        root_path=tmp_path / "delta_fallback",
+        hash_algorithm=hash_algorithm,
+    )
 
     # Prepare root data
     root_data = pl.DataFrame(
@@ -199,7 +201,7 @@ def test_fallback_store_warning_issued(
             primary_store_type,
             versioning_engine=versioning_engine,  # ty: ignore[invalid-argument-type]
             hash_algorithm=hash_algorithm,
-            params=store_params,
+            tmp_path=tmp_path,
             suffix=f"primary_{versioning_engine}",
             fallback_stores=[fallback_store],
         )
@@ -254,7 +256,7 @@ def test_fallback_store_warning_issued(
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_no_fallback_warning_when_all_local(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
     RootFeature,
@@ -271,7 +273,7 @@ def test_no_fallback_warning_when_all_local(
         store_type,
         versioning_engine="native",
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="single",
     )
 
@@ -306,10 +308,9 @@ def test_no_fallback_warning_when_all_local(
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("primary_store_type", get_available_store_types_for_fallback())
-@pytest.mark.parametrize("fallback_store_type", ["inmemory"])
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_fallback_store_switches_to_polars_components(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     primary_store_type: str,
     fallback_store_type: str,
@@ -344,7 +345,7 @@ def test_fallback_store_switches_to_polars_components(
         primary_store_type,
         versioning_engine="native",
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="all_local",
     )
 
@@ -377,8 +378,10 @@ def test_fallback_store_switches_to_polars_components(
         }
 
     # Scenario 2: Upstream in fallback (Polars components)
-    # Use InMemory for fallback (realistic - simple store from previous deployment)
-    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    fallback_store = DeltaMetadataStore(
+        root_path=tmp_path / "delta_fallback",
+        hash_algorithm=hash_algorithm,
+    )
 
     # Write root to fallback store
     with fallback_store:
@@ -390,7 +393,7 @@ def test_fallback_store_switches_to_polars_components(
         primary_store_type,
         versioning_engine="native",
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="with_fallback",
         fallback_stores=[fallback_store],
     )
@@ -438,7 +441,7 @@ def test_fallback_store_switches_to_polars_components(
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_versioning_engine_polars_no_warning_even_without_fallback(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
     RootFeature,
@@ -455,7 +458,7 @@ def test_versioning_engine_polars_no_warning_even_without_fallback(
         store_type,
         versioning_engine="polars",  # Explicitly use Polars
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="polars_engine",
     )
 
@@ -488,7 +491,7 @@ def test_versioning_engine_polars_no_warning_even_without_fallback(
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_configured(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
     RootFeature,
@@ -500,15 +503,17 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
     versioning_engine="native" should work without errors or warnings because the
     data is actually local (native format).
     """
-    # Create fallback store (InMemory - Polars)
-    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    fallback_store = DeltaMetadataStore(
+        root_path=tmp_path / "delta_fallback",
+        hash_algorithm=hash_algorithm,
+    )
 
     # Create primary store with fallback configured and versioning_engine="native"
     primary_store = create_store_for_fallback(
         store_type,
         versioning_engine="native",
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="local_data_test",
         fallback_stores=[fallback_store],
     )
@@ -543,7 +548,7 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_versioning_engine_native_warns_when_fallback_actually_used(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
     RootFeature,
@@ -555,8 +560,10 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
     versioning_engine="native" should issue a warning but not raise an error, because
     the implementation mismatch is due to legitimate fallback access.
     """
-    # Create fallback store (InMemory - Polars)
-    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    fallback_store = DeltaMetadataStore(
+        root_path=tmp_path / "delta_fallback",
+        hash_algorithm=hash_algorithm,
+    )
 
     # Write data ONLY to fallback store
     with fallback_store:
@@ -578,7 +585,7 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
         store_type,
         versioning_engine="native",
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="fallback_access_test",
         fallback_stores=[fallback_store],
     )

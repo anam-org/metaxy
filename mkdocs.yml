@@ -1,6 +1,6 @@
 site_name: Metaxy
 site_description: Pluggable metadata layer for multi-modal pipelines
-site_url: https://anam-org.github.io/metaxy
+site_url: https://docs.metaxy.io
 repo_url: https://github.com/anam-org/metaxy
 repo_name: anam-org/metaxy
 
@@ -197,8 +197,9 @@ nav:
       - Lineage Relationship: guide/learn/relationship.md
       - Optional Dependencies: guide/learn/optional-dependencies.md
       - Filters: guide/learn/filters.md
-      - Testing: guide/learn/testing.md
+      - Deletions: guide/learn/deletions.md
       - System Columns: guide/learn/system-columns.md
+      - Testing: guide/learn/testing.md
   - Integrations:
     - integrations/index.md
     - Orchestration:
@@ -272,7 +273,6 @@ nav:
       - Constants: reference/api/constants.md
       - Metadata Stores:
         - reference/api/metadata-stores/index.md
-        - Memory: reference/api/metadata-stores/memory.md
         - Exceptions: reference/api/metadata-stores/exceptions.md
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md

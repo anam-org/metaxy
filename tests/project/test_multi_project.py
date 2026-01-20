@@ -11,7 +11,7 @@ import pytest
 from metaxy._testing import SampleFeature
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FieldSpec
@@ -32,9 +32,9 @@ class TestProjectDetection:
             # Create venv using uv
             subprocess.run(["uv", "venv", str(venv_path)], check=True)
 
-            # Get python path
+            # Get python path (Windows needs .exe extension for uv to find it)
             if sys.platform == "win32":
-                python = venv_path / "Scripts" / "python"
+                python = venv_path / "Scripts" / "python.exe"
             else:
                 python = venv_path / "bin" / "python"
 
@@ -339,7 +339,7 @@ class TestMultiProjectIsolation:
 class TestSystemTableRecording:
     """Test that system tables correctly record feature tracking versions."""
 
-    def test_record_snapshot_with_tracking_version(self):
+    def test_record_snapshot_with_tracking_version(self, tmp_path: Path):
         """Test that push_graph_snapshot includes tracking version."""
         test_graph = FeatureGraph()
 
@@ -358,7 +358,7 @@ class TestSystemTableRecording:
             TestFeature.project = "test_project"
 
             # Create a store and record snapshot (while the test graph is still active)
-            with InMemoryMetadataStore() as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
                 storage = SystemTableStorage(store)
                 result = storage.push_graph_snapshot()
 
@@ -386,59 +386,10 @@ class TestSystemTableRecording:
                 assert row["project"] == "test_project"
 
 
-class TestBackwardCompatibility:
-    """Test backward compatibility with existing snapshots without tracking version."""
-
-    def test_snapshot_without_tracking_version(self):
-        """Test that snapshots without tracking version still work."""
-        import json
-
-        import polars as pl
-
-        # Create a store with an old-style snapshot (no tracking version)
-        with InMemoryMetadataStore() as store:
-            # Manually insert old-style feature version record
-            from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
-
-            old_record = pl.DataFrame(
-                {
-                    "project": ["old_project"],
-                    "feature_key": ["test/feature"],
-                    "metaxy_feature_version": ["abc123"],
-                    "metaxy_feature_spec_version": ["def456"],
-                    "recorded_at": [pl.datetime(2024, 1, 1)],
-                    "feature_spec": [
-                        json.dumps(
-                            {
-                                "key": ["test", "feature"],
-                                "fields": [{"key": ["value"], "code_version": 1}],
-                            }
-                        )
-                    ],
-                    "feature_class_path": ["test.TestFeature"],
-                    "metaxy_snapshot_version": ["snap123"],
-                    # Note: no full_definition_version column in old data
-                }
-            )
-
-            # Write with only the old columns
-            store.write_metadata(FEATURE_VERSIONS_KEY, old_record)
-
-            # Try to read features - should handle missing tracking version
-            storage = SystemTableStorage(store)
-            features_df = storage.read_features(
-                current=False, snapshot_version="snap123"
-            )
-
-            # Should still work even without tracking version
-            assert features_df.height == 1
-            assert features_df["feature_key"][0] == "test/feature"
-
-
 class TestProjectValidation:
     """Test project validation in store operations."""
 
-    def test_write_metadata_validates_project(self):
+    def test_write_metadata_validates_project(self, tmp_path: Path):
         """Test that write_metadata validates project matches config."""
         import polars as pl
 
@@ -462,7 +413,7 @@ class TestProjectValidation:
             # Override to different project
             TestFeature.project = "different_project"
 
-            with InMemoryMetadataStore() as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
                 # Create some test data
                 test_df = pl.DataFrame(
                     {

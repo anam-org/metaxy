@@ -8,10 +8,10 @@ import dagster as dg
 import polars as pl
 import pytest
 
-import metaxy as mx
 import metaxy.ext.dagster as mxd
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
 
@@ -89,11 +89,11 @@ def test_delete_metadata_op_hard_delete_with_mock():
     assert kwargs["soft"] is False
 
 
-def test_delete_metadata_integration(feature_cls):
+def test_delete_metadata_integration(feature_cls, tmp_path):
     """Integration test: create job, write data, run delete, verify results."""
 
-    # Create an in-memory store
-    store = mx.InMemoryMetadataStore()
+    # Create a delta store
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     # Define a job with the delete op
     @dg.job(
@@ -156,11 +156,11 @@ def test_delete_metadata_integration(feature_cls):
         assert all_data.height == 3
 
 
-def test_delete_metadata_integration_hard_delete(feature_cls):
+def test_delete_metadata_integration_hard_delete(feature_cls, tmp_path):
     """Integration test for hard delete: data is physically removed."""
 
-    # Create an in-memory store
-    store = mx.InMemoryMetadataStore()
+    # Create a delta store
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     # Define a job with the delete op
     @dg.job(
