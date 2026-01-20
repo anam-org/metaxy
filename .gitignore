@@ -33,3 +33,4 @@ examples/.generated
 PLAN.md
 plans/*.md
 .cache/
+docs/slides/.node_modules/

@@ -9,7 +9,7 @@ tags:
   - metadata
 authors:
   - name: Daniel Gafni
-    orcid: 0000-0000-0000-0000
+    # orcid: 0000-0000-0000-0000
     affiliation: "1"
   - name: Georg Heiler
     orcid: 0000-0002-8684-1163
@@ -32,38 +32,70 @@ aas-journal: Journal of Open Source Software
 
 # Summary
 
-Metaxy delivers reproducible feature metadata management for GPU-intensive machine-learning pipelines.
-By encoding features as static graphs with field-level dependencies, the library resolves incremental updates deterministically before any expensive recomputation.
-This advance keeps GPU experimentation lean by scheduling only the samples whose metadata actually changed, trimming both energy usage and iteration time.
+Modern machine learning demands rapid experimentation across model architectures, hyperparameters, and feature transformations.
+Research teams must iterate quickly to remain competitive, yet each experiment requires careful lineage tracking to ensure reproducibility.
+This tension intensifies in GPU-accelerated pipelines where compute minutes cost 10–100× more than traditional CPU workloads, making redundant recomputation prohibitively expensive.
+Teams face a dilemma: iterate quickly and lose reproducibility, or maintain rigorous tracking at the cost of velocity.
 
-Metaxy packages its approach as a permissive Python library with a CLI and documentation for applied researchers and practitioners.
-The project integrates with lakehouse storage, more than twenty SQL backends through Ibis (@ibis), and backend-agnostic data frames via Narwhals (@narwhals) to keep deployments vendor-neutral.
-The possibility of coupling with orchestrators such as Dagster (@dagster) and Ray (@ray) allows teams to feed version diffs directly into smart compute management policies, deferring GPU work that is not justified by metadata change.
-An automated test suite protects version stability and ensures precise change propagation, making the tool reliable in production-like workflows.
+Metaxy resolves this conflict through topological dependency graphs with record-level versioning.
+Unlike table-level orchestrators, Metaxy tracks versions for individual data instances and computes which specific records require reprocessing based on upstream changes.
+The library resolves incremental updates deterministically in the metadata layer before any GPU execution, eliminating redundant computation while preserving complete lineage.
+
+The system integrates with lakehouse storage, more than twenty SQL backends through Ibis (@ibis), and backend-agnostic data frames via Narwhals (@narwhals).
+Orchestration platforms such as Dagster (@dagster) and Ray (@ray) consume Metaxy version diffs to gate GPU workloads behind concrete evidence of metadata changes.
+An automated test suite ensures version stability and deterministic change propagation across heterogeneous execution environments.
 
 # Statement of Need
 
-GPU feature stores face distinct cost and agility pressures compared with traditional ETL pipelines.
-The high marginal price of GPU minutes and the volatility of experimental feature definitions punish redundant recomputation, yet existing feature stores often target batch ETL on CPUs with coarse-grained dependency tracking.
-Research teams therefore resort to ad-hoc metadata tables or manual notebooks, leading to wasteful duplication and irreproducible experiment state.
+Machine learning research requires rapid iteration on feature definitions, model architectures, and training strategies.
+Teams must experiment freely to discover what works, yet reproducibility demands rigorous lineage tracking.
+Traditional approaches force a trade-off: either rerun entire pipelines to guarantee correctness, sacrificing iteration speed, or skip proper tracking to move quickly, sacrificing reproducibility.
 
-Metaxy targets this gap by coupling fine-grained feature lineage with resource-aware execution planning.
-Its field-level dependency system and sample-aware versioning allow teams to preview compute deltas, quantify cost, and defer unnecessary GPU jobs without sacrificing traceability.
-By unifying metadata capture across prototyping laptops and production clusters, the project lowers the barrier to disciplined experimentation for resource-constrained labs.
+This dilemma is particularly acute for multimodal pipelines processing video, audio, and high-resolution imagery.
+When a researcher updates an audio processing algorithm, should the system recompute face detections that depend only on video frames?
+Existing orchestrators operate at table granularity, treating entire feature tables as atomic units.
+This coarse granularity forces unnecessary recomputation because the system cannot distinguish which fields within a record have changed.
+The resulting waste becomes prohibitive when GPU compute costs 10–100× more per hour than traditional CPU workloads.
+
+Metaxy addresses this challenge through topological dependency graphs operating at record granularity.
+Researchers define features as Pydantic models specifying which upstream fields each computation depends on.
+The system constructs a dependency graph where nodes represent feature fields and edges represent data flow.
+For each record, Metaxy computes version hashes based on upstream record versions and code versions, propagating changes through the graph topology.
+When resolving incremental updates, the system returns only those specific records whose upstream dependencies have changed.
+
+This approach delivers both rapid experimentation and reproducibility.
+Researchers modify feature definitions freely, knowing the system will identify exactly which records require reprocessing.
+The metadata layer preserves complete lineage, allowing retrospective audits of any experiment.
+By computing diffs before execution, teams quantify the impact of code changes and defer updates that do not justify their computational cost.
+
+The target audience includes machine learning engineers working with multimodal data, MLOps teams managing production feature pipelines, and research labs operating under compute budgets.
+Metaxy supports prototyping on laptops with DuckDB and scales to production clusters with ClickHouse, BigQuery, or any backend supported by Ibis.
 
 # System Overview
 
-Metaxy encodes features as declarative Pydantic models (@pydantic) bound to a global feature graph.
-Each feature declares its identifiers, fields, and dependencies, enabling the graph to determine downstream impacts of every change before execution.
-Deterministic hashes summarize field, feature, and snapshot state, creating a reproducible contract between experimentation and deployment.
+Metaxy represents features as declarative Pydantic (@pydantic) models organized into a directed acyclic graph.
+Each feature declares its identifier columns, computed fields, and topological dependencies on upstream feature fields.
+The system constructs a global dependency graph at initialization where nodes represent feature fields and edges represent data flow, enabling downstream version propagation before any data processing occurs.
 
-Metadata persistence is provided by pluggable stores, including DuckDB, ClickHouse, and any backend Ibis supports, while Narwhals supplies a backend-agnostic dataframe interface.
-By computing dependency-aware versions entirely inside the configured store, Metaxy keeps metadata close to the data and avoids shuttling large intermediate tables.
-The append-only design preserves historical lineage so users can audit experiments long after data has shifted.
+Version computation operates at record granularity through hierarchical hashing.
+Field code versions are user-specified strings marking algorithmic changes.
+For each record, field versions combine code versions with upstream record field versions through deterministic hashing, propagating changes along graph edges.
+Feature versions aggregate field versions defined on that feature.
+Record versions map each data instance to the specific upstream field versions that produced it, creating a precise per-record provenance trail.
 
-Developers interact through a Python API, a CLI for graph visualization and inspection, and in the future integrations with orchestrators such as Dagster (@dagster) and Ray (@ray).
-In these environments, Metaxy diffs can be ingested as scheduling inputs so that compute graphs prioritize samples with the highest impact, gracefully throttling or cancelling redundant GPU jobs.
-Syntactic sugar for feature definitions, comprehensive type hints, and testing helpers keep authoring friction low, allowing teams to onboard quickly without sacrificing rigor.
+This record-level granularity distinguishes Metaxy from table-level orchestrators.
+When an upstream field changes for a subset of records, only those downstream records that transitively depend on the changed field are marked for recomputation.
+Records whose dependencies remain unchanged are skipped, eliminating redundant work.
+
+Metadata persistence uses pluggable storage backends.
+DuckDB provides embedded local storage for prototyping.
+ClickHouse, BigQuery, and any Ibis-supported database scale to production workloads.
+Narwhals supplies a backend-agnostic dataframe interface, allowing users to work with Pandas, Polars, or Ibis without vendor lock-in.
+The system pushes version computation into the metadata store through SQL, avoiding expensive data transfers when resolving incremental updates.
+
+Developers define features through Python classes, visualize dependency graphs through the CLI, and integrate with orchestrators via the Python API.
+Orchestration platforms consume record-level metadata diffs to make scheduling decisions, gating GPU-intensive assets behind concrete evidence of upstream changes.
+The append-only storage design preserves complete historical lineage, enabling retrospective experiment audits and migration detection.
 
 # Minimal usage example
 
@@ -85,31 +117,44 @@ with DuckDBMetadataStore("metaxy.duckdb") as store:
 ```
 
 This flow keeps recomputation focused on the minimum viable subset while maintaining end-to-end lineage.
-Because field-level dependencies travel with the diff object, downstream aggregations only rerun when the relevant upstream fields actually changed.
+Because topological dependencies are encoded in record-level versions, downstream aggregations only rerun when the relevant upstream fields actually changed.
 
 # Evaluation
 
-We exercise versioning invariants through a comprehensive automated test suite.
-Unit and regression tests such as `tests/test_feature_version.py` and `tests/test_snapshot_version_stability.py` confirm that hashes remain stable across code refactors, while `tests/test_metadata_store.py` verifies consistent behavior for append-only writes, cross-environment fallbacks, and dependency resolution.
-These checks ensure that the metadata plan matches the independent recompute results users would obtain in production.
+Correctness is validated through automated tests covering three critical properties.
+First, version stability tests (`tests/test_feature_version.py`, `tests/test_snapshot_version_stability.py`) ensure that hash computation is deterministic across Python interpreter versions and code refactorings.
+Second, incremental update tests (`tests/test_metadata_store.py`) verify that `resolve_update` returns exactly those records whose upstream dependencies have changed through the topological graph, neither missing updates nor triggering false positives.
+Third, cross-backend tests exercise the same feature definitions against DuckDB, ClickHouse, DeltaLake, and Lance to confirm consistent record-level metadata semantics.
 
-Metaxy also ships executable examples that simulate multimodal media pipelines, demonstrating how field-level dependencies curtail unnecessary recomputation.
-These scenarios show orchestration layers gating GPU execution on concrete, versioned diffs rather than heuristics.
+Example pipelines demonstrate the system's impact on multimodal workflows.
+A video processing pipeline (`examples/overview`) defines features for audio transcription and face detection with topological dependencies between fields.
+When only the audio processing algorithm changes, the system correctly schedules transcription updates for affected records while leaving face detection metadata unchanged.
+This record-level selective recomputation is the core value proposition: only records depending on the modified field incur GPU costs.
 
 # Impact and Future Work
 
-Metaxy reduces the operational waste of GPU experimentation by grounding complex pipelines in reproducible metadata lineage.
-Labs can iterate on feature definitions freely, knowing that only the affected samples will be recomputed and that historical runs remain explorable.
-The project thus builds a bridge between exploratory research culture and the accountability expected in production data science, while slotting naturally into orchestrators that already govern job priorities.
+Metaxy enables fearless experimentation without sacrificing reproducibility.
+Researchers modify feature definitions freely, knowing the system will identify exactly which records require reprocessing.
+The append-only lineage design ensures that every experiment remains reproducible, addressing a critical gap in machine learning research.
+By computing metadata diffs before execution, teams can iterate rapidly while maintaining complete audit trails.
 
-Future work will improve ergonomics and deepen resource awareness.
-Planned extensions include richer scheduling hints for workload managers and tighter integrations with GPU cluster telemetry.
+This approach also addresses GPU economics.
+Record-level selective execution eliminates redundant computation, making expensive GPU workloads financially viable.
+Teams quantify the cost-benefit of each pipeline change and defer updates that do not justify their computational expense.
 
-We are actively looking for issues, PRs and other contributions https://github.com/anam-org/metaxy.
-Check out the documentation at https://docs.metaxy.io for more details.
+The system bridges prototyping and production through vendor-neutral abstractions.
+Researchers define features once and deploy them across DuckDB on laptops, ClickHouse in data centers, or BigQuery in the cloud without modifying feature code.
+This portability lowers the operational barrier to disciplined metadata management, making reproducibility the default rather than an afterthought.
+
+Future work will extend orchestration integrations and cost modeling.
+Planned features include native Dagster sensors that trigger downstream assets based on Metaxy metadata diffs, direct cost estimation by propagating per-sample compute costs through the dependency graph, and integration with GPU cluster telemetry to track actual resource consumption against predicted metadata changes.
+
+The project welcomes contributions at https://github.com/anam-org/metaxy.
+Documentation is available at https://docs.metaxy.io.
 
 # Acknowledgements
 
 We thank the maintainers of the Ibis, Narwhals, Pydantic, and Dagster communities for the foundational tooling Metaxy builds upon, and the contributors who tested early releases across heterogeneous hardware.
+Funding and in-kind support were provided by [Anam](https://anam.ai/) the Complexity Science Hub Vienna and the Austrian Supply Chain Intelligence Institute.
 
 # References
