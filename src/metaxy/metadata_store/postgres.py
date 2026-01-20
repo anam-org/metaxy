@@ -15,7 +15,6 @@ import ibis
 import ibis.expr.datatypes as dt
 import narwhals as nw
 import polars as pl
-import pyarrow as pa
 from narwhals.typing import Frame
 from psycopg import sql
 from psycopg.types.json import Jsonb
@@ -180,8 +179,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         supported_algorithms = {HashAlgorithm.MD5, HashAlgorithm.SHA256}
         if self.hash_algorithm not in supported_algorithms:
             raise HashAlgorithmNotSupportedError(
-                "PostgresMetadataStore supports only MD5 and SHA256 hash algorithms. "
-                f"Requested: {self.hash_algorithm}"
+                f"PostgresMetadataStore supports only MD5 and SHA256 hash algorithms. Requested: {self.hash_algorithm}"
             )
 
     def _create_hash_functions(self) -> dict[HashAlgorithm, Any]:
@@ -192,7 +190,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         def md5(_value: str) -> str:  # ty: ignore[invalid-return-type]
             ...
 
-        def md5_hash(expr):
+        def md5_hash(expr: Any) -> Any:
             return md5(expr.cast(str))
 
         hash_functions[HashAlgorithm.MD5] = md5_hash
@@ -209,7 +207,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         def lower(_value: str) -> str:  # ty: ignore[invalid-return-type]
             ...
 
-        def sha256_hash(expr):
+        def sha256_hash(expr: Any) -> Any:
             digest_expr = digest(expr.cast(str), ibis.literal("sha256"))
             encoded = encode(digest_expr, ibis.literal("hex"))
             return lower(encoded)
@@ -225,8 +223,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         json_columns: set[str],
     ) -> ibis.Schema:
         """Build an Ibis schema, forcing JSONB for JSON/struct columns."""
-        arrow_schema = cast(pa.Schema, df.to_arrow().schema)
-        inferred = ibis.schema(arrow_schema)
+        inferred = ibis.schema(df.to_arrow().schema)
         overrides = dict(inferred.items())
         for name, dtype in inferred.items():
             if name in json_columns or dtype.is_struct():
@@ -316,26 +313,16 @@ class PostgresMetadataStore(IbisJsonCompatStore):
         table_name = self.get_table_name(resolved_key)
         if table_name not in self.conn.list_tables():
             if self.auto_create_tables:
-                schema = self._build_table_schema(
-                    polars_eager, json_columns=json_columns
-                )
+                schema = self._build_table_schema(polars_eager, json_columns=json_columns)
                 self.conn.create_table(table_name, schema=schema)
             else:
-                raise TableNotFoundError(
-                    f"Table '{table_name}' does not exist for feature {resolved_key.to_string()}."
-                )
+                raise TableNotFoundError(f"Table '{table_name}' does not exist for feature {resolved_key.to_string()}.")
 
         columns = list(polars_eager.columns)
-        rows: list[tuple[Any, ...]] = []
-        for row in polars_eager.iter_rows(named=True):
-            values: list[Any] = []
-            for col in columns:
-                value = row[col]
-                if col in json_columns and value is not None:
-                    values.append(Jsonb(value))
-                else:
-                    values.append(value)
-            rows.append(tuple(values))
+        rows = [
+            tuple(Jsonb(row[col]) if col in json_columns and row[col] is not None else row[col] for col in columns)
+            for row in polars_eager.iter_rows(named=True)
+        ]
 
         raw_conn = cast(Any, self.conn).con
         placeholders = sql.SQL(", ").join([sql.Placeholder()] * len(columns))
@@ -367,8 +354,7 @@ class PostgresMetadataStore(IbisJsonCompatStore):
             raw_conn.commit()
         except Exception as exc:  # noqa: BLE001
             logger.warning(
-                "Could not enable pgcrypto extension: %s. "
-                "If using SHA256, ensure pgcrypto is enabled.",
+                "Could not enable pgcrypto extension: %s. If using SHA256, ensure pgcrypto is enabled.",
                 exc,
             )
 

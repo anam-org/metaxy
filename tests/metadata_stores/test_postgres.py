@@ -94,9 +94,7 @@ def test_postgres_hash_functions_include_sha256() -> None:
 
 def test_postgres_display_with_connection_string() -> None:
     """Test display output when initialized with connection string."""
-    connection_string = (
-        "postgresql://user:pass@localhost:5432/metaxy?password=secret&sslmode=require"
-    )
+    connection_string = "postgresql://user:pass@localhost:5432/metaxy?password=secret&sslmode=require"
     store = PostgresMetadataStore(connection_string)
 
     display = store.display()
@@ -117,12 +115,8 @@ def test_postgres_default_hash_algorithm_is_md5() -> None:
 
 def test_postgres_enable_pgcrypto_parameter() -> None:
     """Test that enable_pgcrypto parameter is stored correctly."""
-    store_with_pgcrypto = PostgresMetadataStore(
-        host="localhost", database="metaxy", enable_pgcrypto=True
-    )
-    store_without_pgcrypto = PostgresMetadataStore(
-        host="localhost", database="metaxy", enable_pgcrypto=False
-    )
+    store_with_pgcrypto = PostgresMetadataStore(host="localhost", database="metaxy", enable_pgcrypto=True)
+    store_without_pgcrypto = PostgresMetadataStore(host="localhost", database="metaxy", enable_pgcrypto=False)
 
     assert store_with_pgcrypto.enable_pgcrypto is True
     assert store_without_pgcrypto.enable_pgcrypto is False
@@ -216,9 +210,7 @@ def test_postgres_jsonb_pack_unpack_round_trip(postgres_db: str, graph) -> None:
         ]
 
 
-def test_postgres_resolve_update_matches_duckdb(
-    postgres_db: str, tmp_path, graph
-) -> None:
+def test_postgres_resolve_update_matches_duckdb(postgres_db: str, tmp_path, graph) -> None:
     """PostgreSQL resolve_update should match DuckDB provenance hashes."""
 
     class RootFeature(
@@ -241,9 +233,7 @@ def test_postgres_resolve_update_matches_duckdb(
             ],
         }
     )
-    samples = add_metaxy_provenance_column(
-        samples, RootFeature, hash_algorithm=HashAlgorithm.MD5
-    )
+    samples = add_metaxy_provenance_column(samples, RootFeature, hash_algorithm=HashAlgorithm.MD5)
     ibis_samples = ibis.memtable(samples.to_dicts())
 
     duck_store = DuckDBMetadataStore(
@@ -283,12 +273,8 @@ def test_postgres_resolve_update_matches_duckdb(
         )
     else:
         pg_field_hashes = pg_added.select(
-            pl.col(METAXY_PROVENANCE_BY_FIELD)
-            .struct.field("value")
-            .alias("field_hash"),
+            pl.col(METAXY_PROVENANCE_BY_FIELD).struct.field("value").alias("field_hash"),
             "metaxy_provenance",
         )
 
-    pl_testing.assert_frame_equal(
-        duck_field_hashes, pg_field_hashes, check_row_order=True
-    )
+    pl_testing.assert_frame_equal(duck_field_hashes, pg_field_hashes, check_row_order=True)

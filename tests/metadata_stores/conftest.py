@@ -88,21 +88,35 @@ def patch_subprocess():
 # --- SETUP POSTGRES PATH ---
 _nix_pg_bin = os.environ.get("PG_BIN")
 _pg_executable = None
+_pg_available = False
+
 if _nix_pg_bin:
     _pg_executable = str(Path(_nix_pg_bin) / "pg_ctl")
+    _pg_available = Path(_pg_executable).exists()
+else:
+    # Try to find pg_ctl in system PATH
+    import shutil
+
+    pg_ctl_path = shutil.which("pg_ctl")
+    if pg_ctl_path:
+        _pg_executable = pg_ctl_path
+        _pg_available = True
 
 # --- FIXTURE CONFIGURATION ---
-postgresql_proc = factories.postgresql_proc(
-    executable=_pg_executable,
-    unixsocketdir="/tmp",
-    # FIX: Remove -U and -A.
-    # pytest-postgresql handles auth via arguments to the factory (user=..., password=...)
-    # We only pass performance tuning flags here.
-    postgres_options="-c fsync=off -c synchronous_commit=off -c full_page_writes=off",
-    # Ensure default user matches what Nix Postgres expects (usually the current user or postgres)
-    user="postgres",
-    password=None,
-)
+if _pg_available:
+    postgresql_proc = factories.postgresql_proc(
+        executable=_pg_executable,
+        unixsocketdir="/tmp",
+        postgres_options="-c fsync=off -c synchronous_commit=off -c full_page_writes=off",
+        # Ensure default user matches what Nix Postgres expects (usually the current user or postgres)
+        user="postgres",
+        password=None,
+    )
+else:
+    # Create a dummy fixture that will be skipped
+    @pytest.fixture(scope="session")
+    def postgresql_proc():
+        pytest.skip("PostgreSQL is not available on this system")
 
 
 @pytest.fixture(scope="session")

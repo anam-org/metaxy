@@ -254,8 +254,10 @@ filterwarnings = [
 markers = [
   "duckdb: DuckDB store tests",
   "clickhouse: ClickHouse store tests",
-  "ibis: Ibis-based store tests (DuckDB, ClickHouse)",
+  "postgres: PostgreSQL store tests",
+  "ibis: Ibis-based store tests (DuckDB, ClickHouse, PostgreSQL)",
   "native: Stores with native compute capabilities",
   "polars: Stores using Polars for compute",
   "delta: Delta Lake store tests",
+  "slow: Tests that take longer than 5 seconds (e.g. venv creation, package installation)",
 ]

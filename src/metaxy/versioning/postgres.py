@@ -49,9 +49,7 @@ class PostgresVersioningEngine(IbisFlatVersioningEngine):
             timestamp_expr.alias(temp_column)
         )
 
-        ibis_table: ibis.expr.types.Table = cast(
-            "ibis.expr.types.Table", df.to_native()
-        )
+        ibis_table: ibis.expr.types.Table = cast("ibis.expr.types.Table", df.to_native())
 
         group_exprs = [ibis_table[col] for col in group_columns]
         order_exprs = [ibis_table[temp_column].desc()]
@@ -59,8 +57,7 @@ class PostgresVersioningEngine(IbisFlatVersioningEngine):
             group_by=group_exprs,
             order_by=order_exprs,
         )
+        # Note: Ibis row_number() starts at 0, unlike standard SQL which starts at 1
         ranked = ibis_table.mutate(_metaxy_rn=ibis.row_number().over(window))
-        result_table = ranked.filter(ranked["_metaxy_rn"] == 0).drop(
-            "_metaxy_rn", temp_column
-        )
+        result_table = ranked.filter(ranked["_metaxy_rn"] == 0).drop("_metaxy_rn", temp_column)
         return cast(FrameT, nw.from_native(result_table))
