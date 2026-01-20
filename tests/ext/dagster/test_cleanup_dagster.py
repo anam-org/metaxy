@@ -10,7 +10,6 @@ import pytest
 
 import metaxy as mx
 import metaxy.ext.dagster as mxd
-from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
@@ -19,10 +18,10 @@ from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 @pytest.fixture
 def feature_cls():
     class Logs(
-        BaseFeature,
+        mx.BaseFeature,
         spec=SampleFeatureSpec(
-            key=FeatureKey(["logs"]),
-            fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            key=mx.FeatureKey(["logs"]),
+            fields=[mx.FieldSpec(key=mx.FieldKey(["level"]), code_version="1")],
         ),
     ):
         level: str | None = None
@@ -46,7 +45,7 @@ def test_delete_metadata_op_with_mock():
     mxd.delete_metadata(ctx)
     store.delete_metadata.assert_called_once()
     args, kwargs = store.delete_metadata.call_args
-    assert args[0] == FeatureKey(["logs"])
+    assert args[0] == mx.FeatureKey(["logs"])
     assert kwargs["soft"] is True
 
 
@@ -66,7 +65,7 @@ def test_delete_metadata_op_with_slashed_key():
     mxd.delete_metadata(ctx)
     store.delete_metadata.assert_called_once()
     args, kwargs = store.delete_metadata.call_args
-    assert args[0] == FeatureKey(["customer", "segment"])
+    assert args[0] == mx.FeatureKey(["customer", "segment"])
     assert kwargs["soft"] is True
 
 
@@ -86,7 +85,7 @@ def test_delete_metadata_op_hard_delete_with_mock():
     mxd.delete_metadata(ctx)
     store.delete_metadata.assert_called_once()
     args, kwargs = store.delete_metadata.call_args
-    assert args[0] == FeatureKey(["logs"])
+    assert args[0] == mx.FeatureKey(["logs"])
     assert kwargs["soft"] is False
 
 
@@ -210,14 +209,22 @@ def test_delete_metadata_integration_hard_delete(feature_cls, tmp_path):
 # ========== Cascade Deletion Tests ==========
 
 
-def test_delete_metadata_cascade_with_mock():
-    """Test delete_metadata op with cascade parameter."""
+def test_delete_metadata_cascade_with_mock(monkeypatch):
+    """Test delete_metadata op with cascade parameter using FeatureGraph."""
     store = MagicMock()
-    store.get_deletion_order.return_value = [
-        FeatureKey(["video", "faces"]),
-        FeatureKey(["video", "chunk"]),
-        FeatureKey(["video", "raw"]),
+
+    # Mock FeatureGraph with get_cascade_features returning the expected order
+    mock_graph = MagicMock()
+    mock_graph.get_cascade_features.return_value = [
+        mx.FeatureKey(["video", "faces"]),
+        mx.FeatureKey(["video", "chunk"]),
+        mx.FeatureKey(["video", "raw"]),
     ]
+
+    # Patch FeatureGraph.get_active to return our mock
+    from metaxy.models.feature import FeatureGraph
+
+    monkeypatch.setattr(FeatureGraph, "get_active", lambda: mock_graph)
 
     ctx = dg.build_op_context(
         resources={"metaxy_store": store},
@@ -231,15 +238,24 @@ def test_delete_metadata_cascade_with_mock():
 
     mxd.delete_metadata(ctx)
 
-    # Verify get_deletion_order was called
-    store.get_deletion_order.assert_called_once()
-    args, kwargs = store.get_deletion_order.call_args
-    assert args[0] == FeatureKey(["video", "raw"])
-    assert kwargs["direction"] == "downstream"
-    assert kwargs["include_self"] is True
+    # Verify get_cascade_features was called with correct arguments
+    mock_graph.get_cascade_features.assert_called_once_with(
+        mx.FeatureKey(["video", "raw"]),
+        "downstream",
+    )
 
-    # Verify delete_metadata was called for each feature in order
+    # Verify delete_metadata was called for each feature in correct order
     assert store.delete_metadata.call_count == 3
+
+    # Verify deletion order (dependents first, then self)
+    call_args_list = store.delete_metadata.call_args_list
+    assert call_args_list[0][0][0] == mx.FeatureKey(["video", "faces"])
+    assert call_args_list[1][0][0] == mx.FeatureKey(["video", "chunk"])
+    assert call_args_list[2][0][0] == mx.FeatureKey(["video", "raw"])
+
+    # Verify filters are applied consistently to all features
+    for call_args in call_args_list:
+        assert call_args[1]["soft"] is True
 
 
 def test_delete_metadata_cascade_invalid_option():
@@ -265,7 +281,7 @@ def test_delete_metadata_cascade_integration(tmp_path):
 
     # Create dependent features
     class VideoRaw(
-        BaseFeature,
+        mx.BaseFeature,
         spec=mx.FeatureSpec(
             key=["video", "raw"],
             id_columns=["video_id"],
@@ -276,7 +292,7 @@ def test_delete_metadata_cascade_integration(tmp_path):
         frames: bytes | None = None
 
     class VideoChunk(
-        BaseFeature,
+        mx.BaseFeature,
         spec=mx.FeatureSpec(
             key=["video", "chunk"],
             id_columns=["chunk_id"],
@@ -361,9 +377,15 @@ def test_delete_metadata_cascade_integration(tmp_path):
         assert store.read_metadata(VideoChunk, include_soft_deleted=True).collect().to_polars().height == 2
 
 
-def test_delete_metadata_no_cascade_default():
+def test_delete_metadata_no_cascade_default(monkeypatch):
     """Test that cascade defaults to 'none' (no cascading)."""
     store = MagicMock()
+
+    # Mock FeatureGraph to ensure it's not used when cascade is "none"
+    mock_graph = MagicMock()
+    from metaxy.models.feature import FeatureGraph
+
+    monkeypatch.setattr(FeatureGraph, "get_active", lambda: mock_graph)
 
     ctx = dg.build_op_context(
         resources={"metaxy_store": store},
@@ -377,8 +399,9 @@ def test_delete_metadata_no_cascade_default():
 
     mxd.delete_metadata(ctx)
 
-    # Verify get_deletion_order was NOT called
-    store.get_deletion_order.assert_not_called()
+    # Verify FeatureGraph methods were NOT called (no cascade)
+    mock_graph.get_downstream_features.assert_not_called()
+    mock_graph.topological_sort_features.assert_not_called()
 
     # Verify delete_metadata was called only once (no cascading)
     assert store.delete_metadata.call_count == 1
