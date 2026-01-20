@@ -33,7 +33,7 @@ The feature that makes Metaxy stand out is the ability to track **partial data d
 
 Metaxy's goal is to provide a standard instrument for any kind of multi-modal (or just purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations over metadata.
 
-Read the [docs](https://anam-org.github.io/metaxy) to discover more about Metaxy.
+Read the [docs](https://docs.metaxy.io) to discover more about Metaxy.
 
 ## Installation
 
@@ -47,9 +47,9 @@ pip install --pre metaxy
 
 Metaxy is highly pluggable and generally can be used with any kind of incremental pipelines, storage, metadata storage, and dataframe libraries.
 
-Metaxy provides integrations with popular tools such as [Dagster](https://anam-org.github.io/metaxy/main/integrations/orchestration/dagster), [ClickHouse](https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://anam-org.github.io/metaxy/main/integrations/metadata-stores/storage/delta/), [SQLModel](https://anam-org.github.io/metaxy/main/integrations/plugins/sqlmodel/).
+Metaxy provides integrations with popular tools such as [Dagster](https://docs.metaxy.io/main/integrations/orchestration/dagster), [ClickHouse](https://docs.metaxy.io/main/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://docs.metaxy.io/main/integrations/metadata-stores/storage/delta/), [SQLModel](https://docs.metaxy.io/main/integrations/plugins/sqlmodel/).
 
-The full list can be found [here](https://anam-org.github.io/metaxy/main/integrations).
+The full list can be found [here](https://docs.metaxy.io/main/integrations).
 
 ## Contributing
 

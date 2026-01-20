@@ -49,7 +49,7 @@ FilterArgs = Annotated[
     ],  # Actually list[nw.Expr], but using Any to avoid import at module level
     cyclopts.Parameter(
         name=["--filter"],
-        help="SQL WHERE clause [filter](https://anam-org.github.io/metaxy/main/guide/learn/filters/) applied to all features. Can be repeated.",
+        help="SQL WHERE clause [filter](https://docs.metaxy.io/main/guide/learn/filters/) applied to all features. Can be repeated.",
         converter=_convert_filters,
         accepts_keys=False,
     ),
