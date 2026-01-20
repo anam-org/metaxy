@@ -120,6 +120,9 @@ plugins:
             - https://docs.pola.rs/api/python/stable/objects.inv
             - https://docs.dagster.io/objects.inv
 
+hooks:
+  - docs/hooks.py
+
 markdown_extensions:
   # Core extensions
   - abbr
@@ -200,6 +203,7 @@ nav:
       - Deletions: guide/learn/deletions.md
       - System Columns: guide/learn/system-columns.md
       - Testing: guide/learn/testing.md
+  - Slides: slides/intro.md
   - Integrations:
     - integrations/index.md
     - Orchestration:
