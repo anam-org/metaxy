@@ -154,7 +154,7 @@ class MetadataStore(ABC):
     """
 
     # Subclasses can override this to disable auto_create_tables warning
-    # Set to False for stores where table creation is not applicable (e.g., InMemoryMetadataStore)
+    # Set to False for stores where table creation is not applicable
     _should_warn_auto_create_tables: bool = True
 
     # Subclasses must define the versioning engine class to use

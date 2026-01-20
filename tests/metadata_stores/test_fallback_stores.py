@@ -29,9 +29,9 @@ from metaxy._testing.models import SampleFeatureSpec
 from metaxy._testing.pytest_helpers import skip_exception
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
-    InMemoryMetadataStore,
     MetadataStore,
 )
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.warnings import PolarsMaterializationWarning
 from metaxy.models.feature import FeatureGraph
@@ -171,7 +171,10 @@ def test_fallback_store_warning_issued(
     - Results should match snapshot across different configurations
     """
     # Create fallback store (InMemory - simple, no native components)
-    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    fallback_store = DeltaMetadataStore(
+        root_path=store_params["tmp_path"] / "delta_fallback",
+        hash_algorithm=hash_algorithm,
+    )
 
     # Prepare root data
     root_data = pl.DataFrame(
@@ -378,7 +381,10 @@ def test_fallback_store_switches_to_polars_components(
 
     # Scenario 2: Upstream in fallback (Polars components)
     # Use InMemory for fallback (realistic - simple store from previous deployment)
-    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    fallback_store = DeltaMetadataStore(
+        root_path=store_params["tmp_path"] / "delta_fallback",
+        hash_algorithm=hash_algorithm,
+    )
 
     # Write root to fallback store
     with fallback_store:
@@ -501,7 +507,10 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
     data is actually local (native format).
     """
     # Create fallback store (InMemory - Polars)
-    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    fallback_store = DeltaMetadataStore(
+        root_path=store_params["tmp_path"] / "delta_fallback",
+        hash_algorithm=hash_algorithm,
+    )
 
     # Create primary store with fallback configured and versioning_engine="native"
     primary_store = create_store_for_fallback(
@@ -556,7 +565,10 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
     the implementation mismatch is due to legitimate fallback access.
     """
     # Create fallback store (InMemory - Polars)
-    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+    fallback_store = DeltaMetadataStore(
+        root_path=store_params["tmp_path"] / "delta_fallback",
+        hash_algorithm=hash_algorithm,
+    )
 
     # Write data ONLY to fallback store
     with fallback_store:

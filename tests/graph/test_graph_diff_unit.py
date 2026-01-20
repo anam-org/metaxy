@@ -13,7 +13,7 @@ from metaxy.graph.diff.diff_models import (
     RemovedNode,
 )
 from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -148,14 +148,14 @@ class TestSnapshotResolver:
         assert result == graph.snapshot_version
         assert result != "empty"
 
-    def test_resolve_latest_empty_store(self):
+    def test_resolve_latest_empty_store(self, tmp_path):
         """Test resolving 'latest' with empty store fails."""
         resolver = SnapshotResolver()
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             with pytest.raises(ValueError, match="No snapshots found"):
                 resolver.resolve_snapshot("latest", store, None)
 
-    def test_resolve_latest_with_snapshot(self, graph):
+    def test_resolve_latest_with_snapshot(self, graph, tmp_path):
         """Test resolving 'latest' from store."""
         resolver = SnapshotResolver()
 
@@ -168,7 +168,7 @@ class TestSnapshotResolver:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Record a snapshot
             result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -363,7 +363,7 @@ class TestGraphDiffer:
         reason="Feature class must be importable from module level for snapshot reconstruction. "
         "Test setup creates class inside function which is not importable."
     )
-    def test_load_snapshot_data_from_store(self):
+    def test_load_snapshot_data_from_store(self, tmp_path):
         """Test loading snapshot data from store.
 
         NOTE: This test is skipped because it requires feature classes to be importable
@@ -381,7 +381,7 @@ class TestGraphDiffer:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Record snapshot
             result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -399,11 +399,11 @@ class TestGraphDiffer:
             assert "metaxy_feature_version" in feature_data
             assert "fields" in feature_data
 
-    def test_load_snapshot_data_invalid_version(self):
+    def test_load_snapshot_data_invalid_version(self, tmp_path):
         """Test loading non-existent snapshot fails."""
         differ = GraphDiffer()
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             with pytest.raises(ValueError, match="No features recorded for snapshot"):
                 differ.load_snapshot_data(store, "nonexistent", project="default")
 

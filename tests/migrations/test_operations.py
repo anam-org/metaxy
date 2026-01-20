@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 import polars as pl
 import pytest
@@ -13,11 +14,11 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
-    InMemoryMetadataStore,
 )
 from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.models import FullGraphMigration
 from metaxy.migrations.ops import BaseOperation, DataVersionReconciliation
@@ -142,7 +143,7 @@ class _FailingOperation(BaseOperation):
 # ============================================================================
 
 
-def test_full_graph_migration_single_operation_single_feature():
+def test_full_graph_migration_single_operation_single_feature(tmp_path: Path):
     # Create a simple test graph
     temp_module = TempFeatureModule("test_single_op_single_feat")
 
@@ -173,7 +174,7 @@ def test_full_graph_migration_single_operation_single_feature():
     )
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Setup data
         Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
         Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
@@ -223,7 +224,7 @@ def test_full_graph_migration_single_operation_single_feature():
     temp_module.cleanup()
 
 
-def test_full_graph_migration_single_operation_multiple_features():
+def test_full_graph_migration_single_operation_multiple_features(tmp_path: Path):
     temp_module = TempFeatureModule("test_single_op_multi_feat")
 
     feature_a_spec = SampleFeatureSpec(
@@ -239,7 +240,7 @@ def test_full_graph_migration_single_operation_multiple_features():
     temp_module.write_features({"FeatureA": feature_a_spec, "FeatureB": feature_b_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -268,7 +269,7 @@ def test_full_graph_migration_single_operation_multiple_features():
     temp_module.cleanup()
 
 
-def test_full_graph_migration_multiple_operations():
+def test_full_graph_migration_multiple_operations(tmp_path: Path):
     temp_module = TempFeatureModule("test_multi_op")
 
     feature_a_spec = SampleFeatureSpec(
@@ -284,7 +285,7 @@ def test_full_graph_migration_multiple_operations():
     temp_module.write_features({"FeatureA": feature_a_spec, "FeatureB": feature_b_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -319,7 +320,7 @@ def test_full_graph_migration_multiple_operations():
     temp_module.cleanup()
 
 
-def test_full_graph_migration_topological_sorting():
+def test_full_graph_migration_topological_sorting(tmp_path: Path):
     temp_module = TempFeatureModule("test_topo_sort")
 
     upstream_spec = SampleFeatureSpec(
@@ -349,7 +350,7 @@ def test_full_graph_migration_topological_sorting():
     )
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -381,7 +382,7 @@ def test_full_graph_migration_topological_sorting():
     temp_module.cleanup()
 
 
-def test_full_graph_migration_operation_fails():
+def test_full_graph_migration_operation_fails(tmp_path: Path):
     temp_module = TempFeatureModule("test_op_fails")
 
     feature_a_spec = SampleFeatureSpec(
@@ -397,7 +398,7 @@ def test_full_graph_migration_operation_fails():
     temp_module.write_features({"FeatureA": feature_a_spec, "FeatureB": feature_b_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -428,7 +429,7 @@ def test_full_graph_migration_operation_fails():
     temp_module.cleanup()
 
 
-def test_full_graph_migration_invalid_operation_class():
+def test_full_graph_migration_invalid_operation_class(tmp_path: Path):
     temp_module = TempFeatureModule("test_invalid_op")
 
     feature_spec = SampleFeatureSpec(
@@ -439,7 +440,7 @@ def test_full_graph_migration_invalid_operation_class():
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -468,7 +469,7 @@ def test_full_graph_migration_invalid_operation_class():
     temp_module.cleanup()
 
 
-def test_full_graph_migration_dry_run():
+def test_full_graph_migration_dry_run(tmp_path: Path):
     temp_module = TempFeatureModule("test_dry_run")
 
     feature_spec = SampleFeatureSpec(
@@ -479,7 +480,7 @@ def test_full_graph_migration_dry_run():
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -513,7 +514,7 @@ def test_full_graph_migration_dry_run():
     temp_module.cleanup()
 
 
-def test_full_graph_migration_resume_after_partial_failure():
+def test_full_graph_migration_resume_after_partial_failure(tmp_path: Path):
     temp_module = TempFeatureModule("test_resume")
 
     upstream_spec = SampleFeatureSpec(
@@ -543,7 +544,7 @@ def test_full_graph_migration_resume_after_partial_failure():
     )
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Setup data
         Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
         Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
@@ -597,7 +598,7 @@ def test_full_graph_migration_resume_after_partial_failure():
     temp_module.cleanup()
 
 
-def test_full_graph_migration_operation_specific_config():
+def test_full_graph_migration_operation_specific_config(tmp_path: Path):
     temp_module = TempFeatureModule("test_op_config")
 
     feature_spec = SampleFeatureSpec(
@@ -608,7 +609,7 @@ def test_full_graph_migration_operation_specific_config():
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -636,7 +637,7 @@ def test_full_graph_migration_operation_specific_config():
     temp_module.cleanup()
 
 
-def test_full_graph_migration_events_tracking():
+def test_full_graph_migration_events_tracking(tmp_path: Path):
     temp_module = TempFeatureModule("test_events")
 
     feature_spec = SampleFeatureSpec(
@@ -647,7 +648,7 @@ def test_full_graph_migration_events_tracking():
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
@@ -682,7 +683,7 @@ def test_full_graph_migration_events_tracking():
 # ============================================================================
 
 
-def test_data_version_reconciliation_requires_from_snapshot():
+def test_data_version_reconciliation_requires_from_snapshot(tmp_path: Path):
     temp_module = TempFeatureModule("test_dvr_from_snap")
 
     upstream_spec = SampleFeatureSpec(
@@ -712,7 +713,7 @@ def test_data_version_reconciliation_requires_from_snapshot():
     )
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
 
         op = DataVersionReconciliation()
@@ -732,7 +733,7 @@ def test_data_version_reconciliation_requires_from_snapshot():
     temp_module.cleanup()
 
 
-def test_data_version_reconciliation_root_feature_error():
+def test_data_version_reconciliation_root_feature_error(tmp_path: Path):
     temp_module = TempFeatureModule("test_dvr_root")
 
     root_spec = SampleFeatureSpec(
@@ -743,7 +744,7 @@ def test_data_version_reconciliation_root_feature_error():
     temp_module.write_features({"Root": root_spec})
     graph = temp_module.graph
 
-    with graph.use(), InMemoryMetadataStore() as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         Root = graph.features_by_key[FeatureKey(["test", "root"])]
 
         # Write some data

@@ -1,12 +1,14 @@
 """Tests for 1:N ExpansionRelationship functionality."""
 
+from pathlib import Path
+
 import narwhals as nw
 import polars as pl
 
 from metaxy import BaseFeature
 from metaxy._testing import add_metaxy_provenance_column
 from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.lineage import LineageRelationship
@@ -15,7 +17,7 @@ from metaxy.models.lineage import LineageRelationship
 class TestExpansionRelationships:
     """Test suite for 1:N expansion relationship functionality."""
 
-    def test_expansion_with_explicit_on_parameter(self, graph):
+    def test_expansion_with_explicit_on_parameter(self, graph, tmp_path: Path):
         """Test ExpansionRelationship with explicit 'on' parameter."""
 
         class Video(
@@ -59,7 +61,7 @@ class TestExpansionRelationships:
         )
 
         # Test with metadata store
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Write parent metadata
             video_data = pl.DataFrame(
                 {
@@ -102,7 +104,7 @@ class TestExpansionRelationships:
             # Should group by parent ID, so 2 parent changes detected
             assert changed_df.shape[0] == 2
 
-    def test_expansion_with_metadata_store_diff(self, graph):
+    def test_expansion_with_metadata_store_diff(self, graph, tmp_path: Path):
         """Test ExpansionRelationship diff resolution with metadata store."""
 
         class Article(
@@ -132,7 +134,7 @@ class TestExpansionRelationships:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Parent metadata
             article_data = pl.DataFrame(
                 {
