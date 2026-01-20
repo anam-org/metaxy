@@ -199,7 +199,7 @@ The `delete_metadata` op supports both basic and cascade deletion workflows in D
 
 ```python
 import dagster as dg
-from metaxy.ext.dagster import delete_metadata
+from metaxy.ext.dagster import delete_metadata, MetaxyStoreFromConfigResource
 
 
 @dg.job(resource_defs={"metaxy_store": MetaxyStoreFromConfigResource(name="default")})

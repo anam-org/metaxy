@@ -440,7 +440,7 @@ class FeatureGraph:
         return result
 
     def get_upstream_features(self, sources: Sequence[CoercibleToFeatureKey]) -> list[FeatureKey]:
-        """Get all features upstream of sources (dependencies).
+        """Get all features upstream of sources (their dependencies), topologically sorted.
 
         Performs a depth-first traversal of the dependency graph to find all
         features that the source features transitively depend on.
@@ -449,7 +449,7 @@ class FeatureGraph:
             sources: List of source feature keys. Each element can be string, sequence, FeatureKey, or BaseFeature class.
 
         Returns:
-            List of upstream feature keys (dependencies).
+            List of upstream feature keys in topological order (dependencies first).
             Does not include the source features themselves.
 
         Example:
@@ -463,14 +463,14 @@ class FeatureGraph:
             graph.get_upstream_features(["D"])
             ```
         """
-        # Validate and coerce the source keys
         validated_sources = ValidatedFeatureKeySequenceAdapter.validate_python(sources)
 
+        source_set = set(validated_sources)
         visited: set[FeatureKey] = set()
-        upstream: list[FeatureKey] = []
+        post_order: list[FeatureKey] = []
 
         def visit(key: FeatureKey) -> None:
-            """DFS traversal of dependencies."""
+            """DFS traversal following dependencies (upstream)."""
             if key in visited:
                 return
             visited.add(key)
@@ -479,14 +479,14 @@ class FeatureGraph:
             if feature_spec and feature_spec.deps:
                 for dep in feature_spec.deps:
                     visit(dep.feature)
-                    if dep.feature not in upstream:
-                        upstream.append(dep.feature)
 
-        # Visit all sources
+            post_order.append(key)
+
         for source in validated_sources:
             visit(source)
 
-        return upstream
+        # Remove sources from result; post_order is already in dependency-first order
+        return [k for k in post_order if k not in source_set]
 
     def get_cascade_features(
         self,

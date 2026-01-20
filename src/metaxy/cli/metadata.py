@@ -470,7 +470,6 @@ def delete(
                 try:
                     features_in_cascade = graph.get_cascade_features(feature_key, cascade)
 
-                    # Add features not already in the list (preserve order)
                     for fk in features_in_cascade:
                         if fk not in features_to_delete:
                             features_to_delete.append(fk)
