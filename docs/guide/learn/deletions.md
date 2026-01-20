@@ -1,8 +1,6 @@
-# Metadata Cleanup (hard & soft deletes)
+# Metadata Deletion
 
-Metaxy supports two deletion modes: soft deletes that preserve history and hard deletes that permanently remove records. Soft deletes are the default behavior and preferred for most use cases since they maintain audit trails while allowing records to be filtered out from normal queries.
-
-All examples assume `import narwhals as nw` and a store opened in the appropriate mode.
+Metaxy supports two deletion modes: **soft deletes** that preserve history and **hard deletes** that permanently remove records. Soft deletes are the default behavior and preferred for most use cases since they maintain audit trails while allowing records to be filtered out from normal queries.
 
 ## Soft deletes
 
@@ -54,4 +52,4 @@ metaxy metadata delete --feature predictions --filter "confidence < 0.3"
 metaxy metadata delete --feature predictions --filter "created_at < '2024-01-01'" --soft=false
 ```
 
-The CLI requires a filter expression and feature selection via `--feature` or `--all-features`.
+Learn more in the [CLI reference](../../reference/cli.md#metaxy-metadata-delete)
