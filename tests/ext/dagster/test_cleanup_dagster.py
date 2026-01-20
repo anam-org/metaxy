@@ -204,3 +204,190 @@ def test_delete_metadata_integration_hard_delete(feature_cls, tmp_path):
         # Verify hard-deleted row is NOT in store even when including deleted
         all_data = store.read_metadata(feature_cls, include_soft_deleted=True).collect().to_polars()
         assert all_data.height == 2  # Hard delete means it's gone
+
+
+# ========== Cascade Deletion Tests ==========
+
+
+def test_delete_metadata_cascade_with_mock():
+    """Test delete_metadata op with cascade parameter."""
+    store = MagicMock()
+    store.get_deletion_order.return_value = [
+        FeatureKey(["video", "faces"]),
+        FeatureKey(["video", "chunk"]),
+        FeatureKey(["video", "raw"]),
+    ]
+
+    ctx = dg.build_op_context(
+        resources={"metaxy_store": store},
+        op_config={
+            "feature_key": ["video", "raw"],
+            "filters": ["video_id = 'v1'"],
+            "soft": True,
+            "cascade": "downstream",
+        },
+    )
+
+    mxd.delete_metadata(ctx)
+
+    # Verify get_deletion_order was called
+    store.get_deletion_order.assert_called_once()
+    args, kwargs = store.get_deletion_order.call_args
+    assert args[0] == FeatureKey(["video", "raw"])
+    assert kwargs["direction"] == "downstream"
+    assert kwargs["include_self"] is True
+
+    # Verify delete_metadata was called for each feature in order
+    assert store.delete_metadata.call_count == 3
+
+
+def test_delete_metadata_cascade_invalid_option():
+    """Test that invalid cascade option raises ValueError."""
+    store = MagicMock()
+
+    ctx = dg.build_op_context(
+        resources={"metaxy_store": store},
+        op_config={
+            "feature_key": ["video", "raw"],
+            "filters": [],
+            "soft": True,
+            "cascade": "invalid",
+        },
+    )
+
+    with pytest.raises(ValueError, match="Invalid cascade option"):
+        mxd.delete_metadata(ctx)
+
+
+def test_delete_metadata_cascade_integration():
+    """Integration test for cascade deletion."""
+
+    # Create dependent features
+    class VideoRaw(
+        BaseFeature,
+        spec=mx.FeatureSpec(
+            key=["video", "raw"],
+            id_columns=["video_id"],
+            fields=["frames"],
+        ),
+    ):
+        video_id: str
+        frames: bytes | None = None
+
+    class VideoChunk(
+        BaseFeature,
+        spec=mx.FeatureSpec(
+            key=["video", "chunk"],
+            id_columns=["chunk_id"],
+            deps=[
+                mx.FeatureDep(
+                    feature=VideoRaw,
+                    lineage=mx.LineageRelationship.expansion(on=["video_id"]),
+                )
+            ],
+            fields=["frames"],
+        ),
+    ):
+        video_id: str
+        chunk_id: str
+        frames: bytes | None = None
+
+    # Create an in-memory store
+    store = mx.InMemoryMetadataStore()
+
+    # Define a job with the delete op
+    @dg.job(
+        resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)}
+    )
+    def cascade_cleanup_job():
+        mxd.delete_metadata()
+
+    # Write test data
+    video_data = pl.DataFrame({
+        "video_id": ["v1"],
+        "frames": [b"frame_data"],
+        METAXY_PROVENANCE_BY_FIELD: [{"frames": "p1"}],
+    })
+
+    chunk_data = pl.DataFrame({
+        "video_id": ["v1", "v1"],
+        "chunk_id": ["c1", "c2"],
+        "frames": [b"f1", b"f2"],
+        METAXY_PROVENANCE_BY_FIELD: [
+            {"frames": "p1"},
+            {"frames": "p1"},
+        ],
+    })
+
+    with store.open("write"):
+        store.write_metadata(VideoRaw, video_data)
+        store.write_metadata(VideoChunk, chunk_data)
+
+    # Verify data was written
+    with store:
+        assert store.read_metadata(VideoRaw).collect().to_polars().height == 1
+        assert store.read_metadata(VideoChunk).collect().to_polars().height == 2
+
+    # Execute cascade deletion
+    result = cascade_cleanup_job.execute_in_process(
+        run_config={
+            "ops": {
+                "delete_metadata": {
+                    "config": {
+                        "feature_key": ["video", "raw"],
+                        "filters": [],  # Delete all
+                        "soft": True,
+                        "cascade": "downstream",
+                    }
+                }
+            }
+        }
+    )
+
+    # Verify the job succeeded
+    assert result.success
+
+    # Verify both features were soft-deleted
+    with store:
+        # No active data (soft deleted)
+        assert store.read_metadata(VideoRaw).collect().to_polars().height == 0
+        assert store.read_metadata(VideoChunk).collect().to_polars().height == 0
+
+        # Data still exists with include_soft_deleted
+        assert (
+            store.read_metadata(VideoRaw, include_soft_deleted=True)
+            .collect()
+            .to_polars()
+            .height
+            == 1
+        )
+        assert (
+            store.read_metadata(VideoChunk, include_soft_deleted=True)
+            .collect()
+            .to_polars()
+            .height
+            == 2
+        )
+
+
+def test_delete_metadata_no_cascade_default():
+    """Test that cascade defaults to 'none' (no cascading)."""
+    store = MagicMock()
+
+    ctx = dg.build_op_context(
+        resources={"metaxy_store": store},
+        op_config={
+            "feature_key": ["logs"],
+            "filters": ["level = 'debug'"],
+            "soft": True,
+            # cascade not specified, should default to "none"
+        },
+    )
+
+    mxd.delete_metadata(ctx)
+
+    # Verify get_deletion_order was NOT called
+    store.get_deletion_order.assert_not_called()
+
+    # Verify delete_metadata was called only once (no cascading)
+    assert store.delete_metadata.call_count == 1
