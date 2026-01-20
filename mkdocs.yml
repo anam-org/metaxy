@@ -6,6 +6,7 @@ repo_name: anam-org/metaxy
 
 theme:
   name: material
+  custom_dir: docs/.overrides
   logo: assets/metaxy.svg
   favicon: assets/favicon.ico
   features:
@@ -62,7 +63,9 @@ plugins:
   - gh-admonitions
   - macros:
       module_name: docs/main
-  - social
+  - social:
+      cards_layout_dir: docs/.overrides
+      cards_layout: social_card
 
   # in the futurem, we could move navigation to a separate file
   # - literate-nav:
