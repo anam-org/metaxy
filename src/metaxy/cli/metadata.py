@@ -352,6 +352,20 @@ def delete(
             help="Whether to mark records with deletion timestamps vs physically remove them.",
         ),
     ] = True,
+    cascade: Annotated[
+        str,
+        cyclopts.Parameter(
+            name=["--cascade"],
+            help="Cascade deletion to dependent/dependency features. Options: none, downstream (dependents first), upstream (dependencies first), both.",
+        ),
+    ] = "none",
+    dry_run: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--dry-run"],
+            help="Preview what would be deleted without actually deleting.",
+        ),
+    ] = False,
     yes: Annotated[
         bool,
         cyclopts.Parameter(
@@ -359,6 +373,13 @@ def delete(
             help="Confirm deletion without prompting (required for hard deletes without filters).",
         ),
     ] = False,
+    format: Annotated[
+        OutputFormat,
+        cyclopts.Parameter(
+            name=["--format"],
+            help="Output format: 'plain' (default) or 'json'.",
+        ),
+    ] = "plain",
 ) -> None:
     """Delete metadata rows matching filters.
 
@@ -366,22 +387,37 @@ def delete(
         $ metaxy metadata delete --feature user_features --filter "status = 'inactive'"
         $ metaxy metadata delete --all-features --filter "created_at < '2024-01-01'" --soft=false
         $ metaxy metadata delete --feature test_feature --filter "1=1" --yes  # Delete all rows
+        $ metaxy metadata delete --feature video/raw --cascade downstream --dry-run  # Preview cascade
+        $ metaxy metadata delete --feature video/raw --filter "video_id='v1'" --cascade downstream --soft=false
     """
     from metaxy.cli.context import AppContext
     from metaxy.cli.utils import CLIError, exit_with_error
 
     filters = filters or []
-    selector.validate("plain")
+    selector.validate(format)
+
+    # Validate cascade option
+    valid_cascade_options = ["none", "downstream", "upstream", "both"]
+    if cascade not in valid_cascade_options:
+        exit_with_error(
+            CLIError(
+                code="INVALID_CASCADE",
+                message=f"Invalid cascade option: '{cascade}'",
+                details={"valid_options": valid_cascade_options},
+                hint=f"Valid options: {', '.join(valid_cascade_options)}",
+            ),
+            format,
+        )
 
     # Require --yes confirmation for hard deletes when no filters provided
-    if not soft and not filters and not yes:
+    if not soft and not filters and not yes and not dry_run:
         exit_with_error(
             CLIError(
                 code="MISSING_CONFIRMATION",
                 message="Hard deleting all metadata requires --yes flag to prevent accidental deletion.",
                 hint="Use --yes to confirm, or provide --filter to restrict deletion.",
             ),
-            "plain",
+            format,
         )
 
     context = AppContext.get()
@@ -392,18 +428,19 @@ def delete(
         from metaxy.models.feature import FeatureGraph
 
         graph = FeatureGraph.get_active()
-        valid_keys, missing_keys = selector.resolve_keys(graph, "plain")
+        valid_keys, missing_keys = selector.resolve_keys(graph, format)
 
         if missing_keys:
             missing = ", ".join(k.to_string() for k in missing_keys)
-            data_console.print(f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {missing}")
+            if format == "plain":
+                data_console.print(f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {missing}")
         if not valid_keys:
             exit_with_error(
                 CLIError(
                     code="NO_FEATURES",
                     message="No valid features selected for deletion.",
                 ),
-                "plain",
+                format,
             )
 
         # Combine filters with AND, or use empty list for "delete all"
@@ -417,10 +454,129 @@ def delete(
             # (e.g., TRUNCATE TABLE in Ibis backend)
             combined_filter = []
 
+        # Determine features to delete (with or without cascading)
+        from metaxy.models.types import FeatureKey
+
+        features_to_delete: list[FeatureKey] = []
+        if cascade != "none":
+            # Cascade deletion: get deletion order for each selected feature
+            if len(valid_keys) > 1 and format == "plain":
+                data_console.print(
+                    "[yellow]Warning:[/yellow] Cascading with multiple features selected. "
+                    "Each feature will cascade independently."
+                )
+
+            for feature_key in valid_keys:
+                try:
+                    # Get upstream and/or downstream features using FeatureGraph
+                    features_in_cascade: list[FeatureKey] = []
+
+                    if cascade == "downstream":
+                        # Get all downstream features (dependents) using FeatureGraph
+                        downstream = graph.get_downstream_features([feature_key])
+                        # Order: dependents first, then self (leaf-first for hard delete)
+                        features_in_cascade = downstream + [feature_key]
+                        features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=True)
+
+                    elif cascade == "upstream":
+                        # Get all upstream features (dependencies) recursively
+                        upstream: list[FeatureKey] = []
+                        visited = set()
+
+                        def get_upstream_recursive(fk: FeatureKey):
+                            if fk in visited:
+                                return
+                            visited.add(fk)
+
+                            feature_spec = graph.feature_specs_by_key.get(fk)
+                            if feature_spec and feature_spec.deps:
+                                for dep in feature_spec.deps:
+                                    get_upstream_recursive(dep.feature)
+                                    if dep.feature not in upstream:
+                                        upstream.append(dep.feature)
+
+                        get_upstream_recursive(feature_key)
+                        # Order: dependencies first, then self (root-first)
+                        features_in_cascade = upstream + [feature_key]
+                        features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=False)
+
+                    elif cascade == "both":
+                        # Get both upstream and downstream
+                        upstream_keys: list[FeatureKey] = []
+                        visited = set()
+
+                        def get_upstream_recursive(fk: FeatureKey):
+                            if fk in visited:
+                                return
+                            visited.add(fk)
+
+                            feature_spec = graph.feature_specs_by_key.get(fk)
+                            if feature_spec and feature_spec.deps:
+                                for dep in feature_spec.deps:
+                                    get_upstream_recursive(dep.feature)
+                                    if dep.feature not in upstream_keys:
+                                        upstream_keys.append(dep.feature)
+
+                        get_upstream_recursive(feature_key)
+                        downstream_keys = graph.get_downstream_features([feature_key])
+
+                        # Combine: deps -> self -> dependents
+                        features_in_cascade = upstream_keys + [feature_key] + downstream_keys
+                        features_in_cascade = graph.topological_sort_features(features_in_cascade, descending=False)
+
+                    # Add features not already in the list (preserve order)
+                    for fk in features_in_cascade:
+                        if fk not in features_to_delete:
+                            features_to_delete.append(fk)
+
+                except Exception as e:
+                    exit_with_error(
+                        CLIError(
+                            code="CASCADE_ERROR",
+                            message=f"Failed to determine cascade order for {feature_key.to_string()}: {e}",
+                        ),
+                        format,
+                    )
+        else:
+            # No cascading: delete only selected features
+            features_to_delete = list(valid_keys)
+
+        # Dry run: show what would be deleted
+        if dry_run:
+            mode_str = "soft" if soft else "hard"
+
+            if format == "plain":
+                data_console.print(f"[bold]Dry run: Would {mode_str} delete features in order:[/bold]")
+                for i, fk in enumerate(features_to_delete, 1):
+                    marker = "→" if cascade != "none" else "•"
+                    data_console.print(f"  {marker} [{i}] {fk.to_string()}")
+
+                if filters:
+                    data_console.print(f"\n[dim]With filters: {filters}[/dim]")
+                else:
+                    data_console.print("\n[dim]All rows (no filters)[/dim]")
+
+                data_console.print("\n[yellow]Note:[/yellow] This is a preview. Use without --dry-run to execute.")
+            else:
+                # JSON output for dry run
+                print(
+                    json.dumps(
+                        {
+                            "dry_run": True,
+                            "mode": mode_str,
+                            "cascade": cascade,
+                            "features": [fk.to_string() for fk in features_to_delete],
+                        },
+                        indent=2,
+                    )
+                )
+            return
+
         errors: dict[str, str] = {}
 
+        # Execute deletions in order
         with metadata_store.open("write"):
-            for feature_key in valid_keys:
+            for feature_key in features_to_delete:
                 try:
                     metadata_store.delete_metadata(
                         feature_key,
@@ -430,10 +586,25 @@ def delete(
                 except Exception as e:  # pragma: no cover - CLI surface
                     error_msg = str(e)
                     errors[feature_key.to_string()] = error_msg
-                    error_console.print(f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}")
+                    if format == "plain":
+                        error_console.print(f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}")
 
         mode_str = "soft" if soft else "hard"
-        data_console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete)")
+        cascade_info = f" ({cascade} cascade)" if cascade != "none" else ""
+
+        if format == "plain":
+            data_console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete{cascade_info})")
+        else:
+            # JSON output
+            result: dict[str, Any] = {
+                "success": True,
+                "mode": mode_str,
+                "cascade": cascade,
+                "features_deleted": [fk.to_string() for fk in features_to_delete],
+            }
+            if errors:
+                result["errors"] = errors
+            print(json.dumps(result, indent=2))
 
         if errors:
             raise SystemExit(1)

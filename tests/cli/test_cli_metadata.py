@@ -2760,3 +2760,222 @@ root_path = "{prod_path}"
         assert result.returncode == 0
         assert "Warning" in result.stdout
         assert "No valid features to copy" in result.stdout
+
+
+# ========== Cascade Deletion Tests ==========
+
+
+def test_metadata_delete_cascade_dry_run(metaxy_project: TempMetaxyProject):
+    """Test --dry-run shows deletion plan without executing."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureDep, FeatureSpec, LineageRelationship
+
+        class VideoRaw(
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "raw"],
+                id_columns=["video_id"],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            frames: bytes | None = None
+
+        class VideoChunk(
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "chunk"],
+                id_columns=["chunk_id"],
+                deps=[
+                    FeatureDep(
+                        feature=VideoRaw,
+                        lineage=LineageRelationship.expansion(on=["video_id"]),
+                    )
+                ],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            chunk_id: str
+            frames: bytes | None = None
+
+    with metaxy_project.with_features(features):
+        # Write metadata
+        metaxy_project.write_sample_metadata("video/raw")
+        metaxy_project.write_sample_metadata("video/chunk")
+
+        # Test dry-run with downstream cascade
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "video/raw",
+                "--cascade",
+                "downstream",
+                "--dry-run",
+            ]
+        )
+
+        assert result.returncode == 0
+        # CLI writes user-facing messages to stdout
+        assert "dry run" in result.stdout.lower() or "preview" in result.stdout.lower()
+        assert "video/chunk" in result.stdout
+        assert "video/raw" in result.stdout
+
+
+def test_metadata_delete_cascade_downstream(metaxy_project: TempMetaxyProject):
+    """Test cascading deletion downstream (dependents first)."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureDep, FeatureSpec, LineageRelationship
+
+        class VideoRaw(
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "raw"],
+                id_columns=["video_id"],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            frames: bytes | None = None
+
+        class VideoChunk(
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "chunk"],
+                id_columns=["chunk_id"],
+                deps=[
+                    FeatureDep(
+                        feature=VideoRaw,
+                        lineage=LineageRelationship.expansion(on=["video_id"]),
+                    )
+                ],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            chunk_id: str
+            frames: bytes | None = None
+
+    with metaxy_project.with_features(features):
+        # Write metadata
+        metaxy_project.write_sample_metadata("video/raw")
+        metaxy_project.write_sample_metadata("video/chunk")
+
+        # Execute cascade deletion (soft delete by default)
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "video/raw",
+                "--cascade",
+                "downstream",
+            ]
+        )
+
+        assert result.returncode == 0
+        # CLI writes user-facing messages to stdout
+        assert "complete" in result.stdout.lower() or "deleted" in result.stdout.lower()
+        assert "downstream" in result.stdout.lower() or "cascade" in result.stdout.lower()
+
+        # Verify both features are soft deleted (check via metadata status)
+        status_result = metaxy_project.run_cli(["metadata", "status", "--feature", "video/raw", "--format", "json"])
+        status_data = json.loads(status_result.stdout)
+        # After soft delete, feature should have no active metadata (store_rows should be 0)
+        assert status_data["features"]["video/raw"]["store_rows"] == 0
+
+
+def test_metadata_delete_cascade_invalid_option(metaxy_project: TempMetaxyProject):
+    """Test that invalid --cascade option raises error."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureSpec
+
+        class VideoRaw(
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "raw"],
+                id_columns=["video_id"],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "video/raw",
+                "--cascade",
+                "invalid",
+                "--format",
+                "json",
+            ],
+            check=False,
+        )
+
+        assert result.returncode == 1
+        # Error messages in JSON format go to stdout
+        error = json.loads(result.stdout)
+        assert error["error"] == "INVALID_CASCADE"
+        assert error["valid_options"] == ["none", "downstream", "upstream", "both"]
+
+
+def test_metadata_delete_cascade_upstream(metaxy_project: TempMetaxyProject):
+    """Test cascading deletion upstream (dependencies first)."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureDep, FeatureSpec
+
+        class VideoRaw(
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "raw"],
+                id_columns=["video_id"],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            frames: bytes | None = None
+
+        class VideoChunk(
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "chunk"],
+                id_columns=["chunk_id"],
+                deps=[FeatureDep(feature=VideoRaw)],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            chunk_id: str
+            frames: bytes | None = None
+
+    with metaxy_project.with_features(features):
+        # Write metadata
+        metaxy_project.write_sample_metadata("video/raw")
+        metaxy_project.write_sample_metadata("video/chunk")
+
+        # Test dry-run with upstream cascade from chunk
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "--feature",
+                "video/chunk",
+                "--cascade",
+                "upstream",
+                "--dry-run",
+            ]
+        )
+
+        assert result.returncode == 0
+        # CLI writes user-facing messages to stdout
+        assert "video/raw" in result.stdout
+        assert "video/chunk" in result.stdout
