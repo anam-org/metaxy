@@ -46,7 +46,7 @@ def _validate_sample_feature_spec_id_columns(
 class SampleFeatureSpec(FeatureSpec):
     """A testing implementation of FeatureSpec that has a `sample_uid` ID column. Has to be moved to tests."""
 
-    id_columns: Annotated[  # pyright: ignore[reportIncompatibleVariableOverride]
+    id_columns: Annotated[
         pydantic.SkipValidation[list[str]],
         BeforeValidator(_validate_sample_feature_spec_id_columns),
     ] = pydantic.Field(
@@ -81,7 +81,7 @@ class SampleFeatureSpec(FeatureSpec):
         ) -> None: ...
 
         # Implementation signature
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
+        def __init__(
             self,
             *,
             key: CoercibleToFeatureKey,
@@ -90,7 +90,7 @@ class SampleFeatureSpec(FeatureSpec):
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: Mapping[str, JsonValue] | None = None,
             **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
+        ) -> None: ...
 
 
 class SampleFeature(BaseFeature, spec=None):

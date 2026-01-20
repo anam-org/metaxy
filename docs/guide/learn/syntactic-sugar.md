@@ -1,3 +1,8 @@
+---
+title: "Syntactic Sugar"
+description: "Shorthand syntax for feature definitions."
+---
+
 # Syntactic Sugar
 
 ## Type Coercion For Input Types

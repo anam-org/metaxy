@@ -92,7 +92,7 @@ def _read_from_store(db_path: Path, result_queue: Any) -> None:
         store = DuckDBMetadataStore(db_path)
         with store.open("read"):
             # Try to list tables
-            tables = store.ibis_conn.list_tables()
+            tables = store.conn.list_tables()
             result_queue.put(("success", len(tables)))
     except Exception as e:
         result_queue.put(("error", str(e)))

@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import TYPE_CHECKING, Literal
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter
+from pydantic import BaseModel, ConfigDict, TypeAdapter, field_serializer
 from pydantic import Field as PydanticField
 from typing_extensions import Self
 
@@ -60,7 +60,7 @@ class FieldsMappingResolutionContext(BaseModel):
         return {field.key for field in self.upstream_feature.fields}
 
 
-class BaseFieldsMapping(BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
+class BaseFieldsMapping(BaseModel, ABC):
     """Base class for field mapping configurations.
 
     Field mappings define how a field automatically resolves its dependencies
@@ -92,6 +92,20 @@ class SpecificFieldsMapping(BaseFieldsMapping):
 
     type: Literal[FieldsMappingType.SPECIFIC] = FieldsMappingType.SPECIFIC
     mapping: dict[FieldKey, set[FieldKey]]
+
+    @field_serializer("mapping", when_used="json")
+    def _serialize_mapping(
+        self, value: dict[FieldKey, set[FieldKey]]
+    ) -> dict[str, list[list[str]]]:
+        """Serialize mapping with FieldKey dict keys converted to strings for JSON.
+
+        JSON dict keys must be strings, so we convert FieldKey objects to their
+        string representation (e.g., "faces" or "audio/french").
+        """
+        return {
+            key.to_string(): [list(field_key.parts) for field_key in field_keys]
+            for key, field_keys in value.items()
+        }
 
     def resolve_field_deps(
         self,

@@ -64,7 +64,7 @@ class TestResolveUpdateRootFeatures:
         with provenance_by_field column.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
         video_feature = create_video_embeddings_feature(graph)
@@ -84,7 +84,7 @@ class TestResolveUpdateRootFeatures:
         When store is empty, all user samples should be 'added'.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
         video_feature = create_video_embeddings_feature(graph)
@@ -129,7 +129,7 @@ class TestResolveUpdateRootFeatures:
         Tests added, changed, and removed samples.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
         video_feature = create_video_embeddings_feature(graph)
@@ -191,7 +191,7 @@ class TestResolveUpdateRootFeatures:
         equal provenance columns by default.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
         video_feature = create_video_embeddings_feature(graph)
@@ -245,7 +245,7 @@ class TestResolveUpdateRootFeatures:
         When users provide custom data_version columns, they should be preserved.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
         video_feature = create_video_embeddings_feature(graph)
@@ -305,7 +305,7 @@ class TestResolveUpdateRootFeatures:
     ):
         """Test that resolve_update with skip_comparison=True adds data_version columns for root features."""
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
         video_feature = create_video_embeddings_feature(graph)
@@ -364,7 +364,7 @@ class TestResolveUpdateRootFeatures:
         The samples parameter now accepts IntoFrame, so users can pass Polars frames directly.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
         video_feature = create_video_embeddings_feature(graph)

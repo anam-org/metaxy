@@ -1,3 +1,8 @@
+---
+title: "Delta Lake API Reference"
+description: "API reference for DeltaMetadataStore."
+---
+
 # Delta Lake Metadata Store API
 
 ::: metaxy.metadata_store.delta

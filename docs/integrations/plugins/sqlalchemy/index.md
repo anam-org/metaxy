@@ -1,3 +1,8 @@
+---
+title: "SQLAlchemy Plugin"
+description: "SQLAlchemy integration for database migrations."
+---
+
 # Metaxy + SQLAlchemy
 
 Metaxy provides helpers for integrating with [SQLAlchemy](https://www.sqlalchemy.org/).

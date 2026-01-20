@@ -9,16 +9,31 @@
   <a href="https://pypi.org/project/metaxy/"><img src="https://img.shields.io/pypi/pyversions/metaxy.svg?color=4644ad" alt="Python versions"></a>
   <a href="https://pypi.org/project/metaxy/"><img src="https://img.shields.io/pypi/dm/metaxy.svg?color=4644ad" alt="PyPI downloads"></a>
   <a href="https://github.com/anam-org/metaxy/actions/workflows/QA.yml"><img src="https://github.com/anam-org/metaxy/actions/workflows/QA.yml/badge.svg" alt="CI"></a>
-  <a href="https://docs.astral.sh/ruff/"><img src="https://img.shields.io/badge/linting-ruff-4644ad" alt="Ruff"></a>
-  <a href="https://docs.basedpyright.com"><img src="https://img.shields.io/badge/basedpyright-checked-4644ad" alt="basedpyright - checked"></a>
-  <a href="https://prek.j178.dev"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/assets/badge/v0.json" alt="prek"></a>
+  <a href="https://docs.astral.sh/ruff/"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
+  <a href="https://docs.astral.sh/ty/"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json" alt="Ty"></a>
+  <a href="https://prek.j178.dev"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/docs/assets/badge-v0.json" alt="prek"></a>
 </p>
 
-Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks feature versions, (partial) data dependencies, and lineage across complex computation graphs.
+Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks lineage and versioning across complex computational graphs for multi-modal datasets.
 
-Metaxy's goal is to provide a standard instrument for any kind of multi-modal (or just tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, manipulations over metadata, migrations, and more.
+Metaxy manages **metadata** while **data** typically lives elsewhere:
 
-Read the [docs](https://anam-org.github.io/metaxy) to learn more.
+```
+┌─────────────────────────────────┐          ┌─────────────────────────┐
+│      Metadata (Metaxy)          │          │   Data (e.g., S3)       │
+├──────┬──────────┬──────┬────────┤          │                         │
+│  ID  │   path   │ size │version │          │  📦 s3://my-bucket/     │
+├──────┼──────────┼──────┼────────┤          │                         │
+│ img1 │ s3://... │ 2.1M │a3fdsf  │ ────────>│    ├─ img1.jpg          │
+│ img2 │ s3://... │ 1.8M │b7e123  │ ────────>│    ├─ img2.jpg          │
+└──────┴──────────┴──────┴────────┘          └─────────────────────────┘
+```
+
+The feature that makes Metaxy stand out is the ability to track **partial data dependencies** that are so common in multi-modal pipelines and skip downstream updates when they are not needed.
+
+Metaxy's goal is to provide a standard instrument for any kind of multi-modal (or just purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations over metadata.
+
+Read the [docs](https://anam-org.github.io/metaxy) to discover more about Metaxy.
 
 ## Installation
 
@@ -28,9 +43,9 @@ Read the [docs](https://anam-org.github.io/metaxy) to learn more.
 pip install --pre metaxy
 ```
 
-## Integrating Metaxy in your project
+## Using Metaxy
 
-Metaxy is highly pluggable and generally can be used with any kind of incremental pipelines, storage, metadata stores, and dataframe libraries.
+Metaxy is highly pluggable and generally can be used with any kind of incremental pipelines, storage, metadata storage, and dataframe libraries.
 
 Metaxy provides integrations with popular tools such as [Dagster](https://anam-org.github.io/metaxy/main/integrations/orchestration/dagster), [ClickHouse](https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://anam-org.github.io/metaxy/main/integrations/metadata-stores/storage/delta/), [SQLModel](https://anam-org.github.io/metaxy/main/integrations/plugins/sqlmodel/).
 

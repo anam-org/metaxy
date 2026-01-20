@@ -1,0 +1,7 @@
+{
+  "metaxy": {
+    "type": "stdio",
+    "command": "uv",
+    "args": ["run", "metaxy", "mcp"]
+  }
+}

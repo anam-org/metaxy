@@ -1,0 +1,23 @@
+# Metadata Stores
+
+See full documentation: https://anam-org.github.io/metaxy/main/guide/learn/metadata-stores/
+
+## Store Operations
+
+```python
+import metaxy as mx
+
+with store:
+    # Resolve what needs to be computed
+    diff = store.resolve_update(MyFeature)
+    # diff.added - new samples
+    # diff.changed - samples with changed provenance
+
+    # Read metadata
+    result = store.read_metadata(MyFeature, current_only=True)
+    df = result.collect().to_polars()
+
+with store.open("write"):
+    # Write metadata
+    store.write_metadata(MyFeature, df)
+```

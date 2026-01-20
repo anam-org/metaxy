@@ -4,11 +4,15 @@ This module provides rendering utilities for:
 - Scenario lists with descriptions
 - Source code in markdown code blocks
 - Diff patches in markdown code blocks
+- Execution events (commands, patches, graph pushes)
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
+
+from metaxy._testing import CommandExecuted, GraphPushed, PatchApplied
 
 
 class ExampleRenderer:
@@ -234,3 +238,131 @@ class ExampleRenderer:
 
         md_parts.append("")
         return "\n".join(md_parts)
+
+    def render_graph_diff(
+        self,
+        from_snapshot: str,
+        to_snapshot: str,
+        example_name: str,
+        example_dir: Path,
+    ) -> str | None:
+        """Render a graph diff as Mermaid diagram using the CLI.
+
+        Args:
+            from_snapshot: Before snapshot version hash.
+            to_snapshot: After snapshot version hash.
+            example_name: Name of the example for context.
+            example_dir: Path to the example directory.
+
+        Returns:
+            Mermaid diagram string or None if rendering fails.
+        """
+        import os
+        import subprocess
+        import sys
+
+        try:
+            # Run metaxy graph-diff render command from the example directory
+            metaxy_path = os.path.join(os.path.dirname(sys.executable), "metaxy")
+
+            result = subprocess.run(
+                [
+                    metaxy_path,
+                    "graph-diff",
+                    "render",
+                    "--format",
+                    "mermaid",
+                    from_snapshot,
+                    to_snapshot,
+                ],
+                capture_output=True,
+                text=True,
+                cwd=example_dir,
+            )
+
+            if result.returncode != 0:
+                return f"```\nError rendering graph diff: {result.stderr}\n```"
+
+            # Wrap the mermaid output in a code block
+            return f"```mermaid\n{result.stdout}\n```"
+
+        except Exception as e:
+            return f"```\nError rendering graph diff: {e}\n```"
+
+    def render_command_output(
+        self, event: CommandExecuted, show_command: bool = True
+    ) -> str:
+        """Render command execution output as markdown.
+
+        Args:
+            event: CommandExecuted event from execution state.
+            show_command: Whether to show the command that was executed.
+
+        Returns:
+            Markdown string with command output.
+        """
+        md_parts = []
+
+        if show_command:
+            md_parts.append(f"```shell\n$ {event.command}\n```")
+            md_parts.append("")
+
+        # Show stdout if present
+        if event.stdout:
+            md_parts.append("```")
+            md_parts.append(event.stdout.rstrip())
+            md_parts.append("```")
+            md_parts.append("")
+
+        # Skip stderr - warnings/errors are noisy in documentation
+
+        return "\n".join(md_parts)
+
+    def render_patch_applied(
+        self, event: PatchApplied, graph_diff_md: str | None = None
+    ) -> str:
+        """Render patch application event as markdown.
+
+        Args:
+            event: PatchApplied event from execution state.
+            graph_diff_md: Optional pre-rendered graph diff markdown.
+
+        Returns:
+            Markdown string describing the patch application.
+        """
+        md_parts = []
+
+        md_parts.append(f"**Applied patch:** `{event.patch_path}`")
+        md_parts.append("")
+
+        # Only show snapshot changes if they actually differ
+        if (
+            event.before_snapshot
+            and event.after_snapshot
+            and event.before_snapshot != event.after_snapshot
+        ):
+            before_short = event.before_snapshot[:8]
+            after_short = event.after_snapshot[:8]
+            md_parts.append(
+                f"Graph snapshot changed: `{before_short}...` → `{after_short}...`"
+            )
+            md_parts.append("")
+
+            # Include graph diff if provided
+            if graph_diff_md:
+                md_parts.append(graph_diff_md)
+                md_parts.append("")
+
+        return "\n".join(md_parts)
+
+    def render_graph_pushed(self, event: GraphPushed) -> str:
+        """Render graph push event as markdown.
+
+        Args:
+            event: GraphPushed event from execution state.
+
+        Returns:
+            Markdown string describing the graph push.
+        """
+        snapshot_short = event.snapshot_version[:8]
+        return f"**Graph snapshot recorded:** `{snapshot_short}...`\n\n"

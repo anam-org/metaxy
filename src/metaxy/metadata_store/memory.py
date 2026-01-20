@@ -62,6 +62,7 @@ class InMemoryMetadataStore(MetadataStore):
     # Disable auto_create_tables warning for in-memory store
     # (table creation concept doesn't apply to memory storage)
     _should_warn_auto_create_tables: bool = False
+    versioning_engine_cls = PolarsVersioningEngine
 
     def __init__(self, **kwargs: Any):
         """
@@ -72,7 +73,7 @@ class InMemoryMetadataStore(MetadataStore):
         """
         # Use tuple as key (hashable) instead of string to avoid parsing issues
         self._storage: dict[tuple[str, ...], pl.DataFrame] = {}
-        super().__init__(**kwargs, versioning_engine_cls=PolarsVersioningEngine)
+        super().__init__(**kwargs)
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for in-memory store."""
@@ -149,7 +150,7 @@ class InMemoryMetadataStore(MetadataStore):
                     # Add column with null values of the appropriate type
                     df_polars = df_polars.with_columns(
                         pl.lit(None).cast(col_dtype).alias(col_name)
-                    )  # type: ignore[arg-type,union-attr]
+                    )
 
             # Ensure column order matches by selecting columns in consistent order
             all_columns = sorted(set(existing_df.columns) | set(df_polars.columns))
@@ -176,6 +177,41 @@ class InMemoryMetadataStore(MetadataStore):
         # Remove from storage if it exists
         if storage_key in self._storage:
             del self._storage[storage_key]
+
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr] | None,
+        *,
+        current_only: bool,  # noqa: ARG002 - version filtering handled by base class
+    ) -> None:
+        """Hard delete rows by filtering them out of in-memory storage.
+
+        Args:
+            feature_key: Feature to delete from
+            filters: Narwhals filter expressions (version filter already applied by base class)
+            current_only: Not used here - version filtering handled by base class
+        """
+        storage_key = self._get_storage_key(feature_key)
+        if storage_key not in self._storage:
+            return
+
+        filter_list = list(filters or [])
+        if not filter_list:
+            del self._storage[storage_key]
+            return
+
+        df = self._storage[storage_key]
+        nw_df = nw.from_native(df, eager_only=True)
+
+        # Combine all filters with AND, then invert to keep rows not matching deletion criteria
+        combined_filter = filter_list[0]
+        for expr in filter_list[1:]:
+            combined_filter = combined_filter & expr
+        kept = nw_df.filter(~combined_filter)
+
+        if len(kept) < len(nw_df):
+            self._storage[storage_key] = kept.to_native()
 
     def read_metadata_in_store(
         self,
@@ -288,5 +324,5 @@ class InMemoryMetadataStore(MetadataStore):
         return f"InMemoryMetadataStore(status={status})"
 
     @classmethod
-    def config_model(cls) -> type[InMemoryMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def config_model(cls) -> type[InMemoryMetadataStoreConfig]:
         return InMemoryMetadataStoreConfig

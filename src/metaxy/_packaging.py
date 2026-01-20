@@ -15,7 +15,7 @@ from functools import lru_cache
 try:
     from importlib.metadata import entry_points
 except ImportError:
-    from importlib_metadata import entry_points  # type: ignore
+    from importlib_metadata import entry_points
 
 
 def detect_project_from_entrypoints(module_name: str) -> str | None:

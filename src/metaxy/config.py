@@ -7,13 +7,13 @@ import warnings
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import tomli
 from pydantic import Field as PydanticField
-from pydantic import field_validator
-from pydantic.types import ImportString
+from pydantic import PrivateAttr, field_validator, model_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -23,13 +23,66 @@ from typing_extensions import Self
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import (
-        MetadataStore,  # pyright: ignore[reportImportCycles]
+        MetadataStore,
     )
 
 T = TypeVar("T")
 
 # Pattern for ${VAR} or ${VAR:-default} syntax
 _ENV_VAR_PATTERN = re.compile(r"\$\{([^}:]+)(?::-([^}]*))?\}")
+
+
+def _collect_dict_keys(d: dict[str, Any], prefix: str = "") -> list[str]:
+    """Recursively collect all keys from a nested dict as dot-separated paths."""
+    keys = []
+    for key, value in d.items():
+        full_key = f"{prefix}.{key}" if prefix else key
+        keys.append(full_key)
+        if isinstance(value, dict):
+            keys.extend(_collect_dict_keys(value, full_key))
+    return keys
+
+
+class InvalidConfigError(Exception):
+    """Raised when Metaxy configuration is invalid.
+
+    This error includes helpful context about where the configuration was loaded from
+    and how environment variables can affect configuration.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        config_file: Path | None = None,
+    ):
+        self.config_file = config_file
+        self.base_message = message
+
+        # Build the full error message with context
+        parts = [message]
+
+        if config_file:
+            parts.append(f"Config file: {config_file}")
+
+        parts.append(
+            "Note: METAXY_* environment variables can override config file settings "
+        )
+
+        super().__init__("\n".join(parts))
+
+    @classmethod
+    def from_config(cls, config: "MetaxyConfig", message: str) -> "InvalidConfigError":
+        """Create an InvalidConfigError from a MetaxyConfig instance.
+
+        Args:
+            config: The MetaxyConfig instance that has the invalid configuration.
+            message: The error message describing what's wrong.
+
+        Returns:
+            An InvalidConfigError with context from the config.
+        """
+        return cls(message, config_file=config._config_file)
 
 
 def _expand_env_vars(value: Any) -> Any:
@@ -144,9 +197,14 @@ class StoreConfig(BaseSettings):
     model_config = SettingsConfigDict(
         extra="forbid",  # Only type and config fields allowed
         frozen=True,
+        populate_by_name=True,  # Allow both 'type' and 'type_path' in constructor
     )
 
-    type: ImportString[Any] = PydanticField(
+    # Store the import path as string (internal field)
+    # Uses alias="type" so TOML and constructor use "type"
+    # Annotated as str | type to allow passing class objects directly
+    type_path: str | type[Any] = PydanticField(
+        alias="type",
         description="Full import path to metadata store class (e.g., 'metaxy.metadata_store.duckdb.DuckDBMetadataStore')",
     )
 
@@ -154,6 +212,52 @@ class StoreConfig(BaseSettings):
         default_factory=dict,
         description="Store-specific configuration parameters (kwargs for __init__). Includes fallback_stores, database paths, connection parameters, etc.",
     )
+
+    @field_validator("type_path", mode="before")
+    @classmethod
+    def _coerce_type_to_string(cls, v: Any) -> str:
+        """Accept both string import paths and class objects.
+
+        Converts class objects to their full import path string.
+        """
+        if isinstance(v, str):
+            return v
+        if isinstance(v, type):
+            # Convert class to import path string
+            return f"{v.__module__}.{v.__qualname__}"
+        raise ValueError(f"type must be a string or class, got {type(v).__name__}")
+
+    @cached_property
+    def type(self) -> type[Any]:
+        """Get the store class, importing lazily on first access.
+
+        Returns:
+            The metadata store class
+
+        Raises:
+            ImportError: If the store class cannot be imported
+        """
+        import importlib
+
+        from pydantic import TypeAdapter
+        from pydantic.types import ImportString
+
+        adapter: TypeAdapter[type[Any]] = TypeAdapter(ImportString[Any])
+        try:
+            return adapter.validate_python(self.type_path)
+        except Exception:
+            # Pydantic's ImportString swallows the underlying ImportError for other packages/modules,
+            # showing a potentially misleading message.
+            # Try a direct import to surface the real error (e.g., missing dependency).
+            module_path, _, _ = str(self.type_path).rpartition(".")
+            if module_path:
+                try:
+                    importlib.import_module(module_path)
+                except ImportError as import_err:
+                    raise ImportError(
+                        f"Cannot import '{self.type_path}': {import_err}"
+                    ) from import_err
+            raise
 
 
 class PluginConfig(BaseSettings):
@@ -202,7 +306,6 @@ class MetaxyConfig(BaseSettings):
         config = MetaxyConfig.load()
         ```
 
-
     Example: Getting a configured metadata store
         ```py
         store = config.get_store("prod")
@@ -215,6 +318,8 @@ class MetaxyConfig(BaseSettings):
         ```
 
     The default store is `"dev"`; `METAXY_STORE` can be used to override it.
+
+    Incomplete store configurations are filtered out if the store type is not set.
     """
 
     model_config = SettingsConfigDict(
@@ -232,6 +337,46 @@ class MetaxyConfig(BaseSettings):
         default_factory=dict,
         description="Named store configurations",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _filter_incomplete_stores(cls, data: Any) -> Any:
+        """Filter out incomplete store configs (e.g. from random environment variables).
+
+        When env vars like METAXY_STORES__PROD__CONFIG__CONNECTION_STRING are set
+        without METAXY_STORES__PROD__TYPE, pydantic-settings creates a partial dict
+        that would fail validation. This validator removes such incomplete entries
+        and emits a warning.
+        """
+        if not isinstance(data, dict) or "stores" not in data:
+            return data
+
+        stores = data["stores"]
+
+        if not isinstance(stores, dict):
+            return data
+
+        complete_stores = {}
+
+        for name, config in stores.items():
+            is_complete = isinstance(config, StoreConfig) or (
+                isinstance(config, dict) and ("type" in config or "type_path" in config)
+            )
+            if is_complete:
+                complete_stores[name] = config
+            else:
+                fields = _collect_dict_keys(config) if isinstance(config, dict) else []
+                fields_hint = f" (has fields: {', '.join(fields)})" if fields else ""
+                warnings.warn(
+                    f"Ignoring incomplete store config '{name}': missing required 'type' field{fields_hint}. "
+                    f"This is typically caused by environment variables.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        data["stores"] = complete_stores
+
+        return data
 
     migrations_dir: str = PydanticField(
         default=".metaxy/migrations",
@@ -269,6 +414,17 @@ class MetaxyConfig(BaseSettings):
         description="Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
     )
 
+    # Private attribute to track which config file was used (set by load())
+    _config_file: Path | None = PrivateAttr(default=None)
+
+    @property
+    def config_file(self) -> Path | None:
+        """The config file path used to load this configuration.
+
+        Returns None if the config was created directly (not via load()).
+        """
+        return self._config_file
+
     def _load_plugins(self) -> None:
         """Load enabled plugins. Must be called after config is set."""
         for name, module in BUILTIN_PLUGINS.items():
@@ -276,8 +432,9 @@ class MetaxyConfig(BaseSettings):
                 try:
                     __import__(module)
                 except Exception as e:
-                    raise ValueError(
-                        f"Failed to load Metaxy plugin '{name}' (defined in \"ext\" config field): {e}"
+                    raise InvalidConfigError.from_config(
+                        self,
+                        f"Failed to load Metaxy plugin '{name}' (defined in \"ext\" config field): {e}",
                     ) from e
 
     @field_validator("project")
@@ -362,16 +519,23 @@ class MetaxyConfig(BaseSettings):
         return (init_settings, env_settings, toml_settings)
 
     @classmethod
-    def get(cls, *, _allow_default_config: bool = False) -> "MetaxyConfig":
+    def get(
+        cls, *, load: bool = False, _allow_default_config: bool = False
+    ) -> "MetaxyConfig":
         """Get the current Metaxy configuration.
 
         Args:
+            load: If True and config is not set, calls `MetaxyConfig.load()` to
+                load configuration from file. Useful for plugins that need config
+                but don't want to require manual initialization.
             _allow_default_config: Internal parameter. When True, returns default
                 config without warning if global config is not set. Used by methods
                 like `get_plugin` that may be called at import time.
         """
         cfg = _metaxy_config.get()
         if cfg is None:
+            if load:
+                return cls.load()
             if not _allow_default_config:
                 warnings.warn(
                     UserWarning(
@@ -482,7 +646,7 @@ class MetaxyConfig(BaseSettings):
             # Customize sources to use custom TOML file
             original_method = cls.settings_customise_sources
 
-            @classmethod  # type: ignore[misc]
+            @classmethod
             def custom_sources(
                 cls_inner,
                 settings_cls,
@@ -495,12 +659,16 @@ class MetaxyConfig(BaseSettings):
                 return (init_settings, env_settings, toml_settings)
 
             # Temporarily replace method
-            cls.settings_customise_sources = custom_sources  # type: ignore[assignment]
+            cls.settings_customise_sources = custom_sources  # ty: ignore[invalid-assignment]
             config = cls()
-            cls.settings_customise_sources = original_method  # type: ignore[method-assign]
+            cls.settings_customise_sources = original_method  # ty: ignore[invalid-assignment]
+            # Store the resolved config file path
+            config._config_file = toml_path.resolve()
         else:
             # Use default sources (auto-discovery + env vars)
             config = cls()
+            # No config file used
+            config._config_file = None
 
         cls.set(config)
 
@@ -598,25 +766,35 @@ class MetaxyConfig(BaseSettings):
         from metaxy.versioning.types import HashAlgorithm
 
         if len(self.stores) == 0:
-            raise ValueError(
-                "No Metaxy stores available. They should be configured in metaxy.toml|pyproject.toml or via environment variables."
+            raise InvalidConfigError.from_config(
+                self,
+                "No Metaxy stores available. They should be configured in metaxy.toml|pyproject.toml or via environment variables.",
             )
 
         name = name or self.store
 
         if name not in self.stores:
-            raise ValueError(
-                f"Store '{name}' not found in config. "
-                f"Available stores: {list(self.stores.keys())}"
+            raise InvalidConfigError.from_config(
+                self,
+                f"Store '{name}' not found in config. Available stores: {list(self.stores.keys())}",
             )
 
         store_config = self.stores[name]
 
-        # Get store class (already imported by Pydantic's ImportString)
-        store_class = store_config.type
+        # Get store class (lazily imported on first access)
+        try:
+            store_class = store_config.type
+        except Exception as e:
+            raise InvalidConfigError.from_config(
+                self,
+                f"Failed to import store class '{store_config.type_path}' for store '{name}': {e}",
+            ) from e
 
         if expected_type is not None and not issubclass(store_class, expected_type):
-            raise TypeError(f"Store '{name}' is not of type '{expected_type.__name__}'")
+            raise InvalidConfigError.from_config(
+                self,
+                f"Store '{name}' is not of type '{expected_type.__name__}'",
+            )
 
         # Extract configuration and prepare for typed config model
         config_copy = store_config.config.copy()
@@ -653,12 +831,27 @@ class MetaxyConfig(BaseSettings):
             else:
                 extra_kwargs[key] = value
 
-        typed_config = config_model_cls.model_validate(config_copy)
+        try:
+            typed_config = config_model_cls.model_validate(config_copy)
+        except Exception as e:
+            raise InvalidConfigError.from_config(
+                self,
+                f"Failed to validate config for store '{name}': {e}",
+            ) from e
 
         # Instantiate using from_config() - fallback stores are resolved via MetaxyConfig.get()
         # Use self.use() to ensure this config is available for fallback resolution
-        with self.use():
-            store = store_class.from_config(typed_config, **extra_kwargs)
+        try:
+            with self.use():
+                store = store_class.from_config(typed_config, **extra_kwargs)
+        except InvalidConfigError:
+            # Don't re-wrap InvalidConfigError (e.g., from nested fallback store resolution)
+            raise
+        except Exception as e:
+            raise InvalidConfigError.from_config(
+                self,
+                f"Failed to instantiate store '{name}' ({store_class.__name__}): {e}",
+            ) from e
 
         # Verify the store actually uses the hash algorithm we configured
         # (in case a store subclass overrides the default or ignores the parameter)
@@ -667,14 +860,18 @@ class MetaxyConfig(BaseSettings):
             configured_hash_algorithm is not None
             and store.hash_algorithm != configured_hash_algorithm
         ):
-            raise ValueError(
+            raise InvalidConfigError.from_config(
+                self,
                 f"Store '{name}' ({store_class.__name__}) was configured with "
                 f"hash_algorithm='{configured_hash_algorithm.value}' but is using "
                 f"'{store.hash_algorithm.value}'. The store class may have overridden "
-                f"the hash algorithm. All stores must use the same hash algorithm."
+                f"the hash algorithm. All stores must use the same hash algorithm.",
             )
 
         if expected_type is not None and not isinstance(store, expected_type):
-            raise TypeError(f"Store '{name}' is not of type '{expected_type.__name__}'")
+            raise InvalidConfigError.from_config(
+                self,
+                f"Store '{name}' is not of type '{expected_type.__name__}'",
+            )
 
         return store

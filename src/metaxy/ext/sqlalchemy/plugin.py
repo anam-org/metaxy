@@ -43,11 +43,8 @@ def create_system_tables(
     Returns:
         Tuple of (feature_versions_table, events_table)
     """
-    feature_versions_name = (
-        f"{table_prefix}{FEATURE_VERSIONS_KEY.table_name}"
-        if table_prefix
-        else FEATURE_VERSIONS_KEY.table_name
-    )
+    feature_versions_name = f"{table_prefix}{FEATURE_VERSIONS_KEY.table_name}"
+    events_name = f"{table_prefix}{EVENTS_KEY.table_name}"
 
     feature_versions_table = Table(
         feature_versions_name,
@@ -55,32 +52,24 @@ def create_system_tables(
         # Composite primary key
         Column("project", String, primary_key=True, index=True),
         Column("feature_key", String, primary_key=True, index=True),
-        Column(
-            METAXY_FEATURE_SPEC_VERSION,
-            String,
-            primary_key=True,
-        ),
+        Column(METAXY_FEATURE_SPEC_VERSION, String, primary_key=True),
         # Versioning columns
         Column(METAXY_FEATURE_VERSION, String, index=True),
         Column(METAXY_FULL_DEFINITION_VERSION, String, index=True),
         Column(METAXY_SNAPSHOT_VERSION, String, index=True),
         # Metadata columns
         Column("recorded_at", DateTime, index=True),
-        Column("feature_schema", String),  # JSON string
-        Column("tags", String, default="{}"),  # JSON string
-        # Additional indexes
+        Column("feature_spec", String),
+        Column("feature_schema", String),
+        Column("feature_class_path", String),
+        Column("tags", String, default="{}"),
         Index(
             f"idx_{feature_versions_name}_lookup",
             "project",
             "feature_key",
             METAXY_FEATURE_VERSION,
         ),
-    )
-
-    events_name = (
-        f"{table_prefix}{EVENTS_KEY.table_name}"
-        if table_prefix
-        else EVENTS_KEY.table_name
+        extend_existing=True,
     )
 
     events_table = Table(
@@ -93,24 +82,32 @@ def create_system_tables(
         # Event fields
         Column("event_type", String, index=True),
         Column("feature_key", String, nullable=True, index=True),
-        Column("payload", String, default=""),  # JSON string
-        # Additional indexes
+        Column("payload", String, default=""),
         Index(
             f"idx_{events_name}_lookup",
             "project",
             "execution_id",
             "event_type",
         ),
+        extend_existing=True,
     )
 
     return feature_versions_table, events_table
 
 
-def _get_store_sqlalchemy_url(store: IbisMetadataStore) -> str:
+def _get_store_sqlalchemy_url(
+    store: IbisMetadataStore,
+    protocol: str | None = None,
+    port: int | None = None,
+) -> str:
     """Get SQLAlchemy URL from an IbisMetadataStore instance.
 
     Args:
         store: IbisMetadataStore instance
+        protocol: Optional protocol (drivername) to replace the existing one.
+            Useful when Ibis uses a different protocol than SQLAlchemy requires.
+        port: Optional port to replace the existing one. Useful when the
+            SQLAlchemy driver uses a different port than Ibis.
 
     Returns:
         SQLAlchemy connection URL string
@@ -121,7 +118,17 @@ def _get_store_sqlalchemy_url(store: IbisMetadataStore) -> str:
     if not store.sqlalchemy_url:
         raise ValueError("IbisMetadataStore has an empty `sqlalchemy_url`.")
 
-    return store.sqlalchemy_url
+    base_url = store.sqlalchemy_url
+
+    if protocol is None and port is None:
+        return base_url
+
+    from sqlalchemy.engine.url import make_url
+
+    url = make_url(base_url)
+    url = url.set(drivername=protocol, port=port)
+
+    return url.render_as_string(hide_password=False)
 
 
 def _get_system_metadata(
@@ -144,6 +151,8 @@ def _get_system_metadata(
 
 def get_system_slqa_metadata(
     store: IbisMetadataStore,
+    protocol: str | None = None,
+    port: int | None = None,
 ) -> tuple[str, MetaData]:
     """Get SQLAlchemy URL and Metaxy system tables metadata for a metadata store.
 
@@ -152,14 +161,21 @@ def get_system_slqa_metadata(
 
     Args:
         store: IbisMetadataStore instance
+        protocol: Optional protocol (drivername) to replace the existing one in the URL.
+            Useful when Ibis uses a different protocol than SQLAlchemy requires.
+        port: Optional port to replace the existing one in the URL.
+            Useful when the SQLAlchemy driver uses a different port than Ibis.
 
     Returns:
         Tuple of (sqlalchemy_url, system_metadata)
 
     Raises:
         ValueError: If store's sqlalchemy_url is empty
+
+    Note:
+        Metadata stores do their best at providing the correct `sqlalchemy_url`, so you typically don't need to modify the output of this function.
     """
-    url = _get_store_sqlalchemy_url(store)
+    url = _get_store_sqlalchemy_url(store, protocol=protocol, port=port)
     metadata = _get_system_metadata(table_prefix=store._table_prefix)
     return url, metadata
 
@@ -191,7 +207,7 @@ def _get_features_metadata(
     """
     from metaxy.models.feature import FeatureGraph
 
-    config = MetaxyConfig.get()
+    config = MetaxyConfig.get(load=True)
 
     if project is None:
         project = config.project
@@ -258,23 +274,16 @@ def _inject_constraints(
     """
     from sqlalchemy import PrimaryKeyConstraint
 
-    from metaxy.models.constants import METAXY_CREATED_AT, METAXY_DATA_VERSION
+    from metaxy.models.constants import METAXY_CREATED_AT, METAXY_FEATURE_VERSION
 
-    # Composite key/index columns: id_columns + metaxy_created_at + metaxy_data_version
-    key_columns = list(spec.id_columns) + [METAXY_CREATED_AT, METAXY_DATA_VERSION]
+    # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
+    key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_CREATED_AT]
 
     if inject_primary_key:
-        # Add primary key constraint
-        pk_constraint = PrimaryKeyConstraint(*key_columns, name="metaxy_pk")
-        table.append_constraint(pk_constraint)
+        table.append_constraint(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))
 
     if inject_index:
-        # Add composite index
-        idx = Index(
-            "metaxy_idx",
-            *key_columns,
-        )
-        table.append_constraint(idx)
+        table.append_constraint(Index("metaxy_idx", *key_columns))
 
 
 def filter_feature_sqla_metadata(
@@ -284,6 +293,8 @@ def filter_feature_sqla_metadata(
     filter_by_project: bool = True,
     inject_primary_key: bool | None = None,
     inject_index: bool | None = None,
+    protocol: str | None = None,
+    port: int | None = None,
 ) -> tuple[str, MetaData]:
     """Get SQLAlchemy URL and feature table metadata for a metadata store.
 
@@ -302,6 +313,10 @@ def filter_feature_sqla_metadata(
                            If False, do not inject. If None, uses config default.
         inject_index: If True, inject composite index.
                      If False, do not inject. If None, uses config default.
+        protocol: Optional protocol to replace the existing one in the URL.
+            Useful when Ibis uses a different protocol than SQLAlchemy requires.
+        port: Optional port to replace the existing one in the URL.
+            Useful when the SQLAlchemy driver uses a different port than Ibis.
 
     Returns:
         Tuple of (sqlalchemy_url, filtered_metadata)
@@ -309,6 +324,9 @@ def filter_feature_sqla_metadata(
     Raises:
         ValueError: If store's sqlalchemy_url is empty
         ImportError: If source_metadata is None and SQLModel is not installed
+
+    Note:
+        Metadata stores do their best at providing the correct `sqlalchemy_url`, so you typically don't need to modify the output of this function.
 
     Example: Basic Usage
 
@@ -341,7 +359,7 @@ def filter_feature_sqla_metadata(
         url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata)
         ```
     """
-    url = _get_store_sqlalchemy_url(store)
+    url = _get_store_sqlalchemy_url(store, protocol=protocol, port=port)
     metadata = _get_features_metadata(
         source_metadata=source_metadata,
         store=store,

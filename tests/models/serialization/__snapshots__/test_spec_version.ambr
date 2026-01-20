@@ -1,14 +1,14 @@
 # serializer version: 1
 # name: test_feature_spec_version_deterministic
-  'eded67864d72c8aa6a753ec90f12371feb7c2200747672aaa80cb5d404a5324f'
+  'a1324dfb386fb264f3dd53c841672277c34177558418f20a0aa8ee007e73c06b'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  '94f31edd238f91502dabe67679c38597242d3fcea87ba36aa0ccc106a83270c0'
+  '7758641505115c2ea87c4d136c4dacbb183db886aa9290c633bf2c90babe85a9'
 # ---
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'metaxy_feature_spec_version': '72471e8bfba84439e4814b65bee1589a56f702592f4068ef30c61167bb6781aa',
+    'metaxy_feature_spec_version': '4ea1c65aa5270149fa2625b8f4e5df5c1bb760635541c634dab843f3d665be7e',
     'metaxy_feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
     'metaxy_snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
   })
@@ -17,6 +17,7 @@
   dict({
     'feature_class_path': 'test_spec_version.SnapshotFeature',
     'feature_schema': dict({
+      'additionalProperties': False,
       'properties': dict({
         'metaxy_created_at': dict({
           'anyOf': list([
@@ -133,35 +134,25 @@
           'code_version': '1',
           'deps': list([
           ]),
-          'key': list([
-            'data',
-          ]),
+          'key': 'data',
         }),
       ]),
       'id_columns': list([
         'sample_uid',
       ]),
-      'key': list([
-        'snapshot',
-        'test',
-      ]),
-      'lineage': dict({
-        'relationship': dict({
-          'type': '1:1',
-        }),
-      }),
+      'key': 'snapshot/test',
       'metadata': dict({
       }),
     }),
-    'metaxy_feature_spec_version': 'cc4b71667ebc22d4c7c90991c87fc89547645468b911e85a0f818d634b5c5303',
+    'metaxy_feature_spec_version': '26736b45eeb37186ef6678426b85f3265cdba9eb5b782a8f41496123d5649cd4',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
-    'metaxy_full_definition_version': '315eea6d509dedf5e3ebceff6c9733c9361efc9ce101bba4602b3ae0ce08efa6',
+    'metaxy_full_definition_version': '9a61cb119a3953cfc47a366ea0abc789635c20f89ff5a866437186085d5cd665',
     'project': 'test',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  '10e301186731f6b21b28148d88bcb3bf5d9474951bae3091139f38839bd3d15a'
+  '45f321c88cda17c6af8c8a8a431e8faca5f4cd0dff9ac7f74adc76131a8abb72'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  'd4f1d3b37efdcdedacfc0a087f22627b00f151cc8ef19295579767dae03f055c'
+  'dac7f36d487dd0e1243482b57fb91892eedf1ee2e49eb7ef7b8d35138df8bc76'
 # ---

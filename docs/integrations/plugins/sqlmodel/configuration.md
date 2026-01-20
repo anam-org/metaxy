@@ -1,3 +1,8 @@
+---
+title: "SQLModel Configuration"
+description: "Configuration options for the SQLModel plugin."
+---
+
 # SQLModel Configuration
 
 <!-- dprint-ignore-start -->

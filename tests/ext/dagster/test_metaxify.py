@@ -121,7 +121,7 @@ class TestMetaxifyBasic:
             pass
 
         # Should have metaxy kind injected
-        asset_spec = list(my_asset.specs)[0]
+        asset_spec = list(my_asset.specs)[0]  # ty: ignore[unresolved-attribute]
         assert DAGSTER_METAXY_KIND in asset_spec.kinds
 
     def test_metaxify_injects_metaxy_kind(self, upstream_feature: type[mx.BaseFeature]):
@@ -149,23 +149,25 @@ class TestMetaxifyBasic:
         asset_spec = list(my_asset.specs)[0]
         assert DAGSTER_METAXY_KIND not in asset_spec.kinds
 
-    def test_metaxify_skips_kind_when_already_3_kinds(
+    def test_metaxify_adds_kind_with_existing_kinds(
         self, upstream_feature: type[mx.BaseFeature]
     ):
-        """Test that kind injection is skipped when asset already has 3 kinds."""
+        """Test that kind injection works when asset already has some kinds."""
 
         @metaxify()
         @dg.asset(
             metadata={"metaxy/feature": "test/upstream"},
-            kinds={"python", "sql", "dbt"},
+            kinds={"python", "sql"},
         )
         def my_asset():
             pass
 
         asset_spec = list(my_asset.specs)[0]
-        # Should have original 3 kinds, not metaxy
+        # Should have original 2 kinds plus metaxy
         assert len(asset_spec.kinds) == 3
-        assert DAGSTER_METAXY_KIND not in asset_spec.kinds
+        assert DAGSTER_METAXY_KIND in asset_spec.kinds
+        assert "python" in asset_spec.kinds
+        assert "sql" in asset_spec.kinds
 
     def test_metaxify_injects_feature_info(
         self, upstream_feature: type[mx.BaseFeature]
@@ -183,7 +185,7 @@ class TestMetaxifyBasic:
         info = asset_spec.metadata[DAGSTER_METAXY_INFO_METADATA_KEY]
         assert "feature" in info
         assert "metaxy" in info
-        assert info["feature"]["spec"]["key"] == ["test", "upstream"]
+        assert info["feature"]["spec"]["key"] == "test/upstream"
 
     def test_metaxify_injects_feature_info_with_metadata(
         self, feature_with_group_name: type[mx.BaseFeature]
@@ -560,7 +562,7 @@ class TestMetaxifyDeps:
             pass
 
         # Downstream asset should have upstream feature key as a dependency
-        downstream_spec = list(downstream_asset.specs)[0]
+        downstream_spec = list(downstream_asset.specs)[0]  # ty: ignore[unresolved-attribute]
         dep_keys = {dep.asset_key for dep in downstream_spec.deps}
         assert dg.AssetKey(["test", "upstream"]) in dep_keys
 
@@ -914,7 +916,7 @@ class TestMetaxifyMaterialization:
             with store:
                 upstream_data = store.read_metadata(upstream_feature).collect()
                 captured_data["rows"] = len(upstream_data)
-                captured_data["ids"] = upstream_data.to_native()["id"].to_list()
+                captured_data["ids"] = upstream_data["id"].to_list()
             return pl.DataFrame(
                 {
                     "id": ["result"],
@@ -988,7 +990,7 @@ class TestMetaxifyMaterialization:
         def downstream_asset(upstream_data):
             collected = upstream_data.collect()
             captured_data["rows"] = len(collected)
-            captured_data["ids"] = collected.to_native()["id"].to_list()
+            captured_data["ids"] = collected["id"].to_list()
             return pl.DataFrame(
                 {
                     "id": ["result"],
@@ -1212,7 +1214,7 @@ class TestMetaxifyDescription:
         def my_asset():
             pass
 
-        asset_spec = list(my_asset.specs)[0]
+        asset_spec = list(my_asset.specs)[0]  # ty: ignore[unresolved-attribute]
         assert asset_spec.description is not None
         assert "feature documentation" in asset_spec.description
         assert asset_spec.description == snapshot
@@ -1231,7 +1233,7 @@ class TestMetaxifyDescription:
         def my_asset():
             pass
 
-        asset_spec = list(my_asset.specs)[0]
+        asset_spec = list(my_asset.specs)[0]  # ty: ignore[unresolved-attribute]
         assert asset_spec.description == "My custom description"
 
     def test_metaxify_no_description_without_docstring(
@@ -1501,7 +1503,7 @@ class TestMetaxifyWithInputDefinitions:
             pass
 
         # Should work even with key replacement
-        assert dg.AssetKey(["custom", "asset", "key"]) in original_key_asset.keys
+        assert dg.AssetKey(["custom", "asset", "key"]) in original_key_asset.keys  # ty: ignore[unresolved-attribute]
 
     def test_metaxify_with_asset_in_materializes(
         self,
@@ -1821,8 +1823,12 @@ class TestMetaxifyColumnLineage:
             key=["test", "agg_downstream"],
             id_columns=["user_id"],  # Aggregated to user level
             fields=["total"],
-            deps=[mx.FeatureDep(feature=UpstreamFeature)],
-            lineage=mx.LineageRelationship.aggregation(on=["user_id"]),
+            deps=[
+                mx.FeatureDep(
+                    feature=UpstreamFeature,
+                    lineage=mx.LineageRelationship.aggregation(on=["user_id"]),
+                )
+            ],
         )
 
         class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
@@ -1864,8 +1870,12 @@ class TestMetaxifyColumnLineage:
             key=["test", "exp_downstream"],
             id_columns=["doc_id", "chunk_id"],  # Expanded with chunk_id
             fields=["chunk_text"],
-            deps=[mx.FeatureDep(feature=UpstreamFeature)],
-            lineage=mx.LineageRelationship.expansion(on=["doc_id"]),
+            deps=[
+                mx.FeatureDep(
+                    feature=UpstreamFeature,
+                    lineage=mx.LineageRelationship.expansion(on=["doc_id"]),
+                )
+            ],
         )
 
         class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):

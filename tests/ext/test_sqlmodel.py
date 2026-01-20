@@ -154,7 +154,7 @@ def test_sqlmodel_custom_tablename() -> None:
                 fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
             ),
         ):
-            __tablename__: str = "my_custom_table"  # pyright: ignore[reportIncompatibleVariableOverride]
+            __tablename__: str = "my_custom_table"
             uid: str = Field(primary_key=True)
             path: str
 
@@ -180,7 +180,7 @@ def test_automatic_tablename() -> None:
         metadata_col: str
 
     # Should automatically be set to "my__auto__feature"
-    tablename = str(AutoTableFeature.__tablename__)  # type: ignore[arg-type]
+    tablename = str(AutoTableFeature.__tablename__)
     assert tablename == "my__auto__feature"
 
     # Should also match the table_name() method
@@ -1430,7 +1430,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
             ),
         ):
             uid: str = Field(primary_key=True)
-            feature_version: str = Field()  # This SHOULD conflict!  # pyright: ignore[reportIncompatibleMethodOverride]
+            feature_version: str = Field()  # This SHOULD conflict!
 
         # If we get here, it means SQLModel didn't protect the column
         # which would be unexpected
@@ -1617,7 +1617,7 @@ def test_sqlmodel_rename_validation_with_store(
             ],
         ),
     ):
-        sample_uid: int = Field(primary_key=True)  # pyright: ignore[reportIncompatibleVariableOverride]
+        sample_uid: int = Field(primary_key=True)
         status: str
         priority: int
         description: str
@@ -1640,7 +1640,7 @@ def test_sqlmodel_rename_validation_with_store(
             ],
         ),
     ):
-        sample_uid: int = Field(primary_key=True)  # pyright: ignore[reportIncompatibleVariableOverride]
+        sample_uid: int = Field(primary_key=True)
         status: str  # Own status field
         result: str
 
@@ -1706,7 +1706,7 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
 
     Verifies that:
     - When explicitly enabled, composite PK is injected
-    - PK includes: id_columns + metaxy_created_at + metaxy_data_version
+    - PK includes: metaxy_feature_version + id_columns + metaxy_created_at
     - Works with both default and custom id_columns
     """
 
@@ -1724,7 +1724,7 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
 
     # Check that __table_args__ contains PrimaryKeyConstraint
     assert hasattr(DefaultPKFeature, "__table_args__")
-    table_args = DefaultPKFeature.__table_args__  # pyright: ignore[reportAttributeAccessIssue]
+    table_args = DefaultPKFeature.__table_args__
     assert isinstance(table_args, tuple)
 
     # Find the PrimaryKeyConstraint
@@ -1739,9 +1739,9 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
     # Check columns in constraint
     column_names = [col.name for col in pk_constraint.columns]
     assert column_names == [
+        "metaxy_feature_version",
         "sample_uid",
         "metaxy_created_at",
-        "metaxy_data_version",
     ]
 
 
@@ -1769,7 +1769,7 @@ def test_inject_primary_key_false_skips_composite_pk() -> None:
     if hasattr(NoPKFeature, "__table_args__"):
         from sqlalchemy import PrimaryKeyConstraint
 
-        table_args = NoPKFeature.__table_args__  # pyright: ignore[reportAttributeAccessIssue]
+        table_args = NoPKFeature.__table_args__
         if isinstance(table_args, tuple):
             pk_constraints = [
                 arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
@@ -1784,7 +1784,7 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
 
     Verifies that:
     - Composite PK is created from spec.id_columns (not hardcoded column names)
-    - PK includes: custom id_columns + metaxy_created_at + metaxy_data_version
+    - PK includes: metaxy_feature_version + custom id_columns + metaxy_created_at
     - Works with multi-column id_columns
     """
 
@@ -1804,7 +1804,7 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
 
     # Check that __table_args__ contains PrimaryKeyConstraint
     assert hasattr(CustomIDFeature, "__table_args__")
-    table_args = CustomIDFeature.__table_args__  # pyright: ignore[reportAttributeAccessIssue]
+    table_args = CustomIDFeature.__table_args__
     assert isinstance(table_args, tuple)
 
     # Find the PrimaryKeyConstraint
@@ -1819,10 +1819,10 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
     # Check columns in constraint - should use custom id_columns from spec
     column_names = [col.name for col in pk_constraint.columns]
     assert column_names == [
+        "metaxy_feature_version",
         "user_id",  # From spec.id_columns
         "session_id",  # From spec.id_columns
         "metaxy_created_at",
-        "metaxy_data_version",
     ]
 
 
@@ -1853,5 +1853,5 @@ def test_sqlmodel_has_materialization_id_field() -> None:
     # The actual column name mapping happens through SQLModel's sa_column_kwargs
     # which is processed when the table is created
     if hasattr(TestFeature, "__table__"):
-        table_columns = {col.name for col in TestFeature.__table__.columns}  # pyright: ignore
+        table_columns = {col.name for col in TestFeature.__table__.columns}
         assert METAXY_MATERIALIZATION_ID in table_columns

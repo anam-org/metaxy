@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 import narwhals as nw
-import polars as pl
 from narwhals.typing import Frame
 from pydantic import Field
 from typing_extensions import Self
@@ -96,6 +95,7 @@ class LanceDBMetadataStore(MetadataStore):
     """
 
     _should_warn_auto_create_tables = False
+    versioning_engine_cls = PolarsVersioningEngine
 
     def __init__(
         self,
@@ -142,7 +142,6 @@ class LanceDBMetadataStore(MetadataStore):
         super().__init__(
             fallback_stores=fallback_stores,
             auto_create_tables=True,
-            versioning_engine_cls=PolarsVersioningEngine,
             **kwargs,
         )
 
@@ -242,14 +241,14 @@ class LanceDBMetadataStore(MetadataStore):
             True if table exists, False otherwise
         """
         try:
-            self.conn.open_table(table_name)  # type: ignore[attr-defined]
+            self.conn.open_table(table_name)
             return True
         except (ValueError, FileNotFoundError):
             # LanceDB raises ValueError when table doesn't exist
             return False
 
     def _get_table(self, table_name: str):
-        return self.conn.open_table(table_name)  # type: ignore[attr-defined]
+        return self.conn.open_table(table_name)
 
     # ===== MetadataStore abstract methods =====
 
@@ -292,29 +291,11 @@ class LanceDBMetadataStore(MetadataStore):
 
         table_name = self._table_name(feature_key)
 
-        # LanceDB supports both Polars DataFrames and Arrow tables directly
-        # Try Polars first (native integration), fall back to Arrow if needed
-        try:
-            if self._table_exists(table_name):
-                table = self._get_table(table_name)
-                # Use Polars DataFrame directly - LanceDB handles conversion
-                table.add(df_polars)  # type: ignore[attr-defined]
-            else:
-                # Create table from Polars DataFrame - LanceDB handles schema
-                self.conn.create_table(table_name, data=df_polars)  # type: ignore[attr-defined]
-        except TypeError as exc:
-            if not self._should_fallback_to_arrow(exc):
-                raise
-            # Defensive fallback: Modern LanceDB (>=0.3) accepts Polars DataFrames natively,
-            # but fall back to Arrow if an older version or edge case doesn't support it.
-            # This ensures compatibility across LanceDB versions.
-            logger.debug("Falling back to Arrow format for LanceDB write: %s", exc)
-            arrow_table = df_polars.to_arrow()
-            if self._table_exists(table_name):
-                table = self._get_table(table_name)
-                table.add(arrow_table)  # type: ignore[attr-defined]
-            else:
-                self.conn.create_table(table_name, data=arrow_table)  # type: ignore[attr-defined]
+        if self._table_exists(table_name):
+            table = self._get_table(table_name)
+            table.add(df_polars)
+        else:
+            self.conn.create_table(table_name, data=df_polars)
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop Lance table for feature.
@@ -327,7 +308,50 @@ class LanceDBMetadataStore(MetadataStore):
         """
         table_name = self._table_name(feature_key)
         if self._table_exists(table_name):
-            self.conn.drop_table(table_name)  # type: ignore[attr-defined]
+            self.conn.drop_table(table_name)
+
+    def _delete_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        filters: Sequence[nw.Expr] | None,
+        *,
+        current_only: bool,
+    ) -> None:
+        """Hard deletion for LanceDB. Calls the delete method on the Lance table.
+
+        Args:
+            feature_key: Feature to delete from
+            filter_expr: Narwhals expression to select rows to delete
+        """
+        table_name = self._table_name(feature_key)
+        table = self._get_table(table_name)
+
+        # If no filters provided, delete all rows
+        if not filters:
+            table.delete()
+            return
+
+        # LanceDB's delete() API requires a single SQL WHERE clause string,
+        # so combine multiple filter expressions into one using all_horizontal
+        combined_filter = nw.all_horizontal(list(filters), ignore_nulls=False)
+
+        # Convert Narwhals expression to SQL WHERE clause for LanceDB.
+        # LanceDB requires unquoted identifiers, so we use the unquote_identifiers transform.
+        from metaxy.metadata_store.utils import (
+            narwhals_expr_to_sql_predicate,
+            unquote_identifiers,
+        )
+
+        schema = self.read_feature_schema_from_store(feature_key)
+        filter_str = narwhals_expr_to_sql_predicate(
+            combined_filter,
+            schema,
+            dialect="datafusion",
+            extra_transforms=unquote_identifiers(),
+        )
+
+        # Use native LanceDB delete for efficient in-place deletion
+        table.delete(filter_str)
 
     def read_metadata_in_store(
         self,
@@ -358,10 +382,9 @@ class LanceDBMetadataStore(MetadataStore):
             return None
 
         table = self._get_table(table_name)
-        # https://github.com/lancedb/lancedb/issues/1539
-        # Fall back to eager Arrow conversion until LanceDB issue #1539 is resolved.
-        arrow_table = table.to_arrow()
-        pl_lazy = pl.DataFrame(arrow_table).lazy()
+        # LanceDB's to_polars() returns a Polars LazyFrame directly
+        # (fixed in Polars via https://github.com/pola-rs/polars/pull/25654)
+        pl_lazy = table.to_polars()
         nw_lazy = nw.from_native(pl_lazy)
 
         if filters:
@@ -372,13 +395,6 @@ class LanceDBMetadataStore(MetadataStore):
 
         return nw_lazy
 
-    @staticmethod
-    def _should_fallback_to_arrow(exc: TypeError) -> bool:
-        """Return True when TypeError likely originates from Polars support gaps."""
-        message = str(exc).lower()
-        polars_markers = ("polars", "dataframe", "lazyframe", "data frame")
-        return any(marker in message for marker in polars_markers)
-
     # Display ------------------------------------------------------------------
 
     def display(self) -> str:
@@ -387,5 +403,5 @@ class LanceDBMetadataStore(MetadataStore):
         return f"LanceDBMetadataStore(path={path})"
 
     @classmethod
-    def config_model(cls) -> type[LanceDBMetadataStoreConfig]:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def config_model(cls) -> type[LanceDBMetadataStoreConfig]:
         return LanceDBMetadataStoreConfig

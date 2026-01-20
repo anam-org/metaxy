@@ -52,6 +52,11 @@ METAXY_DATA_VERSION = f"{SYSTEM_COLUMN_PREFIX}data_version"
 METAXY_CREATED_AT = f"{SYSTEM_COLUMN_PREFIX}created_at"
 """Timestamp when the metadata row was created."""
 
+METAXY_DELETED_AT = f"{SYSTEM_COLUMN_PREFIX}deleted_at"
+"""Timestamp when the metadata row was soft-deleted."""
+
+"""Temporary ordering column name used for deduplication."""
+
 METAXY_MATERIALIZATION_ID = f"{SYSTEM_COLUMN_PREFIX}materialization_id"
 """External orchestration run ID (e.g., Dagster Run ID, Airflow Run ID) for tracking pipeline executions."""
 
@@ -62,10 +67,12 @@ ALL_SYSTEM_COLUMNS = frozenset(
         METAXY_PROVENANCE_BY_FIELD,
         METAXY_PROVENANCE,
         METAXY_FEATURE_VERSION,
+        METAXY_FEATURE_SPEC_VERSION,
         METAXY_SNAPSHOT_VERSION,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
         METAXY_CREATED_AT,
+        METAXY_DELETED_AT,
         METAXY_MATERIALIZATION_ID,
     }
 )
@@ -75,10 +82,25 @@ ALL_SYSTEM_COLUMNS = frozenset(
 _DROPPABLE_COLUMNS = frozenset(
     {
         METAXY_FEATURE_VERSION,
+        METAXY_FEATURE_SPEC_VERSION,
         METAXY_SNAPSHOT_VERSION,
         METAXY_CREATED_AT,
+        METAXY_DELETED_AT,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
+        METAXY_MATERIALIZATION_ID,
+    }
+)
+
+# Columns that should be dropped before joining upstream features in FeatureDepTransformer
+# These are NOT needed for provenance calculation and would cause column name conflicts
+# when joining 3+ upstream features (e.g., metaxy_created_at_right already exists error)
+_COLUMNS_TO_DROP_BEFORE_JOIN = frozenset(
+    {
+        METAXY_FEATURE_VERSION,
+        METAXY_FEATURE_SPEC_VERSION,
+        METAXY_SNAPSHOT_VERSION,
+        METAXY_CREATED_AT,
         METAXY_MATERIALIZATION_ID,
     }
 )

@@ -1,3 +1,8 @@
+---
+title: "Graph API"
+description: "API reference for FeatureGraph."
+---
+
 # Feature Graph
 
 `FeatureGraph` is a global "God" object that holds all the features loaded by Metaxy via the [feature discovery](../../../guide/learn/feature-discovery.md) mechanism.

@@ -1,3 +1,8 @@
+---
+title: "LanceDB API Reference"
+description: "API reference for LanceDBMetadataStore."
+---
+
 # LanceDB Metadata Store API
 
 ::: metaxy.metadata_store.lancedb

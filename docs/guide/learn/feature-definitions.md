@@ -1,3 +1,8 @@
+---
+title: "Feature Definitions"
+description: "Declarative feature definitions with Pydantic models."
+---
+
 # Feature System
 
 Metaxy has a declarative (defined statically at class level), expressive, flexible feature system.
@@ -6,7 +11,13 @@ It has been inspired by [Dagster](https://dagster.io/)'s Software-Defined Assets
 !!! abstract
 
     Features represent tabular **metadata**, typically containing references to external multi-modal **data** such as files, images, or videos.
-    But it can be just pure **metadata** as well.
+
+    | **Subject** | **Description** |
+    |---------|-------------|
+    | **Data** | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform. |
+    | **Metadata** | Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes. |
+
+    As an edge case, Metaxy features may also be pure **metadata** without references to external **data**.
 
 I will highlight **data** and **metadata** with bold so it really stands out.
 
@@ -32,7 +43,10 @@ It's a [Pydantic](https://docs.pydantic.dev/latest/) model.
 
     Features must have unique (across all projects) [`FeatureKey`][metaxy.FeatureKey] associated with them.
 
-    Users must provide one or more ID columns to `FeatureSpec`, telling Metaxy how to uniquely identify feature samples.
+    Users must provide one or more ID columns (1) to `FeatureSpec`, telling Metaxy how to uniquely identify feature samples.
+    { .annotate }
+
+    1. ID columns are *almost* a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).
 
 ```py
 from metaxy import BaseFeature, FeatureSpec

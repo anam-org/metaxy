@@ -1,3 +1,8 @@
+---
+title: "Dagster API Reference"
+description: "API reference for Dagster integration."
+---
+
 # Dagster Integration API
 
 [Integration docs](index.md)
@@ -48,6 +53,22 @@
       heading_level: 3
 
 ::: metaxy.ext.dagster.utils.build_feature_info_metadata
+    options:
+      heading_level: 3
+<!-- dprint-ignore-end -->
+
+## Observation Jobs
+
+<!-- dprint-ignore-start -->
+::: metaxy.ext.dagster.observation_job.build_metaxy_multi_observation_job
+    options:
+      heading_level: 3
+<!-- dprint-ignore-end -->
+
+---
+
+<!-- dprint-ignore-start -->
+::: metaxy.ext.dagster.observation_job.build_metaxy_observation_job
     options:
       heading_level: 3
 <!-- dprint-ignore-end -->

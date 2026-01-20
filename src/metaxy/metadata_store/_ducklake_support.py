@@ -334,8 +334,8 @@ class DuckLakeAttachmentManager:
                 cursor.execute(f"INSTALL {plugin};")
                 cursor.execute(f"LOAD {plugin};")
 
-            metadata_secret_sql, metadata_params_sql = self._config.metadata_sql_parts  # pyright: ignore[reportGeneralTypeIssues]
-            storage_secret_sql, storage_params_sql = self._config.storage_sql_parts  # pyright: ignore[reportGeneralTypeIssues]
+            metadata_secret_sql, metadata_params_sql = self._config.metadata_sql_parts
+            storage_secret_sql, storage_params_sql = self._config.storage_sql_parts
 
             if metadata_secret_sql:
                 cursor.execute(metadata_secret_sql)
@@ -411,7 +411,7 @@ def ensure_extensions_with_plugins(
             existing_names.add(str(name))
         else:
             # Must be ExtensionSpec with 'name' attribute
-            existing_names.add(ext.name)  # pyright: ignore[reportAttributeAccessIssue]
+            existing_names.add(ext.name)
 
     for plugin in plugins:
         if plugin not in existing_names:

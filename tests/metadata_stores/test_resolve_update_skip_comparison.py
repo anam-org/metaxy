@@ -50,7 +50,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
         with changed and removed empty.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
 
@@ -138,7 +138,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
         ALL upstream samples in added (not filtered by what already exists).
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
 
@@ -219,7 +219,7 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
         with changed and removed empty.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
 
@@ -294,7 +294,7 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
         ALL upstream samples in added.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
 
@@ -382,7 +382,7 @@ class TestResolveUpdateSkipComparisonLazy:
         Verify the lazy result can be collected and has the correct structure.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
 
@@ -462,7 +462,7 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
         This verifies that the default behavior hasn't been broken by adding skip_comparison.
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
 
@@ -534,7 +534,7 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
     ):
         """Test explicit skip_comparison=False performs normal increment detection."""
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
 
@@ -611,7 +611,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
         Root -> Intermediate -> Leaf
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
 
@@ -709,7 +709,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
         Root -> BranchA, BranchB -> Leaf
         """
         store_type, config = store_config
-        store = store_type(**config)  # type: ignore[abstract]
+        store = store_type(**config)
 
         graph = FeatureGraph()
 

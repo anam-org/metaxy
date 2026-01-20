@@ -25,6 +25,7 @@ from metaxy import (
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import MetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.warnings import MetaxyColumnMissingWarning
 from metaxy.models.constants import (
     METAXY_PROVENANCE,
@@ -200,3 +201,9 @@ class TestProperDataframeWrite:
             assert len(metaxy_warnings) == 0, (
                 f"Unexpected MetaxyColumnMissingWarning: {[str(warning.message) for warning in metaxy_warnings]}"
             )
+
+
+def test_sql_dialect_uses_connection(ibis_store: DuckDBMetadataStore) -> None:
+    with ibis_store.open("write"):
+        expected = ibis_store.conn.name
+        assert ibis_store._sql_dialect == expected

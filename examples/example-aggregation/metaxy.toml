@@ -1,0 +1,9 @@
+project = "example-aggregation"
+entrypoints = ["example_aggregation.features"]
+auto_create_tables = true # Enable for development/examples
+
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "/tmp/example_aggregation"

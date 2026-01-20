@@ -180,13 +180,20 @@ def render(
             raise SystemExit(1)
 
         # Load snapshot data
+        # Don't use class_path_overrides - let the loader use stored paths
+        # and fall back to spec-only mode for features that can't be imported.
+        # This avoids conflicts when modules define multiple features.
         differ = GraphDiffer()
         try:
             from_snapshot_data = differ.load_snapshot_data(
-                metadata_store, from_snapshot_version, project
+                metadata_store,
+                from_snapshot_version,
+                project,
             )
             to_snapshot_data = differ.load_snapshot_data(
-                metadata_store, to_snapshot_version, project
+                metadata_store,
+                to_snapshot_version,
+                project,
             )
         except ValueError as e:
             console.print(f"[red]Error:[/red] {e}")

@@ -1,205 +1,207 @@
-"""Handler for normalizing provenance based on lineage relationships.
-
-This module provides abstractions for handling different lineage relationship types
-(identity, aggregation, expansion) when comparing expected vs current provenance.
-"""
+"""Lineage handlers for different lineage relationship types."""
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import TYPE_CHECKING
 
 import narwhals as nw
 from narwhals.typing import FrameT
 
-from metaxy.models.constants import METAXY_PROVENANCE, METAXY_PROVENANCE_BY_FIELD
-from metaxy.models.lineage import ExpansionRelationship
-from metaxy.utils.hashing import get_hash_truncation_length
+from metaxy.models.lineage import (
+    AggregationRelationship,
+    ExpansionRelationship,
+    LineageRelationshipType,
+)
 
 if TYPE_CHECKING:
+    from metaxy.models.feature_spec import FeatureDep
     from metaxy.models.plan import FeaturePlan
     from metaxy.versioning.engine import VersioningEngine
+    from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
     from metaxy.versioning.types import HashAlgorithm
 
 
 class LineageHandler(ABC):
-    """Base class for handling lineage-based provenance normalization."""
+    """Base class for handling different lineage relationship types.
 
-    def __init__(self, feature_plan: FeaturePlan, engine: VersioningEngine):
-        """Initialize handler with feature plan and engine.
+    Lineage handlers transform upstream data according to the relationship type
+    (identity, aggregation, expansion) between the upstream and downstream features.
+    Each handler implements transform methods for both upstream preparation and
+    current data comparison during increment resolution.
+    """
 
-        Args:
-            feature_plan: The feature plan containing lineage information
-            engine: The provenance engine instance
-        """
-        self.plan = feature_plan
-        self.feature_spec = feature_plan.feature
-        self.engine = engine
-
-    @abstractmethod
-    def normalize_for_comparison(
+    def __init__(
         self,
-        expected: FrameT,
-        current: FrameT,
+        feature_dep: FeatureDep,
+        plan: FeaturePlan,
+        engine: VersioningEngine,
+        dep_transformer: FeatureDepTransformer,
+    ):
+        self.dep = feature_dep
+        self.plan = plan
+        self.engine = engine
+        self.dep_transformer = dep_transformer
+
+    def transform_upstream(
+        self,
+        df: FrameT,
         hash_algorithm: HashAlgorithm,
-    ) -> tuple[FrameT, FrameT, list[str]]:
-        """Normalize expected and current DataFrames for provenance comparison.
+    ) -> FrameT:
+        """Transform upstream data according to the lineage relationship.
+
+        Called during upstream preparation to apply lineage-specific transformations
+        such as aggregating provenance values for N:1 relationships.
 
         Args:
-            expected: Expected metadata computed from upstream
-            current: Current metadata from store
-            hash_algorithm: Hash algorithm to use
-            hash_length: Hash truncation length
+            df: Upstream DataFrame after filtering, renaming, and selection.
+            hash_algorithm: Hash algorithm for any hashing operations.
 
         Returns:
-            Tuple of (normalized_expected, normalized_current, join_columns)
+            Transformed DataFrame (default implementation returns input unchanged).
         """
-        pass
+        return df
+
+    def transform_current_for_comparison(
+        self,
+        current: FrameT,
+        join_columns: list[str],
+    ) -> FrameT:
+        """Transform current stored data for comparison with expected provenance.
+
+        Called during increment resolution to prepare current metadata for comparison.
+        For example, expansion lineage collapses child rows back to parent level.
+
+        Args:
+            current: Current metadata DataFrame from the store.
+            join_columns: Columns used for joining expected and current data.
+
+        Returns:
+            Transformed DataFrame (default implementation returns input unchanged).
+        """
+        return current
+
+    @property
+    def output_id_columns(self) -> list[str]:
+        """ID columns after lineage transformation."""
+        return list(self.dep_transformer.id_column_tracker.output)
+
+    @property
+    def requires_aggregation(self) -> bool:
+        """Whether this lineage type requires aggregating upstream values."""
+        return False
+
+    def get_required_columns(self) -> set[str]:
+        """Return additional columns required by this lineage relationship.
+
+        These are columns needed for lineage operations (e.g., aggregation 'on'
+        columns) that must be included even if not explicitly selected.
+
+        Returns:
+            Set of column names (before rename) required by this lineage type.
+        """
+        return set()
 
 
 class IdentityLineageHandler(LineageHandler):
-    """Handler for 1:1 identity lineage relationships.
+    """Handler for 1:1 identity lineage. No special handling needed."""
 
-    No normalization needed - each upstream row maps to exactly one downstream row.
-    """
-
-    def normalize_for_comparison(
-        self,
-        expected: FrameT,
-        current: FrameT,
-        hash_algorithm: HashAlgorithm,
-    ) -> tuple[FrameT, FrameT, list[str]]:
-        """No normalization needed for identity relationships."""
-        id_columns = list(self.feature_spec.id_columns)
-        return expected, current, id_columns
+    pass
 
 
 class AggregationLineageHandler(LineageHandler):
-    """Handler for N:1 aggregation lineage relationships.
+    """Handler for N:1 aggregation lineage.
 
-    Multiple upstream rows aggregate to one downstream row. We need to:
-    1. Group expected metadata by aggregation columns (sorted within group)
-    2. Concatenate provenance values deterministically
-    3. Hash the concatenated result using engine's hash method
+    Pre-aggregates provenance columns field-by-field so all rows in the same
+    group have identical metaxy values. Does NOT reduce rows.
     """
 
-    def normalize_for_comparison(
+    @property
+    def requires_aggregation(self) -> bool:
+        return True
+
+    def get_required_columns(self) -> set[str]:
+        """Return aggregation 'on' columns."""
+        relationship = self.dep.lineage.relationship
+        if isinstance(relationship, AggregationRelationship) and relationship.on:
+            return set(relationship.on)
+        return set()
+
+    def transform_upstream(
         self,
-        expected: FrameT,
-        current: FrameT,
-        hash_algorithm: HashAlgorithm,
-    ) -> tuple[FrameT, FrameT, list[str]]:
-        """Aggregate expected provenance by grouping."""
-        id_columns = list(self.feature_spec.id_columns)
-        agg_result = self.feature_spec.lineage.get_aggregation_columns(id_columns)
-        assert agg_result is not None, (
-            "Aggregation relationship must have aggregation columns"
-        )
-        agg_columns = list(agg_result)
-
-        # Aggregate expected provenance
-        expected_agg = self._aggregate_provenance(expected, agg_columns, hash_algorithm)
-
-        return expected_agg, current, agg_columns
-
-    def _aggregate_provenance(
-        self,
-        expected: FrameT,
-        agg_columns: list[str],
+        df: FrameT,
         hash_algorithm: HashAlgorithm,
     ) -> FrameT:
-        """Aggregate provenance for N:1 relationships.
+        """Aggregate upstream metaxy columns field-by-field using window functions."""
+        upstream_spec = self.plan.parent_features_by_key[self.dep.feature]
+        transformer = self.dep_transformer
 
-        Strategy:
-        1. Sort by id_columns within each group for deterministic ordering
-        2. Group by aggregation columns and concatenate provenance with engine's method
-        3. Hash the concatenated result using engine's hash_string_column
+        # Get field names from upstream feature spec
+        upstream_field_names = [f.key.to_struct_key() for f in upstream_spec.fields]
 
-        Args:
-            expected: Expected metadata with upstream provenance
-            agg_columns: Columns to group by
-            hash_algorithm: Hash algorithm to use
-            hash_length: Length to truncate hash to
-
-        Returns:
-            Aggregated DataFrame with one row per group
-        """
-        # Sort by all id_columns for deterministic ordering within groups
-        id_columns = list(self.feature_spec.id_columns)
-        expected_sorted = expected.sort(id_columns)
-
-        # Use engine's aggregate_with_string_concat method
-        # This concatenates provenance strings and stores in a temporary column
-        grouped = self.engine.aggregate_with_string_concat(
-            df=expected_sorted,
-            group_by_columns=agg_columns,
-            concat_column=METAXY_PROVENANCE,
-            concat_separator="|",
-            exclude_columns=[METAXY_PROVENANCE_BY_FIELD],
+        return self.engine.aggregate_metadata_columns(
+            df,  # ty: ignore[invalid-argument-type]
+            group_columns=self.output_id_columns,
+            order_by_columns=transformer.selected_id_columns,
+            upstream_field_names=upstream_field_names,
+            renamed_data_version_col=transformer.renamed_data_version_col,
+            renamed_data_version_by_field_col=transformer.renamed_data_version_by_field_col,
+            renamed_prov_col=transformer.renamed_provenance_col,
+            renamed_prov_by_field_col=transformer.renamed_provenance_by_field_col,
+            hash_algorithm=hash_algorithm,
         )
-
-        # Hash the concatenated provenance using engine's method
-        # Note: the concat column still has name METAXY_PROVENANCE after aggregation
-        hashed = self.engine.hash_string_column(
-            grouped, METAXY_PROVENANCE, "__hashed_prov", hash_algorithm
-        )
-
-        # Replace METAXY_PROVENANCE with truncated hash
-        hashed = hashed.drop(METAXY_PROVENANCE).rename(
-            {"__hashed_prov": METAXY_PROVENANCE}
-        )
-        hashed = hashed.with_columns(
-            nw.col(METAXY_PROVENANCE).str.slice(0, get_hash_truncation_length())
-        )
-
-        # Create placeholder provenance_by_field struct using engine's method
-        field_names = [f.key.to_struct_key() for f in self.plan.feature.fields]
-        field_map = {name: "__aggregated_placeholder" for name in field_names}
-
-        # Add placeholder column
-        hashed = hashed.with_columns(
-            nw.lit("aggregated").alias("__aggregated_placeholder")
-        )
-
-        # Build struct using engine's method
-        result = self.engine.build_struct_column(
-            hashed, METAXY_PROVENANCE_BY_FIELD, field_map
-        )
-
-        # Drop placeholder
-        result = result.drop("__aggregated_placeholder")
-
-        return result
 
 
 class ExpansionLineageHandler(LineageHandler):
-    """Handler for 1:N expansion lineage relationships.
+    """Handler for 1:N expansion lineage.
 
-    One upstream row expands to many downstream rows. All downstream rows
-    with the same parent ID should have the same provenance. We group
-    current by parent columns and take any representative row.
+    During comparison, collapses current metadata to parent level since all
+    children from the same parent have the same provenance.
     """
 
-    def normalize_for_comparison(
-        self,
-        expected: FrameT,
-        current: FrameT,
-        hash_algorithm: HashAlgorithm,
-    ) -> tuple[FrameT, FrameT, list[str]]:
-        """Group current by parent ID columns."""
-        # Access the ExpansionRelationship to get the .on attribute
-        assert isinstance(self.feature_spec.lineage.relationship, ExpansionRelationship)
-        parent_columns = list(self.feature_spec.lineage.relationship.on)
+    def get_required_columns(self) -> set[str]:
+        """Return expansion 'on' columns."""
+        relationship = self.dep.lineage.relationship
+        if isinstance(relationship, ExpansionRelationship) and relationship.on:
+            return set(relationship.on)
+        return set()
 
-        # Group current by parent columns and take any representative row
-        current_grouped = (
-            current.with_columns(nw.lit(True).alias("_dummy"))
-            .filter(
-                nw.col("_dummy")
-                .is_first_distinct()
-                .over(*parent_columns, order_by="_dummy")
-            )
-            .drop("_dummy")
+    def transform_current_for_comparison(
+        self,
+        current: FrameT,
+        join_columns: list[str],
+    ) -> FrameT:
+        """Collapse expanded rows to parent level for comparison."""
+        current_cols = current.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        non_key_cols = [c for c in current_cols if c not in join_columns]
+        return current.group_by(*join_columns).agg(  # ty: ignore[invalid-argument-type]
+            *[nw.col(c).any_value(ignore_nulls=True) for c in non_key_cols]
         )
 
-        return expected, current_grouped, parent_columns
+
+def create_lineage_handler(
+    feature_dep: FeatureDep,
+    plan: FeaturePlan,
+    engine: VersioningEngine,
+    dep_transformer: FeatureDepTransformer,
+) -> LineageHandler:
+    """Create appropriate lineage handler for a dependency based on its lineage type."""
+    relationship_type = feature_dep.lineage.relationship.type
+
+    if relationship_type == LineageRelationshipType.IDENTITY:
+        return IdentityLineageHandler(feature_dep, plan, engine, dep_transformer)
+    elif relationship_type == LineageRelationshipType.AGGREGATION:
+        return AggregationLineageHandler(feature_dep, plan, engine, dep_transformer)
+    elif relationship_type == LineageRelationshipType.EXPANSION:
+        return ExpansionLineageHandler(feature_dep, plan, engine, dep_transformer)
+    else:
+        raise ValueError(f"Unknown lineage relationship type: {relationship_type}")
+
+
+def get_lineage_required_columns(feature_dep: FeatureDep) -> set[str]:
+    """Get 'on' columns required by lineage relationship. Empty set for identity lineage."""
+    relationship = feature_dep.lineage.relationship
+    if isinstance(relationship, (AggregationRelationship, ExpansionRelationship)):
+        if relationship.on:
+            return set(relationship.on)
+    return set()

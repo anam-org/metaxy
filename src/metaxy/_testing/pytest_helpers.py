@@ -1,16 +1,85 @@
 from __future__ import annotations
 
 from functools import wraps
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 import narwhals as nw
 import polars as pl
+from narwhals.typing import IntoFrameT
 
+from metaxy.models.constants import (
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_PROVENANCE,
+    METAXY_PROVENANCE_BY_FIELD,
+)
 from metaxy.utils.hashing import get_hash_truncation_length
 
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
     from metaxy.versioning.types import HashAlgorithm
+
+FrameT = TypeVar("FrameT", bound=nw.DataFrame | nw.LazyFrame)
+
+
+def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:
+    """Add missing metaxy system columns to a DataFrame for testing.
+
+    This function adds the metaxy_provenance, metaxy_data_version, and
+    metaxy_data_version_by_field columns based on existing metaxy_provenance_by_field.
+
+    If metaxy_provenance_by_field is missing, adds placeholder values.
+
+    Works with Polars DataFrames/LazyFrames and Narwhals DataFrames/LazyFrames.
+
+    Args:
+        df: DataFrame to add columns to (Polars or Narwhals)
+
+    Returns:
+        DataFrame with all required metaxy system columns (same type as input)
+    """
+    # Convert to narwhals if needed (works with both eager and lazy frames)
+    df_nw = nw.from_native(df)
+    columns = df_nw.collect_schema().names()  # ty: ignore[possibly-missing-attribute]
+
+    columns_to_add: list[nw.Expr] = []
+
+    # If metaxy_provenance_by_field doesn't exist, we can't derive the others meaningfully
+    # In that case, add placeholders
+    if METAXY_PROVENANCE_BY_FIELD not in columns:
+        if METAXY_PROVENANCE not in columns:
+            columns_to_add.append(nw.lit("test_provenance").alias(METAXY_PROVENANCE))
+        if METAXY_DATA_VERSION not in columns:
+            columns_to_add.append(
+                nw.lit("test_data_version").alias(METAXY_DATA_VERSION)
+            )
+        # Can't add metaxy_data_version_by_field without knowing the struct schema
+    else:
+        # metaxy_provenance_by_field exists, derive others from it
+        if METAXY_PROVENANCE not in columns:
+            columns_to_add.append(nw.lit("test_provenance").alias(METAXY_PROVENANCE))
+
+        if METAXY_DATA_VERSION_BY_FIELD not in columns:
+            # Copy provenance_by_field to data_version_by_field
+            columns_to_add.append(
+                nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD)
+            )
+
+        if METAXY_DATA_VERSION not in columns:
+            # If provenance exists, copy it; otherwise use placeholder
+            if METAXY_PROVENANCE in columns:
+                columns_to_add.append(
+                    nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION)
+                )
+            else:
+                columns_to_add.append(
+                    nw.lit("test_data_version").alias(METAXY_DATA_VERSION)
+                )
+
+    if columns_to_add:
+        df_nw = df_nw.with_columns(columns_to_add)  # ty: ignore[possibly-missing-attribute]
+
+    return df_nw.to_native()  # ty: ignore[possibly-missing-attribute]
 
 
 def add_metaxy_provenance_column(

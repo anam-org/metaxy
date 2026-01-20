@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Annotated, Any, Literal, NoReturn
 
 import cyclopts
+import narwhals as nw
 from rich.console import Console
 from rich.markup import escape as escape_markup
 
@@ -21,6 +22,38 @@ if TYPE_CHECKING:
 
 # Standard output format type used across CLI commands
 OutputFormat = Literal["plain", "json"]
+
+
+def _convert_filters(type_: type, tokens: Sequence[cyclopts.Token]) -> list[nw.Expr]:
+    """Cyclopts converter for filter arguments.
+
+    Converts SQL WHERE clause strings into Narwhals filter expressions.
+    """
+    from pydantic import ValidationError
+
+    from metaxy.models.filter_expression import FilterParseError, parse_filter_string
+
+    result = []
+    for token in tokens:
+        try:
+            result.append(parse_filter_string(token.value))
+        except (FilterParseError, ValidationError) as e:
+            raise cyclopts.ValidationError(f"Invalid filter syntax: {e}") from e
+    return result
+
+
+# Type alias for filter arguments with custom converter
+FilterArgs = Annotated[
+    list[
+        nw.Expr
+    ],  # Actually list[nw.Expr], but using Any to avoid import at module level
+    cyclopts.Parameter(
+        name=["--filter"],
+        help="SQL WHERE clause [filter](https://anam-org.github.io/metaxy/main/guide/learn/filters/) applied to all features. Can be repeated.",
+        converter=_convert_filters,
+        accepts_keys=False,
+    ),
+]
 
 
 def print_error(

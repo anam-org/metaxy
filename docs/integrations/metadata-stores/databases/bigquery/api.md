@@ -1,3 +1,8 @@
+---
+title: "BigQuery API Reference"
+description: "API reference for BigQueryMetadataStore."
+---
+
 # BigQuery Metadata Store API
 
 ::: metaxy.metadata_store.bigquery

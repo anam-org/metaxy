@@ -21,9 +21,13 @@ class VideoChunk(
     spec=mx.FeatureSpec(
         key=["video", "chunk"],
         id_columns=["video_chunk_id"],
-        deps=[mx.FeatureDep(feature=Video)],
+        deps=[
+            mx.FeatureDep(
+                feature=Video,
+                lineage=mx.LineageRelationship.expansion(on=["video_id"]),
+            )
+        ],
         fields=["audio", "frames"],
-        lineage=mx.LineageRelationship.expansion(on=["video_id"]),
     ),
 ):
     video_id: str  # points to the parent video

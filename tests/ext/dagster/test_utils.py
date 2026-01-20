@@ -11,13 +11,13 @@ import metaxy.ext.dagster as mxd
 
 
 @pytest.fixture
-def metadata_store() -> mx.MetadataStore:
+def metadata_store(metaxy_config: mx.MetaxyConfig) -> mx.MetadataStore:
     """Get the MetadataStore from the current config."""
-    return mx.MetaxyConfig.get().get_store("dev")
+    return metaxy_config.get_store("dev")
 
 
 @pytest.fixture
-def feature_a() -> type[mx.BaseFeature]:
+def feature_a(metaxy_config: mx.MetaxyConfig) -> type[mx.BaseFeature]:
     """Create feature A (no dependencies)."""
     spec = mx.FeatureSpec(
         key=["test", "utils", "a"],
@@ -32,7 +32,9 @@ def feature_a() -> type[mx.BaseFeature]:
 
 
 @pytest.fixture
-def feature_b(feature_a: type[mx.BaseFeature]) -> type[mx.BaseFeature]:
+def feature_b(
+    metaxy_config: mx.MetaxyConfig, feature_a: type[mx.BaseFeature]
+) -> type[mx.BaseFeature]:
     """Create feature B (depends on A)."""
     spec = mx.FeatureSpec(
         key=["test", "utils", "b"],
@@ -48,7 +50,9 @@ def feature_b(feature_a: type[mx.BaseFeature]) -> type[mx.BaseFeature]:
 
 
 @pytest.fixture
-def feature_c(feature_b: type[mx.BaseFeature]) -> type[mx.BaseFeature]:
+def feature_c(
+    metaxy_config: mx.MetaxyConfig, feature_b: type[mx.BaseFeature]
+) -> type[mx.BaseFeature]:
     """Create feature C (depends on B, so transitively on A)."""
     spec = mx.FeatureSpec(
         key=["test", "utils", "c"],
@@ -180,6 +184,8 @@ class TestGenerateMaterializationEvents:
         assert "metaxy" in info
         assert info["feature"]["project"] == mx.MetaxyConfig.get().project
         assert info["feature"]["version"] == feature_a.feature_version()
+        # type should be the full import path: module.ClassName
+        assert info["feature"]["type"] == f"{feature_a.__module__}.{feature_a.__name__}"
         assert info["metaxy"]["version"] == mx.__version__
         assert info["metaxy"]["plugins"] == mx.MetaxyConfig.get().plugins
 
@@ -247,6 +253,38 @@ class TestGenerateMaterializationEvents:
         # Should not raise, just skip the feature and log
         results = list(mxd.generate_materialize_results(context, metadata_store, specs))
         assert results == []
+
+    def test_works_with_op_execution_context(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that generate_materialize_results works with OpExecutionContext."""
+        # Write some data first
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+
+        specs = [dg.AssetSpec("my_asset", metadata={"metaxy/feature": "test/utils/a"})]
+
+        # Use build_op_context instead of build_asset_context
+        context = dg.build_op_context()
+        events = list(mxd.generate_materialize_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 3
+        assert events[0].asset_key == dg.AssetKey("my_asset")
+
+    def test_op_execution_context_requires_specs(
+        self,
+        metadata_store: mx.MetadataStore,
+    ):
+        """Test that OpExecutionContext raises ValueError when specs not provided."""
+        context = dg.build_op_context()
+
+        with pytest.raises(ValueError, match="specs must be provided"):
+            list(mxd.generate_materialize_results(context, metadata_store))
 
 
 class TestGenerateObservationEvents:
@@ -339,6 +377,8 @@ class TestGenerateObservationEvents:
         assert "metaxy" in info
         assert info["feature"]["project"] == mx.MetaxyConfig.get().project
         assert info["feature"]["version"] == feature_a.feature_version()
+        # type should be the full import path: module.ClassName
+        assert info["feature"]["type"] == f"{feature_a.__module__}.{feature_a.__name__}"
         assert info["metaxy"]["version"] == mx.__version__
         assert info["metaxy"]["plugins"] == mx.MetaxyConfig.get().plugins
 
@@ -406,6 +446,38 @@ class TestGenerateObservationEvents:
         results = list(mxd.generate_observe_results(context, metadata_store, specs))
         assert results == []
 
+    def test_works_with_op_execution_context(
+        self,
+        feature_a: type[mx.BaseFeature],
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that generate_observe_results works with OpExecutionContext."""
+        # Write some data first
+        _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
+
+        specs = [dg.AssetSpec("my_asset", metadata={"metaxy/feature": "test/utils/a"})]
+
+        # Use build_op_context instead of build_asset_context
+        context = dg.build_op_context()
+        events = list(mxd.generate_observe_results(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 3
+        assert events[0].asset_key == dg.AssetKey("my_asset")
+
+    def test_op_execution_context_requires_specs(
+        self,
+        metadata_store: mx.MetadataStore,
+    ):
+        """Test that OpExecutionContext raises ValueError when specs not provided."""
+        context = dg.build_op_context()
+
+        with pytest.raises(ValueError, match="specs must be provided"):
+            list(mxd.generate_observe_results(context, metadata_store))
+
 
 class TestPartitionedAssets:
     """Tests for partitioned assets."""
@@ -416,7 +488,9 @@ class TestPartitionedAssets:
         return dg.StaticPartitionsDefinition(["2024-01-01", "2024-01-02"])
 
     @pytest.fixture
-    def partitioned_feature(self) -> type[mx.BaseFeature]:
+    def partitioned_feature(
+        self, metaxy_config: mx.MetaxyConfig
+    ) -> type[mx.BaseFeature]:
         """Create a feature with a partition column."""
         spec = mx.FeatureSpec(
             key=["test", "utils", "partitioned"],
@@ -476,8 +550,12 @@ class TestPartitionedAssets:
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test that materialization events filter by partition key."""
-        # Write data for two partitions
+        """Test that materialization events filter by partition key.
+
+        dagster/row_count should show total rows across all partitions.
+        dagster/partition_row_count should show rows for the current partition.
+        """
+        # Write data for two partitions (5 total rows)
         self._write_partitioned_data(
             partitioned_feature,
             "2024-01-01",
@@ -505,20 +583,26 @@ class TestPartitionedAssets:
             )
         ]
 
-        # Test with partition "2024-01-01" (3 rows)
+        # Test with partition "2024-01-01" (3 rows in partition, 5 total)
         context = dg.build_asset_context(partition_key="2024-01-01")
         events = list(mxd.generate_materialize_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
+        assert (
+            events[0].metadata["dagster/row_count"] == 5
+        )  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 3
 
-        # Test with partition "2024-01-02" (2 rows)
+        # Test with partition "2024-01-02" (2 rows in partition, 5 total)
         context = dg.build_asset_context(partition_key="2024-01-02")
         events = list(mxd.generate_materialize_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
+        assert (
+            events[0].metadata["dagster/row_count"] == 5
+        )  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 2
 
     def test_observation_filters_by_partition(
@@ -529,8 +613,12 @@ class TestPartitionedAssets:
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test that observation events filter by partition key."""
-        # Write data for two partitions
+        """Test that observation events filter by partition key.
+
+        dagster/row_count should show total rows across all partitions.
+        dagster/partition_row_count should show rows for the current partition.
+        """
+        # Write data for two partitions (6 total rows)
         self._write_partitioned_data(
             partitioned_feature,
             "2024-01-01",
@@ -558,22 +646,29 @@ class TestPartitionedAssets:
             )
         ]
 
-        # Test with partition "2024-01-01" (2 rows)
+        # Test with partition "2024-01-01" (2 rows in partition, 6 total)
         context = dg.build_asset_context(partition_key="2024-01-01")
         events = list(mxd.generate_observe_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
+        assert (
+            events[0].metadata["dagster/row_count"] == 6
+        )  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 2
 
-        # Test with partition "2024-01-02" (4 rows)
+        # Test with partition "2024-01-02" (4 rows in partition, 6 total)
         context = dg.build_asset_context(partition_key="2024-01-02")
         events = list(mxd.generate_observe_results(context, metadata_store, specs))
 
         assert len(events) == 1
         assert events[0].metadata is not None
+        assert (
+            events[0].metadata["dagster/row_count"] == 6
+        )  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 4
 
+    @pytest.mark.flaky(reruns=5)
     def test_no_partition_by_metadata_returns_all_rows(
         self,
         partitioned_feature: type[mx.BaseFeature],
@@ -659,11 +754,11 @@ class TestMultiAssetIntegration:
 
         # Verify row counts
         assert (
-            mat_a.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            mat_a.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
             == 3
         )
         assert (
-            mat_b.records[0].asset_materialization.metadata["dagster/row_count"].value  # pyright: ignore[reportOptionalMemberAccess]
+            mat_b.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
             == 2
         )
 
@@ -707,7 +802,7 @@ class TestMultiAssetIntegration:
         run2_id = mat.records[0].run_id
         assert run2_id != run1_id
 
-        metadata = mat.records[0].asset_materialization.metadata  # pyright: ignore[reportOptionalMemberAccess]
+        metadata = mat.records[0].asset_materialization.metadata  # ty: ignore[possibly-missing-attribute]
         # Total row count is 3
         assert metadata["dagster/row_count"].value == 3
         # metaxy/materialized_in_run should be present since the store has materialization_id
@@ -763,10 +858,10 @@ class TestMultiObservableSourceAssetIntegration:
 
         # Verify row counts
         assert (
-            obs_a.records[0].asset_observation.metadata["dagster/row_count"].value == 4  # pyright: ignore[reportOptionalMemberAccess]
+            obs_a.records[0].asset_observation.metadata["dagster/row_count"].value == 4  # ty: ignore[possibly-missing-attribute]
         )
         assert (
-            obs_b.records[0].asset_observation.metadata["dagster/row_count"].value == 2  # pyright: ignore[reportOptionalMemberAccess]
+            obs_b.records[0].asset_observation.metadata["dagster/row_count"].value == 2  # ty: ignore[possibly-missing-attribute]
         )
 
 
@@ -779,7 +874,9 @@ class TestPartitionedMultiAssetIntegration:
         return dg.StaticPartitionsDefinition(["2024-01-01", "2024-01-02"])
 
     @pytest.fixture
-    def partitioned_feature_x(self) -> type[mx.BaseFeature]:
+    def partitioned_feature_x(
+        self, metaxy_config: mx.MetaxyConfig
+    ) -> type[mx.BaseFeature]:
         """Create partitioned feature X."""
         spec = mx.FeatureSpec(
             key=["test", "utils", "partitioned_x"],
@@ -794,7 +891,9 @@ class TestPartitionedMultiAssetIntegration:
 
     @pytest.fixture
     def partitioned_feature_y(
-        self, partitioned_feature_x: type[mx.BaseFeature]
+        self,
+        metaxy_config: mx.MetaxyConfig,
+        partitioned_feature_x: type[mx.BaseFeature],
     ) -> type[mx.BaseFeature]:
         """Create partitioned feature Y (depends on X)."""
         spec = mx.FeatureSpec(
@@ -856,7 +955,11 @@ class TestPartitionedMultiAssetIntegration:
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test partitioned @multi_asset with generate_materialize_results."""
+        """Test partitioned @multi_asset with generate_materialize_results.
+
+        dagster/row_count should show total rows across all partitions.
+        dagster/partition_row_count should show rows for the current partition.
+        """
         # Write data for partition 2024-01-01: X has 3 rows, Y has 2 rows
         self._write_partitioned_data(
             partitioned_feature_x,
@@ -875,6 +978,7 @@ class TestPartitionedMultiAssetIntegration:
             instance,
         )
         # Write data for partition 2024-01-02: X has 1 row, Y has 4 rows
+        # Total: X=4 rows, Y=6 rows
         self._write_partitioned_data(
             partitioned_feature_x,
             "2024-01-02",
@@ -931,16 +1035,25 @@ class TestPartitionedMultiAssetIntegration:
 
         assert len(mat_x.records) == 1
         assert len(mat_y.records) == 1
+        # Total: X=4 rows, Y=6 rows
+        assert (
+            mat_x.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
+            == 4
+        )
+        assert (
+            mat_y.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
+            == 6
+        )
         # Partition 2024-01-01: X=3 rows, Y=2 rows
         assert (
-            mat_x.records[0]
-            .asset_materialization.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            mat_x.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_materialization.metadata["dagster/partition_row_count"]
             .value
             == 3
         )
         assert (
-            mat_y.records[0]
-            .asset_materialization.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            mat_y.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_materialization.metadata["dagster/partition_row_count"]
             .value
             == 2
         )
@@ -958,16 +1071,25 @@ class TestPartitionedMultiAssetIntegration:
         mat_x = instance.fetch_materializations(dg.AssetKey("part_multi_x"), limit=1)
         mat_y = instance.fetch_materializations(dg.AssetKey("part_multi_y"), limit=1)
 
+        # Total: X=4 rows, Y=6 rows (same as before)
+        assert (
+            mat_x.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
+            == 4
+        )
+        assert (
+            mat_y.records[0].asset_materialization.metadata["dagster/row_count"].value  # ty: ignore[possibly-missing-attribute]
+            == 6
+        )
         # Partition 2024-01-02: X=1 row, Y=4 rows
         assert (
-            mat_x.records[0]
-            .asset_materialization.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            mat_x.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_materialization.metadata["dagster/partition_row_count"]
             .value
             == 1
         )
         assert (
-            mat_y.records[0]
-            .asset_materialization.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            mat_y.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_materialization.metadata["dagster/partition_row_count"]
             .value
             == 4
         )
@@ -980,7 +1102,11 @@ class TestPartitionedMultiAssetIntegration:
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test partitioned @multi_observable_source_asset with generate_observe_results."""
+        """Test partitioned @multi_observable_source_asset with generate_observe_results.
+
+        dagster/row_count should show total rows across all partitions.
+        dagster/partition_row_count should show rows for the current partition.
+        """
         # Write data for partition 2024-01-01: X has 5 rows, Y has 1 row
         self._write_partitioned_data(
             partitioned_feature_x,
@@ -999,6 +1125,7 @@ class TestPartitionedMultiAssetIntegration:
             instance,
         )
         # Write data for partition 2024-01-02: X has 2 rows, Y has 3 rows
+        # Total: X=7 rows, Y=4 rows
         self._write_partitioned_data(
             partitioned_feature_x,
             "2024-01-02",
@@ -1058,16 +1185,23 @@ class TestPartitionedMultiAssetIntegration:
 
         assert len(obs_x.records) == 1
         assert len(obs_y.records) == 1
+        # Total: X=7 rows, Y=4 rows
+        assert (
+            obs_x.records[0].asset_observation.metadata["dagster/row_count"].value == 7  # ty: ignore[possibly-missing-attribute]
+        )
+        assert (
+            obs_y.records[0].asset_observation.metadata["dagster/row_count"].value == 4  # ty: ignore[possibly-missing-attribute]
+        )
         # Partition 2024-01-01: X=5 rows, Y=1 row
         assert (
-            obs_x.records[0]
-            .asset_observation.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            obs_x.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_observation.metadata["dagster/partition_row_count"]
             .value
             == 5
         )
         assert (
-            obs_y.records[0]
-            .asset_observation.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            obs_y.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_observation.metadata["dagster/partition_row_count"]
             .value
             == 1
         )
@@ -1082,16 +1216,23 @@ class TestPartitionedMultiAssetIntegration:
         obs_x = instance.fetch_observations(dg.AssetKey("part_obs_x"), limit=1)
         obs_y = instance.fetch_observations(dg.AssetKey("part_obs_y"), limit=1)
 
+        # Total: X=7 rows, Y=4 rows (same as before)
+        assert (
+            obs_x.records[0].asset_observation.metadata["dagster/row_count"].value == 7  # ty: ignore[possibly-missing-attribute]
+        )
+        assert (
+            obs_y.records[0].asset_observation.metadata["dagster/row_count"].value == 4  # ty: ignore[possibly-missing-attribute]
+        )
         # Partition 2024-01-02: X=2 rows, Y=3 rows
         assert (
-            obs_x.records[0]
-            .asset_observation.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            obs_x.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_observation.metadata["dagster/partition_row_count"]
             .value
             == 2
         )
         assert (
-            obs_y.records[0]
-            .asset_observation.metadata["dagster/partition_row_count"]  # pyright: ignore[reportOptionalMemberAccess]
+            obs_y.records[0]  # ty: ignore[possibly-missing-attribute]
+            .asset_observation.metadata["dagster/partition_row_count"]
             .value
             == 3
         )

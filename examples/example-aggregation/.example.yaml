@@ -1,0 +1,99 @@
+name: "N:1 Aggregation Example"
+description: "Demonstrates N:1 aggregation relationships where audio recordings for multiple speakers are aggregated into speaker embeddings"
+package_name: "example_aggregation"
+
+scenarios:
+  - name: "Initial pipeline run"
+    description: "First execution creates audio recordings (2 per speaker) and computes speaker embeddings"
+    steps:
+      - name: "run_pipeline"
+        type: "run_command"
+        command: "python pipeline.py"
+        description: "Run pipeline to create audio and speaker embeddings"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify pipeline processed all features"
+        returncode: 0
+        contains:
+          - "Found 4 new audio recordings"
+          - "Found 2 speakers that need embedding computation"
+          - "Computing embedding for speaker"
+          - "Writing embeddings for 2 speakers"
+
+  - name: "Idempotent rerun"
+    description: "Second execution should detect no changes"
+    steps:
+      - type: "run_command"
+        command: "python pipeline.py"
+        description: "Rerun pipeline without any changes"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify nothing needs recomputation (idempotent)"
+        returncode: 0
+        contains:
+          - "No new or changed audio recordings"
+          - "Found 0 speakers that need embedding computation"
+
+  - name: "Update one audio - only affected speaker recomputed"
+    description: "Update audio a1 (speaker s1) - only s1's embedding should be recomputed, not s2's"
+    steps:
+      - type: "apply_patch"
+        patch_path: "patches/01_update_audio_provenance.patch"
+        description: "Change audio a1 provenance from v1 to v2"
+
+      - type: "run_command"
+        command: "python pipeline.py"
+        description: "Run pipeline after audio a1 provenance change"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify only speaker s1's embedding is recomputed (not s2)"
+        returncode: 0
+        contains:
+          - "Found 1 changed audio recordings"
+          - "Found 1 speakers that need embedding computation"
+          - "Computing embedding for speaker s1"
+          - "Writing embeddings for 1 speakers"
+
+  - name: "Add new audio - only affected speaker recomputed"
+    description: "Add audio a5 for speaker s1 - only s1's embedding should be recomputed"
+    steps:
+      - type: "apply_patch"
+        patch_path: "patches/02_add_audio.patch"
+        description: "Add new audio a5 for speaker s1"
+
+      - type: "run_command"
+        command: "python pipeline.py"
+        description: "Run pipeline after adding new audio"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify only speaker s1's embedding is recomputed (not s2)"
+        returncode: 0
+        contains:
+          - "Found 1 new audio recordings"
+          - "Found 1 speakers that need embedding computation"
+          - "Computing embedding for speaker s1"
+          - "Writing embeddings for 1 speakers"
+
+  - name: "Final idempotent check"
+    description: "After all updates, no further recomputation needed"
+    steps:
+      - type: "run_command"
+        command: "python pipeline.py"
+        description: "Rerun pipeline after all changes"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify everything is up-to-date"
+        returncode: 0
+        contains:
+          - "No new or changed audio recordings"
+          - "Found 0 speakers that need embedding computation"

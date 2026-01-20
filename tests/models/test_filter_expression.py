@@ -79,6 +79,64 @@ def test_unsupported_expression_raises() -> None:
         parse_filter_string("age BETWEEN 20 AND 30")
 
 
+def test_parse_in_operator(sample_lazy_frame: nw.LazyFrame[Any]) -> None:
+    """Test IN operator with string values."""
+    expr = parse_filter_string("status IN ('active', 'inactive')")
+    ids = collect_ids(sample_lazy_frame, expr)
+    assert ids == [1, 2, 3]
+
+
+def test_parse_in_operator_numeric(sample_lazy_frame: nw.LazyFrame[Any]) -> None:
+    """Test IN operator with numeric values."""
+    expr = parse_filter_string("age IN (17, 25, 100)")
+    ids = collect_ids(sample_lazy_frame, expr)
+    assert ids == [1, 2]
+
+
+def test_parse_not_in_operator(sample_lazy_frame: nw.LazyFrame[Any]) -> None:
+    """Test NOT IN operator."""
+    expr = parse_filter_string("status NOT IN ('deleted')")
+    ids = collect_ids(sample_lazy_frame, expr)
+    assert ids == [1, 2, 3]
+
+
+def test_parse_in_operator_combined_with_and(
+    sample_lazy_frame: nw.LazyFrame[Any],
+) -> None:
+    """Test IN operator combined with AND."""
+    expr = parse_filter_string("status IN ('active', 'inactive') AND age > 20")
+    ids = collect_ids(sample_lazy_frame, expr)
+    assert ids == [2, 3]
+
+
+def test_parsed_expression_equals_narwhals_expression_in() -> None:
+    """Test that parsed IN expression matches manually constructed Narwhals expression."""
+    parsed = parse_filter_string("x IN (1, 2, 3)")
+    expected = nw.col("x").is_in([1, 2, 3])
+
+    df = pl.DataFrame({"x": [1, 2, 3, 4, 5]})
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = lf.filter(parsed).collect().to_native()["x"].to_list()
+    expected_result = lf.filter(expected).collect().to_native()["x"].to_list()
+
+    assert parsed_result == expected_result == [1, 2, 3]
+
+
+def test_parsed_expression_equals_narwhals_expression_not_in() -> None:
+    """Test that parsed NOT IN expression matches manually constructed Narwhals expression."""
+    parsed = parse_filter_string("x NOT IN (1, 2)")
+    expected = ~nw.col("x").is_in([1, 2])
+
+    df = pl.DataFrame({"x": [1, 2, 3, 4, 5]})
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = lf.filter(parsed).collect().to_native()["x"].to_list()
+    expected_result = lf.filter(expected).collect().to_native()["x"].to_list()
+
+    assert parsed_result == expected_result == [3, 4, 5]
+
+
 def test_dotted_column_name_preserved() -> None:
     filter_model = NarwhalsFilter.model_validate("metadata.owner = 'alice'")
     expression = filter_model.expression
@@ -165,6 +223,42 @@ def test_parsed_expression_equals_narwhals_expression_null() -> None:
     assert parsed_result == expected_result == [True, True]
 
 
+def test_parsed_expression_equals_narwhals_expression_is_null_operator() -> None:
+    """Test IS NULL operator is handled."""
+    parsed = parse_filter_string("deleted_at IS NULL")
+    expected = nw.col("deleted_at").is_null()
+
+    df = pl.DataFrame({"deleted_at": [None, "2024-01-01", None, "2024-02-01"]})
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = (
+        lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
+    )
+    expected_result = (
+        lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
+    )
+
+    assert parsed_result == expected_result == [True, True]
+
+
+def test_parsed_expression_equals_narwhals_expression_is_not_null_operator() -> None:
+    """Test IS NOT NULL operator is handled."""
+    parsed = parse_filter_string("deleted_at IS NOT NULL")
+    expected = ~nw.col("deleted_at").is_null()
+
+    df = pl.DataFrame({"deleted_at": [None, "2024-01-01", None, "2024-02-01"]})
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = (
+        lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
+    )
+    expected_result = (
+        lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
+    )
+
+    assert parsed_result == expected_result == [False, False]
+
+
 @pytest.mark.parametrize(
     ("filter_string", "expected_expr", "expected_values"),
     [
@@ -235,7 +329,7 @@ def test_parse_deeply_nested_expressions(
 
 def test_feature_dep_filters_parsing(sample_lazy_frame: nw.LazyFrame[Any]) -> None:
     dep = FeatureDep(feature="upstream", filters=["age >= 25", "status = 'active'"])
-    assert dep.filters is not None  # Type guard for basedpyright
+    assert dep.filters is not None  # Type guard for type checker
     filtered_ids = (
         sample_lazy_frame.filter(*dep.filters).collect().to_native().sort("id")["id"]
     )

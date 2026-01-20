@@ -101,20 +101,25 @@ class FeatureGraph:
             feature: Feature class to register
 
         Raises:
-            ValueError: If a feature with the same key is already registered
+            ValueError: If a feature with a different import path but the same key is already registered
                        or if duplicate column names would result from renaming operations
         """
         if feature.spec().key in self.features_by_key:
             existing = self.features_by_key[feature.spec().key]
-            raise ValueError(
-                f"Feature with key {feature.spec().key.to_string()} already registered. "
-                f"Existing: {existing.__name__}, New: {feature.__name__}. "
-                f"Each feature key must be unique within a graph."
-            )
+            # Allow quiet replacement if it's the same class (same import path)
+            existing_path = f"{existing.__module__}.{existing.__name__}"
+            new_path = f"{feature.__module__}.{feature.__name__}"
+            if existing_path != new_path:
+                raise ValueError(
+                    f"Feature with key {feature.spec().key.to_string()} already registered. "
+                    f"Existing: {existing_path}, New: {new_path}. "
+                    f"Each feature key must be unique within a graph."
+                )
 
-        # Validate that there are no duplicate column names across dependencies after renaming
+        # Validation happens automatically when FeaturePlan is constructed via get_feature_plan()
+        # We trigger it here to catch errors at definition time
         if feature.spec().deps:
-            self._validate_no_duplicate_columns(feature.spec())
+            self._build_and_validate_plan(feature.spec())
 
         self.features_by_key[feature.spec().key] = feature
         self.feature_specs_by_key[feature.spec().key] = feature.spec()
@@ -141,152 +146,44 @@ class FeatureGraph:
                     f"with a different version."
                 )
 
-        # Validate that there are no duplicate columns across dependencies after renaming
+        # Validation happens automatically when FeaturePlan is constructed
         if spec.deps:
-            self._validate_no_duplicate_columns(spec)
+            self._build_and_validate_plan(spec)
 
         # Store standalone spec
         self.standalone_specs_by_key[spec.key] = spec
         # Also add to feature_specs_by_key for methods that only need the spec
         self.feature_specs_by_key[spec.key] = spec
 
-    def _validate_no_duplicate_columns(self, spec: "FeatureSpec") -> None:
-        """Validate that there are no duplicate column names across dependencies after renaming.
+    def _build_and_validate_plan(self, spec: "FeatureSpec") -> None:
+        """Build a FeaturePlan to trigger validation.
 
-        This method checks that after all column selection and renaming operations,
-        no two columns have the same name (except for ID columns which are expected to be the same).
-        Also validates that columns are not renamed to system column names.
-
-        Args:
-            spec: Feature specification to validate
-
-        Raises:
-            ValueError: If duplicate column names would result from the dependency configuration
-                       or if columns are renamed to system column names
+        FeaturePlan validates column configuration on construction.
+        We skip validation if upstream specs are missing (will be validated later).
         """
-        from metaxy.models.constants import ALL_SYSTEM_COLUMNS
         from metaxy.models.feature_spec import FeatureDep
 
-        if not spec.deps:
+        parent_specs = []
+        for dep in spec.deps or []:
+            if not isinstance(dep, FeatureDep):
+                continue
+            upstream_spec = self.feature_specs_by_key.get(dep.feature)
+            if upstream_spec:
+                parent_specs.append(upstream_spec)
+
+        # Skip if any upstream spec is missing (will be validated later)
+        feature_dep_count = len(
+            [d for d in (spec.deps or []) if isinstance(d, FeatureDep)]
+        )
+        if len(parent_specs) != feature_dep_count:
             return
 
-        # First, validate each dependency individually
-        for dep in spec.deps:
-            if not isinstance(dep, FeatureDep):
-                continue
-
-            if dep.rename:
-                # Get the upstream feature's spec to check its ID columns
-                upstream_spec = self.feature_specs_by_key.get(dep.feature)
-                upstream_id_columns = upstream_spec.id_columns if upstream_spec else []
-
-                # Check for renaming to system columns or upstream's ID columns
-                for old_name, new_name in dep.rename.items():
-                    if new_name in ALL_SYSTEM_COLUMNS:
-                        raise ValueError(
-                            f"Cannot rename column '{old_name}' to system column name '{new_name}' "
-                            f"in dependency '{dep.feature.to_string()}'. "
-                            f"System columns: {sorted(ALL_SYSTEM_COLUMNS)}"
-                        )
-
-                    # Check against upstream feature's ID columns
-                    if new_name in upstream_id_columns:
-                        raise ValueError(
-                            f"Cannot rename column '{old_name}' to ID column '{new_name}' "
-                            f"from upstream feature '{dep.feature.to_string()}'. "
-                            f"ID columns for '{dep.feature.to_string()}': {upstream_id_columns}"
-                        )
-
-                # Check for duplicate column names within this dependency
-                renamed_values = list(dep.rename.values())
-                if len(renamed_values) != len(set(renamed_values)):
-                    # Find the duplicate(s)
-                    seen = set()
-                    duplicates = set()
-                    for name in renamed_values:
-                        if name in seen:
-                            duplicates.add(name)
-                        seen.add(name)
-                    raise ValueError(
-                        f"Duplicate column names after renaming in dependency '{dep.feature.to_string()}': "
-                        f"{sorted(duplicates)}. Cannot rename multiple columns to the same name within a single dependency."
-                    )
-
-        # Track all column names and their sources
-        column_sources: dict[str, list[str]] = {}  # column_name -> [source_features]
-        id_columns_set = set(spec.id_columns)
-
-        for dep in spec.deps:
-            if not isinstance(dep, FeatureDep):
-                continue
-
-            dep_key_str = dep.feature.to_string()
-
-            # Get the upstream feature spec if available
-            upstream_spec = self.feature_specs_by_key.get(dep.feature)
-            if not upstream_spec:
-                # If upstream feature isn't registered yet, skip validation
-                # This can happen during circular imports or when features are defined in different modules
-                continue
-
-            # Determine which columns will be present from this dependency
-            if dep.columns is None:
-                # All columns from upstream (except droppable system columns)
-                # We don't know exactly which columns without the actual data,
-                # but we can check the renamed columns at least
-                if dep.rename:
-                    for old_name, new_name in dep.rename.items():
-                        if (
-                            new_name not in id_columns_set
-                        ):  # ID columns are expected to be the same
-                            if new_name not in column_sources:
-                                column_sources[new_name] = []
-                            column_sources[new_name].append(
-                                f"{dep_key_str} (renamed from '{old_name}')"
-                            )
-                # For non-renamed columns, we can't validate without knowing the actual columns
-                # This validation will happen at runtime in the joiner
-            elif dep.columns == ():
-                # Only system columns - no user columns to track
-                pass
-            else:
-                # Specific columns selected
-                for col in dep.columns:
-                    # Check if this column is renamed
-                    if dep.rename and col in dep.rename:
-                        new_name = dep.rename[col]
-                        if new_name not in id_columns_set:
-                            if new_name not in column_sources:
-                                column_sources[new_name] = []
-                            column_sources[new_name].append(
-                                f"{dep_key_str} (renamed from '{col}')"
-                            )
-                    else:
-                        # Column keeps its original name
-                        if col not in id_columns_set:
-                            if col not in column_sources:
-                                column_sources[col] = []
-                            column_sources[col].append(dep_key_str)
-
-        # Check for duplicates
-        duplicates = {
-            col: sources for col, sources in column_sources.items() if len(sources) > 1
-        }
-
-        if duplicates:
-            # Format error message
-            error_lines = []
-            for col, sources in sorted(duplicates.items()):
-                error_lines.append(
-                    f"  - Column '{col}' appears in: {', '.join(sources)}"
-                )
-
-            raise ValueError(
-                f"Feature '{spec.key.to_string()}' would have duplicate column names after renaming:\n"
-                + "\n".join(error_lines)
-                + "\n\nUse the 'rename' parameter in FeatureDep to resolve conflicts, "
-                "or use 'columns' to select only the columns you need."
-            )
+        # Constructing FeaturePlan triggers validation
+        FeaturePlan(
+            feature=spec,
+            deps=parent_specs or None,
+            feature_deps=spec.deps,
+        )
 
     def remove_feature(self, key: CoercibleToFeatureKey) -> None:
         """Remove a feature from the graph.
@@ -688,17 +585,17 @@ class FeatureGraph:
 
         for feature_key, feature_cls in self.features_by_key.items():
             feature_key_str = feature_key.to_string()
-            feature_spec_dict = feature_cls.spec().model_dump(mode="json")  # type: ignore[attr-defined]
-            feature_schema_dict = feature_cls.model_json_schema()  # type: ignore[attr-defined]
-            feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
-            feature_spec_version = feature_cls.spec().feature_spec_version  # type: ignore[attr-defined]
-            full_definition_version = feature_cls.full_definition_version()  # type: ignore[attr-defined]
-            project = feature_cls.project  # type: ignore[attr-defined]
+            feature_spec_dict = feature_cls.spec().model_dump(mode="json")
+            feature_schema_dict = feature_cls.model_json_schema()
+            feature_version = feature_cls.feature_version()
+            feature_spec_version = feature_cls.spec().feature_spec_version
+            full_definition_version = feature_cls.full_definition_version()
+            project = feature_cls.project
 
             # Get class import path (module.ClassName)
             class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
 
-            snapshot[feature_key_str] = {  # pyright: ignore
+            snapshot[feature_key_str] = {  # ty: ignore[invalid-assignment]
                 "feature_spec": feature_spec_dict,
                 "feature_schema": feature_schema_dict,
                 FEATURE_VERSION_COL: feature_version,
@@ -948,24 +845,24 @@ class MetaxyMeta(ModelMetaclass):
         *,
         spec: FeatureSpec | None = None,
         **kwargs,
-    ) -> type[Self]:  # pyright: ignore[reportGeneralTypeIssues]
+    ) -> type[Self]:
         # Inject frozen config if not already specified in namespace
         if "model_config" not in namespace:
             from pydantic import ConfigDict
 
-            namespace["model_config"] = ConfigDict(frozen=True)
+            namespace["model_config"] = ConfigDict(frozen=True, extra="forbid")
 
         new_cls = super().__new__(cls, cls_name, bases, namespace, **kwargs)
 
         if spec:
             # Get graph from context at class definition time
             active_graph = FeatureGraph.get_active()
-            new_cls.graph = active_graph  # type: ignore[attr-defined]
-            new_cls._spec = spec  # type: ignore[attr-defined]
+            new_cls.graph = active_graph
+            new_cls._spec = spec
 
             # Determine project for this feature using intelligent detection
             project = cls._detect_project(new_cls)
-            new_cls.project = project  # type: ignore[attr-defined]
+            new_cls.project = project
 
             active_graph.add_feature(new_cls)
         else:
@@ -1097,7 +994,7 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
         return self
 
     @classmethod
-    def spec(cls) -> FeatureSpec:  # type: ignore[override]
+    def spec(cls) -> FeatureSpec:
         return cls._spec
 
     @classmethod

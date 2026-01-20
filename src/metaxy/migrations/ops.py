@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 
-class BaseOperation(BaseSettings, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
+class BaseOperation(BaseSettings, ABC):
     """Base class for all migration operations with environment variable support.
 
     Operations are instantiated from YAML configs and execute on individual features.

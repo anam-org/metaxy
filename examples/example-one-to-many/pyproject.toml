@@ -8,13 +8,11 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "metaxy>=0.1.0",
-  "duckdb",
-  "ibis-framework[duckdb]",
+  "metaxy[delta]",
 ]
 
 [tool.uv.sources]
-metaxy = { path = "../../", editable = true }
+metaxy = { path = "../..", editable = true }
 
 [build-system]
 requires = ["uv_build>=0.8.19,<0.9.0"]

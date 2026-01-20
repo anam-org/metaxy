@@ -1,3 +1,8 @@
+---
+title: "SQLModel Plugin"
+description: "SQLModel integration for ORM-based features."
+---
+
 # Metaxy + SQLModel
 
 The [SQLModel](https://sqlmodel.tiangolo.com/) integration enables Metaxy features to also act as [SQLAlchemy](https://www.sqlalchemy.org/) ORM models. It exposes user-defined feature tables to SQLAlchemy.
@@ -88,8 +93,7 @@ from metaxy.ext.sqlmodel import filter_feature_sqlmodel_metadata
 from metaxy.config import MetaxyConfig
 from metaxy import init_metaxy
 
-init_metaxy()
-config = MetaxyConfig.get()
+config = init_metaxy()
 store = config.get_store()
 
 # Transform SQLModel metadata with table_prefix

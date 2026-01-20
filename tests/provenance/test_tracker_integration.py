@@ -79,6 +79,7 @@ def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
                     {"original_name": "hash2"},
                 ],
                 "metaxy_provenance": ["prov1", "prov2"],
+                "metaxy_data_version": ["prov1", "prov2"],
             }
         ).lazy()
     )
@@ -186,6 +187,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
                     {"field_a": "hash_a2", "field_b": "hash_b2", "field_c": "hash_c2"},
                 ],
                 "metaxy_provenance": ["prov1", "prov2"],
+                "metaxy_data_version": ["prov1", "prov2"],
             }
         ).lazy()
     )
@@ -285,6 +287,7 @@ def test_multi_upstream_join_on_common_id_columns(
                     {"data_a": "hash_a3"},
                 ],
                 "metaxy_provenance": ["prov_a1", "prov_a2", "prov_a3"],
+                "metaxy_data_version": ["prov_a1", "prov_a2", "prov_a3"],
             }
         ).lazy()
     )
@@ -305,6 +308,7 @@ def test_multi_upstream_join_on_common_id_columns(
                     {"data_b": "hash_b4"},
                 ],
                 "metaxy_provenance": ["prov_b2", "prov_b3", "prov_b4"],
+                "metaxy_data_version": ["prov_b2", "prov_b3", "prov_b4"],
             }
         ).lazy()
     )
@@ -409,6 +413,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
                     {"value": f"hash_{i}"} for i in range(1, 6)
                 ],
                 "metaxy_provenance": [f"prov_{i}" for i in range(1, 6)],
+                "metaxy_data_version": [f"prov_{i}" for i in range(1, 6)],
             }
         ).lazy()
     )
@@ -425,6 +430,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
                     {"value": f"hash_{i}"} for i in range(1, 6)
                 ],
                 "metaxy_provenance": [f"prov_{i}" for i in range(1, 6)],
+                "metaxy_data_version": [f"prov_{i}" for i in range(1, 6)],
             }
         ).lazy()
     )
@@ -596,6 +602,7 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
                     {"sensor": "raw_a2"},
                 ],
                 "metaxy_provenance": ["raw_prov_a1", "raw_prov_a2"],
+                "metaxy_data_version": ["raw_prov_a1", "raw_prov_a2"],
             }
         ).lazy()
     )
@@ -614,6 +621,7 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
                     {"sensor": "raw_b2"},
                 ],
                 "metaxy_provenance": ["raw_prov_b1", "raw_prov_b2"],
+                "metaxy_data_version": ["raw_prov_b1", "raw_prov_b2"],
             }
         ).lazy()
     )
@@ -711,6 +719,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
                 "metaxy_provenance_by_field": [{"data": "hash_a"}],
                 "metaxy_data_version_by_field": [{"data": "hash_a"}],
                 "metaxy_provenance": ["prov_a"],
+                "metaxy_data_version": ["prov_a"],
             }
         ).lazy()
     )
@@ -723,6 +732,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
                 "metaxy_provenance_by_field": [{"data": "hash_b"}],
                 "metaxy_data_version_by_field": [{"data": "hash_b"}],
                 "metaxy_provenance": ["prov_b"],
+                "metaxy_data_version": ["prov_b"],
             }
         ).lazy()
     )
@@ -733,7 +743,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
     }
 
     # Should raise error about colliding columns
-    with pytest.raises(ValueError, match="additional shared columns"):
+    with pytest.raises(ValueError, match="column collisions"):
         engine.prepare_upstream(
             upstream=upstream,
             filters={},

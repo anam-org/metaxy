@@ -1,3 +1,8 @@
+---
+title: "Ibis API Reference"
+description: "API reference for IbisMetadataStore."
+---
+
 # Ibis Metadata Store API
 
 ::: metaxy.metadata_store.ibis

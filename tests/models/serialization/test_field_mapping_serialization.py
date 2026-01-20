@@ -40,12 +40,12 @@ def test_default_fields_mapping_serialization_with_config():
         exclude_fields=[field_key],
     )
 
-    # Serialize to dict
+    # Serialize to dict (FieldKey serializes as slashed string)
     serialized = mapping.model_dump(mode="json")
     assert serialized == {
         "type": "default",
         "match_suffix": True,
-        "exclude_fields": [field_key.model_dump()],
+        "exclude_fields": ["test_field"],  # FieldKey serializes as string
     }
 
     # Deserialize back
@@ -117,7 +117,7 @@ def test_fields_mapping_classmethod_serialization():
         "mapping": {
             "type": "default",
             "match_suffix": True,
-            "exclude_fields": [["metadata"]],  # FieldKey serializes as list
+            "exclude_fields": ["metadata"],  # FieldKey serializes as string
         }
     }
 

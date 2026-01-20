@@ -1,3 +1,8 @@
+---
+title: "CLI Reference"
+description: "Reference for the Metaxy command-line interface."
+---
+
 # CLI Commands
 
 This section provides a comprehensive reference for all Metaxy CLI commands.

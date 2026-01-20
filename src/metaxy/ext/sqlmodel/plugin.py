@@ -19,6 +19,7 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_DELETED_AT,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
@@ -50,7 +51,7 @@ class MetaxyTableInfo(BaseModel):
     feature_key: ValidatedFeatureKey
 
 
-class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[reportUnsafeMultipleInheritance]
+class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
     def __new__(
         cls,
         cls_name: str,
@@ -70,9 +71,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             namespace: Class namespace (attributes and methods)
             spec: Metaxy FeatureSpec (required for concrete features)
             inject_primary_key: If True, automatically create composite primary key
-                including id_columns + (metaxy_created_at, metaxy_data_version).
+                including (metaxy_feature_version, *id_columns, metaxy_created_at).
             inject_index: If True, automatically create composite index
-                including id_columns + (metaxy_created_at, metaxy_data_version).
+                including (metaxy_feature_version, *id_columns, metaxy_created_at).
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
@@ -172,32 +173,33 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             "metaxy-system": MetaxyTableInfo(feature_key=spec.key).model_dump()
         }
 
+        # Base table kwargs that are always applied
+        base_table_kwargs = {"extend_existing": True}
+
         # Prepare constraints if requested
         constraints = []
         if inject_primary_key or inject_index:
-            # Composite key/index columns: id_columns + metaxy_created_at + metaxy_data_version
-            key_columns = list(spec.id_columns) + [
-                METAXY_CREATED_AT,
-                METAXY_DATA_VERSION,
-            ]
+            # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
+            key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_CREATED_AT]
 
             if inject_primary_key:
-                pk_constraint = PrimaryKeyConstraint(*key_columns, name="metaxy_pk")
-                constraints.append(pk_constraint)
+                constraints.append(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))
 
             if inject_index:
-                idx = Index("metaxy_idx", *key_columns)
-                constraints.append(idx)
+                constraints.append(Index("metaxy_idx", *key_columns))
 
         # Merge with existing __table_args__
         if "__table_args__" in namespace:
             existing_args = namespace["__table_args__"]
 
             if isinstance(existing_args, dict):
-                # Dict format: merge info, convert to tuple if we have constraints
+                # Dict format: merge info and base kwargs, convert to tuple if we have constraints
                 existing_info = existing_args.get("info", {})
                 existing_info.update(metaxy_info)
                 existing_args["info"] = existing_info
+                # Merge base table kwargs (don't override user settings)
+                for key, value in base_table_kwargs.items():
+                    existing_args.setdefault(key, value)
 
                 if constraints:
                     # Convert to tuple format with constraints
@@ -220,6 +222,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
                 existing_info = table_kwargs.get("info", {})
                 existing_info.update(metaxy_info)
                 table_kwargs["info"] = existing_info
+                # Merge base table kwargs (don't override user settings)
+                for key, value in base_table_kwargs.items():
+                    table_kwargs.setdefault(key, value)
 
                 # Combine: existing constraints + new constraints + table kwargs
                 namespace["__table_args__"] = (
@@ -231,19 +236,18 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
                 )
         else:
             # No existing __table_args__
+            table_kwargs = {**base_table_kwargs, "info": metaxy_info}
             if constraints:
-                # Create tuple format with constraints + info
-                namespace["__table_args__"] = tuple(constraints) + (
-                    {"info": metaxy_info},
-                )
+                # Create tuple format with constraints + table kwargs
+                namespace["__table_args__"] = tuple(constraints) + (table_kwargs,)
             else:
-                # Just info, use dict format
-                namespace["__table_args__"] = {"info": metaxy_info}
+                # Just table kwargs, use dict format
+                namespace["__table_args__"] = table_kwargs
 
 
-class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, reportUnsafeMultipleInheritance]
+class BaseSQLModelFeature(
     SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None
-):  # type: ignore[misc]
+):
     """Base class for `Metaxy` features that are also `SQLModel` tables.
 
     !!! example
@@ -280,7 +284,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
 
     # Override the frozen config from Feature's FrozenBaseModel
     # SQLModel instances need to be mutable for ORM operations
-    model_config = {"frozen": False}  # pyright: ignore[reportAssignmentType]
+    model_config = {"frozen": False}
 
     # Re-declare ClassVar attributes from BaseFeature for type checker visibility.
     # These are set by MetaxyMeta at class creation time but type checkers can't see them
@@ -297,6 +301,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_PROVENANCE,
         },
+        nullable=False,
     )
 
     metaxy_provenance_by_field: dict[str, str] = Field(
@@ -306,6 +311,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_PROVENANCE_BY_FIELD,
         },
+        nullable=False,
     )
 
     metaxy_feature_version: str | None = Field(
@@ -314,6 +320,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_FEATURE_VERSION,
         },
+        nullable=False,
     )
 
     metaxy_feature_spec_version: str | None = Field(
@@ -322,6 +329,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_FEATURE_SPEC_VERSION,
         },
+        nullable=False,
     )
 
     metaxy_snapshot_version: str | None = Field(
@@ -330,6 +338,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_SNAPSHOT_VERSION,
         },
+        nullable=False,
     )
 
     metaxy_data_version: str | None = Field(
@@ -338,6 +347,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_DATA_VERSION,
         },
+        nullable=False,
     )
 
     metaxy_data_version_by_field: dict[str, str] | None = Field(
@@ -347,15 +357,17 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_DATA_VERSION_BY_FIELD,
         },
+        nullable=False,
     )
 
     metaxy_created_at: AwareDatetime | None = Field(
         default=None,
         description="Timestamp when the metadata row was created (UTC)",
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
         sa_column_kwargs={
             "name": METAXY_CREATED_AT,
         },
+        nullable=False,
     )
 
     metaxy_materialization_id: str | None = Field(
@@ -364,6 +376,17 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         sa_column_kwargs={
             "name": METAXY_MATERIALIZATION_ID,
         },
+        nullable=True,
+    )
+
+    metaxy_deleted_at: AwareDatetime | None = Field(
+        default=None,
+        description="Soft delete timestamp (UTC); null means active row",
+        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
+        sa_column_kwargs={
+            "name": METAXY_DELETED_AT,
+        },
+        nullable=True,
     )
 
 
@@ -377,6 +400,8 @@ def filter_feature_sqlmodel_metadata(
     filter_by_project: bool = True,
     inject_primary_key: bool | None = None,
     inject_index: bool | None = None,
+    protocol: str | None = None,
+    port: int | None = None,
 ) -> tuple[str, "MetaData"]:
     """Get SQLAlchemy URL and filtered SQLModel feature metadata for a metadata store.
 
@@ -399,6 +424,10 @@ def filter_feature_sqlmodel_metadata(
                            If False, do not inject. If None, uses config default.
         inject_index: If True, inject composite index.
                      If False, do not inject. If None, uses config default.
+        protocol: Optional protocol to replace the existing one in the URL.
+            Useful when Ibis uses a different protocol than SQLAlchemy requires.
+        port: Optional port to replace the existing one in the URL.
+            Useful when the SQLAlchemy driver uses a different port than Ibis.
 
     Returns:
         Tuple of (sqlalchemy_url, filtered_metadata)
@@ -406,7 +435,11 @@ def filter_feature_sqlmodel_metadata(
     Raises:
         ValueError: If store's sqlalchemy_url is empty
 
-    Example:
+    Note:
+        For ClickHouse, the `sqlalchemy_url` property already returns the native
+        protocol with port 9000, so you typically don't need to override these.
+
+    Example: Basic Usage
 
         ```py
         from sqlmodel import SQLModel
@@ -430,10 +463,11 @@ def filter_feature_sqlmodel_metadata(
         context.configure(url=url, target_metadata=target_metadata)
         ```
     """
-
     from sqlalchemy import MetaData
 
-    config = MetaxyConfig.get()
+    from metaxy.ext.sqlalchemy.plugin import _get_store_sqlalchemy_url
+
+    config = MetaxyConfig.get(load=True)
 
     if project is None:
         project = config.project
@@ -445,10 +479,7 @@ def filter_feature_sqlmodel_metadata(
     if inject_index is None:
         inject_index = sqlmodel_config.inject_index
 
-    # Get SQLAlchemy URL from store
-    if not store.sqlalchemy_url:
-        raise ValueError("IbisMetadataStore has an empty `sqlalchemy_url`.")
-    url = store.sqlalchemy_url
+    url = _get_store_sqlalchemy_url(store, protocol=protocol, port=port)
 
     # Create new metadata with transformed table names
     filtered_metadata = MetaData()

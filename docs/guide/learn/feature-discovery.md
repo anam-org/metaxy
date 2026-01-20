@@ -1,3 +1,8 @@
+---
+title: "Feature Discovery"
+description: "Automatic feature discovery from Python modules."
+---
+
 # Feature Discovery
 
 !!! warning
