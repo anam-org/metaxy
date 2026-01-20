@@ -24,6 +24,9 @@ mdc: true
 # duration of the presentation
 duration: 20min
 routerMode: hash
+# Metaxy brand colors from logo
+themeConfig:
+  primary: '#696FCC'
 ---
 
 # Welcome to Metaxy
@@ -53,30 +56,28 @@ image: /img/coffee.jpg
 transition: fade-out
 ---
 
-# The Compute Economics Have Changed
+# GPU Economics
 
-> Your data team used to worry about storage costs. Now you're staring at GPU bills that make storage look like pocket change.
+> GPU bills are in a different league.
 
 <br>
 
 **The old world (CPU):**
 
-- Compute was cheap, storage was expensive
-- "When in doubt, rerun everything" was the safe choice
-- $50/month for your entire ETL cluster
+- Compute was cheap
+- CPU reruns were affordable
 
 **The new world (GPU):**
 
 - GPUs cost **10-100× more** than CPUs per hour
-- A single experiment might burn through your weekly budget
-- But you need to run 200 experiments to find what works
+- A single experiment might be budget breaking
 
 > **Metaxy** helps you experiment fast without going broke
 
 <style>
 h1 {
-  background-color: #2B90B6;
-  background-image: linear-gradient(45deg, #4EC5D4 10%, #146b8c 20%);
+  background-color: #696FCC;
+  background-image: linear-gradient(45deg, #94A9F0 10%, #4644AD 20%);
   background-size: 100%;
   -webkit-background-clip: text;
   -moz-background-clip: text;
@@ -89,12 +90,13 @@ h1 {
 layout: two-cols
 ---
 
-## BI Pipelines (The Old Playbook)
+## BI Pipelines (The Old reality)
 
 - Run at 2 AM every night
 - Everything fits in SQL
-- Worst case: rerun takes 4 hours
+- Worst case: rerun takes a couple of hours
 - $200/month, all-in
+- Single-node Xgboost CPU AI is cheap
 
 ::right::
 
@@ -102,16 +104,18 @@ layout: two-cols
 
 <v-clicks>
 
-- Run 50 times a day, whenever someone has an idea
+- Run many times a day, + parameter sweeps
 - Half the work happens on GPUs outside your warehouse
-- Worst case: rerun costs **$5,000** and takes 3 days
+- Worst case: rerun costs a lot and takes several days
 - You can't afford to guess what needs recomputing
 
 </v-clicks>
 
 ---
+layout: center
+---
 
-# What Metaxy Does For You
+# What **Metaxy** Does For You
 
 <v-clicks>
 
@@ -122,9 +126,9 @@ layout: two-cols
 
 </v-clicks>
 
-<div mt-8 text-muted>
-Think of it as version control for your feature pipeline metadata.
-</div>
+<br>
+
+> Think of it as version control for your feature pipeline metadata.
 
 ---
 
@@ -140,7 +144,7 @@ Think of it as version control for your feature pipeline metadata.
    - Detects that only the audio field changed
    - Face detection depends on video frames, not audio
    - Only reruns transcription, skips face detection
-   - Saves 50% of your GPU bill
+   - Saves a large part of your GPU bill
 
 </v-clicks>
 
@@ -157,7 +161,7 @@ Think of it as version control for your feature pipeline metadata.
 The workflow in 3 steps:
 
 ````md magic-move {lines: true}
-```py {1-3|1-5}
+```py {1-3|5-6}
 # 1. Define your features (in features.py)
 from metaxy import init_metaxy
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
@@ -176,7 +180,7 @@ with DuckDBMetadataStore("metadata.duckdb") as store:
         new_rows = run_face_detection(diff)  # Your GPU job runs here
 ```
 
-```py
+```py {1-8|7-8}
 # 3. Record the results
 with DuckDBMetadataStore("metadata.duckdb") as store:
     diff = store.resolve_update(FaceDetection)
@@ -198,7 +202,7 @@ with DuckDBMetadataStore("metadata.duckdb") as store:
 layout: two-cols
 ---
 
-# How It Works Under the Hood
+# How It Works
 
 **Your code:**
 
@@ -208,10 +212,9 @@ layout: two-cols
 
 **The system:**
 
-- Computes version hashes for every field
+- Computes version hashes (data, code) for every record
 - Tracks which samples have which versions
-- Joins upstream metadata in SQL (fast!)
-- Returns only samples needing work
+- Manages metadata in SQL including filters (fast!)
 
 **Your orchestrator:**
 
@@ -220,17 +223,21 @@ layout: two-cols
 
 ::right::
 
-```mermaid
-graph TD
-    Specs["Your Feature Definitions"] --> Graph["Dependency Graph"]
-    Graph --> Versions["Version Hashing"]
-    Versions --> Store["Metadata Store<br/>(DuckDB/ClickHouse/BigQuery)"]
-    Store --> Diff["Compute Diff"]
-    Diff --> Orchestrator["Dagster/Airflow/Ray"]
+<div class="flex items-center justify-center h-full">
 
-    classDef node fill:#0f172a,color:#f8fafc,stroke:#38bdf8,stroke-width:2px;
+```mermaid {scale: 0.85}
+graph TD
+    Specs["Feature Definitions"] --> Graph["Dependency Graph"]
+    Graph --> Versions["Version Hashing"]
+    Versions --> Store["Metadata Store"]
+    Store --> Diff["Compute Diff"]
+    Diff --> Orchestrator["Orchestrator"]
+
+    classDef node fill:#0f172a,color:#f8fafc,stroke:#696FCC,stroke-width:2px;
     class Specs,Graph,Versions,Store,Diff,Orchestrator node;
 ```
+
+</div>
 
 ---
 
@@ -271,6 +278,7 @@ class: text-center
 
 [Documentation](https://docs.metaxy.io) · [GitHub](https://github.com/anam-org/metaxy/)
 
+
 <div class="w-60 relative">
   <div class="relative w-40 h-40">
     <img
@@ -278,10 +286,10 @@ class: text-center
       :initial="{ x: 800, y: -100, scale: 1.5, rotate: -50 }"
       :enter="final"
       class="absolute inset-0"
-      src="https://sli.dev/logo-square.png"
+      src="https://raw.githubusercontent.com/anam-org/metaxy/main/docs/assets/metaxy.svg"
       alt=""
     />
-    <img
+    <!-- <img
       v-motion
       :initial="{ y: 500, x: -100, scale: 2 }"
       :enter="final"
@@ -296,11 +304,11 @@ class: text-center
       class="absolute inset-0"
       src="https://sli.dev/logo-triangle.png"
       alt=""
-    />
+    /> -->
   </div>
 
 <div
-    class="text-5xl absolute top-14 left-40 text-[#2B90B6] -z-1"
+    class="text-5xl absolute top-14 left-40 text-[#696FCC] -z-1"
     v-motion
     :initial="{ x: -80, opacity: 0}"
     :enter="{ x: 0, opacity: 1, transition: { delay: 2000, duration: 1000 } }">
