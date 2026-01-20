@@ -13,6 +13,8 @@ This is important for:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import polars as pl
 from syrupy.assertion import SnapshotAssertion
 
@@ -21,10 +23,10 @@ from metaxy import (
     FeatureKey,
     FieldKey,
     FieldSpec,
-    InMemoryMetadataStore,
 )
 from metaxy._testing import TempFeatureModule
 from metaxy._testing.models import SampleFeatureSpec
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations import detect_diff_migration
 
@@ -68,7 +70,7 @@ def test_feature_spec_version_exists_and_differs_from_feature_version():
 
 
 def test_migration_detector_uses_feature_version_not_feature_spec_version(
-    tmp_path, snapshot: SnapshotAssertion
+    tmp_path: Path, snapshot: SnapshotAssertion
 ):
     """Test that migration detection compares feature_version, not feature_spec_version.
 
@@ -90,7 +92,8 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     SimpleV1 = graph_v1.features_by_key[FeatureKey(["test", "simple"])]
 
     # Setup v1 data and snapshot
-    store_v1 = InMemoryMetadataStore()
+    store_path = tmp_path / "delta_store"
+    store_v1 = DeltaMetadataStore(root_path=store_path)
     with graph_v1.use(), store_v1:
         data = pl.DataFrame(
             {
@@ -141,8 +144,8 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     )  # Also changed (includes code_version)
 
     # Test migration detection
-    store_v2 = InMemoryMetadataStore()
-    store_v2._storage = store_v1._storage.copy()  # Copy v1 data
+    # DeltaMetadataStore persists data to disk, so we reuse the same path
+    store_v2 = DeltaMetadataStore(root_path=store_path)
 
     with graph_v2.use(), store_v2:
         # Detect migration (compares latest snapshot vs current graph)
@@ -165,7 +168,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     temp_v2.cleanup()
 
 
-def test_no_migration_when_only_non_computational_properties_change(tmp_path):
+def test_no_migration_when_only_non_computational_properties_change(tmp_path: Path):
     """Test that changes to non-computational properties don't trigger migrations.
 
     This test documents the intended behavior for when SampleFeatureSpec gains
@@ -192,7 +195,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
     TestFeature = graph.features_by_key[FeatureKey(["test", "feature"])]
 
     # Setup data and snapshot
-    store = InMemoryMetadataStore()
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
     with graph.use(), store:
         data = pl.DataFrame(
             {
@@ -361,7 +364,7 @@ def test_computational_property_changes_trigger_migrations(
     temp_d2.cleanup()
 
 
-def test_snapshot_stores_both_versions(tmp_path):
+def test_snapshot_stores_both_versions(tmp_path: Path):
     """Test that graph snapshots store both feature_version and feature_spec_version.
 
     This ensures:
@@ -381,7 +384,7 @@ def test_snapshot_stores_both_versions(tmp_path):
     TestFeature = graph.features_by_key[FeatureKey(["test", "feature"])]
 
     # Create store and record snapshot
-    store = InMemoryMetadataStore()
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
     with graph.use(), store:
         data = pl.DataFrame(
             {

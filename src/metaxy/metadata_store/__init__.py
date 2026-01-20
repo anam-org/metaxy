@@ -10,7 +10,6 @@ from metaxy.metadata_store.exceptions import (
     MetadataStoreError,
     StoreNotOpenError,
 )
-from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
 )
@@ -18,7 +17,6 @@ from metaxy.metadata_store.types import AccessMode
 
 __all__ = [
     "MetadataStore",
-    "InMemoryMetadataStore",
     "MetadataStoreError",
     "FeatureNotFoundError",
     "FieldNotFoundError",

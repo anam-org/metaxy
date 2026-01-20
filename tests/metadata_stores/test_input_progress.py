@@ -19,14 +19,14 @@ from metaxy import (
 )
 from metaxy._testing import add_metaxy_provenance_column
 from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.lineage import LineageRelationship
 
 
 class TestCalculateInputProgress:
     """Tests for MetadataStore.calculate_input_progress method."""
 
-    def test_returns_none_when_input_is_none(self, graph: FeatureGraph):
+    def test_returns_none_when_input_is_none(self, graph: FeatureGraph, tmp_path):
         """Returns None when LazyIncrement.input is None (root features)."""
 
         class RootFeature(
@@ -39,7 +39,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Root features require samples argument
             samples = pl.DataFrame(
                 {
@@ -61,7 +61,7 @@ class TestCalculateInputProgress:
             progress = store.calculate_input_progress(lazy_increment, RootFeature)
             assert progress is None
 
-    def test_returns_100_when_all_input_processed(self, graph: FeatureGraph):
+    def test_returns_100_when_all_input_processed(self, graph: FeatureGraph, tmp_path):
         """Returns 100.0 when all input samples have been processed."""
 
         class Upstream(
@@ -85,7 +85,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Write upstream metadata
             upstream_data = pl.DataFrame(
                 {
@@ -111,7 +111,7 @@ class TestCalculateInputProgress:
             assert progress == 100.0
 
     def test_returns_correct_percentage_when_partially_processed(
-        self, graph: FeatureGraph
+        self, graph: FeatureGraph, tmp_path
     ):
         """Returns correct percentage when some input samples are missing."""
 
@@ -136,7 +136,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Write upstream metadata for 10 samples
             upstream_data = pl.DataFrame(
                 {
@@ -160,7 +160,7 @@ class TestCalculateInputProgress:
             progress = store.calculate_input_progress(lazy_increment, Downstream)
             assert progress == 30.0
 
-    def test_returns_none_when_no_input(self, graph: FeatureGraph):
+    def test_returns_none_when_no_input(self, graph: FeatureGraph, tmp_path):
         """Returns None when there's no upstream input available."""
 
         class Upstream(
@@ -184,7 +184,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Write empty upstream metadata (0 rows) with proper schema
             upstream_data = pl.DataFrame(
                 {
@@ -203,7 +203,9 @@ class TestCalculateInputProgress:
             progress = store.calculate_input_progress(lazy_increment, Downstream)
             assert progress is None  # No input available
 
-    def test_identity_lineage_uses_upstream_id_columns(self, graph: FeatureGraph):
+    def test_identity_lineage_uses_upstream_id_columns(
+        self, graph: FeatureGraph, tmp_path
+    ):
         """Identity (1:1) lineage uses upstream_id_columns for progress."""
 
         class Upstream(
@@ -227,7 +229,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Write upstream with composite keys
             upstream_data = pl.DataFrame(
                 {
@@ -255,7 +257,9 @@ class TestCalculateInputProgress:
             assert progress is not None
             assert abs(progress - 66.67) < 0.1
 
-    def test_aggregation_lineage_uses_aggregation_columns(self, graph: FeatureGraph):
+    def test_aggregation_lineage_uses_aggregation_columns(
+        self, graph: FeatureGraph, tmp_path
+    ):
         """Aggregation (N:1) lineage uses aggregation columns for progress."""
 
         class SensorReadings(
@@ -286,7 +290,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Write 6 sensor readings (2 hours × 3 readings each)
             upstream_data = pl.DataFrame(
                 {
@@ -328,7 +332,7 @@ class TestCalculateInputProgress:
             progress = store.calculate_input_progress(lazy_increment, HourlyStats)
             assert progress == 50.0
 
-    def test_expansion_lineage_uses_parent_columns(self, graph: FeatureGraph):
+    def test_expansion_lineage_uses_parent_columns(self, graph: FeatureGraph, tmp_path):
         """Expansion (1:N) lineage uses parent columns for progress."""
 
         class Video(
@@ -357,7 +361,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Write 3 videos
             upstream_data = pl.DataFrame(
                 {
@@ -406,7 +410,7 @@ class TestCalculateInputProgress:
             assert progress is not None
             assert abs(progress - 66.67) < 0.1
 
-    def test_with_renamed_columns(self, graph: FeatureGraph):
+    def test_with_renamed_columns(self, graph: FeatureGraph, tmp_path):
         """Progress calculation works with renamed columns."""
 
         class Upstream(
@@ -435,7 +439,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Write upstream
             upstream_data = pl.DataFrame(
                 {
@@ -459,7 +463,7 @@ class TestCalculateInputProgress:
             progress = store.calculate_input_progress(lazy_increment, Downstream)
             assert progress == 50.0
 
-    def test_multiple_upstreams(self, graph: FeatureGraph):
+    def test_multiple_upstreams(self, graph: FeatureGraph, tmp_path):
         """Progress calculation with multiple upstream features."""
 
         class UpstreamA(
@@ -493,7 +497,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Write upstream A
             upstream_a_data = pl.DataFrame(
                 {

@@ -3,18 +3,19 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import polars as pl
 
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy._version import __version__
-from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 
 
-def test_push_graph_snapshot_with_default_tags():
+def test_push_graph_snapshot_with_default_tags(tmp_path: Path):
     """Test that push_graph_snapshot() automatically adds metaxy_version."""
     graph = FeatureGraph()
 
@@ -29,7 +30,7 @@ def test_push_graph_snapshot_with_default_tags():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Push without explicit tags
             SystemTableStorage(store).push_graph_snapshot()
 
@@ -48,7 +49,7 @@ def test_push_graph_snapshot_with_default_tags():
             assert metaxy_data["version"] == __version__
 
 
-def test_push_graph_snapshot_with_custom_tags():
+def test_push_graph_snapshot_with_custom_tags(tmp_path: Path):
     """Test that custom tags are merged with automatic tags."""
     graph = FeatureGraph()
 
@@ -63,7 +64,7 @@ def test_push_graph_snapshot_with_custom_tags():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Push with custom tags
             custom_tags = {
                 "environment": "production",
@@ -90,7 +91,7 @@ def test_push_graph_snapshot_with_custom_tags():
             assert tags["deployed_by"] == "ci-system"
 
 
-def test_push_graph_snapshot_tags_persist_across_pushes():
+def test_push_graph_snapshot_tags_persist_across_pushes(tmp_path: Path):
     """Test that tags are stored with each push."""
     graph = FeatureGraph()
 
@@ -105,7 +106,7 @@ def test_push_graph_snapshot_tags_persist_across_pushes():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # First push
             SystemTableStorage(store).push_graph_snapshot(
                 tags={"environment": "staging"}
@@ -134,7 +135,7 @@ def test_push_graph_snapshot_tags_persist_across_pushes():
             assert "version" in metaxy_data
 
 
-def test_push_graph_snapshot_tags_updated_with_feature_changes():
+def test_push_graph_snapshot_tags_updated_with_feature_changes(tmp_path: Path):
     """Test that tags are updated when feature definitions change."""
     graph_v1 = FeatureGraph()
 
@@ -149,7 +150,7 @@ def test_push_graph_snapshot_tags_updated_with_feature_changes():
         ):
             pass
 
-        with InMemoryMetadataStore() as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # First push
             SystemTableStorage(store).push_graph_snapshot(
                 tags={"environment": "staging", "build": "123"}

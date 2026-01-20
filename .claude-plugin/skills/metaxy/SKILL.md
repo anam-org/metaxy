@@ -83,14 +83,14 @@ To test features in isolation, use context managers to avoid polluting the globa
 ```python
 import pytest
 import metaxy as mx
+from metaxy.metadata_store.delta import DeltaMetadataStore
 
 
 @pytest.fixture
-def metaxy_env():
+def metaxy_env(tmp_path):
     with mx.FeatureGraph().use():
-        with mx.MetaxyConfig(
-            stores={"test": mx.InMemoryMetadataStore()}
-        ).use() as config:
+        store = DeltaMetadataStore(root_path=tmp_path / "delta_test")
+        with mx.MetaxyConfig(stores={"test": store}).use() as config:
             yield config
 ```
 

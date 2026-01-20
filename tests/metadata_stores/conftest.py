@@ -16,7 +16,6 @@ from metaxy._testing import HashAlgorithmCases
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
-    InMemoryMetadataStore,
     MetadataStore,
 )
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
@@ -60,11 +59,6 @@ def store_params(tmp_path: Path, clickhouse_db: str) -> dict[str, Any]:
 
 class StoreCases:
     """Store configuration cases for parametrization."""
-
-    def case_inmemory(
-        self, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        return (InMemoryMetadataStore, {})
 
     def case_duckdb(
         self, tmp_path: Path, test_graph: FeatureGraph
@@ -120,9 +114,13 @@ def persistent_store(
 
 
 @pytest.fixture
-def default_store() -> InMemoryMetadataStore:
-    """Default store (InMemory, xxhash64)."""
-    return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
+def default_store(tmp_path: Path) -> DeltaMetadataStore:
+    """Default store (Delta, xxhash64)."""
+    delta_path = tmp_path / "default_delta_store"
+    return DeltaMetadataStore(
+        root_path=delta_path,
+        hash_algorithm=HashAlgorithm.XXHASH64,
+    )
 
 
 @pytest.fixture
@@ -138,12 +136,16 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
 
 
 class AnyStoreCases:
-    """Minimal store cases (InMemory + DuckDB)."""
+    """Minimal store cases (Delta + DuckDB)."""
 
-    @pytest.mark.inmemory
+    @pytest.mark.delta
     @pytest.mark.polars
-    def case_inmemory(self) -> MetadataStore:
-        return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
+    def case_delta(self, tmp_path: Path) -> MetadataStore:
+        delta_path = tmp_path / "delta_store"
+        return DeltaMetadataStore(
+            root_path=delta_path,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
 
     @pytest.mark.ibis
     @pytest.mark.native
@@ -157,12 +159,16 @@ class AnyStoreCases:
 
 
 class AllStoresCases:
-    """All store types (InMemory, DuckDB, ClickHouse)."""
+    """All store types (Delta, DuckDB, ClickHouse, LanceDB)."""
 
-    @pytest.mark.inmemory
+    @pytest.mark.delta
     @pytest.mark.polars
-    def case_inmemory(self) -> MetadataStore:
-        return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
+    def case_delta(self, tmp_path: Path) -> MetadataStore:
+        delta_path = tmp_path / "delta_store"
+        return DeltaMetadataStore(
+            root_path=delta_path,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
 
     @pytest.mark.ibis
     @pytest.mark.native
@@ -183,15 +189,6 @@ class AllStoresCases:
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
-    @pytest.mark.delta
-    @pytest.mark.polars
-    def case_delta(self, tmp_path: Path) -> MetadataStore:
-        delta_path = tmp_path / "delta_store"
-        return DeltaMetadataStore(
-            root_path=delta_path,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
     @pytest.mark.lancedb
     @pytest.mark.polars
     def case_lancedb(self, tmp_path: Path) -> MetadataStore:
@@ -205,7 +202,7 @@ class AllStoresCases:
 @fixture
 @parametrize_with_cases("store", cases=AllStoresCases)
 def any_store(store: MetadataStore) -> MetadataStore:
-    """Parametrized store (InMemory + DuckDB + ClickHouse)."""
+    """Parametrized store (Delta + DuckDB + ClickHouse + LanceDB)."""
     return store
 
 

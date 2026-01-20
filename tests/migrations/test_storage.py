@@ -1,8 +1,10 @@
 """Tests for migration system table storage layer."""
 
+from pathlib import Path
+
 import pytest
 
-from metaxy import InMemoryMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import (
     Event,
     EventType,
@@ -12,9 +14,9 @@ from metaxy.metadata_store.system import (
 
 
 @pytest.fixture
-def store():
+def store(tmp_path: Path):
     """Create fresh store for each test."""
-    with InMemoryMetadataStore() as s:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as s:
         yield s
 
 

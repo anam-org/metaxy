@@ -273,7 +273,6 @@ nav:
       - Constants: reference/api/constants.md
       - Metadata Stores:
         - reference/api/metadata-stores/index.md
-        - Memory: reference/api/metadata-stores/memory.md
         - Exceptions: reference/api/metadata-stores/exceptions.md
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md
