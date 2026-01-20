@@ -21,10 +21,6 @@ from metaxy.models.types import FeatureKey, FieldKey
 class TestProjectDetection:
     """Test automatic project detection from various sources."""
 
-    @pytest.mark.skipif(
-        sys.platform == "win32",
-        reason="uv pip --python doesn't find venv Python on Windows",
-    )
     def test_detect_project_from_entrypoints(self):
         """Test project detection from installed package with entry points."""
         # Install the test-project fixture in a temporary venv and test it
@@ -36,9 +32,9 @@ class TestProjectDetection:
             # Create venv using uv
             subprocess.run(["uv", "venv", str(venv_path)], check=True)
 
-            # Get python path
+            # Get python path (Windows needs .exe extension for uv to find it)
             if sys.platform == "win32":
-                python = venv_path / "Scripts" / "python"
+                python = venv_path / "Scripts" / "python.exe"
             else:
                 python = venv_path / "bin" / "python"
 
