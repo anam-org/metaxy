@@ -6,35 +6,35 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="API reference for filter parsing utilities.">
+        <meta name="description" content="Pluggable metadata layer for multi-modal pipelines">
       
       
       
-        <link rel="canonical" href="https://docs.metaxy.io/main/reference/api/definitions/filters/">
+        <link rel="canonical" href="https://docs.metaxy.io/main/guide/learn/cleanup/">
       
       
-        <link rel="prev" href="../graph/">
+        <link rel="prev" href="../testing/">
       
       
-        <link rel="next" href="../../config/">
+        <link rel="next" href="../system-columns/">
       
       
         
       
       
-      <link rel="icon" href="../../../../assets/favicon.ico">
+      <link rel="icon" href="../../../assets/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
     
     
       
-        <title>Filters API - Metaxy</title>
+        <title>Cleanup - Metaxy</title>
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../../css/code_select.css">
+      <link rel="stylesheet" href="../../../css/code_select.css">
     
-    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -65,17 +65,17 @@
     
   
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Filters API - Metaxy" />
-<meta property="og:description" content="API reference for filter parsing utilities." />
-<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/reference/api/definitions/filters.png" />
+<meta property="og:title" content="Cleanup - Metaxy" />
+<meta property="og:description" content="Pluggable metadata layer for multi-modal pipelines" />
+<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/guide/learn/cleanup.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://docs.metaxy.io/main/reference/api/definitions/filters/" />
+<meta property="og:url" content="https://docs.metaxy.io/main/guide/learn/cleanup/" />
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:title" content="Filters API - Metaxy" />
-<meta property="twitter:description" content="API reference for filter parsing utilities." />
-<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/reference/api/definitions/filters.png" />
+<meta property="twitter:title" content="Cleanup - Metaxy" />
+<meta property="twitter:description" content="Pluggable metadata layer for multi-modal pipelines" />
+<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/guide/learn/cleanup.png" />
 </head>
   
   
@@ -95,7 +95,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#string-filters" class="md-skip">
+        <a href="#metadata-cleanup-hard-soft-deletes" class="md-skip">
           Skip to content
         </a>
       
@@ -115,9 +115,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
-  <img src="../../../../assets/metaxy.svg" alt="logo">
+  <img src="../../../assets/metaxy.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -134,7 +134,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Filters API
+              Cleanup
             
           </span>
         </div>
@@ -256,7 +256,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../.." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -273,9 +273,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../../../../guide/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="../../" class="md-tabs__link">
         
   
   
@@ -294,7 +296,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../integrations/" class="md-tabs__link">
+      <a href="../../../integrations/" class="md-tabs__link">
         
   
   
@@ -313,7 +315,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../examples/" class="md-tabs__link">
+      <a href="../../../examples/" class="md-tabs__link">
         
   
   
@@ -330,11 +332,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="../../../" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../../reference/" class="md-tabs__link">
         
   
   
@@ -375,9 +375,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
-  <img src="../../../../assets/metaxy.svg" alt="logo">
+  <img src="../../../assets/metaxy.svg" alt="logo">
 
     </a>
     Metaxy
@@ -404,7 +404,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -428,8 +428,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -441,20 +443,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../guide/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -472,13 +477,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -508,17 +513,20 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" >
         
           
-          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="">
             
   
   
@@ -554,7 +562,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/overview/quickstart/" class="md-nav__link">
+      <a href="../../overview/quickstart/" class="md-nav__link">
         
   
   
@@ -582,7 +590,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/overview/feature-dependencies/" class="md-nav__link">
+      <a href="../../overview/feature-dependencies/" class="md-nav__link">
         
   
   
@@ -615,8 +623,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -647,18 +657,21 @@
     
       
       
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
         
           
-          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="">
             
   
   
@@ -676,7 +689,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -694,7 +707,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/learn/metadata-stores/" class="md-nav__link">
+      <a href="../metadata-stores/" class="md-nav__link">
         
   
   
@@ -722,7 +735,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/learn/feature-definitions/" class="md-nav__link">
+      <a href="../feature-definitions/" class="md-nav__link">
         
   
   
@@ -750,7 +763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/learn/data-versioning/" class="md-nav__link">
+      <a href="../data-versioning/" class="md-nav__link">
         
   
   
@@ -778,7 +791,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/learn/feature-discovery/" class="md-nav__link">
+      <a href="../feature-discovery/" class="md-nav__link">
         
   
   
@@ -806,7 +819,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/learn/syntactic-sugar/" class="md-nav__link">
+      <a href="../syntactic-sugar/" class="md-nav__link">
         
   
   
@@ -834,7 +847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/learn/relationship/" class="md-nav__link">
+      <a href="../relationship/" class="md-nav__link">
         
   
   
@@ -862,7 +875,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/learn/optional-dependencies/" class="md-nav__link">
+      <a href="../optional-dependencies/" class="md-nav__link">
         
   
   
@@ -890,7 +903,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/learn/filters/" class="md-nav__link">
+      <a href="../filters/" class="md-nav__link">
         
   
   
@@ -918,7 +931,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/learn/testing/" class="md-nav__link">
+      <a href="../testing/" class="md-nav__link">
         
   
   
@@ -943,10 +956,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../../guide/learn/cleanup/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cleanup
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -962,6 +1002,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#soft-deletes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Soft deletes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hard-deletes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hard deletes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -974,7 +1067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guide/learn/system-columns/" class="md-nav__link">
+      <a href="../system-columns/" class="md-nav__link">
         
   
   
@@ -1044,7 +1137,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/" class="md-nav__link ">
+            <a href="../../../integrations/" class="md-nav__link ">
               
   
   
@@ -1107,7 +1200,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/orchestration/" class="md-nav__link ">
+            <a href="../../../integrations/orchestration/" class="md-nav__link ">
               
   
   
@@ -1172,7 +1265,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/orchestration/dagster/" class="md-nav__link ">
+            <a href="../../../integrations/orchestration/dagster/" class="md-nav__link ">
               
   
   
@@ -1214,7 +1307,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/orchestration/dagster/metaxify/" class="md-nav__link">
+      <a href="../../../integrations/orchestration/dagster/metaxify/" class="md-nav__link">
         
   
   
@@ -1242,7 +1335,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/orchestration/dagster/api/" class="md-nav__link">
+      <a href="../../../integrations/orchestration/dagster/api/" class="md-nav__link">
         
   
   
@@ -1309,7 +1402,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/metadata-stores/" class="md-nav__link ">
+            <a href="../../../integrations/metadata-stores/" class="md-nav__link ">
               
   
   
@@ -1380,7 +1473,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/metadata-stores/databases/" class="md-nav__link ">
+            <a href="../../../integrations/metadata-stores/databases/" class="md-nav__link ">
               
   
   
@@ -1445,7 +1538,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/metadata-stores/databases/bigquery/" class="md-nav__link ">
+            <a href="../../../integrations/metadata-stores/databases/bigquery/" class="md-nav__link ">
               
   
   
@@ -1487,7 +1580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/databases/bigquery/configuration/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/databases/bigquery/configuration/" class="md-nav__link">
         
   
   
@@ -1515,7 +1608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/databases/bigquery/api/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/databases/bigquery/api/" class="md-nav__link">
         
   
   
@@ -1574,7 +1667,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/metadata-stores/databases/clickhouse/" class="md-nav__link ">
+            <a href="../../../integrations/metadata-stores/databases/clickhouse/" class="md-nav__link ">
               
   
   
@@ -1616,7 +1709,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/databases/clickhouse/configuration/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/databases/clickhouse/configuration/" class="md-nav__link">
         
   
   
@@ -1644,7 +1737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/databases/clickhouse/api/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/databases/clickhouse/api/" class="md-nav__link">
         
   
   
@@ -1703,7 +1796,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/metadata-stores/databases/duckdb/" class="md-nav__link ">
+            <a href="../../../integrations/metadata-stores/databases/duckdb/" class="md-nav__link ">
               
   
   
@@ -1745,7 +1838,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/databases/duckdb/configuration/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/databases/duckdb/configuration/" class="md-nav__link">
         
   
   
@@ -1773,7 +1866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/databases/duckdb/api/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/databases/duckdb/api/" class="md-nav__link">
         
   
   
@@ -1832,7 +1925,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/metadata-stores/databases/lancedb/" class="md-nav__link ">
+            <a href="../../../integrations/metadata-stores/databases/lancedb/" class="md-nav__link ">
               
   
   
@@ -1874,7 +1967,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/databases/lancedb/configuration/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/databases/lancedb/configuration/" class="md-nav__link">
         
   
   
@@ -1902,7 +1995,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/databases/lancedb/api/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/databases/lancedb/api/" class="md-nav__link">
         
   
   
@@ -1959,7 +2052,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/metadata-stores/databases/ibis/" class="md-nav__link ">
+            <a href="../../../integrations/metadata-stores/databases/ibis/" class="md-nav__link ">
               
   
   
@@ -2001,7 +2094,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/databases/ibis/api/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/databases/ibis/api/" class="md-nav__link">
         
   
   
@@ -2066,7 +2159,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/metadata-stores/storage/" class="md-nav__link ">
+            <a href="../../../integrations/metadata-stores/storage/" class="md-nav__link ">
               
   
   
@@ -2131,7 +2224,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/metadata-stores/storage/delta/" class="md-nav__link ">
+            <a href="../../../integrations/metadata-stores/storage/delta/" class="md-nav__link ">
               
   
   
@@ -2173,7 +2266,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/storage/delta/configuration/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/storage/delta/configuration/" class="md-nav__link">
         
   
   
@@ -2201,7 +2294,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/metadata-stores/storage/delta/api/" class="md-nav__link">
+      <a href="../../../integrations/metadata-stores/storage/delta/api/" class="md-nav__link">
         
   
   
@@ -2276,7 +2369,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/plugins/" class="md-nav__link ">
+            <a href="../../../integrations/plugins/" class="md-nav__link ">
               
   
   
@@ -2341,7 +2434,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/plugins/sqlmodel/" class="md-nav__link ">
+            <a href="../../../integrations/plugins/sqlmodel/" class="md-nav__link ">
               
   
   
@@ -2383,7 +2476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/plugins/sqlmodel/configuration/" class="md-nav__link">
+      <a href="../../../integrations/plugins/sqlmodel/configuration/" class="md-nav__link">
         
   
   
@@ -2411,7 +2504,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/plugins/sqlmodel/api/" class="md-nav__link">
+      <a href="../../../integrations/plugins/sqlmodel/api/" class="md-nav__link">
         
   
   
@@ -2470,7 +2563,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../integrations/plugins/sqlalchemy/" class="md-nav__link ">
+            <a href="../../../integrations/plugins/sqlalchemy/" class="md-nav__link ">
               
   
   
@@ -2512,7 +2605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/plugins/sqlalchemy/configuration/" class="md-nav__link">
+      <a href="../../../integrations/plugins/sqlalchemy/configuration/" class="md-nav__link">
         
   
   
@@ -2540,7 +2633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/plugins/sqlalchemy/api/" class="md-nav__link">
+      <a href="../../../integrations/plugins/sqlalchemy/api/" class="md-nav__link">
         
   
   
@@ -2642,7 +2735,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/ai/claude/" class="md-nav__link">
+      <a href="../../../integrations/ai/claude/" class="md-nav__link">
         
   
   
@@ -2670,7 +2763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../integrations/ai/mcp/" class="md-nav__link">
+      <a href="../../../integrations/ai/mcp/" class="md-nav__link">
         
   
   
@@ -2738,7 +2831,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../examples/" class="md-nav__link ">
+            <a href="../../../examples/" class="md-nav__link ">
               
   
   
@@ -2780,7 +2873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/basic/" class="md-nav__link">
+      <a href="../../../examples/basic/" class="md-nav__link">
         
   
   
@@ -2808,7 +2901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/aggregation/" class="md-nav__link">
+      <a href="../../../examples/aggregation/" class="md-nav__link">
         
   
   
@@ -2836,7 +2929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/expansion/" class="md-nav__link">
+      <a href="../../../examples/expansion/" class="md-nav__link">
         
   
   
@@ -2868,10 +2961,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -2885,23 +2976,20 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../" class="md-nav__link ">
+            <a href="../../../reference/" class="md-nav__link ">
               
   
   
@@ -2919,13 +3007,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2940,10 +3028,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -2963,21 +3049,18 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../../reference/api/" class="md-nav__link ">
               
   
   
@@ -2995,13 +3078,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5_1" id="__nav_5_1_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3016,10 +3099,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -3046,15 +3127,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../../reference/api/definitions/" class="md-nav__link ">
               
   
   
@@ -3078,7 +3159,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_1_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_1_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_1_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3096,7 +3177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../feature-spec/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/feature-spec/" class="md-nav__link">
         
   
   
@@ -3124,7 +3205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../feature/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/feature/" class="md-nav__link">
         
   
   
@@ -3152,7 +3233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../field/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/field/" class="md-nav__link">
         
   
   
@@ -3180,7 +3261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../fields-mapping/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/fields-mapping/" class="md-nav__link">
         
   
   
@@ -3208,7 +3289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../relationship/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/relationship/" class="md-nav__link">
         
   
   
@@ -3236,7 +3317,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/graph/" class="md-nav__link">
         
   
   
@@ -3261,37 +3342,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Filters
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../reference/api/definitions/filters/" class="md-nav__link">
         
   
   
@@ -3307,37 +3361,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#metaxy.models.filter_expression.parse_filter_string" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;parse_filter_string
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3358,7 +3381,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/" class="md-nav__link">
+      <a href="../../../reference/api/config/" class="md-nav__link">
         
   
   
@@ -3386,7 +3409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../types/" class="md-nav__link">
+      <a href="../../../reference/api/types/" class="md-nav__link">
         
   
   
@@ -3414,7 +3437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../constants/" class="md-nav__link">
+      <a href="../../../reference/api/constants/" class="md-nav__link">
         
   
   
@@ -3465,7 +3488,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../metadata-stores/" class="md-nav__link ">
+            <a href="../../../reference/api/metadata-stores/" class="md-nav__link ">
               
   
   
@@ -3507,7 +3530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../metadata-stores/memory/" class="md-nav__link">
+      <a href="../../../reference/api/metadata-stores/memory/" class="md-nav__link">
         
   
   
@@ -3535,7 +3558,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../metadata-stores/exceptions/" class="md-nav__link">
+      <a href="../../../reference/api/metadata-stores/exceptions/" class="md-nav__link">
         
   
   
@@ -3579,7 +3602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../configuration/" class="md-nav__link">
+      <a href="../../../reference/configuration/" class="md-nav__link">
         
   
   
@@ -3607,7 +3630,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../cli/" class="md-nav__link">
+      <a href="../../../reference/cli/" class="md-nav__link">
         
   
   
@@ -3662,10 +3685,32 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#metaxy.models.filter_expression.parse_filter_string" class="md-nav__link">
+  <a href="#soft-deletes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;parse_filter_string
+        Soft deletes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hard-deletes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hard deletes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI workflows
       
     </span>
   </a>
@@ -3697,7 +3742,7 @@
   
   
     <li class="md-path__item">
-      <a href="../../../.." class="md-path__link">
+      <a href="../../.." class="md-path__link">
         
   <span class="md-ellipsis">
     Overview
@@ -3719,45 +3764,11 @@
   
     
     
-      
-  
-  
-    
-    
       <li class="md-path__item">
-        <a href="../feature-spec/" class="md-path__link">
+        <a href="../../overview/quickstart/" class="md-path__link">
           
   <span class="md-ellipsis">
-    Reference
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-    
-  
-
-    
-  
-
-      
-        
-  
-  
-    
-    
-      
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="../feature-spec/" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    API
+    User Guide
   </span>
 
         </a>
@@ -3775,10 +3786,10 @@
     
     
       <li class="md-path__item">
-        <a href="../feature-spec/" class="md-path__link">
+        <a href="../metadata-stores/" class="md-path__link">
           
   <span class="md-ellipsis">
-    Definitions
+    Concepts
   </span>
 
         </a>
@@ -3800,66 +3811,51 @@
   
 
 
-<h1 id="string-filters">String Filters<a class="headerlink" href="#string-filters" title="Permanent link">&para;</a></h1>
-
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="metaxy.models.filter_expression.parse_filter_string" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">metaxy.models.filter_expression.parse_filter_string</span>
-
-
-<a href="#metaxy.models.filter_expression.parse_filter_string" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">parse_filter_string</span><span class="p">(</span><span class="n">filter_string</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span>
+<h1 id="metadata-cleanup-hard-soft-deletes">Metadata Cleanup (hard &amp; soft deletes)<a class="headerlink" href="#metadata-cleanup-hard-soft-deletes" title="Permanent link">&para;</a></h1>
+<p>Metaxy supports two deletion modes: soft deletes that preserve history and hard deletes that permanently remove records. Soft deletes are the default behavior and preferred for most use cases since they maintain audit trails while allowing records to be filtered out from normal queries.</p>
+<p>All examples assume <code>import narwhals as nw</code> and a store opened in the appropriate mode.</p>
+<h2 id="soft-deletes">Soft deletes<a class="headerlink" href="#soft-deletes" title="Permanent link">&para;</a></h2>
+<p>Soft deletes mark records as deleted without physically removing them. When you call <code>delete_metadata</code>, Metaxy appends a new row with the <code>metaxy_deleted_at</code> <a href="../system-columns/">system column</a> set to the deletion timestamp. This preserves your full history—nothing is lost, and you can always query for soft-deleted records if needed.</p>
+<p>By default, <code>read_metadata</code> filters out soft-deleted records automatically. You only see active data. Behind the scenes, Metaxy keeps the latest version of each record by coalescing deletion and creation timestamps, so even if you've updated a record multiple times, queries return only the current state.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;write&quot;</span><span class="p">):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete_metadata</span><span class="p">(</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="n">PredictionFeature</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="n">filters</span><span class="o">=</span><span class="n">nw</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;model_version&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;v1&quot;</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">active</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_metadata</span><span class="p">(</span><span class="n">PredictionFeature</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>  <span class="c1"># soft-deleted hidden</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">all_rows</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_metadata</span><span class="p">(</span><span class="n">PredictionFeature</span><span class="p">,</span> <span class="n">include_deleted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">only_deleted</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_metadata</span><span class="p">(</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">PredictionFeature</span><span class="p">,</span> <span class="n">with_soft_deleted</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
 </span></code></pre></div>
-
-    <div class="doc doc-contents first">
-
-        <p>Parse a SQL WHERE-like string into a Narwhals expression.</p>
-<p>The parser understands SQL <code>WHERE</code> clauses composed of comparison operators, logical operators, parentheses,
-dotted identifiers, and literal values (strings, numbers, booleans, <code>NULL</code>).</p>
-<p>This functionality is implemented with <a href="https://sqlglot.com/">SQLGlot</a>.</p>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">parse_filter_string</span><span class="p">(</span><span class="s2">&quot;NOT (status = &#39;deleted&#39;) AND deleted_at = NULL&quot;</span><span class="p">)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># Returns: (~(nw.col(&quot;status&quot;) == &quot;deleted&quot;)) &amp; nw.col(&quot;deleted_at&quot;).is_null()</span>
+<p>If you track custom deletion flags in your feature schema, filter them through <code>read_metadata</code> filters.</p>
+<h2 id="hard-deletes">Hard deletes<a class="headerlink" href="#hard-deletes" title="Permanent link">&para;</a></h2>
+<p>Hard deletes permanently remove rows from storage. Use them when you need to physically delete data, such as for compliance requirements or to reclaim space. Pass <code>soft=False</code> to <code>delete_metadata</code> and specify which records to remove with a filter expression.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;write&quot;</span><span class="p">):</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete_metadata</span><span class="p">(</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;predictions&quot;</span><span class="p">,</span> <span class="s2">&quot;model_v1&quot;</span><span class="p">]),</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="n">filters</span><span class="o">=</span><span class="n">nw</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;confidence&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">soft</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="p">)</span>
 </span></code></pre></div>
-</details>
-
-            <details class="mkdocstrings-source">
-              <summary>Source code in <code>src/metaxy/models/filter_expression.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a><a href="#__codelineno-0-56"><span class="linenos" data-linenos="56 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">parse_filter_string</span><span class="p">(</span><span class="n">filter_string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nw</span><span class="o">.</span><span class="n">Expr</span><span class="p">:</span>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a><a href="#__codelineno-0-57"><span class="linenos" data-linenos="57 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a SQL WHERE-like string into a Narwhals expression.</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><a href="#__codelineno-0-58"><span class="linenos" data-linenos="58 "></span></a>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a><a href="#__codelineno-0-59"><span class="linenos" data-linenos="59 "></span></a><span class="sd">    The parser understands SQL `WHERE` clauses composed of comparison operators, logical operators, parentheses,</span>
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a><a href="#__codelineno-0-60"><span class="linenos" data-linenos="60 "></span></a><span class="sd">    dotted identifiers, and literal values (strings, numbers, booleans, ``NULL``).</span>
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><a href="#__codelineno-0-61"><span class="linenos" data-linenos="61 "></span></a>
-</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a><a href="#__codelineno-0-62"><span class="linenos" data-linenos="62 "></span></a><span class="sd">    This functionality is implemented with [SQLGlot](https://sqlglot.com/).</span>
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a><a href="#__codelineno-0-63"><span class="linenos" data-linenos="63 "></span></a>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><a href="#__codelineno-0-64"><span class="linenos" data-linenos="64 "></span></a><span class="sd">    Example:</span>
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><a href="#__codelineno-0-65"><span class="linenos" data-linenos="65 "></span></a><span class="sd">        ```python</span>
-</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a><a href="#__codelineno-0-66"><span class="linenos" data-linenos="66 "></span></a><span class="sd">        parse_filter_string(&quot;NOT (status = &#39;deleted&#39;) AND deleted_at = NULL&quot;)</span>
-</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a><a href="#__codelineno-0-67"><span class="linenos" data-linenos="67 "></span></a><span class="sd">        # Returns: (~(nw.col(&quot;status&quot;) == &quot;deleted&quot;)) &amp; nw.col(&quot;deleted_at&quot;).is_null()</span>
-</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a><a href="#__codelineno-0-68"><span class="linenos" data-linenos="68 "></span></a><span class="sd">        ```</span>
-</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><a href="#__codelineno-0-69"><span class="linenos" data-linenos="69 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><a href="#__codelineno-0-70"><span class="linenos" data-linenos="70 "></span></a>    <span class="k">return</span> <span class="n">NarwhalsFilter</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">filter_string</span><span class="p">)</span><span class="o">.</span><span class="n">to_expr</span><span class="p">()</span>
+<p>Not all metadata stores support hard deletes. If your store doesn't support them, you'll get a <code>NotImplementedError</code>.</p>
+<h2 id="cli-workflows">CLI workflows<a class="headerlink" href="#cli-workflows" title="Permanent link">&para;</a></h2>
+<p>Run cleanups from the command line using <code>metaxy metadata delete</code>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Soft delete by default</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>metaxy<span class="w"> </span>metadata<span class="w"> </span>delete<span class="w"> </span>--feature<span class="w"> </span>predictions<span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;confidence &lt; 0.3&quot;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Hard delete</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>metaxy<span class="w"> </span>metadata<span class="w"> </span>delete<span class="w"> </span>--feature<span class="w"> </span>predictions<span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;created_at &lt; &#39;2024-01-01&#39;&quot;</span><span class="w"> </span>--soft<span class="o">=</span><span class="nb">false</span>
 </span></code></pre></div>
-            </details>
-    </div>
-
-</div>
+<p>The CLI requires a filter expression and feature selection via <code>--feature</code> or <code>--all-features</code>.</p>
 
 
 
 
 
 
-
-  
-  
 
 
 
@@ -3927,12 +3923,12 @@ dotted identifiers, and literal values (strings, numbers, booleans, <code>NULL</
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
-        <script src="../../../../javascripts/scarf.js"></script>
+        <script src="../../../javascripts/scarf.js"></script>
       
     
   </body>
