@@ -261,3 +261,9 @@ markers = [
   "polars: Stores using Polars for compute",
   "delta: Delta Lake store tests",
 ]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true

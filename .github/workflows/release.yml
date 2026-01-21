@@ -34,16 +34,34 @@ jobs:
       run-macos: true
       run-all-checks: true
 
-  release:
+  testpypi:
     needs: qa
-    uses: ./.github/workflows/_release.yml
+    uses: ./.github/workflows/_publish.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: testpypi
+
+  pypi:
+    needs: testpypi
+    uses: ./.github/workflows/_publish.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: pypi
+
+  docs:
+    needs: pypi
+    # Only deploy docs for stable releases (vX.Y.Z without pre-release suffix)
+    if: ${{ github.ref_type == 'tag' && !contains(github.ref_name, '-') }}
+    uses: ./.github/workflows/_docs.yml
     permissions:
       contents: write
       pages: write
       id-token: write
     with:
-      publish-pypi: true
-      # Only deploy docs for stable releases (vX.Y.Z without pre-release suffix)
-      deploy-docs: ${{ github.ref_type == 'tag' && !contains(github.ref_name, '-') }}
+      environment: github-pages
       docs-version: ${{ github.ref_name }}
       docs-alias: 'latest'

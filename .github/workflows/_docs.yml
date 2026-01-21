@@ -1,4 +1,4 @@
-name: _Release (reusable)
+name: _Docs (reusable)
 
 permissions:
   contents: write
@@ -8,28 +8,23 @@ permissions:
 on:
   workflow_call:
     inputs:
-      publish-pypi:
-        description: 'Publish package to PyPI'
-        type: boolean
-        default: false
-      deploy-docs:
-        description: 'Deploy documentation'
-        type: boolean
-        default: false
+      environment:
+        description: 'GitHub environment to use'
+        type: string
+        default: 'github-pages'
       docs-version:
         description: 'Documentation version name (e.g., v1.0.0, main)'
         type: string
-        default: ''
+        required: true
       docs-alias:
         description: 'Documentation alias (e.g., latest)'
         type: string
         default: ''
 
 jobs:
-  release:
-    if: ${{ inputs.publish-pypi || inputs.deploy-docs }}
+  docs:
     runs-on: depot-ubuntu-latest
-    environment: ${{ inputs.publish-pypi && 'pypi' || '' }}
+    environment: ${{ inputs.environment }}
 
     env:
       UV_PYTHON_PREFERENCE: only-system
@@ -39,9 +34,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Save original environment
-        run: bash .github/scripts/save-env.sh
 
       - name: Install Nix
         uses: cachix/install-nix-action@v27
@@ -59,28 +51,15 @@ jobs:
           uv python pin 3.10
           uv sync --all-extras --all-groups
 
-      # Build docs to validate before any publishing
       - name: Build documentation
         run: uv run mkdocs build --strict
 
-      # PyPI publishing steps
-      - name: Build package
-        if: ${{ inputs.publish-pypi }}
-        run: uv build
-
-      - name: Publish to PyPI
-        if: ${{ inputs.publish-pypi }}
-        run: uv publish --trusted-publishing always
-
-      # Docs deployment steps
       - name: Configure Git for Mike
-        if: ${{ inputs.deploy-docs }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Fetch and pull gh-pages branch
-        if: ${{ inputs.deploy-docs }}
         run: |
           git fetch origin gh-pages:gh-pages || true
           if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
@@ -90,14 +69,9 @@ jobs:
           fi
 
       - name: Deploy documentation with Mike
-        if: ${{ inputs.deploy-docs }}
         run: |
           if [ -n "${{ inputs.docs-alias }}" ]; then
             uv run mike deploy --push --update-aliases --ignore-remote-status ${{ inputs.docs-version }} ${{ inputs.docs-alias }}
           else
             uv run mike deploy --push --ignore-remote-status ${{ inputs.docs-version }}
           fi
-
-      - name: Restore original environment
-        if: always()
-        run: bash .github/scripts/restore-env.sh
