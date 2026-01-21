@@ -76,6 +76,7 @@ adbc = [
   "adbc-driver-manager>=1.10.0",
   "adbc-driver-postgresql>=1.1.0",
   "adbc-driver-sqlite>=1.1.0",
+  "duckdb>=1.4.1", # Built-in ADBC driver via adbc_driver_duckdb
   "pyarrow>=18.0.0",
 ]
 

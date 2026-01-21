@@ -2896,6 +2896,7 @@ adbc = [
     { name = "adbc-driver-manager" },
     { name = "adbc-driver-postgresql" },
     { name = "adbc-driver-sqlite" },
+    { name = "duckdb" },
     { name = "pyarrow" },
 ]
 bigquery = [
@@ -2996,6 +2997,7 @@ requires-dist = [
     { name = "cyclopts", specifier = ">=4.4.0" },
     { name = "dagster", marker = "extra == 'dagster'", specifier = ">=1.12.3" },
     { name = "deltalake", marker = "extra == 'delta'", specifier = ">=1.2.1" },
+    { name = "duckdb", marker = "extra == 'adbc'", specifier = ">=1.4.1" },
     { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=1.4.1" },
     { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.0.0" },
     { name = "ibis-framework", marker = "extra == 'delta'", specifier = ">=11.0.0" },
