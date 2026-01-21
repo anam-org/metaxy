@@ -10,7 +10,7 @@ import pytest
 from metaxy_testing.models import SampleFeatureSpec
 
 import metaxy.ext.dagster as mxd
-from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FeatureSpec, FieldKey, FieldSpec
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
@@ -204,3 +204,98 @@ def test_delete_integration_hard_delete(feature_cls, tmp_path):
         # Verify hard-deleted row is NOT in store even when including deleted
         all_data = store.read(feature_cls, include_soft_deleted=True).collect().to_polars()
         assert all_data.height == 2  # Hard delete means it's gone
+
+
+def test_delete_metadata_cascade_downstream(tmp_path):
+    """Test cascade deletion downstream in Dagster op."""
+
+    class VideoRaw(
+        BaseFeature,
+        spec=FeatureSpec(
+            key=["video", "raw"],
+            id_columns=["video_id"],
+            fields=[FieldSpec(key=FieldKey(["frames"]), code_version="1")],
+        ),
+    ):
+        video_id: str
+        frames: str | None = None
+
+    class VideoChunk(
+        BaseFeature,
+        spec=FeatureSpec(
+            key=["video", "chunk"],
+            id_columns=["chunk_id"],
+            fields=[FieldSpec(key=FieldKey(["frames"]), code_version="1")],
+            deps=[FeatureDep(feature=VideoRaw)],
+        ),
+    ):
+        video_id: str
+        chunk_id: str
+        frames: str | None = None
+
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+
+    @dg.job(resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)})
+    def cascade_cleanup_job():
+        mxd.delete()
+
+    raw_data = pl.DataFrame(
+        {
+            "video_id": ["v1", "v2"],
+            "frames": ["f1", "f2"],
+            METAXY_PROVENANCE_BY_FIELD: [
+                {"frames": "p1"},
+                {"frames": "p2"},
+            ],
+        }
+    )
+
+    chunk_data = pl.DataFrame(
+        {
+            "chunk_id": ["c1", "c2", "c3"],
+            "frames": ["cf1", "cf2", "cf3"],
+            METAXY_PROVENANCE_BY_FIELD: [
+                {"frames": "p1"},
+                {"frames": "p2"},
+                {"frames": "p3"},
+            ],
+        }
+    )
+
+    with store.open("w"):
+        store.write(VideoRaw, raw_data)
+        store.write(VideoChunk, chunk_data)
+
+    with store:
+        assert store.read(VideoRaw).collect().to_polars().height == 2
+        assert store.read(VideoChunk).collect().to_polars().height == 3
+
+    result = cascade_cleanup_job.execute_in_process(
+        run_config={
+            "ops": {
+                "delete": {
+                    "config": {
+                        "feature_key": ["video", "raw"],
+                        "filters": [],
+                        "soft": True,
+                        "cascade": "DOWNSTREAM",
+                    }
+                }
+            }
+        }
+    )
+
+    assert result.success
+
+    with store:
+        raw_remaining = store.read(VideoRaw).collect().to_polars()
+        assert raw_remaining.height == 0
+
+        chunk_remaining = store.read(VideoChunk).collect().to_polars()
+        assert chunk_remaining.height == 0
+
+        raw_all = store.read(VideoRaw, include_soft_deleted=True).collect().to_polars()
+        assert raw_all.height == 2
+
+        chunk_all = store.read(VideoChunk, include_soft_deleted=True).collect().to_polars()
+        assert chunk_all.height == 3

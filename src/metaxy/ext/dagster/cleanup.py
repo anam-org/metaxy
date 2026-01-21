@@ -4,7 +4,7 @@ import dagster as dg
 from pydantic import Field
 
 import metaxy as mx
-from metaxy.models.types import FeatureKey, ValidatedFeatureKeyList
+from metaxy.models.types import CascadeMode, FeatureKey, ValidatedFeatureKeyList
 
 
 class DeleteMetadataConfig(dg.Config):
@@ -15,6 +15,7 @@ class DeleteMetadataConfig(dg.Config):
         filters: List of SQL WHERE clause filter expressions (e.g., ["status = 'inactive'", "age > 18"]).
             See https://docs.metaxy.org/guide/concepts/filters/ for syntax.
         soft: Whether to use soft deletes or hard deletes.
+        cascade: Cascade deletion to dependent/dependency features. Options: none, downstream, upstream, both.
     """
 
     feature_key: ValidatedFeatureKeyList
@@ -24,6 +25,10 @@ class DeleteMetadataConfig(dg.Config):
     soft: bool = Field(
         default=True,
         description="Whether to use soft deletes or hard deletes.",
+    )
+    cascade: CascadeMode = Field(
+        default=CascadeMode.NONE,
+        description="Cascade deletion to dependent/dependency features. Options: none, downstream, upstream, both.",
     )
 
 
@@ -81,7 +86,28 @@ def delete(
 
     context.log.info(f"Executing {'soft' if config.soft else 'hard'} delete for {feature_key.to_string()}")
 
-    with store.open("w"):
-        store.delete(feature_key, filters=filter_exprs, soft=config.soft)
+    # Determine features to delete (with or without cascading)
+    if config.cascade != CascadeMode.NONE:
+        from metaxy.models.feature import FeatureGraph
 
-    context.log.info(f"Successfully completed delete for {feature_key.to_string()}")
+        graph = FeatureGraph.get_active()
+        features_to_delete: list[FeatureKey] = graph.get_cascade_deletion_order(feature_key, config.cascade)
+
+        context.log.info(
+            f"Cascading {'soft' if config.soft else 'hard'} delete "
+            f"for {feature_key.to_string()} in {config.cascade.value} direction"
+        )
+        context.log.info(
+            f"Will delete {len(features_to_delete)} features in order: "
+            f"{', '.join(fk.to_string() for fk in features_to_delete)}"
+        )
+    else:
+        features_to_delete = [feature_key]
+
+    with store.open("w"):
+        for fk in features_to_delete:
+            context.log.info(f"Deleting {fk.to_string()}...")
+            store.delete(fk, filters=filter_exprs, soft=config.soft)
+
+    cascade_info = f" ({config.cascade.value} cascade)" if config.cascade != CascadeMode.NONE else ""
+    context.log.info(f"Successfully completed delete for {feature_key.to_string()}{cascade_info}")
