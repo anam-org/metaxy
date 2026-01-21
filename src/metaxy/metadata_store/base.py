@@ -211,6 +211,7 @@ class MetadataStore(ABC):
         self._allow_cross_project_writes = False
         self._materialization_id = materialization_id
         self._open_cm: AbstractContextManager[Self] | None = None  # Track the open() context manager
+        self._transaction_timestamp: datetime | None = None  # Shared timestamp for write operations
 
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
@@ -1254,6 +1255,32 @@ class MetadataStore(ABC):
         finally:
             self._allow_cross_project_writes = previous_value
 
+    @contextmanager
+    def _shared_transaction_timestamp(self) -> Iterator[datetime]:
+        """Context manager that establishes a shared timestamp for a write transaction.
+
+        All write operations (write_metadata, delete_metadata with soft=True) within
+        this context share the same timestamp for metaxy_created_at and metaxy_deleted_at
+        columns. This ensures consistency when a single logical operation affects
+        multiple system columns.
+
+        If already within a transaction, returns the existing timestamp without
+        creating a new one (reentrant).
+
+        Yields:
+            datetime: The transaction timestamp (UTC)
+        """
+        if self._transaction_timestamp is not None:
+            # Already in a transaction, reuse existing timestamp
+            yield self._transaction_timestamp
+        else:
+            # Start new transaction
+            self._transaction_timestamp = datetime.now(timezone.utc)
+            try:
+                yield self._transaction_timestamp
+            finally:
+                self._transaction_timestamp = None
+
     def _validate_project_write(self, feature: CoercibleToFeatureKey) -> None:
         """Validate that writing to a feature matches the expected project from config.
 
@@ -1429,9 +1456,8 @@ class MetadataStore(ABC):
         columns = df.collect_schema().names()
 
         if METAXY_CREATED_AT not in columns:
-            from datetime import datetime, timezone
-
-            df = df.with_columns(nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT))
+            with self._shared_transaction_timestamp() as ts:
+                df = df.with_columns(nw.lit(ts).alias(METAXY_CREATED_AT))
 
         if METAXY_DELETED_AT not in columns:
             df = df.with_columns(nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT))
@@ -1607,8 +1633,10 @@ class MetadataStore(ABC):
                 latest_only=latest_only,
                 allow_fallback=True,
             )
-            soft_deletion_marked = lazy.with_columns(nw.lit(datetime.now(timezone.utc)).alias(METAXY_DELETED_AT))
-            self.write_metadata(feature_key, soft_deletion_marked.to_native())
+            # Use transaction to ensure deleted_aat and created_at share the same timestamp
+            with self._shared_transaction_timestamp() as ts:
+                soft_deletion_marked = lazy.with_columns(nw.lit(ts).alias(METAXY_DELETED_AT))
+                self.write_metadata(feature_key, soft_deletion_marked.to_native())
         else:
             # Hard delete: add version filter if needed, then delegate to backend
             if current_only and not self._is_system_table(feature_key):
