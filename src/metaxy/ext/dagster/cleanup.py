@@ -4,6 +4,7 @@ import dagster as dg
 from pydantic import Field
 
 import metaxy as mx
+from metaxy._decorators import public
 from metaxy.models.types import CascadeMode, FeatureKey, ValidatedFeatureKeyList
 
 
@@ -32,6 +33,7 @@ class DeleteMetadataConfig(dg.Config):
     )
 
 
+@public
 @dg.op
 def delete(
     context: dg.OpExecutionContext,

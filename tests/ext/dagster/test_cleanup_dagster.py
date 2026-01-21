@@ -252,6 +252,7 @@ def test_delete_metadata_cascade_downstream(tmp_path):
 
     chunk_data = pl.DataFrame(
         {
+            "video_id": ["v1", "v1", "v2"],  # Add required video_id column
             "chunk_id": ["c1", "c2", "c3"],
             "frames": ["cf1", "cf2", "cf3"],
             METAXY_PROVENANCE_BY_FIELD: [

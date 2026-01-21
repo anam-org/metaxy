@@ -48,16 +48,86 @@ with store.open("w"):
 
 Not all metadata stores support hard deletes. If your store doesn't support them, you'll get a `NotImplementedError`.
 
+## Topological (cascade) deletion
+
+When working with dependent features (such as [expansion relationships](definitions/relationship.md)), you need to delete features in the correct order to maintain referential integrity. Metaxy automatically determines deletion order based on your feature dependency graph.
+
+**Direction options:**
+
+- `downstream`: Returns dependents first (leaf → root). Use for hard deletions to avoid foreign key violations.
+- `upstream`: Returns dependencies first (root → leaf). Less common for deletions.
+- `both`: Returns all connected features in dependency order.
+
 ## CLI workflows
 
 Run cleanups from the command line using `metaxy metadata delete`:
 
 ```bash
 # Soft delete by default
-metaxy metadata delete --feature predictions --filter "confidence < 0.3"
+metaxy metadata delete predictions --filter "confidence < 0.3"
 
 # Hard delete
-metaxy metadata delete --feature predictions --filter "created_at < '2024-01-01'" --soft=false
+metaxy metadata delete predictions --filter "created_at < '2024-01-01'" --hard --yes
 ```
 
-Learn more in the [CLI reference](../../reference/cli.md#metaxy-metadata-delete)
+### Cascade deletion
+
+Use `--cascade` to automatically delete dependent or dependency features:
+
+```bash
+# Preview deletion plan (dry-run)
+metaxy metadata delete video/raw --cascade downstream --dry-run
+
+# Execute soft cascade deletion
+metaxy metadata delete video/raw --filter "video_id='v1'" --cascade downstream
+
+# Execute hard cascade deletion
+metaxy metadata delete video/raw --cascade downstream --hard --yes
+```
+
+| Option           | Behavior                                                  |
+| ---------------- | --------------------------------------------------------- |
+| `none` (default) | Delete only the specified feature                         |
+| `downstream`     | Delete dependents first, then the feature (leaf → root)   |
+| `upstream`       | Delete dependencies first, then the feature (root → leaf) |
+| `both`           | Delete both dependencies and dependents                   |
+
+The `--dry-run` flag previews which features would be deleted and in what order without executing the operation.
+
+## Dagster integration
+
+The `delete` op supports both basic and cascade deletion workflows in Dagster pipelines. For more about the Dagster integration, see the [Dagster Integration Guide](../../integrations/orchestration/dagster/index.md).
+
+<!-- skip next -->
+```python
+import dagster as dg
+import metaxy.ext.dagster as mxd
+
+
+@dg.job(resource_defs={"metaxy_store": mxd.MetaxyStoreFromConfigResource(name="default")})
+def cleanup_job():
+    mxd.delete()
+
+
+# Execute with cascade deletion
+cleanup_job.execute_in_process(
+    run_config={
+        "ops": {
+            "delete": {
+                "config": {
+                    "feature_key": ["video", "raw"],
+                    "filters": ["video_id = 'v1'"],
+                    "soft": True,
+                    "cascade": "DOWNSTREAM",
+                }
+            }
+        }
+    }
+)
+```
+
+## Related materials
+
+- [Expansion Relationships Example](../../examples/expansion.md) - Complete video processing pipeline
+- [Filter Expressions](filters.md) - Syntax for deletion filters
+- [System Columns](../../reference/system-columns.md) - Understanding `metaxy_deleted_at`
