@@ -81,6 +81,14 @@ description: "API reference for Dagster integration."
       heading_level: 3
 <!-- dprint-ignore-end -->
 
+## Ops
+
+<!-- dprint-ignore-start -->
+::: metaxy.ext.dagster.delete_metadata
+    options:
+      heading_level: 3
+<!-- dprint-ignore-end -->
+
 ## Helpers
 
 <!-- dprint-ignore-start -->

@@ -174,3 +174,4 @@ Learn more about:
 - [Features and Fields](../guide/learn/feature-definitions.md)
 - [Relationships](../guide/learn/relationship.md)
 - [Fields Mapping](../guide/learn/syntactic-sugar.md#fields-mapping)
+- [Topological Deletions](../guide/learn/deletions.md#topological-cascade-deletion) - How to delete videos and all derived chunks/faces in the correct order
