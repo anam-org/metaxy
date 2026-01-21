@@ -3,13 +3,13 @@
 import subprocess
 import sys
 
-import metaxy
+import metaxy as mx
 
 
 def main() -> None:
     # Verify version is accessible
-    assert hasattr(metaxy, "__version__"), "Missing __version__"
-    print(f"metaxy version: {metaxy.__version__}")
+    assert hasattr(mx, "__version__"), "Missing __version__"
+    print(f"metaxy version: {mx.__version__}")
 
     # Verify core imports work
     from metaxy import BaseFeature, FeatureGraph

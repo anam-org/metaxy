@@ -423,9 +423,8 @@ class TestResolveUpdateSkipComparisonLazy:
             actual_impl = lazy_result.added.implementation
 
             # Allow Polars when samples are Polars (auto-switching behavior)
-            from narwhals import Implementation
 
-            assert actual_impl in [expected_impl, Implementation.POLARS]
+            assert actual_impl in [expected_impl, nw.Implementation.POLARS]
             assert lazy_result.changed.implementation == actual_impl
             assert lazy_result.removed.implementation == actual_impl
 

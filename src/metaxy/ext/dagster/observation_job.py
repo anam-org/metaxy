@@ -5,7 +5,6 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 import dagster as dg
-from dagster import Nothing
 
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
@@ -406,7 +405,7 @@ def _build_observation_op_for_specs(
     @dg.op(
         name=name,
         required_resource_keys={store_resource_key},
-        out=dg.Out(Nothing),
+        out=dg.Out(dg.Nothing),
     )
     def observe_asset(context: dg.OpExecutionContext, asset_key_str: str) -> None:
         spec = spec_by_asset_key[asset_key_str]
