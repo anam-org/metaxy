@@ -1,15 +1,15 @@
-"""PostgreSQL metadata store using ADBC for high-performance bulk ingestion.
+"""SQLite metadata store using ADBC for high-performance bulk ingestion.
 
 Uses Arrow Database Connectivity (ADBC) for zero-copy data transfer and bulk writes.
-Provides 2-10x faster write performance compared to the Ibis-based PostgresMetadataStore.
+Provides 2-10x faster write performance for SQLite compared to traditional approaches.
 
-Note: This is an initial implementation focusing on the core ADBC infrastructure.
-Full feature parity with PostgresMetadataStore will be achieved in subsequent PRs.
+Note: SQLite is single-threaded, so max_connections>1 won't provide concurrency benefits.
 """
 
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
@@ -19,133 +19,113 @@ from pydantic import Field
 
 from metaxy.metadata_store.adbc import ADBCMetadataStore, ADBCMetadataStoreConfig
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
-from metaxy.models.constants import (
-    METAXY_DATA_VERSION_BY_FIELD,
-    METAXY_PROVENANCE_BY_FIELD,
-)
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
-    pass  # ty: ignore[unresolved-import]
+    pass
 
 logger = logging.getLogger(__name__)
 
 
-class ADBCPostgresMetadataStoreConfig(ADBCMetadataStoreConfig):
-    """Configuration for ADBC PostgreSQL metadata store.
+class ADBCSQLiteMetadataStoreConfig(ADBCMetadataStoreConfig):
+    """Configuration for ADBC SQLite metadata store.
 
     Example:
         ```python
-        config = ADBCPostgresMetadataStoreConfig(
-            connection_string="postgresql://user:pass@host:5432/db",
-            schema="public",
-            max_connections=8,
+        config = ADBCSQLiteMetadataStoreConfig(
+            database="metadata.db",
         )
         ```
     """
 
-    schema: str | None = Field(
-        default=None,
-        description="PostgreSQL schema (defaults to search_path).",
-    )
-
-    enable_pgcrypto: bool = Field(
-        default=False,
-        description=(
-            "If True, attempt to enable pgcrypto for SHA256 hashing on open. "
-            "pgcrypto is required for SHA256 hashing on PostgreSQL."
-        ),
+    database: str | Path = Field(
+        description="Database file path or :memory: for in-memory database.",
     )
 
 
-class ADBCPostgresMetadataStore(ADBCMetadataStore):
+class ADBCSQLiteMetadataStore(ADBCMetadataStore):
     """
-    PostgreSQL metadata store using ADBC for high-performance bulk writes.
+    SQLite metadata store using ADBC for high-performance bulk writes.
 
-    Provides production-grade metadata storage using PostgreSQL with:
+    Provides lightweight metadata storage using SQLite with:
     - Zero-copy Arrow data transfer via ADBC
-    - Bulk ingestion (2-10x faster than Ibis)
-    - Full ACID compliance
-    - JSONB storage for struct columns
+    - Bulk ingestion (2-10x faster than traditional SQLite)
+    - File-based and in-memory storage
+    - No external dependencies (perfect for testing and CI)
 
     Note:
-        This is an initial implementation. Some advanced features (filters, deletes)
-        are marked as TODO and will be implemented in subsequent PRs.
+        This is an initial implementation. Some advanced features (JSON struct storage,
+        filters, deletes) are marked as TODO and will be implemented in subsequent PRs.
+        SQLite is single-threaded, so max_connections>1 has no effect.
 
     Example:
         ```python
-        from metaxy.metadata_store.adbc_postgres import ADBCPostgresMetadataStore
+        from metaxy.metadata_store.adbc_sqlite import ADBCSQLiteMetadataStore
 
-        # Basic usage
-        store = ADBCPostgresMetadataStore(
-            connection_string="postgresql://user:pass@host:5432/db",
+        # File-based storage
+        store = ADBCSQLiteMetadataStore(
+            database="metadata.db",
             hash_algorithm=HashAlgorithm.MD5,
         )
 
-        # With connection pooling for concurrent writes
-        store = ADBCPostgresMetadataStore(
-            connection_string="postgresql://localhost/metaxy",
-            max_connections=8,  # Pool size for bulk writes
-            schema="features",
+        # In-memory database (for testing)
+        store = ADBCSQLiteMetadataStore(
+            database=":memory:",
         )
         ```
     """
 
     def __init__(
         self,
-        connection_string: str | None = None,
-        *,
-        schema: str | None = None,
-        enable_pgcrypto: bool = False,
+        database: str | Path,
         **kwargs: Any,
     ) -> None:
-        """Initialize ADBC PostgreSQL metadata store.
+        """Initialize ADBC SQLite metadata store.
 
         Args:
-            connection_string: PostgreSQL connection URI.
-                Example: "postgresql://user:pass@host:5432/db"
-            schema: PostgreSQL schema (defaults to search_path).
-            enable_pgcrypto: If True, attempt to enable pgcrypto on open.
-                Required for SHA256 hashing on PostgreSQL.
-            **kwargs: Passed to ADBCMetadataStore (e.g., max_connections, hash_algorithm).
+            database: Database file path or :memory: for in-memory database.
+                Examples: "metadata.db", Path("metadata.db"), ":memory:"
+            **kwargs: Passed to ADBCMetadataStore (e.g., hash_algorithm).
+                Note: max_connections>1 has no effect (SQLite is single-threaded).
         """
-        super().__init__(connection_string=connection_string, **kwargs)
+        # Convert Path to string
+        database_str = str(database)
 
-        self.schema = schema
-        self.enable_pgcrypto = enable_pgcrypto
-        self._pgcrypto_checked = False
+        # ADBC SQLite driver expects "uri" parameter
+        super().__init__(connection_params={"uri": database_str}, **kwargs)
 
-        # PostgreSQL supports MD5 and SHA256 (via pgcrypto)
-        supported_algorithms = {HashAlgorithm.MD5, HashAlgorithm.SHA256}
+        self.database = database_str
+
+        # SQLite supports MD5 via crypto extension (optional)
+        # For now, we'll support MD5 as it's the most portable
+        supported_algorithms = {HashAlgorithm.MD5}
         if self.hash_algorithm not in supported_algorithms:
             raise HashAlgorithmNotSupportedError(
-                f"ADBCPostgresMetadataStore supports only MD5 and SHA256. Requested: {self.hash_algorithm}"
+                f"ADBCSQLiteMetadataStore currently supports only MD5. Requested: {self.hash_algorithm}"
             )
 
     @classmethod
     def config_model(cls) -> type[ADBCMetadataStoreConfig]:
         """Return the configuration model for this store type."""
-        return ADBCPostgresMetadataStoreConfig
+        return ADBCSQLiteMetadataStoreConfig
 
     def _get_driver_name(self) -> str:
-        """Get the ADBC driver path for PostgreSQL."""
-        import adbc_driver_postgresql  # type: ignore[import-untyped]
+        """Get the ADBC driver path for SQLite."""
+        import adbc_driver_sqlite  # type: ignore[import-untyped]
 
-        return adbc_driver_postgresql._driver_path()  # type: ignore[no-any-return]
+        return adbc_driver_sqlite._driver_path()  # type: ignore[no-any-return]
 
     def _get_connection_options(self) -> dict[str, Any]:
-        """Get PostgreSQL-specific connection options for ADBC."""
+        """Get SQLite-specific connection options for ADBC."""
         options: dict[str, Any] = {}
 
-        if self.connection_string:
+        # ADBC SQLite driver uses 'uri' parameter
+        if self.connection_params:
+            options.update(self.connection_params)
+        elif self.connection_string:
+            # If connection string was provided, use it as uri
             options["uri"] = self.connection_string
-        else:
-            # Build from connection params if no URI provided
-            if self.connection_params:
-                # ADBC PostgreSQL driver uses 'uri' parameter
-                # We could build the URI here if needed
-                pass
 
         return options
 
@@ -156,9 +136,6 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
         **kwargs: Any,
     ) -> None:
         """Write metadata using ADBC bulk ingestion.
-
-        Converts struct columns (provenance, data_version) to JSON strings
-        for PostgreSQL JSONB storage.
 
         Args:
             feature_key: Feature identifier
@@ -179,14 +156,16 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
             polars_df = native  # type: ignore[assignment]
 
         # Flatten struct columns to separate columns (e.g., metaxy_provenance_by_field__foo)
-        # This matches the Ibis flat versioning engine behavior
+        # This matches the PostgreSQL approach and preserves type information
+        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+
         struct_columns = {METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD}
         for col in struct_columns:
             if col in polars_df.columns:
                 col_dtype = polars_df[col].dtype
                 if col_dtype == pl.Struct:
                     # Get field names from struct
-                    struct_fields = polars_df[col].dtype.fields  # type: ignore[union-attr]
+                    struct_fields = polars_df[col].dtype.fields
 
                     # Create flattened columns for each field
                     flatten_exprs = [
@@ -225,7 +204,7 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
                 warnings.warn(
                     f"AUTO_CREATE_TABLES is enabled - automatically creating table '{table_name}'. "
                     "Do not use in production! "
-                    "Use proper database migration tools like Alembic for production deployments.",
+                    "Use proper database migration tools for production deployments.",
                     UserWarning,
                     stacklevel=4,
                 )
@@ -259,7 +238,7 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
         filters: Any = None,
         **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
-        """Read metadata from PostgreSQL via ADBC.
+        """Read metadata from SQLite via ADBC.
 
         Args:
             feature: Feature to read
@@ -285,7 +264,7 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
         if not self._has_feature_impl(feature_key):
             return None
 
-        # Query via ADBC statement (filters will be applied by Narwhals after reading)
+        # Query via ADBC statement
         query = f'SELECT * FROM "{table_name}"'
 
         import adbc_driver_manager  # ty: ignore[unresolved-import]
@@ -311,6 +290,14 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
             # Reconstruct struct columns from flattened columns
             # This preserves ALL fields across schema changes
             result = self._reconstruct_struct_columns(result, feature_key)
+
+            # Convert datetime text columns back to datetime
+            # SQLite stores timestamps as TEXT, need to parse them back
+            result = self._convert_datetime_columns(result)
+
+            # Convert Int64 null columns to their proper types
+            # SQLite stores NULL-only columns as Int64, need to cast them
+            result = self._convert_null_columns(result)
 
             # Convert to Narwhals LazyFrame
             lazy_result = nw.from_native(result.lazy())
@@ -344,7 +331,6 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
         try:
             stmt.set_sql_query(query)
             stmt.execute_update()
-            self._conn.commit()
         finally:
             stmt.close()
 
@@ -382,13 +368,11 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
         feature_key = self._resolve_feature_key(feature)
         table_name = self._table_name(feature_key)
 
-        # Query information_schema to check table existence
-        schema_condition = f"AND table_schema = '{self.schema}'" if self.schema else ""
+        # Query sqlite_master to check table existence
         query = f"""
             SELECT EXISTS (
-                SELECT 1 FROM information_schema.tables
-                WHERE table_name = '{table_name}'
-                {schema_condition}
+                SELECT 1 FROM sqlite_master
+                WHERE type = 'table' AND name = '{table_name}'
             )
         """
 
@@ -407,9 +391,78 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
 
             # Get the boolean result
             result = arrow_table.to_pylist()
-            return bool(result[0]["exists"]) if result else False
+            # SQLite returns the result with a generated column name
+            if result and len(result) > 0:
+                # Get the first column value (EXISTS result)
+                first_col_name = list(result[0].keys())[0]
+                return bool(result[0][first_col_name])
+            return False
         finally:
             stmt.close()
+
+    def _convert_null_columns(self, df: pl.DataFrame) -> pl.DataFrame:
+        """Convert null-only Int64 columns to their proper types.
+
+        SQLite stores NULL-only columns as Int64. When certain string columns
+        have all NULL values, they come back as Int64 and need to be cast.
+
+        Args:
+            df: DataFrame with Int64 null columns
+
+        Returns:
+            DataFrame with proper types
+        """
+        from metaxy.models.constants import METAXY_MATERIALIZATION_ID
+
+        # String columns that might be stored as Int64 when all NULL
+        string_columns = [METAXY_MATERIALIZATION_ID]
+
+        for col in string_columns:
+            if col not in df.columns:
+                continue
+
+            col_dtype = df[col].dtype
+
+            # If it's Int64 (likely all NULL), cast to String
+            if col_dtype == pl.Int64:
+                df = df.with_columns(pl.col(col).cast(pl.Utf8).alias(col))
+
+        return df
+
+    def _convert_datetime_columns(self, df: pl.DataFrame) -> pl.DataFrame:
+        """Convert text datetime columns back to datetime type.
+
+        SQLite stores timestamps as TEXT. When read back via Arrow, they're strings.
+        This converts known datetime columns back to proper datetime type.
+
+        Args:
+            df: DataFrame with text datetime columns
+
+        Returns:
+            DataFrame with datetime columns converted
+        """
+        from metaxy.models.constants import METAXY_CREATED_AT, METAXY_DELETED_AT
+
+        datetime_columns = [METAXY_CREATED_AT, METAXY_DELETED_AT]
+
+        for col in datetime_columns:
+            if col not in df.columns:
+                continue
+
+            col_dtype = df[col].dtype
+
+            # If it's already datetime, skip
+            if col_dtype == pl.Datetime:
+                continue
+
+            # If it's string (text), convert to datetime
+            if col_dtype == pl.Utf8:
+                df = df.with_columns(pl.col(col).str.to_datetime(time_unit="us", time_zone="UTC").alias(col))
+            # If it's Int64 (null-only column), cast to datetime
+            elif col_dtype == pl.Int64:
+                df = df.with_columns(pl.col(col).cast(pl.Datetime(time_unit="us", time_zone="UTC")).alias(col))
+
+        return df
 
     def _reconstruct_struct_columns(self, df: pl.DataFrame, feature_key: FeatureKey) -> pl.DataFrame:
         """Reconstruct struct columns from flattened columns.
@@ -418,12 +471,14 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
         across schema changes.
 
         Args:
-            df: Polars DataFrame with flattened columns (e.g., metaxy_provenance_by_field__foo)
-            feature_key: Feature key (not used, kept for compatibility)
+            df: Polars DataFrame with flattened columns
+            feature_key: Feature key
 
         Returns:
             DataFrame with struct columns reconstructed
         """
+        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+
         struct_columns = {METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD}
 
         for struct_col in struct_columns:
@@ -457,10 +512,9 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
 
         Args:
             table_name: Name of the table to check
-            new_schema: PyArrow schema of the new data
+            new_schema: PyArrow schema with new columns
         """
-        # Get current table schema
-        import adbc_driver_manager  # ty: ignore[unresolved-import]
+        import adbc_driver_manager
         import pyarrow as pa
 
         stmt = adbc_driver_manager.AdbcStatement(self._conn)
@@ -478,9 +532,8 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
             if missing_fields:
                 # Add missing columns using ALTER TABLE
                 for field in missing_fields:
-                    # Map PyArrow types to PostgreSQL types
-                    pg_type = self._arrow_to_postgres_type(field.type)
-                    alter_query = f'ALTER TABLE "{table_name}" ADD COLUMN IF NOT EXISTS "{field.name}" {pg_type}'
+                    sqlite_type = self._arrow_to_sqlite_type(field.type)
+                    alter_query = f'ALTER TABLE "{table_name}" ADD COLUMN "{field.name}" {sqlite_type}'
 
                     alter_stmt = adbc_driver_manager.AdbcStatement(self._conn)
                     try:
@@ -488,50 +541,39 @@ class ADBCPostgresMetadataStore(ADBCMetadataStore):
                         alter_stmt.execute_update()
                     finally:
                         alter_stmt.close()
-
         finally:
             stmt.close()
 
-    def _arrow_to_postgres_type(self, arrow_type: Any) -> str:
-        """Convert PyArrow type to PostgreSQL type string.
+    def _arrow_to_sqlite_type(self, arrow_type: Any) -> str:
+        """Convert Arrow type to SQLite type string.
 
         Args:
             arrow_type: PyArrow DataType
 
         Returns:
-            PostgreSQL type string
+            SQLite type string
         """
         import pyarrow as pa
 
-        if pa.types.is_string(arrow_type) or pa.types.is_large_string(arrow_type):
-            return "TEXT"
-        elif pa.types.is_int64(arrow_type):
-            return "BIGINT"
-        elif pa.types.is_int32(arrow_type):
+        # SQLite has limited types: NULL, INTEGER, REAL, TEXT, BLOB
+        if pa.types.is_integer(arrow_type):
             return "INTEGER"
-        elif pa.types.is_float64(arrow_type):
-            return "DOUBLE PRECISION"
+        elif pa.types.is_floating(arrow_type):
+            return "REAL"
+        elif pa.types.is_string(arrow_type) or pa.types.is_large_string(arrow_type):
+            return "TEXT"
+        elif pa.types.is_binary(arrow_type) or pa.types.is_large_binary(arrow_type):
+            return "BLOB"
         elif pa.types.is_boolean(arrow_type):
-            return "BOOLEAN"
-        elif pa.types.is_timestamp(arrow_type):
-            return "TIMESTAMP"
-        elif pa.types.is_date(arrow_type):
-            return "DATE"
+            return "INTEGER"  # SQLite stores booleans as 0/1
+        elif pa.types.is_timestamp(arrow_type) or pa.types.is_date(arrow_type):
+            return "TEXT"  # SQLite stores timestamps as text or integer
         else:
             # Default to TEXT for unknown types
             return "TEXT"
 
     def display(self) -> str:
         """Return a human-readable display string for this store."""
-        parts = []
-        if self.schema:
-            parts.append(f"schema={self.schema}")
-        if self.connection_string:
-            # Sanitize connection string
-            from metaxy.metadata_store.utils import sanitize_uri
-
-            parts.append(f"uri={sanitize_uri(self.connection_string)}")
-
-        if parts:
-            return f"ADBCPostgresMetadataStore({', '.join(parts)})"
-        return "ADBCPostgresMetadataStore()"
+        if self.database == ":memory:":
+            return "ADBCSQLiteMetadataStore(:memory:)"
+        return f"ADBCSQLiteMetadataStore(database={self.database})"
