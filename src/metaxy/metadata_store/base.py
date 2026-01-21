@@ -324,10 +324,12 @@ class MetadataStore(ABC):
         !!! example "With a root feature"
 
             ```py
-            samples = pl.DataFrame({
-                "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
-            })
+            samples = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "metaxy_provenance_by_field": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
+                }
+            )
             result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
             ```
         """
@@ -909,10 +911,12 @@ class MetadataStore(ABC):
         Example:
             ```py
             with store.open(mode="write"):
-                store.write_metadata_multi({
-                    ChildFeature: child_df,
-                    ParentFeature: parent_df,
-                })
+                store.write_metadata_multi(
+                    {
+                        ChildFeature: child_df,
+                        ParentFeature: parent_df,
+                    }
+                )
             # Features are written in reverse topological order:
             # ChildFeature first, then ParentFeature
             ```

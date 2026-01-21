@@ -103,6 +103,7 @@ def feature_to_dagster_type(
         import metaxy.ext.dagster as mxd
         from myproject.features import MyFeature  # Your Metaxy feature class
 
+
         @mxd.metaxify(feature=MyFeature)
         @dg.asset(dagster_type=mxd.feature_to_dagster_type(MyFeature))
         def my_asset():

@@ -98,7 +98,7 @@ def generate_migration(
             project="my_project",
             from_snapshot_version="abc123...",
             to_snapshot_version="def456...",
-            )
+        )
         ```
     """
     from metaxy.models.feature import FeatureGraph

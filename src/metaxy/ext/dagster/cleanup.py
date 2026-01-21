@@ -46,12 +46,12 @@ def delete_metadata(
         from metaxy.ext.dagster import delete_metadata
         from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 
+
         # Define a job with the delete op
-        @dg.job(
-            resource_defs={"metaxy_store": MetaxyStoreFromConfigResource(name="dev")}
-        )
+        @dg.job(resource_defs={"metaxy_store": MetaxyStoreFromConfigResource(name="dev")})
         def cleanup_job():
             delete_metadata()
+
 
         # Execute with config to delete inactive customer segments
         cleanup_job.execute_in_process(

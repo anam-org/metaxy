@@ -290,10 +290,7 @@ class FieldsMapping(BaseModel):
 
         Examples:
             >>> # Use in field specifications
-            >>> FieldSpec(
-            ...     key="combined",
-            ...     fields_mapping=FieldsMapping.all()
-            ... )
+            >>> FieldSpec(key="combined", fields_mapping=FieldsMapping.all())
         """
         return cls(mapping=AllFieldsMapping())
 

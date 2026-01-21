@@ -60,9 +60,9 @@ class ClickHouseMetadataStore(IbisMetadataStore):
                 "port": 8443,
                 "database": "default",
                 "user": "default",
-                "password": ""
+                "password": "",
             },
-            hash_algorithm=HashAlgorithm.XXHASH64
+            hash_algorithm=HashAlgorithm.XXHASH64,
         )
         ```
     """

@@ -54,9 +54,11 @@ def observable_metaxy_asset(
         import metaxy.ext.dagster as mxd
         from myproject.features import ExternalFeature
 
+
         @mxd.observable_metaxy_asset(feature=ExternalFeature)
         def external_data(context, store, lazy_df):
             pass
+
 
         # With custom metadata - return a dict
         @mxd.observable_metaxy_asset(feature=ExternalFeature)

@@ -9,10 +9,9 @@ Key concepts:
 - When any audio for a speaker changes, the speaker embedding needs recomputation
 """
 
+import metaxy as mx
 import polars as pl
 from example_aggregation.features import Audio, SpeakerEmbedding
-
-import metaxy as mx
 
 # Audio samples: 2 speakers with 2 recordings each
 AUDIO_SAMPLES = pl.DataFrame(

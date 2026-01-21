@@ -68,11 +68,10 @@ class metaxify:
         import metaxy as mx
         import metaxy.ext.dagster as mxd
 
+
         @mxd.metaxify()
         @dg.asset(
-            metadata={
-                "metaxy/feature": "my/feature/key"
-            },
+            metadata={"metaxy/feature": "my/feature/key"},
         )
         def my_asset(store: mx.MetadataStore):
             with store:
@@ -94,8 +93,7 @@ class metaxify:
                 dg.AssetSpec("output_b", metadata={"metaxy/feature": "feature/b"}),
             ]
         )
-        def my_multi_asset():
-            ...
+        def my_multi_asset(): ...
         ```
 
     ??? example "With `dagster.AssetSpec`"
@@ -115,8 +113,8 @@ class metaxify:
                 "metaxy/partition": {"dataset": "a"},
             },
         )
-        def my_feature_dataset_a():
-            ...
+        def my_feature_dataset_a(): ...
+
 
         @dg.asset(
             metadata={
@@ -124,8 +122,7 @@ class metaxify:
                 "metaxy/partition": {"dataset": "b"},
             },
         )
-        def my_feature_dataset_b():
-            ...
+        def my_feature_dataset_b(): ...
         ```
     """
 

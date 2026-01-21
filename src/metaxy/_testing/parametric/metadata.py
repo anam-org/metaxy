@@ -216,6 +216,7 @@ def feature_metadata_strategy(
             fields=[FieldSpec(key=FieldKey(["field1"]))],
         )
 
+
         @given(feature_metadata_strategy(spec, min_rows=5, max_rows=20))
         def test_something(metadata_df):
             assert len(metadata_df) >= 5
@@ -409,6 +410,7 @@ def upstream_metadata_strategy(
 
         graph = FeatureGraph()
         with graph.use():
+
             class ParentFeature(
                 Feature,
                 spec=SampleFeatureSpec(
@@ -651,12 +653,15 @@ def downstream_metadata_strategy(
         }
         snapshot_version = graph.snapshot_version()
 
-        @given(downstream_metadata_strategy(
-            plan,
-            feature_versions=feature_versions,
-            snapshot_version=snapshot_version,
-            hash_algorithm=HashAlgorithm.SHA256,
-        ))
+
+        @given(
+            downstream_metadata_strategy(
+                plan,
+                feature_versions=feature_versions,
+                snapshot_version=snapshot_version,
+                hash_algorithm=HashAlgorithm.SHA256,
+            )
+        )
         def test_provenance_calculation(data):
             upstream_data, downstream_df = data
             # Test that downstream_df has correctly calculated provenance

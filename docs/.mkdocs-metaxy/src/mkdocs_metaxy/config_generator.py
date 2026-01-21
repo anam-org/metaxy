@@ -377,7 +377,6 @@ def generate_toml_code_block(content: str, indent_level: int = 1) -> list[str]:
 
             store = "dev"
             ```
-
     """
     indent = "    " * indent_level
     lines = []
