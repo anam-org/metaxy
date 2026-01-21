@@ -64,6 +64,8 @@ plugins:
   - macros:
       module_name: docs/main
   - social:
+      # check the rendered images during local development at
+      # http://localhost:8000/assets/images/social/index.png
       cards_layout_dir: docs/.overrides
       cards_layout: social_card
 

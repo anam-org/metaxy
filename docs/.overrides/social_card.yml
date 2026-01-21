@@ -67,15 +67,15 @@ layers:
         style: Bold
 
   # Description
-  - size: { width: 1072, height: 80 }
-    offset: { x: 64, y: 464 }
+  - size: { width: 1072, height: 160 }
+    offset: { x: 64, y: 364 }
     typography:
       content: "{{ page.meta.description or config.site_description }}"
       align: start
       color: *color_transparent
       line:
         amount: 2
-        height: 1.5
+        height: 2.3
       font:
         family: *font_family
         style: Regular
