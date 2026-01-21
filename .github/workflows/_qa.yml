@@ -106,15 +106,26 @@ jobs:
           arguments: "'.#\"python${{ matrix.python-version }}\"'"
       - name: Install Dependencies
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
+      - name: Install Coverage Subprocess Support
+        run: cp .github/coverage_subprocess.pth $(uv run python -c "import sysconfig; print(sysconfig.get_path('purelib'))")/
       - name: Run Tests
         id: pytest
+        env:
+          # Enable subprocess coverage collection
+          COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
+          COVERAGE_FILE: ${{ github.workspace }}/.coverage
         run: >
           uv run pytest
           --cov=src/metaxy
-          --cov-report=term-missing
-          --cov-report=xml
           --durations=10
           --junit-xml=./junit.xml
+
+      - name: Combine Coverage Data
+        if: always()
+        run: |
+          uv run coverage combine --keep || true
+          uv run coverage xml -o coverage.xml
+          uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY || true
 
       # Restore original environment to prevent Nix tools from interfering with subsequent steps
       - name: Restore Original Environment After Nix

@@ -10,12 +10,15 @@ This is a private module (_testing) containing testing utilities organized into:
 # Runbook system
 # Metaxy project helpers
 from metaxy._testing.metaxy_project import (
+    COVERAGE_ENV_VARS,
     ExternalMetaxyProject,
     HashAlgorithmCases,
     MetaxyProject,
     TempFeatureModule,
     TempMetaxyProject,
+    _get_coverage_env,
     assert_all_results_equal,
+    env_override,
 )
 from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.pytest_helpers import (
@@ -61,6 +64,9 @@ __all__ = [
     "ExternalMetaxyProject",
     "TempMetaxyProject",
     "assert_all_results_equal",
+    "env_override",
+    "COVERAGE_ENV_VARS",
+    "_get_coverage_env",
     # Pytest helpers
     "add_metaxy_provenance_column",
     "add_metaxy_system_columns",
