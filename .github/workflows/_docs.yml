@@ -35,6 +35,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Save original environment
+        run: bash .github/scripts/save-env.sh
+
       - name: Install Nix
         uses: cachix/install-nix-action@v27
         with:
@@ -75,3 +78,7 @@ jobs:
           else
             uv run mike deploy --push --ignore-remote-status ${{ inputs.docs-version }}
           fi
+
+      - name: Restore original environment
+        if: always()
+        run: bash .github/scripts/restore-env.sh
