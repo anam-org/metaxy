@@ -81,6 +81,10 @@ jobs:
     if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
     env:
       UV_PYTHON_PREFERENCE: only-system
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -93,8 +97,10 @@ jobs:
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
+        with:
+          arguments: "'.#\"python${{ matrix.python-version }}\"'"
       - name: Install Dependencies
-        run: uv python pin 3.10 && uv sync --all-extras --all-groups
+        run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
       - name: Run ty
         # Clear LD_LIBRARY_PATH to avoid linker mismatch between Ubuntu's dynamic linker and Nix's glibc
         run: LD_LIBRARY_PATH= uv run ty check
