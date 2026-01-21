@@ -32,6 +32,7 @@ from metaxy.metadata_store.types import AccessMode
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning import VersioningEngine
+from metaxy.versioning.adbc import ADBCVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
@@ -115,8 +116,8 @@ class ADBCMetadataStore(MetadataStore, ABC):
         ```
     """
 
-    # Subclasses must override this with their ADBC versioning engine
-    versioning_engine_cls: type[VersioningEngine]
+    # Use ADBC versioning engine by default
+    versioning_engine_cls: type[VersioningEngine] = ADBCVersioningEngine
 
     def __init__(
         self,

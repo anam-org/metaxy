@@ -1,15 +1,23 @@
 """Common fixtures for metadata store tests."""
 
+import logging
+import os
 import socket
+import subprocess
 import uuid
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
 import boto3
+import psycopg
 import pytest
+from metaxy._testing.duckdb_json_compat_store import DuckDBJsonCompatStore  # type: ignore[import-not-found]
+from metaxy.metadata_store.postgres import PostgresMetadataStore  # type: ignore[import-not-found]
 from moto.server import ThreadedMotoServer
+from psycopg import conninfo as psycopg_conninfo
 from pytest_cases import fixture, parametrize_with_cases
+from pytest_postgresql import factories
 
 from metaxy import HashAlgorithm
 from metaxy._testing import HashAlgorithmCases
@@ -35,6 +43,144 @@ def find_free_port() -> int:
         s.listen(1)
         port = s.getsockname()[1]
     return port
+
+
+logger = logging.getLogger(__name__)
+
+# Force pytest-postgresql to use a short socket directory to avoid hitting the
+# 103-character Unix socket limit enforced by PostgreSQL on macOS.
+_PG_SOCKET_DIR = Path("/tmp/metaxy-pg")
+_PG_SOCKET_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# Use Nix-provided PostgreSQL if available, otherwise use system PostgreSQL
+original_popen = subprocess.Popen
+
+
+class SafePopen(original_popen):
+    def __init__(self, args, **kwargs):
+        if (
+            isinstance(args, list)
+            and len(args) > 0
+            and any(x in str(args[0]) for x in ["pg_ctl", "initdb", "postgres"])
+        ):
+            env = kwargs.get("env", os.environ).copy()
+            for var in [
+                "LD_LIBRARY_PATH",
+                "DYLD_LIBRARY_PATH",
+                "DYLD_FALLBACK_LIBRARY_PATH",
+            ]:
+                if var in env:
+                    del env[var]
+            env["LANG"] = "C.UTF-8"
+            env["LC_ALL"] = "C.UTF-8"
+            kwargs["env"] = env
+        super().__init__(args, **kwargs)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def patch_subprocess():
+    subprocess.Popen = SafePopen  # type: ignore
+    yield
+    subprocess.Popen = original_popen  # type: ignore
+
+
+# --- SETUP POSTGRES PATH ---
+_nix_pg_bin = os.environ.get("PG_BIN")
+_pg_executable = None
+_pg_available = False
+
+if _nix_pg_bin:
+    _pg_executable = str(Path(_nix_pg_bin) / "pg_ctl")
+    _pg_available = Path(_pg_executable).exists()
+else:
+    # Try to find pg_ctl in system PATH
+    import shutil
+
+    pg_ctl_path = shutil.which("pg_ctl")
+    if pg_ctl_path:
+        _pg_executable = pg_ctl_path
+        _pg_available = True
+
+# --- FIXTURE CONFIGURATION ---
+if _pg_available:
+    postgresql_proc = factories.postgresql_proc(
+        executable=_pg_executable,
+        unixsocketdir="/tmp",
+        postgres_options="-c fsync=off -c synchronous_commit=off -c full_page_writes=off",
+        # Ensure default user matches what Nix Postgres expects (usually the current user or postgres)
+        user="postgres",
+        password=None,
+    )
+else:
+    # Create a dummy fixture that will be skipped
+    @pytest.fixture(scope="session")
+    def postgresql_proc():
+        pytest.skip("PostgreSQL is not available on this system")
+
+
+@pytest.fixture(scope="session")
+def postgres_server(postgresql_proc: Any):
+    """Expose connection details from pytest-postgresql's server."""
+    host = postgresql_proc.host
+    port = postgresql_proc.port
+    user = postgresql_proc.user
+    password = postgresql_proc.password
+    options = postgresql_proc.options
+
+    admin_dbname = "postgres"
+
+    admin_dsn = psycopg_conninfo.make_conninfo(
+        host=host,
+        port=str(port),
+        user=user,
+        password=password or None,
+        dbname=admin_dbname,
+        options=options or None,
+    )
+
+    return {
+        "host": host,
+        "port": port,
+        "user": user,
+        "dbname": admin_dbname,
+        "password": password,
+        "options": options,
+        "dsn": admin_dsn,
+        "psycopg": psycopg,
+    }
+
+
+@pytest.fixture
+def postgres_db(postgres_server):
+    """Create a clean PostgreSQL database for each test."""
+    psycopg_mod = postgres_server["psycopg"]
+    admin_dsn = postgres_server["dsn"]
+    host = postgres_server["host"]
+    port = postgres_server["port"]
+    user = postgres_server["user"]
+    password = postgres_server["password"]
+
+    db_name = f"test_{uuid.uuid4().hex}"
+
+    with psycopg_mod.connect(admin_dsn, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'CREATE DATABASE "{db_name}"')
+
+    if password:
+        auth = f"{user}:{password}"
+    else:
+        auth = user
+    test_conn_string = f"postgresql://{auth}@{host}:{port}/{db_name}"
+
+    yield test_conn_string
+
+    try:
+        with psycopg_mod.connect(admin_dsn, autocommit=True) as conn:
+            with conn.cursor() as cur:
+                cur.execute(f'DROP DATABASE IF EXISTS "{db_name}" WITH (FORCE)')
+    except psycopg.Error as exc:
+        logger.warning("Failed to drop test database %s: %s", db_name, exc)
 
 
 class StoreCases:
@@ -137,7 +283,7 @@ class AnyStoreCases:
 
 
 class AllStoresCases:
-    """All store types (Delta, DuckDB, ClickHouse, LanceDB)."""
+    """All store types (Delta, DuckDB, ClickHouse, LanceDB, ADBC variants)."""
 
     @pytest.mark.delta
     @pytest.mark.polars
@@ -175,6 +321,56 @@ class AllStoresCases:
             uri=lancedb_path,
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
+
+    @pytest.mark.ibis
+    @pytest.mark.native
+    @pytest.mark.postgres
+    def case_postgres(self, postgres_db: str) -> MetadataStore:
+        return PostgresMetadataStore(
+            connection_string=postgres_db,
+            hash_algorithm=HashAlgorithm.MD5,
+            auto_create_tables=True,
+        )
+
+    @pytest.mark.ibis
+    @pytest.mark.native
+    @pytest.mark.duckdb
+    def case_duckdb_json_compat(self, tmp_path: Path) -> MetadataStore:
+        db_path = tmp_path / "test_json_compat.duckdb"
+        return DuckDBJsonCompatStore(database=str(db_path))
+
+    # ADBC store cases - will be implemented in subsequent PRs
+    # These use native ADBC drivers for high-performance bulk writes
+
+    # @pytest.mark.adbc
+    # @pytest.mark.native
+    # @pytest.mark.postgres
+    # def case_adbc_postgres(self, postgres_db: str) -> MetadataStore:
+    #     from metaxy.metadata_store.adbc_postgres import ADBCPostgresMetadataStore
+    #     return ADBCPostgresMetadataStore(
+    #         connection_string=postgres_db,
+    #         hash_algorithm=HashAlgorithm.MD5,
+    #         auto_create_tables=True,
+    #     )
+
+    # @pytest.mark.adbc
+    # @pytest.mark.native
+    # @pytest.mark.duckdb
+    # def case_adbc_duckdb(self, tmp_path: Path) -> MetadataStore:
+    #     from metaxy.metadata_store.adbc_duckdb import ADBCDuckDBMetadataStore
+    #     return ADBCDuckDBMetadataStore(
+    #         database=tmp_path / "test_adbc.duckdb",
+    #         hash_algorithm=HashAlgorithm.XXHASH64,
+    #     )
+
+    # @pytest.mark.adbc
+    # @pytest.mark.native
+    # def case_adbc_sqlite(self, tmp_path: Path) -> MetadataStore:
+    #     from metaxy.metadata_store.adbc_sqlite import ADBCSQLiteMetadataStore
+    #     return ADBCSQLiteMetadataStore(
+    #         database=tmp_path / "test_adbc.sqlite",
+    #         hash_algorithm=HashAlgorithm.MD5,
+    #     )
 
 
 @fixture

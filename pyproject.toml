@@ -255,7 +255,9 @@ filterwarnings = [
 markers = [
   "duckdb: DuckDB store tests",
   "clickhouse: ClickHouse store tests",
-  "ibis: Ibis-based store tests (DuckDB, ClickHouse)",
+  "postgres: PostgreSQL store tests",
+  "ibis: Ibis-based store tests (DuckDB, ClickHouse, PostgreSQL)",
+  "adbc: ADBC-based store tests (PostgreSQL, DuckDB, SQLite)",
   "native: Stores with native compute capabilities",
   "polars: Stores using Polars for compute",
   "delta: Delta Lake store tests",
