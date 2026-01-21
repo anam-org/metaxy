@@ -195,6 +195,7 @@ nav:
       - Feature Dependencies: guide/overview/feature-dependencies.md
     - Concepts:
       - Metadata Stores: guide/learn/metadata-stores.md
+      - ADBC Stores: guide/learn/adbc-stores.md
       - Feature Definitions: guide/learn/feature-definitions.md
       - Versioning: guide/learn/data-versioning.md
       - Feature Discovery: guide/learn/feature-discovery.md
@@ -236,6 +237,12 @@ nav:
         - Ibis:
           - integrations/metadata-stores/databases/ibis/index.md
           - API: integrations/metadata-stores/databases/ibis/api.md
+        - ADBC Postgres:
+          - integrations/metadata-stores/databases/postgres-adbc/index.md
+        - ADBC DuckDB:
+          - integrations/metadata-stores/databases/duckdb-adbc/index.md
+        - ADBC SQLite:
+          - integrations/metadata-stores/databases/sqlite-adbc/index.md
       - Storage:
         - integrations/metadata-stores/storage/index.md
         - Delta Lake:
@@ -255,6 +262,7 @@ nav:
     - AI:
       - Claude Code: integrations/ai/claude.md
       - MCP Server: integrations/ai/mcp.md
+    - Arrow Flight SQL: integrations/flight-sql.md
   - Examples:
     - examples/index.md
     - Basic: examples/basic.md
