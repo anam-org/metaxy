@@ -4598,7 +4598,8 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--feature, --empty-feature</code>: Feature key (e.g., 'my_feature' or 'namespace/feature'). Can be repeated.</li>
 <li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
+<li><code>--global-filter, --empty-global-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to all features being selected (including upstream). Can be repeated.</li>
 <li><code>--snapshot-id</code>: Check metadata against a specific snapshot version.</li>
 <li><code>--assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: False]</em></li>
 <li><code>--verbose, --no-verbose</code>: Whether to display sample slices of dataframes.  <em>[default: False]</em></li>
@@ -4615,7 +4616,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--feature, --empty-feature</code>: Feature key (e.g., 'my_feature' or 'namespace/feature'). Can be repeated.</li>
 <li><code>--all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--soft, --no-soft</code>: Whether to mark records with deletion timestamps vs physically remove them.  <em>[default: True]</em></li>
 <li><code>--yes, --no-yes</code>: Confirm deletion without prompting (required for hard deletes without filters).  <em>[default: False]</em></li>
 </ul>
@@ -4647,7 +4648,7 @@ keeping only the latest row per sample (--latest-only).</p>
 <ul>
 <li><code>FROM, --from</code>: Source store name to copy metadata from.  <strong>[required]</strong></li>
 <li><code>TO, --to</code>: Destination store name to copy metadata to.  <strong>[required]</strong></li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to all features. Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--current-only, --no-current-only</code>: Only copy rows with the current feature_version (as defined in loaded feature graph).  <em>[default: False]</em></li>
 <li><code>--latest-only, --no-latest-only</code>: Deduplicate samples by keeping only the latest row per id_columns group.  <em>[default: True]</em></li>
 </ul>
