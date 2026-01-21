@@ -985,8 +985,12 @@ def test_metadata_status_root_feature_missing_metadata(metaxy_project: TempMetax
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_filter(metaxy_project: TempMetaxyProject, output_format: str):
-    """Test status command with --filter flag to filter metadata by column value."""
+def test_metadata_status_with_global_filter(metaxy_project: TempMetaxyProject, output_format: str):
+    """Test status command with --global-filter flag to filter metadata by column value.
+
+    --global-filter applies to all features (both upstream and target), which is needed
+    when you want to filter the entire pipeline by a common column like 'category'.
+    """
 
     def features():
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
@@ -1043,14 +1047,14 @@ def test_metadata_status_with_filter(metaxy_project: TempMetaxyProject, output_f
             added_df = increment.added.to_polars().filter(pl.col("category") == "A")
             store.write_metadata(feature_cls, added_df)
 
-        # Check status with filter for category A - should be up-to-date
+        # Check status with global-filter for category A - should be up-to-date
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
                 "--feature",
                 "video/files",
-                "--filter",
+                "--global-filter",
                 "category = 'A'",
                 "--format",
                 output_format,
@@ -1072,14 +1076,14 @@ def test_metadata_status_with_filter(metaxy_project: TempMetaxyProject, output_f
             assert "✓" in result.stdout  # Up-to-date icon
             assert "3" in result.stdout  # Materialized count
 
-        # Check status with filter for category B - should need updates
+        # Check status with global-filter for category B - should need updates
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
                 "--feature",
                 "video/files",
-                "--filter",
+                "--global-filter",
                 "category = 'B'",
                 "--format",
                 output_format,
@@ -1141,8 +1145,8 @@ def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_multiple_filters(metaxy_project: TempMetaxyProject, output_format: str):
-    """Test status command with multiple --filter flags (combined with AND)."""
+def test_metadata_status_with_multiple_global_filters(metaxy_project: TempMetaxyProject, output_format: str):
+    """Test status command with multiple --global-filter flags (combined with AND)."""
 
     def features():
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
@@ -1197,7 +1201,7 @@ def test_metadata_status_with_multiple_filters(metaxy_project: TempMetaxyProject
             increment = store.resolve_update(feature_cls, lazy=False)
             store.write_metadata(feature_cls, increment.added.to_polars())
 
-        # Check status with multiple filters: category A AND status active
+        # Check status with multiple global-filters: category A AND status active
         # Should match sample_uids 1 and 5
         result = metaxy_project.run_cli(
             [
@@ -1205,9 +1209,9 @@ def test_metadata_status_with_multiple_filters(metaxy_project: TempMetaxyProject
                 "status",
                 "--feature",
                 "video/files",
-                "--filter",
+                "--global-filter",
                 "category = 'A'",
-                "--filter",
+                "--global-filter",
                 "status = 'active'",
                 "--format",
                 output_format,
@@ -2255,7 +2259,7 @@ def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyPro
         # Write upstream metadata with sample_uids
         metaxy_project.write_sample_metadata("video/files_root", id_values={"sample_uid": [1, 2, 3]})
 
-        # Check status with --progress flag and a filter that excludes all rows
+        # Check status with --progress flag and a global-filter that excludes all rows
         # This simulates the "no input" scenario when all upstream data is filtered out
         result = metaxy_project.run_cli(
             [
@@ -2266,7 +2270,7 @@ def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyPro
                 "--format",
                 "plain",
                 "--progress",
-                "--filter",
+                "--global-filter",
                 "sample_uid > 999",  # No samples match this filter
             ]
         )
@@ -2285,7 +2289,7 @@ def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyPro
                 "--format",
                 "json",
                 "--progress",
-                "--filter",
+                "--global-filter",
                 "sample_uid > 999",  # No samples match this filter
             ]
         )

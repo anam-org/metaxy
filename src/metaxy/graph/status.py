@@ -252,6 +252,7 @@ def get_feature_metadata_status(
     *,
     use_fallback: bool = True,
     global_filters: Sequence[nw.Expr] | None = None,
+    target_filters: Sequence[nw.Expr] | None = None,
     compute_progress: bool = False,
 ) -> FeatureMetadataStatusWithIncrement:
     """Get metadata status for a single feature.
@@ -262,8 +263,10 @@ def get_feature_metadata_status(
             FeatureKey instance, or BaseFeature class.
         metadata_store: The metadata store to query
         use_fallback: Whether to read metadata from fallback stores.
-        global_filters: List of Narwhals filter expressions to apply to all features.
-            These filters are applied when reading metadata and resolving updates.
+        global_filters: List of Narwhals filter expressions applied to all features
+            (both upstream and target).
+        target_filters: List of Narwhals filter expressions applied only to the target
+            feature (or more precisely, the result of an increment calculation on it).
         compute_progress: Whether to calculate progress percentage.
             When True, computes what percentage of input units have been processed.
             This requires additional computation (re-runs the input query).
@@ -297,12 +300,20 @@ def get_feature_metadata_status(
     # Get store metadata (table_name, uri, etc.)
     store_metadata = metadata_store.get_store_metadata(key)
 
+    # Combine global_filters and target_filters for read_metadata
+    # (read_metadata doesn't distinguish them - it only reads the target feature)
+    combined_filters: list[nw.Expr] = []
+    if global_filters:
+        combined_filters.extend(global_filters)
+    if target_filters:
+        combined_filters.extend(target_filters)
+
     try:
         metadata_lazy = metadata_store.read_metadata(
             key,
             columns=list(id_columns_seq) if id_columns_seq is not None else None,
             allow_fallback=use_fallback,
-            filters=list(global_filters) if global_filters else None,
+            filters=combined_filters if combined_filters else None,
         )
         row_count = count_lazy_rows(metadata_lazy)
         metadata_exists = True
@@ -331,6 +342,7 @@ def get_feature_metadata_status(
         feature_cls,
         lazy=True,
         global_filters=list(global_filters) if global_filters else None,
+        target_filters=list(target_filters) if target_filters else None,
     )
 
     # Count changes
