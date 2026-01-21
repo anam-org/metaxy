@@ -498,3 +498,64 @@ def test_hard_delete_then_overwrite_restores_row(
         assert active.height == 1
         assert active["value"].to_list() == [2]
         assert METAXY_DELETED_AT not in active.columns or active[METAXY_DELETED_AT].is_null().all()
+
+
+def test_soft_delete_preserves_original_created_at(
+    any_store: MetadataStore,
+    base_time: datetime,
+    make_value_df,
+):
+    """Soft delete should preserve the original created_at and set deleted_at.
+
+    When delete_metadata with soft=True is called, it:
+    1. Reads the existing row (with its original created_at)
+    2. Sets metaxy_deleted_at on it
+    3. Writes it back (preserving the original created_at)
+    """
+
+    class SoftDeleteTimestampFeature(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="soft_delete_timestamp",
+            fields=["value"],
+        ),
+    ):
+        value: int | None = None
+
+    initial_df = make_value_df(
+        sample_uids=["a"],
+        values=[1],
+        provenance=["p1"],
+        created_at=[base_time],
+    )
+
+    with any_store:
+        any_store.write_metadata(SoftDeleteTimestampFeature, initial_df)
+
+        # Perform soft delete
+        any_store.delete_metadata(
+            SoftDeleteTimestampFeature,
+            filters=nw.col("sample_uid") == "a",
+            soft=True,
+        )
+
+        # Read all rows including soft deleted to see the deletion marker
+        all_rows = (
+            any_store.read_metadata(SoftDeleteTimestampFeature, include_soft_deleted=True, latest_only=False)
+            .collect()
+            .to_polars()
+            .sort(METAXY_CREATED_AT)
+        )
+
+        # Should have 2 rows: original and soft delete marker
+        assert all_rows.height == 2
+
+        # Get the soft delete marker row (the one with deleted_at set)
+        soft_delete_row = all_rows.filter(pl.col(METAXY_DELETED_AT).is_not_null())
+        assert soft_delete_row.height == 1
+
+        # The created_at should be preserved from the original row
+        created_at = soft_delete_row[METAXY_CREATED_AT][0]
+        deleted_at = soft_delete_row[METAXY_DELETED_AT][0]
+        assert created_at == base_time, f"created_at ({created_at}) should be preserved as {base_time}"
+        assert deleted_at > base_time, f"deleted_at ({deleted_at}) should be after base_time ({base_time})"
