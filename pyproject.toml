@@ -180,8 +180,13 @@ min_confidence = 60
 
 [tool.coverage.run]
 source = ["src/metaxy"]
+branch = true
+parallel = true
+concurrency = ["multiprocessing", "thread"]
+sigterm = true
 omit = [
   "src/metaxy/_testing.py",
+  "src/metaxy/_testing/*",
   "tests/*",
   "examples/*",
 ]

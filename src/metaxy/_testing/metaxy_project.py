@@ -23,6 +23,18 @@ from metaxy.versioning.types import HashAlgorithm
 
 DEFAULT_ID_COLUMNS = ["sample_uid"]
 
+# Environment variables that should be forwarded to subprocesses for coverage collection
+COVERAGE_ENV_VARS = ["COVERAGE_PROCESS_START", "COVERAGE_FILE"]
+
+
+def _get_coverage_env() -> dict[str, str]:
+    """Get coverage-related environment variables if set.
+
+    Returns a dict of coverage env vars that should be forwarded to subprocesses
+    to enable coverage collection in subprocess calls during testing.
+    """
+    return {k: v for k in COVERAGE_ENV_VARS if (v := os.environ.get(k))}
+
 
 @contextmanager
 def env_override(overrides: dict[str, str | None]):
@@ -70,6 +82,8 @@ __all__ = [
     "TempMetaxyProject",  # Backward compatibility alias
     "DEFAULT_ID_COLUMNS",
     "env_override",
+    "COVERAGE_ENV_VARS",
+    "_get_coverage_env",
 ]
 
 
@@ -435,7 +449,9 @@ class ExternalMetaxyProject(MetaxyProject):
             # .parent -> repo root
             import metaxy
 
-            install_metaxy_from = Path(metaxy.__file__).parent.parent.parent  # ty: ignore[invalid-argument-type]
+            if metaxy.__file__ is None:
+                raise RuntimeError("Cannot determine metaxy package location")
+            install_metaxy_from = Path(metaxy.__file__).parent.parent.parent
 
         # Set VIRTUAL_ENV to activate the venv
         venv_env = os.environ.copy()
@@ -481,7 +497,46 @@ class ExternalMetaxyProject(MetaxyProject):
                 f"Failed to install project from {self.project_dir}\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
             )
 
+        # Install coverage subprocess support if COVERAGE_PROCESS_START is set
+        # This enables coverage collection in subprocesses spawned by tests
+        if os.environ.get("COVERAGE_PROCESS_START"):
+            self._install_coverage_subprocess_support(venv_path, venv_env)
+
         self._venv_path = venv_path
+
+    def _install_coverage_subprocess_support(self, venv_path: Path, venv_env: dict[str, str]) -> None:
+        """Install coverage subprocess support in a venv.
+
+        Copies the coverage_subprocess.pth file to the venv's site-packages,
+        enabling automatic coverage collection for any Python subprocess
+        started within that venv.
+
+        Args:
+            venv_path: Path to the virtual environment
+            venv_env: Environment dict with VIRTUAL_ENV set
+        """
+        # Get the site-packages path for the venv
+        result = subprocess.run(
+            ["uv", "run", "--active", "python", "-c", "import sysconfig; print(sysconfig.get_path('purelib'))"],
+            env=venv_env,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        site_packages = Path(result.stdout.strip())
+
+        # Find the coverage_subprocess.pth file in .github/
+        import metaxy
+
+        if metaxy.__file__ is None:
+            return  # Can't find repo root, skip coverage setup
+        repo_root = Path(metaxy.__file__).parent.parent.parent
+        pth_source = repo_root / ".github" / "coverage_subprocess.pth"
+
+        if pth_source.exists():
+            import shutil
+
+            shutil.copy(pth_source, site_packages / "coverage_subprocess.pth")
 
     def run_in_venv(self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs):
         """Run a command in the configured venv.
