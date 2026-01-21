@@ -131,39 +131,11 @@ The observation automatically tracks:
 - **Data version**: Uses `mean(metaxy_created_at)` to detect both additions and deletions
 - **Row count**: Logged as `dagster/row_count` metadata
 
-## Deletion workflows with Dagster ops
+## Deletion workflows
 
-The Dagster integration provides a `delete_metadata` op:
+The Dagster integration provides a [`delete_metadata`][metaxy.ext.dagster.delete_metadata] op for orchestrated cleanup with support for both basic and cascade deletions.
 
-```python
-import dagster as dg
-import metaxy.ext.dagster as mxd
-
-
-# Define a job with the delete op
-@dg.job(resource_defs={"metaxy_store": mxd.MetaxyStoreFromConfigResource(name="default")})
-def cleanup_job():
-    mxd.delete_metadata()
-
-
-# Execute with config to delete inactive customer segments
-cleanup_job.execute_in_process(
-    run_config={
-        "ops": {
-            "delete_metadata": {
-                "config": {
-                    "feature_key": ["customer", "segment"],
-                    "filters": ["status = 'inactive'"],
-                    "soft": True,
-                }
-            }
-        }
-    }
-)
-```
-
-`filters` is a list of SQL WHERE clause strings (e.g., `["status = 'inactive'", "age > 18"]`) that are parsed into Narwhals expressions. Multiple filters are combined with AND logic. See the [filter expressions guide](../../../guide/learn/filters.md) for supported syntax.
-Set `soft=False` to physically remove rows.
+See the [Deletion Guide - Dagster Integration](../../../guide/learn/deletions.md#dagster-integration) for detailed examples and configuration options.
 
 ## Reference
 
