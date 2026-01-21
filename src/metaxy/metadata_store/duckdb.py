@@ -430,6 +430,109 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
         return candidate
 
+    # ADBC Scanner Support (Experimental)
+
+    def install_adbc_scanner(self) -> None:
+        """Install and load the adbc_scanner community extension.
+
+        Warning:
+            This is an experimental feature that requires the DuckDB community
+            extension `adbc_scanner`. The extension may not be available in all
+            environments.
+
+        Raises:
+            ADBCScannerNotAvailableError: If extension cannot be installed
+            RuntimeError: If store is not open
+
+        Example:
+            ```python
+            with store:
+                store.install_adbc_scanner()
+            ```
+        """
+        from metaxy.metadata_store._adbc_scanner_support import install_adbc_scanner
+
+        conn = self._duckdb_raw_connection()
+        install_adbc_scanner(conn)
+
+    def adbc_connect(self, options: dict[str, Any]) -> int:
+        """Connect to a remote ADBC data source.
+
+        Args:
+            options: ADBC connection options (driver-specific)
+
+        Returns:
+            Connection handle (integer) for use with adbc_scan() and other methods
+
+        Example:
+            ```python
+            handle = store.adbc_connect({
+                'driver': 'postgresql',
+                'uri': 'postgresql://host:5432/db',
+            })
+            ```
+        """
+        from metaxy.metadata_store._adbc_scanner_support import adbc_connect
+
+        conn = self._duckdb_raw_connection()
+        return adbc_connect(conn, options)
+
+    def adbc_disconnect(self, handle: int) -> None:
+        """Disconnect from a remote ADBC data source.
+
+        Args:
+            handle: Connection handle from adbc_connect()
+        """
+        from metaxy.metadata_store._adbc_scanner_support import adbc_disconnect
+
+        conn = self._duckdb_raw_connection()
+        adbc_disconnect(conn, handle)
+
+    def adbc_scan(self, handle: int, query: str) -> Any:
+        """Execute a query on a remote ADBC connection.
+
+        Args:
+            handle: Connection handle from adbc_connect()
+            query: SQL query to execute on the remote database
+
+        Returns:
+            Narwhals DataFrame with query results
+
+        Example:
+            ```python
+            # Query remote PostgreSQL metadata
+            remote_df = store.adbc_scan(
+                handle,
+                "SELECT * FROM my_feature__key WHERE sample_uid < 1000"
+            )
+            ```
+        """
+        from metaxy.metadata_store._adbc_scanner_support import adbc_scan
+
+        conn = self._duckdb_raw_connection()
+        return adbc_scan(conn, handle, query)
+
+    def adbc_scan_table(self, handle: int, table_name: str) -> Any:
+        """Scan an entire table from a remote ADBC connection.
+
+        Args:
+            handle: Connection handle from adbc_connect()
+            table_name: Name of table to scan
+
+        Returns:
+            Narwhals DataFrame with table data
+
+        Example:
+            ```python
+            # Scan entire remote table
+            remote_df = store.adbc_scan_table(handle, "my_feature__key")
+            ```
+        """
+        from metaxy.metadata_store._adbc_scanner_support import adbc_scan_table
+
+        conn = self._duckdb_raw_connection()
+        return adbc_scan_table(conn, handle, table_name)
+
     @classmethod
     def config_model(cls) -> type[DuckDBMetadataStoreConfig]:
         return DuckDBMetadataStoreConfig
