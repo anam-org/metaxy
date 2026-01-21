@@ -1228,6 +1228,155 @@ def test_metadata_status_with_multiple_filters(metaxy_project: TempMetaxyProject
             assert "2" in result.stdout  # Materialized count
 
 
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_root_feature_with_filter_after_overwrites(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Test status command with --filter on a root feature after writing updated rows.
+
+    This tests the scenario where:
+    1. Initial write has some rows with a column as NULL
+    2. Later writes update those rows with non-NULL values
+    3. Filter by IS NULL / IS NOT NULL should show the correct counts
+       based on the LATEST version of each row (timestamp-based deduplication)
+    """
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class RawVideoRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["raw_video", "root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        feature_key = FeatureKey(["raw_video", "root"])
+        feature_cls = graph.get_feature_by_key(feature_key)
+
+        # Step 1: Write initial data where all rows have height=NULL
+        # Cast height to Int64 to avoid DuckDB's NULL-typed column issue
+        initial_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3, 4, 5],
+                "value": ["val_1", "val_2", "val_3", "val_4", "val_5"],
+                "height": pl.Series([None, None, None, None, None], dtype=pl.Int64),
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in range(1, 6)],
+            }
+        )
+
+        with graph.use(), store:
+            store.write_metadata(feature_cls, initial_data)
+
+        # Step 2: Write updated data for samples 1, 2, 3 with height filled
+        # (This simulates overwriting the same samples with updated values)
+        import time
+
+        time.sleep(0.01)  # Ensure different metaxy_created_at timestamps
+        updated_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "value": ["val_1_updated", "val_2_updated", "val_3_updated"],
+                "height": [100, 200, 300],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}_v2"} for i in range(1, 4)],
+            }
+        )
+
+        with graph.use(), store:
+            store.write_metadata(feature_cls, updated_data)
+
+        # After deduplication:
+        # - Samples 1, 2, 3 should have the latest version (height filled)
+        # - Samples 4, 5 should still have height=NULL
+        # Total: 5 unique samples
+
+        # Check status WITHOUT filter - should show 5 rows
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "raw_video/root",
+                "--format",
+                output_format,
+            ]
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["raw_video/root"]
+            assert feature["store_rows"] == 5  # Total unique samples after dedup
+        else:
+            assert "raw_video/root" in result.stdout
+            assert "5" in result.stdout  # Materialized count
+
+        # Check status with filter for height IS NULL - should show 2 rows (samples 4, 5)
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "raw_video/root",
+                "--filter",
+                "height IS NULL",
+                "--format",
+                output_format,
+            ]
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["raw_video/root"]
+            # Only samples 4 and 5 should have NULL height after deduplication
+            assert feature["store_rows"] == 2, (
+                f"Expected 2 rows with height IS NULL, got {feature['store_rows']}. "
+                "Filter should apply AFTER deduplication."
+            )
+        else:
+            assert "raw_video/root" in result.stdout
+            # Should show 2 in the Materialized column
+            assert "2" in result.stdout
+
+        # Check status with filter for height IS NOT NULL - should show 3 rows (samples 1, 2, 3)
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "status",
+                "--feature",
+                "raw_video/root",
+                "--filter",
+                "height IS NOT NULL",
+                "--format",
+                output_format,
+            ]
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["raw_video/root"]
+            # Samples 1, 2, 3 should have non-NULL height after deduplication
+            assert feature["store_rows"] == 3, (
+                f"Expected 3 rows with height IS NOT NULL, got {feature['store_rows']}. "
+                "Filter should apply AFTER deduplication."
+            )
+        else:
+            assert "raw_video/root" in result.stdout
+            # Should show 3 in the Materialized column
+            assert "3" in result.stdout
+
+
 def test_metadata_status_error_representation():
     """Test that FullFeatureMetadataRepresentation handles error status correctly."""
     from metaxy.graph.status import FullFeatureMetadataRepresentation

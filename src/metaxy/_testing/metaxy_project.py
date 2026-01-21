@@ -767,6 +767,7 @@ class TempMetaxyProject(MetaxyProject):
             staging_db_path = (self.project_dir / "metadata_staging.duckdb").as_posix()
             config_content = f'''project = "test"
 store = "dev"
+auto_create_tables = true
 
 [stores.dev]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
