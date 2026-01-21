@@ -682,14 +682,25 @@ class MetadataStore(ABC):
                 "Use current_only=False with feature_version parameter."
             )
 
-        # Add feature_version filter only when needed
+        # Separate system filters (applied before dedup) from user filters (applied after dedup)
+        # System filters like feature_version need to be applied early to reduce data volume
+        # User filters should see the deduplicated view of the data
+        system_filters: list[nw.Expr] = []
+        user_filters = list(filters) if filters else []
+
+        # Add feature_version filter only when needed (this is a system filter)
         if current_only or feature_version is not None and not is_system_table:
             version_filter = nw.col(METAXY_FEATURE_VERSION) == (
                 current_graph().get_feature_version(feature_key) if current_only else feature_version
             )
-            filters = [version_filter, *filters]
+            system_filters.append(version_filter)
 
-        if columns and not is_system_table:
+        # If user filters are provided, we need to read all columns since filters may
+        # reference columns not in the requested columns list. Column selection happens
+        # after filtering
+        if user_filters:
+            read_columns = None
+        elif columns and not is_system_table:
             # Add only system columns that aren't already in the user's columns list
             columns_set = set(columns)
             missing_system_cols = [c for c in ALL_SYSTEM_COLUMNS if c not in columns_set]
@@ -699,7 +710,11 @@ class MetadataStore(ABC):
 
         lazy_frame = None
         try:
-            lazy_frame = self.read_metadata_in_store(feature, filters=filters, columns=read_columns)
+            # Only pass system filters to read_metadata_in_store
+            # User filters will be applied after deduplication
+            lazy_frame = self.read_metadata_in_store(
+                feature, filters=system_filters if system_filters else None, columns=read_columns
+            )
         except FeatureNotFoundError as e:
             # do not read system features from fallback stores
             if is_system_table:
@@ -728,8 +743,17 @@ class MetadataStore(ABC):
             if filter_deleted:
                 lazy_frame = lazy_frame.filter(nw.col(METAXY_DELETED_AT).is_null())
 
+            # Apply user filters AFTER deduplication so they see the latest version of each row
+            for user_filter in user_filters:
+                lazy_frame = lazy_frame.filter(user_filter)
+
+        # For system tables, apply user filters directly (no dedup needed)
+        if lazy_frame is not None and is_system_table:
+            for user_filter in user_filters:
+                lazy_frame = lazy_frame.filter(user_filter)
+
         if lazy_frame is not None:
-            # After dedup, filter to requested columns if specified
+            # After dedup and user filters, filter to requested columns if specified
             if columns:
                 lazy_frame = lazy_frame.select(columns)
 
