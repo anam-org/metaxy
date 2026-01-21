@@ -55,7 +55,7 @@ Metaxy manages **metadata** while **data** typically (1) lives elsewhere:
 
 The feature that makes Metaxy stand out is the ability to track **partial data dependencies** that are so common in multi-modal pipelines and skip downstream updates when they are not needed.
 
-Metaxy is [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data or [metadata storage](guide/learn/metadata-stores.md). Metaxy has no strict infrastructure requirements, and can scale to handle large amounts of **big metadata**.
+Metaxy is [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data or [metadata storage](guide/learn/metadata-stores.md). Metaxy has no strict infrastructure requirements, and can scale to handle large amounts of **big metadata**. Metaxy is fanatically tested across all supported Python versions and platforms [^1].
 
 All of this is possible thanks to (1) [Narwhals](https://narwhals-dev.github.io/narwhals/), [Ibis](https://ibis-project.org/), and a few clever tricks.
 { .annotate }
@@ -166,3 +166,5 @@ Metaxy is:
 - Learn how to [configure Metaxy](./reference/configuration.md)
 
 - Get lost in our [API Reference](./reference/api/index.md)
+
+[^1]: The CLI is not tested on Windows yet.

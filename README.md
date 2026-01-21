@@ -33,6 +33,8 @@ The feature that makes Metaxy stand out is the ability to track **partial data d
 
 Metaxy's goal is to provide a standard instrument for any kind of multi-modal (or just purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations over metadata.
 
+Metaxy is fanatically tested across all supported Python versions and platforms [^1].
+
 Read the [docs](https://docs.metaxy.io) to discover more about Metaxy.
 
 ## Installation
@@ -57,3 +59,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 <!-- scarf.sh for telemetry collection ( it does not record personal data such as IP addresses) -->
 <img referrerpolicy="no-referrer" src="https://telemetry.metaxy.io/a.png?x-pxid=22cb75dc-201e-4a72-9fb2-c3a53ce9207e&page=README.md" />
+
+[^1]: The CLI is not tested on Windows yet.
