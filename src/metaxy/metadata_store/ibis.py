@@ -6,7 +6,7 @@ Supports any SQL database that Ibis supports:
 - And 20+ other backends
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, cast
@@ -240,12 +240,13 @@ class IbisMetadataStore(MetadataStore, ABC):
             # No cleanup needed for Ibis engine
             pass
 
-    @abstractmethod
     def _create_hash_functions(self):
         """Create hash functions for Ibis expressions.
 
-        Base implementation returns empty dict. Subclasses must override
-        to provide backend-specific hash function implementations.
+        Returns empty dict by default. Subclasses using IbisVersioningEngine must
+        override to provide backend-specific hash function implementations.
+        Subclasses using PolarsVersioningEngine (like PostgreSQL) don't need this
+        since hashing is handled by the polars-hash plugin.
 
         Returns:
             Dictionary mapping HashAlgorithm to Ibis expression functions
@@ -467,8 +468,9 @@ class IbisMetadataStore(MetadataStore, ABC):
             self.conn.truncate_table(table_name)  # ty: ignore[unresolved-attribute]
             return
 
-        # Read and filter using store's lazy path to build WHERE clause
-        filtered = self.read_metadata_in_store(feature_key, filters=filter_list)
+        # Read and filter using Ibis lazy path to build WHERE clause
+        # Use _read_ibis_lazy() to get Ibis-backed frame (needed for SQL compilation)
+        filtered = self._read_ibis_lazy(feature_key, filters=filter_list)
         if filtered is None:
             raise FeatureNotFoundError(f"Feature {feature_key.to_string()} not found in store")
 
@@ -493,7 +495,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         """Extract SQL dialect from the active backend connection."""
         return self.conn.name
 
-    def read_metadata_in_store(
+    def _read_ibis_table(
         self,
         feature: CoercibleToFeatureKey,
         *,
@@ -502,8 +504,11 @@ class IbisMetadataStore(MetadataStore, ABC):
         columns: Sequence[str] | None = None,
         **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
-        """
-        Read metadata from this store only (no fallback).
+        """Read metadata as Ibis-backed lazy frame (internal method).
+
+        Returns Ibis-backed Narwhals frame. Subclasses that need additional
+        transformations (e.g., PostgreSQL converting JSONB to Polars Structs)
+        should override read_metadata_in_store() to call this then transform.
 
         Args:
             feature: Feature to read
@@ -513,7 +518,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             **kwargs: Backend-specific parameters (currently unused)
 
         Returns:
-            Narwhals LazyFrame with metadata, or None if not found
+            Ibis-backed Narwhals LazyFrame with metadata, or None if not found
         """
         feature_key = self._resolve_feature_key(feature)
         table_name = self.get_table_name(feature_key)
@@ -548,6 +553,41 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
         return nw_lazy
+
+    # Alias for backwards compatibility and clearer naming
+    _read_ibis_lazy = _read_ibis_table
+
+    def read_metadata_in_store(
+        self,
+        feature: CoercibleToFeatureKey,
+        *,
+        feature_version: str | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
+        **kwargs: Any,
+    ) -> nw.LazyFrame[Any] | None:
+        """
+        Read metadata from this store only (no fallback).
+
+        Args:
+            feature: Feature to read
+            feature_version: Filter by specific feature_version (applied as SQL WHERE clause)
+            filters: List of Narwhals filter expressions (converted to SQL WHERE clauses)
+            columns: Optional list of columns to select
+            **kwargs: Backend-specific parameters (currently unused)
+
+        Returns:
+            Narwhals LazyFrame with metadata, or None if not found
+        """
+        # Default implementation just returns Ibis-backed frame
+        # Subclasses can override to add transformations (e.g., PostgreSQL JSONB->Struct parsing)
+        return self._read_ibis_lazy(
+            feature,
+            feature_version=feature_version,
+            filters=filters,
+            columns=columns,
+            **kwargs,
+        )
 
     def transform_after_read(self, table: "ibis.Table", feature_key: "FeatureKey") -> "ibis.Table":
         """Transform Ibis table before wrapping with Narwhals.

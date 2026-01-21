@@ -237,6 +237,10 @@ nav:
           - integrations/metadata-stores/databases/lancedb/index.md
           - Configuration: integrations/metadata-stores/databases/lancedb/configuration.md
           - API: integrations/metadata-stores/databases/lancedb/api.md
+        - PostgreSQL:
+          - integrations/metadata-stores/databases/postgresql/index.md
+          - Configuration: integrations/metadata-stores/databases/postgresql/configuration.md
+          - API: integrations/metadata-stores/databases/postgresql/api.md
         - Ibis:
           - integrations/metadata-stores/databases/ibis/index.md
           - API: integrations/metadata-stores/databases/ibis/api.md

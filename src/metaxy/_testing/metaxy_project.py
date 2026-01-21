@@ -515,9 +515,14 @@ class ExternalMetaxyProject(MetaxyProject):
             venv_path: Path to the virtual environment
             venv_env: Environment dict with VIRTUAL_ENV set
         """
+        # Get venv's Python interpreter path
+        import sys
+
+        venv_python = venv_path / ("Scripts" if sys.platform == "win32" else "bin") / "python"
+
         # Get the site-packages path for the venv
         result = subprocess.run(
-            ["uv", "run", "--active", "python", "-c", "import sysconfig; print(sysconfig.get_path('purelib'))"],
+            [str(venv_python), "-c", "import sysconfig; print(sysconfig.get_path('purelib'))"],
             env=venv_env,
             capture_output=True,
             text=True,
@@ -579,9 +584,19 @@ class ExternalMetaxyProject(MetaxyProject):
         if env:
             cmd_env.update(env)
 
+        # Get venv's Python interpreter path
+        import sys
+
+        venv_python = self._venv_path / ("Scripts" if sys.platform == "win32" else "bin") / "python"
+
+        # Replace "python" with venv's Python interpreter
+        cmd_args = list(args)
+        if cmd_args and cmd_args[0] == "python":
+            cmd_args[0] = str(venv_python)
+
         # Run command with venv python
         result = subprocess.run(
-            ["uv", "run", "--active", *args],
+            cmd_args,
             cwd=str(self.project_dir),
             capture_output=True,
             text=True,
