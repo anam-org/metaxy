@@ -52,6 +52,7 @@ from metaxy.models.fields_mapping import (
 )
 from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import (
+    CascadeMode,
     CoercibleToFeatureKey,
     CoercibleToFieldKey,
     FeatureDepMetadata,
@@ -151,6 +152,7 @@ def init(
 __all__ = [
     "BufferedMetadataWriter",
     "BaseFeature",
+    "CascadeMode",
     "experimental",
     "FeatureDefinition",
     "FeatureGraph",
