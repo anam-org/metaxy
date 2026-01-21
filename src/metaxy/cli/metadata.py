@@ -11,7 +11,7 @@ import narwhals as nw
 from rich.table import Table
 
 from metaxy.cli.console import console, data_console, error_console
-from metaxy.cli.utils import FeatureSelector, FilterArgs, OutputFormat
+from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, OutputFormat
 
 if TYPE_CHECKING:
     from metaxy import BaseFeature
@@ -39,6 +39,7 @@ def status(
         ),
     ] = None,
     filters: FilterArgs | None = None,
+    global_filters: GlobalFilterArgs | None = None,
     snapshot_version: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -94,13 +95,12 @@ def status(
     from metaxy.cli.utils import CLIError, exit_with_error, load_graph_for_command
     from metaxy.graph.status import get_feature_metadata_status
 
-    filters = filters or []
+    # Normalize filter arguments
+    target_filters_list = filters if filters else None
+    global_filters_list = global_filters if global_filters else None
 
     # Validate feature selection
     selector.validate(format)
-
-    # Filters are already parsed by the converter
-    global_filters = filters if filters else None
 
     context = AppContext.get()
     metadata_store = context.get_store(store)
@@ -160,7 +160,8 @@ def status(
                     feature_cls,
                     metadata_store,
                     use_fallback=allow_fallback_stores,
-                    global_filters=global_filters,
+                    global_filters=global_filters_list,
+                    target_filters=target_filters_list,
                     compute_progress=compute_progress,
                 )
 

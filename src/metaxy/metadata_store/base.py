@@ -236,6 +236,7 @@ class MetadataStore(ABC):
         samples: IntoFrame | Frame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
         global_filters: Sequence[nw.Expr] | None = None,
+        target_filters: Sequence[nw.Expr] | None = None,
         lazy: Literal[False] = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -250,6 +251,7 @@ class MetadataStore(ABC):
         samples: IntoFrame | Frame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
         global_filters: Sequence[nw.Expr] | None = None,
+        target_filters: Sequence[nw.Expr] | None = None,
         lazy: Literal[True],
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -263,6 +265,7 @@ class MetadataStore(ABC):
         samples: IntoFrame | Frame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
         global_filters: Sequence[nw.Expr] | None = None,
+        target_filters: Sequence[nw.Expr] | None = None,
         lazy: bool = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -292,10 +295,15 @@ class MetadataStore(ABC):
                 Applied at read-time. May filter the current feature,
                 in this case it will also be applied to `samples` (if provided).
                 Example: `{UpstreamFeature: [nw.col("x") > 10], ...}`
-            global_filters: A list of Narwhals filter expressions applied to all features.
-                These filters are combined with any feature-specific filters from `filters`.
+            global_filters: A list of Narwhals filter expressions applied to all features
+                (both upstream and target). These filters are combined with any feature-specific
+                filters from `filters`. Must reference columns that exist in ALL features.
                 Useful for filtering by common columns like `sample_uid` across all features.
                 Example: `[nw.col("sample_uid").is_in(["s1", "s2"])]`
+            target_filters: A list of Narwhals filter expressions applied ONLY to the target
+                feature (not to upstream features). Use this when filtering by columns that
+                only exist in the target feature.
+                Example: `[nw.col("height").is_null()]`
             lazy: Whether to return a [metaxy.versioning.types.LazyIncrement][] or a [metaxy.versioning.types.Increment][].
             versioning_engine: Override the store's versioning engine for this operation.
             skip_comparison: If True, skip the increment comparison logic and return all
@@ -334,8 +342,9 @@ class MetadataStore(ABC):
                 feature_key = self._resolve_feature_key(key)
                 normalized_filters[feature_key] = list(exprs)
 
-        # Convert global_filters to a list for easy concatenation
+        # Convert global_filters and target_filters to lists for easy concatenation
         global_filter_list = list(global_filters) if global_filters else []
+        target_filter_list = list(target_filters) if target_filters else []
 
         feature_key = self._resolve_feature_key(feature)
         if self._is_system_table(feature_key):
@@ -351,10 +360,12 @@ class MetadataStore(ABC):
                 f"Root features require manual {METAXY_PROVENANCE_BY_FIELD} computation."
             )
 
-        # Combine feature-specific filters with global filters
+        # Combine feature-specific filters, global filters, and target filters for current feature
+        # target_filters are ONLY applied to the current feature, not to upstream features
         current_feature_filters = [
             *normalized_filters.get(feature_key, []),
             *global_filter_list,
+            *target_filter_list,
         ]
 
         # Read current metadata with deduplication (latest_only=True by default)
@@ -406,7 +417,7 @@ class MetadataStore(ABC):
                 ]
                 upstream_feature_metadata = self.read_metadata(
                     upstream_spec.key,
-                    filters=upstream_filters,
+                    filters=upstream_filters if upstream_filters else None,
                 )
                 if upstream_feature_metadata is not None:
                     upstream_by_key[upstream_spec.key] = upstream_feature_metadata
