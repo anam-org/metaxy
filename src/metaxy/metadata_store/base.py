@@ -856,6 +856,42 @@ class MetadataStore(ABC):
         self._validate_schema(df_nw)
         self.write_metadata_to_store(feature_key, df_nw)
 
+    def write_metadata_bulk(
+        self,
+        feature: CoercibleToFeatureKey,
+        df: IntoFrame,
+        *,
+        materialization_id: str | None = None,
+        concurrency: int = 1,
+    ) -> None:
+        """Write metadata with optimized bulk ingestion.
+
+        This method enables high-performance concurrent writes by partitioning
+        the DataFrame and writing chunks in parallel across multiple connections.
+        Particularly beneficial for ADBC stores which support connection pooling.
+
+        Args:
+            feature: Feature to write metadata for
+            df: DataFrame containing metadata to write
+            materialization_id: Optional external orchestration ID
+            concurrency: Number of concurrent write operations (default: 1).
+                For ADBC stores, limited by max_connections configuration.
+
+        Raises:
+            MetadataSchemaError: If DataFrame schema is invalid
+            StoreNotOpenError: If store is not open
+            ValueError: If feature is from a different project
+            NotImplementedError: If store does not support bulk ingestion
+
+        Note:
+            Only ADBC stores currently support bulk ingestion.
+            Other stores should use write_metadata() instead.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support bulk ingestion. "
+            f"Use write_metadata() instead, or switch to an supported store for bulk write performance."
+        )
+
     def write_metadata_multi(
         self,
         metadata: Mapping[Any, IntoFrame],
