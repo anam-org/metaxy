@@ -34,14 +34,15 @@ def test_server_context_manager(empty_store):
         store=empty_store,
     )
 
-    # Store should not be open initially
+    # Server context manager doesn't manage store lifecycle
+    # Store must be opened separately
     assert not empty_store._is_open
 
-    with server:
-        # Store should be opened by server
+    with empty_store, server:
+        # Store is open
         assert empty_store._is_open
 
-    # Store should be closed after context
+    # Store is closed after context
     assert not empty_store._is_open
 
 

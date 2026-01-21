@@ -74,17 +74,15 @@ class MetaxyFlightSQLServer(flight.FlightServerBase):
         self._store_opened_by_server = False
 
     def __enter__(self) -> MetaxyFlightSQLServer:
-        """Enter context manager - opens store if needed."""
-        if not self._store._is_open:
-            self._store.__enter__()
-            self._store_opened_by_server = True
+        """Enter context manager - server is ready to handle requests."""
+        # Don't manage store lifecycle - let caller handle it
+        # Server just needs store to be open before serving
         return self
 
     def __exit__(self, *args: Any) -> None:
-        """Exit context manager - closes store if opened by server."""
-        if self._store_opened_by_server:
-            self._store.__exit__(*args)
-            self._store_opened_by_server = False
+        """Exit context manager - cleanup server resources."""
+        # Server cleanup (if needed in future)
+        pass
 
     def get_flight_info(
         self,
@@ -112,10 +110,14 @@ class MetaxyFlightSQLServer(flight.FlightServerBase):
         schema_query = f"SELECT * FROM ({sql_query}) LIMIT 0"
 
         try:
-            result_df = self._store.read_metadata_sql(schema_query)
-            # Convert to Arrow schema
-            arrow_table = result_df.to_arrow()
-            schema = arrow_table.schema
+            # Execute SQL via Ibis connection (if available)
+            if not hasattr(self._store, "_conn") or self._store._conn is None:
+                raise flight.FlightServerError(
+                    "Backend store does not support SQL queries. Use an Ibis-based store (DuckDB, PostgreSQL, etc.)"
+                )
+
+            result = self._store._conn.sql(schema_query).to_pyarrow()
+            schema = result.schema
         except Exception as e:
             raise flight.FlightInternalError(f"Failed to get query schema: {e}") from e
 
@@ -155,13 +157,16 @@ class MetaxyFlightSQLServer(flight.FlightServerBase):
             raise flight.FlightServerError("No SQL query provided")
 
         try:
-            # Execute query
-            result_df = self._store.read_metadata_sql(sql_query)
+            # Execute SQL via Ibis connection
+            if not hasattr(self._store, "_conn") or self._store._conn is None:
+                raise flight.FlightServerError(
+                    "Backend store does not support SQL queries. Use an Ibis-based store (DuckDB, PostgreSQL, etc.)"
+                )
 
-            # Convert to Arrow table
-            arrow_table = result_df.to_arrow()
+            # Execute query and convert to Arrow
+            arrow_table = self._store._conn.sql(sql_query).to_pyarrow()
 
-            # Return as RecordBatchReader
+            # Return as RecordBatchStream
             return flight.RecordBatchStream(arrow_table)
 
         except Exception as e:
@@ -205,14 +210,20 @@ class MetaxyFlightSQLServer(flight.FlightServerBase):
     def serve(self) -> None:
         """Start the Flight server and block until shutdown.
 
-        This method opens the metadata store if needed and serves
-        Flight requests until interrupted.
+        The metadata store must be opened before calling this method.
 
         Example:
             ```python
+            store = DuckDBMetadataStore("metadata.duckdb")
             server = MetaxyFlightSQLServer("grpc://0.0.0.0:8815", store)
-            server.serve()  # Blocks until Ctrl+C
+
+            with store:
+                server.serve()  # Blocks until Ctrl+C
             ```
         """
-        with self:
-            super().serve()
+        if not self._store._is_open:
+            raise RuntimeError(
+                "Metadata store must be opened before serving. Use 'with store:' or call store.open() first."
+            )
+
+        super().serve()
