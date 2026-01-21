@@ -11,6 +11,7 @@ from rich.table import Table
 
 from metaxy.cli.console import console, data_console, error_console
 from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, OutputFormat
+from metaxy.models.types import CascadeMode
 
 if TYPE_CHECKING:
     from metaxy import FeatureDefinition
@@ -345,6 +346,16 @@ def delete(
             help="Include rows from all historical feature versions (by default, only current version is affected).",
         ),
     ] = False,
+    cascade: Annotated[
+        CascadeMode,
+        cyclopts.Parameter(
+            name=["--cascade"],
+            help=(
+                "Cascade deletion to dependent/dependency features. Use 'downstream' to delete dependents, "
+                "'upstream' to delete dependencies, 'both' for both directions, or 'none' for no cascading."
+            ),
+        ),
+    ] = CascadeMode.NONE,
     yes: Annotated[
         bool,
         cyclopts.Parameter(
@@ -359,6 +370,13 @@ def delete(
             help="Preview deletion: show features, filters, and row counts without executing.",
         ),
     ] = False,
+    format: Annotated[
+        OutputFormat,
+        cyclopts.Parameter(
+            name=["--format"],
+            help="Output format: 'plain' (default) or 'json'.",
+        ),
+    ] = "plain",
 ) -> None:
     """Delete metadata rows matching filters.
 
@@ -366,6 +384,11 @@ def delete(
         $ metaxy metadata delete my/feature --filter "status = 'inactive'"
         $ metaxy metadata delete --all-features --filter "created_at < '2024-01-01'" --hard
         $ metaxy metadata delete test_feature --filter "1=1" --yes  # Delete all rows
+        $ metaxy metadata delete video/raw --cascade downstream --dry-run  # Preview cascade
+        $ metaxy metadata delete video/raw --filter "video_id='v1'" --cascade downstream --hard
+
+    Note: When using --cascade with --filter, the same filter is applied to all cascaded features.
+    This may cause errors if the filter references columns that don't exist in all features.
     """
     from metaxy.cli.context import AppContext
     from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error
@@ -373,14 +396,14 @@ def delete(
     filters = filters or []
 
     # Require --yes confirmation for hard deletes when no filters provided
-    if not soft and not filters and not yes:
+    if not soft and not filters and not yes and not dry_run:
         exit_with_error(
             CLIError(
                 code=CLIErrorCode.MISSING_CONFIRMATION,
                 message="Hard deleting all metadata requires --yes flag to prevent accidental deletion.",
                 hint="Use --yes to confirm, or provide --filter to restrict deletion.",
             ),
-            "plain",
+            format,
         )
 
     context = AppContext.get()
@@ -388,7 +411,7 @@ def delete(
 
     with metadata_store:
         # Resolve feature keys
-        selector.resolve("plain")
+        selector.resolve(format)
 
         if not selector:
             exit_with_error(
@@ -396,20 +419,53 @@ def delete(
                     code=CLIErrorCode.NO_FEATURES,
                     message="No valid features selected for deletion.",
                 ),
-                "plain",
+                format,
             )
+
+        # Determine features to delete (with or without cascading)
+        from metaxy.models.feature import FeatureGraph
+
+        features_to_delete: list[FeatureKey] = []
+        if cascade != CascadeMode.NONE:
+            graph = FeatureGraph.get_active()
+
+            if len(selector) > 1 and format == "plain":
+                data_console.print(
+                    "[yellow]Warning:[/yellow] Cascading with multiple features selected. "
+                    "Each feature will cascade independently."
+                )
+
+            for feature_key in selector:
+                try:
+                    features_in_cascade = graph.get_cascade_deletion_order(feature_key, cascade)
+                    for fk in features_in_cascade:
+                        if fk not in features_to_delete:
+                            features_to_delete.append(fk)
+                except Exception as e:
+                    exit_with_error(
+                        CLIError(
+                            code=CLIErrorCode.CASCADE_ERROR,
+                            message=f"Failed to determine cascade order for {feature_key.to_string()}: {e}",
+                        ),
+                        format,
+                    )
+        else:
+            features_to_delete = list(selector)
 
         # Dry-run mode: count rows, print features and filters, then exit
         if dry_run:
-            store_name = store if store else context.config.store
-            row_counts = _count_rows_to_delete(metadata_store, selector, filters, soft, with_feature_history)
-            _print_dry_run_info(selector, filters, soft, with_feature_history, store_name, row_counts)
+            if cascade != CascadeMode.NONE:
+                _print_cascade_dry_run(features_to_delete, cascade, filters, soft, format)
+            else:
+                store_name = store if store else context.config.store
+                row_counts = _count_rows_to_delete(metadata_store, selector, filters, soft, with_feature_history)
+                _print_dry_run_info(selector, filters, soft, with_feature_history, store_name, row_counts)
             return
 
         errors: dict[str, str] = {}
 
         with metadata_store.open("w"):
-            for feature_key in selector:
+            for feature_key in features_to_delete:
                 try:
                     metadata_store.delete(
                         feature_key,
@@ -420,10 +476,31 @@ def delete(
                 except Exception as e:  # pragma: no cover - CLI surface
                     error_msg = str(e)
                     errors[feature_key.to_string()] = error_msg
-                    error_console.print(f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}")
+                    if format == "plain":
+                        error_console.print(f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}")
 
         mode_str = "soft" if soft else "hard"
-        console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete)")
+        cascade_info = f" ({cascade.value} cascade)" if cascade != CascadeMode.NONE else ""
+
+        if format == "plain":
+            if errors:
+                data_console.print(
+                    f"[yellow]Warning:[/yellow] Deletion completed with errors "
+                    f"({mode_str} delete{cascade_info}); {len(errors)} feature(s) failed"
+                )
+            else:
+                console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete{cascade_info})")
+        else:
+            result: dict[str, Any] = {
+                "success": len(errors) == 0,
+                "mode": mode_str,
+                "cascade": cascade.value,
+                "features_attempted": [fk.to_string() for fk in features_to_delete],
+                "filters": [str(f) for f in filters] if filters else None,
+            }
+            if errors:
+                result["errors"] = errors
+            print(json.dumps(result, indent=2))
 
         if errors:
             raise SystemExit(1)
@@ -538,6 +615,142 @@ def _print_dry_run_info(
             console.print(f"  [magenta]•[/magenta] {f!r}")
     else:
         console.print("  [dim](none)[/dim]")
+
+
+def _print_cascade_dry_run(
+    features_to_delete: list[FeatureKey],
+    cascade: CascadeMode,
+    filters: list[nw.Expr],
+    soft: bool,
+    format: OutputFormat,
+) -> None:
+    """Print dry-run information for cascade delete."""
+    mode_str = "soft" if soft else "hard"
+
+    if format == "plain":
+        data_console.print(f"[bold]Dry run: Would {mode_str} delete features in order:[/bold]")
+        for i, fk in enumerate(features_to_delete, 1):
+            data_console.print(f"  → [{i}] {fk.to_string()}")
+
+        if filters:
+            data_console.print(f"\n[dim]With filters: {filters}[/dim]")
+        else:
+            data_console.print("\n[dim]All rows (no filters)[/dim]")
+
+        data_console.print("\n[yellow]Note:[/yellow] This is a preview. Use without --dry-run to execute.")
+    else:
+        result_json = {
+            "dry_run": True,
+            "mode": mode_str,
+            "cascade": cascade.value,
+            "features": [fk.to_string() for fk in features_to_delete],
+            "filters": [str(f) for f in filters] if filters else None,
+        }
+        print(json.dumps(result_json, indent=2))
+
+
+@app.command()
+def drop(
+    selector: FeatureSelector = FeatureSelector(),
+    *,
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--store"],
+            help="Store name to drop metadata from (defaults to configured default store).",
+        ),
+    ] = None,
+    confirm: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--confirm"],
+            help="Confirm the drop operation (required to prevent accidental deletion).",
+        ),
+    ] = False,
+    format: Annotated[
+        OutputFormat,
+        cyclopts.Parameter(
+            name=["--format"],
+            help="Output format: 'plain' (default) or 'json'.",
+        ),
+    ] = "plain",
+) -> None:
+    """Drop metadata from a store.
+
+    Removes metadata for specified features. This is destructive and requires --confirm.
+
+    Examples:
+        $ metaxy metadata drop my/feature --confirm
+        $ metaxy metadata drop feat1 feat2 --confirm
+        $ metaxy metadata drop --store dev --all-features --confirm
+    """
+    from metaxy.cli.context import AppContext
+    from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error
+
+    if not confirm:
+        exit_with_error(
+            CLIError(
+                code=CLIErrorCode.MISSING_CONFIRMATION,
+                message="This is a destructive operation. Must specify --confirm flag.",
+                details={"required_flag": "--confirm"},
+            ),
+            format,
+        )
+
+    context = AppContext.get()
+    context.raise_command_cannot_override_project()
+    metadata_store = context.get_store(store)
+
+    with metadata_store:
+        selector.resolve(format)
+
+        if not selector:
+            if format == "json":
+                print(
+                    json.dumps(
+                        {
+                            "warning": "NO_FEATURES_FOUND",
+                            "message": "No features found in active graph.",
+                            "features_dropped": 0,
+                        }
+                    )
+                )
+            else:
+                data_console.print("[yellow]Warning:[/yellow] No features found in active graph.")
+            return
+
+        if format == "plain":
+            data_console.print(f"\n[bold]Dropping metadata for {len(selector)} feature(s)...[/bold]\n")
+
+        dropped: list[str] = []
+        failed: list[dict[str, str]] = []
+
+        with metadata_store.open("w"):
+            for feature_key in selector:
+                key_str = feature_key.to_string()
+                try:
+                    metadata_store.drop_feature_metadata(feature_key)
+                    dropped.append(key_str)
+                    if format == "plain":
+                        data_console.print(f"[green]✓[/green] Dropped: {key_str}")
+                except Exception as e:
+                    failed.append({"feature": key_str, "error": str(e)})
+                    if format == "plain":
+                        from metaxy.cli.utils import print_error_item
+
+                        print_error_item(error_console, key_str, e, prefix="[red]✗[/red] Failed to drop")
+
+        if format == "json":
+            result: dict[str, Any] = {
+                "success": True,
+                "features_dropped": len(dropped),
+                "dropped": dropped,
+            }
+            if failed:
+                result["failed"] = failed
+            print(json.dumps(result, indent=2))
+        else:
+            data_console.print(f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped")
 
 
 @app.command()
