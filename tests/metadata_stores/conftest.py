@@ -339,19 +339,18 @@ class AllStoresCases:
         db_path = tmp_path / "test_json_compat.duckdb"
         return DuckDBJsonCompatStore(database=str(db_path))
 
-    # ADBC store cases - will be implemented in subsequent PRs
-    # These use native ADBC drivers for high-performance bulk writes
+    # ADBC store cases - use native ADBC drivers for high-performance bulk writes
 
-    # @pytest.mark.adbc
-    # @pytest.mark.native
-    # @pytest.mark.postgres
-    # def case_adbc_postgres(self, postgres_db: str) -> MetadataStore:
-    #     from metaxy.metadata_store.adbc_postgres import ADBCPostgresMetadataStore
-    #     return ADBCPostgresMetadataStore(
-    #         connection_string=postgres_db,
-    #         hash_algorithm=HashAlgorithm.MD5,
-    #         auto_create_tables=True,
-    #     )
+    @pytest.mark.adbc
+    @pytest.mark.native
+    @pytest.mark.postgres
+    def case_adbc_postgres(self, postgres_db: str) -> MetadataStore:
+        from metaxy.metadata_store.adbc_postgres import ADBCPostgresMetadataStore
+
+        return ADBCPostgresMetadataStore(
+            connection_string=postgres_db,
+            hash_algorithm=HashAlgorithm.MD5,
+        )
 
     # @pytest.mark.adbc
     # @pytest.mark.native
