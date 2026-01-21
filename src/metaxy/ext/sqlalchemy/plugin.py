@@ -274,10 +274,10 @@ def _inject_constraints(
     """
     from sqlalchemy import PrimaryKeyConstraint
 
-    from metaxy.models.constants import METAXY_CREATED_AT, METAXY_FEATURE_VERSION
+    from metaxy.models.constants import METAXY_FEATURE_VERSION, METAXY_UPDATED_AT
 
-    # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
-    key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_CREATED_AT]
+    # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_updated_at
+    key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_UPDATED_AT]
 
     if inject_primary_key:
         table.append_constraint(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))

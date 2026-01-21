@@ -14,6 +14,7 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DELETED_AT,
     METAXY_PROVENANCE_BY_FIELD,
+    METAXY_UPDATED_AT,
 )
 
 
@@ -31,6 +32,7 @@ def make_value_df():
         provenance: list[str],
         created_at: list[datetime],
         deleted_at: list[datetime] | None = None,
+        updated_at: list[datetime] | None = None,
     ) -> pl.DataFrame:
         data = {
             "sample_uid": sample_uids,
@@ -40,6 +42,13 @@ def make_value_df():
         }
         if deleted_at is not None:
             data[METAXY_DELETED_AT] = deleted_at
+        # Set updated_at: if provided, use it; if deleted_at is set, use deleted_at; otherwise use created_at
+        if updated_at is not None:
+            data[METAXY_UPDATED_AT] = updated_at
+        elif deleted_at is not None:
+            data[METAXY_UPDATED_AT] = deleted_at
+        else:
+            data[METAXY_UPDATED_AT] = created_at
         return pl.DataFrame(data)
 
     return _make

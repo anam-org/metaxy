@@ -306,6 +306,7 @@ def test_clickhouse_json_column_type(
                 metaxy_data_version_by_field JSON,
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -395,6 +396,7 @@ def test_clickhouse_map_column_type(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -485,6 +487,7 @@ def test_clickhouse_map_column_empty_table_read(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -545,6 +548,7 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -643,6 +647,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -752,6 +757,7 @@ def test_clickhouse_user_defined_map_column(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -843,6 +849,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -922,6 +929,7 @@ def test_clickhouse_auto_cast_struct_for_map_false(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -984,6 +992,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -1080,6 +1089,7 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -1156,6 +1166,7 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String
@@ -1235,6 +1246,7 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
                 metaxy_materialization_id String,
                 metaxy_feature_spec_version String

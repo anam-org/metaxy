@@ -28,6 +28,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
+    METAXY_UPDATED_AT,
 )
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.types import HashAlgorithm
@@ -322,11 +323,13 @@ def feature_metadata_strategy(
         pl.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
     )
 
-    # Add created_at timestamp column
+    # Add timestamp columns
     from datetime import datetime, timezone
 
+    ts = datetime.now(timezone.utc)
     df = df.with_columns(
-        pl.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+        pl.lit(ts).alias(METAXY_CREATED_AT),
+        pl.lit(ts).alias(METAXY_UPDATED_AT),
         pl.lit(None, dtype=pl.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT),
     )
 
@@ -747,6 +750,7 @@ def downstream_metadata_strategy(
     # Use Narwhals lit since downstream_df is a Narwhals DataFrame
     from datetime import datetime, timezone
 
+    ts = datetime.now(timezone.utc)
     downstream_df = downstream_df.with_columns(
         nw.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
         nw.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
@@ -754,8 +758,9 @@ def downstream_metadata_strategy(
         # Add data_version columns (default to provenance)
         nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
         nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
-        # Add created_at timestamp
-        nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+        # Add timestamp columns
+        nw.lit(ts).alias(METAXY_CREATED_AT),
+        nw.lit(ts).alias(METAXY_UPDATED_AT),
         # Soft delete column defaults to NULL
         nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT),
         # Add materialization_id (nullable)

@@ -180,3 +180,192 @@ def test_read_metadata_filters_applied_after_deduplication(store: MetadataStore)
         # Verify the correct rows are returned (use polars for consistent access)
         ids = set(result_not_null_df.to_polars()["id"].to_list())
         assert ids == {"a", "b", "c"}, f"Expected rows a, b, c but got {ids}"
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_metaxy_updated_at_column(store: MetadataStore):
+    """Test that metaxy_updated_at is populated on write and used for deduplication.
+
+    This tests the behavior of the metaxy_updated_at column:
+    1. It's automatically populated when metadata is written
+    2. It's updated to a new timestamp on every write (unlike metaxy_created_at)
+    3. It's used by keep_latest_by_group for deduplication
+
+    See: https://github.com/anam-org/metaxy/issues/703
+    """
+    import time
+
+    from metaxy.models.constants import METAXY_CREATED_AT, METAXY_UPDATED_AT
+
+    key = FeatureKey(["test_updated_at"])
+
+    class MyFeature(
+        BaseFeature,
+        spec=FeatureSpec(key=key, id_columns=["id"]),
+    ):
+        id: str
+        value: int
+
+    with store.open("write"):
+        # Step 1: Write initial data
+        initial_data = pl.DataFrame(
+            {
+                "id": ["a"],
+                "value": [1],
+                "metaxy_provenance_by_field": [{"default": "hash1"}],
+            }
+        )
+        store.write_metadata(key, initial_data)
+
+        # Read back to check metaxy_updated_at was populated
+        result1 = store.read_metadata(key, latest_only=False).collect().to_polars()
+        assert METAXY_UPDATED_AT in result1.columns, "metaxy_updated_at should be present"
+        assert METAXY_CREATED_AT in result1.columns, "metaxy_created_at should be present"
+        updated_at_1 = result1[METAXY_UPDATED_AT][0]
+        created_at_1 = result1[METAXY_CREATED_AT][0]
+        assert updated_at_1 is not None, "metaxy_updated_at should not be null"
+        assert created_at_1 is not None, "metaxy_created_at should not be null"
+
+        # Step 2: Wait a bit and write updated data for the same row
+        time.sleep(0.01)
+        updated_data = pl.DataFrame(
+            {
+                "id": ["a"],
+                "value": [2],
+                "metaxy_provenance_by_field": [{"default": "hash1_v2"}],
+            }
+        )
+        store.write_metadata(key, updated_data)
+
+        # Read all versions (without deduplication) to verify both rows exist
+        all_versions = store.read_metadata(key, latest_only=False).collect().to_polars()
+        assert all_versions.shape[0] == 2, "Should have 2 versions of the row"
+
+        # The newer row should have a later updated_at timestamp
+        updated_ats = all_versions[METAXY_UPDATED_AT].sort()
+        assert updated_ats[1] > updated_ats[0], "Second write should have later updated_at"
+
+        # Read with deduplication (latest_only=True) - should get 1 row with value=2
+        latest = store.read_metadata(key, latest_only=True).collect().to_polars()
+        assert latest.shape[0] == 1, "Should get 1 row after deduplication"
+        assert latest["value"][0] == 2, "Should get the latest value"
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_metaxy_updated_at_matches_deleted_at_on_soft_delete(store: MetadataStore):
+    """Test that metaxy_updated_at equals metaxy_deleted_at when soft deleting.
+
+    When a row is soft-deleted, both timestamps should be set to the same value
+    for consistency.
+
+    See: https://github.com/anam-org/metaxy/issues/703
+    """
+    from metaxy.models.constants import METAXY_DELETED_AT, METAXY_UPDATED_AT
+
+    key = FeatureKey(["test_soft_delete_timestamps"])
+
+    class MyFeature(
+        BaseFeature,
+        spec=FeatureSpec(key=key, id_columns=["id"]),
+    ):
+        id: str
+        value: int
+
+    with store.open("write"):
+        # Write initial data
+        initial_data = pl.DataFrame(
+            {
+                "id": ["a"],
+                "value": [1],
+                "metaxy_provenance_by_field": [{"default": "hash1"}],
+            }
+        )
+        store.write_metadata(key, initial_data)
+
+        # Soft delete the row (filters=None deletes all rows)
+        store.delete_metadata(key, filters=None, soft=True)
+
+        # Read including soft-deleted rows
+        result = store.read_metadata(key, include_soft_deleted=True, latest_only=True).collect().to_polars()
+
+        assert result.shape[0] == 1, "Should have 1 row"
+        deleted_at = result[METAXY_DELETED_AT][0]
+        updated_at = result[METAXY_UPDATED_AT][0]
+
+        assert deleted_at is not None, "metaxy_deleted_at should be set after soft delete"
+        assert updated_at is not None, "metaxy_updated_at should be set"
+        assert deleted_at == updated_at, "metaxy_updated_at should equal metaxy_deleted_at on soft delete"
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_soft_delete_timestamps_consistency(store: MetadataStore):
+    """Test timestamp consistency during soft delete operations.
+
+    When soft deleting, the _shared_transaction_timestamp context manager ensures:
+    - metaxy_updated_at and metaxy_deleted_at are equal (both set during soft delete)
+    - metaxy_created_at preserves the original row's creation time
+
+    The soft-deleted row is a new append-only record that marks the original as deleted,
+    so it gets a new created_at timestamp when written.
+    """
+    from metaxy.models.constants import METAXY_CREATED_AT, METAXY_DELETED_AT, METAXY_UPDATED_AT
+
+    key = FeatureKey(["test_soft_delete_all_timestamps"])
+
+    class MyFeature(
+        BaseFeature,
+        spec=FeatureSpec(key=key, id_columns=["id"]),
+    ):
+        id: str
+        value: int
+
+    with store.open("write"):
+        # Write initial data
+        initial_data = pl.DataFrame(
+            {
+                "id": ["a"],
+                "value": [1],
+                "metaxy_provenance_by_field": [{"default": "hash1"}],
+            }
+        )
+        store.write_metadata(key, initial_data)
+
+        # Read the original row to get its created_at
+        original_row = store.read_metadata(key, latest_only=True).collect().to_polars()
+        original_created_at = original_row[METAXY_CREATED_AT][0]
+
+        # Soft delete the row
+        store.delete_metadata(key, filters=None, soft=True)
+
+        # Read all rows including soft-deleted, without deduplication
+        all_rows = store.read_metadata(key, include_soft_deleted=True, latest_only=False).collect().to_polars()
+
+        # Should have 2 rows: original and soft-deleted
+        assert all_rows.shape[0] == 2, f"Expected 2 rows, got {all_rows.shape[0]}"
+
+        # Find the soft-deleted row (has non-null deleted_at)
+        soft_deleted_row = all_rows.filter(pl.col(METAXY_DELETED_AT).is_not_null())
+        assert soft_deleted_row.shape[0] == 1, "Should have exactly 1 soft-deleted row"
+
+        created_at = soft_deleted_row[METAXY_CREATED_AT][0]
+        updated_at = soft_deleted_row[METAXY_UPDATED_AT][0]
+        deleted_at = soft_deleted_row[METAXY_DELETED_AT][0]
+
+        assert created_at is not None, "metaxy_created_at should be set"
+        assert updated_at is not None, "metaxy_updated_at should be set"
+        assert deleted_at is not None, "metaxy_deleted_at should be set"
+
+        # updated_at and deleted_at should be equal (both set during soft delete)
+        assert updated_at == deleted_at, (
+            f"metaxy_updated_at ({updated_at}) should equal metaxy_deleted_at ({deleted_at}) on the soft-deleted row"
+        )
+
+        # The soft-deleted row preserves the original created_at (read from existing row)
+        assert created_at == original_created_at, (
+            f"Soft-deleted row should preserve original created_at ({original_created_at}), but got {created_at}"
+        )
+
+        # The deletion timestamps should be after the original created_at
+        assert deleted_at > original_created_at, (
+            f"Deletion timestamp ({deleted_at}) should be after original created_at ({original_created_at})"
+        )

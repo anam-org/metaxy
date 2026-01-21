@@ -24,4 +24,6 @@ All system column names start with the `metaxy_` prefix.
 | `metaxy_feature_spec_version`    | Derived from the part of the feature spec responsible for versioning    | sample  | string |
 | `metaxy_full_definition_version` | Hash of the entire feature Pydanitc model schema and the Metaxy project | string  | true   |
 | `metaxy_created_at`              | Timestamp when the metadata row was created                             | sample  | string |
+| `metaxy_updated_at`              | Timestamp when the metadata row was last written to the store           | sample  | string |
+| `metaxy_deleted_at`              | Timestamp when the metadata row was soft-deleted (null if active)       | sample  | string |
 | `metaxy_materialization_id`      | External orchestration run ID (e.g., Dagster, Airflow) for tracking     | run     | string |
