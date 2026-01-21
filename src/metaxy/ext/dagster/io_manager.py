@@ -41,13 +41,13 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             ```py
             import dagster as dg
 
+
             @dg.asset(
                 metadata={
                     "metaxy/feature": "my/feature/key",
                 }
             )
-            def my_asset():
-                ...
+            def my_asset(): ...
             ```
 
     !!! tip "Defining Partitioned Assets"
@@ -58,14 +58,14 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             ```py
             import dagster as dg
 
+
             @dg.asset(
                 metadata={
                     "metaxy/feature": "my/feature/key",
                     "partition_by": "date",
                 }
             )
-            def my_partitioned_asset():
-                ...
+            def my_partitioned_asset(): ...
             ```
 
         This key is commonly used to configure partitioning behavior by various Dagster IO managers.

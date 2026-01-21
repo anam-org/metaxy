@@ -158,10 +158,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
 
             # Using backend + params
-            store = IbisMetadataStore(
-                backend="clickhouse",
-                connection_params={"host": "localhost", "port": 9000}
-                )
+            store = IbisMetadataStore(backend="clickhouse", connection_params={"host": "localhost", "port": 9000})
             ```
         """
         from ibis.backends.sql import SQLBackend

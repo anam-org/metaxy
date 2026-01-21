@@ -98,9 +98,7 @@ class SystemTableStorage:
 
         Example:
             ```python
-            storage.write_event(
-                Event.migration_started(project="my_project", migration_id="m001")
-            )
+            storage.write_event(Event.migration_started(project="my_project", migration_id="m001"))
 
             storage.write_event(
                 Event.feature_completed(
@@ -850,10 +848,7 @@ class SystemTableStorage:
             ```python
             with store:
                 storage = SystemTableStorage(store)
-                graph = storage.load_graph_from_snapshot(
-                    snapshot_version="abc123",
-                    project="my_project"
-                )
+                graph = storage.load_graph_from_snapshot(snapshot_version="abc123", project="my_project")
                 print(f"Loaded {len(graph.features_by_key)} features")
             ```
         """

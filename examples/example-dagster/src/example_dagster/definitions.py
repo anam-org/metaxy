@@ -1,6 +1,5 @@
-import narwhals as nw
-
 import metaxy as mx
+import narwhals as nw
 
 # --8<-- [start:feature-definitions]
 # Upstream feature
@@ -33,9 +32,8 @@ class AudioClusters(mx.BaseFeature, spec=downstream_spec):
 
 
 import dagster as dg
-import polars as pl
-
 import metaxy.ext.dagster as mxd
+import polars as pl
 
 
 # --8<-- [start:root-asset]
@@ -62,7 +60,7 @@ def audio_embeddings(
     # resolve the increment with Metaxy
 
     with store:
-        increment = store.resolve_update("audio/embeddings", samples=samples)
+        store.resolve_update("audio/embeddings", samples=samples)
 
     # Compute embeddings...
 
@@ -88,7 +86,7 @@ def audio_clusters(
 ):
     with store:
         # Get IDs that need recomputation
-        update = store.resolve_update(AudioClusters)
+        store.resolve_update(AudioClusters)
     ...
 
 

@@ -14,6 +14,9 @@ dependencies = [
   "dagster-webserver",
 ]
 
+[tool.ruff]
+extend = "../pyproject.toml"
+
 [tool.uv.sources]
 metaxy = { path = "../..", editable = true }
 [build-system]

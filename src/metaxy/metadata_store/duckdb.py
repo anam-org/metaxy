@@ -120,11 +120,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
     Example: With extensions
         ```py
         # With extensions
-        store = DuckDBMetadataStore(
-            "metadata.db",
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            extensions=["hashfuncs"]
-        )
+        store = DuckDBMetadataStore("metadata.db", hash_algorithm=HashAlgorithm.XXHASH64, extensions=["hashfuncs"])
         ```
     """
 

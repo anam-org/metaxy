@@ -191,7 +191,7 @@ class StoreConfig(BaseSettings):
                 "root_path": "s3://bucket/metadata",
                 "region": "us-west-2",
                 "fallback_stores": ["prod"],
-            }
+            },
         )
         ```
     """

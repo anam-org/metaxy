@@ -3,10 +3,10 @@ import random
 
 import narwhals as nw
 import polars as pl
+from metaxy import init_metaxy
+
 from example_one_to_many.features import FaceRecognition, Video, VideoChunk
 from example_one_to_many.utils import split_video_into_chunks
-
-from metaxy import init_metaxy
 
 
 def main():

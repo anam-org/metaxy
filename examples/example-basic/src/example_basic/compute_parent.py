@@ -10,7 +10,6 @@ Run with VERSION=1 initially, then VERSION=2 to see recomputation.
 """
 
 import polars as pl
-
 from metaxy import (
     FeatureKey,
     get_feature_by_key,

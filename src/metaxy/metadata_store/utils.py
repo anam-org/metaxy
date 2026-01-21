@@ -247,7 +247,7 @@ def unquote_identifiers() -> Callable[[exp.Expression], exp.Expression]:
         import sqlglot
         from sqlglot import exp
 
-        sql = '"status" = \'active\''
+        sql = "\"status\" = 'active'"
         parsed = sqlglot.parse_one(sql)
         transformed = parsed.transform(unquote_identifiers())
         # Result: status = 'active'

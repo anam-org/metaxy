@@ -83,15 +83,16 @@ def build_metaxy_multi_observation_job(
         import dagster as dg
         import metaxy.ext.dagster as mxd
 
+
         @mxd.metaxify()
         @dg.asset(metadata={"metaxy/feature": "my/feature_a"})
-        def feature_a():
-            ...
+        def feature_a(): ...
+
 
         @mxd.metaxify()
         @dg.asset(metadata={"metaxy/feature": "my/feature_b"})
-        def feature_b():
-            ...
+        def feature_b(): ...
+
 
         # Option 1: Using asset_selection + defs
         my_defs = dg.Definitions(assets=[feature_a, feature_b])
@@ -290,10 +291,11 @@ def build_metaxy_observation_job(
         import dagster as dg
         import metaxy.ext.dagster as mxd
 
+
         @mxd.metaxify()
         @dg.asset(metadata={"metaxy/feature": "my/feature"})
-        def my_asset():
-            ...
+        def my_asset(): ...
+
 
         # Build the observation job - partitions_def is extracted automatically
         observation_job = mxd.build_metaxy_observation_job(my_asset)

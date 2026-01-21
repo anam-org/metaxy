@@ -240,6 +240,7 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
         from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
         from sqlmodel import Field
 
+
         class VideoFeature(
             BaseSQLModelFeature,
             table=True,
@@ -254,7 +255,6 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
                 ],
             ),
         ):
-
             uid: str = Field(primary_key=True)
             path: str
             duration: float
@@ -453,6 +453,7 @@ def filter_feature_sqlmodel_metadata(
 
         # Use with Alembic env.py
         from alembic import context
+
         url, target_metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
         context.configure(url=url, target_metadata=target_metadata)
         ```

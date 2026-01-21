@@ -11,6 +11,9 @@ dependencies = [
   "metaxy[delta]",
 ]
 
+[tool.ruff]
+extend = "../pyproject.toml"
+
 [tool.uv.sources]
 metaxy = { path = "../..", editable = true }
 

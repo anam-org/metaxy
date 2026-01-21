@@ -301,6 +301,7 @@ def generate_materialize_results(
             dg.AssetSpec("output_b", metadata={"metaxy/feature": "my/feature/b"}),
         ]
 
+
         @metaxify
         @dg.multi_asset(specs=specs)
         def my_multi_asset(context: dg.AssetExecutionContext, store: mx.MetadataStore):
@@ -313,6 +314,7 @@ def generate_materialize_results(
         specs = [
             dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
         ]
+
 
         @dg.op
         def my_op(context: dg.OpExecutionContext, store: mx.MetadataStore):
@@ -483,9 +485,7 @@ def build_runtime_feature_metadata(
     Example:
         ```python
         with store:
-            metadata, stats = build_runtime_feature_metadata(
-                feature_key, store, context, partition_col="date"
-            )
+            metadata, stats = build_runtime_feature_metadata(feature_key, store, context, partition_col="date")
             context.add_output_metadata(metadata)
         ```
     """
@@ -590,6 +590,7 @@ def generate_observe_results(
             dg.AssetSpec("output_b", metadata={"metaxy/feature": "my/feature/b"}),
         ]
 
+
         @metaxify
         @dg.multi_observable_source_asset(specs=specs)
         def my_observable_assets(context: dg.AssetExecutionContext, store: mx.MetadataStore):
@@ -601,6 +602,7 @@ def generate_observe_results(
         specs = [
             dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
         ]
+
 
         @dg.op
         def my_op(context: dg.OpExecutionContext, store: mx.MetadataStore):
