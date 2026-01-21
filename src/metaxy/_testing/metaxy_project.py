@@ -447,11 +447,11 @@ class ExternalMetaxyProject(MetaxyProject):
             # .parent -> .../src/metaxy
             # .parent -> .../src
             # .parent -> repo root
-            import metaxy
+            import metaxy as mx
 
-            if metaxy.__file__ is None:
+            if mx.__file__ is None:
                 raise RuntimeError("Cannot determine metaxy package location")
-            install_metaxy_from = Path(metaxy.__file__).parent.parent.parent
+            install_metaxy_from = Path(mx.__file__).parent.parent.parent
 
         # Set VIRTUAL_ENV to activate the venv
         venv_env = os.environ.copy()
@@ -526,11 +526,11 @@ class ExternalMetaxyProject(MetaxyProject):
         site_packages = Path(result.stdout.strip())
 
         # Find the coverage_subprocess.pth file in .github/
-        import metaxy
+        import metaxy as mx
 
-        if metaxy.__file__ is None:
+        if mx.__file__ is None:
             return  # Can't find repo root, skip coverage setup
-        repo_root = Path(metaxy.__file__).parent.parent.parent
+        repo_root = Path(mx.__file__).parent.parent.parent
         pth_source = repo_root / ".github" / "coverage_subprocess.pth"
 
         if pth_source.exists():

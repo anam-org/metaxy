@@ -152,12 +152,24 @@ extend-select = [
   "I",
   "TID252",
   "UP",
+  "ICN001", # enforces common aliases
+  "ICN003", # bans certain from imports
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
 # Ban certain modules from being imported at module level, instead requiring
 # that they're imported lazily (e.g., within a function definition).
 banned-module-level-imports = ["ibis", "duckdb"]
+
+[tool.ruff.lint.flake8-import-conventions]
+# Declare the banned `from` imports.
+banned-from = ["dagster", "narwhals", "polars"]
+
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"metaxy" = "mx"
+"dagster" = "dg"
+"polars" = "pl"
+"narwhals" = "nw"
 
 [tool.uv.workspace]
 members = [
