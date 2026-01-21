@@ -31,14 +31,13 @@ jobs:
       run-windows: true
       run-macos: true
 
-  release:
+  docs:
     needs: qa
-    uses: ./.github/workflows/_release.yml
+    uses: ./.github/workflows/_docs.yml
     permissions:
       contents: write
       pages: write
       id-token: write
     with:
-      publish-pypi: false
-      deploy-docs: true
+      environment: github-pages
       docs-version: ${{ github.ref_name }}
