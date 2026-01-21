@@ -352,6 +352,9 @@ class AllStoresCases:
             hash_algorithm=HashAlgorithm.MD5,
         )
 
+    # TODO: DuckDB ADBC support requires different implementation
+    # DuckDB's ADBC driver is built into the main duckdb package, not distributed separately
+    # Will be implemented in a future PR using DuckDB's native ADBC integration
     # @pytest.mark.adbc
     # @pytest.mark.native
     # @pytest.mark.duckdb
@@ -362,14 +365,15 @@ class AllStoresCases:
     #         hash_algorithm=HashAlgorithm.XXHASH64,
     #     )
 
-    # @pytest.mark.adbc
-    # @pytest.mark.native
-    # def case_adbc_sqlite(self, tmp_path: Path) -> MetadataStore:
-    #     from metaxy.metadata_store.adbc_sqlite import ADBCSQLiteMetadataStore
-    #     return ADBCSQLiteMetadataStore(
-    #         database=tmp_path / "test_adbc.sqlite",
-    #         hash_algorithm=HashAlgorithm.MD5,
-    #     )
+    @pytest.mark.adbc
+    @pytest.mark.native
+    def case_adbc_sqlite(self, tmp_path: Path) -> MetadataStore:
+        from metaxy.metadata_store.adbc_sqlite import ADBCSQLiteMetadataStore
+
+        return ADBCSQLiteMetadataStore(
+            database=tmp_path / "test_adbc.sqlite",
+            hash_algorithm=HashAlgorithm.MD5,
+        )
 
 
 @fixture

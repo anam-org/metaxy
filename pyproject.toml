@@ -75,6 +75,7 @@ mcp = [
 adbc = [
   "adbc-driver-manager>=1.10.0",
   "adbc-driver-postgresql>=1.1.0",
+  "adbc-driver-sqlite>=1.1.0",
   "pyarrow>=18.0.0",
 ]
 

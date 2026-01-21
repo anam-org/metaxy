@@ -86,6 +86,23 @@ wheels = [
 ]
 
 [[package]]
+name = "adbc-driver-sqlite"
+version = "1.10.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "adbc-driver-manager" },
+    { name = "importlib-resources" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/72/34/f4924d98a340835988f135303c7e562f7a388308a3fbb949f357bcb94b04/adbc_driver_sqlite-1.10.0.tar.gz", hash = "sha256:064ed5f1372578d2063cd920514cd2597c6a6db3b0163c2116e373faeedffec6", size = 18298, upload-time = "2026-01-09T07:13:49.001Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d1/d0/e7b0632d3098a209a4700cf75e69dcecfea8e4de369b2b07431a10195234/adbc_driver_sqlite-1.10.0-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:ebef54331c006a42adbe0510ae0f9b3a37fd5e1819214e875fe36a72ce7bf883", size = 1051483, upload-time = "2026-01-09T07:13:34.252Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/a5/968f2031dd97b7907ccfd90b28de3629ce7f31cfd8041e1f509cb1e30a28/adbc_driver_sqlite-1.10.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:1de3fb50a3a4bcad1b097d3805b41681226a5c35ccc625637a8dfb87fc4123c1", size = 1030203, upload-time = "2026-01-09T07:13:36.149Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/f0/71d53fc347b3a598c3f1f562aad7be1e4548c55c06ebda7c6e1ae04f7695/adbc_driver_sqlite-1.10.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:1f8fa45ca274502e145a0fd43af5253f508fe2c17e82857a898392abeb577588", size = 1139328, upload-time = "2026-01-09T07:13:37.837Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/88/7f900b29099764307d1c9816c30b05d0076df120a7ca57c759b3a7a5e82b/adbc_driver_sqlite-1.10.0-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:435cbf57c42e6c57762f6998041a8129ddf7a3f0b407712cbb62d46e0729a450", size = 1158802, upload-time = "2026-01-09T07:13:40.612Z" },
+    { url = "https://files.pythonhosted.org/packages/91/46/bea7cfb4b0779ff67a40833c652b15e702c9e5d1232aff96e577211eb60d/adbc_driver_sqlite-1.10.0-py3-none-win_amd64.whl", hash = "sha256:c6adfb5a934cd1573076fdd71b03492140c8563b6a0d9d2d46c7e718e736b3e0", size = 960435, upload-time = "2026-01-09T07:13:42.333Z" },
+]
+
+[[package]]
 name = "alembic"
 version = "1.18.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2878,6 +2895,7 @@ dependencies = [
 adbc = [
     { name = "adbc-driver-manager" },
     { name = "adbc-driver-postgresql" },
+    { name = "adbc-driver-sqlite" },
     { name = "pyarrow" },
 ]
 bigquery = [
@@ -2974,6 +2992,7 @@ examples = [
 requires-dist = [
     { name = "adbc-driver-manager", marker = "extra == 'adbc'", specifier = ">=1.10.0" },
     { name = "adbc-driver-postgresql", marker = "extra == 'adbc'", specifier = ">=1.1.0" },
+    { name = "adbc-driver-sqlite", marker = "extra == 'adbc'", specifier = ">=1.1.0" },
     { name = "cyclopts", specifier = ">=4.4.0" },
     { name = "dagster", marker = "extra == 'dagster'", specifier = ">=1.12.3" },
     { name = "deltalake", marker = "extra == 'delta'", specifier = ">=1.2.1" },
