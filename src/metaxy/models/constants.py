@@ -52,10 +52,11 @@ METAXY_DATA_VERSION = f"{SYSTEM_COLUMN_PREFIX}data_version"
 METAXY_CREATED_AT = f"{SYSTEM_COLUMN_PREFIX}created_at"
 """Timestamp when the metadata row was created."""
 
+METAXY_UPDATED_AT = f"{SYSTEM_COLUMN_PREFIX}updated_at"
+"""Timestamp when the metadata row was last updated (written to the store)."""
+
 METAXY_DELETED_AT = f"{SYSTEM_COLUMN_PREFIX}deleted_at"
 """Timestamp when the metadata row was soft-deleted."""
-
-"""Temporary ordering column name used for deduplication."""
 
 METAXY_MATERIALIZATION_ID = f"{SYSTEM_COLUMN_PREFIX}materialization_id"
 """External orchestration run ID (e.g., Dagster Run ID, Airflow Run ID) for tracking pipeline executions."""
@@ -72,6 +73,7 @@ ALL_SYSTEM_COLUMNS = frozenset(
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
         METAXY_CREATED_AT,
+        METAXY_UPDATED_AT,
         METAXY_DELETED_AT,
         METAXY_MATERIALIZATION_ID,
     }
@@ -85,6 +87,7 @@ _DROPPABLE_COLUMNS = frozenset(
         METAXY_FEATURE_SPEC_VERSION,
         METAXY_SNAPSHOT_VERSION,
         METAXY_CREATED_AT,
+        METAXY_UPDATED_AT,
         METAXY_DELETED_AT,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
@@ -101,6 +104,7 @@ _COLUMNS_TO_DROP_BEFORE_JOIN = frozenset(
         METAXY_FEATURE_SPEC_VERSION,
         METAXY_SNAPSHOT_VERSION,
         METAXY_CREATED_AT,
+        METAXY_UPDATED_AT,
         METAXY_MATERIALIZATION_ID,
     }
 )

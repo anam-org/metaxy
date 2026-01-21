@@ -742,8 +742,8 @@ def test_sqlmodel_feature_with_duckdb_store(tmp_path: Path, snapshot: SnapshotAs
         assert "metaxy_feature_version" in result_df.columns
         assert all(v == VideoFeature.feature_version() for v in result_df["metaxy_feature_version"].to_list())
 
-        # Snapshot result (exclude timestamp which varies between runs)
-        result_for_snapshot = result_df.drop("metaxy_created_at").to_dicts()
+        # Snapshot result (exclude timestamps which vary between runs)
+        result_for_snapshot = result_df.drop("metaxy_created_at", "metaxy_updated_at").to_dicts()
         assert result_for_snapshot == snapshot
 
 
@@ -933,10 +933,14 @@ def test_sqlmodel_duckdb_custom_id_columns(tmp_path: Path, snapshot: SnapshotAss
         )
         assert sorted(child_composite_keys) == [(1, 10), (1, 20), (2, 10), (2, 30)]
 
-        # Snapshot results (exclude timestamp which varies between runs)
+        # Snapshot results (exclude timestamps which vary between runs)
         assert {
-            "parent": parent_result_df.drop("metaxy_created_at").sort(["user_id", "session_id"]).to_dicts(),
-            "child": child_result_df.drop("metaxy_created_at").sort(["user_id", "session_id"]).to_dicts(),
+            "parent": parent_result_df.drop("metaxy_created_at", "metaxy_updated_at")
+            .sort(["user_id", "session_id"])
+            .to_dicts(),
+            "child": child_result_df.drop("metaxy_created_at", "metaxy_updated_at")
+            .sort(["user_id", "session_id"])
+            .to_dicts(),
         } == snapshot
 
 
@@ -1685,7 +1689,7 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
 
     Verifies that:
     - When explicitly enabled, composite PK is injected
-    - PK includes: metaxy_feature_version + id_columns + metaxy_created_at
+    - PK includes: metaxy_feature_version + id_columns + metaxy_updated_at
     - Works with both default and custom id_columns
     """
 
@@ -1718,7 +1722,7 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
     assert column_names == [
         "metaxy_feature_version",
         "sample_uid",
-        "metaxy_created_at",
+        "metaxy_updated_at",
     ]
 
 
@@ -1759,7 +1763,7 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
 
     Verifies that:
     - Composite PK is created from spec.id_columns (not hardcoded column names)
-    - PK includes: metaxy_feature_version + custom id_columns + metaxy_created_at
+    - PK includes: metaxy_feature_version + custom id_columns + metaxy_updated_at
     - Works with multi-column id_columns
     """
 
@@ -1795,7 +1799,7 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
         "metaxy_feature_version",
         "user_id",  # From spec.id_columns
         "session_id",  # From spec.id_columns
-        "metaxy_created_at",
+        "metaxy_updated_at",
     ]
 
 

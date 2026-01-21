@@ -46,6 +46,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
+    METAXY_UPDATED_AT,
 )
 from metaxy.models.feature import FeatureGraph, current_graph
 from metaxy.models.plan import FeaturePlan
@@ -115,6 +116,7 @@ _SYSTEM_COLUMN_DTYPES = {
     METAXY_SNAPSHOT_VERSION: nw.String,
     METAXY_DATA_VERSION: nw.String,
     METAXY_CREATED_AT: nw.Datetime(time_zone="UTC"),
+    METAXY_UPDATED_AT: nw.Datetime(time_zone="UTC"),
     METAXY_DELETED_AT: nw.Datetime(time_zone="UTC"),
     METAXY_MATERIALIZATION_ID: nw.String,
 }
@@ -749,7 +751,7 @@ class MetadataStore(ABC):
                 lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
                     df=lazy_frame,
                     group_columns=id_cols,
-                    timestamp_columns=[METAXY_DELETED_AT, METAXY_CREATED_AT],
+                    timestamp_columns=[METAXY_DELETED_AT, METAXY_UPDATED_AT],
                 )
 
             if filter_deleted:
@@ -1433,6 +1435,7 @@ class MetadataStore(ABC):
             METAXY_CREATED_AT,
             METAXY_DATA_VERSION,
             METAXY_DATA_VERSION_BY_FIELD,
+            METAXY_UPDATED_AT,
         )
 
         # Re-fetch columns since df may have been modified above
@@ -1466,9 +1469,16 @@ class MetadataStore(ABC):
         # Re-fetch columns since df may have been modified
         columns = df.collect_schema().names()
 
-        if METAXY_CREATED_AT not in columns:
-            with self._shared_transaction_timestamp() as ts:
+        # Use shared transaction timestamp to ensure consistency across
+        # metaxy_created_at and metaxy_updated_at columns
+        with self._shared_transaction_timestamp() as ts:
+            if METAXY_CREATED_AT not in columns:
                 df = df.with_columns(nw.lit(ts).alias(METAXY_CREATED_AT))
+
+            # metaxy_updated_at: if already present (e.g., from soft deletion), preserve it;
+            # otherwise set to current time
+            if METAXY_UPDATED_AT not in columns:
+                df = df.with_columns(nw.lit(ts).alias(METAXY_UPDATED_AT))
 
         if METAXY_DELETED_AT not in columns:
             df = df.with_columns(nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT))
@@ -1644,9 +1654,12 @@ class MetadataStore(ABC):
                 latest_only=latest_only,
                 allow_fallback=True,
             )
-            # Use transaction to ensure deleted_aat and created_at share the same timestamp
+            # Use transaction to ensure deleted_at, updated_at, and created_at share the same timestamp
             with self._shared_transaction_timestamp() as ts:
-                soft_deletion_marked = lazy.with_columns(nw.lit(ts).alias(METAXY_DELETED_AT))
+                soft_deletion_marked = lazy.with_columns(
+                    nw.lit(ts).alias(METAXY_DELETED_AT),
+                    nw.lit(ts).alias(METAXY_UPDATED_AT),
+                )
                 self.write_metadata(feature_key, soft_deletion_marked.to_native())
         else:
             # Hard delete: add version filter if needed, then delegate to backend

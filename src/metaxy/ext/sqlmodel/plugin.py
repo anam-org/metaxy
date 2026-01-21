@@ -26,6 +26,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
+    METAXY_UPDATED_AT,
     SYSTEM_COLUMN_PREFIX,
 )
 from metaxy.models.feature import BaseFeature, FeatureGraph, MetaxyMeta
@@ -67,9 +68,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
             namespace: Class namespace (attributes and methods)
             spec: Metaxy FeatureSpec (required for concrete features)
             inject_primary_key: If True, automatically create composite primary key
-                including (metaxy_feature_version, *id_columns, metaxy_created_at).
+                including (metaxy_feature_version, *id_columns, metaxy_updated_at).
             inject_index: If True, automatically create composite index
-                including (metaxy_feature_version, *id_columns, metaxy_created_at).
+                including (metaxy_feature_version, *id_columns, metaxy_updated_at).
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
@@ -165,8 +166,8 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
         # Prepare constraints if requested
         constraints = []
         if inject_primary_key or inject_index:
-            # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
-            key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_CREATED_AT]
+            # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_updated_at
+            key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_UPDATED_AT]
 
             if inject_primary_key:
                 constraints.append(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))
@@ -343,9 +344,19 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
     metaxy_created_at: AwareDatetime | None = Field(
         default=None,
         description="Timestamp when the metadata row was created (UTC)",
-        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
+        sa_type=DateTime(timezone=True),
         sa_column_kwargs={
             "name": METAXY_CREATED_AT,
+        },
+        nullable=False,
+    )
+
+    metaxy_updated_at: AwareDatetime | None = Field(
+        default=None,
+        description="Timestamp when the metadata row was last updated (UTC)",
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "name": METAXY_UPDATED_AT,
         },
         nullable=False,
     )
@@ -362,7 +373,7 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
     metaxy_deleted_at: AwareDatetime | None = Field(
         default=None,
         description="Soft delete timestamp (UTC); null means active row",
-        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
+        sa_type=DateTime(timezone=True),
         sa_column_kwargs={
             "name": METAXY_DELETED_AT,
         },
