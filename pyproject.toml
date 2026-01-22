@@ -72,6 +72,9 @@ lancedb = [
 mcp = [
   "fastmcp>=2.0.0",
 ]
+ray = [
+  "ray>=2.53.0",
+]
 
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
@@ -114,6 +117,8 @@ dev = [
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
   "pandas>=2.3.3",
+  "ray>=2.53.0",
+  "numpy>=2.2.6",
 ]
 
 examples = [
@@ -203,6 +208,10 @@ sigterm = true
 omit = [
   "src/metaxy/_testing.py",
   "src/metaxy/_testing/*",
+  # getting coverage for Ray actors is... complicated
+  # https://github.com/ray-project/ray/issues/9059
+  # probably should be done later
+  "src/metaxy/ext/ray/**",
   "tests/*",
   "examples/*",
 ]
@@ -241,6 +250,7 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 env = [
   "METAXY_AUTO_CREATE_TABLES=1",
+  "RAY_ENABLE_UV_RUN_RUNTIME_ENV=0",
 ]
 filterwarnings = [
   "error::polars.exceptions.PerformanceWarning",

@@ -13,10 +13,15 @@ def describe_graph(
     """Generate comprehensive description of a feature graph.
 
     Analyzes the graph structure and provides metrics including:
+
     - Feature count (optionally filtered by project)
+
     - Graph depth (longest dependency chain)
+
     - Root features (features with no dependencies)
+
     - Leaf features (features with no dependents)
+
     - Feature breakdown by project (if multi-project)
 
     Args:
