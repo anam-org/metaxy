@@ -256,6 +256,30 @@ root_path = "{dev_path}"
     assert config.config_file == config_file.resolve()
 
 
+def test_init_metaxy_with_prebuilt_config(tmp_path: Path) -> None:
+    """Test that init_metaxy accepts a pre-built MetaxyConfig."""
+    from metaxy import init_metaxy
+
+    # Create a pre-built config
+    prebuilt_config = MetaxyConfig(
+        project="prebuilt_project",
+        store="dev",
+        stores={
+            "dev": StoreConfig(
+                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                config={"root_path": str(tmp_path / "delta_dev")},
+            )
+        },
+    )
+
+    # Call init_metaxy with the pre-built config
+    result = init_metaxy(prebuilt_config)
+
+    # Should return the same config object
+    assert result is prebuilt_config
+    assert result.project == "prebuilt_project"
+
+
 def test_get_store_instantiates_correctly(tmp_path: Path) -> None:
     config = MetaxyConfig(
         store="dev",
