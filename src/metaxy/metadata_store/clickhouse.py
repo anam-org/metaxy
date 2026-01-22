@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
     from metaxy.metadata_store.base import MetadataStore
 
+from metaxy._public import public
 from metaxy.metadata_store.ibis import (
     Frame,
     IbisMetadataStore,
@@ -45,6 +46,7 @@ class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
     )
 
 
+@public
 class ClickHouseMetadataStore(IbisMetadataStore):
     """
     [ClickHouse](https://clickhouse.com/) metadata store using [Ibis](https://ibis-project.org/) backend.

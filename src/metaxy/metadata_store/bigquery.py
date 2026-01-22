@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
 from pydantic import Field
 
+from metaxy._public import public
 from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
 from metaxy.versioning.types import HashAlgorithm
 
@@ -36,6 +37,7 @@ class BigQueryMetadataStoreConfig(IbisMetadataStoreConfig):
     )
 
 
+@public
 class BigQueryMetadataStore(IbisMetadataStore):
     """
     [BigQuery](https://cloud.google.com/bigquery) metadata store using [Ibis](https://ibis-project.org/) backend.

@@ -21,6 +21,8 @@ from pydantic_settings import (
 )
 from typing_extensions import Self
 
+from metaxy._public import public
+
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import (
         MetadataStore,
@@ -43,6 +45,7 @@ def _collect_dict_keys(d: dict[str, Any], prefix: str = "") -> list[str]:
     return keys
 
 
+@public
 class InvalidConfigError(Exception):
     """Raised when Metaxy configuration is invalid.
 
@@ -176,6 +179,7 @@ class TomlConfigSettingsSource(PydanticBaseSettingsSource):
         return self.toml_data
 
 
+@public
 class StoreConfig(BaseSettings):
     """Configuration for a single metadata store.
 
@@ -282,6 +286,7 @@ BUILTIN_PLUGINS = {
 StoreTypeT = TypeVar("StoreTypeT", bound="MetadataStore")
 
 
+@public
 class MetaxyConfig(BaseSettings):
     """Main Metaxy configuration.
 

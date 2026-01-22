@@ -16,7 +16,10 @@ from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
 from typing_extensions import Self
 
+from metaxy._public import public
 
+
+@public
 class LineageRelationshipType(str, Enum):
     """Type of lineage relationship between features."""
 
@@ -50,6 +53,7 @@ class BaseLineageRelationship(BaseModel, ABC):
         raise NotImplementedError
 
 
+@public
 class IdentityRelationship(BaseLineageRelationship):
     """One-to-one relationship where each child row maps to exactly one parent row.
 
@@ -74,6 +78,7 @@ class IdentityRelationship(BaseLineageRelationship):
         return None
 
 
+@public
 class AggregationRelationship(BaseLineageRelationship):
     """Many-to-one relationship where multiple parent rows aggregate to one child row.
 
@@ -108,6 +113,7 @@ class AggregationRelationship(BaseLineageRelationship):
         return self.on if self.on is not None else target_id_columns
 
 
+@public
 class ExpansionRelationship(BaseLineageRelationship):
     """One-to-many relationship where one parent row expands to multiple child rows.
 
@@ -172,6 +178,7 @@ class ExpansionRelationship(BaseLineageRelationship):
 LineageRelationshipUnion = IdentityRelationship | AggregationRelationship | ExpansionRelationship
 
 
+@public
 class LineageRelationship(BaseModel):
     """Wrapper class for lineage relationship configurations with convenient constructors.
 

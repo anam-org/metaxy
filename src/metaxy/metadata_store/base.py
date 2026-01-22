@@ -7,7 +7,7 @@ from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime, timezone
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeVar, cast, overload
 
 import narwhals as nw
 from narwhals.typing import Frame, FrameT, IntoFrame
@@ -15,6 +15,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
+from metaxy._public import public
 from metaxy._utils import switch_implementation_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.exceptions import (
@@ -67,6 +68,7 @@ if TYPE_CHECKING:
 MetadataStoreConfigT = TypeVar("MetadataStoreConfigT", bound="MetadataStoreConfig")
 
 
+@public
 class MetadataStoreConfig(BaseSettings):
     """Base configuration class for metadata stores.
 
@@ -104,7 +106,7 @@ class MetadataStoreConfig(BaseSettings):
     )
 
 
-VersioningEngineOptions = Literal["auto", "native", "polars"]
+VersioningEngineOptions: TypeAlias = Literal["auto", "native", "polars"]
 
 # Mapping of system columns to their expected Narwhals dtypes
 # Used to cast Null-typed columns to correct types
@@ -150,6 +152,7 @@ def _cast_present_system_columns(
     return df
 
 
+@public
 class MetadataStore(ABC):
     """
     Abstract base class for metadata storage backends.

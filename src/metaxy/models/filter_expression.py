@@ -8,6 +8,7 @@ from pydantic import field_serializer, model_validator
 from sqlglot import exp
 from sqlglot.errors import ParseError
 
+from metaxy._public import public
 from metaxy.models.bases import FrozenBaseModel
 
 LiteralValue = bool | int | float | str | None
@@ -53,6 +54,7 @@ class NarwhalsFilter(FrozenBaseModel):
         return _expression_to_narwhals(self.expression)
 
 
+@public
 def parse_filter_string(filter_string: str) -> nw.Expr:
     """Parse a SQL WHERE-like string into a Narwhals expression.
 

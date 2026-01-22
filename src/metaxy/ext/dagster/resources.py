@@ -1,8 +1,10 @@
 import dagster as dg
 
 import metaxy as mx
+from metaxy._public import public
 
 
+@public
 class MetaxyStoreFromConfigResource(dg.ConfigurableResource[mx.MetadataStore]):
     """This resource creates a [`metaxy.MetadataStore`](https://docs.metaxy.io/main/guide/learn/metadata-stores/) based on the current Metaxy configuration (`metaxy.toml`).
 

@@ -16,6 +16,7 @@ from packaging.version import Version
 from pydantic import Field
 from typing_extensions import Self
 
+from metaxy._public import public
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
@@ -58,6 +59,7 @@ class DeltaMetadataStoreConfig(MetadataStoreConfig):
     )
 
 
+@public
 class DeltaMetadataStore(MetadataStore):
     """
     Delta Lake metadata store backed by [delta-rs](https://github.com/delta-io/delta-rs).

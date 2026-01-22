@@ -9,6 +9,7 @@ from dagster._core.definitions.events import (
 from typing_extensions import Self
 
 import metaxy as mx
+from metaxy._public import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_COLUMN_LINEAGE_METADATA_KEY,
     DAGSTER_COLUMN_SCHEMA_METADATA_KEY,
@@ -30,6 +31,7 @@ from metaxy.ext.dagster.utils import (
 _T = TypeVar("_T", dg.AssetsDefinition, dg.AssetSpec)
 
 
+@public
 class metaxify:
     """Inject Metaxy metadata into a Dagster [`AssetsDefinition`][dg.AssetsDefinition] or [`AssetSpec`][dg.AssetSpec].
 

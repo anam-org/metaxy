@@ -9,6 +9,7 @@ from pydantic import AwareDatetime, Field, model_validator
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
+from metaxy._public import public
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
@@ -43,6 +44,7 @@ if TYPE_CHECKING:
 _active_graph: ContextVar["FeatureGraph | None"] = ContextVar("_active_graph", default=None)
 
 
+@public
 def get_feature_by_key(key: CoercibleToFeatureKey) -> type["BaseFeature"]:
     """Get a feature class by its key from the active graph.
 
@@ -81,6 +83,7 @@ class SerializedFeature(TypedDict):
     project: str
 
 
+@public
 class FeatureGraph:
     def __init__(self):
         self.features_by_key: dict[FeatureKey, type[BaseFeature]] = {}
@@ -800,6 +803,7 @@ class FeatureGraph:
             _active_graph.reset(token)
 
 
+@public
 def current_graph() -> FeatureGraph:
     """Get the currently active graph.
 
@@ -913,6 +917,7 @@ class _FeatureSpecDescriptor:
         return owner.spec
 
 
+@public
 class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
     _spec: ClassVar[FeatureSpec]
 

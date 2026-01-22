@@ -11,6 +11,7 @@ import dagster as dg
 import narwhals as nw
 
 import metaxy as mx
+from metaxy._public import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_COLUMN_LINEAGE_METADATA_KEY,
     DAGSTER_COLUMN_SCHEMA_METADATA_KEY,
@@ -58,6 +59,7 @@ def _create_type_check_fn(
     return type_check_fn
 
 
+@public
 def feature_to_dagster_type(
     feature: mx.CoercibleToFeatureKey,
     *,

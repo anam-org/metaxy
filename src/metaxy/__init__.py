@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from metaxy._public import public
 from metaxy._version import __version__
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.entrypoints import (
@@ -63,6 +64,7 @@ from metaxy.models.types import (
 from metaxy.versioning.types import HashAlgorithm
 
 
+@public
 def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
     """Coerce a value to a [`FeatureKey`][metaxy.FeatureKey].
 
@@ -85,6 +87,7 @@ def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
     return ValidatedFeatureKeyAdapter.validate_python(value)
 
 
+@public
 def init_metaxy(config_file: Path | None = None, search_parents: bool = True) -> MetaxyConfig:
     """Main user-facing initialization function for Metaxy. It loads the configuration and features.
 

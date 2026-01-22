@@ -11,6 +11,7 @@ import pydantic
 from pydantic import BeforeValidator
 from typing_extensions import Self
 
+from metaxy._public import public
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
 
 
+@public
 class FeatureDep(pydantic.BaseModel):
     """Feature dependency specification with optional column selection, renaming, and lineage.
 
@@ -198,6 +200,7 @@ def _validate_deps(value: Any) -> list[FeatureDep]:
     return result
 
 
+@public
 class FeatureSpec(FrozenBaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     id_columns: Annotated[tuple[str, ...], BeforeValidator(_validate_id_columns)] = pydantic.Field(

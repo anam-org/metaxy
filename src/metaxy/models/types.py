@@ -23,6 +23,8 @@ from pydantic import (
     model_validator,
 )
 
+from metaxy._public import public
+
 if TYPE_CHECKING:
     from typing_extensions import Self
 
@@ -33,6 +35,7 @@ FEATURE_KEY_SEPARATOR = KEY_SEPARATOR
 FIELD_KEY_SEPARATOR = KEY_SEPARATOR
 
 
+@public
 class SnapshotPushResult(NamedTuple):
     """Result of recording a feature graph snapshot.
 
@@ -273,6 +276,7 @@ class _Key(RootModel[tuple[str, ...]]):
 # CoercibleToKey: TypeAlias = _CoercibleToKey | _Key
 
 
+@public
 class FeatureKey(_Key):
     """
     Feature key as a sequence of string parts.
@@ -329,6 +333,7 @@ class FeatureKey(_Key):
         return "__" + "_".join(self.parts)
 
 
+@public
 class FieldKey(_Key):
     """
     Field key as a sequence of string parts.

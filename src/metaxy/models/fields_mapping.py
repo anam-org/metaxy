@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter, field_serializer
 from pydantic import Field as PydanticField
 from typing_extensions import Self
 
+from metaxy._public import public
 from metaxy.models.types import (
     CoercibleToFieldKey,
     FeatureKey,
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
 
 
+@public
 class FieldsMappingType(str, Enum):
     """Type of fields mapping between a field key and the upstream field keys."""
 
@@ -87,6 +89,7 @@ class BaseFieldsMapping(BaseModel, ABC):
         raise NotImplementedError
 
 
+@public
 class SpecificFieldsMapping(BaseFieldsMapping):
     """Field mapping that explicitly depends on specific upstream fields."""
 
@@ -112,6 +115,7 @@ class SpecificFieldsMapping(BaseFieldsMapping):
         return desired_upstream_fields & context.upstream_feature_fields
 
 
+@public
 class AllFieldsMapping(BaseFieldsMapping):
     """Field mapping that explicitly depends on all upstream fields."""
 
@@ -124,6 +128,7 @@ class AllFieldsMapping(BaseFieldsMapping):
         return context.upstream_feature_fields
 
 
+@public
 class NoneFieldsMapping(BaseFieldsMapping):
     """Field mapping that never matches any upstream fields."""
 
@@ -136,6 +141,7 @@ class NoneFieldsMapping(BaseFieldsMapping):
         return set()
 
 
+@public
 class DefaultFieldsMapping(BaseFieldsMapping):
     """Default automatic field mapping configuration.
 
@@ -201,6 +207,7 @@ class DefaultFieldsMapping(BaseFieldsMapping):
         return False
 
 
+@public
 class FieldsMapping(BaseModel):
     """Base class for field mapping configurations.
 

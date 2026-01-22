@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import Column, DateTime, Index, MetaData, String, Table
 
+from metaxy._public import public
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlalchemy.config import SQLAlchemyConfig
 from metaxy.metadata_store.system import EVENTS_KEY, FEATURE_VERSIONS_KEY
@@ -28,6 +29,7 @@ if TYPE_CHECKING:
 # System Tables
 
 
+@public
 def create_system_tables(
     metadata: MetaData,
     table_prefix: str = "",
@@ -149,6 +151,7 @@ def _get_system_metadata(
     return metadata
 
 
+@public
 def get_system_slqa_metadata(
     store: IbisMetadataStore,
     protocol: str | None = None,
@@ -286,6 +289,7 @@ def _inject_constraints(
         table.append_constraint(Index("metaxy_idx", *key_columns))
 
 
+@public
 def filter_feature_sqla_metadata(
     store: IbisMetadataStore,
     source_metadata: MetaData,

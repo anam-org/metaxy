@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal
 from pydantic import BaseModel, BeforeValidator, TypeAdapter
 from pydantic import Field as PydanticField
 
+from metaxy._public import public
 from metaxy.models.constants import DEFAULT_CODE_VERSION
 from metaxy.models.types import (
     CoercibleToFieldKey,
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
 
 
+@public
 class SpecialFieldDep(Enum):
     ALL = "__METAXY_ALL_DEP__"
 
@@ -56,6 +58,7 @@ def _validate_field_dep_fields(
     return TypeAdapter(list[FieldKey]).validate_python(value)
 
 
+@public
 class FieldDep(BaseModel):
     model_config = {"extra": "forbid"}
 
@@ -102,6 +105,7 @@ def _validate_field_spec_key(value: Any) -> FieldKey:
     return FieldKeyAdapter.validate_python(value)
 
 
+@public
 class FieldSpec(BaseModel):
     model_config = {"extra": "forbid"}
 
