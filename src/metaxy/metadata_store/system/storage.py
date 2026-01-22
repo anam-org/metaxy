@@ -751,7 +751,7 @@ class SystemTableStorage:
             current: If True, only return features from the current code snapshot.
                      If False, must provide snapshot_version.
             snapshot_version: Specific snapshot version to filter by. Required if current=False.
-            project: Project name to filter by. Defaults to None.
+            project: Project name to filter by.
 
         Returns:
             Polars DataFrame with columns from FEATURE_VERSIONS_SCHEMA:
