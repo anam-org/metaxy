@@ -89,30 +89,34 @@ def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
 
 
 @public
-def init_metaxy(config_file: Path | None = None, search_parents: bool = True) -> MetaxyConfig:
-    """Main user-facing initialization function for Metaxy. It loads the configuration and features.
+def init_metaxy(
+    config: MetaxyConfig | Path | str | None = None,
+    search_parents: bool = True,
+) -> MetaxyConfig:
+    """Main user-facing initialization function for Metaxy. It loads feature definitions and Metaxy configuration.
 
     Features are [discovered](../../guide/learn/feature-discovery.md) from installed Python packages metadata.
 
     Args:
-        config_file (Path | None, optional): Path to the configuration file.
-
-            Will be auto-discovered in current or parent directories if not provided.
+        config: Metaxy configuration to use for initialization. Will be auto-discovered if not provided.
 
             !!! tip
-                `METAXY_CONFIG` environment variable can be used to set this parameter
+                `METAXY_CONFIG` environment variable can be used to set the config file path.
 
-        search_parents (bool, optional): Whether to search parent directories for configuration files. Defaults to True.
+        search_parents: Whether to search parent directories for configuration files during config auto-discovery.
 
     Returns:
-        MetaxyConfig: The initialized Metaxy configuration.
+        The activated Metaxy configuration.
     """
-    cfg = MetaxyConfig.load(
-        config_file=config_file,
-        search_parents=search_parents,
-    )
-    load_features(cfg.entrypoints)
-    return cfg
+    if isinstance(config, MetaxyConfig):
+        MetaxyConfig.set(config)
+    else:
+        config = MetaxyConfig.load(
+            config_file=config,
+            search_parents=search_parents,
+        )
+    load_features(config.entrypoints)
+    return config
 
 
 __all__ = [

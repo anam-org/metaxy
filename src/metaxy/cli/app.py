@@ -69,7 +69,7 @@ def launcher(
 
     # Load Metaxy configuration with parent directory search
     # This handles TOML discovery, env vars, and entrypoint loading
-    config = init_metaxy(config_file=config_file, search_parents=True)
+    config = init_metaxy(config_file)
 
     # Store config in context for commands to access
     # Commands will instantiate and open store as needed
