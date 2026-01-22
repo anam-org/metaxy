@@ -11,6 +11,7 @@ import pydantic
 from pydantic import BeforeValidator
 from typing_extensions import Self
 
+from metaxy._hashing import truncate_hash
 from metaxy._public import public
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
@@ -24,7 +25,6 @@ from metaxy.models.types import (
     FieldKey,
     ValidatedFeatureKey,
 )
-from metaxy.utils.hashing import truncate_hash
 
 if TYPE_CHECKING:
     # yes, these are circular imports, the TYPE_CHECKING block hides them at runtime.

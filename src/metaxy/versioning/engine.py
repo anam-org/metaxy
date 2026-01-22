@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Literal, cast
 import narwhals as nw
 from narwhals.typing import FrameT
 
+from metaxy._hashing import get_hash_truncation_length
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
@@ -18,7 +19,6 @@ from metaxy.models.constants import (
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.utils.hashing import get_hash_truncation_length
 from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
 from metaxy.versioning.renamed_df import RenamedDataFrame
 from metaxy.versioning.types import HashAlgorithm

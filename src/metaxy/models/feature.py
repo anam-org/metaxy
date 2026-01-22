@@ -9,6 +9,7 @@ from pydantic import AwareDatetime, Field, model_validator
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
+from metaxy._hashing import truncate_hash
 from metaxy._public import public
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
@@ -25,7 +26,6 @@ from metaxy.models.types import (
     ValidatedFeatureKeyAdapter,
     ValidatedFeatureKeySequenceAdapter,
 )
-from metaxy.utils.hashing import truncate_hash
 
 FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
 FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
