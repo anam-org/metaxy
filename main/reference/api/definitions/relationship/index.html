@@ -4917,7 +4917,7 @@ Can be "sequential", "hash", or custom. If None, handled by load_input().</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="metaxy.models.lineage.BaseLineageRelationship">BaseLineageRelationship</span></code></p>
+              Bases: <code><span title="BaseLineageRelationship">BaseLineageRelationship</span></code></p>
 
         <p>One-to-one relationship where each child row maps to exactly one parent row.</p>
 <p>This is the default relationship type. Parent and child features share the same
@@ -5027,7 +5027,7 @@ ID columns and have the same cardinality. No aggregation is performed.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="metaxy.models.lineage.BaseLineageRelationship">BaseLineageRelationship</span></code></p>
+              Bases: <code><span title="BaseLineageRelationship">BaseLineageRelationship</span></code></p>
 
         <p>One-to-many relationship where one parent row expands to multiple child rows.</p>
 <p>Child features have more granular ID columns than the parent. Each parent row
@@ -5310,7 +5310,7 @@ should pass through all parent records without aggregation.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="metaxy.models.lineage.BaseLineageRelationship">BaseLineageRelationship</span></code></p>
+              Bases: <code><span title="BaseLineageRelationship">BaseLineageRelationship</span></code></p>
 
         <p>Many-to-one relationship where multiple parent rows aggregate to one child row.</p>
 <p>Parent features have more granular ID columns than the child. The child aggregates
