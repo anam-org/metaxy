@@ -35,3 +35,14 @@ examples/.generated
 PLAN.md
 plans/*.md
 .cache/
+.pg-wrappers/initdb
+.pg-wrappers/pg_ctl
+.pg-wrappers/postgres
+
+# Devenv
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.direnv
