@@ -462,7 +462,46 @@ if TYPE_CHECKING:
 
 # Type unions - what inputs are accepted
 CoercibleToFeatureKey: TypeAlias = str | Sequence[str] | FeatureKey | type["BaseFeature"]
+"""Type alias for values that can be coerced to a [`FeatureKey`][metaxy.FeatureKey].
+
+Accepted formats:
+
+- `str`: Slash-separated string like `"raw/video"` or `"ml/embeddings/v2"`
+- `Sequence[str]`: sequences of parts like `["user", "profile"]`
+- [`FeatureKey`][metaxy.FeatureKey]: Pass through unchanged
+- `type[BaseFeature]`: Any [`BaseFeature`][metaxy.BaseFeature] subclass - extracts its key via `.spec().key`
+
+Example:
+    ```python
+    from metaxy import FeatureKey
+
+    # All of these are valid `CoercibleToFeatureKey` values:
+    key1 = "raw/video"
+    key2 = ["raw", "video"]
+    key3 = FeatureKey("raw/video")
+    key4 = MyFeatureClass  # where MyFeatureClass is a BaseFeature subclass
+    ```
+"""
+
 CoercibleToFieldKey: TypeAlias = str | Sequence[str] | FieldKey
+"""Type alias for values that can be coerced to a [`FieldKey`][metaxy.FieldKey].
+
+Accepted formats:
+
+- `str`: Slash-separated string like `"audio/english"`
+- `Sequence[str]`: sequence of parts like `["audio", "english"]`
+- [`FieldKey`][metaxy.FieldKey]: Pass through unchanged
+
+Example:
+    ```python
+    from metaxy import FieldKey
+
+    # All of these are valid `CoercibleToFieldKey` values:
+    key1 = "audio/english"
+    key2 = ["audio", "english"]
+    key3 = FieldKey("audio/english")
+    ```
+"""
 
 # Annotated types for Pydantic field annotations - automatically validate
 # After validation, these ARE FeatureKey/FieldKey (not unions)

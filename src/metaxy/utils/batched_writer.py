@@ -136,9 +136,7 @@ class BatchedMetadataWriter:
         `[MetadataStore.write_metadata_multi][]`.
 
         Args:
-            batches: Mapping from feature keys to dataframes. Keys can be any type
-                coercible to FeatureKey (string path, sequence, FeatureKey, or
-                BaseFeature class).
+            batches: Mapping from feature keys to dataframes.
                 Dataframes can be of any type supported by [Narwhals](https://narwhals-dev.github.io/narwhals/).
 
         Raises:
