@@ -13,6 +13,8 @@ in
     version = defaultPythonVersion;
   };
 
+  dotenv.enable = true;
+
   # https://devenv.sh/packages/
   packages = with pkgs; [
     # Core development tools
@@ -55,9 +57,10 @@ in
     PG_BIN = "${pkgs.postgresql}/bin";
 
     # Platform-specific library paths for DuckDB/ClickHouse and mkdocs image generation
-    # NOTE: Avoid including system libraries (glibc, gcc-unwrapped) to prevent
-    # "stack smashing detected" errors when spawning subprocesses (e.g., uv build, pg_ctl)
+    # NOTE: We include stdenv.cc.cc.lib for libstdc++ (needed by DuckDB Python bindings)
+    # but avoid glibc to prevent "stack smashing detected" errors when spawning subprocesses
     LD_LIBRARY_PATH = lib.optionalString pkgs.stdenv.isLinux (lib.makeLibraryPath [
+      pkgs.stdenv.cc.cc.lib  # libstdc++.so.6
       pkgs.duckdb.lib
       pkgs.clickhouse
       pkgs.cairo
