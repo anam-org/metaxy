@@ -3,9 +3,9 @@
 This extension controls API visibility in documentation based on the presence
 of the `@public` decorator from `metaxy._public`.
 
-Objects decorated with `@public` will have `obj.public = True`, making them
-visible in documentation. Objects without the decorator will have
-`obj.public = False`, hiding them from implicit module documentation.
+Objects decorated with `@public` will appear in documentation.
+Objects without the decorator will be removed from the Griffe tree,
+hiding them from module documentation.
 """
 
 from __future__ import annotations
@@ -13,32 +13,54 @@ from __future__ import annotations
 import griffe
 
 
+def _has_public_decorator(obj: griffe.Object) -> bool:
+    """Check if object has @public decorator.
+
+    Args:
+        obj: The Griffe object to check.
+
+    Returns:
+        True if the object has the @public decorator.
+    """
+    if not hasattr(obj, "decorators"):
+        return False
+
+    for decorator in obj.decorators:
+        if decorator.callable_path == "metaxy._public.public":
+            return True
+
+    return False
+
+
 class PublicAPIExtension(griffe.Extension):
-    """Griffe extension that detects the @public decorator and sets visibility."""
+    """Griffe extension that removes non-public objects from documentation.
 
-    def on_class_instance(self, *, cls: griffe.Class, **kwargs: object) -> None:
-        """Process class instances to check for @public decorator."""
-        self._check_public(cls)
+    Objects without the @public decorator are deleted from the Griffe tree,
+    preventing them from appearing in module documentation.
+    """
 
-    def on_function_instance(self, *, func: griffe.Function, **kwargs: object) -> None:
-        """Process function instances to check for @public decorator."""
-        self._check_public(func)
+    def on_package(self, *, pkg: griffe.Module, **kwargs: object) -> None:
+        """Process the entire package after loading to remove non-public members."""
+        self._prune_non_public(pkg)
 
-    def _check_public(self, obj: griffe.Object) -> None:
-        """Check if object has @public decorator and set visibility accordingly.
+    def _prune_non_public(self, module: griffe.Module) -> None:
+        """Recursively remove non-public members from a module.
 
         Args:
-            obj: The Griffe object to check.
+            module: The module to prune.
         """
-        if not hasattr(obj, "decorators"):
-            return
+        # Collect members to remove (can't modify dict during iteration)
+        to_remove: list[str] = []
 
-        for decorator in obj.decorators:
-            # Check for the @public decorator from metaxy._public
-            if decorator.callable_path in ("metaxy._public.public",):
-                obj.public = True
-                return
+        for name, member in module.members.items():
+            # Recurse into submodules first
+            if isinstance(member, griffe.Module):
+                self._prune_non_public(member)
+            # Remove non-public classes and functions
+            elif isinstance(member, griffe.Class | griffe.Function):
+                if not _has_public_decorator(member):
+                    to_remove.append(name)
 
-        # Objects without @public are marked as non-public
-        # This hides them from implicit module documentation
-        obj.public = False
+        # Remove non-public members
+        for name in to_remove:
+            del module.members[name]
