@@ -7,13 +7,13 @@ import narwhals as nw
 import polars as pl
 from narwhals.typing import IntoFrameT
 
+from metaxy._hashing import get_hash_truncation_length
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
 )
-from metaxy.utils.hashing import get_hash_truncation_length
 
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature

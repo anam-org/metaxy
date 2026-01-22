@@ -4,10 +4,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from metaxy._hashing import ensure_hash_compatibility, get_hash_truncation_length
 from metaxy.graph.diff.differ import GraphDiffer
 from metaxy.migrations.models import DiffMigration, FullGraphMigration
 from metaxy.models.feature import FeatureGraph
-from metaxy.utils.hashing import ensure_hash_compatibility, get_hash_truncation_length
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore

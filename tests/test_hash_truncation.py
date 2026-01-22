@@ -7,13 +7,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.delta import DeltaMetadataStore
-from metaxy.metadata_store.system import SystemTableStorage
-from metaxy.models.feature_spec import FieldSpec
-from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.utils.hashing import (
+from metaxy._hashing import (
     MIN_TRUNCATION_LENGTH,
     ensure_hash_compatibility,
     get_hash_truncation_length,
@@ -21,6 +15,12 @@ from metaxy.utils.hashing import (
     truncate_string_column,
     truncate_struct_column,
 )
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
+from metaxy.config import MetaxyConfig
+from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
+from metaxy.models.feature_spec import FieldSpec
+from metaxy.models.types import FeatureKey, FieldKey
 
 
 class TestHashTruncationUtils:
@@ -514,7 +514,7 @@ class TestMigrationCompatibility:
 
     def test_hash_compatibility_in_migration(self):
         """Test hash compatibility checking in migrations."""
-        from metaxy.utils.hashing import ensure_hash_compatibility
+        from metaxy._hashing import ensure_hash_compatibility
 
         # Full hashes
         hash1 = hashlib.sha256(b"test1").hexdigest()
