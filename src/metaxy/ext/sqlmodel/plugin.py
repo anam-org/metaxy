@@ -12,6 +12,7 @@ from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
 from metaxy import FeatureSpec
+from metaxy._public import public
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlmodel.config import SQLModelPluginConfig
 from metaxy.models.constants import (
@@ -228,6 +229,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                 namespace["__table_args__"] = table_kwargs
 
 
+@public
 class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None):
     """Base class for `Metaxy` features that are also `SQLModel` tables.
 
@@ -384,6 +386,7 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
 # Convenience wrappers for filtering SQLModel metadata
 
 
+@public
 def filter_feature_sqlmodel_metadata(
     store: "IbisMetadataStore",
     source_metadata: "MetaData",

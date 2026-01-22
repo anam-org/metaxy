@@ -13,6 +13,7 @@ from narwhals.typing import Frame
 from pydantic import Field
 from typing_extensions import Self
 
+from metaxy._public import public
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
@@ -47,6 +48,7 @@ class LanceDBMetadataStoreConfig(MetadataStoreConfig):
     )
 
 
+@public
 class LanceDBMetadataStore(MetadataStore):
     """
     [LanceDB](https://lancedb.github.io/lancedb/) metadata store for vector and structured data.

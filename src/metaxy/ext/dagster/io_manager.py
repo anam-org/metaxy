@@ -6,6 +6,7 @@ import pydantic
 from narwhals.typing import IntoFrame
 
 import metaxy as mx
+from metaxy._public import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
@@ -24,6 +25,7 @@ from metaxy.models.types import ValidatedFeatureKey
 MetaxyOutput = IntoFrame | None
 
 
+@public
 class MetaxyIOManager(dg.ConfigurableIOManager):
     """MetaxyIOManager is a Dagster IOManager that reads and writes data to/from Metaxy's [`MetadataStore`][metaxy.MetadataStore].
 

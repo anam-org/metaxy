@@ -14,6 +14,8 @@ from pydantic import (
     field_validator,
 )
 
+from metaxy._public import public
+
 
 @runtime_checkable
 class SupportsDuckLakeParts(Protocol):
@@ -212,6 +214,7 @@ def format_attach_options(options: Mapping[str, Any] | None) -> str:
     return f" ({', '.join(parts)})" if parts else ""
 
 
+@public
 class DuckLakeAttachmentConfig(BaseModel):
     """Configuration payload used to attach DuckLake to a DuckDB connection."""
 

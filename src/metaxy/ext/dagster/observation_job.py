@@ -7,6 +7,7 @@ from typing import Any
 import dagster as dg
 
 import metaxy as mx
+from metaxy._public import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
@@ -24,6 +25,7 @@ from metaxy.metadata_store.exceptions import FeatureNotFoundError
 logger = logging.getLogger(__name__)
 
 
+@public
 def build_metaxy_multi_observation_job(
     name: str,
     *,
@@ -254,6 +256,7 @@ def build_metaxy_multi_observation_job(
     return observation_job
 
 
+@public
 def build_metaxy_observation_job(
     asset: dg.AssetSpec | dg.AssetsDefinition,
     *,

@@ -11,6 +11,7 @@ from typing_extensions import Self
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
+from metaxy._public import public
 from metaxy.metadata_store._ducklake_support import (
     DuckDBPyConnection,
     DuckLakeAttachmentConfig,
@@ -24,6 +25,7 @@ from metaxy.metadata_store.types import AccessMode
 from metaxy.versioning.types import HashAlgorithm
 
 
+@public
 class ExtensionSpec(BaseModel):
     """
     DuckDB extension specification accepted by DuckDBMetadataStore.
@@ -93,6 +95,7 @@ def _normalise_extensions(
     return normalised
 
 
+@public
 class DuckDBMetadataStore(IbisMetadataStore):
     """
     [DuckDB](https://duckdb.org/) metadata store using [Ibis](https://ibis-project.org/) backend.

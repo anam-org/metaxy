@@ -5,6 +5,7 @@ import dagster as dg
 import narwhals as nw
 
 import metaxy as mx
+from metaxy._public import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_CODE_VERSION_TAG_KEY,
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
@@ -18,6 +19,7 @@ from metaxy.metadata_store.exceptions import FeatureNotFoundError
 from metaxy.models.constants import METAXY_CREATED_AT, METAXY_MATERIALIZATION_ID
 
 
+@public
 class FeatureStats(NamedTuple):
     """Statistics about a feature's metadata for Dagster events."""
 
@@ -270,6 +272,7 @@ def get_asset_key_for_metaxy_feature_spec(
     return dg.AssetKey(list(feature_spec.key.parts))
 
 
+@public
 def generate_materialize_results(
     context: dg.AssetExecutionContext | dg.OpExecutionContext,
     store: mx.MetadataStore | MetaxyStoreFromConfigResource,
@@ -370,6 +373,7 @@ def generate_materialize_results(
         )
 
 
+@public
 def build_feature_info_metadata(
     feature: mx.CoercibleToFeatureKey,
 ) -> dict[str, Any]:
@@ -557,6 +561,7 @@ def build_runtime_feature_metadata(
         return {}, FeatureStats(row_count=0, data_version=dg.DataVersion("empty"))
 
 
+@public
 def generate_observe_results(
     context: dg.AssetExecutionContext | dg.OpExecutionContext,
     store: mx.MetadataStore | MetaxyStoreFromConfigResource,

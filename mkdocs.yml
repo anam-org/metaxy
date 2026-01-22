@@ -53,6 +53,9 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 
+hooks:
+  - docs/.mkdocs-metaxy/src/mkdocs_metaxy/validate_public.py
+
 plugins:
   - search
   - metaxy-examples:
@@ -118,6 +121,7 @@ plugins:
               - griffe_inherited_docstrings
               - griffe_pydantic:
                   schema: true
+              - docs/.mkdocs-metaxy/src/mkdocs_metaxy/griffe_public.py:PublicAPIExtension
           inventories:
             - https://docs.python.org/3/objects.inv
             - https://docs.pydantic.dev/latest/objects.inv

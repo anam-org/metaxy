@@ -7,9 +7,11 @@ from typing import Any, NamedTuple
 import narwhals as nw
 import polars as pl
 
+from metaxy._public import public
 from metaxy._utils import lazy_frame_to_polars
 
 
+@public
 class HashAlgorithm(Enum):
     """Supported hash algorithms for field provenance calculation.
 
@@ -27,6 +29,7 @@ class HashAlgorithm(Enum):
     FARMHASH = "farmhash"  # Better than MD5, available in BigQuery
 
 
+@public
 class PolarsIncrement(NamedTuple):
     """Like [`Increment`][metaxy.versioning.types.Increment], but converted to Polars frames."""
 
@@ -35,6 +38,7 @@ class PolarsIncrement(NamedTuple):
     removed: pl.DataFrame
 
 
+@public
 @dataclass(kw_only=True)
 class PolarsLazyIncrement:
     """Like [`LazyIncrement`][metaxy.versioning.types.LazyIncrement], but converted to Polars lazy frames.
@@ -68,6 +72,7 @@ class PolarsLazyIncrement:
         return PolarsIncrement(added, changed, removed)
 
 
+@public
 class Increment(NamedTuple):
     """Result of an incremental update containing eager dataframes.
 
@@ -97,6 +102,7 @@ class Increment(NamedTuple):
         )
 
 
+@public
 @dataclass(kw_only=True)
 class LazyIncrement:
     """Result of an incremental update containing lazy dataframes.

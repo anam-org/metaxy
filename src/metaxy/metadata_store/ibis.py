@@ -16,6 +16,7 @@ from narwhals.typing import Frame
 from pydantic import Field
 from typing_extensions import Self
 
+from metaxy._public import public
 from metaxy.metadata_store.base import (
     MetadataStore,
     MetadataStoreConfig,
@@ -80,6 +81,7 @@ class IbisMetadataStoreConfig(MetadataStoreConfig):
     )
 
 
+@public
 class IbisMetadataStore(MetadataStore, ABC):
     """
     Generic SQL metadata store using Ibis.
