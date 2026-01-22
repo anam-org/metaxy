@@ -38,6 +38,8 @@ uv run pytest    # Run tests (add -k "pattern" to filter)
 
 **Error handling**: Fail fast with clean errors. Do not catch exceptions to handle them gracefully. Let errors propagate with clear messages. Avoid try/except blocks unless re-raising with additional context.
 
+**Docstrings** Avoid documenting implementation details. Focus on high-level concepts, properties and invariants. Avoid documenting default values as they are already documented in the code.
+
 ## When to Consult Docs
 
 - **Architecture decisions or unfamiliar patterns**: See `docs/guide/` for concepts like feature graphs, migrations, and metadata stores

@@ -113,6 +113,7 @@ dev = [
   "ty==0.0.10",
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
+  "pandas>=2.3.3",
 ]
 
 examples = [

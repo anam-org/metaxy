@@ -278,11 +278,12 @@ nav:
         - Graph: reference/api/definitions/graph.md
         - Filters: reference/api/definitions/filters.md
       - Config: reference/api/config.md
-      - Types: reference/api/types.md
-      - Constants: reference/api/constants.md
       - Metadata Stores:
         - reference/api/metadata-stores/index.md
         - Exceptions: reference/api/metadata-stores/exceptions.md
+      - Types: reference/api/types.md
+      - Constants: reference/api/constants.md
+      - Utils: reference/api/utils.md
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md
 

@@ -61,6 +61,7 @@ from metaxy.models.types import (
     ValidatedFieldKeySequence,
     ValidatedFieldKeySequenceAdapter,
 )
+from metaxy.utils import BatchedMetadataWriter
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -115,6 +116,7 @@ def init_metaxy(config_file: Path | None = None, search_parents: bool = True) ->
 
 
 __all__ = [
+    "BatchedMetadataWriter",
     "BaseFeature",
     "FeatureGraph",
     "graph",
