@@ -38,8 +38,10 @@ jobs:
           filters: |
             test:
               - '.github/workflows/**'
-              - flake.nix
-              - flake.lock
+              - .envrc
+              - devenv.nix
+              - devenv.lock
+              - devenv.yaml
               - 'src/metaxy/**'
               - 'tests/**'
               - 'examples/**'
