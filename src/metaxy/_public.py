@@ -31,10 +31,13 @@ def public(obj: _T) -> _T:
         ```python
         from metaxy import public
 
+
         @public
         class MyFeature(BaseFeature):
             '''This feature will appear in documentation.'''
+
             pass
+
 
         @public
         def my_function():
