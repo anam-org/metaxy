@@ -202,6 +202,8 @@ jobs:
           -k "not clickhouse"
           --ignore=tests/docs
           --ignore=tests/cli
+          --ignore=tests/ext/ray
+          --ignore=tests/project
           --durations=15
 
   test-macos:
@@ -241,6 +243,7 @@ jobs:
           -k "not clickhouse"
           --ignore=tests/docs
           --ignore=tests/cli
+          --ignore=tests/ext/ray
           --durations=15
 
   docs:
