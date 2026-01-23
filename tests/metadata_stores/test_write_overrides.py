@@ -192,6 +192,58 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
+def test_write_metadata_overwrites_user_provided_timestamp(store: MetadataStore):
+    """Verify that write_metadata overwrites user-provided metaxy_updated_at.
+
+    Users should not be able to set arbitrary timestamps via write_metadata.
+    The system always sets metaxy_updated_at to the current time on write.
+    To preserve custom timestamps, use write_metadata_to_store directly.
+    """
+    key = FeatureKey(["test_timestamp_overwrite"])
+
+    class MyFeature(
+        BaseFeature,
+        spec=FeatureSpec(key=key, id_columns=["id"]),
+    ):
+        id: str
+        value: int
+
+    # Create a timestamp far in the past
+    past_time = datetime(2020, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+
+    # Write data WITH metaxy_updated_at already set to past_time
+    data = pl.DataFrame(
+        {
+            "id": ["row1"],
+            "value": [100],
+            METAXY_UPDATED_AT: [past_time],
+            METAXY_PROVENANCE_BY_FIELD: [{"default": "hash1"}],
+        }
+    )
+
+    with store.open("write"):
+        store.write_metadata(key, data)
+
+    with store.open("read"):
+        result = store.read_metadata(key, latest_only=False).collect().to_polars()
+        actual_ts = result[METAXY_UPDATED_AT][0]
+
+        # The timestamp should be overwritten to current time, NOT preserved
+        assert actual_ts > past_time, (
+            f"Expected metaxy_updated_at to be overwritten to current time, "
+            f"but got {actual_ts} which is not after {past_time}"
+        )
+
+        # Verify it's close to "now" (within last minute)
+        now = datetime.now(timezone.utc)
+        time_diff = now - actual_ts
+        assert time_diff.total_seconds() < 60, (
+            f"Expected metaxy_updated_at to be recent (within 60s of now), "
+            f"but got {actual_ts} which is {time_diff.total_seconds()}s ago"
+        )
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
 def test_multiple_ids_each_get_latest_value(store: MetadataStore):
     """Test that multiple different IDs each get their latest value independently.
 
