@@ -82,7 +82,6 @@ jobs:
     needs: filter
     if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
     env:
-      UV_PYTHON_PREFERENCE: only-system
       DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
     strategy:
       fail-fast: false
@@ -91,24 +90,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          nix_path: nixpkgs=channel:nixpkgs-unstable
-      - name: Setup Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@v8
-      - name: Setup Cachix
-        uses: cachix/cachix-action@v16
-        with:
-          name: devenv
-      - name: Install devenv
-        run: nix profile install nixpkgs#devenv
-      - name: Build devenv environment
-        run: devenv shell echo "Environment ready"
-      - name: Install Python dependencies
-        run: devenv shell -- uv sync --all-extras --all-groups
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
       - name: Run ty
-        run: devenv shell -- uv run ty check
+        run: uv run ty check
 
   test-linux:
     needs: filter
@@ -120,7 +105,6 @@ jobs:
       checks: write
     runs-on: depot-ubuntu-latest
     env:
-      UV_PYTHON_PREFERENCE: only-system
       DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
     strategy:
       fail-fast: false
@@ -129,22 +113,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          nix_path: nixpkgs=channel:nixpkgs-unstable
-      - name: Setup Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@v8
-      - name: Setup Cachix
-        uses: cachix/cachix-action@v16
-        with:
-          name: devenv
-      - name: Install devenv
-        run: nix profile install nixpkgs#devenv
-      - name: Build devenv environment
-        run: devenv shell -- echo "Environment ready"
-      - name: Install Python dependencies
-        run: devenv shell -- uv sync --all-extras --all-groups
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
 
       - name: Run Tests with Coverage
         id: pytest
@@ -153,27 +123,20 @@ jobs:
           COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
           COVERAGE_FILE: ${{ github.workspace }}/.coverage
         run: |
-          devenv shell -- bash -c '
-            # Verify uv is available
-            which uv || { echo "uv not found in PATH"; echo "PATH: $PATH"; exit 1; }
+          # Install coverage subprocess support
+          SITE_PACKAGES=$(python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
+          echo "Installing coverage support to: $SITE_PACKAGES"
+          cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
 
-            # Install coverage subprocess support
-            SITE_PACKAGES=$(python -c "import sysconfig; print(sysconfig.get_path('\''purelib'\''))")
-            echo "Installing coverage support to: $SITE_PACKAGES"
-            cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
-
-            # Run tests
-            uv run pytest --cov=src/metaxy --durations=10 --junit-xml=./junit.xml
-          '
+          # Run tests
+          uv run pytest --cov=src/metaxy --durations=10 --junit-xml=./junit.xml
 
       - name: Combine Coverage Data
         if: always()
         run: |
-          devenv shell -- bash -c '
-            uv run coverage combine --keep || true
-            uv run coverage xml -o coverage.xml
-            uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY || true
-          '
+          uv run coverage combine --keep || true
+          uv run coverage xml -o coverage.xml
+          uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY || true
 
 
       - name: Test Execution Summary
@@ -288,30 +251,15 @@ jobs:
       - filter
     if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' || needs.filter.outputs.docs == 'true' }}
     env:
-      UV_PYTHON_PREFERENCE: only-system
       DEVENV_PYTHON_VERSION: "3.10"
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          nix_path: nixpkgs=channel:nixpkgs-unstable
-      - name: Setup Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@v8
-      - name: Setup Cachix
-        uses: cachix/cachix-action@v16
-        with:
-          name: devenv
-      - name: Install devenv
-        run: nix profile install nixpkgs#devenv
-      - name: Build devenv environment
-        run: devenv shell echo "Environment ready"
-      - name: Install Python dependencies
-        run: devenv shell -- uv sync --all-extras --all-groups
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
       - name: Build Docs
         id: docs
-        run: devenv shell -- uv run mkdocs build --strict
+        run: uv run mkdocs build --strict
 
   check:
     permissions: {}
