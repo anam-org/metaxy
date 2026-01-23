@@ -9,20 +9,16 @@ The VERSION environment variable determines which feature versions are loaded.
 Run with VERSION=1 initially, then VERSION=2 to see recomputation.
 """
 
+import metaxy as mx
 import polars as pl
-from metaxy import (
-    FeatureKey,
-    get_feature_by_key,
-    init_metaxy,
-)
 from metaxy.metadata_store.system import SystemTableStorage
 
 # Initialize metaxy (loads config and discovers features)
-config = init_metaxy()
+config = mx.init_metaxy()
 
 # feature showcase: get feature classes by key
-parent_key = FeatureKey(["examples", "parent"])
-ParentFeature = get_feature_by_key(parent_key)
+parent_key = mx.FeatureKey(["examples", "parent"])
+ParentFeature = mx.get_feature_by_key(parent_key)
 
 with config.get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline

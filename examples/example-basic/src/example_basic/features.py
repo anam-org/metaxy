@@ -1,18 +1,15 @@
 """Feature definitions for recompute example."""
 
-from metaxy import (
-    BaseFeature,
-    FeatureSpec,
-    FieldSpec,
-)
+# --8<-- [start:parent_feature]
+import metaxy as mx
 
 
 class ParentFeature(
-    BaseFeature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="examples/parent",
         fields=[
-            FieldSpec(
+            mx.FieldSpec(
                 key="embeddings",
                 code_version="1",
             ),
@@ -25,9 +22,13 @@ class ParentFeature(
     pass
 
 
+# --8<-- [end:parent_feature]
+
+
+# --8<-- [start:child_feature]
 class ChildFeature(
-    BaseFeature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="examples/child",
         deps=[ParentFeature],
         fields=["predictions"],
@@ -37,3 +38,6 @@ class ChildFeature(
     """Child feature that uses parent embeddings to generate predictions."""
 
     pass
+
+
+# --8<-- [end:child_feature]

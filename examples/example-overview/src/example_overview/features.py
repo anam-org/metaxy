@@ -1,22 +1,16 @@
-from metaxy import (
-    BaseFeature,
-    FeatureDep,
-    FeatureSpec,
-    FieldDep,
-    FieldSpec,
-)
+import metaxy as mx
 
 
 class Video(
-    BaseFeature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="example/video",
         fields=[
-            FieldSpec(
+            mx.FieldSpec(
                 key="audio",
                 code_version="1",
             ),
-            FieldSpec(
+            mx.FieldSpec(
                 key="frames",
                 code_version="1",
             ),
@@ -32,26 +26,26 @@ class Video(
 
 
 class Crop(
-    BaseFeature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="example/crop",
-        deps=[FeatureDep(feature=Video)],
+        deps=[mx.FeatureDep(feature=Video)],
         fields=[
-            FieldSpec(
+            mx.FieldSpec(
                 key="audio",
                 code_version="1",
                 deps=[
-                    FieldDep(
+                    mx.FieldDep(
                         feature=Video,
                         fields=["audio"],
                     )
                 ],
             ),
-            FieldSpec(
+            mx.FieldSpec(
                 key="frames",
                 code_version="1",
                 deps=[
-                    FieldDep(
+                    mx.FieldDep(
                         feature=Video,
                         fields=["frames"],
                     )
@@ -65,20 +59,20 @@ class Crop(
 
 
 class FaceDetection(
-    BaseFeature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="example/face_detection",
         deps=[
-            FeatureDep(
+            mx.FeatureDep(
                 feature=Crop,
             )
         ],
         fields=[
-            FieldSpec(
+            mx.FieldSpec(
                 key="faces",
                 code_version="1",
                 deps=[
-                    FieldDep(
+                    mx.FieldDep(
                         feature=Crop,
                         fields=["frames"],
                     )
@@ -92,20 +86,20 @@ class FaceDetection(
 
 
 class SpeechToText(
-    BaseFeature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="example/stt",
         deps=[
-            FeatureDep(
+            mx.FeatureDep(
                 feature=Video,
             )
         ],
         fields=[
-            FieldSpec(
+            mx.FieldSpec(
                 key="transcription",
                 code_version="1",
                 deps=[
-                    FieldDep(
+                    mx.FieldDep(
                         feature=Video,
                         fields=["audio"],
                     )

@@ -2962,7 +2962,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-env", specifier = ">=1.2.0" },
     { name = "pytest-rerunfailures", specifier = ">=15.0" },
-    { name = "ruff", specifier = ">=0.13.1" },
+    { name = "ruff", specifier = ">=0.14.4" },
     { name = "syrupy", specifier = ">=5.0.0" },
     { name = "ty", specifier = "==0.0.10" },
     { name = "vulture", specifier = ">=2.14" },

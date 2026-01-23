@@ -3,14 +3,14 @@
 import tempfile
 from pathlib import Path
 
+import metaxy as mx
 import polars as pl
-from metaxy import FeatureKey, get_feature_by_key, init_metaxy
 
 # Initialize metaxy (loads config and discovers features)
-config = init_metaxy()
+config = mx.init_metaxy()
 
 # Get feature class
-ParentFeature = get_feature_by_key(FeatureKey(["examples", "parent"]))
+ParentFeature = mx.get_feature_by_key(mx.FeatureKey(["examples", "parent"]))
 
 # Load upstream data (use system temp dir for cross-platform compatibility)
 data_dir = Path(tempfile.gettempdir()) / "migration_example_data"

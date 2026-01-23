@@ -1,18 +1,19 @@
 import os
 import random
 
+import metaxy as mx
 import narwhals as nw
 import polars as pl
+
 from example_one_to_many.features import FaceRecognition, Video, VideoChunk
 from example_one_to_many.utils import split_video_into_chunks
-from metaxy import init_metaxy
 
 
 def main():
     # Set random seed from environment if provided (for deterministic testing)
     if seed_str := os.environ.get("RANDOM_SEED"):
         random.seed(int(seed_str))
-    cfg = init_metaxy()
+    cfg = mx.init_metaxy()
     store = cfg.get_store("dev")
 
     # let's pretend somebody has already created the videos for us

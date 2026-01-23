@@ -44,7 +44,7 @@ Let's set the code version of `audio` to `"1"` in order to change it in the futu
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_one_to_many/features.py" hl_lines="10"
---8<-- "example-one-to-many/src/example_one_to_many/features.py::16"
+--8<-- "example-one-to-many/src/example_one_to_many/features.py:video"
 ```
 <!-- dprint-ignore-end -->
 
@@ -54,7 +54,7 @@ Let's set the code version of `audio` to `"1"` in order to change it in the futu
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_one_to_many/features.py" hl_lines="9"
---8<-- "example-one-to-many/src/example_one_to_many/features.py:19:36"
+--8<-- "example-one-to-many/src/example_one_to_many/features.py:video_chunk"
 ```
 <!-- dprint-ignore-end -->
 
@@ -65,8 +65,8 @@ We do not specify custom versions on its fields. Metaxy will automatically assig
 `FaceRecognition` processes video chunks and **only depends on the `frames` field**. This can be expressed with a [`SpecificFieldsMapping`][metaxy.models.fields_mapping.FieldsMapping.specific].
 
 <!-- dprint-ignore-start -->
-```python title="src/example_one_to_many/features.py" hl_lines="9-11"
---8<-- "example-one-to-many/src/example_one_to_many/features.py:38:55"
+```python title="src/example_one_to_many/features.py" hl_lines="9"
+--8<-- "example-one-to-many/src/example_one_to_many/features.py:face_recognition"
 ```
 <!-- dprint-ignore-end -->
 
