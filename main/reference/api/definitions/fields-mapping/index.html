@@ -4341,10 +4341,30 @@
 <h1 id="fields-mapping">Fields Mapping<a class="headerlink" href="#fields-mapping" title="Permanent link">&para;</a></h1>
 <p>Metaxy provides a few helpers when defining field-level dependencies:</p>
 <ul>
-<li>the default mapping that matches on field names or suffixes with [[metaxy.models.fields_mapping.FieldsMapping.default]] (the default one)</li>
-<li><code>specific</code> mapping with [[metaxy.models.fields_mapping.FieldsMapping.specific]]</li>
-<li><code>all</code> mapping with [[metaxy.models.fields_mapping.FieldsMapping.all]]</li>
-<li><code>none</code> mapping with [[metaxy.models.fields_mapping.FieldsMapping.none]]</li>
+<li>the default mapping that matches on field names or suffixes with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.fields_mapping.FieldsMapping.default&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.models.fields_mapping.FieldsMapping.default">metaxy.models.fields_mapping.FieldsMapping.default</a></li>
+<li><code>specific</code> mapping with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.fields_mapping.FieldsMapping.specific&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.models.fields_mapping.FieldsMapping.specific">metaxy.models.fields_mapping.FieldsMapping.specific</a></li>
+<li><code>all</code> mapping with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.fields_mapping.FieldsMapping.all&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.models.fields_mapping.FieldsMapping.all">metaxy.models.fields_mapping.FieldsMapping.all</a></li>
+<li><code>none</code> mapping with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.fields_mapping.FieldsMapping.none&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#metaxy.models.fields_mapping.FieldsMapping.none">metaxy.models.fields_mapping.FieldsMapping.none</a>]</li>
 </ul>
 <p>Always use these classmethods to create instances of lineage relationships. Under the hood, they use Pydantic's discriminated union to ensure that the correct type is constructed based on the provided data.</p>
 <hr />
