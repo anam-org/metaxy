@@ -32,5 +32,5 @@ jobs:
     uses: ./.github/workflows/_qa.yml
     with:
       python-versions: ${{ github.event_name == 'workflow_dispatch' && inputs.python-versions || '["3.10"]' }}
-      run-windows: ${{ github.event_name == 'workflow_dispatch' && inputs.run-windows || false }}
-      run-macos: ${{ github.event_name == 'workflow_dispatch' && inputs.run-macos || false }}
+      run-windows: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-windows) || contains(github.event.pull_request.labels.*.name, 'windows') }}
+      run-macos: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-macos) || contains(github.event.pull_request.labels.*.name, 'macos') }}
