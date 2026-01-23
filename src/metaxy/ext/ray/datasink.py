@@ -73,6 +73,7 @@ class MetaxyDatasink(Datasink[None]):
         blocks: Iterable[Block],
         ctx: TaskContext,
     ) -> None:
+        """Write blocks of metadata to the store."""
         # Initialize metaxy on the worker - config and features are needed for write_metadata
         mx.init_metaxy(self.config)
 
