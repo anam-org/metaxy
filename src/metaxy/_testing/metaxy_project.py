@@ -414,7 +414,6 @@ class ExternalMetaxyProject(MetaxyProject):
                 "ExternalMetaxyProject requires an existing project configuration."
             )
         self._venv_path: Path | None = None
-        self._venv_python: Path | None = None
 
     def setup_venv(self, venv_path: Path, install_metaxy_from: Path | None = None):
         """Create a virtual environment and install the project.
@@ -500,11 +499,11 @@ class ExternalMetaxyProject(MetaxyProject):
         # Install coverage subprocess support if COVERAGE_PROCESS_START is set
         # This enables coverage collection in subprocesses spawned by tests
         if os.environ.get("COVERAGE_PROCESS_START"):
-            self._install_coverage_subprocess_support(venv_path, venv_env)
+            self._install_coverage_subprocess_support(venv_path)
 
         self._venv_path = venv_path
 
-    def _install_coverage_subprocess_support(self, venv_path: Path, venv_env: dict[str, str]) -> None:
+    def _install_coverage_subprocess_support(self, venv_path: Path) -> None:
         """Install coverage subprocess support in a venv.
 
         Copies the coverage_subprocess.pth file to the venv's site-packages,
@@ -513,17 +512,27 @@ class ExternalMetaxyProject(MetaxyProject):
 
         Args:
             venv_path: Path to the virtual environment
-            venv_env: Environment dict with VIRTUAL_ENV set
         """
-        # Get the site-packages path for the venv
-        result = subprocess.run(
-            ["uv", "run", "--active", "python", "-c", "import sysconfig; print(sysconfig.get_path('purelib'))"],
-            env=venv_env,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        site_packages = Path(result.stdout.strip())
+        import sys
+
+        # Calculate site-packages path directly
+        # This is more robust than subprocess call
+        if sys.platform == "win32":
+            # Windows: venv/Lib/site-packages
+            site_packages = venv_path / "Lib" / "site-packages"
+        else:
+            # Unix/Mac: venv/lib/pythonX.Y/site-packages
+            # Use current Python version (venv typically created with same version)
+            version = f"python{sys.version_info.major}.{sys.version_info.minor}"
+            site_packages = venv_path / "lib" / version / "site-packages"
+
+            # Fallback: if version-specific path doesn't exist, try to find it
+            if not site_packages.exists():
+                lib_dir = venv_path / "lib"
+                if lib_dir.exists():
+                    python_dirs = list(lib_dir.glob("python*"))
+                    if python_dirs:
+                        site_packages = python_dirs[0] / "site-packages"
 
         # Find the coverage_subprocess.pth file in .github/
         import metaxy as mx
@@ -567,6 +576,7 @@ class ExternalMetaxyProject(MetaxyProject):
 
         # Start with current environment
         import os
+        import sys
 
         cmd_env = os.environ.copy()
 
@@ -575,13 +585,26 @@ class ExternalMetaxyProject(MetaxyProject):
         # Remove PYTHONHOME if set (can interfere with venv)
         cmd_env.pop("PYTHONHOME", None)
 
+        # Prepend venv's bin/Scripts to PATH so all commands (pytest, pip, uv, etc.)
+        # are found from the venv first
+        bin_dir = "Scripts" if sys.platform == "win32" else "bin"
+        venv_bin_path = self._venv_path / bin_dir
+
+        # Validate venv bin directory exists
+        if not venv_bin_path.exists():
+            raise FileNotFoundError(f"Venv bin directory not found: {venv_bin_path}")
+
+        # Prepend to PATH
+        old_path = cmd_env.get("PATH", "")
+        cmd_env["PATH"] = f"{venv_bin_path}{os.pathsep}{old_path}"
+
         # Apply additional env overrides
         if env:
             cmd_env.update(env)
 
-        # Run command with venv python
+        # Run command with venv activated via PATH
         result = subprocess.run(
-            ["uv", "run", "--active", *args],
+            args,
             cwd=str(self.project_dir),
             capture_output=True,
             text=True,
