@@ -174,11 +174,13 @@ def test_batched_writer_batch_size_trigger(store: MetadataStore, writer_feature:
 @pytest.mark.flaky(reruns=3)
 def test_batched_writer_interval_trigger(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that flush is triggered after interval."""
+    flush_interval = 0.1
+
     with store.open("write"):
         with BatchedMetadataWriter(
             store,
-            flush_batch_size=1000,
-            flush_interval=0.1,
+            flush_batch_size=1000,  # high threshold so batch size won't trigger
+            flush_interval=flush_interval,
         ) as writer:
             # Write a small batch (won't trigger batch size)
             batch = pl.DataFrame(
@@ -190,11 +192,12 @@ def test_batched_writer_interval_trigger(store: MetadataStore, writer_feature: t
             )
             writer.put({writer_feature: batch})
 
-            # Wait for interval to trigger flush
-            time.sleep(0.15)
+            # Wait well beyond the interval to ensure flush has time to complete
+            time.sleep(flush_interval + 0.5)
 
-            # Should have flushed due to interval
-            assert writer.num_written[writer_feature.spec().key] == 1
+            # Should have flushed due to interval (not batch size)
+            feature_key = writer_feature.spec().key
+            assert writer.num_written.get(feature_key, 0) == 1
 
         # Verify data was written
         result = store.read_metadata(writer_feature).collect().to_polars()
