@@ -95,7 +95,7 @@ dev = [
   "pytest>=8.4.2",
   "pytest-cases>=3.9.1",
   "hypothesis>=6.142.4",
-  "ruff>=0.13.1",
+  "ruff>=0.14.4",
   "syrupy>=5.0.0",
   "ibis-framework[duckdb,clickhouse]>=11.0.0",
   "lancedb>=0.15.0",
@@ -147,9 +147,6 @@ line-length = 120
 
 [tool.ruff.format]
 docstring-code-format = true
-
-# temporary
-exclude = ["examples/example-dagster"]
 
 [tool.ruff.lint]
 extend-select = [
@@ -235,26 +232,7 @@ include = [
 ]
 exclude = [
   ".venv",
-  "examples/example-dagster/src/example_dagster/definitions.py",
   "tests/models/test_extra_args_forbidden.py", # intentionally passes invalid args for runtime validation
-]
-
-[tool.pyright]
-reportAny = "none"
-reportExplicitAny = "none"
-reportUnnecessaryCast = "error"
-reportImportCycles = "none"
-include = [
-  "src/metaxy",
-  "tests",
-  "examples",
-]
-exclude = [
-  # temporary
-  "examples/example-dagster/src/example_dagster/definitions.py",
-  "**/node_modules",
-  "**/__pycache__",
-  "**/*venv/**/*",
 ]
 
 [tool.pytest.ini_options]

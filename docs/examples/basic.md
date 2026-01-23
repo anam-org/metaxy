@@ -30,7 +30,7 @@ The parent feature represents raw embeddings computed from source data. It has a
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_basic/features.py"
---8<-- "example-basic/src/example_basic/features.py:1:26"
+--8<-- "example-basic/src/example_basic/features.py:parent_feature"
 ```
 <!-- dprint-ignore-end -->
 
@@ -40,7 +40,7 @@ The child feature depends on the parent and produces predictions. The key config
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_basic/features.py" hl_lines="5"
---8<-- "example-basic/src/example_basic/features.py:29:45"
+--8<-- "example-basic/src/example_basic/features.py:child_feature"
 ```
 <!-- dprint-ignore-end -->
 

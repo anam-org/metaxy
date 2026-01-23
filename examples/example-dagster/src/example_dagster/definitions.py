@@ -121,7 +121,7 @@ def definitions():
     mx.init_metaxy()  # (1)!
 
     return dg.Definitions(
-        assets=[
+        assets=[  # ty: ignore[invalid-argument-type]
             audio_embeddings,
             audio_clusters,
             cluster_report,

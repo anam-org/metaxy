@@ -1,16 +1,6 @@
-"""Pipeline demonstrating N:1 aggregation lineage.
-
-This example shows how Metaxy handles aggregation lineage where multiple
-upstream records (audio recordings) are aggregated into a single downstream
-record (speaker embedding).
-
-Key concepts:
-- Multiple audio recordings per speaker are aggregated into one embedding
-- When any audio for a speaker changes, the speaker embedding needs recomputation
-"""
-
 import metaxy as mx
 import polars as pl
+
 from example_aggregation.features import Audio, SpeakerEmbedding
 
 # Audio samples: 2 speakers with 2 recordings each

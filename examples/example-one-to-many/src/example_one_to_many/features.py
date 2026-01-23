@@ -1,3 +1,4 @@
+# --8<-- [start:video]
 import metaxy as mx
 
 
@@ -16,6 +17,10 @@ class Video(
     path: str  # where the video is stored
 
 
+# --8<-- [end:video]
+
+
+# --8<-- [start:video_chunk]
 class VideoChunk(
     mx.BaseFeature,
     spec=mx.FeatureSpec(
@@ -35,6 +40,10 @@ class VideoChunk(
     path: str  # where the video chunk is stored
 
 
+# --8<-- [end:video_chunk]
+
+
+# --8<-- [start:face_recognition]
 class FaceRecognition(
     mx.BaseFeature,
     spec=mx.FeatureSpec(
@@ -51,3 +60,6 @@ class FaceRecognition(
 ):
     video_chunk_id: str
     num_faces: int  # number of faces detected
+
+
+# --8<-- [end:face_recognition]

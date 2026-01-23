@@ -3,24 +3,16 @@
 Initial feature implementation.
 """
 
-from metaxy import (
-    BaseFeature,
-    FeatureDep,
-    FeatureKey,
-    FeatureSpec,
-    FieldDep,
-    FieldKey,
-    FieldSpec,
-)
+import metaxy as mx
 
 
 class ParentFeature(
-    BaseFeature,
-    spec=FeatureSpec(
-        key=FeatureKey(["examples", "parent"]),
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
+        key=mx.FeatureKey(["examples", "parent"]),
         fields=[
-            FieldSpec(
-                key=FieldKey(["embeddings"]),
+            mx.FieldSpec(
+                key=mx.FieldKey(["embeddings"]),
                 code_version="1",
             ),
         ],
@@ -33,18 +25,18 @@ class ParentFeature(
 
 
 class ChildFeature(
-    BaseFeature,
-    spec=FeatureSpec(
-        key=FeatureKey(["examples", "child"]),
-        deps=[FeatureDep(feature=ParentFeature.spec().key)],
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
+        key=mx.FeatureKey(["examples", "child"]),
+        deps=[mx.FeatureDep(feature=ParentFeature.spec().key)],
         fields=[
-            FieldSpec(
-                key=FieldKey(["predictions"]),
+            mx.FieldSpec(
+                key=mx.FieldKey(["predictions"]),
                 code_version="1",
                 deps=[
-                    FieldDep(
+                    mx.FieldDep(
                         feature=ParentFeature.spec().key,
-                        fields=[FieldKey(["embeddings"])],
+                        fields=[mx.FieldKey(["embeddings"])],
                     )
                 ],
             ),
