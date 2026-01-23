@@ -72,6 +72,10 @@ lancedb = [
 mcp = [
   "fastmcp>=2.0.0",
 ]
+adbc = [
+  "adbc-driver-manager>=1.10.0",
+  "pyarrow>=18.0.0",
+]
 
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
