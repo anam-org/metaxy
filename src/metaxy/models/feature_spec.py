@@ -66,47 +66,29 @@ class FeatureDep(pydantic.BaseModel):
         FeatureDep(feature="upstream")
 
         # Keep only specific columns
-        FeatureDep(
-            feature="upstream/feature",
-            columns=("col1", "col2")
-        )
+        FeatureDep(feature="upstream/feature", columns=("col1", "col2"))
 
         # Rename columns to avoid conflicts
-        FeatureDep(
-            feature="upstream/feature",
-            rename={"old_name": "new_name"}
-        )
+        FeatureDep(feature="upstream/feature", rename={"old_name": "new_name"})
 
         # SQL filters
-        FeatureDep(
-            feature="upstream",
-            filters=["age >= 25", "status = 'active'"]
-        )
+        FeatureDep(feature="upstream", filters=["age >= 25", "status = 'active'"])
 
         # Optional dependency (left join - samples preserved even if no match)
-        FeatureDep(
-            feature="enrichment/data",
-            optional=True
-        )
+        FeatureDep(feature="enrichment/data", optional=True)
         ```
 
     Example: Lineage Relationships
         ```py
         # Aggregation: many sensor readings aggregate to one hourly stat
-        FeatureDep(
-            feature="sensor_readings",
-            lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"])
-        )
+        FeatureDep(feature="sensor_readings", lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]))
 
         # Expansion: one video expands to many frames
-        FeatureDep(
-            feature="video",
-            lineage=LineageRelationship.expansion(on=["video_id"])
-        )
+        FeatureDep(feature="video", lineage=LineageRelationship.expansion(on=["video_id"]))
 
         # Mixed lineage: aggregate from one parent, identity from another
         # In FeatureSpec:
-        deps=[
+        deps = [
             FeatureDep(feature="readings", lineage=LineageRelationship.aggregation(on=["sensor_id"])),
             FeatureDep(feature="sensor_info", lineage=LineageRelationship.identity()),
         ]

@@ -145,6 +145,9 @@ docs = [
 target-version = "py310"
 line-length = 120
 
+[tool.ruff.format]
+docstring-code-format = true
+
 # temporary
 exclude = ["examples/example-dagster"]
 
@@ -156,6 +159,9 @@ extend-select = [
   "ICN001", # enforces common aliases
   "ICN003", # bans certain from imports
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 # Ban certain modules from being imported at module level, instead requiring

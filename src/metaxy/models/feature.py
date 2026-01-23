@@ -62,6 +62,7 @@ def get_feature_by_key(key: CoercibleToFeatureKey) -> type["BaseFeature"]:
     Example:
         ```py
         from metaxy import get_feature_by_key, FeatureKey
+
         parent_key = FeatureKey(["examples", "parent"])
         ParentFeature = get_feature_by_key(parent_key)
 
@@ -474,10 +475,12 @@ class FeatureGraph:
             ```py
             graph = FeatureGraph.get_active()
             # Sort specific features (dependencies first)
-            sorted_keys = graph.topological_sort_features([
-                FeatureKey(["video", "raw"]),
-                FeatureKey(["video", "scene"]),
-            ])
+            sorted_keys = graph.topological_sort_features(
+                [
+                    FeatureKey(["video", "raw"]),
+                    FeatureKey(["video", "scene"]),
+                ]
+            )
 
             # Or use string notation
             sorted_keys = graph.topological_sort_features(["video/raw", "video/scene"])
@@ -629,10 +632,7 @@ class FeatureGraph:
 
             # With override for moved feature
             historical_graph = FeatureGraph.from_snapshot(
-                snapshot_data,
-                class_path_overrides={
-                    "video_processing": "myapp.features_v2.VideoProcessing"
-                }
+                snapshot_data, class_path_overrides={"video_processing": "myapp.features_v2.VideoProcessing"}
             )
             ```
         """
@@ -1022,11 +1022,16 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
         Example:
             ```py
-            class MyFeature(Feature, spec=FeatureSpec(
-                key=FeatureKey(["my", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            )):
+            class MyFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["my", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                ),
+            ):
                 pass
+
+
             MyFeature.feature_version()
             # 'a3f8b2c1...'
             ```
@@ -1055,11 +1060,16 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
         Example:
             ```py
-            class MyFeature(Feature, spec=FeatureSpec(
-                key=FeatureKey(["my", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            )):
+            class MyFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["my", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                ),
+            ):
                 pass
+
+
             MyFeature.feature_spec_version()
             # 'def456...'  # Different from feature_version
             ```

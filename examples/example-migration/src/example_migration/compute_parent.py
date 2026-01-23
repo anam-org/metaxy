@@ -4,7 +4,6 @@ import tempfile
 from pathlib import Path
 
 import polars as pl
-
 from metaxy import FeatureKey, get_feature_by_key, init_metaxy
 
 # Initialize metaxy (loads config and discovers features)

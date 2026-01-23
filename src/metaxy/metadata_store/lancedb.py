@@ -90,8 +90,7 @@ class LanceDBMetadataStore(MetadataStore):
 
         # Option 2: Explicit credentials
         store = LanceDBMetadataStore(
-            "db://my-database",
-            connect_kwargs={"api_key": "your-api-key", "region": "us-east-1"}
+            "db://my-database", connect_kwargs={"api_key": "your-api-key", "region": "us-east-1"}
         )
         ```
     """

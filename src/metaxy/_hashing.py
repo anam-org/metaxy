@@ -167,9 +167,7 @@ def truncate_struct_column(df: pl.DataFrame | pl.LazyFrame, struct_column: str) 
     Example:
         ```py
         # With global config set to truncation_length=12:
-        df = pl.DataFrame({
-            "metaxy_provenance_by_field": [{"field1": "a" * 64, "field2": "b" * 64}]
-            })
+        df = pl.DataFrame({"metaxy_provenance_by_field": [{"field1": "a" * 64, "field2": "b" * 64}]})
         result = truncate_struct_column(df, "metaxy_provenance_by_field")
         # result["metaxy_provenance_by_field"] contains [{"field1": "aaaaaaaaaaaa", "field2": "bbbbbbbbbbbb"}]
         ```

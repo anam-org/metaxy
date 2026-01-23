@@ -54,6 +54,7 @@ def load_module_entrypoint(
     Example:
         ```py
         from metaxy.entrypoints import load_module_entrypoint
+
         load_module_entrypoint("myapp.features.core")
         # Features from myapp.features.core are now registered
         ```
@@ -89,11 +90,8 @@ def load_entrypoints(
     Example:
         ```py
         from metaxy.entrypoints import load_config_entrypoints
-        load_config_entrypoints([
-            "myapp.features.video",
-            "myapp.features.audio",
-            "myapp.features.text"
-        ])
+
+        load_config_entrypoints(["myapp.features.video", "myapp.features.audio", "myapp.features.text"])
         ```
     """
     from metaxy.models.feature import FeatureGraph
@@ -135,6 +133,7 @@ def load_package_entrypoints(
     Example:
         ```py
         from metaxy.entrypoints import load_package_entrypoints
+
         # Discover and load all installed plugins
         load_package_entrypoints()
         ```
@@ -193,8 +192,10 @@ def load_env_entrypoints() -> None:
     Example:
         ```py
         import os
+
         os.environ["METAXY_ENTRYPOINT"] = "myapp.features.core"
         from metaxy.entrypoints import load_env_entrypoints
+
         load_env_entrypoints()
         ```
     """

@@ -780,14 +780,18 @@ class TempMetaxyProject(MetaxyProject):
         ```py
         project = TempMetaxyProject(tmp_path)
 
+
         def features():
             from metaxy import BaseFeature as Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-            class MyFeature(Feature, spec=FeatureSpec(
-                key=FeatureKey(["my_feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")]
-            )):
+            class MyFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["my_feature"]), fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")]
+                ),
+            ):
                 pass
+
 
         with project.with_features(features):
             result = project.run_cli("graph", "push")
@@ -861,6 +865,7 @@ database = "{staging_db_path}"
 
                 class MyFeature(Feature, spec=...):
                     pass
+
 
             with project.with_features(my_features) as module:
                 print(module)  # "features_0"

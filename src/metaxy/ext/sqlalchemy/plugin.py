@@ -348,6 +348,7 @@ def filter_feature_sqla_metadata(
 
         # With custom metadata
         from sqlalchemy import MetaData
+
         my_metadata = MetaData()
         # ... define tables in my_metadata ...
 
@@ -360,6 +361,7 @@ def filter_feature_sqla_metadata(
         ```py
         # With SQLModel
         from sqlmodel import SQLModel
+
         url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata)
         ```
     """
