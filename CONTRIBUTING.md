@@ -4,24 +4,13 @@ We are in early and active development. Contributors are very welcome!
 
 ## Development
 
-Setting up the environment:
+We are using [Devenv](https://devenv.sh/) to manage the development environment, except the Python packages, which are managed by `uv`. We also recommend using [Direnv](https://direnv.net/) to automatically build and activate the environment whenever you enter the project directory.s
 
-```shell
-uv sync --all-extras
-uv run prek install
-```
+1. Install `direnv`, `devenv` and `uv`
+2. Enter the project directory and run `direnv allow` to setup the environment
+3. Run `prek install` (needs to be done only once) to install the pre-commit Git hooks
 
-You are also expected to install system dependencies such as `clickhouse` and others. These can be found in `flake.nix`.
-
-### For happy Nix users
-
-`Nix` and `direnv` users can flex with `direnv allow` - this will automatically setup the environment for you, including all system dependencies and Python packages.
-We also have Nix dev shells for all supported Python versions:
-
-```shell
-nix develop  # enters a shell with the lowest supported Python version
-nix develop '.#"python3.11"'  # enters a shell with Python 3.11
-```
+To reinstall Python dependencies, run `uv sync --all-extras`.
 
 ## Testing
 
@@ -39,3 +28,7 @@ To allow snapshots to be updated (this must be an explicit decision), add `--sna
 ### Testing the examples
 
 All examples for this project **must bundle integration tests** placed in `tests/examples`.
+
+## Building the docs
+
+Run `uv run mkdocs serve` to start the documentation server.
