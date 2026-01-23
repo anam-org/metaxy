@@ -45,4 +45,5 @@ devenv.local.nix
 devenv.local.yaml
 
 # direnv
-.direnv
+.devenv/
+.devenv.flake.nix
