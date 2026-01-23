@@ -2796,7 +2796,7 @@ wheels = [
 
 [[package]]
 name = "metaxy"
-version = "0.0.1.dev28"
+version = "0.0.1.dev29"
 source = { editable = "." }
 dependencies = [
     { name = "cyclopts" },
