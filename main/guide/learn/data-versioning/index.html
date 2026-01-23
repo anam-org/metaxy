@@ -4180,15 +4180,15 @@ flowchart TB
     example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;3ac04df8&lt;/font&gt; → &lt;font color="#00FF00"&gt;54dc7f8a&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;76c8bdc9&lt;/font&gt; → &lt;font color="#00FF00"&gt;f3130c0f&lt;/font&gt;)&lt;br/&gt;- frames (abc79017)&lt;/div&gt;"]
     example_face_detection["&lt;div style="text-align:left"&gt;&lt;b&gt;example/face_detection&lt;/b&gt;&lt;br/&gt;1ac83b07&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (2d75f0bd)&lt;/div&gt;"]
     example_stt["&lt;div style="text-align:left"&gt;&lt;b&gt;example/stt&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;c83a754a&lt;/font&gt; → &lt;font color="#00FF00"&gt;066d34fc&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;transcription&lt;/font&gt; (&lt;font color="#FF0000"&gt;ac412b3c&lt;/font&gt; → &lt;font color="#00FF00"&gt;05841013&lt;/font&gt;)&lt;/div&gt;"]
-    example_video --&gt; example_crop
-    example_crop --&gt; example_face_detection
     example_video --&gt; example_stt
+    example_crop --&gt; example_face_detection
+    example_video --&gt; example_crop
 
 
-    style example_video stroke:#FFAA00,stroke-width:2px
-    style example_crop stroke:#FFAA00,stroke-width:2px
+    style example_stt stroke:#FFAA00,stroke-width:2px
     style example_face_detection stroke:#808080
-    style example_stt stroke:#FFAA00,stroke-width:2px</code></pre>
+    style example_video stroke:#FFAA00,stroke-width:2px
+    style example_crop stroke:#FFAA00,stroke-width:2px</code></pre>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
 <ul>
