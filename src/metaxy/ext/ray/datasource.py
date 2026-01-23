@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
 import pyarrow as pa
@@ -54,6 +54,20 @@ class MetaxyDatasource(Datasource):
         )
         ```
 
+    !!! example "incremental mode"
+
+        ```python
+        # Read only samples that need processing
+        ds = ray.data.read_datasource(
+            MetaxyDatasource(
+                feature="my/feature",
+                store=cfg.get_store(),
+                config=cfg,
+                incremental=True,
+            )
+        )
+        ```
+
     Args:
         feature: Feature to read metadata for.
         store: Metadata store to read from.
@@ -63,6 +77,13 @@ class MetaxyDatasource(Datasource):
                 Ensure the Ray environment is set up properly when not passing `config` explicitly.
                 This can be achieved by setting `METAXY_CONFIG` and other `METAXY_` environment variables.
                 The best practice is to pass `config` explicitly to avoid any surprises.
+
+        incremental: If `True`, return only samples that need processing (new and stale).
+            Adds a `metaxy_status` column with values:
+
+            - `"new"`: samples that have not been processed yet
+
+            - `"stale"`: samples that have been processed but have to be reprocessed
 
         filters: Sequence of Narwhals filter expressions to apply.
         columns: Subset of columns to include. Metaxy's system columns are always included.
@@ -79,6 +100,7 @@ class MetaxyDatasource(Datasource):
         store: mx.MetadataStore,
         config: mx.MetaxyConfig | None = None,
         *,
+        incremental: bool = False,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
@@ -90,6 +112,7 @@ class MetaxyDatasource(Datasource):
         self.config = mx.init_metaxy(config)
 
         self.store = store
+        self.incremental = incremental
         self.feature_version = feature_version
         self.filters = list(filters) if filters else None
         self.columns = list(columns) if columns else None
@@ -100,24 +123,43 @@ class MetaxyDatasource(Datasource):
 
         self._feature_key = mx.coerce_to_feature_key(feature)
 
-    def _read_metadata_lazy(self) -> nw.LazyFrame:
+    def _read_metadata_lazy(self) -> nw.LazyFrame[Any]:
         """Create a lazy frame for reading metadata with all configured options."""
-        return self.store.read_metadata(
+        if self.incremental:
+            return self._read_incremental_lazy()
+        else:
+            return self.store.read_metadata(
+                self._feature_key,
+                feature_version=self.feature_version,
+                filters=self.filters,
+                columns=self.columns,
+                allow_fallback=self.allow_fallback,
+                current_only=self.current_only,
+                latest_only=self.latest_only,
+                include_soft_deleted=self.include_soft_deleted,
+            )
+
+    def _read_incremental_lazy(self) -> nw.LazyFrame[Any]:
+        """Create a lazy frame for incremental reads (added + changed samples).
+
+        Returns a LazyFrame with a `metaxy_status` column indicating:
+        - "new": samples that don't exist in the target store
+        - "stale": samples that exist but have outdated provenance
+        """
+        increment = self.store.resolve_update(
             self._feature_key,
-            feature_version=self.feature_version,
-            filters=self.filters,
-            columns=self.columns,
-            allow_fallback=self.allow_fallback,
-            current_only=self.current_only,
-            latest_only=self.latest_only,
-            include_soft_deleted=self.include_soft_deleted,
+            lazy=True,
+            target_filters=self.filters,
         )
+        # Add status column and concatenate added + changed
+        added_with_status = increment.added.with_columns(nw.lit("new").alias("metaxy_status"))
+        changed_with_status = increment.changed.with_columns(nw.lit("stale").alias("metaxy_status"))
+        return nw.concat([added_with_status, changed_with_status])
 
     def _get_row_count(self) -> int:
         """Get the row count by executing a lightweight count query."""
         with self.store.open("read"):
-            lf = self._read_metadata_lazy()
-            return lf.select(nw.len()).collect().item()
+            return self._read_metadata_lazy().select(nw.len()).collect().item()
 
     def get_read_tasks(self, parallelism: int, per_task_row_limit: int | None = None) -> list[ReadTask]:
         """Return read tasks for the feature metadata.
@@ -134,27 +176,14 @@ class MetaxyDatasource(Datasource):
 
         num_rows = self._get_row_count()
 
-        # Capture state for the worker closure. These locals avoid serializing the entire
-        # datasource instance when the closure is pickled for Ray workers.
-        store, config, feature_key = self.store, self.config, self._feature_key
-        feature_version, filters, columns = self.feature_version, self.filters, self.columns
-        allow_fallback, current_only = self.allow_fallback, self.current_only
-        latest_only, include_soft_deleted = self.latest_only, self.include_soft_deleted
+        # Capture self for the closure
+        datasource = self
         row_limit = per_task_row_limit
 
         def read_fn() -> list[pa.Table]:
-            mx.init_metaxy(config)
-            with store.open("read"):
-                lf = store.read_metadata(
-                    feature_key,
-                    feature_version=feature_version,
-                    filters=filters,
-                    columns=columns,
-                    allow_fallback=allow_fallback,
-                    current_only=current_only,
-                    latest_only=latest_only,
-                    include_soft_deleted=include_soft_deleted,
-                )
+            mx.init_metaxy(datasource.config)
+            with datasource.store.open("read"):
+                lf = datasource._read_metadata_lazy()
                 table = lf.collect(backend="pyarrow").to_arrow()
                 batches = table.to_batches(max_chunksize=row_limit)
                 return [pa.Table.from_batches([b]) for b in batches]
