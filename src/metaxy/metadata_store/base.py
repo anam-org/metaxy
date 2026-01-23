@@ -217,6 +217,7 @@ class MetadataStore(ABC):
         self._materialization_id = materialization_id
         self._open_cm: AbstractContextManager[Self] | None = None  # Track the open() context manager
         self._transaction_timestamp: datetime | None = None  # Shared timestamp for write operations
+        self._soft_delete_in_progress: bool = False  # Track if we're inside a soft delete operation
 
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
@@ -1276,7 +1277,7 @@ class MetadataStore(ABC):
             self._allow_cross_project_writes = previous_value
 
     @contextmanager
-    def _shared_transaction_timestamp(self) -> Iterator[datetime]:
+    def _shared_transaction_timestamp(self, *, soft_delete: bool = False) -> Iterator[datetime]:
         """Context manager that establishes a shared timestamp for a write transaction.
 
         All write operations (write_metadata, delete_metadata with soft=True) within
@@ -1287,6 +1288,9 @@ class MetadataStore(ABC):
         If already within a transaction, returns the existing timestamp without
         creating a new one (reentrant).
 
+        Args:
+            soft_delete: If True, preserves metaxy_updated_at during writes within this context.
+
         Yields:
             datetime: The transaction timestamp (UTC)
         """
@@ -1296,10 +1300,13 @@ class MetadataStore(ABC):
         else:
             # Start new transaction
             self._transaction_timestamp = datetime.now(timezone.utc)
+            if soft_delete:
+                self._soft_delete_in_progress = True
             try:
                 yield self._transaction_timestamp
             finally:
                 self._transaction_timestamp = None
+                self._soft_delete_in_progress = False
 
     def _validate_project_write(self, feature: CoercibleToFeatureKey) -> None:
         """Validate that writing to a feature matches the expected project from config.
@@ -1482,9 +1489,9 @@ class MetadataStore(ABC):
             if METAXY_CREATED_AT not in columns:
                 df = df.with_columns(nw.lit(ts).alias(METAXY_CREATED_AT))
 
-            # metaxy_updated_at: if already present (e.g., from soft deletion), preserve it;
-            # otherwise set to current time
-            if METAXY_UPDATED_AT not in columns:
+            # metaxy_updated_at: set to current transaction time unless soft delete is in progress
+            # Soft delete preserves the original updated_at to reflect when data was last changed
+            if not self._soft_delete_in_progress:
                 df = df.with_columns(nw.lit(ts).alias(METAXY_UPDATED_AT))
 
         if METAXY_DELETED_AT not in columns:
@@ -1652,7 +1659,7 @@ class MetadataStore(ABC):
             filter_list = list(filters)
 
         if soft:
-            # Soft delete: mark records with deletion timestamp
+            # Soft delete: mark records with deletion timestamp, preserving original updated_at
             lazy = self.read_metadata(
                 feature_key,
                 filters=filter_list,
@@ -1661,11 +1668,9 @@ class MetadataStore(ABC):
                 latest_only=latest_only,
                 allow_fallback=True,
             )
-            # Use transaction to ensure deleted_at, updated_at, and created_at share the same timestamp
-            with self._shared_transaction_timestamp() as ts:
+            with self._shared_transaction_timestamp(soft_delete=True) as ts:
                 soft_deletion_marked = lazy.with_columns(
                     nw.lit(ts).alias(METAXY_DELETED_AT),
-                    nw.lit(ts).alias(METAXY_UPDATED_AT),
                 )
                 self.write_metadata(feature_key, soft_deletion_marked.to_native())
         else:

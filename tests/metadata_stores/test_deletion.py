@@ -14,7 +14,6 @@ from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DELETED_AT,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_UPDATED_AT,
 )
 
 
@@ -32,7 +31,6 @@ def make_value_df():
         provenance: list[str],
         created_at: list[datetime],
         deleted_at: list[datetime] | None = None,
-        updated_at: list[datetime] | None = None,
     ) -> pl.DataFrame:
         data = {
             "sample_uid": sample_uids,
@@ -42,13 +40,7 @@ def make_value_df():
         }
         if deleted_at is not None:
             data[METAXY_DELETED_AT] = deleted_at
-        # Set updated_at: if provided, use it; if deleted_at is set, use deleted_at; otherwise use created_at
-        if updated_at is not None:
-            data[METAXY_UPDATED_AT] = updated_at
-        elif deleted_at is not None:
-            data[METAXY_UPDATED_AT] = deleted_at
-        else:
-            data[METAXY_UPDATED_AT] = created_at
+        # Note: metaxy_updated_at is set by write_metadata, not manually
         return pl.DataFrame(data)
 
     return _make
@@ -92,17 +84,11 @@ def test_soft_deleted_rows_filtered_by_default(
         provenance=["p1", "p2"],
         created_at=[base_time, base_time],
     )
-    soft_deletes_df = make_value_df(
-        sample_uids=["a"],
-        values=[1],
-        provenance=["p_del"],
-        created_at=[base_time + timedelta(seconds=1)],
-        deleted_at=[base_time + timedelta(seconds=1)],
-    )
 
     with any_store:
         any_store.write_metadata(SoftDeleteFeature, initial_df)
-        any_store.write_metadata(SoftDeleteFeature, soft_deletes_df)
+        # Use delete_metadata to soft-delete row "a" instead of manually writing a deleted row
+        any_store.delete_metadata(SoftDeleteFeature, filters=nw.col("sample_uid") == "a", soft=True)
 
         active = any_store.read_metadata(SoftDeleteFeature).collect().to_polars()
         assert active.filter(pl.col("sample_uid") == "a").is_empty()
@@ -200,14 +186,6 @@ def test_write_delete_write_delete_sequence(
         created_at=[base_time],
     )
 
-    delete1_df = make_value_df(
-        sample_uids=["y"],
-        values=[100],
-        provenance=["p_delete1"],
-        created_at=[base_time + timedelta(seconds=1)],
-        deleted_at=[base_time + timedelta(seconds=1)],
-    )
-
     write2_df = make_value_df(
         sample_uids=["y"],
         values=[200],
@@ -215,19 +193,15 @@ def test_write_delete_write_delete_sequence(
         created_at=[base_time + timedelta(seconds=2)],
     )
 
-    delete2_df = make_value_df(
-        sample_uids=["y"],
-        values=[200],
-        provenance=["p_delete2"],
-        created_at=[base_time + timedelta(seconds=3)],
-        deleted_at=[base_time + timedelta(seconds=3)],
-    )
-
     with any_store:
+        # Write first value
         any_store.write_metadata(WriteDeleteWriteDeleteFeature, write1_df)
-        any_store.write_metadata(WriteDeleteWriteDeleteFeature, delete1_df)
+        # Soft delete it
+        any_store.delete_metadata(WriteDeleteWriteDeleteFeature, filters=nw.col("sample_uid") == "y", soft=True)
+        # Write second value
         any_store.write_metadata(WriteDeleteWriteDeleteFeature, write2_df)
-        any_store.write_metadata(WriteDeleteWriteDeleteFeature, delete2_df)
+        # Soft delete it again
+        any_store.delete_metadata(WriteDeleteWriteDeleteFeature, filters=nw.col("sample_uid") == "y", soft=True)
 
         active = any_store.read_metadata(WriteDeleteWriteDeleteFeature).collect().to_polars()
         assert active.is_empty()

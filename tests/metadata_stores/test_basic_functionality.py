@@ -252,13 +252,12 @@ def test_metaxy_updated_at_column(store: MetadataStore):
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
-def test_metaxy_updated_at_matches_deleted_at_on_soft_delete(store: MetadataStore):
-    """Test that metaxy_updated_at equals metaxy_deleted_at when soft deleting.
+def test_soft_delete_preserves_original_updated_at(store: MetadataStore):
+    """Test that soft delete preserves the original metaxy_updated_at timestamp.
 
-    When a row is soft-deleted, both timestamps should be set to the same value
-    for consistency.
-
-    See: https://github.com/anam-org/metaxy/issues/703
+    When a row is soft-deleted, metaxy_deleted_at is set to the deletion time,
+    but metaxy_updated_at should preserve the original value from when the row
+    was last actually updated.
     """
     from metaxy.models.constants import METAXY_DELETED_AT, METAXY_UPDATED_AT
 
@@ -282,6 +281,10 @@ def test_metaxy_updated_at_matches_deleted_at_on_soft_delete(store: MetadataStor
         )
         store.write_metadata(key, initial_data)
 
+        # Read to get the original updated_at
+        before_delete = store.read_metadata(key, latest_only=True).collect().to_polars()
+        original_updated_at = before_delete[METAXY_UPDATED_AT][0]
+
         # Soft delete the row (filters=None deletes all rows)
         store.delete_metadata(key, filters=None, soft=True)
 
@@ -294,19 +297,21 @@ def test_metaxy_updated_at_matches_deleted_at_on_soft_delete(store: MetadataStor
 
         assert deleted_at is not None, "metaxy_deleted_at should be set after soft delete"
         assert updated_at is not None, "metaxy_updated_at should be set"
-        assert deleted_at == updated_at, "metaxy_updated_at should equal metaxy_deleted_at on soft delete"
+        # updated_at should be preserved from before the delete, not changed to deleted_at
+        assert updated_at == original_updated_at, (
+            f"metaxy_updated_at should be preserved as {original_updated_at}, but got {updated_at}"
+        )
+        assert deleted_at > updated_at, "metaxy_deleted_at should be after metaxy_updated_at"
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
 def test_soft_delete_timestamps_consistency(store: MetadataStore):
     """Test timestamp consistency during soft delete operations.
 
-    When soft deleting, the _shared_transaction_timestamp context manager ensures:
-    - metaxy_updated_at and metaxy_deleted_at are equal (both set during soft delete)
+    When soft deleting:
+    - metaxy_deleted_at is set to the deletion time
+    - metaxy_updated_at is preserved from the original row (reflects when data was last changed)
     - metaxy_created_at preserves the original row's creation time
-
-    The soft-deleted row is a new append-only record that marks the original as deleted,
-    so it gets a new created_at timestamp when written.
     """
     from metaxy.models.constants import METAXY_CREATED_AT, METAXY_DELETED_AT, METAXY_UPDATED_AT
 
@@ -330,9 +335,10 @@ def test_soft_delete_timestamps_consistency(store: MetadataStore):
         )
         store.write_metadata(key, initial_data)
 
-        # Read the original row to get its created_at
+        # Read the original row to get its timestamps
         original_row = store.read_metadata(key, latest_only=True).collect().to_polars()
         original_created_at = original_row[METAXY_CREATED_AT][0]
+        original_updated_at = original_row[METAXY_UPDATED_AT][0]
 
         # Soft delete the row
         store.delete_metadata(key, filters=None, soft=True)
@@ -355,9 +361,13 @@ def test_soft_delete_timestamps_consistency(store: MetadataStore):
         assert updated_at is not None, "metaxy_updated_at should be set"
         assert deleted_at is not None, "metaxy_deleted_at should be set"
 
-        # updated_at and deleted_at should be equal (both set during soft delete)
-        assert updated_at == deleted_at, (
-            f"metaxy_updated_at ({updated_at}) should equal metaxy_deleted_at ({deleted_at}) on the soft-deleted row"
+        # updated_at should be preserved from the original row
+        assert updated_at == original_updated_at, (
+            f"metaxy_updated_at ({updated_at}) should be preserved from original ({original_updated_at})"
+        )
+        # deleted_at should be after updated_at (deletion happened after the last update)
+        assert deleted_at > updated_at, (
+            f"metaxy_deleted_at ({deleted_at}) should be after metaxy_updated_at ({updated_at})"
         )
 
         # The soft-deleted row preserves the original created_at (read from existing row)
