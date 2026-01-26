@@ -129,9 +129,11 @@ Metaxy is:
 
 - **📈 scalable**:
 
-    - supports **feature organization and discovery** patterns such as packaging entry points. This enables collaboration across teams and projects.
+    - is built with **performance** in mind: all operations default to **run in the DB**, parallel writers are supported natively
 
-    - is built with **performance** in mind: all operations default to **run in the DB** and we only fetch the resolved increment to Python
+    - [Ray integration](./integrations/compute/ray.md) enables distributed compute for large-scale workloads
+
+    - supports **feature organization and discovery** patterns such as packaging entry points. This enables collaboration across teams and projects.
 
 - **🧑‍💻 dev friendly**:
 

@@ -119,6 +119,24 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
 2. uses a local versioning engine implemented in [Polars](https://docs.pola.rs/) and [`polars-hash`](https://github.com/ion-elgreco/polars-hash)
 
+## Compute
+
+<div class="grid cards" markdown>
+
+<!-- dprint-ignore-start -->
+-   :custom-ray:{ .lg .middle } [**Ray**](compute/ray.md)
+
+    ---
+
+    :material-tag-outline: Compute • Distributed
+
+    Use Metaxy with [Ray](https://ray.io/) for distributed computing workloads.
+
+    [:octicons-arrow-right-24: Integration docs](compute/ray.md)
+<!-- dprint-ignore-end -->
+
+</div>
+
 ## Plugins
 
 <div class="grid cards" markdown>
@@ -147,24 +165,6 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
     [:octicons-arrow-right-24: Integration docs](plugins/sqlmodel/index.md)
 
     [:octicons-arrow-right-24: API docs](plugins/sqlmodel/api.md)
-<!-- dprint-ignore-end -->
-
-</div>
-
-## Compute
-
-<div class="grid cards" markdown>
-
-<!-- dprint-ignore-start -->
--   :custom-ray:{ .lg .middle } [**Ray**](compute/ray.md)
-
-    ---
-
-    :material-tag-outline: Compute • Distributed
-
-    Utilities for integrating [Ray](https://ray.io/) with Metaxy for distributed computing workloads.
-
-    [:octicons-arrow-right-24: Integration docs](compute/ray.md)
 <!-- dprint-ignore-end -->
 
 </div>

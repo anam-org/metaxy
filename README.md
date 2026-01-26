@@ -49,7 +49,7 @@ pip install --pre metaxy
 
 Metaxy is highly pluggable and generally can be used with any kind of incremental pipelines, storage, metadata storage, and dataframe libraries.
 
-Metaxy provides integrations with popular tools such as [Dagster](https://docs.metaxy.io/main/integrations/orchestration/dagster), [ClickHouse](https://docs.metaxy.io/main/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://docs.metaxy.io/main/integrations/metadata-stores/storage/delta/), [SQLModel](https://docs.metaxy.io/main/integrations/plugins/sqlmodel/).
+Metaxy provides integrations with popular tools such as [Dagster](https://docs.metaxy.io/main/integrations/orchestration/dagster), [Ray](https://docs.metaxy.io/main/integrations/compute/ray), [ClickHouse](https://docs.metaxy.io/main/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://docs.metaxy.io/main/integrations/metadata-stores/storage/delta/), [SQLModel](https://docs.metaxy.io/main/integrations/plugins/sqlmodel/).
 
 The full list can be found [here](https://docs.metaxy.io/main/integrations).
 
