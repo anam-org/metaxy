@@ -11,12 +11,12 @@ from metaxy.cli.console import console, error_console
 
 # Main app
 app = cyclopts.App(
-    name="metaxy",  # pyrefly: ignore[unexpected-keyword]
-    version=__version__,  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
-    config=cyclopts.config.Env(  # pyrefly: ignore[unexpected-keyword,implicit-import]  # ty: ignore[invalid-argument-type]
-        "METAXY_",  # Every environment variable for setting the arguments will begin with this.  # pyrefly: ignore[bad-argument-count]
+    name="metaxy",
+    version=__version__,
+    console=console,
+    error_console=error_console,
+    config=cyclopts.config.Env(  # ty: ignore[invalid-argument-type]
+        "METAXY_",  # Every environment variable for setting the arguments will begin with this.
     ),
     help_epilogue="Learn more in [Metaxy docs](https://docs.metaxy.io)",
 )
@@ -82,6 +82,7 @@ def launcher(
 
 
 # Register subcommands (lazy loading via import strings)
+app.command("metaxy.cli.config:app", name="config")
 app.command("metaxy.cli.migrations:app", name="migrations")
 app.command("metaxy.cli.graph:app", name="graph")
 app.command("metaxy.cli.graph_diff:app", name="graph-diff")

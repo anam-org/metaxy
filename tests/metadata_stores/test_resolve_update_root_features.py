@@ -19,7 +19,7 @@ from metaxy.models.feature import FeatureGraph
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 from tests.metadata_stores.conftest import (
-    BasicStoreCases,  # pyrefly: ignore[import-error]
+    BasicStoreCases,
 )
 
 
