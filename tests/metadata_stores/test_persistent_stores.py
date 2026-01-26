@@ -263,13 +263,6 @@ def test_display(persistent_store) -> None:
         assert len(display_open) > 0
 
 
-def test_repr(persistent_store) -> None:
-    """Test /repr/ method."""
-    with persistent_store.open("write") as store:
-        repr_str = repr(store)
-        assert len(repr_str) > 0
-
-
 # Nested Context Manager Tests
 
 

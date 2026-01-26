@@ -30,12 +30,22 @@ description: "Introduction to Metaxy."
 
 ---
 
-Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](guide/learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
+Metaxy is a composable metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](guide/learn/data-versioning.md), dependencies, and data lineage across complex computational graphs. Metaxy gives you quite a few superpowers:
 
-Metaxy manages **metadata** while **data** typically (1) lives elsewhere:
+<div class="annotate" markdown>
+- Cache every single sample in the data pipeline. This evaluation runs for millions of samples in under a second. (1)
+- Swap [storage backends](./guide/learn/metadata-stores.md) in dev, testing and production environments without changing a single line of code.
+- Use the [`mx` CLI](./reference/cli.md) to observe and manage metadata without leaving your terminal
+- Metaxy is **composable** and **extensible** (2): use it to build custom integrations and workflows!
+</div>
+
+1. Our experience at [Anam](https://anam.ai/) with [ClickHouse](./integrations/metadata-stores/databases/clickhouse/index.md)
+2. See our official integrations [here](./integrations/index.md)
+
+Metaxy manages **metadata** while **data** typically (2) lives elsewhere:
 { .annotate }
 
-1. Unless you are a [LanceDB](https://lancedb.com/) fan, in which case [we got you covered](./integrations/metadata-stores/databases/lancedb/index.md)
+2. Unless you are a [LanceDB](https://lancedb.com/) fan, in which case [we got you covered](./integrations/metadata-stores/databases/lancedb/index.md)
 
 ```
 ┌─────────────────────────────────┐          ┌─────────────────────────┐

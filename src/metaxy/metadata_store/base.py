@@ -1781,6 +1781,10 @@ class MetadataStore(ABC):
         """
         pass
 
+    def __repr__(self) -> str:
+        """Return the display string as the repr."""
+        return self.display()
+
     def find_store_for_feature(
         self,
         feature_key: CoercibleToFeatureKey,
