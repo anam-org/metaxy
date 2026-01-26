@@ -2796,7 +2796,7 @@ wheels = [
 
 [[package]]
 name = "metaxy"
-version = "0.0.1.dev30"
+version = "0.0.1.dev31"
 source = { editable = "." }
 dependencies = [
     { name = "cyclopts" },
@@ -2850,7 +2850,7 @@ mermaid = [
     { name = "mermaid-py" },
 ]
 ray = [
-    { name = "ray" },
+    { name = "ray", marker = "python_full_version < '3.13' or sys_platform != 'win32'" },
 ]
 sqlmodel = [
     { name = "sqlmodel" },
@@ -2882,7 +2882,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-env" },
     { name = "pytest-rerunfailures" },
-    { name = "ray" },
+    { name = "ray", marker = "python_full_version < '3.13' or sys_platform != 'win32'" },
     { name = "ruff" },
     { name = "syrupy" },
     { name = "ty" },
@@ -2938,7 +2938,7 @@ requires-dist = [
     { name = "pygraphviz", marker = "extra == 'graphviz'", specifier = ">=1.14" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "pyyaml", specifier = ">=6.0.0" },
-    { name = "ray", marker = "extra == 'ray'", specifier = ">2.36.0" },
+    { name = "ray", marker = "(python_full_version < '3.13' and extra == 'ray') or (sys_platform != 'win32' and extra == 'ray')", specifier = ">2.36.0" },
     { name = "rich", specifier = ">=13.0.0" },
     { name = "sqlglot", specifier = ">=28.1.0" },
     { name = "sqlmodel", marker = "extra == 'sqlmodel'", specifier = ">=0.0.27" },
@@ -2970,7 +2970,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-env", specifier = ">=1.2.0" },
     { name = "pytest-rerunfailures", specifier = ">=15.0" },
-    { name = "ray", specifier = ">2.36.0" },
+    { name = "ray", marker = "python_full_version < '3.13' or sys_platform != 'win32'", specifier = ">2.36.0" },
     { name = "ruff", specifier = ">=0.14.4" },
     { name = "syrupy", specifier = ">=5.0.0" },
     { name = "ty", specifier = "==0.0.10" },

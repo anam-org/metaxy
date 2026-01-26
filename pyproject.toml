@@ -1,6 +1,6 @@
 [project]
 name = "metaxy"
-version = "0.0.1.dev30"
+version = "0.0.1.dev31"
 description = "Pluggable versioned metadata management for incremental multi-modal pipelines."
 readme = "README.md"
 authors = [
@@ -73,7 +73,7 @@ mcp = [
   "fastmcp>=2.0.0",
 ]
 ray = [
-  "ray>2.36.0",
+  "ray>2.36.0; sys_platform != 'win32' or python_version < '3.13'",
 ]
 
 [project.scripts]
@@ -117,7 +117,7 @@ dev = [
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
   "pandas>=2.3.3",
-  "ray>2.36.0",
+  "ray>2.36.0; sys_platform != 'win32' or python_version < '3.13'",
   "numpy>=2.2.6",
 ]
 
