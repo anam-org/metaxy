@@ -64,25 +64,26 @@ def config_project_a(_clear_sqlmodel_metadata):
             sample_uid: str = Field(primary_key=True)
             value: str
 
+        # Override project to simulate different packages
+        ProjectAFeature.__metaxy_project__ = "project_a"
+
         # Also define ProjectBFeature (for explicit_project test)
-        # Need to temporarily switch project context
-        with MetaxyConfig(
-            project="project_b",
-        ).use():
+        class ProjectBFeature(
+            BaseSQLModelFeature,
+            table=True,
+            spec=FeatureSpec(
+                key=FeatureKey(["project_b", "feature"]),
+                id_columns=["sample_uid"],
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+            ),
+        ):
+            """Feature for project B."""
 
-            class ProjectBFeature(
-                BaseSQLModelFeature,
-                table=True,
-                spec=FeatureSpec(
-                    key=FeatureKey(["project_b", "feature"]),
-                    id_columns=["sample_uid"],
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
-                ),
-            ):
-                """Feature for project B."""
+            sample_uid: str = Field(primary_key=True)
+            value: str
 
-                sample_uid: str = Field(primary_key=True)
-                value: str
+        # Override project to simulate different packages
+        ProjectBFeature.__metaxy_project__ = "project_b"
 
         yield config
 
@@ -116,6 +117,9 @@ def config_project_b(_clear_sqlmodel_metadata):
             sample_uid: str = Field(primary_key=True)
             value: str
 
+        # Override project to simulate different packages
+        ProjectBFeature.__metaxy_project__ = "project_b"
+
         yield config
 
 
@@ -148,6 +152,9 @@ def config_no_filter(_clear_sqlmodel_metadata):
             sample_uid: str = Field(primary_key=True)
             value: str
 
+        # Override project to simulate different packages
+        ProjectAFeature.__metaxy_project__ = "project_a"
+
         class ProjectBFeature(
             BaseSQLModelFeature,
             table=True,
@@ -161,6 +168,9 @@ def config_no_filter(_clear_sqlmodel_metadata):
 
             sample_uid: str = Field(primary_key=True)
             value: str
+
+        # Override project to simulate different packages
+        ProjectBFeature.__metaxy_project__ = "project_b"
 
         yield config
 

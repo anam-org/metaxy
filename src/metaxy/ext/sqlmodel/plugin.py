@@ -498,7 +498,7 @@ def filter_feature_sqlmodel_metadata(
 
         # Filter by project if requested
         if filter_by_project:
-            feature_project = getattr(feature_cls, "project", None)
+            feature_project = feature_cls.metaxy_project()
             if feature_project != project:
                 continue
 

@@ -60,7 +60,7 @@ def features(
 
     for feature_key, feature_spec in graph.feature_specs_by_key.items():
         feature_cls = get_feature_by_key(feature_key)
-        if context.project and feature_cls.project != context.project:
+        if context.project and feature_cls.metaxy_project() != context.project:
             continue
 
         version = graph.get_feature_version(feature_key)
@@ -105,7 +105,7 @@ def features(
             "key": feature_key.to_string(),
             "version": version,
             "is_root": is_root,
-            "project": feature_cls.project,
+            "project": feature_cls.metaxy_project(),
             "import_path": import_path,
             "field_count": len(fields_info),
             "fields": fields_info,

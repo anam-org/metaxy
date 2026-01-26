@@ -424,7 +424,7 @@ def build_feature_info_metadata(
 
     return {
         "feature": {
-            "project": feature_cls.project,
+            "project": feature_cls.metaxy_project(),
             "spec": feature_cls.spec().model_dump(mode="json"),
             "version": feature_cls.feature_version(),
             "type": f"{feature_cls.__module__}.{feature_cls.__name__}",
