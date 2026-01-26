@@ -9,6 +9,8 @@ theme:
   custom_dir: docs/.overrides
   logo: assets/metaxy.svg
   favicon: assets/favicon.ico
+  icon:
+    annotation: fontawesome/solid/magic-wand-sparkles
   features:
     # Content features
     - content.code.copy
@@ -64,6 +66,7 @@ plugins:
   - autorefs
   - section-index
   - gh-admonitions
+  # - optimize
   - macros:
       module_name: docs/main
   - social:
@@ -192,13 +195,15 @@ markdown_extensions:
   - pymdownx.tilde
 
 nav:
-  - Overview: index.md
   - User Guide:
-    - guide/index.md
+    - Metaxy:
+      - Introduction: index.md
+      - Overview: overview.md
     - Getting Started:
       - Quickstart: guide/overview/quickstart.md
       - Feature Dependencies: guide/overview/feature-dependencies.md
     - Concepts:
+      - Overview: guide/learn/index.md
       - Metadata Stores: guide/learn/metadata-stores.md
       - Feature Definitions: guide/learn/feature-definitions.md
       - Versioning: guide/learn/data-versioning.md
