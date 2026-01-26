@@ -126,8 +126,7 @@ class TestProperDataframeWrite:
             warnings.simplefilter("always")
 
             with any_store.open("write"):
-                with any_store.allow_cross_project_writes():
-                    any_store.write_metadata(RootFeature, df)
+                any_store.write_metadata(RootFeature, df)
 
                 # Verify write succeeded
                 result = collect_to_polars(any_store.read_metadata(RootFeature))
@@ -176,9 +175,8 @@ class TestProperDataframeWrite:
             warnings.simplefilter("always")
 
             with any_store.open("write"):
-                with any_store.allow_cross_project_writes():
-                    any_store.write_metadata(RootFeature, root_df)
-                    any_store.write_metadata(DownstreamFeature, downstream_df)
+                any_store.write_metadata(RootFeature, root_df)
+                any_store.write_metadata(DownstreamFeature, downstream_df)
 
                 # Verify write succeeded
                 result = collect_to_polars(any_store.read_metadata(DownstreamFeature))

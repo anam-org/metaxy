@@ -83,7 +83,6 @@ class TestProjectDetection:
 
     def test_fallback_to_global_config(self):
         """Test fallback to global config when no entry points are found."""
-        from unittest.mock import patch
 
         # Set a specific project in config
         config = MetaxyConfig(project="fallback_project")
@@ -130,7 +129,7 @@ class TestProjectDetection:
 
     def test_multiple_entrypoints_same_package_raises_error(self):
         """Test that multiple entry points from the same package raises an error."""
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import MagicMock
 
         from metaxy._packaging import get_all_project_entrypoints
 
@@ -367,53 +366,3 @@ class TestSystemTableRecording:
                 row = rows[0]
                 assert row["metaxy_full_definition_version"] == TestFeature.full_definition_version()
                 assert row["project"] == "test_project"
-
-
-class TestProjectValidation:
-    """Test project validation in store operations."""
-
-    def test_write_metadata_validates_project(self, tmp_path: Path):
-        """Test that write_metadata validates project matches config."""
-        import polars as pl
-
-        # Set up config with specific project
-        config = MetaxyConfig(project="expected_project")
-
-        test_graph = FeatureGraph()
-
-        with test_graph.use():
-
-            class TestFeature(
-                SampleFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
-                    # Root feature
-                ),
-            ):
-                pass
-
-            # Override to different project
-            TestFeature.project = "different_project"
-
-            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
-                # Create some test data
-                test_df = pl.DataFrame(
-                    {
-                        "sample_uid": [1, 2],
-                        "metaxy_provenance_by_field": [
-                            {"value": "hash1"},
-                            {"value": "hash2"},
-                        ],
-                    }
-                )
-
-                # Should raise error when writing to feature with different project
-                with patch("metaxy.config.MetaxyConfig.get", return_value=config):
-                    with pytest.raises(ValueError, match="Cannot write to feature .* from project"):
-                        store.write_metadata(TestFeature, test_df)
-
-                # Should work with allow_cross_project_writes context
-                with patch("metaxy.config.MetaxyConfig.get", return_value=config):
-                    with store.allow_cross_project_writes():
-                        store.write_metadata(TestFeature, test_df)  # Should not raise

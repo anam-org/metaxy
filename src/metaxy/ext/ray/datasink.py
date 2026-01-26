@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
-from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -70,7 +69,6 @@ class MetaxyDatasink(Datasink[_WriteTaskResult]):
                 This can be achieved by setting `METAXY_CONFIG` and other `METAXY_` environment variables.
                 The best practice is to pass `config` explicitly to avoid surprises.
 
-        allow_cross_project_writes: Whether to allow writing metadata for features from other projects.
     """
 
     def __init__(
@@ -78,13 +76,11 @@ class MetaxyDatasink(Datasink[_WriteTaskResult]):
         feature: mx.CoercibleToFeatureKey,
         store: mx.MetadataStore,
         config: mx.MetaxyConfig | None = None,
-        allow_cross_project_writes: bool = False,
     ):
         self.config = mx.init_metaxy(config)
 
         self.store = store
         self.config = config
-        self.allow_cross_project_writes = allow_cross_project_writes
 
         self._feature_key = mx.coerce_to_feature_key(feature)
 
@@ -108,10 +104,7 @@ class MetaxyDatasink(Datasink[_WriteTaskResult]):
             num_rows = block_accessor.num_rows()
 
             try:
-                with (
-                    self.store.open("write"),
-                    self.store.allow_cross_project_writes() if self.allow_cross_project_writes else nullcontext(),
-                ):
+                with self.store.open("write"):
                     self.store.write_metadata(self._feature_key, block)
                 rows_written += num_rows
             except Exception:

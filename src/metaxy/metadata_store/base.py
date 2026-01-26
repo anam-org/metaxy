@@ -49,7 +49,7 @@ from metaxy.models.constants import (
     METAXY_SNAPSHOT_VERSION,
     METAXY_UPDATED_AT,
 )
-from metaxy.models.feature import FeatureGraph, current_graph
+from metaxy.models.feature import current_graph
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import (
     CoercibleToFeatureKey,
@@ -213,7 +213,6 @@ class MetadataStore(ABC):
         self._is_open = False
         self._context_depth = 0
         self._versioning_engine = versioning_engine
-        self._allow_cross_project_writes = False
         self._materialization_id = materialization_id
         self._open_cm: AbstractContextManager[Self] | None = None  # Track the open() context manager
         self._transaction_timestamp: datetime | None = None  # Shared timestamp for write operations
@@ -828,8 +827,6 @@ class MetadataStore(ABC):
         Raises:
             MetadataSchemaError: If DataFrame schema is invalid
             StoreNotOpenError: If store is not open
-            ValueError: If writing to a feature from a different project than expected
-
         Note:
             - Must be called within a `MetadataStore.open(mode="write")` context manager.
 
@@ -837,17 +834,11 @@ class MetadataStore(ABC):
 
             - Fallback stores are never used for writes.
 
-            - Features from other Metaxy projects cannot be written to, unless project validation has been disabled with [MetadataStore.allow_cross_project_writes][].
-
         """
         self._check_open()
 
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
-
-        # Validate project for non-system tables
-        if not is_system_table:
-            self._validate_project_write(feature)
 
         # Convert Polars to Narwhals to Polars if needed
         # if isinstance(df_nw, (pl.DataFrame, pl.LazyFrame)):
@@ -1252,31 +1243,6 @@ class MetadataStore(ABC):
     # ========== Core CRUD Operations ==========
 
     @contextmanager
-    def allow_cross_project_writes(self) -> Iterator[None]:
-        """Context manager to temporarily allow cross-project writes.
-
-        This is an escape hatch for legitimate cross-project operations like migrations,
-        where metadata needs to be written to features from different projects.
-
-        Example:
-            ```py
-            # During migration, allow writing to features from different projects
-            with store.allow_cross_project_writes():
-                store.write_metadata(feature_from_project_a, metadata_a)
-                store.write_metadata(feature_from_project_b, metadata_b)
-            ```
-
-        Yields:
-            None: The context manager temporarily disables project validation
-        """
-        previous_value = self._allow_cross_project_writes
-        try:
-            self._allow_cross_project_writes = True
-            yield
-        finally:
-            self._allow_cross_project_writes = previous_value
-
-    @contextmanager
     def _shared_transaction_timestamp(self, *, soft_delete: bool = False) -> Iterator[datetime]:
         """Context manager that establishes a shared timestamp for a write transaction.
 
@@ -1307,47 +1273,6 @@ class MetadataStore(ABC):
             finally:
                 self._transaction_timestamp = None
                 self._soft_delete_in_progress = False
-
-    def _validate_project_write(self, feature: CoercibleToFeatureKey) -> None:
-        """Validate that writing to a feature matches the expected project from config.
-
-        Args:
-            feature: Feature to validate project for
-
-        Raises:
-            ValueError: If feature's project doesn't match the global config project
-        """
-        # Skip validation if cross-project writes are allowed
-        if self._allow_cross_project_writes:
-            return
-
-        # Get the expected project from global config
-        from metaxy.config import MetaxyConfig
-
-        config = MetaxyConfig.get()
-        expected_project = config.project
-
-        # Use existing method to resolve to FeatureKey
-        feature_key = self._resolve_feature_key(feature)
-
-        # Get the Feature class from the graph
-
-        graph = FeatureGraph.get_active()
-        if feature_key not in graph.features_by_key:
-            # Feature not in graph - can't validate, skip
-            return
-
-        feature_cls = graph.features_by_key[feature_key]
-        feature_project = feature_cls.project
-
-        # Validate the project matches
-        if feature_project != expected_project:
-            raise ValueError(
-                f"Cannot write to feature {feature_key.to_string()} from project '{feature_project}' "
-                f"when the global configuration expects project '{expected_project}'. "
-                f"Use store.allow_cross_project_writes() context manager for legitimate "
-                f"cross-project operations like migrations."
-            )
 
     @abstractmethod
     def write_metadata_to_store(

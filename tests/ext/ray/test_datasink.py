@@ -258,12 +258,10 @@ def test_datasink_stores_config(
         feature=FEATURE_KEY,
         store=delta_store,
         config=ray_config,
-        allow_cross_project_writes=True,
     )
 
     assert datasink.store is delta_store
     assert datasink.config is ray_config
-    assert datasink.allow_cross_project_writes is True
 
 
 def test_datasink_result_tracks_written_rows(
