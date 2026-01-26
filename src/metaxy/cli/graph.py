@@ -10,10 +10,10 @@ from metaxy.graph import RenderConfig
 
 # Graph subcommand app
 app = cyclopts.App(
-    name="graph",  # pyrefly: ignore[unexpected-keyword]
-    help="Manage feature graphs",  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
+    name="graph",
+    help="Manage feature graphs",
+    console=console,
+    error_console=error_console,
 )
 
 

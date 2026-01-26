@@ -9,10 +9,10 @@ from metaxy.graph import RenderConfig
 
 # Graph-diff subcommand app
 app = cyclopts.App(
-    name="graph-diff",  # pyrefly: ignore[unexpected-keyword]
-    help="Compare and visualize graph snapshots",  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
+    name="graph-diff",
+    help="Compare and visualize graph snapshots",
+    console=console,
+    error_console=error_console,
 )
 
 

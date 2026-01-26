@@ -16,10 +16,10 @@ if TYPE_CHECKING:
 
 # List subcommand app
 app = cyclopts.App(
-    name="list",  # pyrefly: ignore[unexpected-keyword]
-    help="List Metaxy entities",  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
+    name="list",
+    help="List Metaxy entities",
+    console=console,
+    error_console=error_console,
 )
 
 

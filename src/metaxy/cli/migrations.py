@@ -10,10 +10,10 @@ from metaxy.cli.console import console, data_console, error_console
 
 # Migrations subcommand app
 app = cyclopts.App(
-    name="migrations",  # pyrefly: ignore[unexpected-keyword]
-    help="Metadata migration commands",  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
+    name="migrations",
+    help="Metadata migration commands",
+    console=console,
+    error_console=error_console,
 )
 
 

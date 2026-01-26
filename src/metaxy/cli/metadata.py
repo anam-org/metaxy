@@ -19,10 +19,10 @@ if TYPE_CHECKING:
 
 # Metadata subcommand app
 app = cyclopts.App(
-    name="metadata",  # pyrefly: ignore[unexpected-keyword]
-    help="Manage Metaxy metadata",  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
+    name="metadata",
+    help="Manage Metaxy metadata",
+    console=console,
+    error_console=error_console,
 )
 
 
