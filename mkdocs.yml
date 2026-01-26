@@ -128,6 +128,7 @@ plugins:
             - https://narwhals-dev.github.io/narwhals/objects.inv
             - https://docs.pola.rs/api/python/stable/objects.inv
             - https://docs.dagster.io/objects.inv
+            - https://docs.ray.io/en/latest/objects.inv
 
 markdown_extensions:
   # Core extensions
@@ -246,6 +247,8 @@ nav:
           - integrations/metadata-stores/storage/delta/index.md
           - Configuration: integrations/metadata-stores/storage/delta/configuration.md
           - API: integrations/metadata-stores/storage/delta/api.md
+    - Compute:
+      - Ray: integrations/compute/ray.md
     - Plugins:
       - integrations/plugins/index.md
       - SQLModel:
