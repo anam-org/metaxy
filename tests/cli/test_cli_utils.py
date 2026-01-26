@@ -7,6 +7,7 @@ from rich.console import Console
 
 from metaxy.cli.utils import (
     CLIError,
+    CLIErrorCode,
     print_error,
     print_error_item,
     print_error_list,
@@ -145,19 +146,19 @@ class TestCLIError:
 
     def test_to_json(self):
         error = CLIError(
-            code="TEST_ERROR",
+            code=CLIErrorCode.GENERIC_ERROR,
             message="Test message",
             details={"key": "value"},
         )
         result = error.to_json()
-        assert result["error"] == "TEST_ERROR"
+        assert result["error"] == "GENERIC_ERROR"
         assert result["message"] == "Test message"
         assert result["key"] == "value"
 
     def test_to_plain_escapes_message(self):
         """Message with brackets should be escaped in plain output."""
         error = CLIError(
-            code="FILE_ERROR",
+            code=CLIErrorCode.GENERIC_ERROR,
             message="File [/tmp/test.txt] not found",
         )
         result = error.to_plain()
@@ -167,7 +168,7 @@ class TestCLIError:
     def test_to_plain_escapes_hint(self):
         """Hint with brackets should be escaped in plain output."""
         error = CLIError(
-            code="HINT_ERROR",
+            code=CLIErrorCode.GENERIC_ERROR,
             message="Error occurred",
             hint="Check file [config.yaml]",
         )
@@ -178,7 +179,7 @@ class TestCLIError:
     def test_to_plain_with_rich_markup_in_error(self):
         """Error messages that look like Rich markup should be escaped."""
         error = CLIError(
-            code="MARKUP_ERROR",
+            code=CLIErrorCode.GENERIC_ERROR,
             message="Invalid tag [red] in input",
         )
         # This should not crash when rendered

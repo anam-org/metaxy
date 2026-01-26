@@ -10,7 +10,7 @@ from metaxy._testing import TempMetaxyProject
 
 
 def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject):
-    """Test that drop requires either --feature or --all-features."""
+    """Test that drop requires either feature arguments or --all-features."""
 
     def features():
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
@@ -36,7 +36,7 @@ def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject
         error = json.loads(result.stdout)
         assert error["error"] == "MISSING_REQUIRED_FLAG"
         assert "--all-features" in str(error["required_flags"])
-        assert "--feature" in str(error["required_flags"])
+        assert "<features>" in str(error["required_flags"])
 
 
 def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
@@ -61,7 +61,7 @@ def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
 
         # Try to drop without --confirm
         result = metaxy_project.run_cli(
-            ["metadata", "drop", "--feature", "video/files", "--format", "json"],
+            ["metadata", "drop", "video/files", "--format", "json"],
             check=False,
         )
 
@@ -106,7 +106,6 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "drop",
-                "--feature",
                 "video/files",
                 "--confirm",
                 "--format",
@@ -166,9 +165,7 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "drop",
-                "--feature",
                 "video/files",
-                "--feature",
                 "audio/files",
                 "--confirm",
                 "--format",
@@ -262,7 +259,7 @@ def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
 
 
 def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProject):
-    """Test that cannot specify both --feature and --all-features."""
+    """Test that cannot specify both feature arguments and --all-features."""
 
     def features():
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
@@ -283,7 +280,6 @@ def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProje
             [
                 "metadata",
                 "drop",
-                "--feature",
                 "video/files",
                 "--all-features",
                 "--confirm",
@@ -323,10 +319,9 @@ def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "drop",
+                "video/files",
                 "--store",
                 "dev",
-                "--feature",
-                "video/files",
                 "--confirm",
                 "--format",
                 "json",
@@ -391,7 +386,6 @@ def test_metadata_status_up_to_date(metaxy_project: TempMetaxyProject, output_fo
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 output_format,
@@ -451,7 +445,6 @@ def test_metadata_status_missing_metadata(metaxy_project: TempMetaxyProject, out
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 output_format,
@@ -507,7 +500,7 @@ def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject)
 
         # Check status with --assert-in-sync
         result = metaxy_project.run_cli(
-            ["metadata", "status", "--feature", "video/files", "--assert-in-sync"],
+            ["metadata", "status", "video/files", "--assert-in-sync"],
             check=False,
         )
 
@@ -561,9 +554,7 @@ def test_metadata_status_multiple_features(metaxy_project: TempMetaxyProject, ou
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
-                "--feature",
                 "audio/files",
                 "--format",
                 output_format,
@@ -613,7 +604,6 @@ def test_metadata_status_invalid_feature_key(metaxy_project: TempMetaxyProject, 
             [
                 "metadata",
                 "status",
-                "--feature",
                 "nonexistent/feature",
                 "--format",
                 output_format,
@@ -666,7 +656,6 @@ def test_metadata_status_with_verbose(metaxy_project: TempMetaxyProject, output_
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 output_format,
@@ -736,7 +725,6 @@ def test_metadata_status_with_explicit_store(metaxy_project: TempMetaxyProject, 
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--store",
                 "dev",
@@ -759,7 +747,7 @@ def test_metadata_status_with_explicit_store(metaxy_project: TempMetaxyProject, 
 
 
 def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProject):
-    """Test that status requires either --feature or --all-features."""
+    """Test that status requires either feature arguments or --all-features."""
 
     def features():
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
@@ -782,11 +770,11 @@ def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProje
         error = json.loads(result.stdout)
         assert error["error"] == "MISSING_REQUIRED_FLAG"
         assert "--all-features" in str(error["required_flags"])
-        assert "--feature" in str(error["required_flags"])
+        assert "<features>" in str(error["required_flags"])
 
 
 def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyProject):
-    """Test that cannot specify both --feature and --all-features."""
+    """Test that cannot specify both feature arguments and --all-features."""
 
     def features():
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
@@ -807,7 +795,6 @@ def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyPro
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--all-features",
                 "--format",
@@ -910,7 +897,6 @@ def test_metadata_status_root_feature(metaxy_project: TempMetaxyProject, output_
             [
                 "metadata",
                 "status",
-                "--feature",
                 "root_feature",
                 "--format",
                 output_format,
@@ -961,7 +947,6 @@ def test_metadata_status_root_feature_missing_metadata(metaxy_project: TempMetax
             [
                 "metadata",
                 "status",
-                "--feature",
                 "root_feature",
                 "--format",
                 output_format,
@@ -1052,7 +1037,6 @@ def test_metadata_status_with_global_filter(metaxy_project: TempMetaxyProject, o
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--global-filter",
                 "category = 'A'",
@@ -1081,7 +1065,6 @@ def test_metadata_status_with_global_filter(metaxy_project: TempMetaxyProject, o
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--global-filter",
                 "category = 'B'",
@@ -1129,7 +1112,6 @@ def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--filter",
                 "invalid syntax !!!",
@@ -1207,7 +1189,6 @@ def test_metadata_status_with_multiple_global_filters(metaxy_project: TempMetaxy
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--global-filter",
                 "category = 'A'",
@@ -1308,7 +1289,6 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "raw_video/root",
                 "--format",
                 output_format,
@@ -1329,7 +1309,6 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "raw_video/root",
                 "--filter",
                 "height IS NULL",
@@ -1357,7 +1336,6 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "raw_video/root",
                 "--filter",
                 "height IS NOT NULL",
@@ -1473,7 +1451,6 @@ def test_metadata_status_with_progress_flag(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 output_format,
@@ -1552,7 +1529,6 @@ def test_metadata_status_verbose_includes_progress(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 output_format,
@@ -1603,7 +1579,6 @@ def test_metadata_status_progress_for_root_feature(metaxy_project: TempMetaxyPro
             [
                 "metadata",
                 "status",
-                "--feature",
                 "root_feature",
                 "--format",
                 "json",
@@ -1668,7 +1643,6 @@ def test_metadata_status_progress_100_percent(metaxy_project: TempMetaxyProject,
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 "json",
@@ -1712,7 +1686,7 @@ def test_metadata_delete_requires_yes_for_hard_delete_without_filters(
 
         # Try hard delete without --yes and without filters
         result = metaxy_project.run_cli(
-            ["metadata", "delete", "--feature", "logs", "--soft=false"],
+            ["metadata", "delete", "logs", "--soft=false"],
             check=False,
         )
 
@@ -1768,7 +1742,6 @@ def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProje
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--filter",
                 "level = 'debug'",
@@ -1839,7 +1812,6 @@ def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProje
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--filter",
                 "level = 'debug'",
@@ -1898,9 +1870,7 @@ def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs_a",
-                "--feature",
                 "logs_b",
                 "--filter",
                 "sample_uid = 1",
@@ -1982,7 +1952,6 @@ def test_metadata_delete_invalid_feature(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "nonexistent/feature",
                 "--filter",
                 "sample_uid = 1",
@@ -2039,7 +2008,6 @@ def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--filter",
                 "level = 'debug'",
@@ -2080,7 +2048,6 @@ def test_metadata_delete_with_invalid_filter(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--filter",
                 "invalid syntax !!!",
@@ -2123,7 +2090,6 @@ def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--soft=false",
                 "--yes",
@@ -2175,7 +2141,6 @@ def test_metadata_delete_soft_delete_without_filter_no_yes_required(
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--soft",
             ]
@@ -2199,7 +2164,7 @@ def test_metadata_delete_soft_delete_without_filter_no_yes_required(
 
 
 def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProject):
-    """Test that delete requires either --feature or --all-features."""
+    """Test that delete requires either feature arguments or --all-features."""
 
     def features():
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
@@ -2222,6 +2187,69 @@ def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProje
         )
 
         assert result.returncode == 1
+
+
+def test_metadata_delete_dry_run(metaxy_project: TempMetaxyProject):
+    """Test that --dry-run prints features and filters without deleting."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            ),
+        ):
+            level: str | None = None
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write some metadata
+        test_data = pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2"],
+                "level": ["debug", "info"],
+                METAXY_PROVENANCE_BY_FIELD: [{"level": "p1"}, {"level": "p2"}],
+            }
+        )
+
+        feature_key = FeatureKey(["logs"])
+        feature_cls = graph.get_feature_by_key(feature_key)
+
+        with graph.use(), store:
+            store.write_metadata(feature_cls, test_data)
+
+        # Run dry-run
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "logs",
+                "--filter",
+                "level = 'debug'",
+                "--dry-run",
+            ]
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Dry run" in output
+        assert "logs" in output
+        assert "level" in output  # Filter should be printed
+        assert "Deletion complete" not in output  # Should not actually delete
+
+        # Verify data was NOT deleted
+        with graph.use(), store:
+            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            assert remaining.height == 2  # All rows still present
 
 
 # ============================================================================
@@ -2265,7 +2293,6 @@ def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyPro
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 "plain",
@@ -2284,7 +2311,6 @@ def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyPro
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 "json",
@@ -2399,7 +2425,7 @@ root_path = "{prod_path}"
             dev_store.write_metadata(downstream_cls, increment.added.to_polars())
 
         # Run CLI status command - should use fallback stores by default
-        result = project.run_cli(["metadata", "status", "--feature", "downstream", "--format", output_format])
+        result = project.run_cli(["metadata", "status", "downstream", "--format", output_format])
 
         assert result.returncode == 0
 
@@ -2507,7 +2533,6 @@ root_path = "{prod_path}"
             [
                 "metadata",
                 "status",
-                "--feature",
                 "root",
                 "--format",
                 "json",
@@ -2531,7 +2556,6 @@ root_path = "{prod_path}"
             [
                 "metadata",
                 "status",
-                "--feature",
                 "root",
                 "--format",
                 "json",
@@ -2590,7 +2614,7 @@ def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject):
 
 
 def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
-    """Test that copy requires at least one feature."""
+    """Test that copy requires either feature arguments or --all-features."""
 
     def features():
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
@@ -2611,9 +2635,9 @@ def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
             check=False,
         )
 
-        # Our custom validation requires at least one feature
+        # FeatureSelector validation requires features or --all-features
         assert result.returncode == 1
-        assert "At least one feature must be specified" in result.stdout
+        assert "Must specify either --all-features or feature arguments" in result.stdout
 
 
 def test_metadata_copy_single_feature(tmp_path: Path):
