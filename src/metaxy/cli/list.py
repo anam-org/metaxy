@@ -221,3 +221,79 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
 
             data_console.print(field_table)
             data_console.print()
+
+
+@app.command()
+def stores(
+    *,
+    format: Annotated[
+        OutputFormat,
+        cyclopts.Parameter(
+            name=["-f", "--format"],
+            help="Output format: 'plain' (default) or 'json'.",
+        ),
+    ] = "plain",
+) -> None:
+    """List configured metadata stores.
+
+    Examples:
+        $ metaxy list stores
+        $ metaxy list stores --format json
+    """
+    from metaxy.cli.context import AppContext
+
+    context = AppContext.get()
+    config = context.config
+
+    # Collect store data
+    stores_data: list[dict[str, Any]] = []
+
+    for name, store_config in config.stores.items():
+        store = config.get_store(name)
+        fallback_names = store_config.config.get("fallback_stores", [])
+        store_data: dict[str, Any] = {
+            "name": name,
+            "is_default": name == config.store,
+            "info": store.display(),
+            "fallbacks": fallback_names,
+        }
+        stores_data.append(store_data)
+
+    # Sort: default store first, then alphabetically
+    stores_data.sort(key=lambda s: (not s["is_default"], s["name"]))
+
+    # Output based on format
+    if format == "json":
+        output: dict[str, Any] = {
+            "default_store": config.store,
+            "store_count": len(stores_data),
+            "stores": stores_data,
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        _output_stores_plain(stores_data, config.store)
+
+
+def _output_stores_plain(stores_data: list[dict[str, Any]], default_store: str) -> None:
+    """Output stores in plain format using rich tables."""
+    if not stores_data:
+        data_console.print("[yellow]No stores configured.[/yellow]")
+        return
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Name", no_wrap=True)
+    table.add_column("Info", no_wrap=False)
+    table.add_column("Fallbacks", no_wrap=False)
+
+    for store in stores_data:
+        name = store["name"]
+        if store["is_default"]:
+            name = f"[bold cyan]{name}[/bold cyan] [dim](default)[/dim]"
+
+        fallbacks = ", ".join(store["fallbacks"]) if store["fallbacks"] else "[dim]-[/dim]"
+
+        table.add_row(name, store["info"], fallbacks)
+
+    data_console.print(table)
+    data_console.print()
+    data_console.print(f"[dim]Total: {len(stores_data)} store(s)[/dim]")
