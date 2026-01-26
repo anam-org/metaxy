@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from functools import reduce
 from typing import TYPE_CHECKING, Annotated, Any
 
 import cyclopts
@@ -29,8 +28,8 @@ app = cyclopts.App(
 
 @app.command()
 def status(
-    *,
     selector: FeatureSelector = FeatureSelector(),
+    *,
     store: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -85,22 +84,19 @@ def status(
     """Check metadata completeness and freshness for specified features.
 
     Examples:
-        $ metaxy metadata status --feature user_features
-        $ metaxy metadata status --feature feat1 --feature feat2
+        $ metaxy metadata status my/feature
+        $ metaxy metadata status feat1 feat2
         $ metaxy metadata status --all-features
         $ metaxy metadata status --store dev --all-features
         $ metaxy metadata status --all-features --filter "status = 'active'"
     """
     from metaxy.cli.context import AppContext
-    from metaxy.cli.utils import CLIError, exit_with_error, load_graph_for_command
+    from metaxy.cli.utils import load_graph_for_command
     from metaxy.graph.status import get_feature_metadata_status
 
     # Normalize filter arguments
     target_filters_list = filters if filters else None
     global_filters_list = global_filters if global_filters else None
-
-    # Validate feature selection
-    selector.validate(format)
 
     context = AppContext.get()
     metadata_store = context.get_store(store)
@@ -110,30 +106,16 @@ def status(
         graph = load_graph_for_command(context, snapshot_version, metadata_store, format)
 
         # Resolve feature keys
-        valid_keys, missing_keys = selector.resolve_keys(graph, format)
+        selector.resolve(format, graph=graph, error_missing=assert_in_sync)
+        missing_keys = selector.missing_keys
 
         # Handle empty result for --all-features
-        if selector.all_features and not valid_keys:
+        if selector.all_features and not selector:
             _output_no_features_warning(format, snapshot_version)
             return
 
-        # Handle missing features
-        if missing_keys:
-            if assert_in_sync:
-                exit_with_error(
-                    CLIError(
-                        code="FEATURES_NOT_FOUND",
-                        message="Feature(s) not found in graph",
-                        details={"features": [k.to_string() for k in missing_keys]},
-                    ),
-                    format,
-                )
-            elif format == "plain":
-                formatted = ", ".join(k.to_string() for k in missing_keys)
-                data_console.print(f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}")
-
         # If no valid features remain
-        if not valid_keys:
+        if not selector:
             _output_no_features_warning(format, snapshot_version)
             return
 
@@ -153,7 +135,7 @@ def status(
         # Enable progress calculation if --progress or --verbose is set
         compute_progress = progress or verbose
 
-        for feature_key in valid_keys:
+        for feature_key in selector:
             feature_cls = graph.features_by_key[feature_key]
             try:
                 status_with_increment = get_feature_metadata_status(
@@ -336,8 +318,8 @@ def status(
 
 @app.command()
 def delete(
-    *,
     selector: FeatureSelector = FeatureSelector(),
+    *,
     store: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -350,7 +332,15 @@ def delete(
         bool,
         cyclopts.Parameter(
             name=["--soft"],
+            negative="--hard",
             help="Whether to mark records with deletion timestamps vs physically remove them.",
+        ),
+    ] = True,
+    current_only: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--current-only"],
+            help="Only delete rows with the current feature_version (as defined in loaded feature graph).",
         ),
     ] = True,
     yes: Annotated[
@@ -360,25 +350,31 @@ def delete(
             help="Confirm deletion without prompting (required for hard deletes without filters).",
         ),
     ] = False,
+    dry_run: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--dry-run"],
+            help="Print the features and filters that would be applied without executing the deletion.",
+        ),
+    ] = False,
 ) -> None:
     """Delete metadata rows matching filters.
 
     Examples:
-        $ metaxy metadata delete --feature user_features --filter "status = 'inactive'"
-        $ metaxy metadata delete --all-features --filter "created_at < '2024-01-01'" --soft=false
-        $ metaxy metadata delete --feature test_feature --filter "1=1" --yes  # Delete all rows
+        $ metaxy metadata delete my/feature --filter "status = 'inactive'"
+        $ metaxy metadata delete --all-features --filter "created_at < '2024-01-01'" --hard
+        $ metaxy metadata delete test_feature --filter "1=1" --yes  # Delete all rows
     """
     from metaxy.cli.context import AppContext
-    from metaxy.cli.utils import CLIError, exit_with_error
+    from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error
 
     filters = filters or []
-    selector.validate("plain")
 
     # Require --yes confirmation for hard deletes when no filters provided
     if not soft and not filters and not yes:
         exit_with_error(
             CLIError(
-                code="MISSING_CONFIRMATION",
+                code=CLIErrorCode.MISSING_CONFIRMATION,
                 message="Hard deleting all metadata requires --yes flag to prevent accidental deletion.",
                 hint="Use --yes to confirm, or provide --filter to restrict deletion.",
             ),
@@ -389,44 +385,34 @@ def delete(
     metadata_store = context.get_store(store)
 
     with metadata_store:
-        # Resolve feature keys without loading full graph
-        from metaxy.models.feature import FeatureGraph
+        # Resolve feature keys
+        selector.resolve("plain")
 
-        graph = FeatureGraph.get_active()
-        valid_keys, missing_keys = selector.resolve_keys(graph, "plain")
-
-        if missing_keys:
-            missing = ", ".join(k.to_string() for k in missing_keys)
-            console.print(f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {missing}")
-        if not valid_keys:
+        if not selector:
             exit_with_error(
                 CLIError(
-                    code="NO_FEATURES",
+                    code=CLIErrorCode.NO_FEATURES,
                     message="No valid features selected for deletion.",
                 ),
                 "plain",
             )
 
-        # Combine filters with AND, or use empty list for "delete all"
-        combined_filter: nw.Expr | list[nw.Expr]
-        if filters:
-            combined_filter = (
-                reduce(lambda acc, expr: acc & expr, filters[1:], filters[0]) if len(filters) > 1 else filters[0]
-            )
-        else:
-            # No filters means "delete all" - pass empty list to allow optimized paths
-            # (e.g., TRUNCATE TABLE in Ibis backend)
-            combined_filter = []
+        # Dry-run mode: print features and filters, then exit
+        if dry_run:
+            store_name = store if store else context.config.store
+            _print_dry_run_info(selector, filters, soft, current_only, store_name)
+            return
 
         errors: dict[str, str] = {}
 
         with metadata_store.open("write"):
-            for feature_key in valid_keys:
+            for feature_key in selector:
                 try:
                     metadata_store.delete_metadata(
                         feature_key,
-                        filters=combined_filter,
+                        filters=filters,
                         soft=soft,
+                        current_only=current_only,
                     )
                 except Exception as e:  # pragma: no cover - CLI surface
                     error_msg = str(e)
@@ -458,10 +444,39 @@ def _output_no_features_warning(format: OutputFormat, snapshot_version: str | No
         data_console.print("[yellow]Warning:[/yellow] No valid features to check.")
 
 
+def _print_dry_run_info(
+    selector: FeatureSelector,
+    filters: list[nw.Expr],
+    soft: bool,
+    current_only: bool,
+    store_name: str,
+) -> None:
+    """Print dry-run information for delete command."""
+    mode_str = "[yellow]soft[/yellow]" if soft else "[red]hard[/red]"
+    current_only_str = "[green]yes[/green]" if current_only else "[yellow]no[/yellow]"
+    console.print(f"[bold cyan]Dry run[/bold cyan] ({mode_str} delete, current_only={current_only_str})")
+    console.print()
+
+    console.print(f"[bold]Store:[/bold] [blue]{store_name}[/blue]")
+    console.print()
+
+    console.print(f"[bold]Features[/bold] [dim]({len(selector)})[/dim]:")
+    for feature_key in selector:
+        console.print(f"  [cyan]•[/cyan] {feature_key.to_string()}")
+    console.print()
+
+    console.print("[bold]Filters:[/bold]")
+    if filters:
+        for f in filters:
+            console.print(f"  [magenta]•[/magenta] {f!r}")
+    else:
+        console.print("  [dim](none)[/dim]")
+
+
 @app.command()
 def drop(
-    *,
     selector: FeatureSelector = FeatureSelector(),
+    *,
     store: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -489,21 +504,18 @@ def drop(
     Removes metadata for specified features. This is destructive and requires --confirm.
 
     Examples:
-        $ metaxy metadata drop --feature user_features --confirm
-        $ metaxy metadata drop --feature feat1 --feature feat2 --confirm
+        $ metaxy metadata drop my/feature --confirm
+        $ metaxy metadata drop feat1 feat2 --confirm
         $ metaxy metadata drop --store dev --all-features --confirm
     """
     from metaxy.cli.context import AppContext
-    from metaxy.cli.utils import CLIError, exit_with_error
-
-    # Validate feature selection
-    selector.validate(format)
+    from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error
 
     # Require confirmation
     if not confirm:
         exit_with_error(
             CLIError(
-                code="MISSING_CONFIRMATION",
+                code=CLIErrorCode.MISSING_CONFIRMATION,
                 message="This is a destructive operation. Must specify --confirm flag.",
                 details={"required_flag": "--confirm"},
             ),
@@ -515,13 +527,11 @@ def drop(
     metadata_store = context.get_store(store)
 
     with metadata_store.open("write"):
-        graph = context.graph
-
         # Resolve feature keys
-        valid_keys, _ = selector.resolve_keys(graph, format)
+        selector.resolve(format)
 
         # Handle no features
-        if not valid_keys:
+        if not selector:
             if format == "json":
                 print(
                     json.dumps(
@@ -537,13 +547,13 @@ def drop(
             return
 
         if format == "plain":
-            console.print(f"\n[bold]Dropping metadata for {len(valid_keys)} feature(s)...[/bold]\n")
+            console.print(f"\n[bold]Dropping metadata for {len(selector)} feature(s)...[/bold]\n")
 
         # Drop each feature
         dropped: list[str] = []
         failed: list[dict[str, str]] = []
 
-        for feature_key in valid_keys:
+        for feature_key in selector:
             key_str = feature_key.to_string()
             try:
                 metadata_store.drop_feature_metadata(feature_key)
@@ -573,6 +583,8 @@ def drop(
 
 @app.command()
 def copy(
+    selector: FeatureSelector = FeatureSelector(),
+    *,
     from_store: Annotated[
         str,
         cyclopts.Parameter(
@@ -585,12 +597,6 @@ def copy(
         cyclopts.Parameter(
             name=["--to"],
             help="Destination store name to copy metadata to.",
-        ),
-    ],
-    *features: Annotated[
-        str,
-        cyclopts.Parameter(
-            help="One or more feature keys to copy, separated by whitespaces.",
         ),
     ],
     filters: FilterArgs | None = None,
@@ -616,24 +622,17 @@ def copy(
     keeping only the latest row per sample (--latest-only).
 
     Examples:
-        $ metaxy metadata copy user_features --from prod --to dev
+        $ metaxy metadata copy my/feature --from prod --to dev
         $ metaxy metadata copy feat1 feat2 --from prod --to dev
+        $ metaxy metadata copy --all-features --from prod --to dev
         $ metaxy metadata copy feat1 --from prod --to dev --current-only
         $ metaxy metadata copy feat1 --from prod --to dev --filter "sample_uid IN (1, 2)"
     """
-    from pydantic import ValidationError
     from rich.status import Status
 
-    from metaxy import coerce_to_feature_key
     from metaxy.cli.context import AppContext
-    from metaxy.models.types import FeatureKey
 
     filters = filters or []
-
-    # Require at least one feature
-    if not features:
-        data_console.print("[red]Error:[/red] At least one feature must be specified.")
-        raise SystemExit(1)
 
     context = AppContext.get()
 
@@ -641,29 +640,11 @@ def copy(
     source_store = context.get_store(from_store)
     dest_store = context.get_store(to_store)
 
-    # Parse and resolve feature keys
-    graph = context.graph
-    valid_keys: list[FeatureKey] = []
-    missing_keys: list[FeatureKey] = []
-
-    for raw_key in features:
-        try:
-            key = coerce_to_feature_key(raw_key)
-            if key in graph.features_by_key:
-                valid_keys.append(key)
-            else:
-                missing_keys.append(key)
-        except ValidationError as exc:
-            error_console.print(f"[red]Error:[/red] Invalid feature key '{raw_key}': {exc}")
-            raise SystemExit(1)
-
-    # Handle missing features
-    if missing_keys:
-        formatted = ", ".join(k.to_string() for k in missing_keys)
-        data_console.print(f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}")
+    # Resolve feature keys
+    selector.resolve("plain")
 
     # Handle no valid features
-    if not valid_keys:
+    if not selector:
         data_console.print("[yellow]Warning:[/yellow] No valid features to copy.")
         return
 
@@ -671,14 +652,14 @@ def copy(
     global_filters = filters if filters else None
 
     with Status(
-        f"Copying metadata for {len(valid_keys)} feature(s) from '{from_store}' to '{to_store}'...",
+        f"Copying metadata for {len(selector)} feature(s) from '{from_store}' to '{to_store}'...",
         console=data_console,
         spinner="dots",
     ):
         with source_store.open("read"), dest_store.open("write"):
             stats = dest_store.copy_metadata(
                 from_store=source_store,
-                features=list(valid_keys),
+                features=list(selector),
                 global_filters=global_filters,
                 current_only=current_only,
                 latest_only=latest_only,
