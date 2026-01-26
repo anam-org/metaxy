@@ -20,6 +20,7 @@ else:
 # It must be imported AFTER init_metaxy() to pick up the correct project.
 
 FEATURE_KEY = ["test", "ray_feature"]
+DERIVED_FEATURE_KEY = ["test", "ray_derived"]
 
 
 @pytest.fixture(autouse=True)

@@ -18,7 +18,7 @@ else:
     ray = pytest.importorskip("ray")
 
 
-from .conftest import FEATURE_KEY, make_test_data
+from .conftest import DERIVED_FEATURE_KEY, FEATURE_KEY, make_test_data
 
 
 def test_datasource_reads_metadata(
@@ -385,3 +385,69 @@ def test_datasource_and_datasink_end_to_end(
         assert set(df["sample_uid"].to_list()) == {"a", "b", "c"}
         # Values should be doubled
         assert set(df["value"].to_list()) == {20, 40, 60}
+
+
+def test_datasource_incremental_all_new(
+    ray_config: mx.MetaxyConfig,
+    ray_context,
+    delta_store: DeltaMetadataStore,
+    test_data: pl.DataFrame,
+):
+    """Test incremental mode returns all samples as 'new' when derived feature has no data."""
+    from metaxy.ext.ray.datasource import MetaxyDatasource
+
+    mx.init_metaxy(ray_config)
+
+    # Write upstream data (root feature)
+    with delta_store.open("write"):
+        delta_store.write_metadata(FEATURE_KEY, test_data.to_arrow())
+
+    # Read incrementally from derived feature - all samples should be "new"
+    datasource = MetaxyDatasource(
+        feature=DERIVED_FEATURE_KEY,
+        store=delta_store,
+        config=ray_config,
+        incremental=True,
+    )
+
+    ds = ray.data.read_datasource(datasource)
+    result = pl.from_pandas(ds.to_pandas())
+
+    assert len(result) == 5
+    assert set(result["sample_uid"].to_list()) == {"a", "b", "c", "d", "e"}
+    assert set(result["metaxy_status"].to_list()) == {"new"}
+
+
+def test_datasource_incremental_up_to_date(
+    ray_config: mx.MetaxyConfig,
+    ray_context,
+    delta_store: DeltaMetadataStore,
+    test_data: pl.DataFrame,
+):
+    """Test incremental mode returns empty when derived data is up-to-date."""
+    from metaxy.ext.ray.datasource import MetaxyDatasource
+
+    mx.init_metaxy(ray_config)
+
+    # Write upstream data (root feature)
+    with delta_store.open("write"):
+        delta_store.write_metadata(FEATURE_KEY, test_data.to_arrow())
+
+    # Compute and write derived data with correct provenance
+    with delta_store.open("write"):
+        increment = delta_store.resolve_update(DERIVED_FEATURE_KEY)
+        derived_data = increment.added.with_columns(nw.lit(100).alias("derived_value"))
+        delta_store.write_metadata(DERIVED_FEATURE_KEY, derived_data.to_arrow())
+
+    # Read incrementally - should return empty since data is up-to-date
+    datasource = MetaxyDatasource(
+        feature=DERIVED_FEATURE_KEY,
+        store=delta_store,
+        config=ray_config,
+        incremental=True,
+    )
+
+    ds = ray.data.read_datasource(datasource)
+    result = pl.from_pandas(ds.to_pandas())
+
+    assert len(result) == 0
