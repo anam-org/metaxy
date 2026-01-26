@@ -1919,12 +1919,189 @@ def test_metadata_delete_dry_run(metaxy_project: TempMetaxyProject):
         assert "Dry run" in output
         assert "logs" in output
         assert "level" in output  # Filter should be printed
+        assert "1 rows" in output  # Should show count of rows matching filter
+        assert "Total rows to delete" in output  # Should show total count
         assert "Deletion complete" not in output  # Should not actually delete
 
         # Verify data was NOT deleted
         with graph.use(), store:
             remaining = store.read_metadata(feature_cls).collect().to_polars()
             assert remaining.height == 2  # All rows still present
+
+
+@pytest.mark.parametrize(
+    "soft,current_only",
+    [
+        (True, True),
+        (True, False),
+        (False, True),
+        (False, False),
+    ],
+)
+def test_metadata_delete_dry_run_count_matches_actual_deletion(
+    metaxy_project: TempMetaxyProject,
+    soft: bool,
+    current_only: bool,
+):
+    """Test that --dry-run row counts match the actual number of rows deleted."""
+
+    def features_v1():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Events(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["events"]),
+                fields=[FieldSpec(key=FieldKey(["status"]), code_version="1")],
+            ),
+        ):
+            status: str | None = None
+
+    def features_v2():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class Events(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["events"]),
+                fields=[FieldSpec(key=FieldKey(["status"]), code_version="2")],  # bumped version
+            ),
+        ):
+            status: str | None = None
+
+    # Write v1 metadata
+    with metaxy_project.with_features(features_v1):
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.types import FeatureKey
+
+        graph_v1 = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+        feature_key = FeatureKey(["events"])
+        feature_cls_v1 = graph_v1.get_feature_by_key(feature_key)
+
+        # Write 3 rows with v1 feature version
+        v1_data = pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2", "s3"],
+                "status": ["active", "inactive", "active"],
+                METAXY_PROVENANCE_BY_FIELD: [{"status": "p1"}, {"status": "p2"}, {"status": "p3"}],
+            }
+        )
+        with graph_v1.use(), store:
+            store.write_metadata(feature_cls_v1, v1_data)
+
+    # Write v2 metadata (different feature version)
+    with metaxy_project.with_features(features_v2):
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.types import FeatureKey
+
+        graph_v2 = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+        feature_key = FeatureKey(["events"])
+        feature_cls_v2 = graph_v2.get_feature_by_key(feature_key)
+
+        # Write 2 rows with v2 feature version
+        v2_data = pl.DataFrame(
+            {
+                "sample_uid": ["s4", "s5"],
+                "status": ["inactive", "inactive"],
+                METAXY_PROVENANCE_BY_FIELD: [{"status": "p4"}, {"status": "p5"}],
+            }
+        )
+        with graph_v2.use(), store:
+            store.write_metadata(feature_cls_v2, v2_data)
+
+        # Now we have:
+        # - 3 rows with v1 feature version (2 active, 1 inactive)
+        # - 2 rows with v2 feature version (0 active, 2 inactive)
+        # Filter: status = 'inactive' should match:
+        #   - current_only=True: 2 rows (v2 only)
+        #   - current_only=False: 3 rows (1 from v1 + 2 from v2)
+
+        # Run dry-run to get predicted count
+        delete_mode = "--soft" if soft else "--hard"
+        current_only_flag = "--current-only" if current_only else "--no-current-only"
+
+        dry_run_result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "events",
+                "--filter",
+                "status = 'inactive'",
+                delete_mode,
+                current_only_flag,
+                "--dry-run",
+            ]
+        )
+        assert dry_run_result.returncode == 0
+
+        # Extract the row count from dry-run output
+        output = dry_run_result.stdout + dry_run_result.stderr
+        # Output format: "events (N rows)"
+        import re
+
+        match = re.search(r"events\s+\((\d+)\s+rows\)", output)
+        assert match, f"Could not find row count in output: {output}"
+        dry_run_count = int(match.group(1))
+
+        # Count rows before deletion
+        with graph_v2.use(), store:
+            before_count = (
+                store.read_metadata(
+                    feature_cls_v2,
+                    include_soft_deleted=False,
+                    current_only=False,  # count all versions
+                )
+                .collect()
+                .to_polars()
+                .height
+            )
+
+        # Actually delete
+        delete_result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "events",
+                "--filter",
+                "status = 'inactive'",
+                delete_mode,
+                current_only_flag,
+                "--yes",  # needed for hard delete
+            ]
+        )
+        assert delete_result.returncode == 0
+
+        # Count rows after deletion
+        with graph_v2.use(), store:
+            after_count = (
+                store.read_metadata(
+                    feature_cls_v2,
+                    include_soft_deleted=False,
+                    current_only=False,  # count all versions
+                )
+                .collect()
+                .to_polars()
+                .height
+            )
+
+        # Verify the dry-run count matches actual deletion
+        actual_deleted = before_count - after_count
+        assert dry_run_count == actual_deleted, (
+            f"Dry-run predicted {dry_run_count} rows but actually deleted {actual_deleted}. "
+            f"soft={soft}, current_only={current_only}, before={before_count}, after={after_count}"
+        )
+
+        # Verify expected counts based on parameters
+        if current_only:
+            # Only v2 rows affected (2 inactive)
+            assert dry_run_count == 2, f"Expected 2 rows for current_only=True, got {dry_run_count}"
+        else:
+            # Both v1 and v2 rows affected (1 inactive from v1 + 2 inactive from v2)
+            assert dry_run_count == 3, f"Expected 3 rows for current_only=False, got {dry_run_count}"
 
 
 # ============================================================================
