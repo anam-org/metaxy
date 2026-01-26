@@ -3,11 +3,19 @@ import pickle
 import polars as pl
 import pytest
 from pytest_cases import parametrize_with_cases
+from syrupy.assertion import SnapshotAssertion
 
 from metaxy import BaseFeature, FeatureKey, FeatureSpec
 from metaxy.metadata_store import MetadataStore, StoreNotOpenError
 
 from .conftest import AllStoresCases
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
+def test_repr(store: MetadataStore, snapshot: SnapshotAssertion) -> None:
+    """Test that repr() returns display() for all store types."""
+    # repr() should delegate to display()
+    assert repr(store) == store.display()
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
