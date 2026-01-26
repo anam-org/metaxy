@@ -3886,8 +3886,20 @@
 </span></code></pre></div>
 </div>
 <hr />
-<p>Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks <strong>metadata</strong>: sample <a href="guide/learn/data-versioning/">versions</a>, dependencies, and data lineage across complex computational graphs.</p>
-<p class="annotate">Metaxy manages <strong>metadata</strong> while <strong>data</strong> typically (1) lives elsewhere:</p>
+<p>Metaxy is a composable metadata layer for multi-modal Data and ML pipelines that manages and tracks <strong>metadata</strong>: sample <a href="guide/learn/data-versioning/">versions</a>, dependencies, and data lineage across complex computational graphs. Metaxy gives you quite a few superpowers:</p>
+<div class="annotate">
+<ul>
+<li>Cache every single sample in the data pipeline. This evaluation runs for millions of samples in under a second. (1)</li>
+<li>Swap <a href="guide/learn/metadata-stores/">storage backends</a> in dev, testing and production environments without changing a single line of code.</li>
+<li>Use the <a href="reference/cli/"><code>mx</code> CLI</a> to observe and manage metadata without leaving your terminal</li>
+<li>Metaxy is <strong>composable</strong> and <strong>extensible</strong> (2): use it to build custom integrations and workflows!</li>
+</ul>
+</div>
+<ol>
+<li>Our experience at <a href="https://anam.ai/">Anam</a> with <a href="integrations/metadata-stores/databases/clickhouse/">ClickHouse</a></li>
+<li>See our official integrations <a href="integrations/">here</a></li>
+</ol>
+<p class="annotate">Metaxy manages <strong>metadata</strong> while <strong>data</strong> typically (2) lives elsewhere:</p>
 <ol>
 <li>Unless you are a <a href="https://lancedb.com/">LanceDB</a> fan, in which case <a href="integrations/metadata-stores/databases/lancedb/">we got you covered</a></li>
 </ol>
