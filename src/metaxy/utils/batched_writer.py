@@ -79,7 +79,6 @@ class BatchedMetadataWriter:
                 Setting this triggers row counting which materializes lazy frames.
 
         flush_interval: Maximum seconds between flushes. The timer resets after the end of each flush.
-        allow_cross_project_writes: Whether to allow writing to features from other projects.
 
     Raises:
         RuntimeError: If the background thread encounters an error during flush.
@@ -90,13 +89,10 @@ class BatchedMetadataWriter:
         store: MetadataStore,
         flush_batch_size: int | None = None,
         flush_interval: float = 2.0,
-        *,
-        allow_cross_project_writes: bool = False,
     ) -> None:
         self._store = store
         self._flush_batch_size = flush_batch_size
         self._flush_interval = flush_interval
-        self._allow_cross_project_writes = allow_cross_project_writes
 
         self._queue: queue.Queue[QueueItem] = queue.Queue()
         self._should_stop = threading.Event()
@@ -285,11 +281,7 @@ class BatchedMetadataWriter:
 
         # Write to store
         with self._store.open("write"):
-            if self._allow_cross_project_writes:
-                with self._store.allow_cross_project_writes():
-                    self._store.write_metadata_multi(combined)
-            else:
-                self._store.write_metadata_multi(combined)
+            self._store.write_metadata_multi(combined)
 
         total_rows = sum(rows_per_feature.values())
         feature_count = len(combined)

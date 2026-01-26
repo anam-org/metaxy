@@ -313,8 +313,7 @@ class DataVersionReconciliation(BaseOperation):
         )
 
         with allow_feature_version_override():
-            with store.allow_cross_project_writes():
-                store.write_metadata(feature_cls, df_to_write_nw)
+            store.write_metadata(feature_cls, df_to_write_nw)
 
         return len(df_to_write)
 

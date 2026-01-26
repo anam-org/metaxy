@@ -135,8 +135,7 @@ def populated_store(
             prefix="hash_a",
             include_path=True,
         )
-        with store.allow_cross_project_writes():
-            store.write_metadata(UpstreamFeatureA, upstream_a_data)
+        store.write_metadata(UpstreamFeatureA, upstream_a_data)
 
     yield store
 
@@ -157,8 +156,7 @@ def multi_env_stores(
             prefix="prod_hash",
             include_path=False,
         )
-        with prod.allow_cross_project_writes():
-            prod.write_metadata(UpstreamFeatureA, upstream_data)
+        prod.write_metadata(UpstreamFeatureA, upstream_data)
 
     yield {"prod": prod, "staging": staging, "dev": dev}
 
@@ -175,8 +173,7 @@ def test_write_and_read_metadata(empty_store: DeltaMetadataStore, UpstreamFeatur
             include_path=False,
         )
 
-        with empty_store.allow_cross_project_writes():
-            empty_store.write_metadata(UpstreamFeatureA, metadata)
+        empty_store.write_metadata(UpstreamFeatureA, metadata)
         result = collect_to_polars(empty_store.read_metadata(UpstreamFeatureA))
 
         assert len(result) == 3
@@ -195,8 +192,7 @@ def test_write_invalid_schema(empty_store: DeltaMetadataStore, UpstreamFeatureA)
         )
 
         with pytest.raises(MetadataSchemaError, match="metaxy_provenance_by_field"):
-            with empty_store.allow_cross_project_writes():
-                empty_store.write_metadata(UpstreamFeatureA, invalid_df)
+            empty_store.write_metadata(UpstreamFeatureA, invalid_df)
 
 
 def test_write_append(
@@ -217,9 +213,8 @@ def test_write_append(
             include_path=False,
         )
 
-        with empty_store.allow_cross_project_writes():
-            empty_store.write_metadata(UpstreamFeatureA, df1)
-            empty_store.write_metadata(UpstreamFeatureA, df2)
+        empty_store.write_metadata(UpstreamFeatureA, df1)
+        empty_store.write_metadata(UpstreamFeatureA, df2)
 
         result = collect_to_polars(empty_store.read_metadata(UpstreamFeatureA))
         assert len(result) == 4
@@ -362,8 +357,7 @@ def test_write_to_dev_not_prod(
             }
         )
 
-        with dev.allow_cross_project_writes():
-            dev.write_metadata(UpstreamFeatureB, new_data)
+        dev.write_metadata(UpstreamFeatureB, new_data)
 
         # Should be in dev
         assert dev.has_feature(UpstreamFeatureB, check_fallback=False)
@@ -450,8 +444,7 @@ def test_write_metadata_casts_null_typed_system_columns(empty_store: DeltaMetada
     assert df.schema["metaxy_materialization_id"] == pl.Null
 
     with empty_store.open("write"):
-        with empty_store.allow_cross_project_writes():
-            empty_store.write_metadata(UpstreamFeatureA, df)
+        empty_store.write_metadata(UpstreamFeatureA, df)
 
         # Read back and verify columns are now correctly typed
         result = collect_to_polars(empty_store.read_metadata(UpstreamFeatureA))
