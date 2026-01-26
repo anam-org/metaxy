@@ -585,3 +585,67 @@ def test_list_features_long_names_not_truncated(metaxy_project: TempMetaxyProjec
         assert "CroppedSceneChunk720x480FaceLandmarksEyeFeatures" in result.stdout
         # Should not contain ellipsis truncation
         assert "…" not in result.stdout
+
+
+def test_list_stores_basic(metaxy_project: TempMetaxyProject):
+    """Test basic list stores command with plain output."""
+
+    def features():
+        pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(["list", "stores"])
+
+        assert result.returncode == 0
+        # Check for table output
+        assert "Name" in result.stdout
+        assert "Info" in result.stdout
+        assert "Fallbacks" in result.stdout
+        # Check for the default dev store
+        assert "dev" in result.stdout
+        assert "(default)" in result.stdout
+        assert "Total:" in result.stdout
+
+
+def test_list_stores_json_format(metaxy_project: TempMetaxyProject):
+    """Test list stores with JSON output format."""
+
+    def features():
+        pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(["list", "stores", "--format", "json"])
+
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+
+        assert "default_store" in data
+        assert "store_count" in data
+        assert data["store_count"] >= 1
+        assert "stores" in data
+
+        # Check that each store has required fields
+        for store in data["stores"]:
+            assert "name" in store
+            assert "info" in store
+            assert "is_default" in store
+            assert "fallbacks" in store
+
+        # Check the default store is marked correctly
+        default_stores = [s for s in data["stores"] if s["is_default"]]
+        assert len(default_stores) == 1
+        assert default_stores[0]["name"] == data["default_store"]
+
+
+def test_list_stores_short_flag(metaxy_project: TempMetaxyProject):
+    """Test short flag works (-f for format)."""
+
+    def features():
+        pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(["list", "stores", "-f", "json"])
+
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert "stores" in data
