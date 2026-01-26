@@ -17,17 +17,13 @@ from metaxy_testing.models import SampleFeatureSpec
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
-from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
 
 
 def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -> None:
     """Test that full_definition_version changes when project changes."""
     # Create same feature in two different projects
-    config_a = MetaxyConfig(project="project_a")
     graph_a = FeatureGraph()
-
-    MetaxyConfig.set(config_a)
 
     with graph_a.use():
 
@@ -40,11 +36,11 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
         ):
             pass
 
-    # Same feature in project_b
-    config_b = MetaxyConfig(project="project_b")
-    graph_b = FeatureGraph()
+        # Override project for testing
+        FeatureInA.__metaxy_project__ = "project_a"
 
-    MetaxyConfig.set(config_b)
+    # Same feature in project_b
+    graph_b = FeatureGraph()
 
     with graph_b.use():
 
@@ -57,10 +53,13 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
         ):
             pass
 
+        # Override project for testing
+        FeatureInB.__metaxy_project__ = "project_b"
+
     # The features should have different projects
-    assert FeatureInA.project != FeatureInB.project
-    assert FeatureInA.project == "project_a"
-    assert FeatureInB.project == "project_b"
+    assert FeatureInA.metaxy_project() != FeatureInB.metaxy_project
+    assert FeatureInA.metaxy_project() == "project_a"
+    assert FeatureInB.metaxy_project() == "project_b"
 
     # full_definition_version should be DIFFERENT (includes project)
     tracking_version_a = FeatureInA.full_definition_version()
@@ -72,8 +71,8 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
 
     # Snapshot for verification
     assert {
-        "project_a": FeatureInA.project,
-        "project_b": FeatureInB.project,
+        "project_a": FeatureInA.metaxy_project(),
+        "project_b": FeatureInB.metaxy_project(),
         "tracking_version_a": tracking_version_a,
         "tracking_version_b": tracking_version_b,
         "feature_version_a": FeatureInA.feature_version(),
@@ -81,8 +80,6 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
         "tracking_versions_differ": tracking_version_a != tracking_version_b,
         "feature_versions_same": FeatureInA.feature_version() == FeatureInB.feature_version(),
     } == snapshot
-
-    MetaxyConfig.reset()
 
 
 def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> None:
@@ -94,9 +91,6 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
     # Define identical feature specs in two projects
     graph_1 = FeatureGraph()
     graph_2 = FeatureGraph()
-
-    config_1 = MetaxyConfig(project="project_1")
-    MetaxyConfig.set(config_1)
 
     with graph_1.use():
 
@@ -112,8 +106,8 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
         ):
             pass
 
-    config_2 = MetaxyConfig(project="project_2")
-    MetaxyConfig.set(config_2)
+        # Override project for testing
+        Feature1.__metaxy_project__ = "project_1"
 
     with graph_2.use():
 
@@ -129,6 +123,9 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
         ):
             pass
 
+        # Override project for testing
+        Feature2.__metaxy_project__ = "project_2"
+
     # feature_version should be IDENTICAL (field provenance unchanged)
     version_1 = Feature1.feature_version()
     version_2 = Feature2.feature_version()
@@ -137,17 +134,14 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
     assert version_1 == snapshot
 
     # But projects should differ
-    assert Feature1.project != Feature2.project
-
-    MetaxyConfig.reset()
+    assert Feature1.metaxy_project() != Feature2.metaxy_project
 
 
 def test_tracking_version_deterministic(snapshot: SnapshotAssertion) -> None:
     """Test that tracking version (project + feature) is deterministic."""
-    config = MetaxyConfig(project="deterministic_project")
-    MetaxyConfig.set(config)
+    graph = FeatureGraph()
 
-    try:
+    with graph.use():
 
         class TestFeature(
             BaseFeature,
@@ -158,25 +152,22 @@ def test_tracking_version_deterministic(snapshot: SnapshotAssertion) -> None:
         ):
             pass
 
-        # full_definition_version should be deterministic
-        tracking_1 = TestFeature.full_definition_version()
-        tracking_2 = TestFeature.full_definition_version()
+        # Override project for testing
+        TestFeature.__metaxy_project__ = "deterministic_project"
 
-        assert tracking_1 == tracking_2
-        assert len(tracking_1) == 64  # SHA256 hex
-        assert tracking_1 == snapshot
+    # full_definition_version should be deterministic
+    tracking_1 = TestFeature.full_definition_version()
+    tracking_2 = TestFeature.full_definition_version()
 
-    finally:
-        MetaxyConfig.reset()
+    assert tracking_1 == tracking_2
+    assert len(tracking_1) == 64  # SHA256 hex
+    assert tracking_1 == snapshot
 
 
 def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> None:
     """Test feature_version stays same across projects even with dependencies."""
     # Project A: upstream and downstream
-    config_a = MetaxyConfig(project="project_a")
     graph_a = FeatureGraph()
-
-    MetaxyConfig.set(config_a)
 
     with graph_a.use():
 
@@ -199,11 +190,12 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
         ):
             pass
 
-    # Project B: same features
-    config_b = MetaxyConfig(project="project_b")
-    graph_b = FeatureGraph()
+        # Override projects for testing
+        UpstreamA.__metaxy_project__ = "project_a"
+        DownstreamA.__metaxy_project__ = "project_a"
 
-    MetaxyConfig.set(config_b)
+    # Project B: same features
+    graph_b = FeatureGraph()
 
     with graph_b.use():
 
@@ -226,15 +218,19 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
         ):
             pass
 
+        # Override projects for testing
+        UpstreamB.__metaxy_project__ = "project_b"
+        DownstreamB.__metaxy_project__ = "project_b"
+
     # feature_version should be same across projects
     assert UpstreamA.feature_version() == UpstreamB.feature_version()
     assert DownstreamA.feature_version() == DownstreamB.feature_version()
 
     # But projects should differ
-    assert UpstreamA.project == "project_a"
-    assert UpstreamB.project == "project_b"
-    assert DownstreamA.project == "project_a"
-    assert DownstreamB.project == "project_b"
+    assert UpstreamA.metaxy_project() == "project_a"
+    assert UpstreamB.metaxy_project() == "project_b"
+    assert DownstreamA.metaxy_project() == "project_a"
+    assert DownstreamB.metaxy_project() == "project_b"
 
     # Snapshot both
     assert {
@@ -242,63 +238,58 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
         "upstream_b_version": UpstreamB.feature_version(),
         "downstream_a_version": DownstreamA.feature_version(),
         "downstream_b_version": DownstreamB.feature_version(),
-        "upstream_a_project": UpstreamA.project,
-        "upstream_b_project": UpstreamB.project,
-        "downstream_a_project": DownstreamA.project,
-        "downstream_b_project": DownstreamB.project,
+        "upstream_a_project": UpstreamA.metaxy_project(),
+        "upstream_b_project": UpstreamB.metaxy_project(),
+        "downstream_a_project": DownstreamA.metaxy_project(),
+        "downstream_b_project": DownstreamB.metaxy_project(),
     } == snapshot
-
-    MetaxyConfig.reset()
 
 
 def test_project_in_graph_snapshot(snapshot: SnapshotAssertion) -> None:
     """Test that project information is preserved in graph snapshots."""
-    config = MetaxyConfig(project="snapshot_project")
-    MetaxyConfig.set(config)
+    graph = FeatureGraph()
 
-    try:
-        graph = FeatureGraph()
+    with graph.use():
 
-        with graph.use():
+        class Feature1(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["feature1"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
-            class Feature1(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["feature1"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                ),
-            ):
-                pass
+        class Feature2(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["feature2"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
-            class Feature2(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["feature2"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                ),
-            ):
-                pass
+        # Override projects for testing
+        Feature1.__metaxy_project__ = "snapshot_project"
+        Feature2.__metaxy_project__ = "snapshot_project"
 
-        # Get snapshot
-        snapshot_data = graph.to_snapshot()
+    # Get snapshot
+    snapshot_data = graph.to_snapshot()
 
-        # Both features should have project in snapshot
-        # The snapshot format should include project information
-        # (Implementation detail for python-dev agent)
+    # Both features should have project in snapshot
+    # The snapshot format should include project information
+    # (Implementation detail for python-dev agent)
 
-        # For now, verify features have correct projects
-        assert Feature1.project == "snapshot_project"
-        assert Feature2.project == "snapshot_project"
+    # For now, verify features have correct projects
+    assert Feature1.metaxy_project() == "snapshot_project"
+    assert Feature2.metaxy_project() == "snapshot_project"
 
-        # Snapshot the graph structure
-        assert {
-            "feature1_project": Feature1.project,
-            "feature2_project": Feature2.project,
-            "feature_keys": list(snapshot_data.keys()),
-        } == snapshot
-
-    finally:
-        MetaxyConfig.reset()
+    # Snapshot the graph structure
+    assert {
+        "feature1_project": Feature1.metaxy_project(),
+        "feature2_project": Feature2.metaxy_project(),
+        "feature_keys": list(snapshot_data.keys()),
+    } == snapshot
 
 
 def test_provenance_by_field_unchanged_by_project(
@@ -310,9 +301,6 @@ def test_provenance_by_field_unchanged_by_project(
     """
     graph_a = FeatureGraph()
     graph_b = FeatureGraph()
-
-    config_a = MetaxyConfig(project="proj_a")
-    MetaxyConfig.set(config_a)
 
     with graph_a.use():
 
@@ -328,8 +316,8 @@ def test_provenance_by_field_unchanged_by_project(
         ):
             pass
 
-    config_b = MetaxyConfig(project="proj_b")
-    MetaxyConfig.set(config_b)
+        # Override project for testing
+        FeatureA.__metaxy_project__ = "proj_a"
 
     with graph_b.use():
 
@@ -345,6 +333,9 @@ def test_provenance_by_field_unchanged_by_project(
         ):
             pass
 
+        # Override project for testing
+        FeatureB.__metaxy_project__ = "proj_b"
+
     # provenance_by_field() should be identical
     provenance_a = FeatureA.provenance_by_field()
     provenance_b = FeatureB.provenance_by_field()
@@ -353,6 +344,4 @@ def test_provenance_by_field_unchanged_by_project(
     assert provenance_a == snapshot
 
     # But projects should differ
-    assert FeatureA.project != FeatureB.project
-
-    MetaxyConfig.reset()
+    assert FeatureA.metaxy_project() != FeatureB.metaxy_project

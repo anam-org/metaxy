@@ -298,7 +298,7 @@ class GraphData(FrozenBaseModel):
                 dependencies = [dep.feature for dep in spec.deps]
 
             # Get project from feature class
-            feature_project = feature_cls.project
+            feature_project = feature_cls.metaxy_project()
 
             # Create node
             node = GraphNode(

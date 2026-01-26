@@ -653,7 +653,7 @@ class SystemTableStorage:
         # Filter the data
         lazy = sys_meta.filter(
             nw.col(METAXY_SNAPSHOT_VERSION) == snapshot_version,
-            nw.col("project") == next(iter(graph.features_by_key.values())).project
+            nw.col("project") == next(iter(graph.features_by_key.values())).metaxy_project()
             if len(graph.features_by_key) > 0
             else "_empty_graph_",
         )

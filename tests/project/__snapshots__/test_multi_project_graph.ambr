@@ -20,8 +20,8 @@
 # ---
 # name: test_graph_from_snapshot_preserves_projects
   dict({
-    'restore/feature_a': 'restore_a',
-    'restore/feature_b': 'restore_b',
+    'restore/feature_a': 'project_a',
+    'restore/feature_b': 'project_b',
   })
 # ---
 # name: test_graph_snapshot_includes_all_projects
@@ -35,8 +35,8 @@
 # ---
 # name: test_multi_project_dependency_graph
   dict({
-    'downstream_project': 'downstream_project',
+    'downstream_project': 'project_b',
     'has_dependency': True,
-    'upstream_project': 'upstream_project',
+    'upstream_project': 'project_a',
   })
 # ---
