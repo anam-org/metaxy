@@ -15,6 +15,8 @@ from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, Outp
 if TYPE_CHECKING:
     from metaxy import BaseFeature
     from metaxy.graph.status import FeatureMetadataStatusWithIncrement
+    from metaxy.metadata_store.base import MetadataStore
+    from metaxy.models.types import FeatureKey
 
 
 # Metadata subcommand app
@@ -354,7 +356,7 @@ def delete(
         bool,
         cyclopts.Parameter(
             name=["--dry-run"],
-            help="Print the features and filters that would be applied without executing the deletion.",
+            help="Preview deletion: show features, filters, and row counts without executing.",
         ),
     ] = False,
 ) -> None:
@@ -397,10 +399,11 @@ def delete(
                 "plain",
             )
 
-        # Dry-run mode: print features and filters, then exit
+        # Dry-run mode: count rows, print features and filters, then exit
         if dry_run:
             store_name = store if store else context.config.store
-            _print_dry_run_info(selector, filters, soft, current_only, store_name)
+            row_counts = _count_rows_to_delete(metadata_store, selector, filters, soft, current_only)
+            _print_dry_run_info(selector, filters, soft, current_only, store_name, row_counts)
             return
 
         errors: dict[str, str] = {}
@@ -444,12 +447,65 @@ def _output_no_features_warning(format: OutputFormat, snapshot_version: str | No
         data_console.print("[yellow]Warning:[/yellow] No valid features to check.")
 
 
+def _count_rows_to_delete(
+    store: MetadataStore,
+    selector: FeatureSelector,
+    filters: list[nw.Expr],
+    soft: bool,
+    current_only: bool,
+) -> dict[FeatureKey, int | str]:
+    """Count rows that would be deleted for each feature.
+
+    Returns a dict mapping FeatureKey to row counts.
+    If counting fails for a feature, the value will be an error message string.
+
+    The reason this isn't implemented on the MetadataStore class is because this is an estimation,
+    we don't actually get a number of deleted rows from the storage backend.
+    """
+
+    row_counts: dict[FeatureKey, int | str] = {}
+    count_frames: list[tuple[FeatureKey, nw.LazyFrame]] = []
+
+    with store.open("read"):
+        # Build count lazy frames for all features
+        for feature_key in selector:
+            try:
+                # Match the same parameters as delete_metadata uses for soft deletes
+                # For hard deletes, this is an approximation since hard delete uses
+                # _delete_metadata_impl directly, but this gives a reasonable count
+                lazy = store.read_metadata(
+                    feature_key,
+                    filters=filters,
+                    include_soft_deleted=False,
+                    current_only=current_only,
+                    latest_only=True,  # matches delete_metadata default
+                    allow_fallback=soft,  # soft deletes use fallback, hard deletes don't
+                )
+                # Pre-aggregate to count per feature
+                count_frame = lazy.select(nw.len().alias("count"))
+                count_frames.append((feature_key, count_frame))
+            except Exception as e:
+                row_counts[feature_key] = f"error: {e}"
+
+        # Concat and collect all at once for parallel execution
+        if count_frames:
+            combined = nw.concat([cf for _, cf in count_frames])
+            counts_dicts = combined.collect().to_polars().to_dicts()
+
+            # Map counts back to feature keys (order preserved from concat)
+            for (feature_key, _), row in zip(count_frames, counts_dicts):
+                row_counts[feature_key] = row["count"]
+
+    return row_counts
+
+
 def _print_dry_run_info(
     selector: FeatureSelector,
     filters: list[nw.Expr],
     soft: bool,
     current_only: bool,
     store_name: str,
+    row_counts: dict[FeatureKey, int | str],
 ) -> None:
     """Print dry-run information for delete command."""
     mode_str = "[yellow]soft[/yellow]" if soft else "[red]hard[/red]"
@@ -460,9 +516,20 @@ def _print_dry_run_info(
     console.print(f"[bold]Store:[/bold] [blue]{store_name}[/blue]")
     console.print()
 
+    # Calculate total rows
+    total_rows = sum(c for c in row_counts.values() if isinstance(c, int))
+
     console.print(f"[bold]Features[/bold] [dim]({len(selector)})[/dim]:")
     for feature_key in selector:
-        console.print(f"  [cyan]•[/cyan] {feature_key.to_string()}")
+        count = row_counts.get(feature_key, "?")
+        if isinstance(count, int):
+            count_str = f"[dim]({count} rows)[/dim]"
+        else:
+            count_str = f"[red]{count}[/red]"
+        console.print(f"  [cyan]•[/cyan] {feature_key.to_string()} {count_str}")
+    console.print()
+
+    console.print(f"[bold]Total rows to delete:[/bold] [yellow]{total_rows}[/yellow]")
     console.print()
 
     console.print("[bold]Filters:[/bold]")
