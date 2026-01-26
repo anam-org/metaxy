@@ -73,7 +73,7 @@ mcp = [
   "fastmcp>=2.0.0",
 ]
 ray = [
-  "ray>=2.53.0",
+  "ray>2.36.0",
 ]
 
 [project.scripts]
@@ -117,7 +117,7 @@ dev = [
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
   "pandas>=2.3.3",
-  "ray>=2.53.0",
+  "ray>2.36.0",
   "numpy>=2.2.6",
 ]
 
