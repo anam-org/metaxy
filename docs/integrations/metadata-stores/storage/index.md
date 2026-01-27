@@ -9,7 +9,7 @@ These metadata stores only provide storage and rely on **local** (also referred 
 
 !!! success "Recommended"
 
-    [DeltaLake](./delta/index.md) is an excellent choice for a storage-only metadata store.
+    [DeltaLake](./delta.md) is an excellent choice for a storage-only metadata store.
 
 ## Available Metadata Stores
 

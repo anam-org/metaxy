@@ -26,7 +26,23 @@ Point `uri` at any supported URI (`s3://`, `gs://`, `az://`, `db://`, ...) and f
 All tables are stored within a single LanceDB database at the configured URI location.
 Each feature gets its own Lance table.
 
-## Reference
+## API
 
-- [Configuration](configuration.md)
-- [API](api.md)
+::: metaxy.metadata_store.lancedb
+options:
+members: false
+
+<!-- dprint-ignore-start -->
+::: metaxy.metadata_store.lancedb.LanceDBMetadataStore
+    options:
+      inherited_members: false
+<!-- dprint-ignore-end -->
+
+## Configuration
+
+<!-- dprint-ignore-start -->
+::: metaxy-config
+    class: metaxy.metadata_store.lancedb.LanceDBMetadataStoreConfig
+    path_prefix: stores.dev.config
+    header_level: 3
+<!-- dprint-ignore-end -->

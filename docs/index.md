@@ -34,7 +34,7 @@ Metaxy is a pluggable metadata layer for multi-modal Data and ML pipelines that 
 
 </div>
 
-1. Our experience at [Anam](https://anam.ai/) with [ClickHouse](./integrations/metadata-stores/databases/clickhouse/index.md)
+1. Our experience at [Anam](https://anam.ai/) with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md)
 2. See our official integrations [here](./integrations/index.md)
 
 ??? abstract annotate "Data vs Metadata Clarifications"
@@ -56,7 +56,7 @@ Metaxy is a pluggable metadata layer for multi-modal Data and ML pipelines that 
     | **Data** | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform. |
     | **Metadata** | Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes. |
 
-1. Unless you are a [LanceDB](https://lancedb.com/) fan, in which case [we got you covered](./integrations/metadata-stores/databases/lancedb/index.md)
+1. Unless you are a [LanceDB](https://lancedb.com/) fan, in which case [we got you covered](./integrations/metadata-stores/databases/lancedb.md)
 
 The feature that makes Metaxy stand out is the ability to track **partial data dependencies** (1) and **skip downstream updates** unless the exactly required subset of upstream data has changed. At the moment of writing, Metaxy is the only available tool that tackles these problems.
 { .annotate }

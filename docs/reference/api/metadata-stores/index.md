@@ -13,19 +13,19 @@ Here are some of the built-in metadata store types:
 
 ## Databases
 
-- [BigQuery](../../../integrations/metadata-stores/databases/bigquery/index.md)
+- [BigQuery](../../../integrations/metadata-stores/databases/bigquery.md)
 
-- [ClickHouse](../../../integrations/metadata-stores/databases/clickhouse/index.md)
+- [ClickHouse](../../../integrations/metadata-stores/databases/clickhouse.md)
 
-- [DuckDB](../../../integrations/metadata-stores/databases/duckdb/index.md)
+- [DuckDB](../../../integrations/metadata-stores/databases/duckdb.md)
 
-- [LanceDB](../../../integrations/metadata-stores/databases/lancedb/index.md)
+- [LanceDB](../../../integrations/metadata-stores/databases/lancedb.md)
 
-- [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] (a base class) - see [Ibis integration](../../../integrations/metadata-stores/databases/ibis/index.md)
+- [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] (a base class) - see [Ibis integration](../../../integrations/metadata-stores/databases/ibis.md)
 
 ## Storage Only
 
-- [DeltaMetadataStore](../../../integrations/metadata-stores/storage/delta/index.md)
+- [DeltaMetadataStore](../../../integrations/metadata-stores/storage/delta.md)
 
 The full list can be found [here](../../../integrations/metadata-stores/index.md)
 

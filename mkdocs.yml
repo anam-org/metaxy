@@ -227,43 +227,20 @@ nav:
       - integrations/metadata-stores/index.md
       - Databases:
         - integrations/metadata-stores/databases/index.md
-        - BigQuery:
-          - integrations/metadata-stores/databases/bigquery/index.md
-          - Configuration: integrations/metadata-stores/databases/bigquery/configuration.md
-          - API: integrations/metadata-stores/databases/bigquery/api.md
-        - ClickHouse:
-          - integrations/metadata-stores/databases/clickhouse/index.md
-          - Configuration: integrations/metadata-stores/databases/clickhouse/configuration.md
-          - API: integrations/metadata-stores/databases/clickhouse/api.md
-        - DuckDB:
-          - integrations/metadata-stores/databases/duckdb/index.md
-          - Configuration: integrations/metadata-stores/databases/duckdb/configuration.md
-          - API: integrations/metadata-stores/databases/duckdb/api.md
-        - LanceDB:
-          - integrations/metadata-stores/databases/lancedb/index.md
-          - Configuration: integrations/metadata-stores/databases/lancedb/configuration.md
-          - API: integrations/metadata-stores/databases/lancedb/api.md
-        - Ibis:
-          - integrations/metadata-stores/databases/ibis/index.md
-          - API: integrations/metadata-stores/databases/ibis/api.md
+        - BigQuery: integrations/metadata-stores/databases/bigquery.md
+        - ClickHouse: integrations/metadata-stores/databases/clickhouse.md
+        - DuckDB: integrations/metadata-stores/databases/duckdb.md
+        - LanceDB: integrations/metadata-stores/databases/lancedb.md
+        - Ibis: integrations/metadata-stores/databases/ibis.md
       - Storage:
         - integrations/metadata-stores/storage/index.md
-        - Delta Lake:
-          - integrations/metadata-stores/storage/delta/index.md
-          - Configuration: integrations/metadata-stores/storage/delta/configuration.md
-          - API: integrations/metadata-stores/storage/delta/api.md
+        - Delta Lake: integrations/metadata-stores/storage/delta.md
     - Compute:
       - Ray: integrations/compute/ray.md
     - Plugins:
       - integrations/plugins/index.md
-      - SQLModel:
-        - integrations/plugins/sqlmodel/index.md
-        - Configuration: integrations/plugins/sqlmodel/configuration.md
-        - API: integrations/plugins/sqlmodel/api.md
-      - SQLAlchemy:
-        - integrations/plugins/sqlalchemy/index.md
-        - Configuration: integrations/plugins/sqlalchemy/configuration.md
-        - API: integrations/plugins/sqlalchemy/api.md
+      - SQLModel: integrations/plugins/sqlmodel.md
+      - SQLAlchemy: integrations/plugins/sqlalchemy.md
     - AI:
       - Claude Code: integrations/ai/claude.md
       - MCP Server: integrations/ai/mcp.md

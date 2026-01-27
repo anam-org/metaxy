@@ -7,11 +7,11 @@ description: "SQLModel integration for ORM-based features."
 
 The [SQLModel](https://sqlmodel.tiangolo.com/) integration enables Metaxy features to also act as [SQLAlchemy](https://www.sqlalchemy.org/) ORM models. It exposes user-defined feature tables to SQLAlchemy.
 
-It is the primary way to use Metaxy with database-backed [metadata stores](../../../guide/learn/metadata-stores.md).
+It is the primary way to use Metaxy with database-backed [metadata stores](../../guide/learn/metadata-stores.md).
 
 !!! tip "Database Migrations"
 
-    For database migration management with Alembic, see the [SQLAlchemy integration guide](../sqlalchemy/index.md#alembic-integration).
+    For database migration management with Alembic, see the [SQLAlchemy integration guide](sqlalchemy.md#alembic-integration).
 
 ## Installation
 
@@ -112,13 +112,24 @@ The `filter_feature_sqlmodel_metadata()` function:
 - Returns the SQLAlchemy URL for the store
 - Optionally injects primary key and index constraints
 
-See the [SQLAlchemy integration guide](../sqlalchemy/index.md#alembic-integration) for complete Alembic setup examples.
+See the [SQLAlchemy integration guide](sqlalchemy.md#alembic-integration) for complete Alembic setup examples.
 
 !!! tip "Separate Alembic Version Tables"
 
-    When managing both system tables and feature tables with Alembic, use separate version tables to avoid conflicts. See the [Multi-Store Setup](../sqlalchemy/index.md#multi-store-setup) section for configuration details.
+    When managing both system tables and feature tables with Alembic, use separate version tables to avoid conflicts. See the [Multi-Store Setup](sqlalchemy.md#multi-store-setup) section for configuration details.
 
-## Reference
+## API
 
-- [Configuration](configuration.md)
-- [API](api.md)
+<!-- dprint-ignore-start -->
+::: metaxy.ext.sqlmodel
+    members: true
+<!-- dprint-ignore-end -->
+
+## Configuration
+
+<!-- dprint-ignore-start -->
+::: metaxy-config
+    class: metaxy.ext.sqlmodel.SQLModelPluginConfig
+    path_prefix: ext.sqlmodel
+    header_level: 2
+<!-- dprint-ignore-end -->
