@@ -9,16 +9,17 @@ Soft deletes mark records as deleted without physically removing them. When you 
 By default, `read_metadata` filters out soft-deleted records automatically. You only see active data. Behind the scenes, Metaxy keeps the latest version of each record by coalescing deletion and creation timestamps, so even if you've updated a record multiple times, queries return only the current state.
 
 ```python
+import narwhals as nw
+
 with store.open("write"):
     store.delete_metadata(
-        PredictionFeature,
-        filters=nw.col("model_version") == "v1",
+        MyFeature,
+        filters=nw.col("status") == "pending",
     )
 
 with store:
-    active = store.read_metadata(PredictionFeature).collect()  # soft-deleted hidden
-    all_rows = store.read_metadata(PredictionFeature, include_deleted=True).collect()
-    only_deleted = store.read_metadata(PredictionFeature, with_soft_deleted=True).collect()
+    active = store.read_metadata(MyFeature)
+    all_rows = store.read_metadata(MyFeature, include_soft_deleted=True)
 ```
 
 If you track custom deletion flags in your feature schema, filter them through `read_metadata` filters.
@@ -28,10 +29,12 @@ If you track custom deletion flags in your feature schema, filter them through `
 Hard deletes permanently remove rows from storage. Use them when you need to physically delete data, such as for compliance requirements or to reclaim space. Pass `soft=False` to `delete_metadata` and specify which records to remove with a filter expression.
 
 ```python
+import narwhals as nw
+
 with store.open("write"):
     store.delete_metadata(
-        FeatureKey(["predictions", "model_v1"]),
-        filters=nw.col("confidence") < 0.5,
+        MyFeature,
+        filters=nw.col("quality") < 0.8,
         soft=False,
     )
 ```

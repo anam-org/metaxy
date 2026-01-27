@@ -26,7 +26,9 @@ pip install 'metaxy[duckdb]'
 DuckDB extensions can be loaded automatically:
 
 ```py
-store = DuckDBMetadataStore("metadata.db", extensions=["hashfuncs", "spatial"])
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+
+store = DuckDBMetadataStore(":memory:", extensions=["hashfuncs"])
 ```
 
 `hashfuncs` is typically used by the versioning engine.

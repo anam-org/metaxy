@@ -16,11 +16,11 @@ This is fully typed and only affects **constructor arguments**, so accessing **a
 Some examples:
 
 ```py
-from metaxy import BaseFeature as FeatureKey
+import metaxy as mx
 
-key = FeatureKey("prefix/feature")
-key = FeatureKey(["prefix", "feature"])
-same_key = FeatureKey(key)
+key = mx.FeatureKey("prefix/feature")
+key = mx.FeatureKey(["prefix", "feature"])
+same_key = mx.FeatureKey(key)
 ```
 
 Metaxy really loves you, the user!
@@ -42,7 +42,9 @@ All formats produce equivalent keys, internally represented as a sequence of par
 [`FeatureDep`][metaxy.FeatureDep] accepts types coercible to `FeatureKey` and additionally subclasses of `BaseFeature`:
 
 ```py
-dep = FeatureDep(feature=MyFeature)
+import metaxy as mx
+
+dep = mx.FeatureDep(feature=MyFeature)
 ```
 
 ## Feature Spec
@@ -54,13 +56,16 @@ dep = FeatureDep(feature=MyFeature)
 The `deps` argument accepts a sequence of types coercible to `FeatureDep`:
 
 ```py
-spec = FeatureSpec(
-    ...,
+import metaxy as mx
+
+spec = mx.FeatureSpec(
+    key="example/spec",
+    id_columns=["id"],
     deps=[
         MyFeature,
-        FeatureDep(feature=["my/feature/key"]),
-        ["another/key"],
-        "very/nice",
+        mx.FeatureDep(feature=["my", "feature", "key"]),  # sequence format
+        ["another", "key"],  # also sequence format
+        "very/nice",  # string format with slash separator
     ],
 )
 ```
@@ -70,7 +75,13 @@ spec = FeatureSpec(
 `fields` elements can omit the full `FieldsSpec` and be strings (field keys) instead:
 
 ```python
-spec = FeatureSpec(..., fields=["my/field", FieldSpec(key="field/with/version", code_version="v1.2.3")])
+import metaxy as mx
+
+spec = mx.FeatureSpec(
+    key="example/fields",
+    id_columns=["id"],
+    fields=["my/field", mx.FieldSpec(key="field/with/version", code_version="v1.2.3")],
+)
 ```
 
 ### Fields Mapping
@@ -78,19 +89,33 @@ spec = FeatureSpec(..., fields=["my/field", FieldSpec(key="field/with/version", 
 Metaxy uses a bunch of common sense heuristics [automatically find parent fields](../../reference/api/definitions/fields-mapping.md) by matching on their names. This is enabled by default. For example, using the same field names in upstream and downstream features will automatically create a dependency between these fields:
 
 ```py
-class Parent(BaseFeature, spec=FeatureSpec(fields=["my_field"], ...):
-    ...
+import metaxy as mx
 
-class Child(Parent, spec=FeatureSpec(fields=["my_field"], ...):
-    ...
+
+class Parent(mx.BaseFeature, spec=mx.FeatureSpec(key="parent/feature", id_columns=["id"], fields=["my_field"])):
+    id: str
+
+
+class Child(
+    mx.BaseFeature, spec=mx.FeatureSpec(key="child/feature", id_columns=["id"], deps=[Parent], fields=["my_field"])
+):
+    id: str
 ```
 
 is equivalent to:
 
 ```py
-class Child(Parent, spec=FeatureSpec(fields=["my_field"], ...):
-    ...
+import metaxy as mx
 
-class Grandchild(Child, spec=FeatureSpec(fields=[FieldSpec(key="my_field", deps=[FieldDep(feature=Parent.spec().key, field="my_field")])], ...):
-    ...
+
+class Grandchild(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
+        key="grandchild/feature",
+        id_columns=["id"],
+        deps=[Child],
+        fields=[mx.FieldSpec(key="my_field", deps=[mx.FieldDep(feature=Parent, fields=["my_field"])])],
+    ),
+):
+    id: str
 ```

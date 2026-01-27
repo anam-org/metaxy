@@ -15,13 +15,10 @@ It looks more or less like this:
 
     ```py
     with store:
-        df = store.read_metadata("/my/feature/key")
+        df = store.read_metadata(MyFeature)
 
     with store.open("write"):
-        store.write_metadata("/another/key", df)
-
-    with store:
-        increment = store.resolve_update("and/another/key")
+        store.write_metadata(MyFeature, df)
     ```
 
 Metadata stores implement an append-only storage model and rely on [Metaxy system columns](system-columns.md).
@@ -74,14 +71,14 @@ Deletes are typically not required during normal operations, but they are still 
 Here is an example of how a deletion would look like:
 
 ```py
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import narwhals as nw
 
 with store.open("write"):
     store.delete_metadata(
-        "my/feature",
-        filters=[nw.col("metaxy_created_at") < datetime.now() - timedelta(days=30)],
+        MyFeature,
+        filters=[nw.col("metaxy_created_at") < datetime.now(timezone.utc) - timedelta(days=30)],
     )
 ```
 

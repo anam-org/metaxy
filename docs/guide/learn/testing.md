@@ -17,19 +17,23 @@ During testing, you might want to construct your own, clean and isolated graphs.
 Always use isolated graphs in tests:
 
 ```python
+import pytest
+import metaxy as mx
+from metaxy.models.feature import FeatureGraph
+
+
 @pytest.fixture(autouse=True)
-def graph():
-    with FeatureGraph().use():
-        yield graph
+def isolated_graph():
+    with FeatureGraph().use() as g:
+        yield g
 
 
-def test_my_feature(graph: FeatureGraph):
-    class MyFeature(Feature, spec=...):
-        pass
+def test_my_feature(isolated_graph: FeatureGraph):
+    class TestFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="test/feature", id_columns=["id"])):
+        id: str
 
     # Test operations here
-
-    # inspect the graph object if needed
+    assert isolated_graph.get_spec("test/feature") is not None
 ```
 
 The context manager ensures all feature registrations within the block use the test graph instead of the global one.
@@ -40,16 +44,18 @@ Multiple graphs can exist at the same time, but only one will be used for featur
 The active graph uses context variables to support multiple graphs:
 
 ```python
-# Default global graph (used in production)
-graph = FeatureGraph()
+from metaxy.models.feature import FeatureGraph
 
-# Get active graph
+# Create a new graph instance
+custom_graph = FeatureGraph()
+
+# Get active graph (returns the currently active context)
 active = FeatureGraph.get_active()
 
 # Use custom graph temporarily
 with custom_graph.use():
     # All operations use custom_graph
-    pass
+    assert FeatureGraph.get_active() is custom_graph
 ```
 
 This enables:
@@ -66,6 +72,8 @@ Use parametrized tests to verify behavior across backends:
 
 ```python
 import pytest
+from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
 @pytest.mark.parametrize(
@@ -82,7 +90,7 @@ def test_store_behavior(store_cls, tmp_path):
     else:
         store_kwargs = {"database": tmp_path / "test.db"}
 
-    with store_cls(**store_kwargs) as store:
+    with store_cls(**store_kwargs) as test_store:
         # Test your feature operations
         pass
 ```
@@ -134,12 +142,12 @@ with MetaxyConfig(
     ext={
         "sqlmodel": SQLModelPluginConfig(
             enable=True,
-            infer_db_table_names=True,
+            inject_primary_key=True,
         )
     }
-).use() as config:
+).use() as cfg:
     sqlmodel_config = MetaxyConfig.get_plugin("sqlmodel", SQLModelPluginConfig)
-    # your code here
+    assert sqlmodel_config.inject_primary_key is True
 ```
 
 When testing Metaxy code, it's best if this setup is performed via `pytest` fixtures.

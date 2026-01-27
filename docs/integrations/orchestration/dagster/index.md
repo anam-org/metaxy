@@ -23,12 +23,16 @@ Unleash the full power of `@metaxify` on Dagster!
 
     ```python
     import dagster as dg
+    import metaxy as mx
     import metaxy.ext.dagster as mxd
+
+    class MyMetaxyFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="my/metaxy/feature", id_columns=["id"])):
+        id: str
 
     @mxd.metaxify()
     @dg.asset(metadata={"metaxy/feature": "my/metaxy/feature"})
     def my_asset():
-      ...
+        pass
     ```
 <!-- dprint-ignore-end -->
 
@@ -115,13 +119,17 @@ This is useful when Metaxy features are populated outside of Dagster (e.g., by e
 
     ```python
     import dagster as dg
+    import narwhals as nw
     import metaxy as mx
     import metaxy.ext.dagster as mxd
+
+    class ExternalFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="external/feature", id_columns=["id"])):
+        id: str
 
     @mxd.observable_metaxy_asset(key="dagster/asset/key", feature="external/feature")
     def external_data(context, store: dg.ResourceParam[mx.MetadataStore], lazy_df: nw.LazyFrame):
         # build a custom metadata dict
-        metadata = ...
+        metadata = {"row_count": lazy_df.collect().shape[0]}
         return metadata
     ```
 <!-- dprint-ignore-end -->
@@ -144,22 +152,6 @@ import metaxy.ext.dagster as mxd
 @dg.job(resource_defs={"metaxy_store": mxd.MetaxyStoreFromConfigResource(name="default")})
 def cleanup_job():
     mxd.delete_metadata()
-
-
-# Execute with config to delete inactive customer segments
-cleanup_job.execute_in_process(
-    run_config={
-        "ops": {
-            "delete_metadata": {
-                "config": {
-                    "feature_key": ["customer", "segment"],
-                    "filters": ["status = 'inactive'"],
-                    "soft": True,
-                }
-            }
-        }
-    }
-)
 ```
 
 `filters` is a list of SQL WHERE clause strings (e.g., `["status = 'inactive'", "age > 18"]`) that are parsed into Narwhals expressions. Multiple filters are combined with AND logic. See the [filter expressions guide](../../../guide/learn/filters.md) for supported syntax.

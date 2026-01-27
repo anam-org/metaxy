@@ -49,10 +49,10 @@ It's a [Pydantic](https://docs.pydantic.dev/latest/) model.
     1. ID columns are *almost* a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).
 
 ```py
-from metaxy import BaseFeature, FeatureSpec
+import metaxy as mx
 
 
-class VideoFeature(BaseFeature, spec=FeatureSpec(key="/raw/video", id_columns=["video_id"])):
+class VideoFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="raw/video", id_columns=["video_id"])):
     path: str
 ```
 
@@ -68,8 +68,8 @@ Now let's define a child feature.
 
 ```py
 class Transcript(
-    BaseFeature,
-    spec=FeatureSpec(key="/processed/transcript", id_columns=["video_id"], deps=[VideoFeature]),
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(key="processed/transcript", id_columns=["video_id"], deps=[VideoFeature]),
 ):
     transcript_path: str
     speakers_json_path: str
@@ -106,28 +106,29 @@ At this point, careful readers have probably noticed that the `Transcript` featu
 Let's express this with Metaxy:
 
 ```py
-from metaxy import FieldDep, FieldSpec
+import metaxy as mx
 
-video_spec = FeatureSpec(key="/raw/video", fields=["audio", "frames"])
+video_spec = mx.FeatureSpec(key="raw/video2", id_columns=["video_id"], fields=["audio", "frames"])
 
 
-class VideoFeature(BaseFeature, spec=video_spec):
+class VideoFeature2(mx.BaseFeature, spec=video_spec):
     path: str
 
 
-transcript_spec = TranscriptFeatureSpec(
-    key="/raw/transcript",
+transcript_spec = mx.FeatureSpec(
+    key="raw/transcript",
     id_columns=["video_id"],
+    deps=[VideoFeature2],
     fields=[
-        FieldSpec(
+        mx.FieldSpec(
             key="text",
-            deps=[FieldDep(feature=VideoFeature, fields=["audio"])],
+            deps=[mx.FieldDep(feature=VideoFeature2, fields=["audio"])],
         )
     ],
 )
 
 
-class TranscriptFeature(BaseTranscriptFeature, spec=transcript_spec):
+class TranscriptFeature(mx.BaseFeature, spec=transcript_spec):
     path: str
 ```
 

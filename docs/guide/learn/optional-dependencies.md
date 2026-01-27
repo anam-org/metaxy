@@ -14,17 +14,32 @@ When building features with multiple dependencies, you often want certain depend
 This is controlled by the `optional` parameter on [`FeatureDep`][metaxy.FeatureDep].
 
 ```python
-from metaxy import FeatureSpec, FeatureDep
+import metaxy as mx
 
-spec = FeatureSpec(
-    key="enriched/video",
-    id_columns=["video_id"],
-    deps=[
-        FeatureDep(feature=RawVideo),  # Required (default)
-        FeatureDep(feature=AudioTranscript, optional=True),  # Optional
-    ],
-    fields=["analysis"],
-)
+
+class RawVideo(mx.BaseFeature, spec=mx.FeatureSpec(key="raw/video", id_columns=["video_id"])):
+    path: str
+
+
+class AudioTranscript(
+    mx.BaseFeature, spec=mx.FeatureSpec(key="audio/transcript", id_columns=["video_id"], deps=[RawVideo])
+):
+    text: str
+
+
+class EnrichedVideo(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
+        key="enriched/video",
+        id_columns=["video_id"],
+        deps=[
+            mx.FeatureDep(feature=RawVideo),  # Required (default)
+            mx.FeatureDep(feature=AudioTranscript, optional=True),  # Optional
+        ],
+        fields=["analysis"],
+    ),
+):
+    pass
 ```
 
 ## Join Behavior
@@ -45,15 +60,27 @@ If all dependencies are optional, outer joins are used instead to allow any row 
 Use optional dependencies when you have a **base feature** that should always be present, with **optional enrichment data** that may or may not exist:
 
 ```python
+class AudioTranscription(
+    mx.BaseFeature, spec=mx.FeatureSpec(key="audio/transcription", id_columns=["video_id"], deps=[RawVideo])
+):
+    transcript: str
+
+
+class ManualAnnotations(
+    mx.BaseFeature, spec=mx.FeatureSpec(key="manual/annotations", id_columns=["video_id"], deps=[RawVideo])
+):
+    labels: str
+
+
 class VideoAnalysis(
-    BaseFeature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="video/analysis",
         id_columns=["video_id"],
         deps=[
-            FeatureDep(feature=RawVideo),  # Required - defines sample universe
-            FeatureDep(feature=AudioTranscription, optional=True),  # Optional enrichment
-            FeatureDep(feature=ManualAnnotations, optional=True),  # Optional enrichment
+            mx.FeatureDep(feature=RawVideo),  # Required - defines sample universe
+            mx.FeatureDep(feature=AudioTranscription, optional=True),  # Optional enrichment
+            mx.FeatureDep(feature=ManualAnnotations, optional=True),  # Optional enrichment
         ],
         fields=["analysis"],
     ),
@@ -72,15 +99,30 @@ In this example:
 Use optional dependencies when combining data from **multiple sources** where not all sources have all samples:
 
 ```python
+import metaxy as mx
+
+
+class CoreUserData(mx.BaseFeature, spec=mx.FeatureSpec(key="user/core", id_columns=["user_id"])):
+    name: str
+
+
+class SocialMediaData(mx.BaseFeature, spec=mx.FeatureSpec(key="user/social", id_columns=["user_id"])):
+    followers: int
+
+
+class PurchaseHistory(mx.BaseFeature, spec=mx.FeatureSpec(key="user/purchases", id_columns=["user_id"])):
+    total_spent: float
+
+
 class UnifiedUserProfile(
-    BaseFeature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="user/unified",
         id_columns=["user_id"],
         deps=[
-            FeatureDep(feature=CoreUserData),  # Required base
-            FeatureDep(feature=SocialMediaData, optional=True),
-            FeatureDep(feature=PurchaseHistory, optional=True),
+            mx.FeatureDep(feature=CoreUserData),  # Required base
+            mx.FeatureDep(feature=SocialMediaData, optional=True),
+            mx.FeatureDep(feature=PurchaseHistory, optional=True),
         ],
         fields=["profile"],
     ),
