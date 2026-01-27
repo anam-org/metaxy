@@ -11,9 +11,26 @@ description: "Defining dependencies between features."
 
 Now let's add a downstream feature. We can use `deps` field on [`FeatureSpec`][metaxy.FeatureSpec] in order to do that.
 
-```py {title="features.py, hl_lines="13"}
+```py {title="features.py" hl_lines="31"}
 import metaxy as mx
 from pydantic import Field
+
+
+class Video(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
+        key="video",
+        id_columns=["video_id"],
+        fields=[
+            "audio",
+            "frames",
+        ],
+    ),
+):
+    # define DB columns
+    video_id: str = Field(description="Unique identifier for the video")
+    path: str = Field(description="Path to the video file")
+    duration: float = Field(description="Duration of the video in seconds")
 
 
 class CroppedVideo(

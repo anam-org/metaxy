@@ -29,12 +29,18 @@ The following syntax is supported:
 !!! example
 
     ```py
+    import polars as pl
+    import narwhals as nw
     from metaxy.models.filter_expression import parse_filter_string
 
-    df = ...  # a Narwhals frame
+    # Create a sample Polars DataFrame
+    pdf = pl.DataFrame({"age": [10, 20, 30], "status": ["active", "deleted", "active"]})
+    df = nw.from_native(pdf)
 
     # Parse a SQL WHERE clause into a backend-agnostic Narwhals expression
     expr = parse_filter_string("(age > 25 OR age < 18) AND status != 'deleted'")
 
-    df = df.filter(expr)
+    result = df.filter(expr)
+
+    assert result["age"].to_list() == [10, 30]
     ```

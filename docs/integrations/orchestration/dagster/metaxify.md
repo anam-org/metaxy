@@ -26,10 +26,16 @@ Upstream Metaxy features are injected into `deps`.
 === "Code"
 
     ```py
-    spec = FeatureSpec(..., deps=[Chunk, BodyPose])  # (1)!
-    ```
+    import metaxy as mx
 
-    1.  :man_raising_hand: `Chunk` and `BodyPose` are Metaxy [feature classes][metaxy.BaseFeature]
+    class Chunk(mx.BaseFeature, spec=mx.FeatureSpec(key="chunk", id_columns=["id"])):
+        id: str
+
+    class BodyPose(mx.BaseFeature, spec=mx.FeatureSpec(key="body/pose", id_columns=["id"])):
+        id: str
+
+    spec = mx.FeatureSpec(key="downstream", id_columns=["id"], deps=[Chunk, BodyPose])
+    ```
 
 <!-- dprint-ignore-end -->
 
@@ -51,8 +57,11 @@ The Metaxy feature class docstring is used if the asset spec doesn't have a desc
 === "Code"
 
     ```py
-    class AudioFeature(...):
+    import metaxy as mx
+
+    class AudioFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="audio/feature", id_columns=["id"])):
         """Scene chunk audio with optional waveform visualization."""
+        id: str
     ```
 <!-- dprint-ignore-end -->
 
@@ -82,12 +91,15 @@ columns take precedence for columns with the same name).
 === "Code"
 
     ```py
-    class AudioFeature(...):
-        # some fields are inherited
+    import metaxy as mx
+    from pydantic import Field
+
+    class AudioFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="audio/feature2", id_columns=["id"])):
+        id: str
         duration: float = Field(description="duration in seconds")
         sample_rate: int = Field(description="sample rate in Hz")
         channels: int = Field(description="number of audio channels")
-        codec: str = Field(description="audio codec"))
+        codec: str = Field(description="audio codec")
     ```
 <!-- dprint-ignore-end -->
 

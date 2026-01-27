@@ -77,72 +77,77 @@ Consider a video processing pipeline with these features:
     and field names matching upstream fields automatically create field-level dependencies.
 
 ```python
-from metaxy import Feature, FeatureSpec, FieldDep, FieldSpec
+import metaxy as mx
 
 
 class Video(
-    Feature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="example/video",
+        id_columns=["video_id"],
         fields=[
-            FieldSpec(key="audio", code_version="1"),
-            FieldSpec(key="frames", code_version="1"),
+            mx.FieldSpec(key="audio", code_version="1"),
+            mx.FieldSpec(key="frames", code_version="1"),
         ],
     ),
 ):
     """Video metadata feature (root)."""
 
+    video_id: str
     frames: int
     duration: float
     size: int
 
 
 class Crop(
-    Feature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="example/crop",
+        id_columns=["video_id"],
         deps=[Video],
         fields=[
-            FieldSpec(key="audio", code_version="1"),  # (1)!
-            FieldSpec(key="frames", code_version="1"),  # (2)!
+            mx.FieldSpec(key="audio", code_version="1"),  # (1)!
+            mx.FieldSpec(key="frames", code_version="1"),  # (2)!
         ],
     ),
 ):
-    pass  # omit columns for the sake of simplicity
+    video_id: str  # ID column
 
 
 class FaceDetection(
-    Feature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="example/face_detection",
+        id_columns=["video_id"],
         deps=[Crop],
         fields=[
-            FieldSpec(
+            mx.FieldSpec(
                 key="faces",
                 code_version="1",
-                deps=[FieldDep(feature=Crop, fields=["frames"])],
+                deps=[mx.FieldDep(feature=Crop, fields=["frames"])],
             ),
         ],
     ),
 ):
-    pass
+    video_id: str
 
 
 class SpeechToText(
-    Feature,
-    spec=FeatureSpec(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
         key="example/stt",
+        id_columns=["video_id"],
         deps=[Video],
         fields=[
-            FieldSpec(
+            mx.FieldSpec(
                 key="transcription",
                 code_version="1",
-                deps=[FieldDep(feature=Video, fields=["audio"])],
+                deps=[mx.FieldDep(feature=Video, fields=["audio"])],
             ),
         ],
     ),
 ):
-    pass
+    video_id: str
 ```
 
 { .annotated }
@@ -205,10 +210,12 @@ Typically, steps 1-3 can be run directly in the database. Analytical databases s
 
 The Python pipeline then only handles the increment.
 
+<!-- skip: next -->
+
 ```python
 with store:  # MetadataStore
     # Metaxy computes provenance_by_field and identifies changes
-    increment = store.resolve_update(MyFeature)
+    increment = store.resolve_update(DownstreamFeature)
 
     # Process only changed samples
 ```

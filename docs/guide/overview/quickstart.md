@@ -55,6 +55,8 @@ class Video(
 
 Use [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update] to compute an increment for materialization:
 
+<!-- skip: next -->
+
 ```py {title="script.py"}
 import metaxy as mx
 
@@ -78,6 +80,8 @@ with store:
 
 Metaxy is not involved in this step at all.
 
+<!-- skip: next -->
+
 ```py {title="script.py"}
 if (len(increment.added) + len(increment.changed)) > 0:
     # run your computation, this can be done in a distributed manner
@@ -85,6 +89,8 @@ if (len(increment.added) + len(increment.changed)) > 0:
 ```
 
 ### 4. Record metadata for processed samples
+
+<!-- skip: next -->
 
 ```py {title="script.py"}
 with store.open("write"):
