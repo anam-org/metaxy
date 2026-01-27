@@ -11,7 +11,7 @@ import dagster as dg
 import narwhals as nw
 
 import metaxy as mx
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_COLUMN_LINEAGE_METADATA_KEY,
     DAGSTER_COLUMN_SCHEMA_METADATA_KEY,

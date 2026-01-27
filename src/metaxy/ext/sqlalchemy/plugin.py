@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import Column, DateTime, Index, MetaData, String, Table
 
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlalchemy.config import SQLAlchemyConfig
 from metaxy.metadata_store.system import EVENTS_KEY, FEATURE_VERSIONS_KEY
@@ -334,20 +334,17 @@ def filter_feature_sqla_metadata(
 
     Example: Basic Usage
 
+        <!-- skip next -->
         ```py
         from metaxy.ext.sqlalchemy import filter_feature_sqla_metadata
-        from metaxy import init_metaxy
-        from metaxy.config import MetaxyConfig
+        from sqlalchemy import MetaData
 
         # Load features first
-        init_metaxy()
+        mx.init_metaxy()
 
         # Get store instance
-        config = MetaxyConfig.get()
+        config = mx.MetaxyConfig.get()
         store = config.get_store("my_store")
-
-        # With custom metadata
-        from sqlalchemy import MetaData
 
         my_metadata = MetaData()
         # ... define tables in my_metadata ...
@@ -358,8 +355,8 @@ def filter_feature_sqla_metadata(
 
     Example: With SQLModel
 
+        <!-- skip next -->
         ```py
-        # With SQLModel
         from sqlmodel import SQLModel
 
         url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata)

@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter, field_serializer
 from pydantic import Field as PydanticField
 from typing_extensions import Self
 
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy.models.types import (
     CoercibleToFieldKey,
     FeatureKey,

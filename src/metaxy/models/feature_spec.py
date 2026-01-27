@@ -11,8 +11,8 @@ import pydantic
 from pydantic import BeforeValidator
 from typing_extensions import Self
 
+from metaxy._decorators import public
 from metaxy._hashing import truncate_hash
-from metaxy._public import public
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
@@ -63,34 +63,36 @@ class FeatureDep(pydantic.BaseModel):
     Example: Basic Usage
         ```py
         # Keep all columns with default field mapping (1:1 lineage)
-        FeatureDep(feature="upstream")
+        mx.FeatureDep(feature="upstream")
 
         # Keep only specific columns
-        FeatureDep(feature="upstream/feature", columns=("col1", "col2"))
+        mx.FeatureDep(feature="upstream/feature", columns=("col1", "col2"))
 
         # Rename columns to avoid conflicts
-        FeatureDep(feature="upstream/feature", rename={"old_name": "new_name"})
+        mx.FeatureDep(feature="upstream/feature", rename={"old_name": "new_name"})
 
         # SQL filters
-        FeatureDep(feature="upstream", filters=["age >= 25", "status = 'active'"])
+        mx.FeatureDep(feature="upstream", filters=["age >= 25", "status = 'active'"])
 
         # Optional dependency (left join - samples preserved even if no match)
-        FeatureDep(feature="enrichment/data", optional=True)
+        mx.FeatureDep(feature="enrichment/data", optional=True)
         ```
 
     Example: Lineage Relationships
         ```py
+        from metaxy.models.lineage import LineageRelationship
+
         # Aggregation: many sensor readings aggregate to one hourly stat
-        FeatureDep(feature="sensor_readings", lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]))
+        mx.FeatureDep(feature="sensor_readings", lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]))
 
         # Expansion: one video expands to many frames
-        FeatureDep(feature="video", lineage=LineageRelationship.expansion(on=["video_id"]))
+        mx.FeatureDep(feature="video", lineage=LineageRelationship.expansion(on=["video_id"]))
 
         # Mixed lineage: aggregate from one parent, identity from another
         # In FeatureSpec:
         deps = [
-            FeatureDep(feature="readings", lineage=LineageRelationship.aggregation(on=["sensor_id"])),
-            FeatureDep(feature="sensor_info", lineage=LineageRelationship.identity()),
+            mx.FeatureDep(feature="readings", lineage=LineageRelationship.aggregation(on=["sensor_id"])),
+            mx.FeatureDep(feature="sensor_info", lineage=LineageRelationship.identity()),
         ]
         ```
     """
@@ -304,9 +306,9 @@ class FeatureSpec(FrozenBaseModel):
 
         Example:
             ```py
-            spec = FeatureSpec(
-                key=FeatureKey(["my", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]))],
+            spec = mx.FeatureSpec(
+                key=mx.FeatureKey(["my", "feature"]),
+                id_columns=["id"],
             )
             spec.feature_spec_version
             # 'abc123...'  # 64-character hex string

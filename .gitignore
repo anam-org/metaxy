@@ -33,6 +33,7 @@ examples/.generated
 
 # Claude stuff
 PLAN.md
+.claude/plans
 plans/*.md
 .cache/
 .pg-wrappers/initdb

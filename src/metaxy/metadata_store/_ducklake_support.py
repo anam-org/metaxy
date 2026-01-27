@@ -14,7 +14,7 @@ from pydantic import (
     field_validator,
 )
 
-from metaxy._public import public
+from metaxy._decorators import public
 
 
 @runtime_checkable

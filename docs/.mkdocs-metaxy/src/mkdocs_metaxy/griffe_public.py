@@ -1,7 +1,7 @@
 """Griffe extension for @public decorator detection.
 
 This extension controls API visibility in documentation based on the presence
-of the `@public` decorator from `metaxy._public`.
+of the `@public` decorator from `metaxy._decorators`.
 
 Objects decorated with `@public` will appear in documentation.
 Objects without the decorator will be removed from the Griffe tree,
@@ -26,7 +26,7 @@ def _has_public_decorator(obj: griffe.Object) -> bool:
         return False
 
     for decorator in obj.decorators:
-        if decorator.callable_path == "metaxy._public.public":
+        if decorator.callable_path == "metaxy._decorators.public":
             return True
 
     return False

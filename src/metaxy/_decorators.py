@@ -1,4 +1,7 @@
-"""Public API decorator for documentation whitelisting."""
+"""Private module containing decorators for internal use.
+
+This module is not part of the public API.
+"""
 
 from __future__ import annotations
 
@@ -29,17 +32,14 @@ def public(obj: _T) -> _T:
 
     Example:
         ```python
-        from metaxy import public
-
-
-        @public
-        class MyFeature(BaseFeature):
+        @mx.public
+        class MyFeature(mx.BaseFeature):
             '''This feature will appear in documentation.'''
 
             pass
 
 
-        @public
+        @mx.public
         def my_function():
             '''This function will appear in documentation.'''
             pass

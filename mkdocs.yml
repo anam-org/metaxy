@@ -97,8 +97,13 @@ plugins:
             docstring_options:
               ignore_init_summary: true
             show_source: true
+            separate_signature: true
+            overloads_only: true
+            modernize_annotations: true
+            line_length: 60
             show_docstring_classes: true
             show_docstring_description: true
+            show_docstring_examples: true
             show_docstring_parameters: true
             show_root_heading: true
             show_root_full_path: true
@@ -106,8 +111,6 @@ plugins:
             scoped_crossrefs: true
             show_category_heading: true
             show_signature_annotations: true
-            separate_signature: true
-            line_length: 120
             merge_init_into_class: true
             docstring_section_style: list
             members_order: source

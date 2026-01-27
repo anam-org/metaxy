@@ -12,7 +12,7 @@ from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
 from metaxy import FeatureSpec
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlmodel.config import SQLModelPluginConfig
 from metaxy.models.constants import (
@@ -235,21 +235,21 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
 
     !!! example
 
+        <!-- skip next -->
         ```py
         from metaxy.integrations.sqlmodel import BaseSQLModelFeature
-        from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
         from sqlmodel import Field
 
 
         class VideoFeature(
             BaseSQLModelFeature,
             table=True,
-            spec=FeatureSpec(
-                key=FeatureKey(["video"]),
+            spec=mx.FeatureSpec(
+                key=mx.FeatureKey(["video"]),
                 id_columns=["uid"],
                 fields=[
-                    FieldSpec(
-                        key=FieldKey(["video_file"]),
+                    mx.FieldSpec(
+                        key=mx.FieldKey(["video_file"]),
                         code_version="1",
                     ),
                 ],
@@ -435,25 +435,23 @@ def filter_feature_sqlmodel_metadata(
 
     Example: Basic Usage
 
+        <!-- skip next -->
         ```py
         from sqlmodel import SQLModel
         from metaxy.ext.sqlmodel import filter_feature_sqlmodel_metadata
-        from metaxy import init_metaxy
-        from metaxy.config import MetaxyConfig
+        from alembic import context
 
         # Load features first
-        init_metaxy()
+        mx.init_metaxy()
 
         # Get store instance
-        config = MetaxyConfig.get()
+        config = mx.MetaxyConfig.get()
         store = config.get_store("my_store")
 
         # Filter SQLModel metadata with prefix transformation
         url, metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
 
         # Use with Alembic env.py
-        from alembic import context
-
         url, target_metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
         context.configure(url=url, target_metadata=target_metadata)
         ```

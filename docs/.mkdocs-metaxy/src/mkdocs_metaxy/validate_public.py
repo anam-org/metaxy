@@ -44,7 +44,7 @@ def _has_public_decorator(obj: griffe.Object) -> bool:
         return True
 
     for decorator in obj.decorators:
-        if decorator.callable_path in ("metaxy._public.public",):
+        if decorator.callable_path in ("metaxy._decorators.public",):
             return True
 
     return False
@@ -130,7 +130,7 @@ def on_files(files: list, config: dict) -> list:
         for file_path, identifier in sorted(errors):
             log.error(f"  {file_path}: {identifier}")
         log.error(
-            "\nAdd the @public decorator from metaxy._public to these objects, or remove them from the documentation."
+            "\nAdd the @public decorator from metaxy._decorators to these objects, or remove them from the documentation."
         )
         # This will cause mkdocs build --strict to fail
         raise SystemExit(1)

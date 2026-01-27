@@ -16,7 +16,7 @@ from narwhals.typing import Frame
 from pydantic import Field
 from typing_extensions import Self
 
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy.metadata_store.base import (
     MetadataStore,
     MetadataStoreConfig,
@@ -101,6 +101,7 @@ class IbisMetadataStore(MetadataStore, ABC):
     For other backends, override the calculator instance variable with backend-specific implementations.
 
     Example:
+        <!-- skip next -->
         ```py
         # ClickHouse
         store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
@@ -153,6 +154,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             ImportError: If Ibis or required backend driver not installed
 
         Example:
+            <!-- skip next -->
             ```py
             # Using connection string
             store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
@@ -350,6 +352,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             ValueError: If connection_string is not available
 
         Example:
+            <!-- skip next -->
             ```python
             store = IbisMetadataStore("postgresql://user:pass@host:5432/db")
             print(store.sqlalchemy_url)  # postgresql://user:pass@host:5432/db

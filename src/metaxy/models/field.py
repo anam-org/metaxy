@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal
 from pydantic import BaseModel, BeforeValidator, TypeAdapter
 from pydantic import Field as PydanticField
 
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy.models.constants import DEFAULT_CODE_VERSION
 from metaxy.models.types import (
     CoercibleToFieldKey,

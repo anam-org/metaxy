@@ -3,7 +3,7 @@
 import dagster as dg
 
 import metaxy as mx
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_PROJECT_TAG_KEY,
