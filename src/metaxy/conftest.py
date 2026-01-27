@@ -89,8 +89,14 @@ def sybil_setup(namespace):
         - mx: The metaxy module (import metaxy as mx)
         - graph: The active FeatureGraph instance for this document
         - MyFeature: A pre-defined feature class with key "my/feature"
+        - store: An empty DeltaMetadataStore in a temporary directory
+        - store_with_data: A DeltaMetadataStore with sample MyFeature data
     """
-    from metaxy._testing.doctest_fixtures import MyFeature, register_doctest_fixtures
+    from metaxy._testing.doctest_fixtures import (
+        DocsStoreFixtures,
+        MyFeature,
+        register_doctest_fixtures,
+    )
     from metaxy.models import feature as feature_module
     from metaxy.models.feature import FeatureGraph
 
@@ -102,6 +108,10 @@ def sybil_setup(namespace):
     # Register pre-defined fixtures to the isolated graph
     register_doctest_fixtures(isolated_graph)
 
+    # Set up store fixtures
+    store_fixtures = DocsStoreFixtures(isolated_graph)
+    store_fixtures.setup()
+
     # IMPORTANT: Override the module-level 'graph' variable so docstring examples
     # in feature.py use our isolated graph instead of the global singleton.
     # We restore it in teardown.
@@ -111,15 +121,23 @@ def sybil_setup(namespace):
     # Internal state
     namespace["_sybil_graph"] = isolated_graph
     namespace["_sybil_context_manager"] = context_manager
+    namespace["_store_fixtures"] = store_fixtures
 
     # Pre-populated symbols for examples
     namespace["mx"] = mx
     namespace["graph"] = isolated_graph
     namespace["MyFeature"] = MyFeature
+    namespace["store"] = store_fixtures.store
+    namespace["store_with_data"] = store_fixtures.store_with_data
 
 
 def sybil_teardown(namespace):
-    """Clean up the isolated FeatureGraph context."""
+    """Clean up the isolated FeatureGraph context and store fixtures."""
+    # Clean up store fixtures
+    store_fixtures = namespace.get("_store_fixtures")
+    if store_fixtures is not None:
+        store_fixtures.teardown()
+
     # Restore the original module-level graph
     original_graph = namespace.get("_original_module_graph")
     if original_graph is not None:
