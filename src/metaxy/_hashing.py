@@ -124,8 +124,11 @@ def truncate_string_column(df: nw.DataFrame[Any], column_name: str) -> nw.DataFr
 
     Example:
         ```py
+        import narwhals as nw
+        import polars as pl
+
         # With global config set to truncation_length=12:
-        df = nw.from_native(pd.DataFrame({"hash": ["a" * 64, "b" * 64]}))
+        df = nw.from_native(pl.DataFrame({"hash": ["a" * 64, "b" * 64]}))
         result = truncate_string_column(df, "hash")
         # result["hash"] contains ["aaaaaaaaaaaa", "bbbbbbbbbbbb"]
         ```

@@ -185,7 +185,7 @@ class StoreConfig(BaseSettings):
 
     Example:
         ```py
-        config = StoreConfig(
+        store_config = StoreConfig(
             type="metaxy_delta.DeltaMetadataStore",
             config={
                 "root_path": "s3://bucket/metadata",
@@ -301,6 +301,7 @@ class MetaxyConfig(BaseSettings):
     Environment variables can be templated with `${MY_VAR:-default}` syntax.
 
     Example: Accessing current configuration
+        <!-- skip next -->
         ```py
         config = MetaxyConfig.load()
         ```
@@ -561,8 +562,8 @@ class MetaxyConfig(BaseSettings):
 
         Example:
             ```py
-            config = MetaxyConfig(project="test")
-            with config.use():
+            test_config = MetaxyConfig(project="test")
+            with test_config.use():
                 # Code here uses test config
                 assert MetaxyConfig.get().project == "test"
             # Previous config restored
@@ -599,6 +600,7 @@ class MetaxyConfig(BaseSettings):
             Loaded config (TOML + env vars merged)
 
         Example:
+            <!-- skip next -->
             ```py
             # Auto-discover with parent search
             config = MetaxyConfig.load()
@@ -749,7 +751,6 @@ class MetaxyConfig(BaseSettings):
 
         Example:
             ```py
-            config = MetaxyConfig.load()
             store = config.get_store("prod")
 
             # Use default store
