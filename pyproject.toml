@@ -246,7 +246,7 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--snapshot-details"
+addopts = "--snapshot-details --doctest-modules --ignore=src/metaxy/ext/mcp --ignore=tests/fixtures"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 env = [

@@ -287,10 +287,6 @@ class FieldsMapping(BaseModel):
 
         Returns:
             Configured FieldsMapping instance.
-
-        Examples:
-            >>> # Use in field specifications
-            >>> FieldSpec(key="combined", fields_mapping=FieldsMapping.all())
         """
         return cls(mapping=AllFieldsMapping())
 

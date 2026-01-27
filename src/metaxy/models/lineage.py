@@ -61,11 +61,8 @@ class IdentityRelationship(BaseLineageRelationship):
     ID columns and have the same cardinality. No aggregation is performed.
 
     Examples:
-        >>> # Default 1:1 relationship
         >>> IdentityRelationship()
-
-        >>> # Or use the classmethod
-        >>> LineageRelationship.identity()
+        IdentityRelationship(type=<LineageRelationshipType.IDENTITY: '1:1'>)
     """
 
     type: Literal[LineageRelationshipType.IDENTITY] = LineageRelationshipType.IDENTITY
@@ -90,13 +87,8 @@ class AggregationRelationship(BaseLineageRelationship):
             target feature's ID columns. If not specified, uses all target ID columns.
 
     Examples:
-        >>> # Aggregate sensor readings by hour
         >>> AggregationRelationship(on=["sensor_id", "hour"])
-        >>> # Parent has: sensor_id, hour, minute
-        >>> # Child has: sensor_id, hour
-
-        >>> # Or use the classmethod
-        >>> LineageRelationship.aggregation(on=["user_id", "session_id"])
+        AggregationRelationship(type=<LineageRelationshipType.AGGREGATION: 'N:1'>, on=['sensor_id', 'hour'])
     """
 
     type: Literal[LineageRelationshipType.AGGREGATION] = LineageRelationshipType.AGGREGATION
@@ -129,18 +121,8 @@ class ExpansionRelationship(BaseLineageRelationship):
             the feature's load_input() method is responsible for ID generation.
 
     Examples:
-        >>> # Video frames from video
-        >>> ExpansionRelationship(
-        ...     on=["video_id"],  # Parent ID
-        ...     id_generation_pattern="sequential",
-        ... )
-        >>> # Parent has: video_id
-        >>> # Child has: video_id, frame_id (generated)
-
-        >>> # Text chunks from document
-        >>> ExpansionRelationship(on=["doc_id"])
-        >>> # Parent has: doc_id
-        >>> # Child has: doc_id, chunk_id (generated in load_input)
+        >>> ExpansionRelationship(on=["video_id"], id_generation_pattern="sequential")
+        ExpansionRelationship(type=<LineageRelationshipType.EXPANSION: '1:N'>, on=['video_id'], id_generation_pattern='sequential')
     """
 
     type: Literal[LineageRelationshipType.EXPANSION] = LineageRelationshipType.EXPANSION
@@ -198,7 +180,8 @@ class LineageRelationship(BaseModel):
             Configured LineageRelationship for 1:1 relationship.
 
         Examples:
-            >>> spec = FeatureSpec(key="feature", lineage=LineageRelationship.identity())
+            >>> LineageRelationship.identity()
+            LineageRelationship(relationship=IdentityRelationship(type=<LineageRelationshipType.IDENTITY: '1:1'>))
         """
         return cls(relationship=IdentityRelationship())
 
@@ -213,17 +196,8 @@ class LineageRelationship(BaseModel):
             Configured LineageRelationship for N:1 relationship.
 
         Examples:
-            >>> # Aggregate on specific columns
-            >>> spec = FeatureSpec(
-            ...     key="hourly_stats",
-            ...     id_columns=["sensor_id", "hour"],
-            ...     lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
-            ... )
-
-            >>> # Aggregate on all ID columns (default)
-            >>> spec = FeatureSpec(
-            ...     key="user_summary", id_columns=["user_id"], lineage=LineageRelationship.aggregation()
-            ... )
+            >>> LineageRelationship.aggregation(on=["sensor_id", "hour"])
+            LineageRelationship(relationship=AggregationRelationship(type=<LineageRelationshipType.AGGREGATION: 'N:1'>, on=['sensor_id', 'hour']))
         """
         return cls(relationship=AggregationRelationship(on=on))
 
@@ -246,19 +220,8 @@ class LineageRelationship(BaseModel):
             Configured LineageRelationship for 1:N relationship.
 
         Examples:
-            >>> # Sequential ID generation with explicit parent ID
-            >>> spec = FeatureSpec(
-            ...     key="video_frames",
-            ...     id_columns=["video_id", "frame_id"],
-            ...     lineage=LineageRelationship.expansion(on=["video_id"], id_generation_pattern="sequential"),
-            ... )
-
-            >>> # Custom ID generation in load_input()
-            >>> spec = FeatureSpec(
-            ...     key="text_chunks",
-            ...     id_columns=["doc_id", "chunk_id"],
-            ...     lineage=LineageRelationship.expansion(on=["doc_id"]),
-            ... )
+            >>> LineageRelationship.expansion(on=["video_id"], id_generation_pattern="sequential")
+            LineageRelationship(relationship=ExpansionRelationship(type=<LineageRelationshipType.EXPANSION: '1:N'>, on=['video_id'], id_generation_pattern='sequential'))
         """
         return cls(relationship=ExpansionRelationship(on=on, id_generation_pattern=id_generation_pattern))
 
