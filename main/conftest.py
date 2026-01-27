@@ -141,12 +141,12 @@ def sybil_setup(namespace):
     banned in documentation examples.
     """
     import narwhals as nw
-
-    from metaxy._testing.doctest_fixtures import (
+    from metaxy_testing.doctest_fixtures import (
         DocsStoreFixtures,
         MyFeature,
         register_doctest_fixtures,
     )
+
     from metaxy.models import feature as feature_module
 
     # Create isolated graph and enter its context
