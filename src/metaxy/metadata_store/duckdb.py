@@ -11,7 +11,7 @@ from typing_extensions import Self
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy.metadata_store._ducklake_support import (
     DuckDBPyConnection,
     DuckLakeAttachmentConfig,

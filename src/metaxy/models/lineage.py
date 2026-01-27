@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
 from typing_extensions import Self
 
-from metaxy._public import public
+from metaxy._decorators import public
 
 
 @public
@@ -58,14 +58,14 @@ class IdentityRelationship(BaseLineageRelationship):
     """One-to-one relationship where each child row maps to exactly one parent row.
 
     This is the default relationship type. Parent and child features share the same
-    ID columns and have the same cardinality. No aggregation is performed.
+    ID columns and have the same cardinality.
 
-    Examples:
-        >>> # Default 1:1 relationship
-        >>> IdentityRelationship()
+    Construct this relationship via [`LineageRelationship.identity`][metaxy.models.lineage.LineageRelationship.identity] classmethod.
 
-        >>> # Or use the classmethod
-        >>> LineageRelationship.identity()
+    Example:
+        ```python
+        mx.LineageRelationship.identity()
+        ```
     """
 
     type: Literal[LineageRelationshipType.IDENTITY] = LineageRelationshipType.IDENTITY
@@ -85,18 +85,16 @@ class AggregationRelationship(BaseLineageRelationship):
     Parent features have more granular ID columns than the child. The child aggregates
     multiple parent rows by grouping on a subset of the parent's ID columns.
 
+    Construct this relationship via [`LineageRelationship.aggregation`][metaxy.models.lineage.LineageRelationship.aggregation] classmethod.
+
     Attributes:
         on: Columns to group by for aggregation. These should be a subset of the
             target feature's ID columns. If not specified, uses all target ID columns.
 
-    Examples:
-        >>> # Aggregate sensor readings by hour
-        >>> AggregationRelationship(on=["sensor_id", "hour"])
-        >>> # Parent has: sensor_id, hour, minute
-        >>> # Child has: sensor_id, hour
-
-        >>> # Or use the classmethod
-        >>> LineageRelationship.aggregation(on=["user_id", "session_id"])
+    Example:
+        ```python
+        mx.LineageRelationship.aggregation(on=["sensor_id", "hour"])
+        ```
     """
 
     type: Literal[LineageRelationshipType.AGGREGATION] = LineageRelationshipType.AGGREGATION
@@ -120,6 +118,8 @@ class ExpansionRelationship(BaseLineageRelationship):
     Child features have more granular ID columns than the parent. Each parent row
     generates multiple child rows with additional ID columns.
 
+    Construct this relationship via [`LineageRelationship.expansion`][metaxy.models.lineage.LineageRelationship.expansion] classmethod.
+
     Attributes:
         on: Parent ID columns that identify the parent record. Child records with
             the same parent IDs will share the same upstream provenance.
@@ -128,19 +128,10 @@ class ExpansionRelationship(BaseLineageRelationship):
             Can be "sequential", "hash", or a custom pattern. If not specified,
             the feature's load_input() method is responsible for ID generation.
 
-    Examples:
-        >>> # Video frames from video
-        >>> ExpansionRelationship(
-        ...     on=["video_id"],  # Parent ID
-        ...     id_generation_pattern="sequential",
-        ... )
-        >>> # Parent has: video_id
-        >>> # Child has: video_id, frame_id (generated)
-
-        >>> # Text chunks from document
-        >>> ExpansionRelationship(on=["doc_id"])
-        >>> # Parent has: doc_id
-        >>> # Child has: doc_id, chunk_id (generated in load_input)
+    Example:
+        ```python
+        mx.LineageRelationship.expansion(on=["video_id"], id_generation_pattern="sequential")
+        ```
     """
 
     type: Literal[LineageRelationshipType.EXPANSION] = LineageRelationshipType.EXPANSION
@@ -197,8 +188,10 @@ class LineageRelationship(BaseModel):
         Returns:
             Configured LineageRelationship for 1:1 relationship.
 
-        Examples:
-            >>> spec = FeatureSpec(key="feature", lineage=LineageRelationship.identity())
+        Example:
+            ```python
+            mx.LineageRelationship.identity()
+            ```
         """
         return cls(relationship=IdentityRelationship())
 
@@ -212,18 +205,10 @@ class LineageRelationship(BaseModel):
         Returns:
             Configured LineageRelationship for N:1 relationship.
 
-        Examples:
-            >>> # Aggregate on specific columns
-            >>> spec = FeatureSpec(
-            ...     key="hourly_stats",
-            ...     id_columns=["sensor_id", "hour"],
-            ...     lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
-            ... )
-
-            >>> # Aggregate on all ID columns (default)
-            >>> spec = FeatureSpec(
-            ...     key="user_summary", id_columns=["user_id"], lineage=LineageRelationship.aggregation()
-            ... )
+        Example:
+            ```py
+            mx.LineageRelationship.aggregation(on=["sensor_id", "hour"])
+            ```
         """
         return cls(relationship=AggregationRelationship(on=on))
 
@@ -245,20 +230,10 @@ class LineageRelationship(BaseModel):
         Returns:
             Configured LineageRelationship for 1:N relationship.
 
-        Examples:
-            >>> # Sequential ID generation with explicit parent ID
-            >>> spec = FeatureSpec(
-            ...     key="video_frames",
-            ...     id_columns=["video_id", "frame_id"],
-            ...     lineage=LineageRelationship.expansion(on=["video_id"], id_generation_pattern="sequential"),
-            ... )
-
-            >>> # Custom ID generation in load_input()
-            >>> spec = FeatureSpec(
-            ...     key="text_chunks",
-            ...     id_columns=["doc_id", "chunk_id"],
-            ...     lineage=LineageRelationship.expansion(on=["doc_id"]),
-            ... )
+        Example:
+            ```py
+            mx.LineageRelationship.expansion(on=["video_id"], id_generation_pattern="sequential")
+            ```
         """
         return cls(relationship=ExpansionRelationship(on=on, id_generation_pattern=id_generation_pattern))
 

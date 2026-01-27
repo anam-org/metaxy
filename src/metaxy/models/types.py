@@ -23,7 +23,7 @@ from pydantic import (
     model_validator,
 )
 
-from metaxy._public import public
+from metaxy._decorators import public
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -473,12 +473,9 @@ Accepted formats:
 
 Example:
     ```python
-    from metaxy import FeatureKey
-
-    # All of these are valid `CoercibleToFeatureKey` values:
     key1 = "raw/video"
     key2 = ["raw", "video"]
-    key3 = FeatureKey("raw/video")
+    key3 = mx.FeatureKey("raw/video")
     key4 = MyFeatureClass  # where MyFeatureClass is a BaseFeature subclass
     ```
 """
@@ -494,12 +491,9 @@ Accepted formats:
 
 Example:
     ```python
-    from metaxy import FieldKey
-
-    # All of these are valid `CoercibleToFieldKey` values:
     key1 = "audio/english"
     key2 = ["audio", "english"]
-    key3 = FieldKey("audio/english")
+    key3 = mx.FieldKey("audio/english")
     ```
 """
 

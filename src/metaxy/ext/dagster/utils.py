@@ -5,7 +5,7 @@ import dagster as dg
 import narwhals as nw
 
 import metaxy as mx
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_CODE_VERSION_TAG_KEY,
     DAGSTER_METAXY_FEATURE_METADATA_KEY,

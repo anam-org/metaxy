@@ -9,8 +9,8 @@ from pydantic import AwareDatetime, Field, model_validator
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
+from metaxy._decorators import public
 from metaxy._hashing import truncate_hash
-from metaxy._public import public
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
@@ -61,13 +61,9 @@ def get_feature_by_key(key: CoercibleToFeatureKey) -> type["BaseFeature"]:
 
     Example:
         ```py
-        from metaxy import get_feature_by_key, FeatureKey
-
-        parent_key = FeatureKey(["examples", "parent"])
-        ParentFeature = get_feature_by_key(parent_key)
-
-        # Or use string notation
-        ParentFeature = get_feature_by_key("examples/parent")
+        MyFeature = mx.get_feature_by_key("my/feature")
+        MyFeature.spec().key
+        # FeatureKey(['my', 'feature'])
         ```
     """
     graph = FeatureGraph.get_active()
@@ -229,12 +225,9 @@ class FeatureGraph:
 
         Example:
             ```py
-            graph = FeatureGraph.get_active()
-            parent_key = FeatureKey(["examples", "parent"])
-            ParentFeature = graph.get_feature_by_key(parent_key)
-
-            # Or use string notation
-            ParentFeature = graph.get_feature_by_key("examples/parent")
+            MyFeature = graph.get_feature_by_key("my/feature")
+            MyFeature.spec().key
+            # FeatureKey(['my', 'feature'])
             ```
         """
         # Validate and coerce the key
@@ -271,15 +264,8 @@ class FeatureGraph:
 
         Example:
             ```py
-            # Get all features for current project
-            graph = FeatureGraph.get_active()
-            features = graph.list_features()
-
             # Get features for specific project
             features = graph.list_features(projects="myproject")
-
-            # Get features for multiple projects
-            features = graph.list_features(projects=["project1", "project2"])
 
             # Get all features regardless of project
             all_features = graph.list_features(only_current_project=False)
@@ -403,13 +389,34 @@ class FeatureGraph:
 
         Example:
             ```py
-            # DAG: A -> B -> D
-            #      A -> C -> D
-            graph.get_downstream_features([FeatureKey(["A"])])
-            # [FeatureKey(["B"]), FeatureKey(["C"]), FeatureKey(["D"])]
+            # Build a DAG: a -> b -> d, a -> c -> d
+            class FeatureA(mx.BaseFeature, spec=mx.FeatureSpec(key="a", id_columns=["id"])):
+                id: str
 
-            # Or use string notation
-            graph.get_downstream_features(["A"])
+
+            class FeatureB(
+                mx.BaseFeature, spec=mx.FeatureSpec(key="b", id_columns=["id"], deps=[mx.FeatureDep(feature=FeatureA)])
+            ):
+                id: str
+
+
+            class FeatureC(
+                mx.BaseFeature, spec=mx.FeatureSpec(key="c", id_columns=["id"], deps=[mx.FeatureDep(feature=FeatureA)])
+            ):
+                id: str
+
+
+            class FeatureD(
+                mx.BaseFeature,
+                spec=mx.FeatureSpec(
+                    key="d", id_columns=["id"], deps=[mx.FeatureDep(feature=FeatureB), mx.FeatureDep(feature=FeatureC)]
+                ),
+            ):
+                id: str
+
+
+            graph.get_downstream_features(["a"])
+            # [FeatureKey(['b']), FeatureKey(['c']), FeatureKey(['d'])]
             ```
         """
         # Validate and coerce the source keys
@@ -473,23 +480,19 @@ class FeatureGraph:
 
         Example:
             ```py
-            graph = FeatureGraph.get_active()
-            # Sort specific features (dependencies first)
-            sorted_keys = graph.topological_sort_features(
-                [
-                    FeatureKey(["video", "raw"]),
-                    FeatureKey(["video", "scene"]),
-                ]
-            )
+            class VideoRaw(mx.BaseFeature, spec=mx.FeatureSpec(key="video/raw", id_columns=["id"])):
+                id: str
 
-            # Or use string notation
-            sorted_keys = graph.topological_sort_features(["video/raw", "video/scene"])
 
-            # Sort all features in the graph (including standalone specs)
-            all_sorted = graph.topological_sort_features()
+            class VideoScene(
+                mx.BaseFeature,
+                spec=mx.FeatureSpec(key="video/scene", id_columns=["id"], deps=[mx.FeatureDep(feature=VideoRaw)]),
+            ):
+                id: str
 
-            # Sort with dependents first (useful for processing leaf nodes before roots)
-            reverse_sorted = graph.topological_sort_features(descending=True)
+
+            graph.topological_sort_features(["video/raw", "video/scene"])
+            # [FeatureKey(['video', 'raw']), FeatureKey(['video', 'scene'])]
             ```
         """
         # Determine which features to sort
@@ -556,17 +559,13 @@ class FeatureGraph:
 
         Example:
             ```py
+            class VideoProcessing(mx.BaseFeature, spec=mx.FeatureSpec(key="video_processing", id_columns=["id"])):
+                id: str
+
+
             snapshot = graph.to_snapshot()
-            snapshot["video_processing"]["metaxy_feature_version"]
-            # 'abc12345'
-            snapshot["video_processing"]["metaxy_feature_spec_version"]
-            # 'def67890'
-            snapshot["video_processing"]["metaxy_full_definition_version"]
-            # 'xyz98765'
-            snapshot["video_processing"]["feature_class_path"]
-            # 'myapp.features.video.VideoProcessing'
-            snapshot["video_processing"]["project"]
-            # 'myapp'
+            "video_processing" in snapshot
+            # True
             ```
         """
         snapshot: dict[str, SerializedFeature] = {}
@@ -626,7 +625,9 @@ class FeatureGraph:
             ImportError: If feature class cannot be imported at recorded path
 
         Example:
+            <!-- skip next -->
             ```py
+            snapshot_data = {}  # Loaded from metadata store
             # Load snapshot from metadata store
             historical_graph = FeatureGraph.from_snapshot(snapshot_data)
 
@@ -742,12 +743,7 @@ class FeatureGraph:
 
         Example:
             ```py
-            # Normal usage - returns default graph
-            reg = FeatureGraph.get_active()
-
-            # With custom graph in context
-            with my_graph.use():
-                reg = FeatureGraph.get_active()  # Returns my_graph
+            graph = mx.FeatureGraph.get_active()
             ```
         """
         return _active_graph.get() or graph
@@ -764,12 +760,9 @@ class FeatureGraph:
 
         Example:
             ```py
-            # In application setup
-            my_graph = FeatureGraph()
-            FeatureGraph.set_active(my_graph)
-
-            # Now all operations use my_graph
-            FeatureGraph.get_active()  # Returns my_graph
+            my_graph = mx.FeatureGraph()
+            mx.FeatureGraph.set_active(my_graph)
+            mx.FeatureGraph.get_active()  # Returns my_graph
             ```
         """
         _active_graph.set(reg)
@@ -786,14 +779,10 @@ class FeatureGraph:
 
         Example:
             ```py
-            test_graph = FeatureGraph()
+            with graph.use():
 
-            with test_graph.use():
-                # All operations use test_graph
-                class TestFeature(Feature, spec=...):
-                    pass
-
-            # Outside context, back to previous graph
+                class TestFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="test", id_columns=["id"])):
+                    id: str
             ```
         """
         token = _active_graph.set(self)
@@ -989,11 +978,10 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
         Example:
             ```py
-            class VideoFeature(Feature, spec=FeatureSpec(
-                key=FeatureKey(["video", "processing"]),
-                ...
-            )):
-                pass
+            class VideoFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="video/processing", id_columns=["id"])):
+                id: str
+
+
             VideoFeature.table_name()
             # 'video__processing'
             ```
@@ -1022,14 +1010,8 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
         Example:
             ```py
-            class MyFeature(
-                Feature,
-                spec=FeatureSpec(
-                    key=FeatureKey(["my", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                ),
-            ):
-                pass
+            class MyFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="my/feature", id_columns=["id"])):
+                id: str
 
 
             MyFeature.feature_version()
@@ -1060,14 +1042,8 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
         Example:
             ```py
-            class MyFeature(
-                Feature,
-                spec=FeatureSpec(
-                    key=FeatureKey(["my", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                ),
-            ):
-                pass
+            class MyFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="my/feature2", id_columns=["id"])):
+                id: str
 
 
             MyFeature.feature_spec_version()
@@ -1183,14 +1159,16 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
             Increment (eager) or LazyIncrement (lazy) with added, changed, removed
 
         Example (default):
+            <!-- skip next -->
             ```py
-            class MyFeature(Feature, spec=...):
+            class MyFeature(BaseFeature, spec=...):
                 pass  # Uses diff resolver's default implementation
             ```
 
         Example (ignore certain field changes):
+            <!-- skip next -->
             ```py
-            class MyFeature(Feature, spec=...):
+            class MyFeature(BaseFeature, spec=...):
                 @classmethod
                 def resolve_data_version_diff(cls, diff_resolver, target_provenance, current_metadata, **kwargs):
                     # Get standard diff

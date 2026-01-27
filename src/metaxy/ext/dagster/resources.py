@@ -1,7 +1,7 @@
 import dagster as dg
 
 import metaxy as mx
-from metaxy._public import public
+from metaxy._decorators import public
 
 
 @public

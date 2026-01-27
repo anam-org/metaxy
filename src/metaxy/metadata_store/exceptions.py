@@ -1,6 +1,6 @@
 """Exceptions for metadata store operations."""
 
-from metaxy._public import public
+from metaxy._decorators import public
 
 
 @public

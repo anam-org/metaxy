@@ -85,13 +85,15 @@ def generate_migration(
         ValueError: If only one snapshot_version is provided, or snapshots not found
 
     Example (default mode):
+        <!-- skip next -->
         ```py
         migration = generate_migration(store, project="my_project")
         if migration:
-        migration.to_yaml("migrations/001_update.yaml")
-
+            migration.to_yaml("migrations/001_update.yaml")
         ```
+
     Example (historical mode):
+        <!-- skip next -->
         ```py
         migration = generate_migration(
             store,

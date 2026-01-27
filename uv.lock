@@ -2885,6 +2885,7 @@ dev = [
     { name = "pytest-rerunfailures" },
     { name = "ray", marker = "python_full_version < '3.13' or sys_platform != 'win32'" },
     { name = "ruff" },
+    { name = "sybil" },
     { name = "syrupy" },
     { name = "ty" },
     { name = "vulture" },
@@ -2974,6 +2975,7 @@ dev = [
     { name = "pytest-rerunfailures", specifier = ">=15.0" },
     { name = "ray", marker = "python_full_version < '3.13' or sys_platform != 'win32'", specifier = ">2.36.0" },
     { name = "ruff", specifier = ">=0.14.4" },
+    { name = "sybil", specifier = ">=9.3.0" },
     { name = "syrupy", specifier = ">=5.0.0" },
     { name = "ty", specifier = "==0.0.10" },
     { name = "vulture", specifier = ">=2.14" },
@@ -5693,6 +5695,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e0/de/a0c3d1244912c260638f0f925e190e493ccea37ecaea9bbad7c14413b803/super_collections-0.6.2.tar.gz", hash = "sha256:0c8d8abacd9fad2c7c1c715f036c29f5db213f8cac65f24d45ecba12b4da187a", size = 31315, upload-time = "2025-09-30T00:37:08.067Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/17/43/47c7cf84b3bd74a8631b02d47db356656bb8dff6f2e61a4c749963814d0d/super_collections-0.6.2-py3-none-any.whl", hash = "sha256:291b74d26299e9051d69ad9d89e61b07b6646f86a57a2f5ab3063d206eee9c56", size = 16173, upload-time = "2025-09-30T00:37:07.104Z" },
+]
+
+[[package]]
+name = "sybil"
+version = "9.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c6/46/bae21847b8d761ddd6ede1811d32818342dbd482c32a2a5805c28d9b2f18/sybil-9.3.0.tar.gz", hash = "sha256:847d1d17b8a857c4bb3f8471b4a57b8affa939a60fbf507e70aa72ad79097c05", size = 89078, upload-time = "2025-12-02T09:29:09.302Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2c/08/cd3cf2a82570748cfb3142e795044197deff81ad3b70a0b9a9c22331e70a/sybil-9.3.0-py3-none-any.whl", hash = "sha256:0b108b980ab9fac774953042b07fcb5858aa19a38404d0cb42c30c93423ac0c1", size = 39286, upload-time = "2025-12-02T09:29:08.417Z" },
 ]
 
 [[package]]

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy._version import __version__
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.entrypoints import (

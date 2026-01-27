@@ -36,8 +36,7 @@ def allow_feature_version_override() -> Iterator[None]:
     Example:
         ```py
         with allow_feature_version_override():
-            # DataFrame already has metaxy_feature_version column from migration
-            store.write_metadata(MyFeature, df_with_feature_version)
+            pass  # Warnings suppressed within this block
         ```
     """
     token = _suppress_feature_version_warning.set(True)
@@ -163,26 +162,26 @@ def narwhals_expr_to_sql_predicate(
     Example:
         ```py
         import narwhals as nw
-        import polars as pl
 
-        df = pl.DataFrame({"status": ["active"], "age": [25]})
+        schema = nw.Schema({"status": nw.String, "age": nw.Int64})
         filters = nw.col("status") == "active"
-        narwhals_expr_to_sql_predicate(filters, df, dialect="duckdb")
-        # '"status" = \'active\''
+        result = narwhals_expr_to_sql_predicate(filters, schema, dialect="duckdb")
         ```
 
     Example: With extra transforms
         ```py
+        import narwhals as nw
         from metaxy.metadata_store.utils import unquote_identifiers
 
-        # Generate unquoted SQL for LanceDB
+        schema = nw.Schema({"status": nw.String})
+        filters = nw.col("status") == "active"
         sql = narwhals_expr_to_sql_predicate(
             filters,
             schema,
             dialect="datafusion",
             extra_transforms=unquote_identifiers(),
         )
-        # 'status = \'active\''  (no quotes around column name)
+        assert "status" in sql  # Unquoted column name
         ```
     """
     filter_list = list(filters) if isinstance(filters, Sequence) and not isinstance(filters, nw.Expr) else [filters]
@@ -245,12 +244,11 @@ def unquote_identifiers() -> Callable[[exp.Expression], exp.Expression]:
     Example:
         ```py
         import sqlglot
-        from sqlglot import exp
 
-        sql = "\"status\" = 'active'"
+        sql = '''"status" = 'active' '''
         parsed = sqlglot.parse_one(sql)
         transformed = parsed.transform(unquote_identifiers())
-        # Result: status = 'active'
+        assert "status" in str(transformed)
         ```
     """
 

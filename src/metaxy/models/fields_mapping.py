@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter, field_serializer
 from pydantic import Field as PydanticField
 from typing_extensions import Self
 
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy.models.types import (
     CoercibleToFieldKey,
     FeatureKey,
@@ -287,10 +287,6 @@ class FieldsMapping(BaseModel):
 
         Returns:
             Configured FieldsMapping instance.
-
-        Examples:
-            >>> # Use in field specifications
-            >>> FieldSpec(key="combined", fields_mapping=FieldsMapping.all())
         """
         return cls(mapping=AllFieldsMapping())
 

@@ -7,7 +7,7 @@ from typing import Any, NamedTuple
 import narwhals as nw
 import polars as pl
 
-from metaxy._public import public
+from metaxy._decorators import public
 from metaxy._utils import lazy_frame_to_polars
 
 
