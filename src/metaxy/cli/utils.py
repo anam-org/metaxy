@@ -350,8 +350,8 @@ class FeatureSelector:
                 )
 
         # Check which keys exist in graph
-        valid = [k for k in parsed_keys if k in graph.features_by_key]
-        missing = [k for k in parsed_keys if k not in graph.features_by_key]
+        valid = [k for k in parsed_keys if k in graph.feature_definitions_by_key]
+        missing = [k for k in parsed_keys if k not in graph.feature_definitions_by_key]
 
         return valid, missing
 

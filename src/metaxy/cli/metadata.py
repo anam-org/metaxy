@@ -138,7 +138,7 @@ def status(
         compute_progress = progress or verbose
 
         for feature_key in selector:
-            feature_cls = graph.features_by_key[feature_key]
+            feature_cls = graph.get_feature_by_key(feature_key)
             try:
                 status_with_increment = get_feature_metadata_status(
                     feature_cls,

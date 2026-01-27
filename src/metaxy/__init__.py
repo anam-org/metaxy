@@ -27,6 +27,7 @@ from metaxy.models.feature import (
     current_graph,
     get_feature_by_key,
     graph,
+    resolve_data_version_diff,
 )
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.feature_spec import (
@@ -128,6 +129,7 @@ __all__ = [
     "graph",
     "FeatureSpec",
     "get_feature_by_key",
+    "resolve_data_version_diff",
     "FeatureDep",
     "FeatureDepMetadata",
     "FeatureSpec",

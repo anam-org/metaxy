@@ -142,12 +142,9 @@ def generate_migration(
             print(f"To: current active graph (snapshot {to_snapshot_version}... pushed)")
 
     else:
-        # Historical mode: load from snapshot with force_reload
-        # force_reload ensures we get current code from disk, not cached imports
+        # Historical mode: load from snapshot
         to_graph = SystemTableStorage(store).load_graph_from_snapshot(
             snapshot_version=to_snapshot_version,
-            class_path_overrides=class_path_overrides,
-            force_reload=True,
         )
         print(f"To: snapshot {to_snapshot_version}...")
 
@@ -219,12 +216,11 @@ def generate_migration(
 
     for downstream_key in downstream_keys:
         feature_key_str = downstream_key.to_string()
-        feature_cls = to_graph.features_by_key[downstream_key]
 
         # Check if feature exists in from_snapshot (if not, it's new - skip)
         try:
             from_metadata = store.read_metadata(
-                feature_cls,
+                downstream_key,
                 current_only=False,
                 allow_fallback=False,
                 filters=[nw.col("metaxy_snapshot_version") == from_snapshot_version],

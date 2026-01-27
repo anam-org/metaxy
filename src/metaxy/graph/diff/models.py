@@ -269,9 +269,9 @@ class GraphData(FrozenBaseModel):
         edges: list[EdgeData] = []
 
         # Convert each feature to a GraphNode
-        for feature_key, feature_cls in graph.features_by_key.items():
+        for feature_key, definition in graph.feature_definitions_by_key.items():
             feature_key_str = feature_key.to_string()
-            spec = feature_cls.spec()
+            spec = definition.spec
 
             # Get feature version
             feature_version = graph.get_feature_version(feature_key)
@@ -297,8 +297,8 @@ class GraphData(FrozenBaseModel):
             if spec.deps:
                 dependencies = [dep.feature for dep in spec.deps]
 
-            # Get project from feature class
-            feature_project = feature_cls.metaxy_project()
+            # Get project from feature definition
+            feature_project = definition.project
 
             # Create node
             node = GraphNode(

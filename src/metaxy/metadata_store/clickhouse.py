@@ -292,14 +292,14 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         # Get field names from the feature spec
         graph = FeatureGraph.get_active()
-        if feature_key not in graph.features_by_key:
+        definition = graph.feature_definitions_by_key.get(feature_key)
+        if definition is None:
             # Feature not in graph - fall back to String cast
             return table[col_name].cast("string")
 
-        feature_cls = graph.features_by_key[feature_key]
         # Use to_struct_key() for struct field names (uses "_" separator, not "/")
         # This matches how provenance/data_version fields are accessed elsewhere
-        field_names = [f.key.to_struct_key() for f in feature_cls.spec().fields]
+        field_names = [f.key.to_struct_key() for f in definition.spec.fields]
 
         if not field_names:
             return table[col_name].cast("string")

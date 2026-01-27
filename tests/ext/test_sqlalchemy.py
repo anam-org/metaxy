@@ -50,6 +50,7 @@ def config_project_a(_clear_sqlmodel_metadata):
     )
     with config.use():
         # Define ProjectAFeature within the config context
+        # Set __metaxy_project__ as class attribute to ensure it's captured at registration time
         class ProjectAFeature(
             BaseSQLModelFeature,
             table=True,
@@ -61,13 +62,12 @@ def config_project_a(_clear_sqlmodel_metadata):
         ):
             """Feature for project A."""
 
+            __metaxy_project__ = "project_a"
             sample_uid: str = Field(primary_key=True)
             value: str
 
-        # Override project to simulate different packages
-        ProjectAFeature.__metaxy_project__ = "project_a"
-
         # Also define ProjectBFeature (for explicit_project test)
+        # Set __metaxy_project__ as class attribute to ensure it's captured at registration time
         class ProjectBFeature(
             BaseSQLModelFeature,
             table=True,
@@ -79,11 +79,9 @@ def config_project_a(_clear_sqlmodel_metadata):
         ):
             """Feature for project B."""
 
+            __metaxy_project__ = "project_b"
             sample_uid: str = Field(primary_key=True)
             value: str
-
-        # Override project to simulate different packages
-        ProjectBFeature.__metaxy_project__ = "project_b"
 
         yield config
 
@@ -103,6 +101,7 @@ def config_project_b(_clear_sqlmodel_metadata):
     )
     with config.use():
         # Define ProjectBFeature within the config context
+        # Set __metaxy_project__ as class attribute to ensure it's captured at registration time
         class ProjectBFeature(
             BaseSQLModelFeature,
             table=True,
@@ -114,11 +113,9 @@ def config_project_b(_clear_sqlmodel_metadata):
         ):
             """Feature for project B."""
 
+            __metaxy_project__ = "project_b"
             sample_uid: str = Field(primary_key=True)
             value: str
-
-        # Override project to simulate different packages
-        ProjectBFeature.__metaxy_project__ = "project_b"
 
         yield config
 
@@ -138,6 +135,7 @@ def config_no_filter(_clear_sqlmodel_metadata):
     )
     with config.use():
         # Define both features for the no-filter test
+        # Set __metaxy_project__ as class attribute to ensure it's captured at registration time
         class ProjectAFeature(
             BaseSQLModelFeature,
             table=True,
@@ -149,12 +147,11 @@ def config_no_filter(_clear_sqlmodel_metadata):
         ):
             """Feature for project A."""
 
+            __metaxy_project__ = "project_a"
             sample_uid: str = Field(primary_key=True)
             value: str
 
-        # Override project to simulate different packages
-        ProjectAFeature.__metaxy_project__ = "project_a"
-
+        # Set __metaxy_project__ as class attribute to ensure it's captured at registration time
         class ProjectBFeature(
             BaseSQLModelFeature,
             table=True,
@@ -166,11 +163,9 @@ def config_no_filter(_clear_sqlmodel_metadata):
         ):
             """Feature for project B."""
 
+            __metaxy_project__ = "project_b"
             sample_uid: str = Field(primary_key=True)
             value: str
-
-        # Override project to simulate different packages
-        ProjectBFeature.__metaxy_project__ = "project_b"
 
         yield config
 
