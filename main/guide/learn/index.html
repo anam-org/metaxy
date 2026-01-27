@@ -6,37 +6,43 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Comprehensive documentation for using Metaxy in your multi-modal pipelines.">
+        <meta name="description" content="Core concepts and abstractions in Metaxy.">
       
       
       
-        <link rel="canonical" href="https://docs.metaxy.io/main/guide/">
+        <link rel="canonical" href="https://docs.metaxy.io/main/guide/learn/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../overview/feature-dependencies/">
       
       
-        <link rel="next" href="overview/quickstart/">
+        <link rel="next" href="metadata-stores/">
       
       
         
       
       
-      <link rel="icon" href="../assets/favicon.ico">
+      <link rel="icon" href="../../assets/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
     
     
       
-        <title>User Guide - Metaxy</title>
+        <title>Concepts - Metaxy</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
+
+  
+  
+  
+  
+  <style>:root{--md-annotation-icon:url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20576%20512%22%3E%3C%21--%21%20Font%20Awesome%20Free%207.1.0%20by%20%40fontawesome%20-%20https%3A//fontawesome.com%20License%20-%20https%3A//fontawesome.com/license/free%20%28Icons%3A%20CC%20BY%204.0%2C%20Fonts%3A%20SIL%20OFL%201.1%2C%20Code%3A%20MIT%20License%29%20Copyright%202025%20Fonticons%2C%20Inc.--%3E%3Cpath%20d%3D%22m263.4-27%2014.8%2036.8L315%2024.6c3%201.2%205%204.2%205%207.4s-2%206.2-5%207.4l-36.8%2014.8L263.4%2091c-1.2%203-4.2%205-7.4%205s-6.2-2-7.4-5l-14.8-36.8L197%2039.4c-3-1.2-5-4.2-5-7.4s2-6.2%205-7.4l36.8-14.8L248.6-27c1.2-3%204.2-5%207.4-5s6.2%202%207.4%205M110.7%2041.7l21.5%2050.1%2050.1%2021.5c5.9%202.5%209.7%208.3%209.7%2014.7s-3.8%2012.2-9.7%2014.7l-50.1%2021.5-21.5%2050.1c-2.5%205.9-8.3%209.7-14.7%209.7s-12.2-3.8-14.7-9.7l-21.5-50.1-50.1-21.5C3.8%20140.2%200%20134.4%200%20128s3.8-12.2%209.7-14.7l50.1-21.5%2021.5-50.1C83.8%2035.8%2089.6%2032%2096%2032s12.2%203.8%2014.7%209.7M464%20304c6.4%200%2012.2%203.8%2014.7%209.7l21.5%2050.1%2050.1%2021.5c5.9%202.5%209.7%208.3%209.7%2014.7s-3.8%2012.2-9.7%2014.7l-50.1%2021.5-21.5%2050.1c-2.5%205.9-8.3%209.7-14.7%209.7s-12.2-3.8-14.7-9.7l-21.5-50.1-50.1-21.5c-5.9-2.5-9.7-8.3-9.7-14.7s3.8-12.2%209.7-14.7l50.1-21.5%2021.5-50.1c2.5-5.9%208.3-9.7%2014.7-9.7M460%200c11%200%2021.6%204.4%2029.5%2012.2l42.3%2042.3C539.6%2062.4%20544%2073%20544%2084s-4.4%2021.6-12.2%2029.5l-88.2%2088.2-101.3-101.3%2088.2-88.2C438.4%204.4%20449%200%20460%200M44.2%20398.5l264.2-264.2%20101.3%20101.3-264.2%20264.2C137.6%20507.6%20127%20512%20116%20512s-21.6-4.4-29.5-12.2l-42.3-42.3C36.4%20449.6%2032%20439%2032%20428s4.4-21.6%2012.2-29.5%22/%3E%3C/svg%3E');}</style>
 
 
     
@@ -53,11 +59,11 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../css/code_select.css">
+      <link rel="stylesheet" href="../../css/code_select.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -65,17 +71,17 @@
     
   
 <meta property="og:type" content="website" />
-<meta property="og:title" content="User Guide - Metaxy" />
-<meta property="og:description" content="Comprehensive documentation for using Metaxy in your multi-modal pipelines." />
-<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/guide/index.png" />
+<meta property="og:title" content="Concepts - Metaxy" />
+<meta property="og:description" content="Core concepts and abstractions in Metaxy." />
+<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/guide/learn/index.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://docs.metaxy.io/main/guide/" />
+<meta property="og:url" content="https://docs.metaxy.io/main/guide/learn/" />
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:title" content="User Guide - Metaxy" />
-<meta property="twitter:description" content="Comprehensive documentation for using Metaxy in your multi-modal pipelines." />
-<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/guide/index.png" />
+<meta property="twitter:title" content="Concepts - Metaxy" />
+<meta property="twitter:description" content="Core concepts and abstractions in Metaxy." />
+<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/guide/learn/index.png" />
 </head>
   
   
@@ -95,7 +101,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#user-guide" class="md-skip">
+        <a href="#concepts" class="md-skip">
           Skip to content
         </a>
       
@@ -115,9 +121,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
-  <img src="../assets/metaxy.svg" alt="logo">
+  <img src="../../assets/metaxy.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -134,7 +140,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              User Guide
+              Concepts
             
           </span>
         </div>
@@ -254,39 +260,35 @@
   
   
   
-  
-    <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
-        
+    
   
   
     
-  
-  Overview
-
-      </a>
-    </li>
-  
-
+    
       
-        
   
   
   
     
   
   
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../.." class="md-tabs__link">
+          
   
   
     
   
   User Guide
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
+  
+
+    
   
 
       
@@ -296,7 +298,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../integrations/" class="md-tabs__link">
+      <a href="../../integrations/" class="md-tabs__link">
         
   
   
@@ -315,7 +317,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../examples/" class="md-tabs__link">
+      <a href="../../examples/" class="md-tabs__link">
         
   
   
@@ -334,7 +336,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../reference/" class="md-tabs__link">
+      <a href="../../reference/" class="md-tabs__link">
         
   
   
@@ -375,9 +377,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
-  <img src="../assets/metaxy.svg" alt="logo">
+  <img src="../../assets/metaxy.svg" alt="logo">
 
     </a>
     Metaxy
@@ -401,39 +403,14 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+  
+    
+    
+      
         
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
       
         
       
@@ -455,12 +432,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
         
           
-          <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
-              
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
   
   
   <span class="md-ellipsis">
@@ -474,17 +450,11 @@
   
   
 
-            </a>
-            
-              
-              <label class="md-nav__link md-nav__link--active" for="__nav_2" id="__nav_2_label" tabindex="">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -503,6 +473,8 @@
     
     
       
+        
+          
         
       
         
@@ -523,17 +495,18 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_1" >
         
           
-          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../.." class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
     
   
-    Getting Started
+    Metaxy
   
 
     
@@ -541,47 +514,27 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_1_1" id="__nav_1_1_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_1">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_1">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Getting Started
+    Metaxy
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
               
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="overview/quickstart/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Quickstart
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -590,14 +543,14 @@
   
   
     <li class="md-nav__item">
-      <a href="overview/feature-dependencies/" class="md-nav__link">
+      <a href="../../overview/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Feature Dependencies
+    Overview
   
 
     
@@ -632,24 +585,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -666,11 +601,161 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_2" >
         
           
-          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="">
             
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/feature-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_3" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="./" class="md-nav__link md-nav__link--active">
+              
   
   
   <span class="md-ellipsis">
@@ -684,11 +769,17 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link md-nav__link--active" for="__nav_1_3" id="__nav_1_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_1_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -699,13 +790,15 @@
           <ul class="md-nav__list" data-md-scrollfix>
             
               
+            
+              
                 
   
   
   
   
     <li class="md-nav__item">
-      <a href="learn/metadata-stores/" class="md-nav__link">
+      <a href="metadata-stores/" class="md-nav__link">
         
   
   
@@ -733,7 +826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="learn/feature-definitions/" class="md-nav__link">
+      <a href="feature-definitions/" class="md-nav__link">
         
   
   
@@ -761,7 +854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="learn/data-versioning/" class="md-nav__link">
+      <a href="data-versioning/" class="md-nav__link">
         
   
   
@@ -789,7 +882,7 @@
   
   
     <li class="md-nav__item">
-      <a href="learn/feature-discovery/" class="md-nav__link">
+      <a href="feature-discovery/" class="md-nav__link">
         
   
   
@@ -817,7 +910,7 @@
   
   
     <li class="md-nav__item">
-      <a href="learn/syntactic-sugar/" class="md-nav__link">
+      <a href="syntactic-sugar/" class="md-nav__link">
         
   
   
@@ -845,7 +938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="learn/relationship/" class="md-nav__link">
+      <a href="relationship/" class="md-nav__link">
         
   
   
@@ -873,7 +966,7 @@
   
   
     <li class="md-nav__item">
-      <a href="learn/optional-dependencies/" class="md-nav__link">
+      <a href="optional-dependencies/" class="md-nav__link">
         
   
   
@@ -901,7 +994,7 @@
   
   
     <li class="md-nav__item">
-      <a href="learn/filters/" class="md-nav__link">
+      <a href="filters/" class="md-nav__link">
         
   
   
@@ -929,7 +1022,7 @@
   
   
     <li class="md-nav__item">
-      <a href="learn/deletions/" class="md-nav__link">
+      <a href="deletions/" class="md-nav__link">
         
   
   
@@ -957,7 +1050,7 @@
   
   
     <li class="md-nav__item">
-      <a href="learn/system-columns/" class="md-nav__link">
+      <a href="system-columns/" class="md-nav__link">
         
   
   
@@ -985,7 +1078,7 @@
   
   
     <li class="md-nav__item">
-      <a href="learn/testing/" class="md-nav__link">
+      <a href="testing/" class="md-nav__link">
         
   
   
@@ -1053,11 +1146,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/" class="md-nav__link ">
+            <a href="../../integrations/" class="md-nav__link ">
               
   
   
@@ -1075,14 +1168,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1116,11 +1209,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/orchestration/" class="md-nav__link ">
+            <a href="../../integrations/orchestration/" class="md-nav__link ">
               
   
   
@@ -1138,14 +1231,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_1">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_1">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1181,11 +1274,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/orchestration/dagster/" class="md-nav__link ">
+            <a href="../../integrations/orchestration/dagster/" class="md-nav__link ">
               
   
   
@@ -1203,14 +1296,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_1_1" id="__nav_3_1_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_1_1" id="__nav_2_1_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_1_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_1_1">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1227,7 +1320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/orchestration/dagster/metaxify/" class="md-nav__link">
+      <a href="../../integrations/orchestration/dagster/metaxify/" class="md-nav__link">
         
   
   
@@ -1255,7 +1348,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/orchestration/dagster/api/" class="md-nav__link">
+      <a href="../../integrations/orchestration/dagster/api/" class="md-nav__link">
         
   
   
@@ -1318,11 +1411,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/metadata-stores/" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/" class="md-nav__link ">
               
   
   
@@ -1340,14 +1433,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1389,11 +1482,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/metadata-stores/databases/" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/databases/" class="md-nav__link ">
               
   
   
@@ -1411,14 +1504,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_1" id="__nav_3_2_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_2_1" id="__nav_2_2_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_1">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1454,11 +1547,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_1_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/metadata-stores/databases/bigquery/" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/databases/bigquery/" class="md-nav__link ">
               
   
   
@@ -1476,14 +1569,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_1_1" id="__nav_3_2_1_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_2_1_1" id="__nav_2_2_1_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_1_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_1_1">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_2_1_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_1_1">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1500,7 +1593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/databases/bigquery/configuration/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/bigquery/configuration/" class="md-nav__link">
         
   
   
@@ -1528,7 +1621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/databases/bigquery/api/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/bigquery/api/" class="md-nav__link">
         
   
   
@@ -1583,11 +1676,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_1_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/metadata-stores/databases/clickhouse/" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/databases/clickhouse/" class="md-nav__link ">
               
   
   
@@ -1605,14 +1698,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_1_2" id="__nav_3_2_1_2_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_2_1_2" id="__nav_2_2_1_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_1_2">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_2_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_1_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1629,7 +1722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/databases/clickhouse/configuration/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/clickhouse/configuration/" class="md-nav__link">
         
   
   
@@ -1657,7 +1750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/databases/clickhouse/api/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/clickhouse/api/" class="md-nav__link">
         
   
   
@@ -1712,11 +1805,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_1_3" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/metadata-stores/databases/duckdb/" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/databases/duckdb/" class="md-nav__link ">
               
   
   
@@ -1734,14 +1827,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_1_3" id="__nav_3_2_1_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_2_1_3" id="__nav_2_2_1_3_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_1_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_1_3">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_2_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_1_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1758,7 +1851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/databases/duckdb/configuration/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/duckdb/configuration/" class="md-nav__link">
         
   
   
@@ -1786,7 +1879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/databases/duckdb/api/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/duckdb/api/" class="md-nav__link">
         
   
   
@@ -1841,11 +1934,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_1_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/metadata-stores/databases/lancedb/" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/databases/lancedb/" class="md-nav__link ">
               
   
   
@@ -1863,14 +1956,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_1_4" id="__nav_3_2_1_4_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_2_1_4" id="__nav_2_2_1_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_1_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_1_4">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_2_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_1_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1887,7 +1980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/databases/lancedb/configuration/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/lancedb/configuration/" class="md-nav__link">
         
   
   
@@ -1915,7 +2008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/databases/lancedb/api/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/lancedb/api/" class="md-nav__link">
         
   
   
@@ -1968,11 +2061,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_1_5" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/metadata-stores/databases/ibis/" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/databases/ibis/" class="md-nav__link ">
               
   
   
@@ -1990,14 +2083,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_1_5" id="__nav_3_2_1_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_2_1_5" id="__nav_2_2_1_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_1_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_1_5">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_2_1_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_1_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2014,7 +2107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/databases/ibis/api/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/ibis/api/" class="md-nav__link">
         
   
   
@@ -2075,11 +2168,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/metadata-stores/storage/" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/storage/" class="md-nav__link ">
               
   
   
@@ -2097,14 +2190,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_2" id="__nav_3_2_2_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_2_2" id="__nav_2_2_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2140,11 +2233,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_2_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/metadata-stores/storage/delta/" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/storage/delta/" class="md-nav__link ">
               
   
   
@@ -2162,14 +2255,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_2_1" id="__nav_3_2_2_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_2_2_1" id="__nav_2_2_2_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_2_1">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_2_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_2_1">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2186,7 +2279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/storage/delta/configuration/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/storage/delta/configuration/" class="md-nav__link">
         
   
   
@@ -2214,7 +2307,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/metadata-stores/storage/delta/api/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/storage/delta/api/" class="md-nav__link">
         
   
   
@@ -2283,10 +2376,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
             
   
   
@@ -2304,8 +2397,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2322,7 +2415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/compute/ray/" class="md-nav__link">
+      <a href="../../integrations/compute/ray/" class="md-nav__link">
         
   
   
@@ -2377,11 +2470,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/plugins/" class="md-nav__link ">
+            <a href="../../integrations/plugins/" class="md-nav__link ">
               
   
   
@@ -2399,14 +2492,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2442,11 +2535,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/plugins/sqlmodel/" class="md-nav__link ">
+            <a href="../../integrations/plugins/sqlmodel/" class="md-nav__link ">
               
   
   
@@ -2464,14 +2557,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_4_1" id="__nav_3_4_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_4_1" id="__nav_2_4_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_4_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_1">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2488,7 +2581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/plugins/sqlmodel/configuration/" class="md-nav__link">
+      <a href="../../integrations/plugins/sqlmodel/configuration/" class="md-nav__link">
         
   
   
@@ -2516,7 +2609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/plugins/sqlmodel/api/" class="md-nav__link">
+      <a href="../../integrations/plugins/sqlmodel/api/" class="md-nav__link">
         
   
   
@@ -2571,11 +2664,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/plugins/sqlalchemy/" class="md-nav__link ">
+            <a href="../../integrations/plugins/sqlalchemy/" class="md-nav__link ">
               
   
   
@@ -2593,14 +2686,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_4_2" id="__nav_3_4_2_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_4_2" id="__nav_2_4_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_4_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2617,7 +2710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/plugins/sqlalchemy/configuration/" class="md-nav__link">
+      <a href="../../integrations/plugins/sqlalchemy/configuration/" class="md-nav__link">
         
   
   
@@ -2645,7 +2738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/plugins/sqlalchemy/api/" class="md-nav__link">
+      <a href="../../integrations/plugins/sqlalchemy/api/" class="md-nav__link">
         
   
   
@@ -2708,10 +2801,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
         
           
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
             
   
   
@@ -2729,8 +2822,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2747,7 +2840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/ai/claude/" class="md-nav__link">
+      <a href="../../integrations/ai/claude/" class="md-nav__link">
         
   
   
@@ -2775,7 +2868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/ai/mcp/" class="md-nav__link">
+      <a href="../../integrations/ai/mcp/" class="md-nav__link">
         
   
   
@@ -2839,11 +2932,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../examples/" class="md-nav__link ">
+            <a href="../../examples/" class="md-nav__link ">
               
   
   
@@ -2861,14 +2954,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2885,7 +2978,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/basic/" class="md-nav__link">
+      <a href="../../examples/basic/" class="md-nav__link">
         
   
   
@@ -2913,7 +3006,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/aggregation/" class="md-nav__link">
+      <a href="../../examples/aggregation/" class="md-nav__link">
         
   
   
@@ -2941,7 +3034,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/expansion/" class="md-nav__link">
+      <a href="../../examples/expansion/" class="md-nav__link">
         
   
   
@@ -2997,11 +3090,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/" class="md-nav__link ">
+            <a href="../../reference/" class="md-nav__link ">
               
   
   
@@ -3019,14 +3112,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3070,11 +3163,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/api/" class="md-nav__link ">
+            <a href="../../reference/api/" class="md-nav__link ">
               
   
   
@@ -3092,14 +3185,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1" id="__nav_4_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_1">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3145,11 +3238,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/api/definitions/" class="md-nav__link ">
+            <a href="../../reference/api/definitions/" class="md-nav__link ">
               
   
   
@@ -3167,14 +3260,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5_1_1" id="__nav_5_1_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_1" id="__nav_4_1_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_1_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_1">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3191,7 +3284,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/definitions/feature-spec/" class="md-nav__link">
+      <a href="../../reference/api/definitions/feature-spec/" class="md-nav__link">
         
   
   
@@ -3219,7 +3312,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/definitions/feature/" class="md-nav__link">
+      <a href="../../reference/api/definitions/feature/" class="md-nav__link">
         
   
   
@@ -3247,7 +3340,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/definitions/field/" class="md-nav__link">
+      <a href="../../reference/api/definitions/field/" class="md-nav__link">
         
   
   
@@ -3275,7 +3368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/definitions/fields-mapping/" class="md-nav__link">
+      <a href="../../reference/api/definitions/fields-mapping/" class="md-nav__link">
         
   
   
@@ -3303,7 +3396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/definitions/relationship/" class="md-nav__link">
+      <a href="../../reference/api/definitions/relationship/" class="md-nav__link">
         
   
   
@@ -3331,7 +3424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/definitions/graph/" class="md-nav__link">
+      <a href="../../reference/api/definitions/graph/" class="md-nav__link">
         
   
   
@@ -3359,7 +3452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/definitions/filters/" class="md-nav__link">
+      <a href="../../reference/api/definitions/filters/" class="md-nav__link">
         
   
   
@@ -3395,7 +3488,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/config/" class="md-nav__link">
+      <a href="../../reference/api/config/" class="md-nav__link">
         
   
   
@@ -3440,11 +3533,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/api/metadata-stores/" class="md-nav__link ">
+            <a href="../../reference/api/metadata-stores/" class="md-nav__link ">
               
   
   
@@ -3462,14 +3555,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5_1_3" id="__nav_5_1_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_1_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_1_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3486,7 +3579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/metadata-stores/exceptions/" class="md-nav__link">
+      <a href="../../reference/api/metadata-stores/exceptions/" class="md-nav__link">
         
   
   
@@ -3522,7 +3615,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/types/" class="md-nav__link">
+      <a href="../../reference/api/types/" class="md-nav__link">
         
   
   
@@ -3550,7 +3643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/constants/" class="md-nav__link">
+      <a href="../../reference/api/constants/" class="md-nav__link">
         
   
   
@@ -3578,7 +3671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/utils/" class="md-nav__link">
+      <a href="../../reference/api/utils/" class="md-nav__link">
         
   
   
@@ -3614,7 +3707,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/configuration/" class="md-nav__link">
+      <a href="../../reference/configuration/" class="md-nav__link">
         
   
   
@@ -3642,7 +3735,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/" class="md-nav__link">
+      <a href="../../reference/cli/" class="md-nav__link">
         
   
   
@@ -3690,6 +3783,58 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-big-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Big Picture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Concepts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependencies-and-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies and Lineage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced Topics
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -3703,8 +3848,57 @@
 
 
 
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+      
+        
+  
+  
+    
+    
+      
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../.." class="md-path__link">
+          
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+
+        </a>
+      </li>
+    
   
 
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Concepts
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
 
               
               <article class="md-content__inner md-typeset">
@@ -3716,16 +3910,72 @@
   
 
 
-<h1 id="user-guide">User Guide<a class="headerlink" href="#user-guide" title="Permanent link">&para;</a></h1>
-<p>Learn how to use Metaxy step by step.</p>
+<h1 id="concepts">Concepts<a class="headerlink" href="#concepts" title="Permanent link">&para;</a></h1>
+<p>Metaxy is built around a few core ideas that work together to solve the problem of incremental processing in multi-modal pipelines.</p>
+<h2 id="the-big-picture">The Big Picture<a class="headerlink" href="#the-big-picture" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph LR
+    A[Feature Definitions] --&gt; B[Incremental Updates]
+    B --&gt; C[Metadata Store]</code></pre>
+<p><strong>Feature definitions</strong> declare what data you have and how it depends on other data. Metaxy builds a <strong>feature graph</strong> from these definitions and uses it to track <strong>versions</strong> at the sample level. When upstream data changes, Metaxy identifies exactly which downstream samples need recomputation and resolves <strong>incremental updates</strong>. All of this is persisted in a <strong>metadata store</strong>. Feature definitions may optionally define custom <strong>metadata columns</strong> (such as file path, size, etc.) which are stored alongside the versioning information.</p>
+<h2 id="core-concepts">Core Concepts<a class="headerlink" href="#core-concepts" title="Permanent link">&para;</a></h2>
+<div class="grid cards">
 <ul>
-<li>
-<p><strong><a href="overview/quickstart/">Getting Started</a></strong> - Get started quickly with Metaxy</p>
-</li>
-<li>
-<p><strong><a href="learn/metadata-stores/">Concepts</a></strong> - Deep dive into Metaxy concepts</p>
-</li>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4m6 14c0 .5-2.13 2-6 2s-6-1.5-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36zM12 9C8.13 9 6 7.5 6 7s2.13-2 6-2 6 1.5 6 2-2.13 2-6 2"/></svg></span> <strong><a href="metadata-stores/">Metadata Stores</a></strong></li>
 </ul>
+<hr />
+<p>Unified interface for storing and retrieving metadata across different backends.</p>
+<ul>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 13H7v5h5v2H5V10h2v1h5zM8 4v2H4V4zm2-2H2v6h8zm10 9v2h-4v-2zm2-2h-8v6h8zm-2 9v2h-4v-2zm2-2h-8v6h8z"/></svg></span> <strong><a href="feature-definitions/">Feature Definitions</a></strong></li>
+</ul>
+<hr />
+<p>Declarative specifications that define your data schema, (partial) dependencies, and how versions are calculated.</p>
+<ul>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.5 10C7.3 10 8 9.3 8 8.5S7.3 7 6.5 7 5 7.7 5 8.5 5.7 10 6.5 10M9 6l7 7-5 5-7-7V6zm0-2H4c-1.1 0-2 .9-2 2v5c0 .6.2 1.1.6 1.4l7 7c.3.4.8.6 1.4.6s1.1-.2 1.4-.6l5-5c.4-.4.6-.9.6-1.4 0-.6-.2-1.1-.6-1.4l-7-7C10.1 4.2 9.6 4 9 4m4.5 1.7 1-1 6.9 6.9c.4.4.6.9.6 1.4s-.2 1.1-.6 1.4L16 19.8l-1-1 5.7-5.8z"/></svg></span> <strong><a href="data-versioning/">Versioning</a></strong></li>
+</ul>
+<hr />
+<p>Sample-level version tracking that detects changes and determines what needs recomputation.</p>
+<ul>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg></span> <strong><a href="feature-discovery/">Feature Discovery</a></strong></li>
+</ul>
+<hr />
+<p>Automatic registration and graph building from feature definitions in your codebase.</p>
+</div>
+<h2 id="dependencies-and-lineage">Dependencies and Lineage<a class="headerlink" href="#dependencies-and-lineage" title="Permanent link">&para;</a></h2>
+<div class="grid cards">
+<ul>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg></span> <strong><a href="relationship/">Lineage Relationship</a></strong></li>
+</ul>
+<hr />
+<p>How features relate to upstream dependencies: one-to-one, one-to-many, or many-to-one.</p>
+<ul>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 18h2v-2h-2zm1-16A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2m0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8m0-14a4 4 0 0 0-4 4h2a2 2 0 0 1 2-2 2 2 0 0 1 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5a4 4 0 0 0-4-4"/></svg></span> <strong><a href="optional-dependencies/">Optional Dependencies</a></strong></li>
+</ul>
+<hr />
+<p>Handle missing upstream data gracefully without blocking downstream processing.</p>
+<ul>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15 19.88c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0L9.29 16.7a.99.99 0 0 1-.29-.83v-5.12L4.21 4.62a1 1 0 0 1 .17-1.4c.19-.14.4-.22.62-.22h14c.22 0 .43.08.62.22a1 1 0 0 1 .17 1.4L15 10.75zM7.04 5 11 10.06v5.52l2 2v-7.53L16.96 5z"/></svg></span> <strong><a href="filters/">Filters</a></strong></li>
+</ul>
+<hr />
+<p>Select subsets of samples for processing based on metadata conditions.</p>
+</div>
+<h2 id="advanced-topics">Advanced Topics<a class="headerlink" href="#advanced-topics" title="Permanent link">&para;</a></h2>
+<div class="grid cards">
+<ul>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM8 9h8v10H8zm7.5-5-1-1h-5l-1 1H5v2h14V4z"/></svg></span> <strong><a href="deletions/">Deletions</a></strong></li>
+</ul>
+<hr />
+<p>Propagate sample deletions through the feature graph correctly.</p>
+<ul>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2m0 8v4h8v-4zm0 6v4h8v-4zM8 4v4h8V4z"/></svg></span> <strong><a href="system-columns/">System Columns</a></strong></li>
+</ul>
+<hr />
+<p>Reserved columns used internally by Metaxy for versioning and deduplication.</p>
+<ul>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 2v2h1v14a4 4 0 0 0 4 4 4 4 0 0 0 4-4V4h1V2zm4 14c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1m2-4c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1m1-5h-4V4h4z"/></svg></span> <strong><a href="testing/">Testing</a></strong></li>
+</ul>
+<hr />
+<p>Patterns and utilities for testing Metaxy features.</p>
+</div>
 
 
 
@@ -3802,12 +4052,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
-        <script src="../javascripts/telemetry.js"></script>
+        <script src="../../javascripts/telemetry.js"></script>
       
     
   </body>
