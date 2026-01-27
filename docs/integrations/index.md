@@ -48,7 +48,7 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/bigquery.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/bigquery.md#api)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/bigquery.md)
 
   - :custom-clickhouse:{ .lg .middle } [**ClickHouse**](metadata-stores/databases/clickhouse.md)
 
@@ -64,7 +64,7 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/clickhouse.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/clickhouse.md#api)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/clickhouse.md)
 
   - :custom-deltalake:{ .lg .middle } [**Delta Lake**](metadata-stores/storage/delta.md)
 
@@ -80,7 +80,7 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/storage/delta.md#api)
+    [:octicons-arrow-right-24: API docs](metadata-stores/storage/delta.md)
 
   - :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb.md)
 
@@ -97,7 +97,7 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/duckdb.md#api)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/duckdb.md)
 
   - :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb.md)
 
@@ -109,7 +109,7 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/lancedb.md#api)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/lancedb.md)
 <!-- dprint-ignore-end -->
 
 </div>
@@ -152,7 +152,7 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: Integration docs](plugins/sqlalchemy.md)
 
-    [:octicons-arrow-right-24: API docs](plugins/sqlalchemy.md#api)
+    [:octicons-arrow-right-24: API docs](plugins/sqlalchemy.md)
 
 -   :custom-sqlmodel:{ .lg .middle } [**SQLModel**](plugins/sqlmodel.md)
 
@@ -164,7 +164,7 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: Integration docs](plugins/sqlmodel.md)
 
-    [:octicons-arrow-right-24: API docs](plugins/sqlmodel.md#api)
+    [:octicons-arrow-right-24: API docs](plugins/sqlmodel.md)
 <!-- dprint-ignore-end -->
 
 </div>

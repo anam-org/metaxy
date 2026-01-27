@@ -112,7 +112,7 @@ plugins:
             docstring_section_style: list
             members_order: source
             show_submodules: false
-            inherited_members: true
+            inherited_members: false
             show_bases: true
             show_signature: true
             signature_crossrefs: true

@@ -3,9 +3,9 @@ title: "SQLModel Plugin"
 description: "SQLModel integration for ORM-based features."
 ---
 
-# Metaxy + SQLModel
+# SQLModel
 
-The [SQLModel](https://sqlmodel.tiangolo.com/) integration enables Metaxy features to also act as [SQLAlchemy](https://www.sqlalchemy.org/) ORM models. It exposes user-defined feature tables to SQLAlchemy.
+[SQLModel](https://sqlmodel.tiangolo.com/) combines SQLAlchemy and Pydantic into a single ORM. If you want your Metaxy feature definitions to double as ORM models, enable the SQLModel integration. This exposes user-defined feature tables directly to SQLAlchemy.
 
 It is the primary way to use Metaxy with database-backed [metadata stores](../../guide/learn/metadata-stores.md).
 
@@ -118,11 +118,24 @@ See the [SQLAlchemy integration guide](sqlalchemy.md#alembic-integration) for co
 
     When managing both system tables and feature tables with Alembic, use separate version tables to avoid conflicts. See the [Multi-Store Setup](sqlalchemy.md#multi-store-setup) section for configuration details.
 
-## API
+---
 
 <!-- dprint-ignore-start -->
 ::: metaxy.ext.sqlmodel
-    members: true
+    options:
+      members: false
+      show_root_heading: true
+      heading_level: 2
+
+::: metaxy.ext.sqlmodel.BaseSQLModelFeature
+    options:
+      members: false
+      heading_level: 3
+
+::: metaxy.ext.sqlmodel.filter_feature_sqlmodel_metadata
+    options:
+      members: false
+      heading_level: 3
 <!-- dprint-ignore-end -->
 
 ## Configuration

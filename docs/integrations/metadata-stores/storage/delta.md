@@ -3,9 +3,9 @@ title: "Delta Lake Metadata Store"
 description: "Delta Lake as a metadata store backend."
 ---
 
-# Metaxy + Delta Lake
+# Delta Lake
 
-Metaxy implements [`DeltaMetadataStore`][metaxy.metadata_store.delta.DeltaMetadataStore] that stores metadata in [Delta Lake](https://delta.io/) (also known as a LakeHouse format) and uses an in-memory Polars versioning engine.
+[Delta Lake](https://delta.io/) is an open-source lakehouse storage format with ACID transactions and schema enforcement. To use Metaxy with Delta Lake, configure [`DeltaMetadataStore`][metaxy.metadata_store.delta.DeltaMetadataStore]. It persists metadata as Delta tables and uses an in-memory Polars engine for versioning computations.
 
 It supports the local filesystem and remote object stores.
 
@@ -34,16 +34,19 @@ It's possible to control how feature keys map to DeltaLake table locations with 
 - `nested` (default) places every feature in its own directory: `your/feature/key.delta`
 - `flat` stores all of them in the same directory: `your__feature_key.delta`
 
-## API
-
-::: metaxy.metadata_store.delta
-options:
-members: false
+---
 
 <!-- dprint-ignore-start -->
+::: metaxy.metadata_store.delta
+    options:
+      members: false
+      show_root_heading: true
+      heading_level: 2
+
 ::: metaxy.metadata_store.delta.DeltaMetadataStore
     options:
-      inherited_members: false
+      members: false
+      heading_level: 2
 <!-- dprint-ignore-end -->
 
 ## Configuration

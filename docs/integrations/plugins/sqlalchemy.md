@@ -155,11 +155,24 @@ The two environments now can be managed independently:
 
 To add `SQLModel` into the mix, make sure to use the [SQLModel integration](sqlmodel.md) and pass `sqlmodel.SQLModel.metadata` into `filter_feature_sqla_metadata`.
 
-## API
+---
 
 <!-- dprint-ignore-start -->
 ::: metaxy.ext.sqlalchemy
-    members: true
+    options:
+      members: false
+      show_root_heading: true
+      heading_level: 3
+
+::: metaxy.ext.sqlalchemy.filter_feature_sqla_metadata
+    options:
+      members: false
+      heading_level: 3
+
+::: metaxy.ext.sqlalchemy.get_system_slqa_metadata
+    options:
+      members: false
+      heading_level: 3
 <!-- dprint-ignore-end -->
 
 ## Configuration
