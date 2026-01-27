@@ -3361,6 +3361,8 @@ Such features do not have upstream dependencies and act as inputs to the feature
 </span></code></pre></div>
 <h2 id="create-feature-materialization-script">Create feature materialization script<a class="headerlink" href="#create-feature-materialization-script" title="Permanent link">&para;</a></h2>
 <p>Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore.resolve_update"><code>MetadataStore.resolve_update</code></a> to compute an increment for materialization:</p>
+<!-- skip: next -->
+
 <div class="language-py highlight"><span class="filename">script.py</span><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.features</span><span class="w"> </span><span class="kn">import</span> <span class="n">Video</span>
@@ -3380,11 +3382,15 @@ Such features do not have upstream dependencies and act as inputs to the feature
 </span></code></pre></div>
 <h3 id="3-run-user-defined-computation-over-the-increment">3. Run user-defined computation over the increment<a class="headerlink" href="#3-run-user-defined-computation-over-the-increment" title="Permanent link">&para;</a></h3>
 <p>Metaxy is not involved in this step at all.</p>
+<!-- skip: next -->
+
 <div class="language-py highlight"><span class="filename">script.py</span><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">increment</span><span class="o">.</span><span class="n">added</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">increment</span><span class="o">.</span><span class="n">changed</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="c1"># run your computation, this can be done in a distributed manner</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">run_custom_pipeline</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="4-record-metadata-for-processed-samples">4. Record metadata for processed samples<a class="headerlink" href="#4-record-metadata-for-processed-samples" title="Permanent link">&para;</a></h3>
+<!-- skip: next -->
+
 <div class="language-py highlight"><span class="filename">script.py</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;write&quot;</span><span class="p">):</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write_metadata</span><span class="p">(</span><span class="n">VoiceDetection</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
 </span></code></pre></div>
