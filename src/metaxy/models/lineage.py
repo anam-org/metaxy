@@ -58,11 +58,13 @@ class IdentityRelationship(BaseLineageRelationship):
     """One-to-one relationship where each child row maps to exactly one parent row.
 
     This is the default relationship type. Parent and child features share the same
-    ID columns and have the same cardinality. No aggregation is performed.
+    ID columns and have the same cardinality.
+
+    Construct this relationship via [`LineageRelationship.identity`][metaxy.models.lineage.LineageRelationship.identity] classmethod.
 
     Examples:
-        >>> IdentityRelationship()
-        IdentityRelationship(type=<LineageRelationshipType.IDENTITY: '1:1'>)
+        >>> LineageRelationship.identity()
+        LineageRelationship(relationship=IdentityRelationship(type=<LineageRelationshipType.IDENTITY: '1:1'>))
     """
 
     type: Literal[LineageRelationshipType.IDENTITY] = LineageRelationshipType.IDENTITY
@@ -82,13 +84,15 @@ class AggregationRelationship(BaseLineageRelationship):
     Parent features have more granular ID columns than the child. The child aggregates
     multiple parent rows by grouping on a subset of the parent's ID columns.
 
+    Construct this relationship via [`LineageRelationship.aggregation`][metaxy.models.lineage.LineageRelationship.aggregation] classmethod.
+
     Attributes:
         on: Columns to group by for aggregation. These should be a subset of the
             target feature's ID columns. If not specified, uses all target ID columns.
 
     Examples:
-        >>> AggregationRelationship(on=["sensor_id", "hour"])
-        AggregationRelationship(type=<LineageRelationshipType.AGGREGATION: 'N:1'>, on=['sensor_id', 'hour'])
+        >>> LineageRelationship.aggregation(on=["sensor_id", "hour"])
+        LineageRelationship(relationship=AggregationRelationship(type=<LineageRelationshipType.AGGREGATION: 'N:1'>, on=['sensor_id', 'hour']))
     """
 
     type: Literal[LineageRelationshipType.AGGREGATION] = LineageRelationshipType.AGGREGATION
@@ -112,6 +116,8 @@ class ExpansionRelationship(BaseLineageRelationship):
     Child features have more granular ID columns than the parent. Each parent row
     generates multiple child rows with additional ID columns.
 
+    Construct this relationship via [`LineageRelationship.expansion`][metaxy.models.lineage.LineageRelationship.expansion] classmethod.
+
     Attributes:
         on: Parent ID columns that identify the parent record. Child records with
             the same parent IDs will share the same upstream provenance.
@@ -121,8 +127,8 @@ class ExpansionRelationship(BaseLineageRelationship):
             the feature's load_input() method is responsible for ID generation.
 
     Examples:
-        >>> ExpansionRelationship(on=["video_id"], id_generation_pattern="sequential")
-        ExpansionRelationship(type=<LineageRelationshipType.EXPANSION: '1:N'>, on=['video_id'], id_generation_pattern='sequential')
+        >>> LineageRelationship.expansion(on=["video_id"], id_generation_pattern="sequential")
+        LineageRelationship(relationship=ExpansionRelationship(type=<LineageRelationshipType.EXPANSION: '1:N'>, on=['video_id'], id_generation_pattern='sequential'))
     """
 
     type: Literal[LineageRelationshipType.EXPANSION] = LineageRelationshipType.EXPANSION

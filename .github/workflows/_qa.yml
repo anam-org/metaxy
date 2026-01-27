@@ -246,6 +246,20 @@ jobs:
           --ignore=tests/ext/ray
           --durations=15
 
+  docstring-tests:
+    runs-on: depot-ubuntu-latest
+    needs: filter
+    if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
+    env:
+      DEVENV_PYTHON_VERSION: "3.10"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
+      - name: Run docstring tests
+        run: uv run pytest src/metaxy/ -p no:cases --ignore=src/metaxy/ext/mcp
+
   docs:
     permissions:
       contents: read
@@ -275,6 +289,7 @@ jobs:
       - lint
       - format
       - typecheck
+      - docstring-tests
       - docs
 
     steps:
@@ -283,4 +298,4 @@ jobs:
         uses: re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: test-linux, test-windows, test-macos, typecheck, docs
+          allowed-skips: test-linux, test-windows, test-macos, typecheck, docstring-tests, docs

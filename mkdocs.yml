@@ -99,6 +99,7 @@ plugins:
             show_source: true
             show_docstring_classes: true
             show_docstring_description: true
+            show_docstring_examples: true
             show_docstring_parameters: true
             show_root_heading: true
             show_root_full_path: true

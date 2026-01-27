@@ -16,6 +16,7 @@ class BigQueryMetadataStoreConfig(IbisMetadataStoreConfig):
     """Configuration for BigQueryMetadataStore.
 
     Example:
+        <!-- skip next -->
         ```python
         config = BigQueryMetadataStoreConfig(
             project_id="my-project",
@@ -54,6 +55,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
         Make sure to use appropriate `filters` when calling [BigQueryMetadataStore.read_metadata][metaxy.metadata_store.bigquery.BigQueryMetadataStore.read_metadata].
 
     Example: Basic Connection
+        <!-- skip next -->
         ```py
         store = BigQueryMetadataStore(
             project_id="my-project",
@@ -62,6 +64,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
         ```
 
     Example: With Service Account
+        <!-- skip next -->
         ```py
         store = BigQueryMetadataStore(
             project_id="my-project",
@@ -71,6 +74,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
         ```
 
     Example: With Location Configuration
+        <!-- skip next -->
         ```py
         store = BigQueryMetadataStore(
             project_id="my-project",
@@ -80,6 +84,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
         ```
 
     Example: With Custom Hash Algorithm
+        <!-- skip next -->
         ```py
         store = BigQueryMetadataStore(
             project_id="my-project",
@@ -135,6 +140,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
             automatically optimize queries with appropriate WHERE clauses on the partition column.
 
         Example:
+            <!-- skip next -->
             ```py
             # Using environment authentication
             store = BigQueryMetadataStore(

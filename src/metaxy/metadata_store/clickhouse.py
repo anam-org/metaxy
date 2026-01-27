@@ -52,6 +52,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
     [ClickHouse](https://clickhouse.com/) metadata store using [Ibis](https://ibis-project.org/) backend.
 
     Example: Connection Parameters
+        <!-- skip next -->
         ```py
         store = ClickHouseMetadataStore(
             backend="clickhouse",

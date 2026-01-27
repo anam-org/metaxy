@@ -76,6 +76,7 @@ class MetadataStoreConfig(BaseSettings):
     Store-specific config classes should inherit from this and add their own fields.
 
     Example:
+        <!-- skip: next -->
         ```python
         from metaxy.metadata_store.duckdb import DuckDBMetadataStoreConfig
 
@@ -323,6 +324,7 @@ class MetadataStore(ABC):
 
         !!! example "With a root feature"
 
+            <!-- skip: next -->
             ```py
             samples = pl.DataFrame(
                 {
@@ -577,6 +579,7 @@ class MetadataStore(ABC):
                 are missing from the DataFrame.
 
         Example:
+            <!-- skip: next -->
             ```py
 
                 # Read upstream metadata
@@ -901,6 +904,7 @@ class MetadataStore(ABC):
               validation and system column handling from that method applies.
 
         Example:
+            <!-- skip: next -->
             ```py
             with store.open(mode="write"):
                 store.write_metadata_multi(
@@ -966,6 +970,7 @@ class MetadataStore(ABC):
             A new store instance configured according to the config object
 
         Example:
+            <!-- skip: next -->
             ```python
             from metaxy.metadata_store.duckdb import (
                 DuckDBMetadataStore,
@@ -1033,6 +1038,7 @@ class MetadataStore(ABC):
             NotImplementedError: If provenance tracking not supported by this store
 
         Example:
+            <!-- skip: next -->
             ```python
             with self._create_versioning_engine(plan) as engine:
                 result = engine.resolve_update(...)
@@ -1534,6 +1540,7 @@ class MetadataStore(ABC):
             feature: Feature class or key to drop metadata for
 
         Example:
+            <!-- skip: next -->
             ```py
             store.drop_feature_metadata(MyFeature)
             assert not store.has_feature(MyFeature)
@@ -1865,12 +1872,14 @@ class MetadataStore(ABC):
             FeatureNotFoundError: If a specified feature doesn't exist in source store
 
         Examples:
+            <!-- skip: next -->
             ```py
             # Copy all features
             with source_store.open("read"), dest_store.open("write"):
                 stats = dest_store.copy_metadata(from_store=source_store)
             ```
 
+            <!-- skip: next -->
             ```py
             # Copy specific features
             with source_store.open("read"), dest_store.open("write"):
@@ -1880,6 +1889,7 @@ class MetadataStore(ABC):
                 )
             ```
 
+            <!-- skip: next -->
             ```py
             # Copy with global filters applied to all features
             with source_store.open("read"), dest_store.open("write"):
@@ -1889,6 +1899,7 @@ class MetadataStore(ABC):
                 )
             ```
 
+            <!-- skip: next -->
             ```py
             # Copy specific features with per-feature filters
             with source_store.open("read"), dest_store.open("write"):

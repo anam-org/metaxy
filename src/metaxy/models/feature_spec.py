@@ -307,6 +307,7 @@ class FeatureSpec(FrozenBaseModel):
             spec = FeatureSpec(
                 key=FeatureKey(["my", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]))],
+                id_columns=["id"],
             )
             spec.feature_spec_version
             # 'abc123...'  # 64-character hex string

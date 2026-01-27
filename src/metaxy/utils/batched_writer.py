@@ -50,6 +50,7 @@ class BatchedMetadataWriter:
     main thread to continue processing data without blocking on writes.
 
     Example:
+        <!-- skip next -->
         ```py
         from metaxy.utils import BatchedMetadataWriter
 
@@ -59,6 +60,7 @@ class BatchedMetadataWriter:
         ```
 
     ??? example "Manual lifecycle management"
+        <!-- skip next -->
         ```py
         writer = BatchedMetadataWriter(store)
         writer.start()

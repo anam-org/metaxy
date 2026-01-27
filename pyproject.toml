@@ -120,6 +120,7 @@ dev = [
   "pandas>=2.3.3",
   "ray>2.36.0; sys_platform != 'win32' or python_version < '3.13'",
   "numpy>=2.2.6",
+  "sybil>=9.3.0",
 ]
 
 examples = [
@@ -246,7 +247,7 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--snapshot-details --doctest-modules --ignore=src/metaxy/ext/mcp --ignore=tests/fixtures"
+addopts = "--snapshot-details --doctest-modules --ignore=src/metaxy/ext/mcp --ignore=tests/fixtures --ignore=examples"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 env = [
