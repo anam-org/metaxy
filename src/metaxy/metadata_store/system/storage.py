@@ -565,20 +565,9 @@ class SystemTableStorage:
 
         # Initialize to_push and already_pushed
         to_push = current_snapshot  # Will be updated if snapshot already exists
-        already_pushed: bool
+        already_pushed = len(latest_pushed_snapshot) != 0
 
-        if len(latest_pushed_snapshot) != 0:
-            # this snapshot_version HAS been previously pushed
-            # let's check for any differences
-
-            already_pushed = True
-        else:
-            # this snapshot_version has not been previously pushed at all
-            # we are safe to push all the features in our graph!
-            to_push = current_snapshot
-            already_pushed = False
-
-        if len(latest_pushed_snapshot) != 0:
+        if already_pushed:
             # let's identify features that have updated definitions since the last push
             # Join full current snapshot with latest pushed (keeping all columns)
             pushed_with_current = current_snapshot.join(
@@ -605,9 +594,7 @@ class SystemTableStorage:
             self.store.write_metadata(FEATURE_VERSIONS_KEY, to_push)
 
         # updated_features only populated when updating existing features
-        updated_features = (
-            to_push["feature_key"].to_list() if len(latest_pushed_snapshot) != 0 and len(to_push) > 0 else []
-        )
+        updated_features = to_push["feature_key"].to_list() if already_pushed and len(to_push) > 0 else []
 
         return SnapshotPushResult(
             snapshot_version=graph.snapshot_version,
