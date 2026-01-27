@@ -472,14 +472,14 @@ def render(
         # Validate feature exists if specified
         if render_config.feature is not None:
             focus_key = render_config.get_feature_key()
-            if focus_key not in graph.features_by_key:
+            if focus_key not in graph.feature_definitions_by_key:
                 console.print(f"[red]Error:[/red] Feature '{render_config.feature}' not found in graph")
                 console.print("\nAvailable features:")
-                for key in sorted(graph.features_by_key.keys(), key=lambda k: k.to_string()):
+                for key in sorted(graph.feature_definitions_by_key.keys(), key=lambda k: k.to_string()):
                     console.print(f"  • {key.to_string()}")
                 raise SystemExit(1)
 
-        if len(graph.features_by_key) == 0:
+        if len(graph.feature_definitions_by_key) == 0:
             console.print("[yellow]Warning:[/yellow] Graph is empty (no features found)")
             if output:
                 # Write empty output to file
@@ -513,7 +513,9 @@ def render(
                 print_error(console, "Failed to load snapshot", e)
                 raise SystemExit(1) from e
 
-            console.print(f"[green]✓[/green] Loaded {len(graph.features_by_key)} features from snapshot {snapshot}")
+            console.print(
+                f"[green]✓[/green] Loaded {len(graph.feature_definitions_by_key)} features from snapshot {snapshot}"
+            )
 
     # Instantiate renderer based on format and type
     # (graph is guaranteed to be assigned by this point - either from get_active() or from_snapshot())

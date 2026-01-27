@@ -281,20 +281,20 @@ def get_feature_metadata_status(
     # Resolve to FeatureKey using the type adapter (handles all input types)
     key = ValidatedFeatureKeyAdapter.validate_python(feature_key)
 
-    # Look up feature class from the active graph
+    # Look up feature definition from the active graph
     graph = FeatureGraph.get_active()
-    if key not in graph.features_by_key:
+    if key not in graph.feature_definitions_by_key:
         raise ValueError(f"Feature {key.to_string()} not found in active graph")
-    feature_cls = graph.features_by_key[key]
+    definition = graph.feature_definitions_by_key[key]
 
-    target_version = feature_cls.feature_version()
+    target_version = graph.get_feature_version(key)
 
     # Check if this is a root feature (no upstream dependencies)
     plan = graph.get_feature_plan(key)
     is_root_feature = not plan.deps
 
     # Get row count for this feature version
-    id_columns = feature_cls.spec().id_columns
+    id_columns = definition.spec.id_columns
     id_columns_seq = tuple(id_columns) if id_columns is not None else None
 
     # Get store metadata (table_name, uri, etc.)
@@ -339,7 +339,7 @@ def get_feature_metadata_status(
 
     # For non-root features, resolve the update to get missing/stale/orphaned counts
     lazy_increment = metadata_store.resolve_update(
-        feature_cls,
+        key,
         lazy=True,
         global_filters=list(global_filters) if global_filters else None,
         target_filters=list(target_filters) if target_filters else None,

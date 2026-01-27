@@ -49,9 +49,11 @@ def describe_graph(
     """
     # Get all features, optionally filtered by project
     if project is not None:
-        filtered_features = {key: cls for key, cls in graph.features_by_key.items() if cls.metaxy_project() == project}
+        filtered_features = {
+            key: defn for key, defn in graph.feature_definitions_by_key.items() if defn.project == project
+        }
     else:
-        filtered_features = graph.features_by_key
+        filtered_features = graph.feature_definitions_by_key
 
     # Calculate graph depth (longest dependency chain)
     def get_feature_depth(
@@ -67,11 +69,11 @@ def describe_graph(
 
         visited.add(feature_key)
 
-        feature_cls = graph.features_by_key.get(feature_key)
-        if feature_cls is None:
+        defn = graph.feature_definitions_by_key.get(feature_key)
+        if defn is None:
             return 1
 
-        deps = feature_cls.spec().deps
+        deps = defn.spec.deps
         if not deps:
             return 1
 
@@ -89,16 +91,16 @@ def describe_graph(
         max_depth = max(max_depth, depth)
 
     # Find root features (no dependencies) in filtered set
-    root_features = [key.to_string() for key, cls in filtered_features.items() if not cls.spec().deps]
+    root_features = [key.to_string() for key, defn in filtered_features.items() if not defn.spec.deps]
 
     # Find leaf features (no dependents) in filtered set
     leaf_features = []
     for feature_key in filtered_features:
         is_leaf = True
         # Check if any other filtered feature depends on this one
-        for other_key, other_cls in filtered_features.items():
+        for other_key, other_defn in filtered_features.items():
             if other_key != feature_key:
-                deps = other_cls.spec().deps
+                deps = other_defn.spec.deps
                 if deps:
                     for dep in deps:
                         if dep.feature == feature_key:
@@ -111,14 +113,14 @@ def describe_graph(
 
     # Calculate project breakdown
     projects: dict[str, int] = {}
-    for cls in graph.features_by_key.values():
-        project_name = cls.metaxy_project()
+    for defn in graph.feature_definitions_by_key.values():
+        project_name = defn.project
         projects[project_name] = projects.get(project_name, 0) + 1
 
     # Build result
     result: dict[str, Any] = {
         "metaxy_snapshot_version": graph.snapshot_version,
-        "total_features": len(graph.features_by_key),
+        "total_features": len(graph.feature_definitions_by_key),
         "graph_depth": max_depth,
         "root_features": sorted(root_features),
         "leaf_features": sorted(leaf_features),
@@ -155,13 +157,13 @@ def get_feature_dependencies(
             "dependency_tree": dict,  # Nested structure if recursive=True
         }
     """
-    feature_cls = graph.features_by_key.get(feature_key)
-    if feature_cls is None:
+    defn = graph.feature_definitions_by_key.get(feature_key)
+    if defn is None:
         raise ValueError(f"Feature {feature_key.to_string()} not found in graph")
 
     # Get direct dependencies
     direct_deps = []
-    deps = feature_cls.spec().deps
+    deps = defn.spec.deps
     if deps:
         direct_deps = [dep.feature.to_string() for dep in deps]
 
@@ -187,11 +189,11 @@ def get_feature_dependencies(
 
             visited.add(key)
 
-            cls = graph.features_by_key.get(key)
-            if cls is None:
+            feature_defn = graph.feature_definitions_by_key.get(key)
+            if feature_defn is None:
                 return {"key": key.to_string(), "dependencies": []}
 
-            spec_deps = cls.spec().deps
+            spec_deps = feature_defn.spec.deps
             if not spec_deps:
                 return {"key": key.to_string(), "dependencies": []}
 
@@ -206,7 +208,7 @@ def get_feature_dependencies(
 
             return {
                 "key": key.to_string(),
-                "project": cls.metaxy_project(),
+                "project": feature_defn.project,
                 "dependencies": deps,
             }
 
@@ -253,8 +255,8 @@ def get_feature_dependents(
     """
     # Find direct dependents
     direct_dependents = []
-    for other_key, other_cls in graph.features_by_key.items():
-        deps = other_cls.spec().deps
+    for other_key, other_defn in graph.feature_definitions_by_key.items():
+        deps = other_defn.spec.deps
         if deps:
             for dep in deps:
                 if dep.feature == feature_key:
@@ -285,8 +287,8 @@ def get_feature_dependents(
 
             # Find features that depend on this one
             dependents = []
-            for other_key, other_cls in graph.features_by_key.items():
-                deps = other_cls.spec().deps
+            for other_key, other_defn in graph.feature_definitions_by_key.items():
+                deps = other_defn.spec.deps
                 if deps:
                     for dep in deps:
                         if dep.feature == key:
@@ -298,10 +300,10 @@ def get_feature_dependents(
                             dependents.append(dep_tree)
                             break
 
-            cls = graph.features_by_key.get(key)
+            defn = graph.feature_definitions_by_key.get(key)
             return {
                 "key": key.to_string(),
-                "project": cls.metaxy_project() if cls else None,
+                "project": defn.project if defn else None,
                 "dependents": dependents,
             }
 

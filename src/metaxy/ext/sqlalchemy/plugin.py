@@ -229,17 +229,16 @@ def _get_features_metadata(
     expected_table_names = set()
     feature_specs_by_table_name = {}
 
-    for feature_key, feature_cls in graph.features_by_key.items():
+    for feature_key, definition in graph.feature_definitions_by_key.items():
         # Filter by project if requested
         if filter_by_project:
-            feature_project = feature_cls.metaxy_project()
-            if feature_project != project:
+            if definition.project != project:
                 continue
 
         table_name = store.get_table_name(feature_key)
 
         expected_table_names.add(table_name)
-        feature_specs_by_table_name[table_name] = feature_cls.spec()
+        feature_specs_by_table_name[table_name] = definition.spec
 
     # Filter source metadata to only include expected tables
     filtered_metadata = MetaData()

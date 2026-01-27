@@ -80,7 +80,7 @@ def detect_diff_migration(
 
     # Get to_snapshot_version from current active graph
     active_graph = FeatureGraph.get_active()
-    if len(active_graph.features_by_key) == 0:
+    if len(active_graph.feature_definitions_by_key) == 0:
         # No features in active graph - nothing to migrate to
         return None
 
@@ -214,11 +214,11 @@ def generate_full_graph_migration(
 
     # Get active graph
     active_graph = FeatureGraph.get_active()
-    if len(active_graph.features_by_key) == 0:
+    if len(active_graph.feature_definitions_by_key) == 0:
         raise ValueError("No features in active graph")
 
     # Get all feature keys in topological order
-    all_feature_keys = active_graph.topological_sort_features(list(active_graph.features_by_key.keys()))
+    all_feature_keys = active_graph.topological_sort_features(list(active_graph.feature_definitions_by_key.keys()))
     feature_key_strings = [key.to_string() for key in all_feature_keys]
 
     # ops is required

@@ -16,6 +16,7 @@ from metaxy.models.constants import (
     METAXY_FEATURE_VERSION,
     METAXY_FULL_DEFINITION_VERSION,
 )
+from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.feature_spec import (
     FeatureSpec,
 )
@@ -35,10 +36,6 @@ if TYPE_CHECKING:
     import narwhals as nw
 
     from metaxy.versioning.types import Increment, LazyIncrement
-
-    # TODO: These are no longer used - remove after refactoring
-    # from metaxy.data_versioning.diff import MetadataDiffResolver
-    # from metaxy.data_versioning.joiners import UpstreamJoiner
 
 # Context variable for active graph (module-level)
 _active_graph: ContextVar["FeatureGraph | None"] = ContextVar("_active_graph", default=None)
@@ -70,6 +67,69 @@ def get_feature_by_key(key: CoercibleToFeatureKey) -> type["BaseFeature"]:
     return graph.get_feature_by_key(key)
 
 
+@public
+def resolve_data_version_diff(
+    key: CoercibleToFeatureKey,
+    diff_resolver: Any,
+    target_provenance: "nw.LazyFrame[Any]",
+    current_metadata: "nw.LazyFrame[Any] | None",
+    *,
+    lazy: bool = False,
+) -> "Increment | LazyIncrement":
+    """Resolve differences between target and current field provenance.
+
+    Standalone function that works with any coercible feature key. If a Feature class
+    is registered for the key, it will use the class's `resolve_data_version_diff` method
+    (allowing for custom override logic). Otherwise, it uses the default diff resolver logic
+    with the FeatureDefinition's spec.
+
+    Args:
+        key: Feature key to resolve diff for. Accepts types that can be converted into a feature key.
+        diff_resolver: MetadataDiffResolver from MetadataStore
+        target_provenance: Calculated target field provenance (Narwhals LazyFrame)
+        current_metadata: Current metadata for this feature (Narwhals LazyFrame, or None).
+            Should be pre-filtered by feature_version at the store level.
+        lazy: If True, return LazyIncrement. If False, return Increment.
+
+    Returns:
+        Increment (eager) or LazyIncrement (lazy) with added, changed, removed
+    """
+    graph = FeatureGraph.get_active()
+    validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
+
+    # If a Feature class is registered, use its method (allows custom overrides)
+    if validated_key in graph._feature_classes_by_key:
+        feature_cls = graph._feature_classes_by_key[validated_key]
+        return feature_cls.resolve_data_version_diff(
+            diff_resolver=diff_resolver,
+            target_provenance=target_provenance,
+            current_metadata=current_metadata,
+            lazy=lazy,
+        )
+
+    # Otherwise, use FeatureDefinition with default diff logic
+    definition = graph.get_feature_definition(validated_key)
+
+    # Diff resolver always returns LazyIncrement - materialize if needed
+    lazy_result = diff_resolver.find_changes(
+        target_provenance=target_provenance,
+        current_metadata=current_metadata,
+        id_columns=definition.spec.id_columns,
+    )
+
+    # Materialize to Increment if lazy=False
+    if not lazy:
+        from metaxy.versioning.types import Increment
+
+        return Increment(
+            added=lazy_result.added.collect(),
+            changed=lazy_result.changed.collect(),
+            removed=lazy_result.removed.collect(),
+        )
+
+    return lazy_result
+
+
 class SerializedFeature(TypedDict):
     feature_spec: dict[str, Any]
     feature_schema: dict[str, Any]
@@ -83,14 +143,46 @@ class SerializedFeature(TypedDict):
 @public
 class FeatureGraph:
     def __init__(self):
-        self.features_by_key: dict[FeatureKey, type[BaseFeature]] = {}
-        self.feature_specs_by_key: dict[FeatureKey, FeatureSpec] = {}
-        # Standalone specs registered without Feature classes (for migrations)
-        self.standalone_specs_by_key: dict[FeatureKey, FeatureSpec] = {}
+        # Primary storage: FeatureDefinition objects
+        self.feature_definitions_by_key: dict[FeatureKey, FeatureDefinition] = {}
+        # Cache of Feature classes for backward compatibility (only populated via add_feature)
+        self._feature_classes_by_key: dict[FeatureKey, type[BaseFeature]] = {}
+
+    @property
+    def features_by_key(self) -> dict[FeatureKey, type["BaseFeature"]]:
+        """Backward-compatible access to feature classes.
+
+        Returns only features that were registered via add_feature() with a class.
+        For features registered via add_feature_definition() or add_feature_spec(),
+        this will not include them.
+        """
+        return self._feature_classes_by_key
+
+    @property
+    def feature_specs_by_key(self) -> dict[FeatureKey, FeatureSpec]:
+        """Backward-compatible access to feature specs.
+
+        Returns specs from all registered features (both class-based and definition-only).
+        """
+        return {key: defn.spec for key, defn in self.feature_definitions_by_key.items()}
+
+    @property
+    def standalone_specs_by_key(self) -> dict[FeatureKey, FeatureSpec]:
+        """Get specs for features registered without a Feature class.
+
+        These are features registered via add_feature_spec() or add_feature_definition()
+        that don't have an associated class.
+        """
+        return {
+            key: defn.spec
+            for key, defn in self.feature_definitions_by_key.items()
+            if key not in self._feature_classes_by_key
+        }
 
     @property
     def all_specs_by_key(self) -> dict[FeatureKey, FeatureSpec]:
-        return {**self.feature_specs_by_key, **self.standalone_specs_by_key}
+        """Get all specs by key (both class-based and standalone)."""
+        return self.feature_specs_by_key
 
     def add_feature(self, feature: type["BaseFeature"]) -> None:
         """Add a feature to the graph.
@@ -102,14 +194,15 @@ class FeatureGraph:
             ValueError: If a feature with a different import path but the same key is already registered
                        or if duplicate column names would result from renaming operations
         """
-        if feature.spec().key in self.features_by_key:
-            existing = self.features_by_key[feature.spec().key]
+        key = feature.spec().key
+        if key in self._feature_classes_by_key:
+            existing = self._feature_classes_by_key[key]
             # Allow quiet replacement if it's the same class (same import path)
             existing_path = f"{existing.__module__}.{existing.__name__}"
             new_path = f"{feature.__module__}.{feature.__name__}"
             if existing_path != new_path:
                 raise ValueError(
-                    f"Feature with key {feature.spec().key.to_string()} already registered. "
+                    f"Feature with key {key.to_string()} already registered. "
                     f"Existing: {existing_path}, New: {new_path}. "
                     f"Each feature key must be unique within a graph."
                 )
@@ -119,14 +212,29 @@ class FeatureGraph:
         if feature.spec().deps:
             self._build_and_validate_plan(feature.spec())
 
-        self.features_by_key[feature.spec().key] = feature
-        self.feature_specs_by_key[feature.spec().key] = feature.spec()
+        # Create FeatureDefinition from the class
+        definition = FeatureDefinition.from_feature_class(feature)
+
+        # Store both the definition and the class reference
+        self.feature_definitions_by_key[key] = definition
+        self._feature_classes_by_key[key] = feature
 
     def add_feature_spec(self, spec: FeatureSpec) -> None:
+        """Add a standalone feature spec to the graph.
+
+        Creates a minimal FeatureDefinition with empty schema and class_path.
+        Useful for migrations when the Feature class may not exist.
+
+        Args:
+            spec: Feature specification to register
+
+        Raises:
+            ValueError: If a spec with a different version already exists for this key
+        """
         import warnings
 
         # Check if a Feature class already exists for this key
-        if spec.key in self.features_by_key:
+        if spec.key in self._feature_classes_by_key:
             warnings.warn(
                 f"Feature class already exists for key {spec.key.to_string()}. "
                 f"Standalone spec will be ignored - Feature class takes precedence.",
@@ -134,11 +242,11 @@ class FeatureGraph:
             )
             return
 
-        # Check if a standalone spec already exists
-        if spec.key in self.standalone_specs_by_key:
-            existing = self.standalone_specs_by_key[spec.key]
+        # Check if a definition already exists (without a class)
+        if spec.key in self.feature_definitions_by_key and spec.key not in self._feature_classes_by_key:
+            existing = self.feature_definitions_by_key[spec.key]
             # Only warn if it's a different spec (by comparing feature_spec_version)
-            if existing.feature_spec_version != spec.feature_spec_version:
+            if existing.spec.feature_spec_version != spec.feature_spec_version:
                 raise ValueError(
                     f"Standalone spec for key {spec.key.to_string()} already exists with a different version."
                 )
@@ -147,10 +255,54 @@ class FeatureGraph:
         if spec.deps:
             self._build_and_validate_plan(spec)
 
-        # Store standalone spec
-        self.standalone_specs_by_key[spec.key] = spec
-        # Also add to feature_specs_by_key for methods that only need the spec
-        self.feature_specs_by_key[spec.key] = spec
+        # Create a minimal FeatureDefinition
+        definition = FeatureDefinition(
+            spec=spec,
+            feature_schema={},
+            feature_class_path="",
+            project=spec.key.parts[0] if spec.key.parts else "",
+        )
+        self.feature_definitions_by_key[spec.key] = definition
+
+    def add_feature_definition(self, definition: FeatureDefinition) -> None:
+        """Add a FeatureDefinition directly to the graph.
+
+        This is the primary method for adding features from snapshots/storage
+        without requiring dynamic imports.
+
+        Args:
+            definition: FeatureDefinition to register
+        """
+        key = definition.key
+
+        # Validation happens automatically when FeaturePlan is constructed
+        if definition.spec.deps:
+            self._build_and_validate_plan(definition.spec)
+
+        self.feature_definitions_by_key[key] = definition
+
+    def get_feature_definition(self, key: CoercibleToFeatureKey) -> FeatureDefinition:
+        """Get a FeatureDefinition by its key.
+
+        This is the primary method for accessing feature information.
+
+        Args:
+            key: Feature key to look up
+
+        Returns:
+            FeatureDefinition for the feature
+
+        Raises:
+            KeyError: If no feature with the given key is registered
+        """
+        validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
+
+        if validated_key not in self.feature_definitions_by_key:
+            raise KeyError(
+                f"No feature with key {validated_key.to_string()} found in graph. "
+                f"Available keys: {[k.to_string() for k in self.feature_definitions_by_key.keys()]}"
+            )
+        return self.feature_definitions_by_key[validated_key]
 
     def _build_and_validate_plan(self, spec: "FeatureSpec") -> None:
         """Build a FeaturePlan to trigger validation.
@@ -183,7 +335,7 @@ class FeatureGraph:
     def remove_feature(self, key: CoercibleToFeatureKey) -> None:
         """Remove a feature from the graph.
 
-        Removes Feature class or standalone spec (whichever exists).
+        Removes the feature definition (and class reference if present).
 
         Args:
             key: Feature key to remove. Accepts types that can be converted into a feature key..
@@ -194,25 +346,23 @@ class FeatureGraph:
         # Validate and coerce the key
         validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
 
-        # Check both Feature classes and standalone specs
-        combined = {**self.feature_specs_by_key, **self.standalone_specs_by_key}
-
-        if validated_key not in combined:
+        if validated_key not in self.feature_definitions_by_key:
             raise KeyError(
                 f"No feature with key {validated_key.to_string()} found in graph. "
-                f"Available keys: {[k.to_string() for k in combined]}"
+                f"Available keys: {[k.to_string() for k in self.feature_definitions_by_key]}"
             )
 
-        # Remove from all relevant dicts
-        if validated_key in self.features_by_key:
-            del self.features_by_key[validated_key]
-        if validated_key in self.standalone_specs_by_key:
-            del self.standalone_specs_by_key[validated_key]
-        if validated_key in self.feature_specs_by_key:
-            del self.feature_specs_by_key[validated_key]
+        # Remove from both dicts
+        del self.feature_definitions_by_key[validated_key]
+        if validated_key in self._feature_classes_by_key:
+            del self._feature_classes_by_key[validated_key]
 
     def get_feature_by_key(self, key: CoercibleToFeatureKey) -> type["BaseFeature"]:
         """Get a feature class by its key.
+
+        Only returns classes registered via add_feature(). For features
+        registered via add_feature_definition() or add_feature_spec(),
+        use get_feature_definition() instead.
 
         Args:
             key: Feature key to look up. Accepts types that can be converted into a feature key..
@@ -221,7 +371,7 @@ class FeatureGraph:
             Feature class
 
         Raises:
-            KeyError: If no feature with the given key is registered
+            KeyError: If no feature class with the given key is registered
 
         Example:
             ```py
@@ -233,12 +383,12 @@ class FeatureGraph:
         # Validate and coerce the key
         validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
 
-        if validated_key not in self.features_by_key:
+        if validated_key not in self._feature_classes_by_key:
             raise KeyError(
-                f"No feature with key {validated_key.to_string()} found in graph. "
-                f"Available keys: {[k.to_string() for k in self.features_by_key.keys()]}"
+                f"No feature class with key {validated_key.to_string()} found in graph. "
+                f"Available class keys: {[k.to_string() for k in self._feature_classes_by_key.keys()]}"
             )
-        return self.features_by_key[validated_key]
+        return self._feature_classes_by_key[validated_key]
 
     def list_features(
         self,
@@ -272,8 +422,8 @@ class FeatureGraph:
             ```
         """
         if not only_current_project:
-            # Return all features
-            return list(self.features_by_key.keys())
+            # Return all features (both class-based and definition-only)
+            return list(self.feature_definitions_by_key.keys())
 
         # Normalize projects to list
         project_list: list[str]
@@ -287,16 +437,14 @@ class FeatureGraph:
             except RuntimeError:
                 # Config not initialized - in tests or non-CLI usage
                 # Return all features (can't determine project)
-                return list(self.features_by_key.keys())
+                return list(self.feature_definitions_by_key.keys())
         elif isinstance(projects, str):
             project_list = [projects]
         else:
             project_list = projects
 
-        # Filter by project(s) using Feature.metaxy_project() method
-        return [
-            key for key in self.features_by_key.keys() if self.features_by_key[key].metaxy_project() in project_list
-        ]
+        # Filter by project(s) using FeatureDefinition.project
+        return [key for key, defn in self.feature_definitions_by_key.items() if defn.project in project_list]
 
     def get_feature_plan(self, key: CoercibleToFeatureKey) -> FeaturePlan:
         """Get a feature plan for a given feature key.
@@ -572,17 +720,15 @@ class FeatureGraph:
         """
         snapshot: dict[str, SerializedFeature] = {}
 
-        for feature_key, feature_cls in self.features_by_key.items():
+        for feature_key, definition in self.feature_definitions_by_key.items():
             feature_key_str = feature_key.to_string()
-            feature_spec_dict = feature_cls.spec().model_dump(mode="json")
-            feature_schema_dict = feature_cls.model_json_schema()
-            feature_version = feature_cls.feature_version()
-            feature_spec_version = feature_cls.spec().feature_spec_version
-            full_definition_version = feature_cls.full_definition_version()
-            project = feature_cls.metaxy_project()
-
-            # Get class import path (module.ClassName)
-            class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
+            feature_spec_dict = definition.spec.model_dump(mode="json")
+            feature_schema_dict = definition.feature_schema
+            feature_version = self.get_feature_version(feature_key)
+            feature_spec_version = definition.spec.feature_spec_version
+            full_definition_version = definition.feature_definition_version
+            project = definition.project
+            class_path = definition.feature_class_path
 
             snapshot[feature_key_str] = {  # ty: ignore[invalid-assignment]
                 "feature_spec": feature_spec_dict,
@@ -600,136 +746,50 @@ class FeatureGraph:
     def from_snapshot(
         cls,
         snapshot_data: Mapping[str, Mapping[str, Any]],
-        *,
-        class_path_overrides: dict[str, str] | None = None,
-        force_reload: bool = False,
     ) -> "FeatureGraph":
-        """Reconstruct graph from snapshot by importing Feature classes.
+        """Reconstruct graph from snapshot by creating FeatureDefinition objects.
 
-        Strictly requires Feature classes to exist at their recorded import paths.
-        This ensures custom methods (like load_input) are available.
-
-        If a feature has been moved/renamed, use class_path_overrides to specify
-        the new location.
+        This method creates FeatureDefinition objects directly from the snapshot data
+        without any dynamic imports. The resulting graph contains all feature metadata
+        needed for operations like migrations and comparisons.
 
         Args:
             snapshot_data: Dict of feature_key -> dict containing
-                feature_spec (dict), feature_class_path (str), and other fields
-                as returned by to_snapshot() or loaded from DB
-            class_path_overrides: Optional dict mapping feature_key to new class path
-                                 for features that have been moved/renamed
-            force_reload: If True, reload modules from disk to get current code state.
+                feature_spec (dict), feature_schema (dict), feature_class_path (str),
+                project (str), and other fields as returned by to_snapshot() or loaded from DB
 
         Returns:
-            New FeatureGraph with historical features
-
-        Raises:
-            ImportError: If feature class cannot be imported at recorded path
+            New FeatureGraph with FeatureDefinition objects
 
         Example:
-            <!-- skip next -->
             ```py
             snapshot_data = {}  # Loaded from metadata store
             # Load snapshot from metadata store
             historical_graph = FeatureGraph.from_snapshot(snapshot_data)
-
-            # With override for moved feature
-            historical_graph = FeatureGraph.from_snapshot(
-                snapshot_data, class_path_overrides={"video_processing": "myapp.features_v2.VideoProcessing"}
-            )
             ```
         """
-        import importlib
-        import sys
-
         graph = cls()
-        class_path_overrides = class_path_overrides or {}
 
-        # If force_reload, collect all module paths first to remove ALL features
-        # from those modules before reloading (modules can have multiple features)
-        modules_to_reload = set()
-        if force_reload:
-            for feature_key_str, feature_data in snapshot_data.items():
-                class_path = class_path_overrides.get(feature_key_str) or feature_data.get("feature_class_path")
-                if class_path:
-                    module_path, _ = class_path.rsplit(".", 1)
-                    if module_path in sys.modules:
-                        modules_to_reload.add(module_path)
+        for feature_key_str, feature_data in snapshot_data.items():
+            # Parse FeatureSpec
+            feature_spec_dict = feature_data["feature_spec"]
+            spec = FeatureSpec.model_validate(feature_spec_dict)
 
-        # Use context manager to temporarily set the new graph as active
-        # This ensures imported Feature classes register to the new graph, not the current one
-        with graph.use():
-            for feature_key_str, feature_data in snapshot_data.items():
-                # Parse FeatureSpec for validation
-                feature_spec_dict = feature_data["feature_spec"]
-                FeatureSpec.model_validate(feature_spec_dict)
+            # Get other fields with defaults for backward compatibility
+            feature_schema = feature_data.get("feature_schema", {})
+            feature_class_path = feature_data.get("feature_class_path", "")
+            project = feature_data.get("project", spec.key.parts[0] if spec.key.parts else "")
 
-                # Get class path (check overrides first)
-                if feature_key_str in class_path_overrides:
-                    class_path = class_path_overrides[feature_key_str]
-                else:
-                    class_path = feature_data.get("feature_class_path")
-                    if not class_path:
-                        raise ValueError(
-                            f"Feature '{feature_key_str}' has no feature_class_path in snapshot. "
-                            f"Cannot reconstruct historical graph."
-                        )
+            # Create FeatureDefinition
+            definition = FeatureDefinition(
+                spec=spec,
+                feature_schema=feature_schema,
+                feature_class_path=feature_class_path,
+                project=project,
+            )
 
-                # Import the class
-                try:
-                    module_path, class_name = class_path.rsplit(".", 1)
-
-                    # Force reload module from disk if requested
-                    # This is critical for migration detection - when code changes,
-                    # we need fresh imports to detect the changes
-                    if force_reload and module_path in modules_to_reload:
-                        # Before first reload of this module, remove ALL features from this module
-                        # (a module can define multiple features)
-                        if module_path in modules_to_reload:
-                            # Find all features from this module in snapshot and remove them
-                            for fk_str, fd in snapshot_data.items():
-                                fcp = class_path_overrides.get(fk_str) or fd.get("feature_class_path")
-                                if fcp and fcp.rsplit(".", 1)[0] == module_path:
-                                    fspec_dict = fd["feature_spec"]
-                                    fspec = FeatureSpec.model_validate(fspec_dict)
-                                    if fspec.key in graph.features_by_key:
-                                        graph.remove_feature(fspec.key)
-
-                            # Mark module as processed so we don't remove features again
-                            modules_to_reload.discard(module_path)
-
-                        module = importlib.reload(sys.modules[module_path])
-                    else:
-                        module = __import__(module_path, fromlist=[class_name])
-
-                    feature_cls = getattr(module, class_name)
-                except (ImportError, AttributeError):
-                    # Feature class not importable - add as standalone spec instead
-                    # This allows migrations to work even when old Feature classes are deleted/moved
-                    import logging
-
-                    logger = logging.getLogger(__name__)
-                    logger.exception(
-                        f"Cannot import Feature class '{class_path}' for '{feature_key_str}'. "
-                        f"Adding only the FeatureSpec. "
-                    )
-
-                    feature_spec = FeatureSpec.model_validate(feature_spec_dict)
-                    # Add the spec as a standalone spec
-                    graph.add_feature_spec(feature_spec)
-                    continue
-
-                # Validate the imported class matches the stored spec
-                if not hasattr(feature_cls, "spec"):
-                    raise TypeError(
-                        f"Imported class '{class_path}' is not a valid Feature class (missing 'spec' attribute)"
-                    )
-
-                # Register the imported feature to this graph if not already present
-                # If the module was imported for the first time, the metaclass already registered it
-                # If the module was previously imported, we need to manually register it
-                if feature_cls.spec().key not in graph.features_by_key:
-                    graph.add_feature(feature_cls)
+            # Add to graph
+            graph.add_feature_definition(definition)
 
         return graph
 
@@ -832,8 +892,12 @@ class MetaxyMeta(ModelMetaclass):
             new_cls.graph = active_graph
             new_cls._spec = spec
 
-            # Determine project for this feature using intelligent detection
-            new_cls.__metaxy_project__ = cls._detect_project(new_cls)
+            # Determine project for this feature
+            # Use explicit class attribute if defined, otherwise auto-detect from package
+            if "__metaxy_project__" in namespace:
+                new_cls.__metaxy_project__ = namespace["__metaxy_project__"]
+            else:
+                new_cls.__metaxy_project__ = cls._detect_project(new_cls)
 
             active_graph.add_feature(new_cls)
         else:

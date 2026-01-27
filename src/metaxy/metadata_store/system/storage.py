@@ -653,8 +653,8 @@ class SystemTableStorage:
         # Filter the data
         lazy = sys_meta.filter(
             nw.col(METAXY_SNAPSHOT_VERSION) == snapshot_version,
-            nw.col("project") == next(iter(graph.features_by_key.values())).metaxy_project()
-            if len(graph.features_by_key) > 0
+            nw.col("project") == next(iter(graph.feature_definitions_by_key.values())).project
+            if len(graph.feature_definitions_by_key) > 0
             else "_empty_graph_",
         )
 
@@ -813,33 +813,22 @@ class SystemTableStorage:
         self,
         snapshot_version: str,
         project: str | None = None,
-        *,
-        class_path_overrides: dict[str, str] | None = None,
-        force_reload: bool = False,
     ) -> FeatureGraph:
         """Load and reconstruct a FeatureGraph from a stored snapshot.
 
-        This is a convenience method that encapsulates the pattern of:
-
-        1. Reading feature metadata for a snapshot
-
-        2. Building the snapshot data dictionary
-
-        3. Reconstructing the FeatureGraph from snapshot data
+        This method creates FeatureDefinition objects directly from the stored snapshot
+        data without any dynamic imports. The resulting graph contains all feature
+        metadata needed for operations like migrations and comparisons.
 
         Args:
             snapshot_version: The snapshot version to load
             project: Optional project name to filter by
-            class_path_overrides: Optional dict mapping feature_key to new class path
-                                  for features that have been moved/renamed
-            force_reload: If True, force reimport of feature classes even if cached
 
         Returns:
-            Reconstructed FeatureGraph
+            Reconstructed FeatureGraph with FeatureDefinition objects
 
         Raises:
             ValueError: If no features found for the snapshot version
-            ImportError: If feature classes cannot be imported at their recorded paths
 
         Note:
             The store must already be open when calling this method.
@@ -849,7 +838,7 @@ class SystemTableStorage:
             with store:
                 storage = SystemTableStorage(store)
                 graph = storage.load_graph_from_snapshot(snapshot_version="abc123", project="my_project")
-                print(f"Loaded {len(graph.features_by_key)} features")
+                print(f"Loaded {len(graph.feature_definitions_by_key)} features")
             ```
         """
         import json
@@ -872,15 +861,15 @@ class SystemTableStorage:
                 "feature_spec": json.loads(row["feature_spec"])
                 if isinstance(row["feature_spec"], str)
                 else row["feature_spec"],
-                "feature_class_path": row["feature_class_path"],
+                "feature_schema": json.loads(row["feature_schema"])
+                if isinstance(row.get("feature_schema"), str)
+                else row.get("feature_schema", {}),
+                "feature_class_path": row.get("feature_class_path", ""),
+                "project": row.get("project", ""),
                 "metaxy_feature_version": row["metaxy_feature_version"],
             }
             for row in features_df.iter_rows(named=True)
         }
 
         # Reconstruct graph from snapshot
-        return FeatureGraph.from_snapshot(
-            snapshot_data,
-            class_path_overrides=class_path_overrides,
-            force_reload=force_reload,
-        )
+        return FeatureGraph.from_snapshot(snapshot_data)

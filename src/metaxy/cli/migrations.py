@@ -835,13 +835,11 @@ def describe(
             for feature_key_str in affected_features:
                 feature_key_obj = FeatureKey(feature_key_str.split("/"))
 
-                # Get feature class
-                if feature_key_obj not in graph.features_by_key:
+                # Check feature exists in graph
+                if feature_key_obj not in graph.feature_definitions_by_key:
                     app.console.print(f"[yellow]⚠[/yellow] {feature_key_str}")
                     app.console.print("    [yellow]Feature not in current graph[/yellow]")
                     continue
-
-                graph.features_by_key[feature_key_obj]
 
                 # Get rows affected from events (sum of all completed events for this feature)
                 import polars as pl
