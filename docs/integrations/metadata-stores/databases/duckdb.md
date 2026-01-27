@@ -3,17 +3,17 @@ title: "DuckDB Metadata Store"
 description: "DuckDB as a metadata store backend."
 ---
 
-# Metaxy + DuckDB
+# DuckDB
 
-Metaxy implements [`DuckDBMetadataStore`][metaxy.metadata_store.duckdb.DuckDBMetadataStore]. It uses [DuckDB](https://duckdb.org/) as metadata storage and versioning engine.
+[DuckDB](https://duckdb.org/) is an embedded analytical database. To use Metaxy with DuckDB, configure [`DuckDBMetadataStore`][metaxy.metadata_store.duckdb.DuckDBMetadataStore]. This runs versioning computations natively in DuckDB.
 
 !!! warning
 
-    DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider either using DuckLake with a `PostgreSQL` catalog, or refer to [DuckDB's documentation](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes) to learn about implementing application-side work-arounds.
+    File-based DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider either using DuckLake with a `PostgreSQL` catalog, or refer to [DuckDB's documentation](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes) to learn about implementing application-side work-arounds.
 
 !!! tip
 
-    The [Delta Lake metadata store](../storage/delta.md) might be a better alternative for concurrent writes.
+    The [Delta Lake metadata store](../storage/delta.md) might be a better alternative for concurrent writes (with it's Polars-based versioning engine being as fast as DuckDB).
 
 ## Installation
 
@@ -31,23 +31,35 @@ store = DuckDBMetadataStore("metadata.db", extensions=["hashfuncs", "spatial"])
 
 `hashfuncs` is typically used by the versioning engine.
 
-## API
-
-::: metaxy.metadata_store.duckdb
-options:
-members: false
+---
 
 <!-- dprint-ignore-start -->
+::: metaxy.metadata_store.duckdb
+    options:
+      members: false
+      show_root_heading: true
+      heading_level: 2
+
 ::: metaxy.metadata_store.duckdb.DuckDBMetadataStore
     options:
-      inherited_members: false
-<!-- dprint-ignore-end -->
+      members: false
+      heading_level: 3
 
 ::: metaxy.metadata_store.duckdb.ExtensionSpec
+    options:
+      members: false
+      heading_level: 3
 
 ::: metaxy.metadata_store.duckdb.DuckLakeConfigInput
+    options:
+      members: false
+      heading_level: 3
 
 ::: metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig
+    options:
+      members: false
+      heading_level: 3
+<!-- dprint-ignore-end -->
 
 ## Configuration
 

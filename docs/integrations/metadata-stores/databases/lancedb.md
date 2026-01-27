@@ -3,11 +3,11 @@ title: "LanceDB Metadata Store"
 description: "LanceDB as a metadata store backend."
 ---
 
-# Metaxy + LanceDB
+# LanceDB
 
-Metaxy implements [`LanceDBMetadataStore`][metaxy.metadata_store.lancedb.LanceDBMetadataStore]. LanceDB keeps one Lance table per feature, writes metadata in append mode, and uses the in-memory Polars versioning engine for provenance calculations. LanceDB handles schema evolution, transactions, and compaction automatically.
+[LanceDB](https://lancedb.github.io/lancedb/) is an vector database built on the Lance columnar format. To use Metaxy with LanceDB, configure [`LanceDBMetadataStore`][metaxy.metadata_store.lancedb.LanceDBMetadataStore]. It uses the in-memory Polars engine for versioning computations. LanceDB handles schema evolution, transactions, and compaction automatically.
 
-It runs embedded (local directory) or against external storage (object stores, HTTP endpoints, LanceDB Cloud), so you can use the same store for local development and remote compute.
+It runs embedded (local directory) or against external storage (object stores, HTTP endpoints, LanceDB Cloud), so you can use the same store type for local development and cloud workloads.
 
 ## Installation
 
@@ -26,16 +26,19 @@ Point `uri` at any supported URI (`s3://`, `gs://`, `az://`, `db://`, ...) and f
 All tables are stored within a single LanceDB database at the configured URI location.
 Each feature gets its own Lance table.
 
-## API
-
-::: metaxy.metadata_store.lancedb
-options:
-members: false
+---
 
 <!-- dprint-ignore-start -->
+::: metaxy.metadata_store.lancedb
+    options:
+      members: false
+      show_root_heading: true
+      heading_level: 2
+
 ::: metaxy.metadata_store.lancedb.LanceDBMetadataStore
     options:
-      inherited_members: false
+      members: false
+      heading_level: 3
 <!-- dprint-ignore-end -->
 
 ## Configuration

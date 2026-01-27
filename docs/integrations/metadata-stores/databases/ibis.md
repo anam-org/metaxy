@@ -15,14 +15,17 @@ The following metadata stores are built on Ibis:
 - [ClickHouse](clickhouse.md)
 - [BigQuery](bigquery.md)
 
-## API
-
-::: metaxy.metadata_store.ibis
-options:
-members: false
+---
 
 <!-- dprint-ignore-start -->
+::: metaxy.metadata_store.ibis
+    options:
+      members: false
+      show_root_heading: true
+      heading_level: 2
+
 ::: metaxy.metadata_store.ibis.IbisMetadataStore
     options:
-      inherited_members: false
+      members: false
+      heading_level: 3
 <!-- dprint-ignore-end -->
