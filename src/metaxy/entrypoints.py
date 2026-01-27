@@ -52,6 +52,7 @@ def load_module_entrypoint(
         EntrypointLoadError: If module import fails
 
     Example:
+        <!-- skip next -->
         ```py
         from metaxy.entrypoints import load_module_entrypoint
 
@@ -88,10 +89,11 @@ def load_entrypoints(
         EntrypointLoadError: If any module import fails
 
     Example:
+        <!-- skip next -->
         ```py
-        from metaxy.entrypoints import load_config_entrypoints
+        from metaxy.entrypoints import load_entrypoints
 
-        load_config_entrypoints(["myapp.features.video", "myapp.features.audio", "myapp.features.text"])
+        load_entrypoints(["myapp.features.video", "myapp.features.audio", "myapp.features.text"])
         ```
     """
     from metaxy.models.feature import FeatureGraph
@@ -190,6 +192,7 @@ def load_env_entrypoints() -> None:
         EntrypointLoadError: If any entrypoint fails to load
 
     Example:
+        <!-- skip next -->
         ```py
         import os
 

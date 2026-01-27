@@ -91,6 +91,7 @@ def sybil_setup(namespace):
         - MyFeature: A pre-defined feature class with key "my/feature"
         - store: An empty DeltaMetadataStore in a temporary directory
         - store_with_data: A DeltaMetadataStore with sample MyFeature data
+        - config: A MetaxyConfig with "dev" and "prod" stores configured
     """
     from metaxy._testing.doctest_fixtures import (
         DocsStoreFixtures,
@@ -129,6 +130,7 @@ def sybil_setup(namespace):
     namespace["MyFeature"] = MyFeature
     namespace["store"] = store_fixtures.store
     namespace["store_with_data"] = store_fixtures.store_with_data
+    namespace["config"] = store_fixtures.config
 
 
 def sybil_teardown(namespace):

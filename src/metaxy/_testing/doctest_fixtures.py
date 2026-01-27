@@ -3,14 +3,21 @@
 These features have stable import paths so they work with to_snapshot()/from_snapshot().
 """
 
+from __future__ import annotations
+
 import tempfile
+from contextlib import ExitStack
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import polars as pl
 
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.feature_spec import FeatureSpec
+
+if TYPE_CHECKING:
+    from metaxy.config import MetaxyConfig
 
 # Define spec at module level for stable reference
 _MY_FEATURE_SPEC = FeatureSpec(key="my/feature", id_columns=["id"], fields=["part/1", "part/2"])
@@ -48,24 +55,48 @@ class DocsStoreFixtures:
     """Manages store fixtures for docstring examples.
 
     Creates temporary directories and stores that are cleaned up on teardown.
+    Uses ExitStack for proper cleanup of all context managers.
     """
 
     def __init__(self, graph: FeatureGraph):
         self.graph = graph
-        self._temp_dir: tempfile.TemporaryDirectory[str] | None = None
+        self._exit_stack: ExitStack | None = None
         self._store: DeltaMetadataStore | None = None
         self._store_with_data: DeltaMetadataStore | None = None
+        self._config: MetaxyConfig | None = None
 
     def setup(self) -> None:
-        """Create temporary stores."""
-        self._temp_dir = tempfile.TemporaryDirectory()
-        temp_path = Path(self._temp_dir.name)
+        """Create temporary stores and config."""
+        from metaxy.config import MetaxyConfig, StoreConfig
+
+        self._exit_stack = ExitStack()
+
+        # Create and register temporary directory for cleanup
+        temp_dir = self._exit_stack.enter_context(tempfile.TemporaryDirectory())
+        temp_path = Path(temp_dir)
 
         # Empty store
         self._store = DeltaMetadataStore(root_path=temp_path / "store")
 
         # Store with sample data
         self._store_with_data = DeltaMetadataStore(root_path=temp_path / "store_with_data")
+
+        # Create a config with both stores pre-configured
+        self._config = MetaxyConfig(
+            store="dev",
+            stores={
+                "dev": StoreConfig(
+                    type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                    config={"root_path": str(temp_path / "store")},
+                ),
+                "prod": StoreConfig(
+                    type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                    config={"root_path": str(temp_path / "store_with_data")},
+                ),
+            },
+        )
+        # Enter config context so MetaxyConfig.get() returns our config
+        self._exit_stack.enter_context(self._config.use())
 
         # Write sample data to store_with_data
         # Include required metaxy_provenance_by_field column with struct matching feature fields
@@ -88,10 +119,13 @@ class DocsStoreFixtures:
             self._store_with_data.write_metadata(MyFeature, sample_data)
 
     def teardown(self) -> None:
-        """Clean up temporary directories."""
-        if self._temp_dir is not None:
-            self._temp_dir.cleanup()
-            self._temp_dir = None
+        """Clean up all resources via ExitStack."""
+        if self._exit_stack is not None:
+            self._exit_stack.close()
+            self._exit_stack = None
+            self._config = None
+            self._store = None
+            self._store_with_data = None
 
     @property
     def store(self) -> DeltaMetadataStore:
@@ -106,6 +140,13 @@ class DocsStoreFixtures:
         if self._store_with_data is None:
             raise RuntimeError("Store fixtures not set up. Call setup() first.")
         return self._store_with_data
+
+    @property
+    def config(self) -> MetaxyConfig:
+        """Pre-configured MetaxyConfig with dev and prod stores."""
+        if self._config is None:
+            raise RuntimeError("Store fixtures not set up. Call setup() first.")
+        return self._config
 
 
 __all__ = ["MyFeature", "register_doctest_fixtures", "DocsStoreFixtures"]
