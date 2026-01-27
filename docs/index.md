@@ -50,6 +50,7 @@ Metaxy is a pluggable metadata layer for multi-modal Data and ML pipelines that 
     │ img2 │ s3://... │ 1.8M │b7e123  │ ────────>│    ├─ img2.jpg          │
     └──────┴──────────┴──────┴────────┘          └─────────────────────────┘
     ```
+
     | **Subject** | **Description** |
     |---------|-------------|
     | **Data** | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform. |
