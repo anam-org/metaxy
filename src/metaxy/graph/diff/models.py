@@ -405,17 +405,13 @@ class GraphData(FrozenBaseModel):
             feature_key = FeatureKey(feature_key_str.split("/"))
 
             # Map status strings to NodeStatus enum
-            status_str = node_data["status"]
-            if status_str == "added":
-                status = NodeStatus.ADDED
-            elif status_str == "removed":
-                status = NodeStatus.REMOVED
-            elif status_str == "changed":
-                status = NodeStatus.CHANGED
-            elif status_str == "unchanged":
-                status = NodeStatus.UNCHANGED
-            else:
-                status = NodeStatus.NORMAL
+            status_map = {
+                "added": NodeStatus.ADDED,
+                "removed": NodeStatus.REMOVED,
+                "changed": NodeStatus.CHANGED,
+                "unchanged": NodeStatus.UNCHANGED,
+            }
+            status = status_map.get(node_data["status"], NodeStatus.NORMAL)
 
             # Convert fields
             fields_dict = node_data.get("fields", {})

@@ -94,22 +94,9 @@ def describe_graph(
     root_features = [key.to_string() for key, defn in filtered_features.items() if not defn.spec.deps]
 
     # Find leaf features (no dependents) in filtered set
-    leaf_features = []
-    for feature_key in filtered_features:
-        is_leaf = True
-        # Check if any other filtered feature depends on this one
-        for other_key, other_defn in filtered_features.items():
-            if other_key != feature_key:
-                deps = other_defn.spec.deps
-                if deps:
-                    for dep in deps:
-                        if dep.feature == feature_key:
-                            is_leaf = False
-                            break
-            if not is_leaf:
-                break
-        if is_leaf:
-            leaf_features.append(feature_key.to_string())
+    # Build a set of all dependency keys for efficient lookup
+    all_dep_keys = {dep.feature for defn in filtered_features.values() if defn.spec.deps for dep in defn.spec.deps}
+    leaf_features = [key.to_string() for key in filtered_features if key not in all_dep_keys]
 
     # Calculate project breakdown
     projects: dict[str, int] = {}

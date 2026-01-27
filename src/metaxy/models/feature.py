@@ -35,7 +35,6 @@ FEATURE_TRACKING_VERSION_COL = METAXY_FULL_DEFINITION_VERSION
 if TYPE_CHECKING:
     import narwhals as nw
 
-    from metaxy.versioning.types import Increment, LazyIncrement
 
 # Context variable for active graph (module-level)
 _active_graph: ContextVar["FeatureGraph | None"] = ContextVar("_active_graph", default=None)
@@ -65,69 +64,6 @@ def get_feature_by_key(key: CoercibleToFeatureKey) -> type["BaseFeature"]:
     """
     graph = FeatureGraph.get_active()
     return graph.get_feature_by_key(key)
-
-
-@public
-def resolve_data_version_diff(
-    key: CoercibleToFeatureKey,
-    diff_resolver: Any,
-    target_provenance: "nw.LazyFrame[Any]",
-    current_metadata: "nw.LazyFrame[Any] | None",
-    *,
-    lazy: bool = False,
-) -> "Increment | LazyIncrement":
-    """Resolve differences between target and current field provenance.
-
-    Standalone function that works with any coercible feature key. If a Feature class
-    is registered for the key, it will use the class's `resolve_data_version_diff` method
-    (allowing for custom override logic). Otherwise, it uses the default diff resolver logic
-    with the FeatureDefinition's spec.
-
-    Args:
-        key: Feature key to resolve diff for. Accepts types that can be converted into a feature key.
-        diff_resolver: MetadataDiffResolver from MetadataStore
-        target_provenance: Calculated target field provenance (Narwhals LazyFrame)
-        current_metadata: Current metadata for this feature (Narwhals LazyFrame, or None).
-            Should be pre-filtered by feature_version at the store level.
-        lazy: If True, return LazyIncrement. If False, return Increment.
-
-    Returns:
-        Increment (eager) or LazyIncrement (lazy) with added, changed, removed
-    """
-    graph = FeatureGraph.get_active()
-    validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
-
-    # If a Feature class is registered, use its method (allows custom overrides)
-    if validated_key in graph._feature_classes_by_key:
-        feature_cls = graph._feature_classes_by_key[validated_key]
-        return feature_cls.resolve_data_version_diff(
-            diff_resolver=diff_resolver,
-            target_provenance=target_provenance,
-            current_metadata=current_metadata,
-            lazy=lazy,
-        )
-
-    # Otherwise, use FeatureDefinition with default diff logic
-    definition = graph.get_feature_definition(validated_key)
-
-    # Diff resolver always returns LazyIncrement - materialize if needed
-    lazy_result = diff_resolver.find_changes(
-        target_provenance=target_provenance,
-        current_metadata=current_metadata,
-        id_columns=definition.spec.id_columns,
-    )
-
-    # Materialize to Increment if lazy=False
-    if not lazy:
-        from metaxy.versioning.types import Increment
-
-        return Increment(
-            added=lazy_result.added.collect(),
-            changed=lazy_result.changed.collect(),
-            removed=lazy_result.removed.collect(),
-        )
-
-    return lazy_result
 
 
 class SerializedFeature(TypedDict):
@@ -1157,67 +1093,3 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
             upstream_columns=upstream_columns,
             upstream_renames=upstream_renames,
         )
-
-    @classmethod
-    def resolve_data_version_diff(
-        cls,
-        diff_resolver: Any,
-        target_provenance: "nw.LazyFrame[Any]",
-        current_metadata: "nw.LazyFrame[Any] | None",
-        *,
-        lazy: bool = False,
-    ) -> "Increment | LazyIncrement":
-        """Resolve differences between target and current field provenance.
-
-        Override for custom diff logic (ignore certain fields, custom rules, etc.).
-
-        Args:
-            diff_resolver: MetadataDiffResolver from MetadataStore
-            target_provenance: Calculated target field provenance (Narwhals LazyFrame)
-            current_metadata: Current metadata for this feature (Narwhals LazyFrame, or None).
-                Should be pre-filtered by feature_version at the store level.
-            lazy: If True, return LazyIncrement. If False, return Increment.
-
-        Returns:
-            Increment (eager) or LazyIncrement (lazy) with added, changed, removed
-
-        Example (default):
-            <!-- skip next -->
-            ```py
-            class MyFeature(BaseFeature, spec=...):
-                pass  # Uses diff resolver's default implementation
-            ```
-
-        Example (ignore certain field changes):
-            <!-- skip next -->
-            ```py
-            class MyFeature(BaseFeature, spec=...):
-                @classmethod
-                def resolve_data_version_diff(cls, diff_resolver, target_provenance, current_metadata, **kwargs):
-                    # Get standard diff
-                    result = diff_resolver.find_changes(target_provenance, current_metadata, cls.spec().id_columns)
-
-                    # Custom: Only consider 'frames' field changes, ignore 'audio'
-                    # Users can filter/modify the increment here
-
-                    return result  # Return modified Increment
-            ```
-        """
-        # Diff resolver always returns LazyIncrement - materialize if needed
-        lazy_result = diff_resolver.find_changes(
-            target_provenance=target_provenance,
-            current_metadata=current_metadata,
-            id_columns=cls.spec().id_columns,  # Pass ID columns from feature spec
-        )
-
-        # Materialize to Increment if lazy=False
-        if not lazy:
-            from metaxy.versioning.types import Increment
-
-            return Increment(
-                added=lazy_result.added.collect(),
-                changed=lazy_result.changed.collect(),
-                removed=lazy_result.removed.collect(),
-            )
-
-        return lazy_result
