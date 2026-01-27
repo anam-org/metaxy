@@ -27,13 +27,15 @@ Bring your own... really everything. Metaxy is a universal glue for metadata. Us
 
 ## 🪨 Reliable
 
-Metaxy is obsessively tested across all supported tabular compute engines. We guarantee to produce [versioning hashes](./guide/learn/data-versioning.md) that are **consistent across DBs and local** (1) compute engines. We really have tested this very well! (1)
-
-Metadata is organized in **append-only tables**. Metaxy never attempts to modify historical metadata. (2)
+Metaxy is obsessively tested across all supported tabular compute engines. We guarantee to produce [versioning hashes](./guide/learn/data-versioning.md) that are **consistent across DBs and local** compute engines. We really have tested this very well! (1)
 { .annotate }
 
 1. At the moment of writing our test suite contains more than 2000 tests executed against Linux, Windows and MacOS on all supported Python versions
-2. But provides the ability to perform soft and hard deletions
+
+Metadata is organized in **append-only tables**. Metaxy never attempts to modify historical metadata, (1) ensuring that data integrity is maintained and historical metadata can be easily retrieved and analyzed.
+{ .annotate }
+
+1. But provides the ability to perform hard and soft deletions
 
 ## 📈 Scalable
 
@@ -43,7 +45,7 @@ Feature definitions can be split across independent Python modules and packages 
 
 We also have a [Ray integration](./integrations/compute/ray.md) which simplifies working with Metaxy from distributed workflows.
 
-# 🧑‍💻 Developer Friendly
+## 🧑‍💻 Developer Friendly
 
 Metaxy provides a clean, intuitive Python API [with syntactic sugar](./guide/learn/syntactic-sugar.md) that simplifies common feature definitions. The [feature discovery](./guide/learn/feature-discovery.md) system enables effortless feature dependency management.
 
@@ -51,7 +53,7 @@ The library includes comprehensive **type hints** (1), and utilizes Pydantic for
 { .annotate }
 
 1. with all the typing shenanigans you would expect from a project as serious as ours
-1. the reference local versioning engine is implemented in [Polars](https://docs.pola.rs/) and [`polars-hash`](https://github.com/ion-elgreco/polars-hash)
+2. the reference local versioning engine is implemented in [Polars](https://docs.pola.rs/) and [`polars-hash`](https://github.com/ion-elgreco/polars-hash)
 
 The included [CLI](./reference/cli.md) tool allows easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats. You can even drop your database in one command! (1)
 { .annotate }
