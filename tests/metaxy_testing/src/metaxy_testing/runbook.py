@@ -292,7 +292,7 @@ class RunbookRunner:
         self._current_step_name: str | None = None
         self._patch_stack = ExitStack()
 
-        from metaxy._testing.metaxy_project import ExternalMetaxyProject
+        from metaxy_testing.metaxy_project import ExternalMetaxyProject
 
         self.project = ExternalMetaxyProject(example_dir, require_config=True)
 

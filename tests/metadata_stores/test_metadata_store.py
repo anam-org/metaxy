@@ -5,6 +5,7 @@ from collections.abc import Iterator, Sequence
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     BaseFeature,
@@ -15,7 +16,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
     FeatureNotFoundError,

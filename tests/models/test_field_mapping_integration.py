@@ -1,6 +1,7 @@
 """Test field mapping integration with FeatureDep."""
 
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
+
 from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldKey, FieldSpec

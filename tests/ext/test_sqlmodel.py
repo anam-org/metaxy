@@ -18,6 +18,7 @@ from pathlib import Path
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 from sqlmodel import Field
 from syrupy.assertion import SnapshotAssertion
 
@@ -28,7 +29,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
 from metaxy.ext.sqlmodel import BaseSQLModelFeature
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore

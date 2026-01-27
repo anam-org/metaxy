@@ -8,7 +8,7 @@ from pathlib import Path
 def test_ducklake_demo_preview():
     """Test that the DuckLake demo runs and previews attachment SQL."""
     example_dir = Path("examples/example-ducklake")
-    from metaxy._testing import ExternalMetaxyProject
+    from metaxy_testing import ExternalMetaxyProject
 
     project = ExternalMetaxyProject(example_dir)
 

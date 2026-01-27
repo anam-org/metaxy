@@ -5,8 +5,8 @@ in the feature spec are present as fields in the feature class.
 """
 
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import BaseFeature
 from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.field import FieldSpec

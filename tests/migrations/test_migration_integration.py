@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 
 import polars as pl
 import pytest
+from metaxy_testing import TempFeatureModule, add_metaxy_provenance_column
+from metaxy_testing.models import SampleFeatureSpec
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import (
@@ -17,8 +19,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.delta import DeltaMetadataStore

@@ -20,6 +20,7 @@ members = [
     "example-overview",
     "examples",
     "metaxy",
+    "metaxy-testing",
     "mkdocs-metaxy",
 ]
 
@@ -2871,6 +2872,7 @@ dev = [
     { name = "ipython", version = "8.37.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "ipython", version = "9.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "lancedb" },
+    { name = "metaxy-testing" },
     { name = "mistune" },
     { name = "moto", extra = ["s3", "server"] },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -2962,6 +2964,7 @@ dev = [
     { name = "ibis-framework", extras = ["duckdb", "clickhouse"], specifier = ">=11.0.0" },
     { name = "ipython", specifier = ">=8.37.0" },
     { name = "lancedb", specifier = ">=0.15.0" },
+    { name = "metaxy-testing", editable = "tests/metaxy_testing" },
     { name = "mistune", specifier = ">=3.1.4" },
     { name = "moto", extras = ["s3", "server"], specifier = ">=5.1.16" },
     { name = "numpy", specifier = ">=2.2.6" },
@@ -3001,6 +3004,17 @@ docs = [
     { name = "pymdown-extensions", specifier = ">=10.16.1" },
 ]
 examples = [{ name = "examples", editable = "examples" }]
+
+[[package]]
+name = "metaxy-testing"
+version = "0.0.1"
+source = { editable = "tests/metaxy_testing" }
+dependencies = [
+    { name = "metaxy" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "metaxy", editable = "." }]
 
 [[package]]
 name = "mike"

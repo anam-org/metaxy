@@ -6,6 +6,8 @@ used for calculating progress percentage in features with different lineage type
 
 from __future__ import annotations
 
+from metaxy_testing.models import SampleFeatureSpec
+
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -14,7 +16,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.lineage import LineageRelationship
 
 

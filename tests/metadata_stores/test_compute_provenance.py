@@ -9,10 +9,10 @@ from __future__ import annotations
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 from pytest_cases import parametrize_with_cases
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.constants import (

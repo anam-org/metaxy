@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     BaseFeature,
@@ -13,7 +14,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.entrypoints import (
     EntrypointLoadError,
     load_entrypoints,
@@ -62,7 +62,7 @@ def test_load_module_entrypoint_basic(graph: FeatureGraph, tmp_path: Path):
     feature_module = module_dir / "feature1.py"
     feature_module.write_text("""
 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
 
 class TestFeature1(BaseFeature, spec=SampleFeatureSpec(
     key=FeatureKey(["test", "feature1"]),
@@ -122,7 +122,7 @@ def test_load_module_entrypoint_uses_active_graph(tmp_path: Path):
     feature_module = module_dir / "feature.py"
     feature_module.write_text("""
 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
 
 class ActiveRegistryFeature(BaseFeature, spec=SampleFeatureSpec(
     key=FeatureKey(["active", "test"]),
@@ -160,7 +160,7 @@ def test_load_config_entrypoints_multiple_modules(graph: FeatureGraph, tmp_path:
         feature_module = module_dir / f"feature{i}.py"
         feature_module.write_text(f"""
 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
 
 class Feature{i}(BaseFeature, spec=SampleFeatureSpec(
     key=FeatureKey(["multi", "feature{i}"]),
@@ -317,7 +317,7 @@ def test_load_features_both_sources(graph: FeatureGraph, tmp_path: Path):
     feature_module = module_dir / "feature.py"
     feature_module.write_text("""
 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
 
 class ConfigFeature(BaseFeature, spec=SampleFeatureSpec(
     key=FeatureKey(["config", "feature"]),
@@ -376,7 +376,7 @@ def test_load_features_entrypoints_only(graph: FeatureGraph, tmp_path: Path):
     feature_module = module_dir / "feature.py"
     feature_module.write_text("""
 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
 
 class EntrypointsOnlyFeature(BaseFeature, spec=SampleFeatureSpec(
     key=FeatureKey(["entrypoints_only", "feature"]),
@@ -471,7 +471,7 @@ def test_duplicate_feature_key_raises_error(graph: FeatureGraph, tmp_path: Path)
     module1 = module_dir / "module1.py"
     module1.write_text("""
 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
 
 class Feature1(BaseFeature, spec=SampleFeatureSpec(
     key=FeatureKey(["duplicate", "key"]),
@@ -484,7 +484,7 @@ class Feature1(BaseFeature, spec=SampleFeatureSpec(
     module2 = module_dir / "module2.py"
     module2.write_text("""
 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
 
 class Feature2(BaseFeature, spec=SampleFeatureSpec(
     key=FeatureKey(["duplicate", "key"]),  # Same key!
@@ -518,7 +518,7 @@ def test_entrypoints_with_dependencies(graph: FeatureGraph, tmp_path: Path):
     upstream = module_dir / "upstream.py"
     upstream.write_text("""
 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
 
 class UpstreamFeature(BaseFeature, spec=SampleFeatureSpec(
     key=FeatureKey(["deps", "upstream"]),
@@ -532,7 +532,7 @@ class UpstreamFeature(BaseFeature, spec=SampleFeatureSpec(
     downstream = module_dir / "downstream.py"
     downstream.write_text("""
 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey, FeatureDep
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
 
 class DownstreamFeature(BaseFeature, spec=SampleFeatureSpec(
     key=FeatureKey(["deps", "downstream"]),

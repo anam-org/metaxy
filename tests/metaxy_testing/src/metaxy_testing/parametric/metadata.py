@@ -208,8 +208,8 @@ def feature_metadata_strategy(
         ```python
         from hypothesis import given
         from metaxy import FieldSpec, FieldKey
-        from metaxy._testing.models import SampleFeatureSpec
-        from metaxy._testing.parametric import feature_metadata_strategy
+        from metaxy_testing.models import SampleFeatureSpec
+        from metaxy_testing.parametric import feature_metadata_strategy
 
         spec = SampleFeatureSpec(
             key="my_feature",
@@ -405,8 +405,8 @@ def upstream_metadata_strategy(
         ```python
         from hypothesis import given
         from metaxy import BaseFeature as FeatureGraph, Feature, FieldSpec, FieldKey
-        from metaxy._testing.models import SampleFeatureSpec
-        from metaxy._testing.parametric import upstream_metadata_strategy
+        from metaxy_testing.models import SampleFeatureSpec
+        from metaxy_testing.parametric import upstream_metadata_strategy
 
         graph = FeatureGraph()
         with graph.use():
@@ -638,7 +638,7 @@ def downstream_metadata_strategy(
         ```python
         from hypothesis import given
         from metaxy import BaseFeature as FeatureGraph, FeatureKey
-        from metaxy._testing.parametric import downstream_metadata_strategy
+        from metaxy_testing.parametric import downstream_metadata_strategy
         from metaxy.versioning.types import HashAlgorithm
 
         graph = FeatureGraph()

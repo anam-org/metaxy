@@ -1,9 +1,9 @@
 """Tests for feature_version() method."""
 
+from metaxy_testing.models import SampleFeatureSpec
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldDep, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
 
 
 def test_feature_version_deterministic(snapshot: SnapshotAssertion) -> None:

@@ -5,8 +5,7 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-
-from metaxy._testing import TempMetaxyProject
+from metaxy_testing import TempMetaxyProject
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
@@ -14,8 +13,9 @@ def test_metadata_status_up_to_date(metaxy_project: TempMetaxyProject, output_fo
     """Status command when metadata is up-to-date for both formats."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         # Create a root feature
         class VideoFilesRoot(
@@ -89,8 +89,9 @@ def test_metadata_status_missing_metadata(metaxy_project: TempMetaxyProject, out
     """Status command when metadata is missing."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -147,8 +148,9 @@ def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject)
     """Test that --assert-in-sync fails when metadata needs updates."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -187,8 +189,9 @@ def test_metadata_status_multiple_features(metaxy_project: TempMetaxyProject, ou
     """Status command with multiple features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class FilesRoot(
             BaseFeature,
@@ -251,8 +254,9 @@ def test_metadata_status_invalid_feature_key(metaxy_project: TempMetaxyProject, 
     """Status command with a feature missing from the graph."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -301,8 +305,9 @@ def test_metadata_status_with_verbose(metaxy_project: TempMetaxyProject, output_
     """Status command with --verbose flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -355,8 +360,9 @@ def test_metadata_status_with_explicit_store(metaxy_project: TempMetaxyProject, 
     """Status command with explicit --store flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -425,8 +431,9 @@ def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProje
     """Test that status requires either feature arguments or --all-features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -452,8 +459,9 @@ def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyPro
     """Test that cannot specify both feature arguments and --all-features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -488,8 +496,9 @@ def test_metadata_status_all_features(metaxy_project: TempMetaxyProject, output_
     """Test status command with --all-features flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class FilesRoot(
             BaseFeature,
@@ -551,8 +560,9 @@ def test_metadata_status_root_feature(metaxy_project: TempMetaxyProject, output_
     """Test status command for a root feature (no upstream dependencies)."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class RootFeature(
             BaseFeature,
@@ -602,8 +612,9 @@ def test_metadata_status_root_feature_missing_metadata(metaxy_project: TempMetax
     """Test status command for a root feature with no metadata."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class RootFeature(
             BaseFeature,
@@ -653,8 +664,9 @@ def test_metadata_status_with_global_filter(metaxy_project: TempMetaxyProject, o
     """
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -769,8 +781,9 @@ def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
     """Test status command with invalid --filter syntax."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -806,8 +819,9 @@ def test_metadata_status_with_multiple_global_filters(metaxy_project: TempMetaxy
     """Test status command with multiple --global-filter flags (combined with AND)."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -902,8 +916,9 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
     """
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class RawVideoRoot(
             BaseFeature,
@@ -1082,8 +1097,9 @@ def test_metadata_status_with_progress_flag(
     monkeypatch.delenv("METAXY_STORE", raising=False)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -1160,8 +1176,9 @@ def test_metadata_status_verbose_includes_progress(
     monkeypatch.delenv("METAXY_STORE", raising=False)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -1233,8 +1250,9 @@ def test_metadata_status_progress_for_root_feature(metaxy_project: TempMetaxyPro
     monkeypatch.delenv("METAXY_STORE", raising=False)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class RootFeature(
             BaseFeature,
@@ -1275,8 +1293,9 @@ def test_metadata_status_progress_100_percent(metaxy_project: TempMetaxyProject,
     monkeypatch.delenv("METAXY_STORE", raising=False)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -1343,8 +1362,9 @@ def test_metadata_delete_requires_yes_for_hard_delete_without_filters(
     """Test that hard delete without filters requires --yes flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1374,8 +1394,9 @@ def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProje
     """Test soft delete with a filter."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1444,8 +1465,9 @@ def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProje
     """Test hard delete with a filter."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1514,8 +1536,9 @@ def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject):
     """Test deleting metadata from multiple features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class LogsA(
             BaseFeature,
@@ -1562,8 +1585,9 @@ def test_metadata_delete_all_features(metaxy_project: TempMetaxyProject):
     """Test deleting from all features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class LogsA(
             BaseFeature,
@@ -1609,8 +1633,9 @@ def test_metadata_delete_invalid_feature(metaxy_project: TempMetaxyProject):
     """Test that delete warns about missing features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1643,8 +1668,9 @@ def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject
     """Test delete with multiple filters combined with AND."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1705,8 +1731,9 @@ def test_metadata_delete_with_invalid_filter(metaxy_project: TempMetaxyProject):
     """Test delete with invalid filter syntax."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1739,8 +1766,9 @@ def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject):
     """Test deleting all rows with --yes flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1790,8 +1818,9 @@ def test_metadata_delete_soft_delete_without_filter_no_yes_required(
     """Test that soft delete without filters does not require --yes flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1842,8 +1871,9 @@ def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProje
     """Test that delete requires either feature arguments or --all-features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1868,8 +1898,9 @@ def test_metadata_delete_dry_run(metaxy_project: TempMetaxyProject):
     """Test that --dry-run prints features and filters without deleting."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1946,8 +1977,9 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
     """Test that --dry-run row counts match the actual number of rows deleted."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Events(
             BaseFeature,
@@ -1959,8 +1991,9 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
             status: str | None = None
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Events(
             BaseFeature,
@@ -2113,8 +2146,9 @@ def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyPro
     monkeypatch.delenv("METAXY_STORE", raising=False)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -2222,8 +2256,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class UpstreamFeature(
             BaseFeature,
@@ -2344,8 +2379,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class RootFeature(
             BaseFeature,
@@ -2437,8 +2473,9 @@ def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject):
     """Test that copy requires both --from and --to flags."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2469,8 +2506,9 @@ def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
     """Test that copy requires either feature arguments or --all-features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2517,8 +2555,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2566,8 +2605,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2636,8 +2676,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2697,8 +2738,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2760,8 +2802,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,

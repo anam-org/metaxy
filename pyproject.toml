@@ -93,6 +93,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
   "examples",
+  "metaxy-testing",
   "ipython>=8.37.0",
   "boto3>=1.35.0",
   "duckdb>=1.4.1",
@@ -187,15 +188,17 @@ members = [
   "examples",
   "examples/example-*",
   "docs/.mkdocs-metaxy",
+  "tests/metaxy_testing",
 ]
 
 [tool.uv.sources]
 examples = { workspace = true }
 mkdocs-metaxy = { workspace = true }
+metaxy-testing = { workspace = true }
 
 [tool.vulture]
 exclude = [
-  "src/metaxy/_testing.py",
+  "tests/metaxy_testing/",
   "src/metaxy/cli/",
   "examples/**/feature*.py",
 ]
@@ -208,8 +211,7 @@ parallel = true
 concurrency = ["multiprocessing", "thread"]
 sigterm = true
 omit = [
-  "src/metaxy/_testing.py",
-  "src/metaxy/_testing/*",
+  "tests/metaxy_testing/*",
   # getting coverage for Ray actors is... complicated
   # https://github.com/ray-project/ray/issues/9059
   # probably should be done later

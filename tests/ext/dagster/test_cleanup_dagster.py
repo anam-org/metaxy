@@ -7,10 +7,10 @@ from unittest.mock import MagicMock
 import dagster as dg
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
 import metaxy.ext.dagster as mxd
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 

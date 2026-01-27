@@ -1,6 +1,6 @@
 """Testing infrastructure for Metaxy examples and runbooks.
 
-This is a private module (_testing) containing testing utilities organized into:
+This module contains testing utilities organized into:
 - runbook: Runbook system for testing and documenting examples
 - metaxy_project: Project helpers for creating and managing temporary Metaxy projects
 - pytest_helpers: Testing helpers for pytest tests
@@ -9,7 +9,7 @@ This is a private module (_testing) containing testing utilities organized into:
 
 # Runbook system
 # Metaxy project helpers
-from metaxy._testing.metaxy_project import (
+from metaxy_testing.metaxy_project import (
     COVERAGE_ENV_VARS,
     ExternalMetaxyProject,
     HashAlgorithmCases,
@@ -20,12 +20,12 @@ from metaxy._testing.metaxy_project import (
     assert_all_results_equal,
     env_override,
 )
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.pytest_helpers import (
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.pytest_helpers import (
     add_metaxy_provenance_column,
     add_metaxy_system_columns,
 )
-from metaxy._testing.runbook import (
+from metaxy_testing.runbook import (
     ApplyPatchStep,
     AssertOutputStep,
     BaseStep,
@@ -41,7 +41,13 @@ from metaxy._testing.runbook import (
     StepType,
 )
 
+# Module path for Ray test features - defined as string to avoid importing
+# the module at load time (which would register features to the global graph)
+RAY_FEATURES_MODULE = "metaxy_testing.ray_features"
+
 __all__ = [
+    # Module paths
+    "RAY_FEATURES_MODULE",
     # Runbook system
     "Runbook",
     "Scenario",

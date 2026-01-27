@@ -37,7 +37,7 @@ def get_store_config_override(example_dir: Path, tmp_path: Path) -> dict[str, st
 @pytest.mark.parametrize("example_dir", discover_examples(), ids=lambda p: p.name)
 def test_example_snapshot(example_dir: Path, tmp_path: Path, example_snapshot):
     """Execute runbook, save raw results, and verify snapshot matches."""
-    from metaxy._testing.runbook import RunbookRunner
+    from metaxy_testing.runbook import RunbookRunner
 
     # Get store-specific env overrides
     store_overrides = get_store_config_override(example_dir, tmp_path)

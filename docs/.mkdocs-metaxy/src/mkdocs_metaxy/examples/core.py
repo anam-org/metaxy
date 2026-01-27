@@ -14,7 +14,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from metaxy._testing import Runbook, SavedRunbookResult
+from metaxy_testing import Runbook, SavedRunbookResult
 
 
 class RunbookLoader:
@@ -225,7 +225,7 @@ class RunbookLoader:
             scenario_patches = accumulated_patches.copy()
 
             # Look for apply_patch steps in this scenario
-            from metaxy._testing import ApplyPatchStep
+            from metaxy_testing import ApplyPatchStep
 
             for step in scenario.steps:
                 if isinstance(step, ApplyPatchStep):

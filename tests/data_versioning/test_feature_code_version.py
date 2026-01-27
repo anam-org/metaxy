@@ -2,6 +2,7 @@
 
 from hypothesis import given
 from hypothesis import strategies as st
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import (
@@ -11,7 +12,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 
 

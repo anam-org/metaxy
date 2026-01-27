@@ -16,6 +16,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import polars as pl
+from metaxy_testing import TempFeatureModule
+from metaxy_testing.models import SampleFeatureSpec
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import (
@@ -24,8 +26,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing import TempFeatureModule
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations import detect_diff_migration

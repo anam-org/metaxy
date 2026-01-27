@@ -25,6 +25,8 @@ import polars.testing as pl_testing
 import pytest
 import pytest_cases
 from hypothesis.errors import NonInteractiveExampleWarning
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.parametric import downstream_metadata_strategy
 from pytest_cases import parametrize_with_cases
 from syrupy.assertion import SnapshotAssertion
 
@@ -36,8 +38,6 @@ from metaxy import (
     FieldSpec,
     LineageRelationship,
 )
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.parametric import downstream_metadata_strategy
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -1510,8 +1510,8 @@ def test_provenance_snapshot(
     from datetime import datetime
 
     import narwhals as nw
+    from metaxy_testing.models import SampleFeatureSpec
 
-    from metaxy._testing.models import SampleFeatureSpec
     from metaxy.models.constants import (
         METAXY_CREATED_AT,
         METAXY_DATA_VERSION,

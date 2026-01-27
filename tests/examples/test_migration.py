@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from metaxy._testing import ExternalMetaxyProject
+from metaxy_testing import ExternalMetaxyProject
 
 
 def test_pipeline(tmp_path, snapshot):

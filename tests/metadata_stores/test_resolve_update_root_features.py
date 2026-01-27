@@ -10,10 +10,10 @@ from typing import Any
 
 import polars as pl
 import pytest
+from metaxy_testing import add_metaxy_provenance_column
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from pytest_cases import parametrize_with_cases
 
-from metaxy._testing import add_metaxy_provenance_column
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.field import FieldSpec

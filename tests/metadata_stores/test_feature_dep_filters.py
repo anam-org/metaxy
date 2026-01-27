@@ -6,12 +6,13 @@ through the metadata store, ensuring FeatureDepTransformer is invoked properly.
 
 from __future__ import annotations
 
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
 from metaxy import (
     FeatureDep,
     FeatureGraph,
     FieldsMapping,
 )
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.metadata_store import MetadataStore
 
 

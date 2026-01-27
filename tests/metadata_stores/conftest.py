@@ -8,11 +8,11 @@ from typing import Any
 
 import boto3
 import pytest
+from metaxy_testing import HashAlgorithmCases
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import HashAlgorithm
-from metaxy._testing import HashAlgorithmCases
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
