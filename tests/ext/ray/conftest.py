@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 import pytest
+from metaxy_testing import RAY_FEATURES_MODULE
 
 import metaxy as mx
 from metaxy.config import StoreConfig
@@ -34,13 +35,12 @@ def reset_ray_features():
     """
 
     # Remove the features module from cache before the test
-    features_module = "metaxy._testing.ray_features"
-    if features_module in sys.modules:
-        del sys.modules[features_module]
+    if RAY_FEATURES_MODULE in sys.modules:
+        del sys.modules[RAY_FEATURES_MODULE]
     yield
     # Clean up after test
-    if features_module in sys.modules:
-        del sys.modules[features_module]
+    if RAY_FEATURES_MODULE in sys.modules:
+        del sys.modules[RAY_FEATURES_MODULE]
 
 
 @pytest.fixture
@@ -74,11 +74,9 @@ def delta_store(tmp_path: Path) -> DeltaMetadataStore:
 @pytest.fixture
 def ray_config(tmp_path: Path, delta_store: DeltaMetadataStore) -> mx.MetaxyConfig:
     """Create a MetaxyConfig with entrypoints pointing to Ray test features."""
-    features_module = "metaxy._testing.ray_features"
-
     return mx.MetaxyConfig(
         project="test",
-        entrypoints=[features_module],
+        entrypoints=[RAY_FEATURES_MODULE],
         stores={
             "dev": StoreConfig(
                 type="metaxy.metadata_store.delta.DeltaMetadataStore",

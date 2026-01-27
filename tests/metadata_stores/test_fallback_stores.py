@@ -11,6 +11,13 @@ from typing import Any, Literal
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing import (
+    HashAlgorithmCases,
+    add_metaxy_provenance_column,
+    assert_all_results_equal,
+)
+from metaxy_testing.models import SampleFeatureSpec
+from metaxy_testing.pytest_helpers import skip_exception
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (
@@ -21,13 +28,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing import (
-    HashAlgorithmCases,
-    add_metaxy_provenance_column,
-    assert_all_results_equal,
-)
-from metaxy._testing.models import SampleFeatureSpec
-from metaxy._testing.pytest_helpers import skip_exception
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
@@ -608,8 +608,9 @@ def test_fallback_stores_opened_on_demand_when_reading(tmp_path, graph: FeatureG
     the primary store tried to read from them, resulting in StoreNotOpenError
     being raised (or worse, being masked as FeatureNotFoundError).
     """
+    from metaxy_testing.models import SampleFeatureSpec
+
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy._testing.models import SampleFeatureSpec
     from metaxy.metadata_store.delta import DeltaMetadataStore
 
     class TestFeature(
@@ -658,8 +659,9 @@ def test_get_store_metadata_respects_fallback_stores(tmp_path, graph: FeatureGra
     fallback stores, returning metadata from the fallback store where the feature is
     actually found when it doesn't exist in the current store.
     """
+    from metaxy_testing.models import SampleFeatureSpec
+
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy._testing.models import SampleFeatureSpec
     from metaxy.metadata_store.delta import DeltaMetadataStore
 
     class TestFeature(
@@ -717,8 +719,9 @@ def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph)
     Even when a fallback store has the same feature, get_store_metadata should return
     metadata from the current store (not the fallback).
     """
+    from metaxy_testing.models import SampleFeatureSpec
+
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy._testing.models import SampleFeatureSpec
     from metaxy.metadata_store.delta import DeltaMetadataStore
 
     class TestFeature(

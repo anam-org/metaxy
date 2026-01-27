@@ -15,12 +15,12 @@ from typing import Any
 
 import narwhals as nw
 import polars as pl
+from metaxy_testing import add_metaxy_provenance_column
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from pytest_cases import parametrize_with_cases
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import FeatureDep, FeatureGraph
-from metaxy._testing import add_metaxy_provenance_column
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,

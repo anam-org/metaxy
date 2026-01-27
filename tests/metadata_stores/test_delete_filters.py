@@ -7,9 +7,9 @@ from datetime import datetime, timezone
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.predicate_cases import predicate_cases
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.predicate_cases import predicate_cases
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 

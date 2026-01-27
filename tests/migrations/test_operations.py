@@ -7,6 +7,8 @@ from pathlib import Path
 
 import polars as pl
 import pytest
+from metaxy_testing import TempFeatureModule, add_metaxy_provenance_column
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     FeatureDep,
@@ -15,8 +17,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage

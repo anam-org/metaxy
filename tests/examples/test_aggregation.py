@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from metaxy._testing import RunbookRunner
+from metaxy_testing import RunbookRunner
 
 
 def test_aggregation_runbook(tmp_path):

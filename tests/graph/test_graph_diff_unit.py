@@ -3,8 +3,8 @@
 from typing import Any
 
 import pytest
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.graph.diff.diff_models import (
     AddedNode,
     FieldChange,

@@ -8,9 +8,9 @@ from typing import Any
 import hypothesis.strategies as st
 import pytest
 from hypothesis import assume, given, settings
+from metaxy_testing.models import SampleFeatureSpec
 from pydantic import BaseModel, ValidationError
 
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey

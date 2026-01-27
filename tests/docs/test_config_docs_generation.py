@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+from metaxy_testing.config import SamplePluginConfig
 from mkdocs_metaxy.config.markdown_ext import MetaxyConfigPreprocessor
 from mkdocs_metaxy.config_generator import (
     extract_field_info,
     generate_individual_field_doc,
 )
-
-from metaxy._testing.config import SamplePluginConfig
 
 
 def test_generate_toml_code_block() -> None:
@@ -431,7 +430,7 @@ def test_full_markdown_generation() -> None:
         "## Configuration Options",
         "",
         "::: metaxy-config",
-        "    class: metaxy._testing.config.SamplePluginConfig",
+        "    class: metaxy_testing.config.SamplePluginConfig",
         "    header_level: 3",
         "",
         "## Additional Information",
@@ -550,7 +549,7 @@ def test_markdown_ast_full_document_structure() -> None:
         "## Fields",
         "",
         "::: metaxy-config",
-        "    class: metaxy._testing.config.SamplePluginConfig",
+        "    class: metaxy_testing.config.SamplePluginConfig",
         "    header_level: 3",
         "",
         "## More Info",

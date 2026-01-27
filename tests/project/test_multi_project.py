@@ -7,9 +7,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from metaxy_testing import SampleFeature
+from metaxy_testing.models import SampleFeatureSpec
 
-from metaxy._testing import SampleFeature
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
@@ -104,7 +104,7 @@ class TestProjectDetection:
 
     def test_load_features_from_entrypoints(self):
         """Test that load_features() actually loads features from entry points."""
-        from metaxy._testing import ExternalMetaxyProject
+        from metaxy_testing import ExternalMetaxyProject
 
         test_project_path = Path(__file__).parent.parent / "fixtures" / "test-project"
         project = ExternalMetaxyProject(test_project_path, require_config=False)

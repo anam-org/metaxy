@@ -2,7 +2,7 @@
 
 import json
 
-from metaxy._testing import TempMetaxyProject
+from metaxy_testing import TempMetaxyProject
 
 
 def test_cli_loads_dotenv_file(metaxy_project: TempMetaxyProject):
@@ -14,8 +14,9 @@ def test_cli_loads_dotenv_file(metaxy_project: TempMetaxyProject):
     def features():
         import os
 
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         # Use the env var in the code_version to prove it was loaded
         test_var = os.environ.get("METAXY_TEST_VAR", "not_found")
@@ -50,8 +51,9 @@ def test_cli_env_vars_override_dotenv(metaxy_project: TempMetaxyProject):
     def features():
         import os
 
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         test_var = os.environ.get("METAXY_TEST_VAR", "not_found")
 
@@ -87,8 +89,9 @@ def test_cli_works_without_dotenv_file(metaxy_project: TempMetaxyProject):
         env_file.unlink()
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class TestFeature(
             BaseFeature,

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import narwhals as nw
 import polars as pl
+from metaxy_testing import add_metaxy_provenance_column
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     BaseFeature,
@@ -17,8 +19,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing import add_metaxy_provenance_column
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.lineage import LineageRelationship
 

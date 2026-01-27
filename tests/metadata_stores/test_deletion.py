@@ -7,8 +7,8 @@ from datetime import datetime, timedelta, timezone
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.constants import (
     METAXY_CREATED_AT,

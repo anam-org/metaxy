@@ -6,9 +6,9 @@ import json
 from pathlib import Path
 
 import polars as pl
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy._version import __version__
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage

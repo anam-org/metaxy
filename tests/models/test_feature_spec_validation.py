@@ -1,9 +1,9 @@
 """Tests for SampleFeatureSpec validation, especially duplicate field keys."""
 
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import BaseFeature
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
 

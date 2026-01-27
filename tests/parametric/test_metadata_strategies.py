@@ -3,14 +3,14 @@
 import polars as pl
 import pytest
 from hypothesis import given, settings
-
-from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.parametric import (
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.parametric import (
     downstream_metadata_strategy,
     feature_metadata_strategy,
     upstream_metadata_strategy,
 )
+
+from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
     METAXY_FEATURE_VERSION,

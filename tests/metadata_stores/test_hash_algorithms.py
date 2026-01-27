@@ -17,14 +17,14 @@ from typing import TYPE_CHECKING
 import polars as pl
 import polars.testing as pl_testing
 import pytest
+from metaxy_testing import HashAlgorithmCases
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.parametric import (
+    downstream_metadata_strategy,
+)
 from pytest_cases import parametrize_with_cases
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
-from metaxy._testing import HashAlgorithmCases
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.parametric import (
-    downstream_metadata_strategy,
-)
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.versioning.types import HashAlgorithm
 

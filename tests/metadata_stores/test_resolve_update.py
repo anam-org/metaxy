@@ -24,6 +24,11 @@ import polars as pl
 import polars.testing as pl_testing
 import pytest
 from hypothesis.errors import NonInteractiveExampleWarning
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.parametric import (
+    downstream_metadata_strategy,
+    feature_metadata_strategy,
+)
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (
@@ -31,11 +36,6 @@ from metaxy import (
     FeatureDep,
     FeatureGraph,
     FeatureKey,
-)
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.parametric import (
-    downstream_metadata_strategy,
-    feature_metadata_strategy,
 )
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,

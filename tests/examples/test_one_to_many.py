@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from metaxy._testing import RunbookRunner
+from metaxy_testing import RunbookRunner
 
 
 def test_one_to_many_runbook(tmp_path):

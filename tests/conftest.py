@@ -8,6 +8,8 @@ from typing import Any
 
 import ibis
 import pytest
+from metaxy_testing import HashAlgorithmCases, TempFeatureModule
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     FeatureDep,
@@ -17,8 +19,6 @@ from metaxy import (
     FieldSpec,
     MetadataStore,
 )
-from metaxy._testing import HashAlgorithmCases, TempFeatureModule
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.models.feature import FeatureGraph
 
@@ -105,7 +105,7 @@ def metaxy_project(tmp_path):
         def test_example(metaxy_project):
             def features():
                 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
-                from metaxy._testing.models import SampleFeatureSpec
+                from metaxy_testing.models import SampleFeatureSpec
 
                 class MyFeature(BaseFeature, spec=SampleFeatureSpec(
                     key=FeatureKey(["my_feature"]),
@@ -118,7 +118,7 @@ def metaxy_project(tmp_path):
                 result = metaxy_project.run_cli(["graph", "push"])
                 assert result.returncode == 0
     """
-    from metaxy._testing import TempMetaxyProject
+    from metaxy_testing import TempMetaxyProject
 
     return TempMetaxyProject(tmp_path)
 
