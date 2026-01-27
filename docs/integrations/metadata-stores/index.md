@@ -27,11 +27,11 @@ These metadata stores can be found [here](./databases/index.md).
 
 !!! example
 
-    [ClickHouse](./databases/clickhouse/index.md) is an excellent choice for a production metadata store.
+    [ClickHouse](./databases/clickhouse.md) is an excellent choice for a production metadata store.
 
 !!! tip
 
-    Some of them such as [LanceDB](./databases/lancedb/index.md) or [DuckDB](./databases/duckdb/index.md) can also act as local compute engines.
+    Some of them such as [LanceDB](./databases/lancedb.md) or [DuckDB](./databases/duckdb.md) can also act as local compute engines.
 
 ## Storage Only
 
@@ -41,7 +41,7 @@ The available storage-only stores can be found [here](./storage/index.md).
 
 !!! example
 
-    [DeltaLake](./storage/delta/index.md) is an excellent choice for a storage-only metadata store.
+    [DeltaLake](./storage/delta.md) is an excellent choice for a storage-only metadata store.
 
 ## Choosing the Right Metadata Store
 

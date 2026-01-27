@@ -34,7 +34,23 @@ It's possible to control how feature keys map to DeltaLake table locations with 
 - `nested` (default) places every feature in its own directory: `your/feature/key.delta`
 - `flat` stores all of them in the same directory: `your__feature_key.delta`
 
-## Reference
+## API
 
-- [Configuration](configuration.md)
-- [API](api.md)
+::: metaxy.metadata_store.delta
+options:
+members: false
+
+<!-- dprint-ignore-start -->
+::: metaxy.metadata_store.delta.DeltaMetadataStore
+    options:
+      inherited_members: false
+<!-- dprint-ignore-end -->
+
+## Configuration
+
+<!-- dprint-ignore-start -->
+::: metaxy-config
+    class: metaxy.metadata_store.delta.DeltaMetadataStoreConfig
+    path_prefix: stores.dev.config
+    header_level: 3
+<!-- dprint-ignore-end -->

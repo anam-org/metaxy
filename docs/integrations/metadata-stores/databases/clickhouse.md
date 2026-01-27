@@ -69,7 +69,7 @@ pip install clickhouse-sqlalchemy
 
 !!! tip "Alembic Integration"
 
-    See [Alembic setup guide](../../../plugins/sqlalchemy/index.md#alembic-integration) for additional instructions on how to use Alembic with Metaxy.
+    See [Alembic setup guide](../../plugins/sqlalchemy.md#alembic-integration) for additional instructions on how to use Alembic with Metaxy.
 
 ## Performance Optimization
 
@@ -80,9 +80,23 @@ pip install clickhouse-sqlalchemy
     - **Partitioning**: Partition your tables!
     - **Ordering**: It's probably a good idea to use `(metaxy_feature_version, <id_columns>, metaxy_updated_at)`
 
-## Reference
+## API
 
-- [Configuration](configuration.md)
-- [API](api.md)
-- [Introduction to ClickHouse](https://clickhouse.com/docs/intro)
-- [ClickHouse Connect](https://clickhouse.com/docs/integrations/python)
+::: metaxy.metadata_store.clickhouse
+options:
+members: false
+
+<!-- dprint-ignore-start -->
+::: metaxy.metadata_store.clickhouse.ClickHouseMetadataStore
+    options:
+      inherited_members: false
+<!-- dprint-ignore-end -->
+
+## Configuration
+
+<!-- dprint-ignore-start -->
+::: metaxy-config
+    class: metaxy.metadata_store.clickhouse.ClickHouseMetadataStoreConfig
+    path_prefix: stores.dev.config
+    header_level: 3
+<!-- dprint-ignore-end -->

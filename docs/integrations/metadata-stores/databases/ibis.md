@@ -11,10 +11,18 @@ Metaxy uses [Ibis](https://ibis-project.org/) as a portable dataframe abstractio
 
 The following metadata stores are built on Ibis:
 
-- [DuckDB](../duckdb/index.md)
-- [ClickHouse](../clickhouse/index.md)
-- [BigQuery](../bigquery/index.md)
+- [DuckDB](duckdb.md)
+- [ClickHouse](clickhouse.md)
+- [BigQuery](bigquery.md)
 
-## Reference
+## API
 
-- [API](api.md)
+::: metaxy.metadata_store.ibis
+options:
+members: false
+
+<!-- dprint-ignore-start -->
+::: metaxy.metadata_store.ibis.IbisMetadataStore
+    options:
+      inherited_members: false
+<!-- dprint-ignore-end -->

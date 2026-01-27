@@ -13,7 +13,7 @@ Bring your own... really everything. Metaxy is a universal glue for metadata. Us
 
 <div class="annotate" markdown>
 
-- Your database or storage format of choice to keep metadata where you want. [DuckDB](./integrations/metadata-stores/databases/duckdb/index.md), [ClickHouse](./integrations/metadata-stores/databases/clickhouse/index.md) and **20+ databases** via [Ibis](https://ibis-project.org/) (1), **lakehouse storage** formats such as DeltaLake or DuckLake, and other solutions such as [LanceDB](./integrations/metadata-stores/databases/lancedb/index.md). All of this is available through a unified [interface](./guide/learn/metadata-stores.md).
+- Your database or storage format of choice to keep metadata where you want. [DuckDB](./integrations/metadata-stores/databases/duckdb.md), [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md) and **20+ databases** via [Ibis](https://ibis-project.org/) (1), **lakehouse storage** formats such as DeltaLake or DuckLake, and other solutions such as [LanceDB](./integrations/metadata-stores/databases/lancedb.md). All of this is available through a unified [interface](./guide/learn/metadata-stores.md).
 - Your favorite dataframe library: Polars, Pandas, or even run **all Metaxy computations in the DB** thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
 - Orchestrators: see the excellent [Dagster integration](./integrations/orchestration/dagster/index.md) :octopus:
 - Compute frameworks like [Ray](./integrations/compute/ray.md). We totally don't care how is **data** (2) produced or where is it stored.

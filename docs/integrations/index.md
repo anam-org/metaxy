@@ -38,7 +38,7 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
 <!-- dprint-ignore-start -->
 
-  - :custom-bigquery-blue:{ .lg .middle } [**BigQuery**](metadata-stores/databases/bigquery/index.md)
+  - :custom-bigquery-blue:{ .lg .middle } [**BigQuery**](metadata-stores/databases/bigquery.md)
 
     ---
 
@@ -46,11 +46,11 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     Use [Google BigQuery](https://cloud.google.com/bigquery) - scalable serverless analytical database on GCP.
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/bigquery/index.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/bigquery.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/bigquery/api.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/bigquery.md#api)
 
-  - :custom-clickhouse:{ .lg .middle } [**ClickHouse**](metadata-stores/databases/clickhouse/index.md)
+  - :custom-clickhouse:{ .lg .middle } [**ClickHouse**](metadata-stores/databases/clickhouse.md)
 
     ---
 
@@ -62,11 +62,11 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
         Ideal for production.
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/clickhouse/index.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/clickhouse.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/clickhouse/api.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/clickhouse.md#api)
 
-  - :custom-deltalake:{ .lg .middle } [**Delta Lake**](metadata-stores/storage/delta/index.md)
+  - :custom-deltalake:{ .lg .middle } [**Delta Lake**](metadata-stores/storage/delta.md)
 
     ---
 
@@ -78,11 +78,11 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
         Ideal for dev environments.
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta/index.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/storage/delta/api.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/storage/delta.md#api)
 
-  - :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb/index.md)
+  - :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb.md)
 
     ---
 
@@ -95,11 +95,11 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
         DuckDB is not recommended for production due to [parallel writes limitations](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb/index.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/duckdb/api.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/duckdb.md#api)
 
-  - :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb/index.md)
+  - :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb.md)
 
     ---
 
@@ -107,9 +107,9 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     Use the multi-modal [LanceDB](https://lancedb.com/) database or [Lance](https://lancedb.com/docs/overview/lance/) storage format. (2)
 
-    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb/index.md)
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb.md)
 
-    [:octicons-arrow-right-24: API docs](metadata-stores/databases/lancedb/api.md)
+    [:octicons-arrow-right-24: API docs](metadata-stores/databases/lancedb.md#api)
 <!-- dprint-ignore-end -->
 
 </div>
@@ -142,7 +142,7 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
--   :custom-sqlalchemy:{ .lg .middle } [**SQLAlchemy**](plugins/sqlalchemy/index.md)
+-   :custom-sqlalchemy:{ .lg .middle } [**SQLAlchemy**](plugins/sqlalchemy.md)
 
     ---
 
@@ -150,11 +150,11 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     Retrieve SQLAlchemy URLs and `MetaData` for the current Metaxy project from Metaxy `MetadataStore` objects.
 
-    [:octicons-arrow-right-24: Integration docs](plugins/sqlalchemy/index.md)
+    [:octicons-arrow-right-24: Integration docs](plugins/sqlalchemy.md)
 
-    [:octicons-arrow-right-24: API docs](plugins/sqlalchemy/api.md)
+    [:octicons-arrow-right-24: API docs](plugins/sqlalchemy.md#api)
 
--   :custom-sqlmodel:{ .lg .middle } [**SQLModel**](plugins/sqlmodel/index.md)
+-   :custom-sqlmodel:{ .lg .middle } [**SQLModel**](plugins/sqlmodel.md)
 
     ---
 
@@ -162,9 +162,9 @@ Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
 
     Adds `SQLModel` capabilities to `metaxy.BaseFeature` class.
 
-    [:octicons-arrow-right-24: Integration docs](plugins/sqlmodel/index.md)
+    [:octicons-arrow-right-24: Integration docs](plugins/sqlmodel.md)
 
-    [:octicons-arrow-right-24: API docs](plugins/sqlmodel/api.md)
+    [:octicons-arrow-right-24: API docs](plugins/sqlmodel.md#api)
 <!-- dprint-ignore-end -->
 
 </div>

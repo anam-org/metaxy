@@ -3,7 +3,7 @@ title: "SQLAlchemy Plugin"
 description: "SQLAlchemy integration for database migrations."
 ---
 
-# Metaxy + SQLAlchemy
+# SQLAlchemy
 
 Metaxy provides helpers for integrating with [SQLAlchemy](https://www.sqlalchemy.org/).
 These helpers allow to construct `sqlalchemy.MetaData` objects for user-defined feature tables and for Metaxy system tables.
@@ -12,7 +12,7 @@ This integration is convenient for setting up [Alembic](https://alembic.sqlalche
 
 !!! tip "SQLModel Features"
 
-    Check out our [SQLModel integration](../sqlmodel/index.md) for metaclass features that combine Metaxy features with SQLModel ORM models. This is the recommended way to use Metaxy with SQLAlchemy.
+    Check out our [SQLModel integration](sqlmodel.md) for metaclass features that combine Metaxy features with SQLModel ORM models. This is the recommended way to use Metaxy with SQLAlchemy.
 
 ## Alembic Integration
 
@@ -153,9 +153,20 @@ The two environments now can be managed independently:
 
 ### Alembic + SQLModel
 
-To add `SQLModel` into the mix, make sure to use the [SQLModel integration](../sqlmodel/index.md) and pass `sqlmodel.SQLModel.metadata` into `filter_feature_sqla_metadata`.
+To add `SQLModel` into the mix, make sure to use the [SQLModel integration](sqlmodel.md) and pass `sqlmodel.SQLModel.metadata` into `filter_feature_sqla_metadata`.
 
-## Reference
+## API
 
-- [Configuration](configuration.md)
-- [API](api.md)
+<!-- dprint-ignore-start -->
+::: metaxy.ext.sqlalchemy
+    members: true
+<!-- dprint-ignore-end -->
+
+## Configuration
+
+<!-- dprint-ignore-start -->
+::: metaxy-config
+    class: metaxy.ext.sqlalchemy.SQLAlchemyConfig
+    path_prefix: ext.sqlalchemy
+    header_level: 2
+<!-- dprint-ignore-end -->
