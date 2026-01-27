@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING, Any
 import polars as pl
 import pytest
 from fastmcp import Client
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import FeatureKey, FieldKey, FieldSpec, MetaxyConfig
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.ext.mcp.server import create_server
 from metaxy.models.feature import BaseFeature
 

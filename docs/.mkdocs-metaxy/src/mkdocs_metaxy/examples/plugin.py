@@ -346,7 +346,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         Returns:
             Markdown string with tabbed content.
         """
-        from metaxy._testing import PatchApplied
+        from metaxy_testing import PatchApplied
 
         if self.loader is None or self.renderer is None or self.generated_dir is None:
             return ""
@@ -429,7 +429,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         Returns:
             Markdown string with execution output.
         """
-        from metaxy._testing import CommandExecuted
+        from metaxy_testing import CommandExecuted
 
         if self.loader is None or self.renderer is None:
             return ""
@@ -504,7 +504,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         Returns:
             Mermaid diagram markdown string.
         """
-        from metaxy._testing import GraphPushed
+        from metaxy_testing import GraphPushed
 
         if self.loader is None:
             return ""
@@ -571,7 +571,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         Returns:
             Mermaid diagram markdown string.
         """
-        from metaxy._testing import PatchApplied
+        from metaxy_testing import PatchApplied
 
         if self.loader is None:
             return ""

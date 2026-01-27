@@ -2,7 +2,8 @@
 
 import pickle
 
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
+
 from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey

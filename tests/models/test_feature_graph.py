@@ -14,6 +14,7 @@ Tests cover:
 from __future__ import annotations
 
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     BaseFeature,
@@ -23,7 +24,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 
 
 class TestAddFeature:

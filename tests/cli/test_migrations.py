@@ -1,14 +1,15 @@
 """Tests for migrations CLI commands."""
 
-from metaxy._testing import TempMetaxyProject
+from metaxy_testing import TempMetaxyProject
 
 
 def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
     """Test migrations list with no migrations."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -34,8 +35,9 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -87,8 +89,9 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -156,8 +159,9 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -209,8 +213,9 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -271,8 +276,9 @@ def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -327,8 +333,9 @@ def test_generated_migration_is_valid(metaxy_project: TempMetaxyProject):
     """
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -369,8 +376,9 @@ def test_migrations_apply_rerun_displays_reprocessing_message(
     """
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -423,8 +431,9 @@ def test_migrations_status_uses_yaml_as_source_of_truth(
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class FeatureA(
             BaseFeature,

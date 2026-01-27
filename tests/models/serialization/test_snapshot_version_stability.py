@@ -3,10 +3,10 @@
 # Import from conftest since it's in the same tests directory
 
 import pytest
+from metaxy_testing import TempFeatureModule
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import FeatureDep, FeatureKey, FieldDep, FieldKey, FieldSpec
-from metaxy._testing import TempFeatureModule
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 
 

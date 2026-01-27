@@ -1,13 +1,13 @@
 """Test features for project detection."""
 
-from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy import BaseFeature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
 
 
 class TestFeature(
     BaseFeature,
-    spec=SampleFeatureSpec(
+    spec=FeatureSpec(
         key=FeatureKey(["test", "feature"]),
+        id_columns=["sample_uid"],
         fields=[
             FieldSpec(key=FieldKey(["value"]), code_version="1"),
         ],
@@ -15,13 +15,14 @@ class TestFeature(
 ):
     """A simple test feature."""
 
-    pass
+    sample_uid: str
 
 
 class AnotherTestFeature(
     BaseFeature,
-    spec=SampleFeatureSpec(
+    spec=FeatureSpec(
         key=FeatureKey(["test", "another"]),
+        id_columns=["sample_uid"],
         fields=[
             FieldSpec(key=FieldKey(["data"]), code_version="1"),
         ],
@@ -29,4 +30,4 @@ class AnotherTestFeature(
 ):
     """Another test feature."""
 
-    pass
+    sample_uid: str

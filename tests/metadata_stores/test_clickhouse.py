@@ -11,7 +11,8 @@ try:
 except ImportError:
     pytest.skip("ibis-clickhouse not installed", allow_module_level=True)
 
-from metaxy._testing.models import SampleFeature
+from metaxy_testing.models import SampleFeature
+
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 

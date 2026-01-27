@@ -18,6 +18,8 @@ else:
     ray = pytest.importorskip("ray")
 
 
+from metaxy_testing import RAY_FEATURES_MODULE
+
 from .conftest import DERIVED_FEATURE_KEY, FEATURE_KEY, make_test_data
 
 
@@ -287,7 +289,7 @@ def test_datasource_with_config_auto_discovery(
     config_content = f'''project = "test"
 store = "dev"
 auto_create_tables = true
-entrypoints = ["metaxy._testing.ray_features"]
+entrypoints = ["{RAY_FEATURES_MODULE}"]
 
 [stores.dev]
 type = "metaxy.metadata_store.delta.DeltaMetadataStore"

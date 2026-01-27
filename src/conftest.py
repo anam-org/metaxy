@@ -93,11 +93,12 @@ def sybil_setup(namespace):
         - store_with_data: A DeltaMetadataStore with sample MyFeature data
         - config: A MetaxyConfig with "dev" and "prod" stores configured
     """
-    from metaxy._testing.doctest_fixtures import (
+    from metaxy_testing.doctest_fixtures import (
         DocsStoreFixtures,
         MyFeature,
         register_doctest_fixtures,
     )
+
     from metaxy.models import feature as feature_module
     from metaxy.models.feature import FeatureGraph
 

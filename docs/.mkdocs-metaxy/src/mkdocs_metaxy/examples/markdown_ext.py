@@ -345,7 +345,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         Raises:
             ValueError: If required parameters are missing or invalid.
         """
-        from metaxy._testing import CommandExecuted, GraphPushed, PatchApplied
+        from metaxy_testing import CommandExecuted, GraphPushed, PatchApplied
 
         # Load execution result (raises FileNotFoundError if missing)
         result = self.loader.load_execution_result(example_name)
@@ -394,7 +394,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         Returns:
             Markdown string with tabbed content.
         """
-        from metaxy._testing import PatchApplied
+        from metaxy_testing import PatchApplied
 
         patch_path = params.get("path")
         if not patch_path:
@@ -492,7 +492,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         Raises:
             ValueError: If required parameters are missing.
         """
-        from metaxy._testing import CommandExecuted
+        from metaxy_testing import CommandExecuted
 
         result = self.loader.load_execution_result(example_name)
 
@@ -527,7 +527,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         Raises:
             ValueError: If required parameters are missing or no matching event found.
         """
-        from metaxy._testing import PatchApplied
+        from metaxy_testing import PatchApplied
 
         result = self.loader.load_execution_result(example_name)
 

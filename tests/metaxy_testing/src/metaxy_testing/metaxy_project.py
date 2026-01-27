@@ -112,7 +112,7 @@ class TempFeatureModule:
         code_lines = [
             "# Auto-generated test feature module",
             "from metaxy import BaseFeature as Feature, FeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
-            "from metaxy._testing.models import SampleFeatureSpec",
+            "from metaxy_testing.models import SampleFeatureSpec",
             "from metaxy.models.feature import FeatureGraph",
             "",
             "# Use a dedicated graph for this temp module",
@@ -1071,9 +1071,9 @@ database = "{staging_db_path}"
         """
         import polars as pl
 
-        from metaxy._testing.parametric.metadata import feature_metadata_strategy
         from metaxy.metadata_store.system import SystemTableStorage
         from metaxy.models.types import FeatureKey
+        from metaxy_testing.parametric.metadata import feature_metadata_strategy
 
         # Parse feature key
         feature_key = FeatureKey(feature_key_str.split("/"))

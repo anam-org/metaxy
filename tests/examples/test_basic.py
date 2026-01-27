@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from metaxy._testing import RunbookRunner
-from metaxy._testing.runbook import GraphPushed, PatchApplied
+from metaxy_testing import RunbookRunner
+from metaxy_testing.runbook import GraphPushed, PatchApplied
 
 
 def test_basic_runbook(tmp_path):

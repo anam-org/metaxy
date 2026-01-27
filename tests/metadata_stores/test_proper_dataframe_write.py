@@ -11,6 +11,7 @@ import warnings
 
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import (
@@ -22,7 +23,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore

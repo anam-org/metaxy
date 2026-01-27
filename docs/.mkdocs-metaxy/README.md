@@ -198,17 +198,17 @@ The plugin consists of:
 
 1. **plugin.py**: MkDocs plugin that registers the markdown extension
 2. **markdown_ext.py**: Markdown preprocessor that parses directives
-3. **core.py**: Loader that wraps `metaxy._testing.Runbook` for MkDocs integration
+3. **core.py**: Loader that wraps `metaxy_testing.Runbook` for MkDocs integration
 4. **renderer.py**: HTML rendering with syntax highlighting
 
-The plugin uses the official runbook system from `metaxy._testing` to load and parse `.example.yaml` files, ensuring consistency between test execution and documentation.
+The plugin uses the official runbook system from `metaxy_testing` to load and parse `.example.yaml` files, ensuring consistency between test execution and documentation.
 
 The plugin hooks into MkDocs' build process to:
 
 1. Register as an MkDocs plugin
 2. Add a markdown extension to process directives
 3. Parse directive blocks in markdown files
-4. Load runbooks using `metaxy._testing.Runbook`
+4. Load runbooks using `metaxy_testing.Runbook`
 5. Apply patches to temporary copies of examples
 6. Render HTML with syntax highlighting
 7. Inject the HTML into the final documentation

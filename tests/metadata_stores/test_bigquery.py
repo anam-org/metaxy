@@ -15,7 +15,8 @@ try:
 except ImportError:
     pytest.skip("BigQueryMetadataStore not available", allow_module_level=True)
 
-from metaxy._testing.models import SampleFeature
+from metaxy_testing.models import SampleFeature
+
 from metaxy.versioning.types import HashAlgorithm
 
 

@@ -5,10 +5,10 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
+from metaxy_testing.pytest_helpers import add_metaxy_system_columns
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
-from metaxy._testing.models import SampleFeatureSpec
-from metaxy._testing.pytest_helpers import add_metaxy_system_columns
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.polars import PolarsVersioningEngine

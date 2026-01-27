@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from metaxy._testing import CommandExecuted, GraphPushed, PatchApplied
+from metaxy_testing import CommandExecuted, GraphPushed, PatchApplied
 
 
 class ExampleRenderer:

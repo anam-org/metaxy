@@ -1,0 +1,11 @@
+[project]
+name = "metaxy-testing"
+version = "0.0.1"
+description = "Testing utilities for Metaxy"
+requires-python = ">=3.10"
+dependencies = [
+  "metaxy",
+]
+
+[tool.uv.sources]
+metaxy = { workspace = true }

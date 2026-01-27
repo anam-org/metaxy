@@ -3,8 +3,7 @@
 import json
 
 import tomli
-
-from metaxy._testing import TempMetaxyProject
+from metaxy_testing import TempMetaxyProject
 
 
 def test_config_print_toml(metaxy_project: TempMetaxyProject):

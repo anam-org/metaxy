@@ -4,11 +4,11 @@ This module contains test features that are loaded via entrypoints
 when testing Ray Data integration.
 """
 
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import BaseFeature
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy_testing.models import SampleFeatureSpec
 
 
 class RayTestFeature(

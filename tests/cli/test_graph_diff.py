@@ -2,15 +2,16 @@
 
 import json
 
-from metaxy._testing import TempMetaxyProject
+from metaxy_testing import TempMetaxyProject
 
 
 def test_graph_diff_render_no_changes(metaxy_project: TempMetaxyProject):
     """Test graph-diff render shows no changes when snapshots are identical."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -41,8 +42,9 @@ def test_graph_diff_render_added_feature(metaxy_project: TempMetaxyProject):
     """Test graph-diff render detects added features."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -54,8 +56,9 @@ def test_graph_diff_render_added_feature(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -102,8 +105,9 @@ def test_graph_diff_render_removed_feature(metaxy_project: TempMetaxyProject):
     """Test graph-diff render detects removed features."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -124,8 +128,9 @@ def test_graph_diff_render_removed_feature(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -163,8 +168,9 @@ def test_graph_diff_render_changed_feature(metaxy_project: TempMetaxyProject):
     """Test graph-diff render detects changed features."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -176,8 +182,9 @@ def test_graph_diff_render_changed_feature(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -217,8 +224,9 @@ def test_graph_diff_render_version_transitions(metaxy_project: TempMetaxyProject
     """Test graph-diff render shows version transitions with proper colors."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -230,8 +238,9 @@ def test_graph_diff_render_version_transitions(metaxy_project: TempMetaxyProject
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -276,8 +285,9 @@ def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject):
     """Test graph-diff render with JSON format output."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -289,8 +299,9 @@ def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -347,8 +358,9 @@ def test_graph_diff_render_format_yaml(metaxy_project: TempMetaxyProject):
     """Test graph-diff render with YAML format output."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -360,8 +372,9 @@ def test_graph_diff_render_format_yaml(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class AudioFiles(
             BaseFeature,
@@ -401,8 +414,9 @@ def test_graph_diff_render_format_mermaid(metaxy_project: TempMetaxyProject):
     """Test graph-diff render with Mermaid format output."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -414,8 +428,9 @@ def test_graph_diff_render_format_mermaid(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -454,8 +469,9 @@ def test_graph_diff_render_format_cards(metaxy_project: TempMetaxyProject):
     """Test graph-diff render with cards format output."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -467,8 +483,9 @@ def test_graph_diff_render_format_cards(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -506,8 +523,9 @@ def test_graph_diff_render_format_graphviz(metaxy_project: TempMetaxyProject):
     """Test graph-diff render with Graphviz format output."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -519,8 +537,9 @@ def test_graph_diff_render_format_graphviz(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -557,8 +576,9 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
     """Test graph-diff render with feature filtering."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -570,6 +590,8 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import (
             BaseFeature,
             FeatureDep,
@@ -577,7 +599,6 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -647,8 +668,9 @@ def test_graph_diff_render_output_to_file(metaxy_project: TempMetaxyProject):
     """Test graph-diff render outputs to file."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -660,8 +682,9 @@ def test_graph_diff_render_output_to_file(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class AudioFiles(
             BaseFeature,
@@ -718,8 +741,9 @@ def test_graph_diff_render_with_store_flag(metaxy_project: TempMetaxyProject):
     """Test graph-diff render works with --store flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -745,8 +769,9 @@ def test_graph_diff_render_invalid_snapshot(metaxy_project: TempMetaxyProject):
     """Test graph-diff render fails gracefully with invalid snapshot."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -768,8 +793,9 @@ def test_graph_diff_render_latest_empty_store(metaxy_project: TempMetaxyProject)
     """Test graph-diff render fails when no snapshots exist in store."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -792,8 +818,9 @@ def test_graph_diff_render_verbose_mode(metaxy_project: TempMetaxyProject):
     """Test graph-diff render verbose mode shows more details."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -805,8 +832,9 @@ def test_graph_diff_render_verbose_mode(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -842,8 +870,9 @@ def test_graph_diff_render_minimal_mode(metaxy_project: TempMetaxyProject):
     """Test graph-diff render minimal mode hides version information."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -855,8 +884,9 @@ def test_graph_diff_render_minimal_mode(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -892,8 +922,9 @@ def test_graph_diff_render_default_to_current(metaxy_project: TempMetaxyProject)
     """Test graph-diff render defaults to 'current' for to_snapshot."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -919,8 +950,9 @@ def test_graph_diff_render_deterministic_ordering(metaxy_project: TempMetaxyProj
     """Test graph-diff render produces deterministic node ordering."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Zebra(
             BaseFeature,
@@ -941,8 +973,9 @@ def test_graph_diff_render_deterministic_ordering(metaxy_project: TempMetaxyProj
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Zebra(
             BaseFeature,
