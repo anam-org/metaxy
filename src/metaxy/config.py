@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import tomli
+import tomli_w
 from pydantic import Field as PydanticField
 from pydantic import PrivateAttr, field_validator, model_validator
 from pydantic_settings import (
@@ -258,6 +259,15 @@ class StoreConfig(BaseSettings):
                 except ImportError as import_err:
                     raise ImportError(f"Cannot import '{self.type_path}': {import_err}") from import_err
             raise
+
+    def to_toml(self) -> str:
+        """Serialize to TOML string.
+
+        Returns:
+            TOML representation of this store configuration.
+        """
+        data = self.model_dump(mode="json", by_alias=True)
+        return tomli_w.dumps(data)
 
 
 class PluginConfig(BaseSettings):
@@ -866,3 +876,23 @@ class MetaxyConfig(BaseSettings):
             )
 
         return store
+
+    def to_toml(self) -> str:
+        """Serialize to TOML string.
+
+        Returns:
+            TOML representation of this configuration.
+        """
+        data = self.model_dump(mode="json", by_alias=True)
+        # Remove None values (TOML doesn't support them)
+        data = _remove_none_values(data)
+        return tomli_w.dumps(data)
+
+
+def _remove_none_values(obj: Any) -> Any:
+    """Recursively remove None values from a dict (TOML doesn't support None)."""
+    if isinstance(obj, dict):
+        return {k: _remove_none_values(v) for k, v in obj.items() if v is not None}
+    if isinstance(obj, list):
+        return [_remove_none_values(item) for item in obj if item is not None]
+    return obj

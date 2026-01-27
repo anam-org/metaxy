@@ -1206,3 +1206,112 @@ print("SUCCESS: Plugin correctly loaded config from METAXY_CONFIG")
 
     assert result.returncode == 0, f"Script failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
     assert "SUCCESS" in result.stdout
+
+
+class TestToToml:
+    """Tests for to_toml serialization methods."""
+
+    def test_store_config_to_toml(self, tmp_path: Path) -> None:
+        """Test StoreConfig.to_toml() produces valid TOML."""
+        import tomli
+
+        config = StoreConfig(
+            type="metaxy.metadata_store.delta.DeltaMetadataStore",
+            config={"root_path": str(tmp_path / "delta_store")},
+        )
+
+        toml_str = config.to_toml()
+
+        # Parse the TOML back
+        parsed = tomli.loads(toml_str)
+
+        assert parsed["type"] == "metaxy.metadata_store.delta.DeltaMetadataStore"
+        assert parsed["config"]["root_path"] == str(tmp_path / "delta_store")
+
+    def test_store_config_to_toml_with_fallback_stores(self, tmp_path: Path) -> None:
+        """Test StoreConfig.to_toml() handles lists correctly."""
+        import tomli
+
+        config = StoreConfig(
+            type="metaxy.metadata_store.delta.DeltaMetadataStore",
+            config={
+                "root_path": str(tmp_path / "delta_store"),
+                "fallback_stores": ["prod", "staging"],
+            },
+        )
+
+        toml_str = config.to_toml()
+        parsed = tomli.loads(toml_str)
+
+        assert parsed["config"]["fallback_stores"] == ["prod", "staging"]
+
+    def test_metaxy_config_to_toml(self, tmp_path: Path) -> None:
+        """Test MetaxyConfig.to_toml() produces valid TOML."""
+        import tomli
+
+        config = MetaxyConfig(
+            store="dev",
+            project="test_project",
+            stores={
+                "dev": StoreConfig(
+                    type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                    config={"root_path": str(tmp_path / "delta_dev")},
+                ),
+            },
+        )
+
+        toml_str = config.to_toml()
+        parsed = tomli.loads(toml_str)
+
+        assert parsed["store"] == "dev"
+        assert parsed["project"] == "test_project"
+        assert parsed["stores"]["dev"]["type"] == "metaxy.metadata_store.delta.DeltaMetadataStore"
+
+    def test_metaxy_config_to_toml_removes_none_values(self) -> None:
+        """Test MetaxyConfig.to_toml() removes None values (TOML doesn't support them)."""
+        import tomli
+
+        config = MetaxyConfig(
+            store="dev",
+            hash_truncation_length=None,  # Should be removed
+        )
+
+        toml_str = config.to_toml()
+        parsed = tomli.loads(toml_str)
+
+        assert "hash_truncation_length" not in parsed
+
+    def test_metaxy_config_to_toml_roundtrip(self, tmp_path: Path) -> None:
+        """Test that to_toml() output can be loaded back."""
+
+        original = MetaxyConfig(
+            store="staging",
+            project="roundtrip_test",
+            migrations_dir=".custom/migrations",
+            entrypoints=["my_features"],
+            stores={
+                "staging": StoreConfig(
+                    type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                    config={"root_path": str(tmp_path / "staging")},
+                ),
+                "prod": StoreConfig(
+                    type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                    config={"root_path": str(tmp_path / "prod")},
+                ),
+            },
+        )
+
+        # Serialize to TOML
+        toml_str = original.to_toml()
+
+        # Write to file and reload
+        config_file = tmp_path / "metaxy.toml"
+        config_file.write_text(toml_str)
+
+        reloaded = MetaxyConfig.load(config_file)
+
+        assert reloaded.store == original.store
+        assert reloaded.project == original.project
+        assert reloaded.migrations_dir == original.migrations_dir
+        assert reloaded.entrypoints == original.entrypoints
+        assert set(reloaded.stores.keys()) == set(original.stores.keys())
