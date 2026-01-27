@@ -109,23 +109,7 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/bigquery/api/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/bigquery/configuration/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/clickhouse/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/clickhouse/api/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/clickhouse/configuration/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -133,31 +117,11 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/duckdb/api/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/duckdb/configuration/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/ibis/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/ibis/api/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/lancedb/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/lancedb/api/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/lancedb/configuration/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -166,14 +130,6 @@
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/storage/delta/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/storage/delta/api/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/metadata-stores/storage/delta/configuration/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -201,23 +157,7 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/integrations/plugins/sqlalchemy/api/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/plugins/sqlalchemy/configuration/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://docs.metaxy.io/main/integrations/plugins/sqlmodel/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/plugins/sqlmodel/api/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/integrations/plugins/sqlmodel/configuration/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
