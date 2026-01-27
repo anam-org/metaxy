@@ -50,19 +50,28 @@ class BatchedMetadataWriter:
     main thread to continue processing data without blocking on writes.
 
     Example:
-        <!-- skip next -->
         ```py
-        from metaxy.utils import BatchedMetadataWriter
+        import polars as pl
 
-        with BatchedMetadataWriter(store) as writer:
-            for batch_dict in data_stream:
-                writer.put(batch_dict)
+        with mx.BatchedMetadataWriter(store) as writer:
+            batch = {
+                MyFeature: pl.DataFrame(
+                    {
+                        "id": ["x"],
+                        "metaxy_provenance_by_field": [{"part_1": "h1", "part_2": "h2"}],
+                    }
+                )
+            }
+            writer.put(batch)
+
+        with store:
+            assert len(store.read_metadata(MyFeature).collect()) == 1
         ```
 
     ??? example "Manual lifecycle management"
         <!-- skip next -->
         ```py
-        writer = BatchedMetadataWriter(store)
+        writer = mx.BatchedMetadataWriter(store)
         writer.start()
         try:
             for batch_dict in data_stream:

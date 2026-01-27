@@ -324,15 +324,22 @@ class MetadataStore(ABC):
 
         !!! example "With a root feature"
 
-            <!-- skip next -->
             ```py
+            import narwhals as nw
+            import polars as pl
+
             samples = pl.DataFrame(
                 {
-                    "sample_uid": [1, 2, 3],
-                    "metaxy_provenance_by_field": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
+                    "id": ["x", "y", "z"],
+                    "metaxy_provenance_by_field": [
+                        {"part_1": "h1", "part_2": "h2"},
+                        {"part_1": "h3", "part_2": "h4"},
+                        {"part_1": "h5", "part_2": "h6"},
+                    ],
                 }
             )
-            result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
+            with store.open(mode="write"):
+                result = store.resolve_update(MyFeature, samples=nw.from_native(samples))
             ```
         """
         import narwhals as nw
@@ -1540,10 +1547,10 @@ class MetadataStore(ABC):
             feature: Feature class or key to drop metadata for
 
         Example:
-            <!-- skip next -->
             ```py
-            store.drop_feature_metadata(MyFeature)
-            assert not store.has_feature(MyFeature)
+            with store_with_data.open(mode="write"):
+                assert store_with_data.has_feature(MyFeature)
+                store_with_data.drop_feature_metadata(MyFeature)
             ```
         """
         self._check_open()
@@ -1836,23 +1843,23 @@ class MetadataStore(ABC):
     def copy_metadata(
         self,
         from_store: MetadataStore,
-        features: list[CoercibleToFeatureKey] | None = None,
+        features: Sequence[CoercibleToFeatureKey] | None = None,
         *,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         global_filters: Sequence[nw.Expr] | None = None,
         current_only: bool = False,
         latest_only: bool = True,
     ) -> dict[str, int]:
-        """Copy metadata from another store with fine-grained filtering.
-
-        This is a reusable method that can be called programmatically or from CLI/migrations.
-        Copies metadata for specified features, preserving the original snapshot_version.
+        """Copy metadata from another store.
 
         Args:
             from_store: Source metadata store to copy from (must be opened for reading)
-            features: List of features to copy. Can be:
-                - None: copies all features from active graph
-                - List of FeatureKey or Feature classes: copies specified features
+            features: Features to copy. Can be:
+
+                - `None`: copies all features from the active graph
+
+                - Sequence of specific features to copy
+
             filters: Dict mapping feature keys (as strings) to sequences of Narwhals filter expressions.
                 These filters are applied when reading from the source store.
                 Example: {"feature/key": [nw.col("x") > 10], "other/feature": [...]}
@@ -1885,7 +1892,7 @@ class MetadataStore(ABC):
             with source_store.open("read"), dest_store.open("write"):
                 stats = dest_store.copy_metadata(
                     from_store=source_store,
-                    features=[FeatureKey(["my_feature"])],
+                    features=[mx.FeatureKey("my_feature")],
                 )
             ```
 
@@ -1895,7 +1902,7 @@ class MetadataStore(ABC):
             with source_store.open("read"), dest_store.open("write"):
                 stats = dest_store.copy_metadata(
                     from_store=source_store,
-                    global_filters=[nw.col("sample_uid").is_in(["s1", "s2"])],
+                    global_filters=[nw.col("id").is_in(["a", "b"])],
                 )
             ```
 
@@ -1906,8 +1913,8 @@ class MetadataStore(ABC):
                 stats = dest_store.copy_metadata(
                     from_store=source_store,
                     features=[
-                        FeatureKey(["feature_a"]),
-                        FeatureKey(["feature_b"]),
+                        mx.FeatureKey("feature_a"),
+                        mx.FeatureKey("feature_b"),
                     ],
                     filters={
                         "feature_a": [nw.col("field_a") > 10],
@@ -1939,7 +1946,7 @@ class MetadataStore(ABC):
     def _copy_metadata_impl(
         self,
         from_store: MetadataStore,
-        features: list[CoercibleToFeatureKey] | None,
+        features: Sequence[CoercibleToFeatureKey] | None,
         filters: Mapping[str, Sequence[nw.Expr]] | None,
         global_filters: Sequence[nw.Expr] | None,
         current_only: bool,
