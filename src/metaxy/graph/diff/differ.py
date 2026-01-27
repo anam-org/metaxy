@@ -203,8 +203,8 @@ class GraphDiffer:
 
             # Get tracking versions for migration detection
             # Use tracking version if available (new system), otherwise fall back to feature_version
-            tracking_version1 = feature1.get("metaxy_full_definition_version", version1)
-            tracking_version2 = feature2.get("metaxy_full_definition_version", version2)
+            tracking_version1 = feature1.get("metaxy_definition_version", version1)
+            tracking_version2 = feature2.get("metaxy_definition_version", version2)
 
             # Check if feature tracking version changed (indicates migration needed)
             if tracking_version1 != tracking_version2:
@@ -613,15 +613,15 @@ class GraphDiffer:
             feature_version = graph.get_feature_version(feature_key)
             field_versions = graph.get_feature_version_by_field(feature_key)
 
-            # Get full definition version from the feature definition
+            # Get definition version from the feature definition
             definition = graph.feature_definitions_by_key.get(feature_key)
-            full_definition_version = definition.full_definition_version if definition else feature_version
+            definition_version = definition.feature_definition_version if definition else feature_version
 
             snapshot_data[feature_key_str] = {
                 "metaxy_feature_version": feature_version,
                 "fields": field_versions,
                 "feature_spec": spec.model_dump(mode="json"),
-                "metaxy_full_definition_version": full_definition_version,
+                "metaxy_definition_version": definition_version,
             }
 
         return snapshot_data

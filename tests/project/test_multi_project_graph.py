@@ -144,16 +144,23 @@ def test_graph_from_snapshot_preserves_projects(
     project_a_package: ModuleType,
     project_b_package: ModuleType,
 ) -> None:
-    """Test that FeatureGraph.to_snapshot() preserves project information."""
+    """Test that FeatureGraph.to_snapshot() preserves project information.
+
+    Note: The project is captured from the FeatureDefinition stored in the graph
+    at class definition time. The test verifies that this project info is correctly
+    preserved in the snapshot.
+    """
     original_graph = FeatureGraph()
 
     with original_graph.use():
-        # Create features from multiple projects
+        # Create features - project is captured at class definition time
         create_feature_in_package("fake_project_a_pkg", ["restore", "feature_a"])
         create_feature_in_package("fake_project_b_pkg", ["restore", "feature_b"])
 
-    # Get original projects
-    original_projects = {key.to_string(): feat.metaxy_project() for key, feat in original_graph.features_by_key.items()}
+    # Get project info from the graph's FeatureDefinitions (source of truth)
+    definition_projects = {
+        key.to_string(): defn.project for key, defn in original_graph.feature_definitions_by_key.items()
+    }
 
     # Create snapshot
     snapshot_data = original_graph.to_snapshot()
@@ -161,18 +168,13 @@ def test_graph_from_snapshot_preserves_projects(
     # Verify that snapshot contains project information for all features
     for feature_key_str, feature_data in snapshot_data.items():
         assert "project" in feature_data
-        assert "metaxy_full_definition_version" in feature_data
-        # Project should match what we expect
-        if "feature_a" in feature_key_str:
-            assert feature_data["project"] == "project_a"
-        elif "feature_b" in feature_key_str:
-            assert feature_data["project"] == "project_b"
+        assert "metaxy_definition_version" in feature_data
 
     # Extract projects from snapshot
     snapshot_projects = {key: data["project"] for key, data in snapshot_data.items()}
 
-    # Projects should be preserved in snapshot
-    assert original_projects == snapshot_projects
+    # Projects in snapshot should match FeatureDefinitions in graph
+    assert definition_projects == snapshot_projects
     assert snapshot_projects == snapshot
 
     MetaxyConfig.reset()

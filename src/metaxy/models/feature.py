@@ -12,9 +12,9 @@ from typing_extensions import Self
 from metaxy._decorators import public
 from metaxy._hashing import truncate_hash
 from metaxy.models.constants import (
+    METAXY_DEFINITION_VERSION,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
-    METAXY_FULL_DEFINITION_VERSION,
 )
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.feature_spec import (
@@ -30,7 +30,7 @@ from metaxy.models.types import (
 
 FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
 FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
-FEATURE_TRACKING_VERSION_COL = METAXY_FULL_DEFINITION_VERSION
+FEATURE_TRACKING_VERSION_COL = METAXY_DEFINITION_VERSION
 
 if TYPE_CHECKING:
     import narwhals as nw
@@ -135,7 +135,7 @@ class SerializedFeature(TypedDict):
     feature_schema: dict[str, Any]
     metaxy_feature_version: str
     metaxy_feature_spec_version: str
-    metaxy_full_definition_version: str
+    metaxy_definition_version: str
     feature_class_path: str
     project: str
 
@@ -726,7 +726,7 @@ class FeatureGraph:
             feature_schema_dict = definition.feature_schema
             feature_version = self.get_feature_version(feature_key)
             feature_spec_version = definition.spec.feature_spec_version
-            full_definition_version = definition.feature_definition_version
+            definition_version = definition.feature_definition_version
             project = definition.project
             class_path = definition.feature_class_path
 
@@ -735,7 +735,7 @@ class FeatureGraph:
                 "feature_schema": feature_schema_dict,
                 FEATURE_VERSION_COL: feature_version,
                 FEATURE_SPEC_VERSION_COL: feature_spec_version,
-                FEATURE_TRACKING_VERSION_COL: full_definition_version,
+                FEATURE_TRACKING_VERSION_COL: definition_version,
                 "feature_class_path": class_path,
                 "project": project,
             }
@@ -1078,32 +1078,6 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
             ```
         """
         return cls.spec().feature_spec_version
-
-    @classmethod
-    def full_definition_version(cls) -> str:
-        """Get hash of the complete feature definition including Pydantic schema.
-
-        This method computes a hash of the entire feature class definition, including:
-        - Pydantic model schema
-        - Feature specification version
-        - Project name
-
-        Used in the `metaxy_full_definition_version` column of system tables.
-
-        Returns:
-            SHA256 hex digest of the complete definition
-        """
-        from metaxy.models.feature_definition import FeatureDefinition
-
-        # Get the base definition version (spec + schema, excludes project)
-        base_version = FeatureDefinition._compute_definition_version(cls.spec(), cls.model_json_schema())
-
-        # Add project to create full definition version
-        hasher = hashlib.sha256()
-        hasher.update(base_version.encode())
-        hasher.update(cls.metaxy_project().encode())
-
-        return truncate_hash(hasher.hexdigest())
 
     @classmethod
     def provenance_by_field(cls) -> dict[str, str]:

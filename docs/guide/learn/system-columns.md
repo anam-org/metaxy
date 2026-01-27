@@ -13,17 +13,17 @@ All system column names start with the `metaxy_` prefix.
 
 ## Canonical column names
 
-| Canonical name                   | Explanation                                                             | Level   | Type   |
-| -------------------------------- | ----------------------------------------------------------------------- | ------- | ------ |
-| `metaxy_provenance_by_field`     | Derived from upstream data versions and code version per field          | sample  | struct |
-| `metaxy_provenance`              | Hash of `metaxy_provenance_by_field`                                    | sample  | string |
-| `metaxy_data_version_by_field`   | Defaults to `metaxy_provenance_by_field`, can be user-defined           | sample  | struct |
-| `metaxy_data_version`            | Hash of `metaxy_data_version_by_field`                                  | sample  | string |
-| `metaxy_feature_version`         | Derived from versions of relevant upstream fields                       | feature | string |
-| `metaxy_snapshot_version`        | Derived from the entire Metaxy feature graph                            | graph   | string |
-| `metaxy_feature_spec_version`    | Derived from the part of the feature spec responsible for versioning    | sample  | string |
-| `metaxy_full_definition_version` | Hash of the entire feature Pydanitc model schema and the Metaxy project | string  | true   |
-| `metaxy_created_at`              | Timestamp when the metadata row was created                             | sample  | string |
-| `metaxy_updated_at`              | Timestamp when the metadata row was last written to the store           | sample  | string |
-| `metaxy_deleted_at`              | Timestamp when the metadata row was soft-deleted (null if active)       | sample  | string |
-| `metaxy_materialization_id`      | External orchestration run ID (e.g., Dagster, Airflow) for tracking     | run     | string |
+| Canonical name                 | Explanation                                                           | Level   | Type   |
+| ------------------------------ | --------------------------------------------------------------------- | ------- | ------ |
+| `metaxy_provenance_by_field`   | Derived from upstream data versions and code version per field        | sample  | struct |
+| `metaxy_provenance`            | Hash of `metaxy_provenance_by_field`                                  | sample  | string |
+| `metaxy_data_version_by_field` | Defaults to `metaxy_provenance_by_field`, can be user-defined         | sample  | struct |
+| `metaxy_data_version`          | Hash of `metaxy_data_version_by_field`                                | sample  | string |
+| `metaxy_feature_version`       | Derived from versions of relevant upstream fields                     | feature | string |
+| `metaxy_snapshot_version`      | Derived from the entire Metaxy feature graph                          | graph   | string |
+| `metaxy_feature_spec_version`  | Derived from the part of the feature spec responsible for versioning  | sample  | string |
+| `metaxy_definition_version`    | Hash of feature definition (spec + schema), project stored separately | feature | string |
+| `metaxy_created_at`            | Timestamp when the metadata row was created                           | sample  | string |
+| `metaxy_updated_at`            | Timestamp when the metadata row was last written to the store         | sample  | string |
+| `metaxy_deleted_at`            | Timestamp when the metadata row was soft-deleted (null if active)     | sample  | string |
+| `metaxy_materialization_id`    | External orchestration run ID (e.g., Dagster, Airflow) for tracking   | run     | string |

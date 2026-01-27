@@ -42,7 +42,7 @@ class SnapshotPushResult(NamedTuple):
     Attributes:
         snapshot_version: The deterministic hash of the graph snapshot
         already_pushed: True if this snapshot_version was already pushed previously
-        updated_features: List of feature keys with updated information (changed full_definition_version)
+        updated_features: List of feature keys with updated information (changed definition_version)
     """
 
     snapshot_version: str

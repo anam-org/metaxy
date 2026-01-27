@@ -62,17 +62,6 @@ class FeatureDefinition(FrozenBaseModel):
         """Hash of spec + schema (excludes project)."""
         return self._compute_definition_version(self.spec, self.feature_schema)
 
-    @cached_property
-    def full_definition_version(self) -> str:
-        """Hash of spec + schema + project.
-
-        Used in the `metaxy_full_definition_version` column of system tables.
-        """
-        hasher = hashlib.sha256()
-        hasher.update(self.feature_definition_version.encode())
-        hasher.update(self.project.encode())
-        return truncate_hash(hasher.hexdigest())
-
     @property
     def key(self) -> FeatureKey:
         """Get the feature key from the spec."""
