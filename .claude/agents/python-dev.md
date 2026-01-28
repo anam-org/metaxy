@@ -55,6 +55,7 @@ You **must** delegate testing to @agent-python-test-engineer.
 - Use early returns to reduce nesting
 - Add docstrings for public APIs (Google or NumPy style)
 - Comment only when necessary to explain "why", not "what"
+- Write comments about the current state of the code, not its history (avoid "using X because Y was removed" or references to deleted code)
 
 **Minimalism**:
 

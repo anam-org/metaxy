@@ -38,7 +38,9 @@ uv run pytest    # Run tests (add -k "pattern" to filter)
 
 **Error handling**: Fail fast with clean errors. Do not catch exceptions to handle them gracefully. Let errors propagate with clear messages. Avoid try/except blocks unless re-raising with additional context.
 
-**Docstrings** Avoid documenting implementation details. Focus on high-level concepts, properties and invariants. Avoid documenting default values as they are already documented in the code.
+**Docstrings**: Avoid documenting implementation details. Focus on high-level concepts, properties and invariants. Avoid documenting default values as they are already documented in the code.
+
+**Comments**: Write comments that describe the current state of the code, not how it got there. Do not reference refactoring history, deleted code, or previous implementations (e.g., avoid "using X because Y was removed" or "previously this used Z").
 
 ## When to Consult Docs
 
