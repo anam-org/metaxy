@@ -293,8 +293,10 @@ class FeatureGraph:
         else:
             project_list = projects
 
-        # Filter by project(s) using Feature.project attribute
-        return [key for key in self.features_by_key.keys() if self.features_by_key[key].project in project_list]
+        # Filter by project(s) using Feature.metaxy_project() method
+        return [
+            key for key in self.features_by_key.keys() if self.features_by_key[key].metaxy_project() in project_list
+        ]
 
     def get_feature_plan(self, key: CoercibleToFeatureKey) -> FeaturePlan:
         """Get a feature plan for a given feature key.
@@ -577,7 +579,7 @@ class FeatureGraph:
             feature_version = feature_cls.feature_version()
             feature_spec_version = feature_cls.spec().feature_spec_version
             full_definition_version = feature_cls.full_definition_version()
-            project = feature_cls.project
+            project = feature_cls.metaxy_project()
 
             # Get class import path (module.ClassName)
             class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
@@ -831,8 +833,7 @@ class MetaxyMeta(ModelMetaclass):
             new_cls._spec = spec
 
             # Determine project for this feature using intelligent detection
-            project = cls._detect_project(new_cls)
-            new_cls.project = project
+            new_cls.__metaxy_project__ = cls._detect_project(new_cls)
 
             active_graph.add_feature(new_cls)
         else:
@@ -842,59 +843,16 @@ class MetaxyMeta(ModelMetaclass):
 
     @staticmethod
     def _detect_project(feature_cls: type) -> str:
-        """Detect project for a feature class.
+        """Detect project for a feature class from its Python package.
 
         Detection order:
-        1. Try to auto-load MetaxyConfig from metaxy.toml/pyproject.toml
-           starting from the feature's file location
-        2. Use config.project if available
-        3. Check metaxy.projects entry points as fallback
-        4. Fall back to "default" with a warning
-
-        Args:
-            feature_cls: The Feature class being registered
-
-        Returns:
-            Project name string
+        1. Check for __metaxy_project__ in top-level package
+        2. Use top-level package name
         """
-        import inspect
-        import warnings
-        from pathlib import Path
-
-        from metaxy._packaging import detect_project_from_entrypoints
-        from metaxy.config import MetaxyConfig
+        from metaxy._packaging import detect_project_from_package
 
         module_name = feature_cls.__module__
-
-        # Strategy 1: Try to load config if not already set
-        if not MetaxyConfig.is_set():
-            # Get the file where the feature class is defined
-            feature_file = inspect.getfile(feature_cls)
-            feature_dir = Path(feature_file).parent
-
-            # Attempt to auto-load config from metaxy.toml or pyproject.toml
-            # starting from the feature's directory
-            config = MetaxyConfig.load(search_parents=True, auto_discovery_start=feature_dir)
-            return config.project
-        else:
-            # Config already set, use it
-            config = MetaxyConfig.get()
-            return config.project
-
-        # Strategy 2: Check metaxy.projects entry points as fallback
-        project = detect_project_from_entrypoints(module_name)
-        if project is not None:
-            return project
-
-        # Strategy 3: Fall back to "default" with a warning
-        warnings.warn(
-            f"Could not detect project for feature '{feature_cls.__name__}' "
-            f"from module '{module_name}'. No metaxy.toml found and no entry point configured. "
-            f"Using 'default' as project name. This may cause issues with metadata isolation. "
-            f"Please ensure features are imported after init_metaxy() or configure a metaxy.toml file.",
-            stacklevel=3,
-        )
-        return "default"
+        return detect_project_from_package(module_name)
 
 
 class _FeatureSpecDescriptor:
@@ -911,7 +869,12 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
     _spec: ClassVar[FeatureSpec]
 
     graph: ClassVar[FeatureGraph]
-    project: ClassVar[str]
+    __metaxy_project__: ClassVar[str]
+
+    @classmethod
+    def metaxy_project(cls) -> str:
+        """Return the project this feature belongs to."""
+        return cls.__metaxy_project__
 
     # System columns - automatically managed by Metaxy
     # Most of them are optional since Metaxy injects them into dataframes at some point
@@ -1078,7 +1041,7 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
         hasher.update(cls.feature_spec_version().encode())
 
         # Hash the project name
-        hasher.update(cls.project.encode())
+        hasher.update(cls.metaxy_project().encode())
 
         return truncate_hash(hasher.hexdigest())
 

@@ -706,6 +706,9 @@ def test_sqlmodel_feature_with_duckdb_store(tmp_path: Path, snapshot: SnapshotAs
         path: str
         duration: float
 
+    # Override project to match default config
+    VideoFeature.__metaxy_project__ = "test"
+
     # Create DuckDB store
     db_path = tmp_path / "test.duckdb"
 
@@ -818,6 +821,9 @@ def test_sqlmodel_duckdb_custom_id_columns(tmp_path: Path, snapshot: SnapshotAss
         duration: float
         timestamp: int
 
+    # Override project to match default config
+    UserActivityFeature.__metaxy_project__ = "test"
+
     # Create child feature with same custom ID columns
     class UserSummaryFeature(
         SQLModelFeature,
@@ -845,6 +851,9 @@ def test_sqlmodel_duckdb_custom_id_columns(tmp_path: Path, snapshot: SnapshotAss
         session_id: int = Field(primary_key=True)
         total_duration: float
         summary: str
+
+    # Override project to match default config
+    UserSummaryFeature.__metaxy_project__ = "test"
 
     # Create DuckDB store
     db_path = tmp_path / "test_custom_ids.duckdb"
@@ -1130,6 +1139,11 @@ def test_sqlmodel_feature_id_columns_with_joins(tmp_path: Path, snapshot: Snapsh
         user_id: int = Field(primary_key=True)
         date: str = Field(primary_key=True)
         combined: float
+
+    # Override projects to match default config
+    FeatureA.__metaxy_project__ = "test"
+    FeatureB.__metaxy_project__ = "test"
+    FeatureC.__metaxy_project__ = "test"
 
     db_path = tmp_path / "test_joins.duckdb"
 
@@ -1626,6 +1640,10 @@ def test_sqlmodel_rename_validation_with_store(tmp_path: Path, snapshot: Snapsho
         sample_uid: int = Field(primary_key=True)
         status: str  # Own status field
         result: str
+
+    # Override projects to match default config
+    SourceFeature.__metaxy_project__ = "test"
+    TargetFeature.__metaxy_project__ = "test"
 
     db_path = tmp_path / "rename_test.duckdb"
 

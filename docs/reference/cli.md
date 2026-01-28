@@ -1,6 +1,6 @@
 ---
 title: "CLI Reference"
-description: "Reference for the Metaxy command-line interface."
+description: "Reference for the Metaxy command line interface."
 ---
 
 # CLI Commands
@@ -9,7 +9,7 @@ This section provides a comprehensive reference for all Metaxy CLI commands.
 
 !!! warning
 
-    Some CLI commands are experimental (read: half-baked)
+    The CLI interface is not stable yet.
 
 ::: cyclopts
     module: metaxy.cli.app:app

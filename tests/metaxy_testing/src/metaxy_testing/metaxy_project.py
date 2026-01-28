@@ -95,10 +95,11 @@ class TempFeatureModule:
     different feature versions by overwriting the module file.
     """
 
-    def __init__(self, module_name: str = "temp_test_features"):
+    def __init__(self, module_name: str = "temp_test_features", project: str = "default"):
         self.temp_dir = tempfile.mkdtemp(prefix="metaxy_test_")
         self.module_name = module_name
         self.module_path = Path(self.temp_dir) / f"{module_name}.py"
+        self.project = project
 
         # Add to sys.path so module can be imported
         sys.path.insert(0, self.temp_dir)
@@ -111,6 +112,8 @@ class TempFeatureModule:
         """
         code_lines = [
             "# Auto-generated test feature module",
+            f'__metaxy_project__ = "{self.project}"',
+            "",
             "from metaxy import BaseFeature as Feature, FeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
             "from metaxy_testing.models import SampleFeatureSpec",
             "from metaxy.models.feature import FeatureGraph",
@@ -919,9 +922,14 @@ database = "{staging_db_path}"
             body_lines = lines[body_start:]
             dedented = textwrap.dedent("\n".join(body_lines))
 
+            # Prepend __metaxy_project__ to match the project in metaxy.toml
+            # This ensures features are registered to the correct project
+            project_name = self.config.project
+            module_content = f'__metaxy_project__ = "{project_name}"\n\n{dedented}'
+
             # Write to file in project directory
             feature_file = self.project_dir / f"{module_name}.py"
-            feature_file.write_text(dedented)
+            feature_file.write_text(module_content)
 
             # Track this module
             self._feature_modules.append(module_name)

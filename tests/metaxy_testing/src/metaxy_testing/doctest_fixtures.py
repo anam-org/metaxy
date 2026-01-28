@@ -38,7 +38,7 @@ class MyFeature(BaseFeature, spec=None):
 
 # Set up class attributes (bypassing metaclass project detection)
 MyFeature._spec = _MY_FEATURE_SPEC
-MyFeature.project = "docs"
+MyFeature.__metaxy_project__ = "docs"
 
 
 def register_doctest_fixtures(graph: FeatureGraph) -> None:
