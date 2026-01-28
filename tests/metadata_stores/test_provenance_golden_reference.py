@@ -443,10 +443,6 @@ class FeaturePlanCases:
         return [(graph, upstream_features, child_plan)]
 
 
-# Removed: TruncationCases and metaxy_config fixture
-# Hash truncation is now tested in test_hash_algorithms.py
-
-
 def generate_plan_data(
     store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
@@ -575,11 +571,6 @@ def setup_store_with_data(
         pytest.skip(f"Hash algorithm {empty_store.hash_algorithm} not supported by {empty_store}")
 
     return empty_store, feature_plan_config, golden_downstream
-
-
-# Removed: EmptyStoreCases with hash algorithm parametrization
-# Now using simplified fixtures from conftest.py
-# Hash algorithm × store combinations are tested in test_hash_algorithms.py
 
 
 def assert_increment_matches_golden(

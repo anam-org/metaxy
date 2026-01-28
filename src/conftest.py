@@ -18,10 +18,7 @@ from sybil.parsers.markdown.skip import SkipParser
 import metaxy as mx
 
 
-# Workaround for pytest-cases compatibility issue
-# pytest-cases patches getfixtureclosure and has an assertion that fails for SybilItem
-# because SybilItem doesn't have the same structure as regular test functions.
-# We patch pytest-cases to skip its assertion for non-function items.
+# Workaround for pytest-cases compatibility issue with SybilItem.
 def _patch_pytest_cases():
     try:
         import pytest_cases.plugin as pc_plugin
@@ -153,8 +150,7 @@ def sybil_teardown(namespace):
         context_manager.__exit__(None, None, None)
 
 
-# Create parsers for both ```python and ```py code blocks
-# SkipParser must come before other parsers to handle skip directives
+# SkipParser must come before other parsers to handle skip directives.
 python_evaluator = ImportStyleCheckingEvaluator()
 parsers = [
     SkipParser(),
