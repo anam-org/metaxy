@@ -21,7 +21,6 @@ from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_DELETED_AT,
-    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
@@ -302,15 +301,6 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
         description="Hash of the feature definition (dependencies + fields + code_versions)",
         sa_column_kwargs={
             "name": METAXY_FEATURE_VERSION,
-        },
-        nullable=False,
-    )
-
-    metaxy_feature_spec_version: str | None = Field(
-        default=None,
-        description="Hash of the complete feature specification.",
-        sa_column_kwargs={
-            "name": METAXY_FEATURE_SPEC_VERSION,
         },
         nullable=False,
     )

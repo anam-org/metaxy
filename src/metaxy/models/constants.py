@@ -27,9 +27,6 @@ METAXY_FEATURE_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_version"
 METAXY_SNAPSHOT_VERSION = f"{SYSTEM_COLUMN_PREFIX}snapshot_version"
 """Hash of the entire feature graph snapshot (recorded during deployment)."""
 
-METAXY_FEATURE_SPEC_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_spec_version"
-"""Hash of the complete feature specification."""
-
 METAXY_DEFINITION_VERSION = f"{SYSTEM_COLUMN_PREFIX}definition_version"
 """Hash of the complete feature definition including Pydantic schema and feature spec.
 
@@ -67,7 +64,6 @@ ALL_SYSTEM_COLUMNS = frozenset(
         METAXY_PROVENANCE_BY_FIELD,
         METAXY_PROVENANCE,
         METAXY_FEATURE_VERSION,
-        METAXY_FEATURE_SPEC_VERSION,
         METAXY_SNAPSHOT_VERSION,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
@@ -83,7 +79,6 @@ ALL_SYSTEM_COLUMNS = frozenset(
 _DROPPABLE_COLUMNS = frozenset(
     {
         METAXY_FEATURE_VERSION,
-        METAXY_FEATURE_SPEC_VERSION,
         METAXY_SNAPSHOT_VERSION,
         METAXY_CREATED_AT,
         METAXY_UPDATED_AT,
@@ -100,7 +95,6 @@ _DROPPABLE_COLUMNS = frozenset(
 _COLUMNS_TO_DROP_BEFORE_JOIN = frozenset(
     {
         METAXY_FEATURE_VERSION,
-        METAXY_FEATURE_SPEC_VERSION,
         METAXY_SNAPSHOT_VERSION,
         METAXY_CREATED_AT,
         METAXY_UPDATED_AT,

@@ -12,7 +12,6 @@ from metaxy.metadata_store.system.events import EVENTS_SCHEMA
 from metaxy.metadata_store.system.keys import EVENTS_KEY
 from metaxy.models.constants import (
     METAXY_DEFINITION_VERSION,
-    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_SNAPSHOT_VERSION,
 )
@@ -23,7 +22,6 @@ FEATURE_VERSIONS_SCHEMA = {
     "project": pl.String,
     "feature_key": pl.String,
     METAXY_FEATURE_VERSION: pl.String,
-    METAXY_FEATURE_SPEC_VERSION: pl.String,  # Hash of complete FeatureSpec (all properties)
     METAXY_DEFINITION_VERSION: pl.String,  # Hash of feature definition (spec + schema), excludes project
     "recorded_at": pl.Datetime("us"),
     "feature_spec": pl.String,  # Full serialized FeatureSpec
@@ -31,6 +29,7 @@ FEATURE_VERSIONS_SCHEMA = {
     "feature_class_path": pl.String,
     METAXY_SNAPSHOT_VERSION: pl.String,
     "tags": pl.String,
+    "deleted_at": pl.Datetime("us"),  # Timestamp when feature was removed from the project (nullable)
 }
 
 
@@ -51,7 +50,6 @@ class FeatureVersionsModel(BaseModel):
         ...,
         description="Hash of versioned feature topology (combined versions of fields on this feature)",
     )
-    metaxy_feature_spec_version: str = Field(..., description="Hash of complete FeatureSpec (all properties)")
     metaxy_definition_version: str = Field(
         ..., description="Hash of feature definition (spec + schema), excludes project"
     )
@@ -64,6 +62,9 @@ class FeatureVersionsModel(BaseModel):
         default="{}",
         description="Snapshot tags as JSON string (key-value pairs). The metaxy tag is reserved for internal use.",
         validate_default=True,
+    )
+    deleted_at: datetime | None = Field(
+        default=None, description="Timestamp when the feature has been removed from the project"
     )
 
     @field_validator("tags", mode="before")

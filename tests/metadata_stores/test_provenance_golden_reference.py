@@ -534,7 +534,6 @@ def generate_plan_data(
         downstream_df = downstream_nw.with_columns(
             nw.lit(child_version).alias(METAXY_FEATURE_VERSION),
             nw.lit(graph.snapshot_version).alias("metaxy_snapshot_version"),
-            nw.lit(child_feature_plan.feature.feature_spec_version).alias("metaxy_feature_spec_version"),
             nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
         )
 

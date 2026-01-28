@@ -22,7 +22,6 @@ from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_DELETED_AT,
-    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
@@ -294,7 +293,6 @@ def feature_metadata_strategy(
     df = df.with_columns(  # ty: ignore[unresolved-attribute]
         pl.lit(feature_version).alias(METAXY_FEATURE_VERSION),
         pl.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
-        pl.lit(feature_spec.feature_spec_version).alias(METAXY_FEATURE_SPEC_VERSION),
     )
 
     # Add METAXY_PROVENANCE column - hash of all field hashes concatenated
@@ -759,7 +757,6 @@ def downstream_metadata_strategy(
     downstream_df = downstream_df.with_columns(
         nw.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
         nw.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
-        nw.lit(feature_plan.feature.feature_spec_version).alias(METAXY_FEATURE_SPEC_VERSION),
         # Add data_version columns (default to provenance)
         nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
         nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),

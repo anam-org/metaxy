@@ -270,7 +270,7 @@ def test_feature_feature_spec_version_classmethod() -> None:
 
 
 def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) -> None:
-    """Test that feature_spec_version is included in graph snapshots."""
+    """Test that feature snapshot contains feature_version and definition_version."""
     from metaxy import BaseFeature, FeatureGraph
 
     graph = FeatureGraph()
@@ -295,22 +295,17 @@ def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) ->
         feature_key_str = "snapshot/test"
         assert feature_key_str in snapshot_dict
 
-        # Should contain feature_spec_version
+        # Should contain version fields
         feature_data = snapshot_dict[feature_key_str]
-        assert "metaxy_feature_spec_version" in feature_data
-
-        # feature_spec_version should match the Feature's feature_spec_version
-        assert feature_data["metaxy_feature_spec_version"] == SnapshotFeature.spec().feature_spec_version
-
-        # feature_spec_version should be different from feature_version
-        assert feature_data["metaxy_feature_spec_version"] != feature_data["metaxy_feature_version"]
+        assert "metaxy_feature_version" in feature_data
+        assert "metaxy_definition_version" in feature_data
 
         # Snapshot the entire feature data for stability
         assert feature_data == snapshot
 
 
-def test_feature_spec_version_recorded_in_metadata_store(snapshot: SnapshotAssertion, tmp_path: Path) -> None:
-    """Test that feature_spec_version is recorded when pushing to metadata store."""
+def test_feature_definition_version_recorded_in_metadata_store(snapshot: SnapshotAssertion, tmp_path: Path) -> None:
+    """Test that feature_definition_version is recorded when pushing to metadata store."""
 
     from metaxy import BaseFeature, FeatureGraph
 
@@ -347,31 +342,25 @@ def test_feature_spec_version_recorded_in_metadata_store(snapshot: SnapshotAsser
             # Should have one feature
             assert len(features_df) == 1
 
-            # Check that feature_spec_version column exists and has value
-            assert "metaxy_feature_spec_version" in features_df.columns
+            # Check that definition_version column exists and has value
+            assert "metaxy_definition_version" in features_df.columns
 
             # Get row as dict
             feature_row = features_df.to_dicts()[0]
-            assert feature_row["metaxy_feature_spec_version"] is not None
-            assert len(feature_row["metaxy_feature_spec_version"]) == 64
-
-            # feature_spec_version should match the Feature's feature_spec_version
-            assert feature_row["metaxy_feature_spec_version"] == RecordedFeature.spec().feature_spec_version
-
-            # feature_spec_version should be different from feature_version
-            assert feature_row["metaxy_feature_spec_version"] != feature_row["metaxy_feature_version"]
+            assert feature_row["metaxy_definition_version"] is not None
+            assert len(feature_row["metaxy_definition_version"]) == 64
 
             # Snapshot for stability
             assert {
                 "feature_key": feature_row["feature_key"],
                 "metaxy_feature_version": feature_row["metaxy_feature_version"],
-                "metaxy_feature_spec_version": feature_row["metaxy_feature_spec_version"],
+                "metaxy_definition_version": feature_row["metaxy_definition_version"],
                 "metaxy_snapshot_version": feature_row["metaxy_snapshot_version"],
             } == snapshot
 
 
-def test_feature_spec_version_idempotent_snapshot_recording(tmp_path: Path) -> None:
-    """Test that recording the same snapshot twice preserves feature_spec_version."""
+def test_feature_definition_version_idempotent_snapshot_recording(tmp_path: Path) -> None:
+    """Test that recording the same snapshot twice preserves definition_version."""
     from metaxy import BaseFeature, FeatureGraph
 
     graph = FeatureGraph()
@@ -402,7 +391,7 @@ def test_feature_spec_version_idempotent_snapshot_recording(tmp_path: Path) -> N
             assert not is_existing_1
 
             features_df_1 = storage.read_features(current=True)
-            feature_spec_version_1 = features_df_1.to_dicts()[0]["metaxy_feature_spec_version"]
+            definition_version_1 = features_df_1.to_dicts()[0]["metaxy_definition_version"]
 
             # Second push (identical graph)
             result = storage.push_graph_snapshot()
@@ -414,10 +403,10 @@ def test_feature_spec_version_idempotent_snapshot_recording(tmp_path: Path) -> N
             assert snapshot_v1 == snapshot_v2  # Same snapshot version
 
             features_df_2 = storage.read_features(current=True)
-            feature_spec_version_2 = features_df_2.to_dicts()[0]["metaxy_feature_spec_version"]
+            definition_version_2 = features_df_2.to_dicts()[0]["metaxy_definition_version"]
 
-            # feature_spec_version should be identical
-            assert feature_spec_version_1 == feature_spec_version_2
+            # definition_version should be identical
+            assert definition_version_1 == definition_version_2
 
 
 def test_feature_spec_version_different_from_feature_version_always() -> None:

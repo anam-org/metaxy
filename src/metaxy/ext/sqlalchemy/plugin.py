@@ -16,7 +16,6 @@ from metaxy.ext.sqlalchemy.config import SQLAlchemyConfig
 from metaxy.metadata_store.system import EVENTS_KEY, FEATURE_VERSIONS_KEY
 from metaxy.models.constants import (
     METAXY_DEFINITION_VERSION,
-    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_SNAPSHOT_VERSION,
 )
@@ -54,10 +53,9 @@ def create_system_tables(
         # Composite primary key
         Column("project", String, primary_key=True, index=True),
         Column("feature_key", String, primary_key=True, index=True),
-        Column(METAXY_FEATURE_SPEC_VERSION, String, primary_key=True),
+        Column(METAXY_DEFINITION_VERSION, String, primary_key=True),
         # Versioning columns
         Column(METAXY_FEATURE_VERSION, String, index=True),
-        Column(METAXY_DEFINITION_VERSION, String, index=True),
         Column(METAXY_SNAPSHOT_VERSION, String, index=True),
         # Metadata columns
         Column("recorded_at", DateTime, index=True),
@@ -65,6 +63,7 @@ def create_system_tables(
         Column("feature_schema", String),
         Column("feature_class_path", String),
         Column("tags", String, default="{}"),
+        Column("deleted_at", DateTime, nullable=True),
         Index(
             f"idx_{feature_versions_name}_lookup",
             "project",

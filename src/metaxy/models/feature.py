@@ -13,7 +13,6 @@ from metaxy._decorators import public
 from metaxy._hashing import truncate_hash
 from metaxy.models.constants import (
     METAXY_DEFINITION_VERSION,
-    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
 )
 from metaxy.models.feature_definition import FeatureDefinition
@@ -29,7 +28,6 @@ from metaxy.models.types import (
 )
 
 FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
-FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
 FEATURE_TRACKING_VERSION_COL = METAXY_DEFINITION_VERSION
 
 if TYPE_CHECKING:
@@ -44,7 +42,6 @@ class SerializedFeature(TypedDict):
     feature_spec: dict[str, Any]
     feature_schema: dict[str, Any]
     metaxy_feature_version: str
-    metaxy_feature_spec_version: str
     metaxy_definition_version: str
     feature_class_path: str
     project: str
@@ -511,7 +508,6 @@ class FeatureGraph:
             feature_spec_dict = definition.spec.model_dump(mode="json")
             feature_schema_dict = definition.feature_schema
             feature_version = self.get_feature_version(feature_key)
-            feature_spec_version = definition.spec.feature_spec_version
             definition_version = definition.feature_definition_version
             project = definition.project
             class_path = definition.feature_class_path
@@ -520,7 +516,6 @@ class FeatureGraph:
                 "feature_spec": feature_spec_dict,
                 "feature_schema": feature_schema_dict,
                 FEATURE_VERSION_COL: feature_version,
-                FEATURE_SPEC_VERSION_COL: feature_spec_version,
                 FEATURE_TRACKING_VERSION_COL: definition_version,
                 "feature_class_path": class_path,
                 "project": project,
@@ -855,9 +850,7 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
         Unlike feature_version which only hashes computational properties
         (for migration triggering), feature_spec_version captures the entire specification
-        for complete reproducibility and audit purposes.
-
-        Stored in the 'metaxy_feature_spec_version' column of metadata DataFrames.
+        for reproducibility and audit purposes.
 
         Returns:
             SHA256 hex digest of the complete specification

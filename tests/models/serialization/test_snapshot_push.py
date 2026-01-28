@@ -383,7 +383,6 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
             my_feature_rows_v1 = versions_df_v1.filter(pl.col("feature_key") == "my_feature")
             assert my_feature_rows_v1.height == 1
             timestamp_v1 = my_feature_rows_v1["recorded_at"][0]
-            my_feature_rows_v1["metaxy_feature_spec_version"][0]
 
             # Change metadata (rename in FeatureDep)
             graph_v2 = FeatureGraph()
@@ -436,10 +435,10 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
                 # All rows have same snapshot_version
                 assert my_feature_rows["metaxy_snapshot_version"].unique().to_list() == [snapshot_v1]
 
-                # But different spec_versions
-                spec_versions = sorted(my_feature_rows["metaxy_feature_spec_version"].to_list())
-                assert len(spec_versions) == 2
-                assert spec_versions[0] != spec_versions[1]
+                # But different definition_versions
+                definition_versions = sorted(my_feature_rows["metaxy_definition_version"].to_list())
+                assert len(definition_versions) == 2
+                assert definition_versions[0] != definition_versions[1]
 
                 # Timestamps are different (new row has later timestamp)
                 timestamps = my_feature_rows.sort("recorded_at")["recorded_at"].to_list()
@@ -592,7 +591,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion, t
                     [
                         "feature_key",
                         "metaxy_feature_version",
-                        "metaxy_feature_spec_version",
+                        "metaxy_definition_version",
                         "metaxy_snapshot_version",
                     ]
                 ).to_dicts()
