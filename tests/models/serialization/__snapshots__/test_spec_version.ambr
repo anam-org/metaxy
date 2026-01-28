@@ -144,9 +144,9 @@
       'metadata': dict({
       }),
     }),
+    'metaxy_definition_version': '37fc36abe2144f961b43512b6016efac279bead9fcbb26c30ca2f467534927f1',
     'metaxy_feature_spec_version': '26736b45eeb37186ef6678426b85f3265cdba9eb5b782a8f41496123d5649cd4',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
-    'metaxy_full_definition_version': '37fc36abe2144f961b43512b6016efac279bead9fcbb26c30ca2f467534927f1',
     'project': 'test_spec_version',
   })
 # ---

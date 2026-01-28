@@ -213,7 +213,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
                     feature,
                     filters=[nw.col(METAXY_MATERIALIZATION_ID) == context.run_id],
                 )
-                materialized_in_run = mat_lazy_df.select(feature.spec().id_columns).unique().collect().to_native()
+                materialized_in_run = mat_lazy_df.select(feature.id_columns).unique().collect().to_native()
                 context.add_output_metadata({"metaxy/materialized_in_run": len(materialized_in_run)})
             except FeatureNotFoundError:
                 pass

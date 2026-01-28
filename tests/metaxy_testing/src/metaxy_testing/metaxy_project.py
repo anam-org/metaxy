@@ -1086,12 +1086,12 @@ database = "{staging_db_path}"
         # Parse feature key
         feature_key = FeatureKey(feature_key_str.split("/"))
 
-        # Get feature class from project's graph (imported from the features module)
+        # Get feature definition from project's graph
         graph = self.graph
-        feature_cls = graph.get_feature_by_key(feature_key)
+        definition = graph.get_feature_definition(feature_key)
 
         # Get versions from graph
-        feature_version = feature_cls.feature_version()
+        feature_version = graph.get_feature_version(feature_key)
         snapshot_version = graph.snapshot_version
 
         # Prepare id_columns_df if specific ID values were provided
@@ -1103,7 +1103,7 @@ database = "{staging_db_path}"
         # Use hypothesis strategy to generate valid metadata
         # .example() gives us a concrete instance without running a full property test
         sample_data = feature_metadata_strategy(
-            feature_cls.spec(),
+            definition.spec,
             feature_version=feature_version,
             snapshot_version=snapshot_version,
             num_rows=num_rows,
@@ -1115,7 +1115,7 @@ database = "{staging_db_path}"
         # Use the project's graph context so the store can resolve feature plans
         with graph.use():
             with store.open("write"):
-                store.write_metadata(feature_cls, sample_data)
+                store.write_metadata(feature_key, sample_data)
                 # Record the feature graph snapshot so copy_metadata can determine snapshot_version
                 SystemTableStorage(store).push_graph_snapshot()
 
@@ -1136,8 +1136,7 @@ database = "{staging_db_path}"
 
         feature_key = FeatureKey(feature_key_str.split("/"))
         graph = self.graph
-        feature_cls = graph.get_feature_by_key(feature_key)
         store = self.stores[store_name]
 
         with graph.use(), store.open("write"):
-            store.write_metadata(feature_cls, data)
+            store.write_metadata(feature_key, data)

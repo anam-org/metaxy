@@ -49,11 +49,12 @@ def test_feature_spec_version_exists_and_differs_from_feature_version():
 
     temp_module.write_features({"TestFeature": spec})
     graph = temp_module.graph
-    TestFeature = graph.features_by_key[FeatureKey(["test", "feature"])]
+    feature_key = FeatureKey(["test", "feature"])
+    definition = graph.feature_definitions_by_key[feature_key]
 
     # Both versions should exist
-    feature_spec_version = TestFeature.feature_spec_version()
-    feature_version = TestFeature.feature_version()
+    feature_spec_version = definition.spec.feature_spec_version
+    feature_version = graph.get_feature_version(feature_key)
 
     assert isinstance(feature_spec_version, str)
     assert isinstance(feature_version, str)
@@ -87,7 +88,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(tmp_pa
 
     temp_v1.write_features({"Simple": spec_v1})
     graph_v1 = temp_v1.graph
-    SimpleV1 = graph_v1.features_by_key[FeatureKey(["test", "simple"])]
+    simple_key = FeatureKey(["test", "simple"])
 
     # Setup v1 data and snapshot
     store_path = tmp_path / "delta_store"
@@ -103,7 +104,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(tmp_pa
                 ],
             }
         )
-        store_v1.write_metadata(SimpleV1, data)
+        store_v1.write_metadata(simple_key, data)
         SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Verify snapshot captures both versions (initialize to satisfy type checker)
@@ -126,11 +127,12 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(tmp_pa
 
     temp_v2.write_features({"Simple": spec_v2})
     graph_v2 = temp_v2.graph
-    SimpleV2 = graph_v2.features_by_key[FeatureKey(["test", "simple"])]
+    simple_key = FeatureKey(["test", "simple"])
+    SimpleV2 = graph_v2.feature_definitions_by_key[simple_key]
 
     # Verify feature_version changed
-    v2_feature_version = SimpleV2.feature_version()
-    v2_feature_spec_version = SimpleV2.feature_spec_version()
+    v2_feature_version = graph_v2.get_feature_version(simple_key)
+    v2_feature_spec_version = SimpleV2.spec.feature_spec_version
 
     assert v1_feature_version != v2_feature_version  # Changed!
     assert v1_feature_spec_version != v2_feature_spec_version  # Also changed (includes code_version)
@@ -184,7 +186,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path: Pa
 
     temp_module.write_features({"TestFeature": spec})
     graph = temp_module.graph
-    TestFeature = graph.features_by_key[FeatureKey(["test", "feature"])]
+    feature_key = FeatureKey(["test", "feature"])
 
     # Setup data and snapshot
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
@@ -195,7 +197,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path: Pa
                 "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
-        store.write_metadata(TestFeature, data)
+        store.write_metadata(feature_key, data)
         SystemTableStorage(store).push_graph_snapshot()
 
     # Currently, there's no way to change spec without changing feature_version
@@ -252,8 +254,9 @@ def test_computational_property_changes_trigger_migrations(tmp_path, snapshot: S
     )
     temp_cv2.write_features({"Feature": spec_cv2})
 
-    fv1_cv = temp_cv1.graph.features_by_key[FeatureKey(["test", "cv"])].feature_version()
-    fv2_cv = temp_cv2.graph.features_by_key[FeatureKey(["test", "cv"])].feature_version()
+    cv_key = FeatureKey(["test", "cv"])
+    fv1_cv = temp_cv1.graph.get_feature_version(cv_key)
+    fv2_cv = temp_cv2.graph.get_feature_version(cv_key)
 
     test_cases.append(
         {
@@ -280,8 +283,9 @@ def test_computational_property_changes_trigger_migrations(tmp_path, snapshot: S
     )
     temp_f2.write_features({"Feature": spec_f2})
 
-    fv1_f = temp_f1.graph.features_by_key[FeatureKey(["test", "field"])].feature_version()
-    fv2_f = temp_f2.graph.features_by_key[FeatureKey(["test", "field"])].feature_version()
+    field_key = FeatureKey(["test", "field"])
+    fv1_f = temp_f1.graph.get_feature_version(field_key)
+    fv2_f = temp_f2.graph.get_feature_version(field_key)
 
     test_cases.append(
         {
@@ -316,8 +320,9 @@ def test_computational_property_changes_trigger_migrations(tmp_path, snapshot: S
 
     temp_d2.write_features({"Upstream": upstream_spec, "Downstream": downstream_v2_spec})
 
-    fv1_d = temp_d1.graph.features_by_key[FeatureKey(["test", "downstream"])].feature_version()
-    fv2_d = temp_d2.graph.features_by_key[FeatureKey(["test", "downstream"])].feature_version()
+    downstream_key = FeatureKey(["test", "downstream"])
+    fv1_d = temp_d1.graph.get_feature_version(downstream_key)
+    fv2_d = temp_d2.graph.get_feature_version(downstream_key)
 
     test_cases.append(
         {
@@ -355,7 +360,8 @@ def test_snapshot_stores_both_versions(tmp_path: Path):
 
     temp_module.write_features({"TestFeature": spec})
     graph = temp_module.graph
-    TestFeature = graph.features_by_key[FeatureKey(["test", "feature"])]
+    feature_key = FeatureKey(["test", "feature"])
+    TestFeature = graph.feature_definitions_by_key[feature_key]
 
     # Create store and record snapshot
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
@@ -366,7 +372,7 @@ def test_snapshot_stores_both_versions(tmp_path: Path):
                 "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
-        store.write_metadata(TestFeature, data)
+        store.write_metadata(feature_key, data)
         SystemTableStorage(store).push_graph_snapshot()
 
         # Check snapshot data structure
@@ -383,9 +389,9 @@ def test_snapshot_stores_both_versions(tmp_path: Path):
         assert len(feature_data["metaxy_feature_version"]) == 64
         assert len(feature_data["metaxy_feature_spec_version"]) == 64
 
-        # Check that they match the class methods
-        assert feature_data["metaxy_feature_version"] == TestFeature.feature_version()
-        assert feature_data["metaxy_feature_spec_version"] == TestFeature.feature_spec_version()
+        # Check that they match graph methods
+        assert feature_data["metaxy_feature_version"] == graph.get_feature_version(feature_key)
+        assert feature_data["metaxy_feature_spec_version"] == TestFeature.spec.feature_spec_version
 
     temp_module.cleanup()
 

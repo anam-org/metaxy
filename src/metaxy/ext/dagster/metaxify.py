@@ -1,4 +1,3 @@
-import inspect
 from typing import Any, TypeVar, overload
 
 import dagster as dg
@@ -20,8 +19,8 @@ from metaxy.ext.dagster.constants import (
     METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.table_metadata import (
-    _get_type_string,
     build_column_lineage,
+    build_column_schema,
 )
 from metaxy.ext.dagster.utils import (
     build_feature_info_metadata,
@@ -361,8 +360,8 @@ def _metaxify_spec(
         return spec
 
     feature_key = mx.coerce_to_feature_key(metadata_feature_key)
-    feature_cls = mx.get_feature_by_key(feature_key)
-    feature_spec = feature_cls.spec()
+    feature_def = mx.get_feature_by_key(feature_key)
+    feature_spec = feature_def.spec
 
     # Determine the final asset key
     # Priority: key > key_prefix + resolved_key > resolved_key
@@ -381,8 +380,8 @@ def _metaxify_spec(
     # Build deps from feature dependencies
     metaxy_deps_by_key: dict[dg.AssetKey, dg.AssetDep] = {}
     for dep in feature_spec.deps:
-        upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
-        upstream_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
+        upstream_feature_def = mx.get_feature_by_key(dep.feature)
+        upstream_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_def.spec)
         # Apply key_prefix to upstream deps as well
         if key_prefix is not None:
             upstream_key = dg.AssetKey([*key_prefix.path, *upstream_key.path])
@@ -421,10 +420,12 @@ def _metaxify_spec(
     else:
         final_code_version = spec.code_version
 
-    # Use feature class docstring as description if not set on asset spec
+    # Use feature schema description if not set on asset spec
     final_description = spec.description
-    if set_description and final_description is None and feature_cls.__doc__:
-        final_description = inspect.cleandoc(feature_cls.__doc__)
+    if set_description and final_description is None:
+        schema_desc = feature_def.feature_schema.get("description")
+        if schema_desc:
+            final_description = schema_desc
 
     # Build tags for project and feature
     # Note: Dagster tag values only allow alpha-numeric, '_', '-', '.'
@@ -448,16 +449,8 @@ def _metaxify_spec(
 
         # Add Metaxy columns that aren't already defined by user
         # (user-defined columns take precedence)
-        metaxy_columns: list[dg.TableColumn] = []
-        for field_name, field_info in feature_cls.model_fields.items():
-            if field_name not in existing_column_names:
-                metaxy_columns.append(
-                    dg.TableColumn(
-                        name=field_name,
-                        type=_get_type_string(field_info.annotation),
-                        description=field_info.description,
-                    )
-                )
+        metaxy_schema = build_column_schema(feature_def)
+        metaxy_columns = [col for col in metaxy_schema.columns if col.name not in existing_column_names]
 
         all_columns = existing_columns + metaxy_columns
         if all_columns:
@@ -476,7 +469,7 @@ def _metaxify_spec(
             existing_deps_by_column = dict(existing_lineage.deps_by_column)
 
         metaxy_lineage = build_column_lineage(
-            feature_cls=feature_cls,
+            feature=feature_def,
             feature_spec=feature_spec,
         )
 

@@ -361,7 +361,7 @@ class RunbookRunner:
         graph = self.project.graph
         snapshot_data: dict[str, dict] = {}
 
-        for feature_key, spec in graph.all_specs_by_key.items():
+        for feature_key, definition in graph.feature_definitions_by_key.items():
             feature_key_str = feature_key.to_string()
             feature_version = graph.get_feature_version(feature_key)
 
@@ -371,7 +371,7 @@ class RunbookRunner:
             snapshot_data[feature_key_str] = {
                 "metaxy_feature_version": feature_version,
                 "fields": field_versions,
-                "feature_spec": spec.model_dump(mode="json"),
+                "feature_spec": definition.spec.model_dump(mode="json"),
             }
 
         return snapshot_data

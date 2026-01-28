@@ -28,7 +28,7 @@ from metaxy.metadata_store.system.events import (
 from metaxy.metadata_store.system.keys import EVENTS_KEY
 from metaxy.metadata_store.system.models import POLARS_SCHEMAS, FeatureVersionsModel
 from metaxy.models.constants import (
-    METAXY_FULL_DEFINITION_VERSION,
+    METAXY_DEFINITION_VERSION,
     METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.models.feature import FeatureGraph
@@ -573,7 +573,7 @@ class SystemTableStorage:
             pushed_with_current = current_snapshot.join(
                 latest_pushed_snapshot.select(
                     "feature_key",
-                    pl.col(METAXY_FULL_DEFINITION_VERSION).alias(f"{METAXY_FULL_DEFINITION_VERSION}_pushed"),
+                    pl.col(METAXY_DEFINITION_VERSION).alias(f"{METAXY_DEFINITION_VERSION}_pushed"),
                 ),
                 on=["feature_key"],
                 how="left",
@@ -582,13 +582,13 @@ class SystemTableStorage:
             to_push = pl.concat(
                 [
                     # these are records that for some reason have not been pushed previously
-                    pushed_with_current.filter(pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed").is_null()),
+                    pushed_with_current.filter(pl.col(f"{METAXY_DEFINITION_VERSION}_pushed").is_null()),
                     # these are the records with actual changes
-                    pushed_with_current.filter(pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed").is_not_null()).filter(
-                        pl.col(METAXY_FULL_DEFINITION_VERSION) != pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed")
+                    pushed_with_current.filter(pl.col(f"{METAXY_DEFINITION_VERSION}_pushed").is_not_null()).filter(
+                        pl.col(METAXY_DEFINITION_VERSION) != pl.col(f"{METAXY_DEFINITION_VERSION}_pushed")
                     ),
                 ]
-            ).drop(f"{METAXY_FULL_DEFINITION_VERSION}_pushed")
+            ).drop(f"{METAXY_DEFINITION_VERSION}_pushed")
 
         if len(to_push) > 0:
             self.store.write_metadata(FEATURE_VERSIONS_KEY, to_push)

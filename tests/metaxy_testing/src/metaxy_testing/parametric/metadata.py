@@ -648,10 +648,10 @@ def downstream_metadata_strategy(
 
         # Get versions from graph
         feature_versions = {
-            "parent": graph.get_feature_by_key(FeatureKey(["parent"])).feature_version(),
-            "child": graph.get_feature_by_key(FeatureKey(["child"])).feature_version(),
+            "parent": graph.get_feature_version(FeatureKey(["parent"])),
+            "child": graph.get_feature_version(FeatureKey(["child"])),
         }
-        snapshot_version = graph.snapshot_version()
+        snapshot_version = graph.snapshot_version
 
 
         @given(

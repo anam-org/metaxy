@@ -1356,22 +1356,14 @@ class MetadataStore(ABC):
             if columns_to_drop:
                 df = df.drop(*columns_to_drop)
 
-            # Get current feature version, feature_spec_version, and snapshot_version from code
-            # Use duck typing to avoid Ray serialization issues with issubclass
-            if isinstance(feature, type) and hasattr(feature, "feature_version") and callable(feature.feature_version):
-                current_feature_version = feature.feature_version()  # ty: ignore[call-top-callable]
-                current_feature_spec_version = feature.feature_spec_version()  # ty: ignore[possibly-missing-attribute]
-            else:
-                from metaxy import get_feature_by_key
-
-                feature_cls = get_feature_by_key(feature_key)
-                current_feature_version = feature_cls.feature_version()
-                current_feature_spec_version = feature_cls.feature_spec_version()
-
-            # Get snapshot_version from active graph
+            # Get current feature version, feature_spec_version, and snapshot_version from graph
             from metaxy.models.feature import FeatureGraph
 
             graph = FeatureGraph.get_active()
+            definition = graph.get_feature_definition(feature_key)
+
+            current_feature_version = graph.get_feature_version(feature_key)
+            current_feature_spec_version = definition.spec.feature_spec_version
             current_snapshot_version = graph.snapshot_version
 
             df = df.with_columns(

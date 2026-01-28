@@ -197,7 +197,7 @@ def test_feature_versions_model_has_feature_schema():
         feature_key="test/feature",
         metaxy_feature_version="abc123",
         metaxy_feature_spec_version="def456",
-        metaxy_full_definition_version="ghi789",
+        metaxy_definition_version="ghi789",
         recorded_at=datetime.now(timezone.utc),
         feature_spec='{"key": "value"}',
         feature_schema='{"type": "object", "properties": {}}',

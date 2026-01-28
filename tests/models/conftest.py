@@ -46,9 +46,9 @@ def upstream_features(graph: FeatureGraph) -> dict[str, type[BaseFeature]]:
         pass
 
     # Verify features registered in graph
-    assert FeatureKey(["test", "upstream1"]) in graph.features_by_key
-    assert FeatureKey(["test", "upstream2"]) in graph.features_by_key
-    assert FeatureKey(["test", "upstream3"]) in graph.features_by_key
+    assert FeatureKey(["test", "upstream1"]) in graph.feature_definitions_by_key
+    assert FeatureKey(["test", "upstream2"]) in graph.feature_definitions_by_key
+    assert FeatureKey(["test", "upstream3"]) in graph.feature_definitions_by_key
 
     return {
         "upstream1": Upstream1,

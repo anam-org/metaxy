@@ -25,7 +25,6 @@ from metaxy.models.feature import (
     BaseFeature,
     FeatureGraph,
     current_graph,
-    get_feature_by_key,
     graph,
 )
 from metaxy.models.feature_definition import FeatureDefinition
@@ -64,6 +63,22 @@ from metaxy.models.types import (
 )
 from metaxy.utils import BatchedMetadataWriter
 from metaxy.versioning.types import HashAlgorithm
+
+
+@public
+def get_feature_by_key(key: CoercibleToFeatureKey) -> FeatureDefinition:
+    """Get a FeatureDefinition by its key from the current graph.
+
+    Args:
+        key: Feature key to look up (can be FeatureKey, list of strings, slash-separated string, etc.)
+
+    Returns:
+        FeatureDefinition for the feature
+
+    Raises:
+        KeyError: If no feature with the given key is registered
+    """
+    return current_graph().get_feature_definition(key)
 
 
 @public
@@ -127,7 +142,6 @@ __all__ = [
     "FeatureGraph",
     "graph",
     "FeatureSpec",
-    "get_feature_by_key",
     "FeatureDep",
     "FeatureDepMetadata",
     "FeatureSpec",
@@ -144,6 +158,7 @@ __all__ = [
     "CoercibleToFeatureKey",
     "CoercibleToFieldKey",
     "coerce_to_feature_key",
+    "get_feature_by_key",
     "ValidatedFeatureKey",
     "ValidatedFieldKey",
     "ValidatedFeatureKeySequence",

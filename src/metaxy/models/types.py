@@ -42,7 +42,7 @@ class SnapshotPushResult(NamedTuple):
     Attributes:
         snapshot_version: The deterministic hash of the graph snapshot
         already_pushed: True if this snapshot_version was already pushed previously
-        updated_features: List of feature keys with updated information (changed full_definition_version)
+        updated_features: List of feature keys with updated information (changed definition_version)
     """
 
     snapshot_version: str
@@ -407,6 +407,8 @@ def _coerce_to_feature_key(value: Any) -> FeatureKey:
 
     - `type[BaseFeature]`: extracts .spec().key
 
+    - `FeatureDefinition`: extracts .key
+
     Args:
         value: Value to coerce to `FeatureKey`
 
@@ -418,6 +420,12 @@ def _coerce_to_feature_key(value: Any) -> FeatureKey:
     """
     if isinstance(value, FeatureKey):
         return value
+
+    # Check if it's a FeatureDefinition
+    from metaxy.models.feature_definition import FeatureDefinition
+
+    if isinstance(value, FeatureDefinition):
+        return value.key
 
     # Check if it's a BaseFeature class
     # Import here to avoid circular dependency at module level
@@ -459,9 +467,11 @@ def _coerce_to_field_key(value: Any) -> FieldKey:
 
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
+    from metaxy.models.feature_definition import FeatureDefinition
 
 # Type unions - what inputs are accepted
-CoercibleToFeatureKey: TypeAlias = str | Sequence[str] | FeatureKey | type["BaseFeature"]
+# Note: FeatureDefinition is imported at runtime in _coerce_to_feature_key to avoid circular imports
+CoercibleToFeatureKey: TypeAlias = "str | Sequence[str] | FeatureKey | type[BaseFeature] | FeatureDefinition"
 """Type alias for values that can be coerced to a [`FeatureKey`][metaxy.FeatureKey].
 
 Accepted formats:
@@ -470,6 +480,7 @@ Accepted formats:
 - `Sequence[str]`: sequences of parts like `["user", "profile"]`
 - [`FeatureKey`][metaxy.FeatureKey]: Pass through unchanged
 - `type[BaseFeature]`: Any [`BaseFeature`][metaxy.BaseFeature] subclass - extracts its key via `.spec().key`
+- [`FeatureDefinition`][metaxy.FeatureDefinition]: Extracts its key via `.key`
 
 Example:
     ```python
@@ -477,6 +488,7 @@ Example:
     key2 = ["raw", "video"]
     key3 = mx.FeatureKey("raw/video")
     key4 = MyFeatureClass  # where MyFeatureClass is a BaseFeature subclass
+    key5 = mx.FeatureDefinition("raw/video", ...)
     ```
 """
 

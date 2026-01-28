@@ -79,9 +79,9 @@ class TestFeature1(BaseFeature, spec=SampleFeatureSpec(
         load_module_entrypoint("test_entrypoint_modules.feature1", graph=graph)
 
         # Verify feature was registered
-        assert FeatureKey(["test", "feature1"]) in graph.features_by_key
-        feature_cls = graph.features_by_key[FeatureKey(["test", "feature1"])]
-        assert feature_cls.__name__ == "TestFeature1"
+        assert FeatureKey(["test", "feature1"]) in graph.feature_definitions_by_key
+        definition = graph.get_feature_definition(FeatureKey(["test", "feature1"]))
+        assert definition.feature_class_path.endswith(".TestFeature1")
     finally:
         sys.path.remove(str(tmp_path))
 
@@ -141,7 +141,7 @@ class ActiveRegistryFeature(BaseFeature, spec=SampleFeatureSpec(
             load_module_entrypoint("test_active_graph.feature")
 
             # Should be in custom_graph since it was active
-            assert FeatureKey(["active", "test"]) in custom_graph.features_by_key
+            assert FeatureKey(["active", "test"]) in custom_graph.feature_definitions_by_key
     finally:
         sys.path.remove(str(tmp_path))
 
@@ -183,19 +183,19 @@ class Feature{i}(BaseFeature, spec=SampleFeatureSpec(
         )
 
         # Verify all features were registered
-        assert len(graph.features_by_key) == 3
-        assert FeatureKey(["multi", "feature0"]) in graph.features_by_key
-        assert FeatureKey(["multi", "feature1"]) in graph.features_by_key
-        assert FeatureKey(["multi", "feature2"]) in graph.features_by_key
+        assert len(graph.feature_definitions_by_key) == 3
+        assert FeatureKey(["multi", "feature0"]) in graph.feature_definitions_by_key
+        assert FeatureKey(["multi", "feature1"]) in graph.feature_definitions_by_key
+        assert FeatureKey(["multi", "feature2"]) in graph.feature_definitions_by_key
     finally:
         sys.path.remove(str(tmp_path))
 
 
 def test_load_config_entrypoints_empty_list(graph: FeatureGraph):
     """Test loading empty entrypoint list does nothing."""
-    initial_count = len(graph.features_by_key)
+    initial_count = len(graph.feature_definitions_by_key)
     load_entrypoints([], graph=graph)
-    assert len(graph.features_by_key) == initial_count
+    assert len(graph.feature_definitions_by_key) == initial_count
 
 
 def test_load_config_entrypoints_failure_raises(graph: FeatureGraph):
@@ -240,7 +240,7 @@ def test_load_package_entrypoints_discovers_and_loads(graph: FeatureGraph):
         load_package_entrypoints(graph=graph)
 
         # Verify feature was registered
-        assert FeatureKey(["plugin", "feature"]) in graph.features_by_key
+        assert FeatureKey(["plugin", "feature"]) in graph.feature_definitions_by_key
 
 
 def test_load_package_entrypoints_no_entrypoints_found(graph: FeatureGraph):
@@ -251,11 +251,11 @@ def test_load_package_entrypoints_no_entrypoints_found(graph: FeatureGraph):
         mock_eps.select.return_value = []
         mock_entry_points.return_value = mock_eps
 
-        initial_count = len(graph.features_by_key)
+        initial_count = len(graph.feature_definitions_by_key)
         load_package_entrypoints(graph=graph)
 
         # Should not raise, graph unchanged
-        assert len(graph.features_by_key) == initial_count
+        assert len(graph.feature_definitions_by_key) == initial_count
 
 
 def test_load_package_entrypoints_custom_group(graph: FeatureGraph):
@@ -285,7 +285,7 @@ def test_load_package_entrypoints_custom_group(graph: FeatureGraph):
 
         mock_eps.select.assert_called_once_with(group="custom.group")
 
-        assert FeatureKey(["custom", "feature"]) in graph.features_by_key
+        assert FeatureKey(["custom", "feature"]) in graph.feature_definitions_by_key
 
 
 def test_load_package_entrypoints_load_failure_raises(graph: FeatureGraph):
@@ -359,9 +359,9 @@ class ConfigFeature(BaseFeature, spec=SampleFeatureSpec(
             )
 
             # Verify both features were registered
-            assert len(result_graph.features_by_key) == 2
-            assert FeatureKey(["config", "feature"]) in result_graph.features_by_key
-            assert FeatureKey(["package", "feature"]) in result_graph.features_by_key
+            assert len(result_graph.feature_definitions_by_key) == 2
+            assert FeatureKey(["config", "feature"]) in result_graph.feature_definitions_by_key
+            assert FeatureKey(["package", "feature"]) in result_graph.feature_definitions_by_key
             assert result_graph is graph
     finally:
         sys.path.remove(str(tmp_path))
@@ -397,7 +397,7 @@ class EntrypointsOnlyFeature(BaseFeature, spec=SampleFeatureSpec(
             )
 
             mock_entry_points.assert_not_called()
-            assert FeatureKey(["entrypoints_only", "feature"]) in graph.features_by_key
+            assert FeatureKey(["entrypoints_only", "feature"]) in graph.feature_definitions_by_key
     finally:
         sys.path.remove(str(tmp_path))
 
@@ -430,7 +430,7 @@ def test_load_features_packages_only(graph: FeatureGraph):
             load_packages=True,
         )
 
-        assert FeatureKey(["package_only", "feature"]) in graph.features_by_key
+        assert FeatureKey(["package_only", "feature"]) in graph.feature_definitions_by_key
 
 
 def test_load_features_returns_graph(graph: FeatureGraph):
@@ -549,13 +549,13 @@ class DownstreamFeature(BaseFeature, spec=SampleFeatureSpec(
         load_entrypoints(["deps_test.upstream", "deps_test.downstream"], graph=graph)
 
         # Verify both registered
-        assert FeatureKey(["deps", "upstream"]) in graph.features_by_key
-        assert FeatureKey(["deps", "downstream"]) in graph.features_by_key
+        assert FeatureKey(["deps", "upstream"]) in graph.feature_definitions_by_key
+        assert FeatureKey(["deps", "downstream"]) in graph.feature_definitions_by_key
 
         # Verify dependency relationship
-        downstream_spec = graph.feature_specs_by_key[FeatureKey(["deps", "downstream"])]
-        assert downstream_spec.deps is not None
-        assert len(downstream_spec.deps) == 1
-        assert downstream_spec.deps[0].feature == FeatureKey(["deps", "upstream"])
+        downstream_def = graph.get_feature_definition(FeatureKey(["deps", "downstream"]))
+        assert downstream_def.spec.deps is not None
+        assert len(downstream_def.spec.deps) == 1
+        assert downstream_def.spec.deps[0].feature == FeatureKey(["deps", "upstream"])
     finally:
         sys.path.remove(str(tmp_path))

@@ -186,9 +186,9 @@ def test_graph_and_features():
 
     # Create features dict for easy access
     features = {
-        "UpstreamFeatureA": graph.features_by_key[FeatureKey(["test_stores", "upstream_a"])],
-        "UpstreamFeatureB": graph.features_by_key[FeatureKey(["test_stores", "upstream_b"])],
-        "DownstreamFeature": graph.features_by_key[FeatureKey(["test_stores", "downstream"])],
+        "UpstreamFeatureA": graph.feature_definitions_by_key[FeatureKey(["test_stores", "upstream_a"])],
+        "UpstreamFeatureB": graph.feature_definitions_by_key[FeatureKey(["test_stores", "upstream_b"])],
+        "DownstreamFeature": graph.feature_definitions_by_key[FeatureKey(["test_stores", "downstream"])],
     }
 
     yield graph, features
