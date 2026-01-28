@@ -241,3 +241,93 @@ class TestGetFeatureByKey:
 
         with pytest.raises(KeyError, match="No feature with key"):
             mx.get_feature_by_key(FeatureKey(["nonexistent", "feature"]))
+
+
+def test_external_feature_definition_creation():
+    """External definitions can be created without a Feature class."""
+    import metaxy as mx
+
+    spec = mx.FeatureSpec(
+        key=mx.FeatureKey(["external", "feature"]),
+        id_columns=["id"],
+        fields=["value"],
+    )
+    schema = {
+        "type": "object",
+        "properties": {
+            "id": {"type": "string"},
+            "value": {"type": "integer"},
+        },
+        "required": ["id", "value"],
+    }
+
+    definition = mx.FeatureDefinition.external(
+        spec=spec,
+        feature_schema=schema,
+        project="external-project",
+    )
+
+    # Spec key and structure preserved, metadata has external marker added
+    assert definition.spec.key == spec.key
+    assert definition.spec.id_columns == spec.id_columns
+    assert definition.spec.fields == spec.fields
+    assert definition.feature_schema == schema
+    assert definition.project == "external-project"
+    assert definition.spec.metadata.get("metaxy/external_feature") is True
+
+
+def test_external_feature_definition_class_path_is_none():
+    """External definitions have no class path."""
+    import metaxy as mx
+
+    spec = mx.FeatureSpec(
+        key=mx.FeatureKey(["my", "external"]),
+        id_columns=["id"],
+    )
+    schema = {"type": "object", "properties": {"id": {"type": "string"}}}
+
+    definition = mx.FeatureDefinition.external(
+        spec=spec,
+        feature_schema=schema,
+        project="proj",
+    )
+
+    assert definition.feature_class_path is None
+
+
+def test_is_external_property_true_for_external():
+    """External definitions report is_external=True."""
+    import metaxy as mx
+
+    spec = mx.FeatureSpec(
+        key=mx.FeatureKey(["ext", "feat"]),
+        id_columns=["id"],
+    )
+    schema = {"type": "object", "properties": {"id": {"type": "string"}}}
+
+    definition = mx.FeatureDefinition.external(
+        spec=spec,
+        feature_schema=schema,
+        project="proj",
+    )
+
+    assert definition.is_external is True
+
+
+def test_is_external_property_false_for_regular(graph):
+    """Regular definitions report is_external=False."""
+    from metaxy_testing.models import SampleFeatureSpec
+
+    import metaxy as mx
+
+    class RegularFeature(
+        mx.BaseFeature,
+        spec=SampleFeatureSpec(
+            key=mx.FeatureKey(["test", "is_external_regular"]),
+            fields=[mx.FieldSpec(key=mx.FieldKey(["default"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    definition = mx.FeatureDefinition.from_feature_class(RegularFeature)
+    assert definition.is_external is False

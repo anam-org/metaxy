@@ -5,6 +5,7 @@ Provides type-safe access to migration system tables using struct-based storage.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
@@ -36,6 +37,7 @@ from metaxy.models.types import FeatureKey, SnapshotPushResult
 
 if TYPE_CHECKING:
     from metaxy.metadata_store import MetadataStore
+    from metaxy.models.feature_definition import FeatureDefinition
 
 
 class SystemTableStorage:
@@ -868,8 +870,6 @@ class SystemTableStorage:
                 print(f"Loaded {len(graph.feature_definitions_by_key)} features")
             ```
         """
-        import json
-
         # Read features for this snapshot
         features_df = self.read_features(
             current=False,
@@ -882,21 +882,180 @@ class SystemTableStorage:
                 f"No features recorded for snapshot {snapshot_version}" + (f" in project {project}" if project else "")
             )
 
-        # Build snapshot data dict for FeatureGraph.from_snapshot()
-        snapshot_data = {
-            row["feature_key"]: {
-                "feature_spec": json.loads(row["feature_spec"])
-                if isinstance(row["feature_spec"], str)
-                else row["feature_spec"],
-                "feature_schema": json.loads(row["feature_schema"])
-                if isinstance(row.get("feature_schema"), str)
-                else row.get("feature_schema", {}),
-                "feature_class_path": row.get("feature_class_path", ""),
-                "project": row.get("project", ""),
-                "metaxy_feature_version": row["metaxy_feature_version"],
-            }
-            for row in features_df.iter_rows(named=True)
-        }
+        # Create definitions and build graph
+        definitions = self._definitions_from_dataframe(features_df)
+        graph = FeatureGraph()
+        for definition in definitions:
+            graph.add_feature_definition(definition)
+        return graph
 
-        # Reconstruct graph from snapshot
-        return FeatureGraph.from_snapshot(snapshot_data)
+    def load_feature_definitions(
+        self,
+        *,
+        projects: str | list[str] | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        graph: FeatureGraph | None = None,
+    ) -> list[FeatureDefinition]:
+        """Load feature definitions from storage into a graph.
+
+        This populates an existing graph with FeatureDefinition objects loaded from
+        the metadata store. Loads the latest snapshot for each requested project.
+
+        Args:
+            projects: Project(s) to load features from. Can be a single project name
+                or a list of project names. If None, loads features from all projects.
+            filters: Narwhals expressions to filter the feature_versions table. Applied
+                after project filtering but before snapshot selection.
+            graph: Target graph to populate. If None, uses the current active graph.
+
+        Returns:
+            List of FeatureDefinition objects that were loaded. Empty if no features
+            found for the specified criteria.
+
+        Note:
+            The store must already be open when calling this method.
+
+        Example:
+            ```python
+            with store:
+                storage = SystemTableStorage(store)
+
+                # Load all features from latest snapshots into active graph
+                definitions = storage.load_feature_definitions()
+                print(f"Loaded {len(definitions)} features")
+
+                # Load features from a specific project
+                definitions = storage.load_feature_definitions(projects="my_project")
+
+                # Load features into a new graph
+                new_graph = FeatureGraph()
+                definitions = storage.load_feature_definitions(
+                    projects=["project_a", "project_b"],
+                    graph=new_graph,
+                )
+
+                # Load specific features by key
+                import narwhals as nw
+
+                definitions = storage.load_feature_definitions(
+                    filters=[nw.col("feature_key").is_in(["my/feature"])],
+                )
+            ```
+        """
+        # Normalize projects to list
+        project_list: list[str] | None
+        if projects is None:
+            project_list = None
+        elif isinstance(projects, str):
+            project_list = [projects]
+        else:
+            project_list = projects
+
+        # Use active graph if not provided
+        if graph is None:
+            graph = FeatureGraph.get_active()
+
+        # Load from the latest snapshot for each project
+        features_df = self._read_latest_features_by_project(project_list, filters=filters)
+
+        if features_df.height == 0:
+            return []
+
+        # Build FeatureDefinitions from rows and add to graph
+        definitions = self._definitions_from_dataframe(features_df)
+        for definition in definitions:
+            graph.add_feature_definition(definition)
+
+        return definitions
+
+    def _definitions_from_dataframe(self, features_df: pl.DataFrame) -> list[FeatureDefinition]:
+        """Create FeatureDefinition objects from a features DataFrame.
+
+        Args:
+            features_df: DataFrame with feature_spec, feature_schema, feature_class_path,
+                and project columns.
+
+        Returns:
+            List of FeatureDefinition objects.
+        """
+        from metaxy.models.feature_definition import FeatureDefinition
+
+        return [
+            FeatureDefinition.from_stored_data(
+                feature_spec=row["feature_spec"],
+                feature_schema=row["feature_schema"],
+                feature_class_path=row["feature_class_path"],
+                project=row["project"],
+            )
+            for row in features_df.iter_rows(named=True)
+        ]
+
+    def _read_latest_features_by_project(
+        self,
+        projects: list[str] | None = None,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> pl.DataFrame:
+        """Read the latest feature versions for each project.
+
+        For each project, finds the latest snapshot and returns all features from it.
+
+        Args:
+            projects: Optional list of projects to filter by. If None, returns
+                features from all projects.
+            filters: Narwhals expressions to apply after project filtering.
+
+        Returns:
+            DataFrame with latest features from each project's most recent snapshot.
+        """
+        # Read all feature versions
+        versions_lazy = self._read_system_metadata(FEATURE_VERSIONS_KEY)
+
+        # Collect to polars for grouping operations
+        versions_df = versions_lazy.collect().to_polars()
+
+        if versions_df.height == 0:
+            return versions_df
+
+        # Filter by projects if specified
+        if projects is not None:
+            versions_df = versions_df.filter(pl.col("project").is_in(projects))
+
+        if versions_df.height == 0:
+            return versions_df
+
+        # Apply user filters via narwhals
+        if filters:
+            versions_nw = nw.from_native(versions_df)
+            for expr in filters:
+                versions_nw = versions_nw.filter(expr)
+            versions_df = versions_nw.to_native()
+
+        if versions_df.height == 0:
+            return versions_df
+
+        # For each project, find the latest snapshot_version by recorded_at
+        latest_snapshots = (
+            versions_df.group_by("project")
+            .agg(
+                [
+                    pl.col(METAXY_SNAPSHOT_VERSION)
+                    .sort_by("recorded_at", descending=True)
+                    .first()
+                    .alias("latest_snapshot"),
+                ]
+            )
+            .select(["project", "latest_snapshot"])
+        )
+
+        # Join back to get all features from latest snapshots
+        result = versions_df.join(
+            latest_snapshots,
+            on="project",
+            how="inner",
+        ).filter(pl.col(METAXY_SNAPSHOT_VERSION) == pl.col("latest_snapshot"))
+
+        # Deduplicate by feature_key (keep latest recorded_at)
+        result = result.sort("recorded_at", descending=True).unique(subset=["feature_key"], keep="first")
+
+        return result.drop("latest_snapshot")

@@ -18,9 +18,11 @@ from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     BaseFeature,
+    FeatureDefinition,
     FeatureDep,
     FeatureGraph,
     FeatureKey,
+    FeatureSpec,
     FieldKey,
     FieldSpec,
 )
@@ -1144,3 +1146,120 @@ class TestComplexGraphs:
         frames_idx = sorted_keys.index(FeatureA.spec().key)
         embeddings_idx = sorted_keys.index(FeatureB.spec().key)
         assert frames_idx < embeddings_idx
+
+
+class TestExternalDefinitions:
+    """Test external feature definitions with FeatureGraph."""
+
+    def test_add_external_definition_to_graph(self, graph: FeatureGraph):
+        """External definitions can be added to a FeatureGraph."""
+
+        spec = FeatureSpec(
+            key=FeatureKey(["external", "test"]),
+            id_columns=["id"],
+            fields=["data"],
+        )
+        schema = {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"},
+                "data": {"type": "number"},
+            },
+        }
+
+        external_def = FeatureDefinition.external(
+            spec=spec,
+            feature_schema=schema,
+            project="other-project",
+        )
+
+        graph.add_feature_definition(external_def)
+
+        # Verify it can be retrieved
+        retrieved = graph.get_feature_definition(["external", "test"])
+        assert retrieved == external_def
+        assert retrieved.is_external is True
+        assert retrieved.project == "other-project"
+
+    def test_external_definition_in_graph_snapshot(self, graph: FeatureGraph):
+        """External definitions are included in graph snapshots."""
+
+        spec = FeatureSpec(
+            key=FeatureKey(["snap", "external"]),
+            id_columns=["uid"],
+        )
+        schema = {"type": "object", "properties": {"uid": {"type": "string"}}}
+
+        external_def = FeatureDefinition.external(
+            spec=spec,
+            feature_schema=schema,
+            project="snapshot-proj",
+        )
+
+        graph.add_feature_definition(external_def)
+        snapshot = graph.to_snapshot()
+
+        # Snapshot keys use slash-separated format (FeatureKey.to_string())
+        assert "snap/external" in snapshot
+        assert snapshot["snap/external"]["project"] == "snapshot-proj"
+
+    def test_external_definition_coexists_with_class_definitions(self, graph: FeatureGraph):
+        """External definitions and class-based definitions can coexist in the same graph."""
+
+        # Add a class-based feature
+        class ClassFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "class_based"]),
+                fields=[FieldSpec(key=FieldKey(["x"]))],
+            ),
+        ):
+            pass
+
+        # Add an external feature
+        external_spec = FeatureSpec(
+            key=FeatureKey(["test", "external_based"]),
+            id_columns=["id"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {"type": "string"}}},
+            project="external-proj",
+        )
+        graph.add_feature_definition(external_def)
+
+        # Both should be retrievable
+        class_def = graph.get_feature_definition(["test", "class_based"])
+        ext_def = graph.get_feature_definition(["test", "external_based"])
+
+        assert class_def.is_external is False
+        assert ext_def.is_external is True
+
+        # Both should appear in list_features
+        all_keys = graph.list_features(only_current_project=False)
+        assert FeatureKey(["test", "class_based"]) in all_keys
+        assert FeatureKey(["test", "external_based"]) in all_keys
+
+    def test_external_definition_in_topological_sort(self, graph: FeatureGraph):
+        """External definitions participate in topological sorting."""
+
+        # Add two external features (no dependencies between them)
+        for name in ["alpha", "beta"]:
+            spec = FeatureSpec(
+                key=FeatureKey(["topo", name]),
+                id_columns=["id"],
+            )
+            definition = FeatureDefinition.external(
+                spec=spec,
+                feature_schema={"type": "object", "properties": {"id": {"type": "string"}}},
+                project="topo-proj",
+            )
+            graph.add_feature_definition(definition)
+
+        sorted_keys = graph.topological_sort_features()
+
+        # Both should be in sorted result in alphabetical order (alpha before beta)
+        assert len(sorted_keys) == 2
+        alpha_idx = sorted_keys.index(FeatureKey(["topo", "alpha"]))
+        beta_idx = sorted_keys.index(FeatureKey(["topo", "beta"]))
+        assert alpha_idx < beta_idx

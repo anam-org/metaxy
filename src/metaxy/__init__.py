@@ -1,4 +1,7 @@
+from collections.abc import Sequence
 from pathlib import Path
+
+import narwhals as nw
 
 from metaxy._decorators import public
 from metaxy._version import __version__
@@ -136,6 +139,63 @@ def init_metaxy(
     return config
 
 
+@public
+def load_feature_definitions(
+    store: MetadataStore,
+    *,
+    projects: str | list[str] | None = None,
+    filters: Sequence[nw.Expr] | None = None,
+) -> list[FeatureDefinition]:
+    """Load feature definitions from a metadata store into the active graph.
+
+    Loads [`FeatureDefinition`][metaxy.FeatureDefinition] objects from the metadata store
+    without requiring the original Python feature classes to be importable.
+
+    This enables depending on features from external projects or historical snapshots where
+    the source code is not available at runtime.
+
+    Args:
+        store: Metadata store to load from. Will be opened automatically if not already open.
+        projects: Project(s) to load features from. If not provided, loads from all projects.
+        filters: Narwhals expressions to filter the feature_versions table. Applied after
+            project filtering. Available columns: `project`, `feature_key`,
+            `metaxy_feature_version`, `metaxy_definition_version`, `recorded_at`,
+            `feature_spec`, `feature_schema`, `feature_class_path`,
+            `metaxy_snapshot_version`, `tags`, `deleted_at`.
+
+    Returns:
+        List of loaded FeatureDefinition objects. Empty if no features found.
+
+    Note:
+        Features loaded this way have their `feature_schema` preserved from when they
+        were originally saved, but the Pydantic model class is not available. Operations
+        requiring the actual Python class (like schema extraction or model validation)
+        will not work.
+
+    Example:
+        ```python
+        import metaxy as mx
+        import narwhals as nw
+
+        # Load all features from latest snapshots into active graph
+        definitions = mx.load_feature_definitions(store)
+
+        # Load from specific project into a custom graph
+        with mx.FeatureGraph().use():
+            definitions = mx.load_feature_definitions(store, projects="external-project")
+
+        # Load specific features by key
+        definitions = mx.load_feature_definitions(
+            store,
+            filters=[nw.col("feature_key").is_in(["my/feature", "other/feature"])],
+        )
+        ```
+    """
+    with store:
+        storage = SystemTableStorage(store)
+        return storage.load_feature_definitions(projects=projects, filters=filters)
+
+
 __all__ = [
     "BatchedMetadataWriter",
     "BaseFeature",
@@ -181,6 +241,7 @@ __all__ = [
     "MetaxyConfig",
     "StoreConfig",
     "init_metaxy",
+    "load_feature_definitions",
     "IDColumns",
     "HashAlgorithm",
     "LineageRelationship",

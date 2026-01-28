@@ -552,18 +552,12 @@ class FeatureGraph:
                     f"All snapshots must include: {required_fields}"
                 )
 
-            # Parse FeatureSpec
-            spec = FeatureSpec.model_validate(feature_data["feature_spec"])
-
-            # Create FeatureDefinition with required fields
-            definition = FeatureDefinition(
-                spec=spec,
+            definition = FeatureDefinition.from_stored_data(
+                feature_spec=feature_data["feature_spec"],
                 feature_schema=feature_data["feature_schema"],
                 feature_class_path=feature_data["feature_class_path"],
                 project=feature_data["project"],
             )
-
-            # Add to graph
             graph.add_feature_definition(definition)
 
         return graph
