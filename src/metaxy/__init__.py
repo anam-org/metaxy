@@ -28,6 +28,7 @@ from metaxy.models.feature import (
     get_feature_by_key,
     graph,
 )
+from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.feature_spec import (
     FeatureDep,
     FeatureSpec,
@@ -122,6 +123,7 @@ def init_metaxy(
 __all__ = [
     "BatchedMetadataWriter",
     "BaseFeature",
+    "FeatureDefinition",
     "FeatureGraph",
     "graph",
     "FeatureSpec",
