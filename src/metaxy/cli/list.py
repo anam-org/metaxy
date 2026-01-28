@@ -48,7 +48,6 @@ def features(
         $ metaxy list features --verbose
         $ metaxy list features --format json
     """
-    from metaxy import get_feature_by_key
     from metaxy.cli.context import AppContext
     from metaxy.models.plan import FQFieldKey
 
@@ -58,18 +57,18 @@ def features(
     # Collect feature data
     features_data: list[dict[str, Any]] = []
 
-    for feature_key, feature_spec in graph.feature_specs_by_key.items():
-        feature_cls = get_feature_by_key(feature_key)
-        if context.project and feature_cls.metaxy_project() != context.project:
+    for feature_key, definition in graph.feature_definitions_by_key.items():
+        if context.project and definition.project != context.project:
             continue
 
+        feature_spec = definition.spec
         version = graph.get_feature_version(feature_key)
 
         # Determine if it's a root feature (no deps)
         is_root = not feature_spec.deps
 
-        # Get import path (module.ClassName)
-        import_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
+        # Get import path from definition
+        import_path = definition.feature_class_path
 
         # Get the feature plan for resolved field dependencies
         feature_plan = graph.get_feature_plan(feature_key) if verbose else None
@@ -105,7 +104,7 @@ def features(
             "key": feature_key.to_string(),
             "version": version,
             "is_root": is_root,
-            "project": feature_cls.metaxy_project(),
+            "project": definition.project,
             "import_path": import_path,
             "field_count": len(fields_info),
             "fields": fields_info,

@@ -181,7 +181,6 @@ class DataVersionReconciliation(BaseOperation):
         feature_key_obj = FeatureKey(feature_key.split("/"))
         feature_key_str = feature_key_obj.to_string()
         graph = FeatureGraph.get_active()
-        feature_cls = graph.features_by_key[feature_key_obj]
 
         # 1. Verify feature has upstream dependencies
         plan = graph.get_feature_plan(feature_key_obj)
@@ -254,7 +253,7 @@ class DataVersionReconciliation(BaseOperation):
         # 3. Load existing metadata with old feature_version
         try:
             existing_metadata = store.read_metadata(
-                feature_cls,
+                feature_key_obj,
                 current_only=False,
                 filters=[nw.col("metaxy_feature_version") == from_feature_version],
                 allow_fallback=False,
@@ -287,7 +286,7 @@ class DataVersionReconciliation(BaseOperation):
 
         # 5. Use resolve_update to calculate field_provenance based on current upstream
         # Don't pass samples - let resolve_update auto-load upstream and calculate provenance_by_field
-        diff_result = store.resolve_update(feature_cls)
+        diff_result = store.resolve_update(feature_key_obj)
 
         # Convert to Polars for the join to avoid cross-backend issues
         sample_metadata_pl = nw.from_native(sample_metadata.to_native()).to_polars()
@@ -313,7 +312,7 @@ class DataVersionReconciliation(BaseOperation):
         )
 
         with allow_feature_version_override():
-            store.write_metadata(feature_cls, df_to_write_nw)
+            store.write_metadata(feature_key_obj, df_to_write_nw)
 
         return len(df_to_write)
 
@@ -375,12 +374,10 @@ class MetadataBackfill(BaseOperation, ABC):
                     return len(external_df)
 
                 # Get field provenance from Metaxy
-                graph = FeatureGraph.get_active()
                 feature_key_obj = FeatureKey(feature_key.split("/"))
-                feature_cls = graph.features_by_key[feature_key_obj]
 
                 diff = store.resolve_update(
-                    feature_cls,
+                    feature_key_obj,
                     samples=external_df.select(["sample_uid"])
                 )
 
@@ -388,7 +385,7 @@ class MetadataBackfill(BaseOperation, ABC):
                 to_write = external_df.join(diff.added, on="sample_uid", how="inner")
 
                 # Write
-                store.write_metadata(feature_cls, to_write)
+                store.write_metadata(feature_key_obj, to_write)
                 return len(to_write)
 
     Example YAML:

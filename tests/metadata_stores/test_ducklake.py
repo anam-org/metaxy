@@ -359,9 +359,9 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
                 features_list = graph.list_features()
                 assert len(features_list) == 3
                 feature_keys = {fk.to_string() for fk in features_list}
-                assert upstream_a.spec().key.to_string() in feature_keys
-                assert upstream_b.spec().key.to_string() in feature_keys
-                assert downstream.spec().key.to_string() in feature_keys
+                assert upstream_a.spec.key.to_string() in feature_keys
+                assert upstream_b.spec.key.to_string() in feature_keys
+                assert downstream.spec.key.to_string() in feature_keys
 
                 # Test 4: Update metadata (append-only write)
                 # Metaxy uses immutable, append-only metadata storage

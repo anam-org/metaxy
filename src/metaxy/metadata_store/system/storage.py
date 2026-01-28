@@ -28,7 +28,7 @@ from metaxy.metadata_store.system.events import (
 from metaxy.metadata_store.system.keys import EVENTS_KEY
 from metaxy.metadata_store.system.models import POLARS_SCHEMAS, FeatureVersionsModel
 from metaxy.models.constants import (
-    METAXY_FULL_DEFINITION_VERSION,
+    METAXY_DEFINITION_VERSION,
     METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.models.feature import FeatureGraph
@@ -565,26 +565,15 @@ class SystemTableStorage:
 
         # Initialize to_push and already_pushed
         to_push = current_snapshot  # Will be updated if snapshot already exists
-        already_pushed: bool
+        already_pushed = len(latest_pushed_snapshot) != 0
 
-        if len(latest_pushed_snapshot) != 0:
-            # this snapshot_version HAS been previously pushed
-            # let's check for any differences
-
-            already_pushed = True
-        else:
-            # this snapshot_version has not been previously pushed at all
-            # we are safe to push all the features in our graph!
-            to_push = current_snapshot
-            already_pushed = False
-
-        if len(latest_pushed_snapshot) != 0:
+        if already_pushed:
             # let's identify features that have updated definitions since the last push
             # Join full current snapshot with latest pushed (keeping all columns)
             pushed_with_current = current_snapshot.join(
                 latest_pushed_snapshot.select(
                     "feature_key",
-                    pl.col(METAXY_FULL_DEFINITION_VERSION).alias(f"{METAXY_FULL_DEFINITION_VERSION}_pushed"),
+                    pl.col(METAXY_DEFINITION_VERSION).alias(f"{METAXY_DEFINITION_VERSION}_pushed"),
                 ),
                 on=["feature_key"],
                 how="left",
@@ -593,21 +582,19 @@ class SystemTableStorage:
             to_push = pl.concat(
                 [
                     # these are records that for some reason have not been pushed previously
-                    pushed_with_current.filter(pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed").is_null()),
+                    pushed_with_current.filter(pl.col(f"{METAXY_DEFINITION_VERSION}_pushed").is_null()),
                     # these are the records with actual changes
-                    pushed_with_current.filter(pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed").is_not_null()).filter(
-                        pl.col(METAXY_FULL_DEFINITION_VERSION) != pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed")
+                    pushed_with_current.filter(pl.col(f"{METAXY_DEFINITION_VERSION}_pushed").is_not_null()).filter(
+                        pl.col(METAXY_DEFINITION_VERSION) != pl.col(f"{METAXY_DEFINITION_VERSION}_pushed")
                     ),
                 ]
-            ).drop(f"{METAXY_FULL_DEFINITION_VERSION}_pushed")
+            ).drop(f"{METAXY_DEFINITION_VERSION}_pushed")
 
         if len(to_push) > 0:
             self.store.write_metadata(FEATURE_VERSIONS_KEY, to_push)
 
         # updated_features only populated when updating existing features
-        updated_features = (
-            to_push["feature_key"].to_list() if len(latest_pushed_snapshot) != 0 and len(to_push) > 0 else []
-        )
+        updated_features = to_push["feature_key"].to_list() if already_pushed and len(to_push) > 0 else []
 
         return SnapshotPushResult(
             snapshot_version=graph.snapshot_version,
@@ -653,8 +640,8 @@ class SystemTableStorage:
         # Filter the data
         lazy = sys_meta.filter(
             nw.col(METAXY_SNAPSHOT_VERSION) == snapshot_version,
-            nw.col("project") == next(iter(graph.features_by_key.values())).metaxy_project()
-            if len(graph.features_by_key) > 0
+            nw.col("project") == next(iter(graph.feature_definitions_by_key.values())).project
+            if len(graph.feature_definitions_by_key) > 0
             else "_empty_graph_",
         )
 
@@ -813,33 +800,22 @@ class SystemTableStorage:
         self,
         snapshot_version: str,
         project: str | None = None,
-        *,
-        class_path_overrides: dict[str, str] | None = None,
-        force_reload: bool = False,
     ) -> FeatureGraph:
         """Load and reconstruct a FeatureGraph from a stored snapshot.
 
-        This is a convenience method that encapsulates the pattern of:
-
-        1. Reading feature metadata for a snapshot
-
-        2. Building the snapshot data dictionary
-
-        3. Reconstructing the FeatureGraph from snapshot data
+        This method creates FeatureDefinition objects directly from the stored snapshot
+        data without any dynamic imports. The resulting graph contains all feature
+        metadata needed for operations like migrations and comparisons.
 
         Args:
             snapshot_version: The snapshot version to load
             project: Optional project name to filter by
-            class_path_overrides: Optional dict mapping feature_key to new class path
-                                  for features that have been moved/renamed
-            force_reload: If True, force reimport of feature classes even if cached
 
         Returns:
-            Reconstructed FeatureGraph
+            Reconstructed FeatureGraph with FeatureDefinition objects
 
         Raises:
             ValueError: If no features found for the snapshot version
-            ImportError: If feature classes cannot be imported at their recorded paths
 
         Note:
             The store must already be open when calling this method.
@@ -849,7 +825,7 @@ class SystemTableStorage:
             with store:
                 storage = SystemTableStorage(store)
                 graph = storage.load_graph_from_snapshot(snapshot_version="abc123", project="my_project")
-                print(f"Loaded {len(graph.features_by_key)} features")
+                print(f"Loaded {len(graph.feature_definitions_by_key)} features")
             ```
         """
         import json
@@ -872,15 +848,15 @@ class SystemTableStorage:
                 "feature_spec": json.loads(row["feature_spec"])
                 if isinstance(row["feature_spec"], str)
                 else row["feature_spec"],
-                "feature_class_path": row["feature_class_path"],
+                "feature_schema": json.loads(row["feature_schema"])
+                if isinstance(row.get("feature_schema"), str)
+                else row.get("feature_schema", {}),
+                "feature_class_path": row.get("feature_class_path", ""),
+                "project": row.get("project", ""),
                 "metaxy_feature_version": row["metaxy_feature_version"],
             }
             for row in features_df.iter_rows(named=True)
         }
 
         # Reconstruct graph from snapshot
-        return FeatureGraph.from_snapshot(
-            snapshot_data,
-            class_path_overrides=class_path_overrides,
-            force_reload=force_reload,
-        )
+        return FeatureGraph.from_snapshot(snapshot_data)

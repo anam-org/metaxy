@@ -154,14 +154,14 @@ def build_feature_event_tags(feature: mx.CoercibleToFeatureKey) -> dict[str, str
           truncated to 63 characters (Dagster limit).
     """
     feature_key = mx.coerce_to_feature_key(feature)
-    feature_cls = mx.get_feature_by_key(feature_key)
-    feature_spec = feature_cls.spec()
+    feature_def = mx.get_feature_by_key(feature_key)
+    feature_version = mx.current_graph().get_feature_version(feature_key)
     return {
         # Use table_name format since Dagster tags don't allow '/' in values
         DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.table_name,
         # Truncate version hashes to 63 chars (Dagster tag value limit)
-        DAGSTER_METAXY_FEATURE_VERSION_TAG_KEY: feature_cls.feature_version()[:_DAGSTER_TAG_VALUE_MAX_LENGTH],
-        DAGSTER_METAXY_FEATURE_CODE_VERSION_TAG_KEY: feature_spec.code_version[:_DAGSTER_TAG_VALUE_MAX_LENGTH],
+        DAGSTER_METAXY_FEATURE_VERSION_TAG_KEY: feature_version[:_DAGSTER_TAG_VALUE_MAX_LENGTH],
+        DAGSTER_METAXY_FEATURE_CODE_VERSION_TAG_KEY: feature_def.spec.code_version[:_DAGSTER_TAG_VALUE_MAX_LENGTH],
     }
 
 
@@ -420,14 +420,15 @@ def build_feature_info_metadata(
         ```
     """
     feature_key = mx.coerce_to_feature_key(feature)
-    feature_cls = mx.get_feature_by_key(feature_key)
+    feature_def = mx.get_feature_by_key(feature_key)
+    feature_version = mx.current_graph().get_feature_version(feature_key)
 
     return {
         "feature": {
-            "project": feature_cls.metaxy_project(),
-            "spec": feature_cls.spec().model_dump(mode="json"),
-            "version": feature_cls.feature_version(),
-            "type": f"{feature_cls.__module__}.{feature_cls.__name__}",
+            "project": feature_def.project,
+            "spec": feature_def.spec.model_dump(mode="json"),
+            "version": feature_version,
+            "type": feature_def.feature_class_path,
         },
         "metaxy": {
             "version": mx.__version__,
@@ -549,8 +550,8 @@ def build_runtime_feature_metadata(
             metadata["dagster/uri"] = dg.MetadataValue.path(store_metadata["uri"])
 
         # Build table preview (from partition-filtered data)
-        feature_cls = mx.get_feature_by_key(feature_key)
-        schema = build_column_schema(feature_cls)
+        feature_def = mx.get_feature_by_key(feature_key)
+        schema = build_column_schema(feature_def)
         metadata["dagster/table"] = build_table_preview_metadata(lazy_df, schema)
 
         return metadata, stats

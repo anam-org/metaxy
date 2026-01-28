@@ -8,16 +8,28 @@ from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
 
-def test_feature_definition_from_feature_class(test_graph, test_features):
+def test_feature_definition_from_feature_class(graph):
     """Test creating FeatureDefinition from a Feature class."""
-    feature_cls = test_features["UpstreamFeatureA"]
+    from metaxy_testing.models import SampleFeatureSpec
 
-    definition = FeatureDefinition.from_feature_class(feature_cls)
+    from metaxy import BaseFeature
 
-    assert definition.spec == feature_cls.spec()
-    assert definition.feature_schema == feature_cls.model_json_schema()
-    assert definition.feature_class_path.endswith(feature_cls.__name__)
-    assert definition.project == feature_cls.metaxy_project()
+    # Create a feature class directly for this test
+    class TestFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["test", "from_class"]),
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    definition = FeatureDefinition.from_feature_class(TestFeature)
+
+    assert definition.spec == TestFeature.spec()
+    assert definition.feature_schema == TestFeature.model_json_schema()
+    assert definition.feature_class_path.endswith(TestFeature.__name__)
+    assert definition.project == TestFeature.metaxy_project()
     assert definition.feature_definition_version  # non-empty hash
 
 
@@ -155,3 +167,77 @@ def test_feature_definition_is_frozen():
 
     with pytest.raises(Exception):  # Pydantic's ValidationError for frozen models
         definition.feature_class_path = "other.path"
+
+
+class TestGetFeatureByKey:
+    """Tests for the get_feature_by_key public function."""
+
+    def test_get_feature_by_key_returns_definition(self, graph):
+        """Test that get_feature_by_key returns a FeatureDefinition."""
+        from metaxy_testing.models import SampleFeatureSpec
+
+        import metaxy as mx
+
+        class TestFeature(
+            mx.BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "get_by_key"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        result = mx.get_feature_by_key(FeatureKey(["test", "get_by_key"]))
+
+        assert isinstance(result, FeatureDefinition)
+        assert result.spec == TestFeature.spec()
+        assert result.feature_class_path.endswith("TestFeature")
+
+    def test_get_feature_by_key_coerces_list(self, graph):
+        """Test that get_feature_by_key accepts list of strings."""
+        from metaxy_testing.models import SampleFeatureSpec
+
+        import metaxy as mx
+
+        class AnotherFeature(
+            mx.BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "coerce_list"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Pass list instead of FeatureKey
+        result = mx.get_feature_by_key(["test", "coerce_list"])
+
+        assert isinstance(result, FeatureDefinition)
+        assert result.key == FeatureKey(["test", "coerce_list"])
+
+    def test_get_feature_by_key_coerces_string(self, graph):
+        """Test that get_feature_by_key accepts slashed string."""
+        from metaxy_testing.models import SampleFeatureSpec
+
+        import metaxy as mx
+
+        class StringFeature(
+            mx.BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "coerce_string"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Pass slashed string instead of FeatureKey
+        result = mx.get_feature_by_key("test/coerce_string")
+
+        assert isinstance(result, FeatureDefinition)
+        assert result.key == FeatureKey(["test", "coerce_string"])
+
+    def test_get_feature_by_key_raises_on_missing(self, graph):
+        """Test that get_feature_by_key raises KeyError for missing feature."""
+        import metaxy as mx
+
+        with pytest.raises(KeyError, match="No feature with key"):
+            mx.get_feature_by_key(FeatureKey(["nonexistent", "feature"]))

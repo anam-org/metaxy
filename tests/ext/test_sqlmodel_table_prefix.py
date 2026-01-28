@@ -51,11 +51,9 @@ def test_filter_feature_sqlmodel_metadata_applies_table_prefix():
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
+            __metaxy_project__ = "test_project"
             id: str = Field(primary_key=True)
             value: str
-
-        # Override project to match config
-        TestFeature.__metaxy_project__ = "test_project"
 
         store = config.get_store(expected_type=IbisMetadataStore)
 
@@ -98,11 +96,9 @@ def test_filter_feature_sqlmodel_metadata_no_prefix():
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
+            __metaxy_project__ = "test_project"
             id: str = Field(primary_key=True)
             value: str
-
-        # Override project to match config
-        TestFeature2.__metaxy_project__ = "test_project"
 
         store = config.get_store(expected_type=IbisMetadataStore)
 
@@ -150,11 +146,9 @@ def test_filter_feature_sqlmodel_metadata_different_prefixes():
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
+            __metaxy_project__ = "test_project"
             id: str = Field(primary_key=True)
             data: str
-
-        # Override project to match config
-        MultiStoreFeature.__metaxy_project__ = "test_project"
 
         # Get metadata for store_a
         store_a = config.get_store("store_a", expected_type=IbisMetadataStore)
@@ -206,11 +200,9 @@ def test_filter_feature_sqlmodel_metadata_with_project_filtering_and_prefix():
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
+            __metaxy_project__ = "test_project"
             id: str = Field(primary_key=True)
             value: str
-
-        # Override project to match config
-        Feature1.__metaxy_project__ = "test_project"
 
         class Feature2(
             BaseSQLModelFeature,
@@ -221,11 +213,9 @@ def test_filter_feature_sqlmodel_metadata_with_project_filtering_and_prefix():
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
+            __metaxy_project__ = "test_project"
             id: str = Field(primary_key=True)
             data: str
-
-        # Override project to match config
-        Feature2.__metaxy_project__ = "test_project"
 
         store = config.get_store(expected_type=IbisMetadataStore)
 
@@ -308,11 +298,9 @@ class TestProtocolParameter:
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
             ):
+                __metaxy_project__ = "test_project"
                 id: str = Field(primary_key=True)
                 value: str
-
-            # Override project to match config
-            ProtocolTestFeature.__metaxy_project__ = "test_project"
 
             store = config.get_store(expected_type=IbisMetadataStore)
 
@@ -388,11 +376,9 @@ class TestProtocolParameter:
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
             ):
+                __metaxy_project__ = "test_project"
                 id: str = Field(primary_key=True)
                 value: str
-
-            # Override project to match config
-            PrefixProtocolFeature.__metaxy_project__ = "test_project"
 
             store = config.get_store(expected_type=IbisMetadataStore)
 

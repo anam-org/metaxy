@@ -16,9 +16,8 @@ from metaxy.metadata_store.system import SystemTableStorage
 # Initialize metaxy (loads config and discovers features)
 config = mx.init_metaxy()
 
-# feature showcase: get feature classes by key
+# feature showcase: get feature definitions by key
 parent_key = mx.FeatureKey(["examples", "parent"])
-ParentFeature = mx.get_feature_by_key(parent_key)
 
 with config.get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
@@ -30,11 +29,10 @@ with config.get_store() as store:
 
     # Check if metadata already exists for current feature_version (avoid duplicates)
     try:
-        existing = store.read_metadata(ParentFeature, current_only=True)
+        existing = store.read_metadata(parent_key, current_only=True)
+        feature_version = mx.current_graph().get_feature_version(parent_key)
         if existing.collect().shape[0] > 0:
-            print(
-                f"Metadata already exists for feature {parent_key} (feature_version: {ParentFeature.feature_version()[:16]}...)"
-            )
+            print(f"Metadata already exists for feature {parent_key} (feature_version: {feature_version[:16]}...)")
             print("Skipping write to avoid duplicates")
             exit(0)
     except Exception:
@@ -57,6 +55,6 @@ with config.get_store() as store:
             "metaxy_provenance_by_field": pl.Struct({"embeddings": pl.Utf8}),
         },
     )
-    store.write_metadata(ParentFeature, parent_metadata)
+    store.write_metadata(parent_key, parent_metadata)
 
     print(f"Written {len(parent_metadata)} rows for feature {parent_key}")

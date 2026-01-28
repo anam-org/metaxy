@@ -42,13 +42,13 @@ class TestAddFeature:
             pass
 
         # Feature is already registered via metaclass
-        assert MyFeature.spec().key in graph.features_by_key
+        assert MyFeature.spec().key in graph.feature_definitions_by_key
 
         # Re-adding the same class should not raise an error
         graph.add_feature(MyFeature)
 
         # Should still be registered
-        assert graph.features_by_key[MyFeature.spec().key] is MyFeature
+        assert graph.feature_definitions_by_key[MyFeature.spec().key].key == MyFeature.spec().key
 
     def test_add_feature_different_class_same_key_raises_during_definition(self, graph: FeatureGraph):
         """Test that defining a different class with the same key raises ValueError."""

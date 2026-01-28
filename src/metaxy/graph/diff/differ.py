@@ -68,7 +68,7 @@ class SnapshotResolver:
                 "Cannot resolve 'current': no active graph provided. Ensure features are loaded before using 'current'."
             )
 
-        if len(graph.features_by_key) == 0:
+        if len(graph.feature_definitions_by_key) == 0:
             raise ValueError(
                 "Cannot resolve 'current': active graph is empty. Ensure features are loaded before using 'current'."
             )
@@ -203,8 +203,8 @@ class GraphDiffer:
 
             # Get tracking versions for migration detection
             # Use tracking version if available (new system), otherwise fall back to feature_version
-            tracking_version1 = feature1.get("metaxy_full_definition_version", version1)
-            tracking_version2 = feature2.get("metaxy_full_definition_version", version2)
+            tracking_version1 = feature1.get("metaxy_definition_version", version1)
+            tracking_version2 = feature2.get("metaxy_definition_version", version2)
 
             # Check if feature tracking version changed (indicates migration needed)
             if tracking_version1 != tracking_version2:
@@ -575,8 +575,6 @@ class GraphDiffer:
         store: MetadataStore,
         snapshot_version: str,
         project: str | None = None,
-        class_path_overrides: dict[str, str] | None = None,
-        force_reload: bool = False,
     ) -> Mapping[str, Mapping[str, Any]]:
         """Load snapshot data from store.
 
@@ -584,11 +582,6 @@ class GraphDiffer:
             store: Metadata store to query
             snapshot_version: Snapshot version to load
             project: Optional project name to filter by (None means all projects)
-            class_path_overrides: Optional dict mapping feature_key to new class path
-                                  for features that have been moved/renamed
-            force_reload: If True, force reimport of feature modules from disk.
-                         Use this when loading multiple snapshots that share
-                         the same class paths.
 
         Returns:
             Dict mapping feature_key (string) -> {feature_version, feature_spec, fields}
@@ -602,36 +595,29 @@ class GraphDiffer:
         # Auto-open store if not already open
         if not store._is_open:
             with store.open("read"):
-                return self.load_snapshot_data(store, snapshot_version, project, class_path_overrides, force_reload)
+                return self.load_snapshot_data(store, snapshot_version, project)
 
         storage = SystemTableStorage(store)
 
-        # Reconstruct the graph from the snapshot - this imports the Feature classes
-        # and gives us access to proper field version computation
+        # Reconstruct the graph from the snapshot using FeatureDefinition objects
         graph = storage.load_graph_from_snapshot(
             snapshot_version=snapshot_version,
             project=project,
-            class_path_overrides=class_path_overrides,
-            force_reload=force_reload,
         )
 
         # Build snapshot data using the reconstructed graph
         snapshot_data: dict[str, dict] = {}
 
-        for feature_key, spec in graph.all_specs_by_key.items():
+        for feature_key, definition in graph.feature_definitions_by_key.items():
             feature_key_str = feature_key.to_string()
             feature_version = graph.get_feature_version(feature_key)
             field_versions = graph.get_feature_version_by_field(feature_key)
 
-            # Get full definition version from the feature class
-            feature_cls = graph.features_by_key.get(feature_key)
-            full_definition_version = feature_cls.full_definition_version() if feature_cls else feature_version
-
             snapshot_data[feature_key_str] = {
                 "metaxy_feature_version": feature_version,
                 "fields": field_versions,
-                "feature_spec": spec.model_dump(mode="json"),
-                "metaxy_full_definition_version": full_definition_version,
+                "feature_spec": definition.spec.model_dump(mode="json"),
+                "metaxy_definition_version": definition.feature_definition_version,
             }
 
         return snapshot_data

@@ -12,16 +12,16 @@
 # ---
 # name: test_graph_contains_features_from_multiple_projects
   dict({
-    'project_a/feature1': 'project_a',
-    'project_a/feature2': 'project_a',
-    'project_b/feature1': 'project_b',
-    'project_b/feature2': 'project_b',
+    'project_a/feature1': 'test_multi_project_graph',
+    'project_a/feature2': 'test_multi_project_graph',
+    'project_b/feature1': 'test_multi_project_graph',
+    'project_b/feature2': 'test_multi_project_graph',
   })
 # ---
 # name: test_graph_from_snapshot_preserves_projects
   dict({
-    'restore/feature_a': 'project_a',
-    'restore/feature_b': 'project_b',
+    'restore/feature_a': 'test_multi_project_graph',
+    'restore/feature_b': 'test_multi_project_graph',
   })
 # ---
 # name: test_graph_snapshot_includes_all_projects
