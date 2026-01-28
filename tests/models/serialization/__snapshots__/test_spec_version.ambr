@@ -1,17 +1,17 @@
 # serializer version: 1
+# name: test_feature_definition_version_recorded_in_metadata_store
+  dict({
+    'feature_key': 'recorded/feature',
+    'metaxy_definition_version': 'cc0931a370fae59482c6a4d403e4883706e04dc58a9985fd11e471b62c843e8c',
+    'metaxy_feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
+    'metaxy_snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
+  })
+# ---
 # name: test_feature_spec_version_deterministic
   'a1324dfb386fb264f3dd53c841672277c34177558418f20a0aa8ee007e73c06b'
 # ---
 # name: test_feature_spec_version_includes_all_properties
   '7758641505115c2ea87c4d136c4dacbb183db886aa9290c633bf2c90babe85a9'
-# ---
-# name: test_feature_spec_version_recorded_in_metadata_store
-  dict({
-    'feature_key': 'recorded/feature',
-    'metaxy_feature_spec_version': '4ea1c65aa5270149fa2625b8f4e5df5c1bb760635541c634dab843f3d665be7e',
-    'metaxy_feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
-    'metaxy_snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
-  })
 # ---
 # name: test_feature_spec_version_stored_in_snapshot
   dict({
@@ -145,7 +145,6 @@
       }),
     }),
     'metaxy_definition_version': '37fc36abe2144f961b43512b6016efac279bead9fcbb26c30ca2f467534927f1',
-    'metaxy_feature_spec_version': '26736b45eeb37186ef6678426b85f3265cdba9eb5b782a8f41496123d5649cd4',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
     'project': 'test_spec_version',
   })
