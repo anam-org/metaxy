@@ -123,6 +123,8 @@ This is the Metaxy project - a feature metadata management system. Key testing p
 
 ## Workflow
 
+**Before writing or reviewing any test code, invoke the `/dignified-python` skill** to load project-specific Python coding standards (LBYL patterns, modern type syntax, pathlib usage, etc.).
+
 When creating or fixing tests:
 
 1. **Understand the requirement**: Clarify what behavior needs testing

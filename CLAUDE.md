@@ -4,6 +4,10 @@
 
 Start each task with the planner agent. Use python-dev to write code, python-test-engineer to write tests. Iterate until qa is satisfied.
 
+## Python Code Standards
+
+**Always invoke the `/dignified-python` skill before writing or reviewing Python code.** This skill enforces LBYL exception handling, modern type syntax, pathlib usage, and other project standards.
+
 ## Project Status
 
 **Early Development - No Stable API**

@@ -94,6 +94,8 @@ When working on code, you must:
 
 ## Your Workflow
 
+**Before writing or reviewing any Python code, invoke the `/dignified-python` skill** to load project-specific Python coding standards (LBYL patterns, modern type syntax, pathlib usage, etc.).
+
 When writing new code:
 
 1. Understand the requirements thoroughly
