@@ -172,8 +172,6 @@ class MetaxyDatasource(Datasource):
         Returns:
             List containing a single ReadTask that may return multiple blocks.
         """
-        # TODO: implement parallelism support via collect_batches to split data into multiple tasks
-
         num_rows = self._get_row_count()
 
         # Capture self for the closure

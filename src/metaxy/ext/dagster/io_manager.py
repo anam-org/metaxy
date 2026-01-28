@@ -127,8 +127,6 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
 
             # Only add input metadata if we have exactly one partition key
             # (add_input_metadata internally uses asset_partition_key which fails with multiple)
-            # TODO: raise an issue in Dagter
-            # or implement our own observation logging for multiple partition keys
             has_single_partition = context.has_asset_partitions and len(list(context.asset_partition_keys)) == 1
             if input_metadata and (not context.has_asset_partitions or has_single_partition):
                 context.add_input_metadata(input_metadata, description="Metadata Store Info")

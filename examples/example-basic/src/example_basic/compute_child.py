@@ -21,7 +21,6 @@ child_def = mx.get_feature_by_key(child_key)
 parent_key = mx.FeatureKey(["examples", "parent"])
 
 with config.get_store() as store:
-    # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
     result = SystemTableStorage(store).push_graph_snapshot()
 
     snapshot_version = result.snapshot_version
@@ -33,7 +32,6 @@ with config.get_store() as store:
     print(f"  feature_version: {mx.current_graph().get_feature_version(child_key)}")
 
     ids_lazy = store.read_metadata(parent_key, columns=["sample_uid"])
-    # Materialize for now (samples parameter currently expects eager frames)
     ids = ids_lazy.collect().to_polars()
 
     diff = store.resolve_update(child_key)

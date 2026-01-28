@@ -236,11 +236,6 @@ class RootFeatureCases:
         return MultiFieldRoot
 
 
-# Removed: StoreCases with hash algorithm parametrization
-# Removed: TruncationCases and metaxy_config fixture
-# Hash algorithm and truncation testing is handled in test_hash_algorithms.py
-
-
 # ============= TEST: ROOT FEATURES (NO UPSTREAM) =============
 
 
@@ -2612,7 +2607,6 @@ def test_aggregation_lineage_preserves_user_columns(
         added_df = increment.added.lazy().collect().to_polars()
 
         # CRITICAL: 'dataset' should be present in the result
-        # This was the bug - aggregate_strings dropped all non-aggregated columns
         assert "dataset" in added_df.columns, (
             f"Expected 'dataset' column in aggregation result. "
             f"Got columns: {added_df.columns}. "

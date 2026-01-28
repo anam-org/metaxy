@@ -20,7 +20,6 @@ config = mx.init_metaxy()
 parent_key = mx.FeatureKey(["examples", "parent"])
 
 with config.get_store() as store:
-    # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
     result = SystemTableStorage(store).push_graph_snapshot()
 
     snapshot_version = result.snapshot_version
