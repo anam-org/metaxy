@@ -505,14 +505,19 @@ class SystemTableStorage:
         # Convert to list of dicts
         return result_df.to_dicts()
 
-    def push_graph_snapshot(self, tags: dict[str, Any] | None = None) -> SnapshotPushResult:
-        """Record all features in graph with a graph snapshot version.
+    def push_graph_snapshot(
+        self,
+        *,
+        project: str | None = None,
+        tags: dict[str, Any] | None = None,
+    ) -> SnapshotPushResult:
+        """Record features for a project with a graph snapshot version.
 
         This should be called during CD (Continuous Deployment) to record what
         feature versions are being deployed. Typically invoked via `metaxy graph push`.
 
-        Records all features in the graph with the same snapshot_version, representing
-        a consistent state of the entire feature graph based on code definitions.
+        Records features for the specified project with the same snapshot_version,
+        representing a consistent state of the feature graph based on code definitions.
 
         The snapshot_version is a deterministic hash of all feature_version hashes
         in the graph, making it idempotent - calling multiple times with the
@@ -524,21 +529,53 @@ class SystemTableStorage:
         3. No changes: Snapshot exists with identical definition_versions for all features
 
         Args:
+            project: Project name to push features for. If None, uses MetaxyConfig.get().project.
+                Raises ValueError if neither is set.
             tags: Optional dictionary of custom tags to attach to the snapshot
                      (e.g., git commit SHA).
 
+        Returns:
+            SnapshotPushResult with snapshot version and list of updated features.
+
+        Raises:
+            ValueError: If no project is specified and MetaxyConfig.get().project is None.
+
         Note:
             The store must already be open when calling this method.
-
-        Returns: SnapshotPushResult
         """
-        tags = tags or {}
+        from metaxy.config import MetaxyConfig
 
+        tags = tags or {}
         graph = FeatureGraph.get_active()
+        current_snapshot_dict = graph.to_snapshot()
+
+        if not current_snapshot_dict:
+            raise ValueError("No features in active graph to push.")
+
+        # Resolve project: argument > infer from graph (if single project) > config
+        if project is None:
+            # Try to infer from graph - only works if all features share the same project
+            projects_in_graph = {v["project"] for v in current_snapshot_dict.values()}
+            if len(projects_in_graph) == 1:
+                project = projects_in_graph.pop()
+            else:
+                # Multiple projects in graph - try config
+                project = MetaxyConfig.get().project
+                if project is None:
+                    raise ValueError(
+                        f"Project is required for push_graph_snapshot. Graph contains features from "
+                        f"multiple projects: {sorted(projects_in_graph)}. "
+                        f"Set 'project' in metaxy.toml or pass project argument."
+                    )
+
+        # Filter to only features for this project
+        project_features = {k: v for k, v in current_snapshot_dict.items() if v["project"] == project}
+
+        if not project_features:
+            raise ValueError(f"No features found for project '{project}' in the active graph.")
 
         # Check if this exact snapshot already exists for this project
-        latest_pushed_snapshot = self._read_latest_snapshot_data(graph.snapshot_version)
-        current_snapshot_dict = graph.to_snapshot()
+        latest_pushed_snapshot = self._read_latest_snapshot_data(graph.snapshot_version, project)
 
         # Convert to DataFrame - need to serialize feature_spec dict to JSON string
         # and add metaxy_snapshot_version and recorded_at columns
@@ -559,7 +596,7 @@ class SystemTableStorage:
                         "tags": json.dumps(tags),
                     }
                 ).to_polars()
-                for k, v in current_snapshot_dict.items()
+                for k, v in project_features.items()
             ]
         )
 
@@ -623,26 +660,29 @@ class SystemTableStorage:
     def _read_latest_snapshot_data(
         self,
         snapshot_version: str,
+        project: str,
     ) -> pl.DataFrame:
-        """Read the latest snapshot data for a given snapshot version.
+        """Read the latest snapshot data for a given snapshot version and project.
 
-        The same snapshot version may include multiple features as their no-topological metadata such as Pydantic fields or spec.metadata/tags change.
-        This method retrieves the latest feature data for each feature pushed to the metadata store.
+        The same snapshot version may include multiple features as their non-topological
+        metadata such as Pydantic fields or spec.metadata/tags change. This method
+        retrieves the latest feature data for each feature pushed to the metadata store.
+
+        Args:
+            snapshot_version: The snapshot version to query.
+            project: The project to filter by.
 
         Returns:
-            Polars DataFrame (materialized) with the latest data. Empty if table doesn't exist or snapshot not found.
+            Polars DataFrame (materialized) with the latest data. Empty if table
+            doesn't exist or snapshot not found.
         """
-        graph = FeatureGraph.get_active()
-
         # Read system metadata
         sys_meta = self._read_system_metadata(FEATURE_VERSIONS_KEY)
 
         # Filter the data
         lazy = sys_meta.filter(
             nw.col(METAXY_SNAPSHOT_VERSION) == snapshot_version,
-            nw.col("project") == next(iter(graph.feature_definitions_by_key.values())).project
-            if len(graph.feature_definitions_by_key) > 0
-            else "_empty_graph_",
+            nw.col("project") == project,
         )
 
         # Deduplicate using Polars (collect and use native operations)

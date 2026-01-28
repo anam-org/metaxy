@@ -132,7 +132,7 @@ def generate_migration(
     if to_snapshot_version is None:
         # Default mode: record current active graph and use its snapshot
         # This ensures the to_snapshot is available in the store for comparison
-        snapshot_result = SystemTableStorage(store).push_graph_snapshot()
+        snapshot_result = SystemTableStorage(store).push_graph_snapshot(project=project)
         to_snapshot_version = snapshot_result.snapshot_version
         was_already_pushed = snapshot_result.already_pushed
         to_graph = FeatureGraph.get_active()

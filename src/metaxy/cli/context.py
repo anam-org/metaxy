@@ -113,8 +113,9 @@ class AppContext:
         if self.cli_project or self.all_projects:
             from metaxy.cli.console import console
 
+            project_msg = f": {self.config.project}" if self.config.project else " (not configured)"
             console.print(
-                f"[red]Error:[/red] This command can only be used with the project from Metaxy configuration: {self.config.project}.",
+                f"[red]Error:[/red] This command can only be used with the project from Metaxy configuration{project_msg}.",
                 style="bold",
             )
             raise SystemExit(1)
@@ -135,13 +136,13 @@ class AppContext:
         """Get the project for commands that require a specific project.
 
         This method ensures we have a valid project string, raising an error
-        if all_projects is True (which would make project None).
+        if all_projects is True or if no project is configured.
 
         Returns:
             Project name (never None)
 
         Raises:
-            SystemExit: If all_projects is True (project would be None)
+            SystemExit: If all_projects is True or no project is available
         """
         if self.all_projects:
             from metaxy.cli.console import console
@@ -152,5 +153,13 @@ class AppContext:
             )
             raise SystemExit(1)
 
-        # Return the project (either from CLI or config, guaranteed to have a default)
-        return self.cli_project or self.config.project
+        project = self.cli_project or self.config.project
+        if project is None:
+            from metaxy.cli.console import console
+
+            console.print(
+                "[red]Error:[/red] This command requires a project. Set 'project' in metaxy.toml or use --project flag.",
+                style="bold",
+            )
+            raise SystemExit(1)
+        return project

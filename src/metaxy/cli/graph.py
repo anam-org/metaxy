@@ -46,6 +46,14 @@ def push(
     context = AppContext.get()
     context.raise_command_cannot_override_project()
 
+    # Ensure project is set for push (required to determine which features to include)
+    if context.config.project is None:
+        console.print(
+            "[red]Error:[/red] The 'project' field must be set in metaxy.toml for 'metaxy graph push'.",
+            style="bold",
+        )
+        raise SystemExit(1)
+
     metadata_store = context.get_store(store)
 
     tags = tags or {}
@@ -53,7 +61,10 @@ def push(
     assert METAXY_TAG not in tags, "`metaxy` tag is reserved for internal use"
 
     with metadata_store.open("write"):
-        result = SystemTableStorage(metadata_store).push_graph_snapshot(tags=tags)
+        result = SystemTableStorage(metadata_store).push_graph_snapshot(
+            project=context.config.project,
+            tags=tags,
+        )
 
         # Log store metadata for the system table
         from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY

@@ -145,6 +145,8 @@ def build_column_lineage(
             feature_spec = feature.spec()
         downstream_columns = set(feature.model_fields.keys())
 
+    assert feature_spec is not None
+
     if not feature_spec.deps:
         return None
 
