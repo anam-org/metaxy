@@ -14,7 +14,7 @@ from metaxy._decorators import public
 from metaxy._hashing import truncate_hash
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import FeatureSpec
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import CoercibleToFieldKey, FeatureKey, ValidatedFieldKeyAdapter
 
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
@@ -39,6 +39,7 @@ class FeatureDefinition(FrozenBaseModel):
     # Runtime-only reference to the feature class. Not serialized. Will be removed in the future once we figure out a good way to extract Pydantic fields from the serialized schema.
     _feature_class: type[BaseFeature] | None = PrivateAttr(default=None)
     _is_external: bool = PrivateAttr(default=False)
+    _provenance_by_field: dict[str, str] | None = PrivateAttr(default=None)
 
     @classmethod
     def from_feature_class(cls, feature_cls: type[BaseFeature]) -> FeatureDefinition:
@@ -100,6 +101,7 @@ class FeatureDefinition(FrozenBaseModel):
         spec: FeatureSpec,
         project: str,
         feature_schema: dict[str, Any] | None = None,
+        provenance_by_field: dict[CoercibleToFieldKey, str] | None = None,
     ) -> FeatureDefinition:
         """Create an external FeatureDefinition without a Feature class.
 
@@ -110,10 +112,19 @@ class FeatureDefinition(FrozenBaseModel):
             spec: The feature specification.
             project: The metaxy project this feature belongs to.
             feature_schema: Pydantic JSON schema dict describing the feature's fields.
+            provenance_by_field: Optional manually-specified field provenance map.
+                Use this argument to avoid providing too many upstream external features.
+                Make sure to provide the actual values from the real external feature.
 
         Returns:
             A new FeatureDefinition marked as external.
         """
+        normalized_provenance: dict[str, str] | None = None
+        if provenance_by_field is not None:
+            normalized_provenance = {
+                ValidatedFieldKeyAdapter.validate_python(k).to_string(): v for k, v in provenance_by_field.items()
+            }
+
         definition = cls(
             spec=spec,
             feature_schema=feature_schema or {},
@@ -121,6 +132,7 @@ class FeatureDefinition(FrozenBaseModel):
             project=project,
         )
         definition._is_external = True
+        definition._provenance_by_field = normalized_provenance
         return definition
 
     def _get_feature_class(self) -> type[BaseFeature]:
@@ -205,3 +217,31 @@ class FeatureDefinition(FrozenBaseModel):
     def is_external(self) -> bool:
         """Check if this is an external feature definition."""
         return self._is_external
+
+    @property
+    def provenance_by_field_override(self) -> dict[str, str]:
+        """The manually-specified field provenance map.
+
+        Raises:
+            RuntimeError: If no provenance override was set.
+        """
+        if self._provenance_by_field is None:
+            from metaxy.utils.exceptions import MetaxyInvariantViolationError
+
+            raise MetaxyInvariantViolationError(
+                f"No provenance override set for feature '{self.key}'. "
+                "Check has_provenance_override before accessing this property."
+            )
+        return self._provenance_by_field
+
+    @property
+    def has_provenance_override(self) -> bool:
+        """True if this external feature has a provenance override."""
+        if not self.is_external:
+            from metaxy.utils.exceptions import MetaxyInvariantViolationError
+
+            raise MetaxyInvariantViolationError(
+                f"Feature '{self.key}' is not an external feature. "
+                "Only external features can have provenance overrides."
+            )
+        return self._provenance_by_field is not None
