@@ -6,104 +6,83 @@ project information is properly tracked throughout the graph lifecycle.
 
 from __future__ import annotations
 
+from types import ModuleType
+
 from metaxy_testing.models import SampleFeatureSpec
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy._packaging import detect_project_from_package
 from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
 
 
-def test_graph_contains_features_from_multiple_projects(snapshot: SnapshotAssertion, graph: FeatureGraph) -> None:
+def create_feature_in_package(
+    package_name: str,
+    feature_key: list[str],
+    deps: list | None = None,
+) -> type[BaseFeature]:
+    """Create a feature class that appears to be from a specific package."""
+    spec_kwargs: dict = {
+        "key": FeatureKey(feature_key),
+        "fields": [FieldSpec(key=FieldKey(["default"]), code_version="1")],
+    }
+    if deps:
+        spec_kwargs["deps"] = deps
+
+    class TempFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(**spec_kwargs),
+    ):
+        pass
+
+    TempFeature.__module__ = package_name
+    TempFeature.__metaxy_project__ = detect_project_from_package(package_name)
+    return TempFeature
+
+
+def test_graph_contains_features_from_multiple_projects(
+    snapshot: SnapshotAssertion,
+    graph: FeatureGraph,
+    project_a_package: ModuleType,
+    project_b_package: ModuleType,
+) -> None:
     """Test that a single FeatureGraph can contain features from different projects."""
     # Create features from project_a
-    config_a = MetaxyConfig(project="project_a")
-    MetaxyConfig.set(config_a)
+    FeatureA1 = create_feature_in_package("fake_project_a_pkg", ["project_a", "feature1"])
+    FeatureA2 = create_feature_in_package("fake_project_a_pkg", ["project_a", "feature2"])
 
-    class FeatureA1(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["project_a", "feature1"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
-
-    class FeatureA2(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["project_a", "feature2"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
-
-    # Create features from project_b in the same graph
-    config_b = MetaxyConfig(project="project_b")
-    MetaxyConfig.set(config_b)
-
-    class FeatureB1(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["project_b", "feature1"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
-
-    class FeatureB2(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["project_b", "feature2"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    # Create features from project_b
+    FeatureB1 = create_feature_in_package("fake_project_b_pkg", ["project_b", "feature1"])
+    FeatureB2 = create_feature_in_package("fake_project_b_pkg", ["project_b", "feature2"])
 
     # Graph should contain all features
     assert len(graph.features_by_key) == 4
 
     # Verify projects are correct
-    assert FeatureA1.project == "project_a"
-    assert FeatureA2.project == "project_a"
-    assert FeatureB1.project == "project_b"
-    assert FeatureB2.project == "project_b"
+    assert FeatureA1.metaxy_project() == "project_a"
+    assert FeatureA2.metaxy_project() == "project_a"
+    assert FeatureB1.metaxy_project() == "project_b"
+    assert FeatureB2.metaxy_project() == "project_b"
 
     # Snapshot the graph structure
-    projects_by_feature = {key.to_string(): feat.project for key, feat in graph.features_by_key.items()}
+    projects_by_feature = {key.to_string(): feat.metaxy_project() for key, feat in graph.features_by_key.items()}
 
     assert projects_by_feature == snapshot
 
     MetaxyConfig.reset()
 
 
-def test_graph_snapshot_includes_all_projects(snapshot: SnapshotAssertion, graph: FeatureGraph) -> None:
+def test_graph_snapshot_includes_all_projects(
+    snapshot: SnapshotAssertion,
+    graph: FeatureGraph,
+    project_a_package: ModuleType,
+    project_b_package: ModuleType,
+) -> None:
     """Test that graph.to_snapshot() includes features from all projects."""
-    # Project A
-    config_a = MetaxyConfig(project="snapshot_a")
-    MetaxyConfig.set(config_a)
-
-    class FeatureA(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["feature_a"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
-
-    # Project B
-    config_b = MetaxyConfig(project="snapshot_b")
-    MetaxyConfig.set(config_b)
-
-    class FeatureB(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["feature_b"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    # Create features from both projects
+    create_feature_in_package("fake_project_a_pkg", ["feature_a"])
+    create_feature_in_package("fake_project_b_pkg", ["feature_b"])
 
     # Create snapshot
     snapshot_data = graph.to_snapshot()
@@ -119,32 +98,16 @@ def test_graph_snapshot_includes_all_projects(snapshot: SnapshotAssertion, graph
     MetaxyConfig.reset()
 
 
-def test_graph_snapshot_version_includes_all_projects(snapshot: SnapshotAssertion, graph: FeatureGraph) -> None:
+def test_graph_snapshot_version_includes_all_projects(
+    snapshot: SnapshotAssertion,
+    graph: FeatureGraph,
+    project_a_package: ModuleType,
+    project_b_package: ModuleType,
+) -> None:
     """Test that graph.snapshot_version is computed from all features regardless of project."""
     # Add features from multiple projects
-    config_a = MetaxyConfig(project="version_a")
-    MetaxyConfig.set(config_a)
-
-    class FeatureA(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["feature_a"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
-
-    config_b = MetaxyConfig(project="version_b")
-    MetaxyConfig.set(config_b)
-
-    class FeatureB(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["feature_b"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    create_feature_in_package("fake_project_a_pkg", ["feature_a"])
+    create_feature_in_package("fake_project_b_pkg", ["feature_b"])
 
     # Get snapshot version
     snapshot_version = graph.snapshot_version
@@ -176,41 +139,21 @@ def test_graph_snapshot_version_includes_all_projects(snapshot: SnapshotAssertio
     MetaxyConfig.reset()
 
 
-def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> None:
+def test_graph_from_snapshot_preserves_projects(
+    snapshot: SnapshotAssertion,
+    project_a_package: ModuleType,
+    project_b_package: ModuleType,
+) -> None:
     """Test that FeatureGraph.to_snapshot() preserves project information."""
     original_graph = FeatureGraph()
 
-    # Create features from multiple projects
-    config_a = MetaxyConfig(project="restore_a")
-    MetaxyConfig.set(config_a)
-
     with original_graph.use():
-
-        class SnapshotFeatureA(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["restore", "feature_a"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    config_b = MetaxyConfig(project="restore_b")
-    MetaxyConfig.set(config_b)
-
-    with original_graph.use():
-
-        class SnapshotFeatureB(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["restore", "feature_b"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
+        # Create features from multiple projects
+        create_feature_in_package("fake_project_a_pkg", ["restore", "feature_a"])
+        create_feature_in_package("fake_project_b_pkg", ["restore", "feature_b"])
 
     # Get original projects
-    original_projects = {key.to_string(): feat.project for key, feat in original_graph.features_by_key.items()}
+    original_projects = {key.to_string(): feat.metaxy_project() for key, feat in original_graph.features_by_key.items()}
 
     # Create snapshot
     snapshot_data = original_graph.to_snapshot()
@@ -221,9 +164,9 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
         assert "metaxy_full_definition_version" in feature_data
         # Project should match what we expect
         if "feature_a" in feature_key_str:
-            assert feature_data["project"] == "restore_a"
+            assert feature_data["project"] == "project_a"
         elif "feature_b" in feature_key_str:
-            assert feature_data["project"] == "restore_b"
+            assert feature_data["project"] == "project_b"
 
     # Extract projects from snapshot
     snapshot_projects = {key: data["project"] for key, data in snapshot_data.items()}
@@ -235,41 +178,29 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
     MetaxyConfig.reset()
 
 
-def test_multi_project_dependency_graph(snapshot: SnapshotAssertion, graph: FeatureGraph) -> None:
+def test_multi_project_dependency_graph(
+    snapshot: SnapshotAssertion,
+    graph: FeatureGraph,
+    project_a_package: ModuleType,
+    project_b_package: ModuleType,
+) -> None:
     """Test that features can depend on features from other projects."""
     # Project A: upstream feature
-    config_a = MetaxyConfig(project="upstream_project")
-    MetaxyConfig.set(config_a)
-
-    class UpstreamFeature(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["upstream"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    UpstreamFeature = create_feature_in_package("fake_project_a_pkg", ["upstream"])
 
     # Project B: downstream feature depending on Project A's feature
-    config_b = MetaxyConfig(project="downstream_project")
-    MetaxyConfig.set(config_b)
-
-    class DownstreamFeature(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["downstream"]),
-            deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    DownstreamFeature = create_feature_in_package(
+        "fake_project_b_pkg",
+        ["downstream"],
+        deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
+    )
 
     # Both features should exist in graph
     assert len(graph.features_by_key) == 2
 
     # Verify projects
-    assert UpstreamFeature.project == "upstream_project"
-    assert DownstreamFeature.project == "downstream_project"
+    assert UpstreamFeature.metaxy_project() == "project_a"
+    assert DownstreamFeature.metaxy_project() == "project_b"
 
     # Verify dependency is tracked
     downstream_spec = graph.feature_specs_by_key[FeatureKey(["downstream"])]
@@ -279,56 +210,38 @@ def test_multi_project_dependency_graph(snapshot: SnapshotAssertion, graph: Feat
 
     # Snapshot the structure
     assert {
-        "upstream_project": UpstreamFeature.project,
-        "downstream_project": DownstreamFeature.project,
+        "upstream_project": UpstreamFeature.metaxy_project(),
+        "downstream_project": DownstreamFeature.metaxy_project(),
         "has_dependency": len(downstream_spec.deps or []) > 0,
     } == snapshot
 
     MetaxyConfig.reset()
 
 
-def test_get_downstream_features_across_projects(snapshot: SnapshotAssertion, graph: FeatureGraph) -> None:
+def test_get_downstream_features_across_projects(
+    snapshot: SnapshotAssertion,
+    graph: FeatureGraph,
+    project_a_package: ModuleType,
+    project_b_package: ModuleType,
+    project_c_package: ModuleType,
+) -> None:
     """Test that get_downstream_features works with multi-project graphs."""
     # Root feature in project A
-    config_a = MetaxyConfig(project="project_a")
-    MetaxyConfig.set(config_a)
-
-    class RootFeature(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["root"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    RootFeature = create_feature_in_package("fake_project_a_pkg", ["root"])
 
     # Mid-level feature in project B
-    config_b = MetaxyConfig(project="project_b")
-    MetaxyConfig.set(config_b)
-
-    class MidFeature(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["mid"]),
-            deps=[FeatureDep(feature=FeatureKey(["root"]))],
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    MidFeature = create_feature_in_package(
+        "fake_project_b_pkg",
+        ["mid"],
+        deps=[FeatureDep(feature=FeatureKey(["root"]))],
+    )
 
     # Leaf feature in project C
-    config_c = MetaxyConfig(project="project_c")
-    MetaxyConfig.set(config_c)
-
-    class LeafFeature(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["leaf"]),
-            deps=[FeatureDep(feature=FeatureKey(["mid"]))],
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-        ),
-    ):
-        pass
+    LeafFeature = create_feature_in_package(
+        "fake_project_c_pkg",
+        ["leaf"],
+        deps=[FeatureDep(feature=FeatureKey(["mid"]))],
+    )
 
     # Get downstream features of root
     downstream = graph.get_downstream_features([FeatureKey(["root"])])
@@ -342,9 +255,9 @@ def test_get_downstream_features_across_projects(snapshot: SnapshotAssertion, gr
 
     # Verify projects
     projects = {
-        "root": RootFeature.project,
-        "mid": MidFeature.project,
-        "leaf": LeafFeature.project,
+        "root": RootFeature.metaxy_project(),
+        "mid": MidFeature.metaxy_project(),
+        "leaf": LeafFeature.metaxy_project(),
         "downstream_keys": downstream_strings,
     }
 
@@ -353,43 +266,26 @@ def test_get_downstream_features_across_projects(snapshot: SnapshotAssertion, gr
     MetaxyConfig.reset()
 
 
-def test_graph_with_same_feature_key_different_projects() -> None:
+def test_graph_with_same_feature_key_different_projects(
+    project_a_package: ModuleType,
+    project_b_package: ModuleType,
+) -> None:
     """Test that two graphs can have the same feature key in different projects.
 
     This is important for multi-tenant scenarios where different projects
     might use the same feature naming conventions.
     """
-    # Graph 1: project_x
+    # Graph 1: project_a
     graph_x = FeatureGraph()
-    config_x = MetaxyConfig(project="project_x")
-    MetaxyConfig.set(config_x)
 
     with graph_x.use():
+        FeatureInX = create_feature_in_package("fake_project_a_pkg", ["common", "feature"])
 
-        class FeatureInX(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["common", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    # Graph 2: project_y with SAME feature key
+    # Graph 2: project_b with SAME feature key
     graph_y = FeatureGraph()
-    config_y = MetaxyConfig(project="project_y")
-    MetaxyConfig.set(config_y)
 
     with graph_y.use():
-
-        class FeatureInY(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["common", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
+        FeatureInY = create_feature_in_package("fake_project_b_pkg", ["common", "feature"])
 
     # Both should exist in their respective graphs
     assert len(graph_x.features_by_key) == 1
@@ -399,9 +295,9 @@ def test_graph_with_same_feature_key_different_projects() -> None:
     assert FeatureInX.spec().key == FeatureInY.spec().key
 
     # But different projects
-    assert FeatureInX.project == "project_x"
-    assert FeatureInY.project == "project_y"
-    assert FeatureInX.project != FeatureInY.project
+    assert FeatureInX.metaxy_project() == "project_a"
+    assert FeatureInY.metaxy_project() == "project_b"
+    assert FeatureInX.metaxy_project() != FeatureInY.metaxy_project
 
     # And same feature_version (computational definition identical)
     assert FeatureInX.feature_version() == FeatureInY.feature_version()

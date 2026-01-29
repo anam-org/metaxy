@@ -132,7 +132,7 @@ def test_graph_and_features():
 
     Uses TempFeatureModule to make features importable for historical graph reconstruction.
     """
-    temp_module = TempFeatureModule("test_stores_features")
+    temp_module = TempFeatureModule("test_stores_features", project="test")
 
     # Define specs
     upstream_a_spec = SampleFeatureSpec(
@@ -220,7 +220,7 @@ def test_features(test_graph_and_features):
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--random-selection",
+        "--sample",
         metavar="N",
         action="store",
         default=-1,
@@ -230,7 +230,7 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(session, config, items):
-    random_sample_size = config.getoption("--random-selection")
+    random_sample_size = config.getoption("--sample")
 
     if random_sample_size >= 0:
         items[:] = random.sample(items, k=random_sample_size)

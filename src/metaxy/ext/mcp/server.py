@@ -116,7 +116,7 @@ def _register_tools(server: FastMCP) -> None:
             feature_cls = graph.get_feature_by_key(feature_key)
 
             # Filter by project if specified
-            if project and feature_cls.project != project:
+            if project and feature_cls.metaxy_project() != project:
                 continue
 
             version = graph.get_feature_version(feature_key)
@@ -157,7 +157,7 @@ def _register_tools(server: FastMCP) -> None:
                 "key": feature_key.to_string(),
                 "version": version,
                 "is_root": is_root,
-                "project": feature_cls.project,
+                "project": feature_cls.metaxy_project(),
                 "import_path": import_path,
                 "field_count": len(fields_info),
                 "fields": fields_info,

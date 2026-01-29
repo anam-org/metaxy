@@ -231,8 +231,8 @@ def _get_features_metadata(
 
     for feature_key, feature_cls in graph.features_by_key.items():
         # Filter by project if requested
-        if filter_by_project and hasattr(feature_cls, "project"):
-            feature_project = getattr(feature_cls, "project")
+        if filter_by_project:
+            feature_project = feature_cls.metaxy_project()
             if feature_project != project:
                 continue
 

@@ -146,8 +146,8 @@
     }),
     'metaxy_feature_spec_version': '26736b45eeb37186ef6678426b85f3265cdba9eb5b782a8f41496123d5649cd4',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
-    'metaxy_full_definition_version': '9a61cb119a3953cfc47a366ea0abc789635c20f89ff5a866437186085d5cd665',
-    'project': 'test',
+    'metaxy_full_definition_version': 'cf053c3135e0948e8a1548d2ebca67472533fa363937c242d5e1931ca149cfb6',
+    'project': 'test_spec_version',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
