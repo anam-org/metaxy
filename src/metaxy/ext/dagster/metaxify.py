@@ -449,8 +449,11 @@ def _metaxify_spec(
 
         # Add Metaxy columns that aren't already defined by user
         # (user-defined columns take precedence)
-        metaxy_schema = build_column_schema(feature_def)
-        metaxy_columns = [col for col in metaxy_schema.columns if col.name not in existing_column_names]
+        # Skip for external features (no Python class to extract schema from)
+        metaxy_columns: list[dg.TableColumn] = []
+        if not feature_def.is_external:
+            metaxy_schema = build_column_schema(feature_def)
+            metaxy_columns = [col for col in metaxy_schema.columns if col.name not in existing_column_names]
 
         all_columns = existing_columns + metaxy_columns
         if all_columns:
@@ -460,8 +463,9 @@ def _metaxify_spec(
 
     # Build column lineage from upstream dependencies
     # Respects existing user-defined column lineage and merges with Metaxy lineage
+    # Skip for external features (no Python class to extract columns from)
     column_lineage: dg.TableColumnLineage | None = None
-    if inject_column_lineage and feature_spec.deps:
+    if inject_column_lineage and feature_spec.deps and not feature_def.is_external:
         # Start with user-defined lineage if present
         existing_lineage = spec.metadata.get(DAGSTER_COLUMN_LINEAGE_METADATA_KEY)
         existing_deps_by_column: dict[str, list[dg.TableColumnDep]] = {}

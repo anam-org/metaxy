@@ -157,8 +157,9 @@ def load_feature_definitions(
     Args:
         store: Metadata store to load from. Will be opened automatically if not already open.
         projects: Project(s) to load features from. If not provided, loads from all projects.
-        filters: Narwhals expressions to filter the feature_versions table. Applied after
-            project filtering. Available columns: `project`, `feature_key`,
+        filters: Narwhals expressions to filter features. Applied after snapshot selection
+            and deduplication, ensuring the latest version of each feature is loaded
+            before filtering. Available columns: `project`, `feature_key`,
             `metaxy_feature_version`, `metaxy_definition_version`, `recorded_at`,
             `feature_spec`, `feature_schema`, `feature_class_path`,
             `metaxy_snapshot_version`, `tags`, `deleted_at`.
@@ -191,7 +192,11 @@ def load_feature_definitions(
         )
         ```
     """
-    with store:
+    from contextlib import nullcontext
+
+    # Use nullcontext if store is already open, otherwise open it
+    cm = nullcontext(store) if store._is_open else store
+    with cm:
         storage = SystemTableStorage(store)
         return storage.load_feature_definitions(projects=projects, filters=filters)
 

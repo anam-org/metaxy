@@ -83,7 +83,7 @@ class TestFeature1(BaseFeature, spec=SampleFeatureSpec(
         # Verify feature was registered
         assert FeatureKey(["test", "feature1"]) in graph.feature_definitions_by_key
         definition = graph.get_feature_definition(FeatureKey(["test", "feature1"]))
-        assert definition.feature_class_path.endswith(".TestFeature1")
+        assert definition.feature_class_path is not None and definition.feature_class_path.endswith(".TestFeature1")
     finally:
         sys.path.remove(str(tmp_path))
 

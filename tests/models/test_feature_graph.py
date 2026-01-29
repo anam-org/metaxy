@@ -1181,8 +1181,8 @@ class TestExternalDefinitions:
         assert retrieved.is_external is True
         assert retrieved.project == "other-project"
 
-    def test_external_definition_in_graph_snapshot(self, graph: FeatureGraph):
-        """External definitions are included in graph snapshots."""
+    def test_external_definition_excluded_from_graph_snapshot(self, graph: FeatureGraph):
+        """External definitions are excluded from graph snapshots."""
 
         spec = FeatureSpec(
             key=FeatureKey(["snap", "external"]),
@@ -1199,9 +1199,8 @@ class TestExternalDefinitions:
         graph.add_feature_definition(external_def)
         snapshot = graph.to_snapshot()
 
-        # Snapshot keys use slash-separated format (FeatureKey.to_string())
-        assert "snap/external" in snapshot
-        assert snapshot["snap/external"]["project"] == "snapshot-proj"
+        # External features should NOT be in the snapshot
+        assert "snap/external" not in snapshot
 
     def test_external_definition_coexists_with_class_definitions(self, graph: FeatureGraph):
         """External definitions and class-based definitions can coexist in the same graph."""
@@ -1263,3 +1262,135 @@ class TestExternalDefinitions:
         alpha_idx = sorted_keys.index(FeatureKey(["topo", "alpha"]))
         beta_idx = sorted_keys.index(FeatureKey(["topo", "beta"]))
         assert alpha_idx < beta_idx
+
+    def test_normal_feature_replaces_external_feature(self, graph: FeatureGraph):
+        """Non-external feature replaces external feature with same key."""
+
+        # First add an external feature
+        external_spec = FeatureSpec(
+            key=FeatureKey(["test", "replaceable"]),
+            id_columns=["id"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {"type": "string"}}},
+            project="external-proj",
+        )
+        graph.add_feature_definition(external_def)
+
+        # Verify it's in the graph as external
+        assert graph.get_feature_definition(["test", "replaceable"]).is_external is True
+
+        # Now define a class-based feature with the same key
+        class ReplaceableFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "replaceable"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+        ):
+            pass
+
+        # The class-based feature should replace the external one
+        retrieved = graph.get_feature_definition(["test", "replaceable"])
+        assert retrieved.is_external is False
+        assert retrieved.feature_class_path is not None
+        assert "ReplaceableFeature" in retrieved.feature_class_path
+
+    def test_external_feature_does_not_overwrite_normal_feature(self, graph: FeatureGraph):
+        """External feature does not overwrite existing non-external feature."""
+
+        # First define a class-based feature
+        class ExistingFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "existing"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+        ):
+            pass
+
+        original_class_path = graph.get_feature_definition(["test", "existing"]).feature_class_path
+
+        # Try to add an external feature with the same key
+        external_spec = FeatureSpec(
+            key=FeatureKey(["test", "existing"]),
+            id_columns=["id"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {"type": "string"}}},
+            project="external-proj",
+        )
+        graph.add_feature_definition(external_def)
+
+        # The original class-based feature should still be there
+        retrieved = graph.get_feature_definition(["test", "existing"])
+        assert retrieved.is_external is False
+        assert retrieved.feature_class_path == original_class_path
+
+    def test_external_features_excluded_from_snapshot_with_normal_features(self, graph: FeatureGraph):
+        """Snapshot only includes non-external features."""
+
+        # Add a class-based feature
+        class NormalFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "normal"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+        ):
+            pass
+
+        # Add an external feature
+        external_spec = FeatureSpec(
+            key=FeatureKey(["test", "external_snap"]),
+            id_columns=["id"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {"type": "string"}}},
+            project="external-proj",
+        )
+        graph.add_feature_definition(external_def)
+
+        # Both should be in the graph
+        assert len(graph.feature_definitions_by_key) == 2
+
+        # Only the normal feature should be in the snapshot
+        snapshot = graph.to_snapshot()
+        assert "test/normal" in snapshot
+        assert "test/external_snap" not in snapshot
+        assert len(snapshot) == 1
+
+    def test_external_feature_with_missing_external_dependency_raises_error(self, graph: FeatureGraph):
+        """External feature depending on missing external parent should raise error on graph operations."""
+        import pytest
+
+        from metaxy.utils.exceptions import MetaxyMissingFeatureDependency
+
+        # Add an external feature that depends on another external feature that doesn't exist
+        child_spec = FeatureSpec(
+            key=FeatureKey(["external", "child"]),
+            id_columns=["id"],
+            deps=[FeatureDep(feature=FeatureKey(["external", "parent"]))],
+        )
+        child_def = FeatureDefinition.external(
+            spec=child_spec,
+            feature_schema={"type": "object"},
+            project="external-project",
+        )
+        graph.add_feature_definition(child_def)
+
+        # The child is in the graph
+        assert FeatureKey(["external", "child"]) in graph.feature_definitions_by_key
+
+        # But the parent is NOT in the graph
+        assert FeatureKey(["external", "parent"]) not in graph.feature_definitions_by_key
+
+        # Trying to get the feature plan should raise an error
+        with pytest.raises(MetaxyMissingFeatureDependency) as exc_info:
+            graph.get_feature_plan(["external", "child"])
+
+        assert "external/parent" in str(exc_info.value)
+        assert "external/child" in str(exc_info.value)

@@ -19,8 +19,6 @@ from metaxy.models.types import FeatureKey
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
 
-EXTERNAL_FEATURE_METADATA_KEY = "metaxy/external_feature"
-
 
 @public
 class FeatureDefinition(FrozenBaseModel):
@@ -40,6 +38,7 @@ class FeatureDefinition(FrozenBaseModel):
 
     # Runtime-only reference to the feature class. Not serialized. Will be removed in the future once we figure out a good way to extract Pydantic fields from the serialized schema.
     _feature_class: type[BaseFeature] | None = PrivateAttr(default=None)
+    _is_external: bool = PrivateAttr(default=False)
 
     @classmethod
     def from_feature_class(cls, feature_cls: type[BaseFeature]) -> FeatureDefinition:
@@ -99,8 +98,8 @@ class FeatureDefinition(FrozenBaseModel):
         cls,
         *,
         spec: FeatureSpec,
-        feature_schema: dict[str, Any],
         project: str,
+        feature_schema: dict[str, Any] | None = None,
     ) -> FeatureDefinition:
         """Create an external FeatureDefinition without a Feature class.
 
@@ -108,20 +107,21 @@ class FeatureDefinition(FrozenBaseModel):
         that don't have corresponding Python Feature classes in the current codebase.
 
         Args:
-            spec: The feature specification. Will have external marker added to metadata.
-            feature_schema: Pydantic JSON schema dict describing the feature's fields.
+            spec: The feature specification.
             project: The metaxy project this feature belongs to.
+            feature_schema: Pydantic JSON schema dict describing the feature's fields.
 
         Returns:
             A new FeatureDefinition marked as external.
         """
-
-        return cls(
-            spec=spec.model_copy(update={"metadata": {**spec.metadata, EXTERNAL_FEATURE_METADATA_KEY: True}}),
-            feature_schema=feature_schema,
+        definition = cls(
+            spec=spec,
+            feature_schema=feature_schema or {},
             feature_class_path=None,
             project=project,
         )
+        definition._is_external = True
+        return definition
 
     def _get_feature_class(self) -> type[BaseFeature]:
         """Return the feature class, using cached reference or importing by path.
@@ -204,4 +204,4 @@ class FeatureDefinition(FrozenBaseModel):
     @property
     def is_external(self) -> bool:
         """Check if this is an external feature definition."""
-        return self.spec.metadata.get(EXTERNAL_FEATURE_METADATA_KEY, False) is True
+        return self._is_external

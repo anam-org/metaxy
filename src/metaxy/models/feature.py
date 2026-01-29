@@ -2,7 +2,7 @@ import hashlib
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypedDict
 
 import pydantic
 from pydantic import AwareDatetime, Field, model_validator
@@ -68,34 +68,50 @@ class FeatureGraph:
         definition = FeatureDefinition.from_feature_class(feature)
         self.add_feature_definition(definition)
 
-    def add_feature_definition(self, definition: FeatureDefinition) -> None:
-        """Add a FeatureDefinition directly to the graph.
+    def add_feature_definition(
+        self, definition: FeatureDefinition, on_conflict: Literal["raise", "ignore"] = "raise"
+    ) -> None:
+        """Add a feature to the graph.
 
-        This is the primary method for adding features. Both `add_feature` (for
-        feature classes) and `from_snapshot` (for stored snapshots) delegate to
-        this method.
+        !!! note "Interactions with External Features"
+
+            Normal features take priority over external features with the same key.
 
         Args:
             definition: FeatureDefinition to register
+            on_conflict: What to do if a feature with the same key is already registered
 
         Raises:
-            ValueError: If a feature with a different import path but the same key
-                is already registered
+            ValueError: If a non-external feature with a different import path but
+                the same key is already registered and `on_conflict` is `"raise"`
         """
         key = definition.key
 
-        # Check for duplicate registration with different class path
-        if key in self.feature_definitions_by_key:
-            existing = self.feature_definitions_by_key[key]
-            # Allow quiet replacement if it's the same class (same import path)
-            if existing.feature_class_path != definition.feature_class_path:
-                raise ValueError(
-                    f"Feature with key {key.to_string()} already registered. "
-                    f"Existing: {existing.feature_class_path}, New: {definition.feature_class_path}. "
-                    f"Each feature key must be unique within a graph."
-                )
-
-        self.feature_definitions_by_key[key] = definition
+        if key not in self.feature_definitions_by_key:
+            self.feature_definitions_by_key[key] = definition
+        elif definition.is_external and not self.feature_definitions_by_key[key].is_external:
+            # External features never overwrite non-external features
+            return
+        elif not definition.is_external and self.feature_definitions_by_key[key].is_external:
+            # Non-external features always replace external features
+            self.feature_definitions_by_key[key] = definition
+        elif definition.feature_class_path == self.feature_definitions_by_key[key].feature_class_path:
+            # Same class path - allow quiet replacement
+            self.feature_definitions_by_key[key] = definition
+        elif on_conflict == "ignore":
+            # Conflict exists but we're ignoring - keep existing definition
+            return
+        elif definition.is_external:
+            # Both external with different class paths - raise to be safe
+            raise ValueError(f"External feature with key {key.to_string()} is already registered.")
+        else:
+            # Both non-external with different class paths
+            raise ValueError(
+                f"Feature with key {key.to_string()} already registered. "
+                f"Existing: {self.feature_definitions_by_key[key].feature_class_path}, "
+                f"New: {definition.feature_class_path}. "
+                f"Each feature key must be unique within a graph."
+            )
 
     def get_feature_definition(self, key: CoercibleToFeatureKey) -> FeatureDefinition:
         """Get a FeatureDefinition by its key.
@@ -467,11 +483,19 @@ class FeatureGraph:
             hasher.update(self.get_feature_version(feature_key).encode("utf-8"))
         return truncate_hash(hasher.hexdigest())
 
+    @property
+    def has_external_features(self) -> bool:
+        """Check if any feature in the graph is an external feature."""
+        return any(d.is_external for d in self.feature_definitions_by_key.values())
+
     def to_snapshot(self) -> dict[str, SerializedFeature]:
         """Serialize graph to snapshot format.
 
         Returns a dict mapping feature_key (string) to feature data dict,
         including the import path of the Feature class for reconstruction.
+
+        External features are excluded from the snapshot as they should not be
+        pushed to the metadata store.
 
         Returns: dictionary mapping feature_key (string) to feature data dict
 
@@ -489,6 +513,22 @@ class FeatureGraph:
         snapshot: dict[str, SerializedFeature] = {}
 
         for feature_key, definition in self.feature_definitions_by_key.items():
+            # Skip external features - they should not be pushed to the metadata store
+            if definition.is_external:
+                continue
+
+            # We should never push a feature if it has an external feature as a dependency
+            # since the version hash might be incorrect (out of sync with the real feature definition)
+            for dep in definition.spec.deps or []:
+                from metaxy.utils.exceptions import MetaxyInvariantViolationError
+
+                if self.feature_definitions_by_key[dep.feature].is_external:
+                    raise MetaxyInvariantViolationError(
+                        f"Feature '{feature_key}' depends on external feature '{dep.feature}'. "
+                        "External dependencies must be replaced with actual feature definitions "
+                        "loaded from the metadata store prior to creating a snapshot."
+                    )
+
             feature_key_str = feature_key.to_string()
             feature_spec_dict = definition.spec.model_dump(mode="json")
             feature_schema_dict = definition.feature_schema

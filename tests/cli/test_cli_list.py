@@ -666,3 +666,133 @@ def test_list_stores_short_flag(metaxy_project: TempMetaxyProject):
         assert result.returncode == 0
         data = json.loads(result.stdout)
         assert "stores" in data
+
+
+def test_list_features_shows_external_features(metaxy_project: TempMetaxyProject):
+    """Test that external features are marked as such in the output."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy.models.feature import FeatureDefinition, FeatureGraph
+
+        # Define a regular feature
+        class LocalFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["local", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Add an external feature (use "test" project to match the project filter)
+        graph = FeatureGraph.get_active()
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["external", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["value"]))],
+            ),
+            feature_schema={"type": "object"},
+            project="test",  # Must match the project to be listed
+        )
+        graph.add_feature_definition(external_def)
+
+    with metaxy_project.with_features(features):
+        # Test plain output
+        result = metaxy_project.run_cli(["list", "features"])
+        assert result.returncode == 0
+        assert "local/feature" in result.stdout
+        assert "external/feature" in result.stdout
+        assert "<external>" in result.stdout  # Import path shows <external>
+        # Summary should mention external count
+        assert "1 external" in result.stdout
+
+
+def test_list_features_external_json_format(metaxy_project: TempMetaxyProject):
+    """Test that JSON output includes is_external field."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy.models.feature import FeatureDefinition, FeatureGraph
+
+        # Define a regular feature
+        class LocalFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["local", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Add an external feature (use "test" project to match the project filter)
+        graph = FeatureGraph.get_active()
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["external", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["value"]))],
+            ),
+            feature_schema={"type": "object"},
+            project="test",  # Must match the project to be listed
+        )
+        graph.add_feature_definition(external_def)
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+
+        # Find both features
+        local_feature = next(f for f in data["features"] if f["key"] == "local/feature")
+        external_feature = next(f for f in data["features"] if f["key"] == "external/feature")
+
+        # Check is_external field
+        assert local_feature["is_external"] is False
+        assert external_feature["is_external"] is True
+
+        # External feature should have None import_path
+        assert local_feature["import_path"] is not None
+        assert external_feature["import_path"] is None
+
+
+def test_list_features_external_verbose(metaxy_project: TempMetaxyProject):
+    """Test verbose mode with external features."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy.models.feature import FeatureDefinition, FeatureGraph
+
+        # Define a regular feature
+        class LocalFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["local", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Add an external feature (use "test" project to match the project filter)
+        graph = FeatureGraph.get_active()
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["external", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["value"]))],
+            ),
+            feature_schema={"type": "object"},
+            project="test",  # Must match the project to be listed
+        )
+        graph.add_feature_definition(external_def)
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(["list", "features", "--verbose"])
+        assert result.returncode == 0
+        # External marker should be visible in verbose output
+        assert "<external>" in result.stdout  # Import path shows <external>
+        assert "external/feature" in result.stdout

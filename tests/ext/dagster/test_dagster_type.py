@@ -354,3 +354,54 @@ class TestWithDagsterAsset:
         assert isinstance(my_asset, dg.AssetsDefinition)
         output_def = my_asset.node_def.output_defs[0]
         assert output_def.dagster_type.display_name == "test__simple"
+
+
+@pytest.fixture
+def external_feature_definition(graph: mx.FeatureGraph) -> mx.FeatureDefinition:
+    """Create an external feature definition for testing."""
+    spec = mx.FeatureSpec(
+        key=["test", "external"],
+        id_columns=["id"],
+        fields=["data"],
+    )
+    schema = {
+        "type": "object",
+        "properties": {
+            "id": {"type": "string"},
+            "data": {"type": "number"},
+        },
+    }
+    external_def = mx.FeatureDefinition.external(
+        spec=spec,
+        feature_schema=schema,
+        project="external-project",
+    )
+    graph.add_feature_definition(external_def)
+    return external_def
+
+
+class TestExternalFeatureDefinitions:
+    """Tests for external feature definitions in Dagster integration."""
+
+    def test_build_column_schema_raises_for_external(self, external_feature_definition: mx.FeatureDefinition):
+        """build_column_schema raises ImportError for external features."""
+        with pytest.raises(ImportError, match="external feature"):
+            build_column_schema(external_feature_definition)
+
+    def test_build_column_lineage_returns_none_for_external(self, external_feature_definition: mx.FeatureDefinition):
+        """build_column_lineage returns None for external features (no deps)."""
+        # External feature has no deps, so lineage should be None
+        lineage = build_column_lineage(external_feature_definition)
+        assert lineage is None
+
+    def test_feature_to_dagster_type_skips_schema_for_external(self, external_feature_definition: mx.FeatureDefinition):
+        """feature_to_dagster_type works without errors for external features."""
+        # Should not raise, should just skip column schema/lineage
+        dagster_type = feature_to_dagster_type(external_feature_definition)
+
+        assert dagster_type is not None
+        assert dagster_type.metadata is not None
+        # Column schema should NOT be present (skipped for external)
+        assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY not in dagster_type.metadata
+        # Column lineage should NOT be present (no deps)
+        assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY not in dagster_type.metadata

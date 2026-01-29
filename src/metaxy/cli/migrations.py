@@ -103,6 +103,12 @@ def generate(
     cli_command = shlex.join(sys.argv)
 
     with metadata_store.open("write"):
+        # Load feature definitions from the store to replace any external feature placeholders
+        # This ensures version hashes are computed correctly against actual stored definitions
+        from metaxy.metadata_store.system.storage import SystemTableStorage
+
+        SystemTableStorage(metadata_store).load_feature_definitions()
+
         if type == "diff":
             # Detect migration and write YAML
             migration = detect_diff_migration(
@@ -222,6 +228,10 @@ def apply(
 
     with metadata_store.open("write"):
         storage = SystemTableStorage(metadata_store)
+
+        # Load feature definitions from the store to replace any external feature placeholders
+        # This ensures version hashes are computed correctly against actual stored definitions
+        storage.load_feature_definitions()
 
         # Build migration chain
         try:

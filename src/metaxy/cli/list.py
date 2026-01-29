@@ -104,6 +104,7 @@ def features(
             "key": feature_key.to_string(),
             "version": version,
             "is_root": is_root,
+            "is_external": definition.is_external,
             "project": definition.project,
             "import_path": import_path,
             "field_count": len(fields_info),
@@ -155,17 +156,25 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
             table.add_column("Dependencies")
 
         for feature in project_features:
+            feature_key_display = feature["key"]
+
+            # Show import path or <external> marker
+            if feature["is_external"]:
+                import_path_display = "[dim]<external>[/dim]"
+            else:
+                import_path_display = feature["import_path"] or "[dim]-[/dim]"
+
             if verbose:
                 deps_display = ", ".join(feature.get("deps", [])) or "-"
                 table.add_row(
-                    feature["key"],
-                    feature["import_path"],
+                    feature_key_display,
+                    import_path_display,
                     deps_display,
                 )
             else:
                 table.add_row(
-                    feature["key"],
-                    feature["import_path"],
+                    feature_key_display,
+                    import_path_display,
                 )
 
         data_console.print(table)
@@ -174,16 +183,22 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
     # Summary
     root_count = sum(1 for f in features_data if f["is_root"])
     dependent_count = len(features_data) - root_count
+    external_count = sum(1 for f in features_data if f["is_external"])
+    external_suffix = f", {external_count} external" if external_count else ""
     data_console.print(
-        f"[dim]Total: {len(features_data)} feature(s) ({root_count} root, {dependent_count} dependent)[/dim]"
+        f"[dim]Total: {len(features_data)} feature(s) ({root_count} root, {dependent_count} dependent{external_suffix})[/dim]"
     )
 
     # Verbose: show field details for each feature
     if verbose:
         data_console.print()
         for feature in features_data:
+            if feature["is_external"]:
+                import_path = "[dim]<external>[/dim]"
+            else:
+                import_path = feature["import_path"] or "-"
             data_console.print(
-                f"[bold cyan]{feature['key']}[/bold cyan] [dim]({feature['project']})[/dim] {feature['import_path']}"
+                f"[bold cyan]{feature['key']}[/bold cyan] [dim]({feature['project']})[/dim] {import_path}"
             )
 
             field_table = Table(show_header=True, header_style="bold dim")

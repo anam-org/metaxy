@@ -28,7 +28,7 @@ def test_feature_definition_from_feature_class(graph):
 
     assert definition.spec == TestFeature.spec()
     assert definition.feature_schema == TestFeature.model_json_schema()
-    assert definition.feature_class_path.endswith(TestFeature.__name__)
+    assert definition.feature_class_path is not None and definition.feature_class_path.endswith(TestFeature.__name__)
     assert definition.project == TestFeature.metaxy_project()
     assert definition.feature_definition_version  # non-empty hash
 
@@ -191,7 +191,7 @@ class TestGetFeatureByKey:
 
         assert isinstance(result, FeatureDefinition)
         assert result.spec == TestFeature.spec()
-        assert result.feature_class_path.endswith("TestFeature")
+        assert result.feature_class_path is not None and result.feature_class_path.endswith("TestFeature")
 
     def test_get_feature_by_key_coerces_list(self, graph):
         """Test that get_feature_by_key accepts list of strings."""
@@ -267,13 +267,12 @@ def test_external_feature_definition_creation():
         project="external-project",
     )
 
-    # Spec key and structure preserved, metadata has external marker added
     assert definition.spec.key == spec.key
     assert definition.spec.id_columns == spec.id_columns
     assert definition.spec.fields == spec.fields
     assert definition.feature_schema == schema
     assert definition.project == "external-project"
-    assert definition.spec.metadata.get("metaxy/external_feature") is True
+    assert definition.is_external is True
 
 
 def test_external_feature_definition_class_path_is_none():

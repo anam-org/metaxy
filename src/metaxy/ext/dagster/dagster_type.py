@@ -143,12 +143,14 @@ def feature_to_dagster_type(
     # Build metadata - start with custom metadata if provided
     final_metadata: dict[str, Any] = dict(metadata) if metadata else {}
     final_metadata[DAGSTER_METAXY_INFO_METADATA_KEY] = build_feature_info_metadata(feature_key)
-    if inject_column_schema:
+    # Skip column schema for external features (no Python class to extract schema from)
+    if inject_column_schema and not feature_def.is_external:
         column_schema = build_column_schema(feature_for_schema)
         if column_schema is not None:
             final_metadata[DAGSTER_COLUMN_SCHEMA_METADATA_KEY] = column_schema
 
-    if inject_column_lineage:
+    # Skip column lineage for external features (no Python class to extract columns from)
+    if inject_column_lineage and not feature_def.is_external:
         column_lineage = build_column_lineage(feature_for_schema)
         if column_lineage is not None:
             final_metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY] = column_lineage

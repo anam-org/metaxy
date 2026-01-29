@@ -69,7 +69,7 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
     graph = FeatureGraph.get_active()
     assert FeatureKey(["video"]) in graph.feature_definitions_by_key
     defn = graph.feature_definitions_by_key[FeatureKey(["video"])]
-    assert defn.feature_class_path.endswith("VideoFeature")
+    assert defn.feature_class_path is not None and defn.feature_class_path.endswith("VideoFeature")
     assert defn.spec == VideoFeature.spec()
 
     # Check Metaxy attributes
