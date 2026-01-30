@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
+  "packages": [
+    "python@3.10",
+    "uv@latest",
+    "git@latest",
+    "duckdb@latest",
+    "clickhouse@latest",
+    "postgresql@latest",
+    "graphviz@latest",
+    "nodejs@22",
+    "cairo@latest",
+    "pango@latest",
+    "gdk-pixbuf@latest",
+    "gobject-introspection@latest",
+    "freetype@latest",
+    "libffi@latest",
+    "libjpeg@latest",
+    "libpng@latest",
+    "zlib@latest",
+    "harfbuzz@latest",
+    "pngquant@latest"
+  ],
+  "env": {
+    "UV_PYTHON_PREFERENCE": "only-system"
+  },
+  "shell": {
+    "init_hook": [
+      "echo '🚀 Metaxy development environment (Devbox)'",
+      "echo \"Python: $(python --version)\"",
+      "export PG_BIN=\"$(dirname $(which pg_ctl))\""
+    ],
+    "scripts": {
+      "sync": "uv sync --all-extras --all-groups",
+      "ruff": "uv run ruff check --fix && uv run ruff format",
+      "typecheck": "uv run ty check",
+      "test": "uv run pytest"
+    }
+  }
+}
