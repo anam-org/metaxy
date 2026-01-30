@@ -62,6 +62,13 @@ def launcher(
             help="Global option. Load external feature definitions from the metadata store before executing the command.",
         ),
     ] = False,
+    locked: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--locked"],
+            help="Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.",
+        ),
+    ] = False,
 ):
     """Metaxy CLI.
 
@@ -82,7 +89,7 @@ def launcher(
     # Commands will instantiate and open store as needed
     from metaxy.cli.context import AppContext
 
-    AppContext.set(config, cli_project=project, all_projects=all_projects, sync=sync)
+    AppContext.set(config, cli_project=project, all_projects=all_projects, sync=sync, locked=locked)
 
     # Run the actual command
     app(tokens)

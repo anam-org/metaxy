@@ -35,6 +35,7 @@ class AppContext:
         cli_project: str | None,
         all_projects: bool = False,
         sync: bool = False,
+        locked: bool = False,
     ) -> None:
         """Initialize the app context.
 
@@ -45,6 +46,7 @@ class AppContext:
             cli_project: CLI project override
             all_projects: Whether to include all projects
             sync: Whether to load external feature definitions from the metadata store
+            locked: Whether to raise an error if external feature versions don't match with what's in the metadata store during
         """
         if _app_context.get() is not None:
             raise RuntimeError("AppContext already initialized. It is not allowed to call AppContext.set() again.")
@@ -61,7 +63,11 @@ class AppContext:
                 graph = FeatureGraph.get_active()
                 if graph.has_external_features:
                     store = config.get_store()
-                    load_feature_definitions(store)
+                    # CLI --locked explicitly sets on_version_mismatch, otherwise let load_feature_definitions check config
+                    load_feature_definitions(
+                        store,
+                        on_version_mismatch="error" if locked else None,
+                    )
 
             _app_context.set(AppContext(config, cli_project, all_projects))
 

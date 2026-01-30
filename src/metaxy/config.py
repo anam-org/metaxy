@@ -424,6 +424,11 @@ class MetaxyConfig(BaseSettings):
         description="Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
     )
 
+    locked: bool | None = PydanticField(
+        default=None,
+        description="Whether to raise an error if an external feature doesn't have a matching feature version when [loading external features][metaxy.load_feature_definitions] from the metadata store.",
+    )
+
     # Private attribute to track which config file was used (set by load())
     _config_file: Path | None = PrivateAttr(default=None)
 

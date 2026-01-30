@@ -165,8 +165,10 @@ def load_feature_definitions(
             `metaxy_feature_version`, `metaxy_definition_version`, `recorded_at`,
             `feature_spec`, `feature_schema`, `feature_class_path`,
             `metaxy_snapshot_version`, `tags`, `deleted_at`.
-        on_version_mismatch: Optional override for the `on_version_mismatch` setting
-            on [external feature definitions][metaxy.FeatureDefinition.external].
+        on_version_mismatch: Optional override for the `on_version_mismatch` setting on external feature definitions.
+
+            !!! info
+                Setting [`MetaxyConfig.locked`][metaxy.MetaxyConfig] to `True` will override this setting for all features.
 
     Returns:
         List of loaded FeatureDefinition objects. Empty if no features found.
