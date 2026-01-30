@@ -150,6 +150,7 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
             header_style="bold",
         )
         table.add_column("Feature", no_wrap=True)
+        table.add_column("Version", no_wrap=True)
         table.add_column("Import Path", no_wrap=True)
 
         if verbose:
@@ -168,12 +169,14 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
                 deps_display = ", ".join(feature.get("deps", [])) or "-"
                 table.add_row(
                     feature_key_display,
+                    feature["version"],
                     import_path_display,
                     deps_display,
                 )
             else:
                 table.add_row(
                     feature_key_display,
+                    feature["version"],
                     import_path_display,
                 )
 

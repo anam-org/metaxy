@@ -102,9 +102,11 @@ class SpecificFieldsMapping(BaseFieldsMapping):
 
         JSON dict keys must be strings, so we convert FieldKey objects to their
         string representation (e.g., "faces" or "audio/french").
+        Field keys are sorted for deterministic serialization.
         """
         return {
-            key.to_string(): [list(field_key.parts) for field_key in field_keys] for key, field_keys in value.items()
+            key.to_string(): [list(field_key.parts) for field_key in sorted(field_keys)]
+            for key, field_keys in value.items()
         }
 
     def resolve_field_deps(

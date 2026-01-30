@@ -30,6 +30,7 @@ def test_list_features_basic(metaxy_project: TempMetaxyProject):
         assert "test" in result.stdout  # Project name as table title
         assert "video/files" in result.stdout
         assert "Feature" in result.stdout  # Table header
+        assert "Version" in result.stdout  # Table header
         assert "Import Path" in result.stdout  # Table header
         assert "Total:" in result.stdout  # Summary
 

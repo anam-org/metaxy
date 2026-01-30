@@ -1,0 +1,119 @@
+# serializer version: 1
+# name: test_all_field_mappings_serialization_snapshot
+  dict({
+    'all': dict({
+      'type': 'all',
+    }),
+    'default_basic': dict({
+      'exclude_fields': list([
+      ]),
+      'match_suffix': False,
+      'type': 'default',
+    }),
+    'default_with_config': dict({
+      'exclude_fields': list([
+        'metadata',
+        'internal/field',
+      ]),
+      'match_suffix': True,
+      'type': 'default',
+    }),
+    'specific': dict({
+      'mapping': dict({
+        'output': list([
+          list([
+            'input_a',
+          ]),
+          list([
+            'input_b',
+          ]),
+        ]),
+      }),
+      'type': 'specific',
+    }),
+  })
+# ---
+# name: test_fields_mapping_wrapper_serialization_snapshot
+  dict({
+    'all': dict({
+      'mapping': dict({
+        'type': 'all',
+      }),
+    }),
+    'default': dict({
+      'mapping': dict({
+        'exclude_fields': list([
+        ]),
+        'match_suffix': False,
+        'type': 'default',
+      }),
+    }),
+    'default_with_excludes': dict({
+      'mapping': dict({
+        'exclude_fields': list([
+          'private',
+        ]),
+        'match_suffix': False,
+        'type': 'default',
+      }),
+    }),
+    'default_with_suffix': dict({
+      'mapping': dict({
+        'exclude_fields': list([
+        ]),
+        'match_suffix': True,
+        'type': 'default',
+      }),
+    }),
+    'none': dict({
+      'mapping': dict({
+        'type': 'none',
+      }),
+    }),
+    'specific': dict({
+      'mapping': dict({
+        'mapping': dict({
+          'result': list([
+            list([
+              'config',
+            ]),
+            list([
+              'data',
+            ]),
+          ]),
+        }),
+        'type': 'specific',
+      }),
+    }),
+  })
+# ---
+# name: test_specific_fields_mapping_serialization_deterministic
+  dict({
+    'mapping': dict({
+      'scores': list([
+        list([
+          'audio',
+        ]),
+        list([
+          'cropped',
+          'frames',
+        ]),
+        list([
+          'video',
+        ]),
+      ]),
+      'summary': list([
+        list([
+          'alpha',
+        ]),
+        list([
+          'middle',
+        ]),
+        list([
+          'zebra',
+        ]),
+      ]),
+    }),
+    'type': 'specific',
+  })
+# ---
