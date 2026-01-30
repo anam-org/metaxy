@@ -431,7 +431,7 @@ def _metaxify_spec(
     # Note: Dagster tag values only allow alpha-numeric, '_', '-', '.'
     # so we use table_name which uses '__' separator
     tags_to_add: dict[str, str] = {
-        DAGSTER_METAXY_PROJECT_TAG_KEY: mx.MetaxyConfig.get().project,
+        DAGSTER_METAXY_PROJECT_TAG_KEY: feature_def.project,
         DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.table_name,
     }
 

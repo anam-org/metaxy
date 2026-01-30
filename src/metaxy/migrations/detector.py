@@ -236,9 +236,13 @@ def generate_full_graph_migration(
         ops_with_features.append(op_copy)
 
     # Push snapshot to get the current snapshot version
+    # Resolve project - use provided or infer from first feature
+    if project is None:
+        project = next(iter(active_graph.feature_definitions_by_key.values())).project
+
     with store:
         storage = SystemTableStorage(store)
-        snapshot_result = storage.push_graph_snapshot()
+        snapshot_result = storage.push_graph_snapshot(project=project)
         snapshot_version = snapshot_result.snapshot_version
 
     # Generate migration ID (timestamp first for sorting)

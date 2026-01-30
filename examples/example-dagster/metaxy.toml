@@ -1,4 +1,4 @@
-project = "example-dagster"
+project = "example_dagster"
 entrypoints = ["example_dagster.definitions"]
 auto_create_tables = true # Enable for development/examples
 

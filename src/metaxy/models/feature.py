@@ -215,6 +215,9 @@ class FeatureGraph:
                 from metaxy.config import MetaxyConfig
 
                 config = MetaxyConfig.get()
+                if config.project is None:
+                    # No project configured - return all features
+                    return list(self.feature_definitions_by_key.keys())
                 project_list = [config.project]
             except RuntimeError:
                 # Config not initialized - in tests or non-CLI usage

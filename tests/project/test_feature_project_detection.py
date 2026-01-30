@@ -142,10 +142,10 @@ class TestConfigProjectLoading:
     """Tests for loading project from config files (used for CLI filtering)."""
 
     def test_default_project(self) -> None:
-        """MetaxyConfig.get() returns default project when not initialized."""
+        """MetaxyConfig.get() returns None project when not initialized."""
         MetaxyConfig.reset()
         config = MetaxyConfig.get()
-        assert config.project == "default"
+        assert config.project is None
 
     def test_project_from_metaxy_toml(self, tmp_path: Path) -> None:
         """Project loads from metaxy.toml."""

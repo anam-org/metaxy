@@ -419,8 +419,8 @@ class MetaxyConfig(BaseSettings):
         description="Auto-create tables when opening stores (development/testing only). WARNING: Do not use in production. Use proper database migration tools like Alembic.",
     )
 
-    project: str = PydanticField(
-        default="default",
+    project: str | None = PydanticField(
+        default=None,
         description="Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
     )
 
@@ -449,8 +449,10 @@ class MetaxyConfig(BaseSettings):
 
     @field_validator("project")
     @classmethod
-    def validate_project(cls, v: str) -> str:
+    def validate_project(cls, v: str | None) -> str | None:
         """Validate project name follows naming rules."""
+        if v is None:
+            return None
         if not v:
             raise ValueError("project name cannot be empty")
         if "/" in v:
@@ -543,11 +545,11 @@ class MetaxyConfig(BaseSettings):
             if not _allow_default_config:
                 warnings.warn(
                     UserWarning(
-                        "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project='default')."
+                        "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved)."
                     ),
                     stacklevel=2,
                 )
-            return cls(project="default")
+            return cls()
         else:
             return cfg
 

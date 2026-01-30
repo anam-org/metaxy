@@ -696,3 +696,55 @@ def test_feature_info_changes_trigger_repush(tmp_path: Path):
                 # Verify recorded_at was updated
                 assert recorded_at_new > recorded_at_old
                 assert recorded_at_old == recorded_at_1  # Old one unchanged
+
+
+def test_push_graph_snapshot_requires_project_for_multi_project_graph(tmp_path: Path):
+    """Test that push_graph_snapshot raises when project cannot be determined.
+
+    When the graph contains features from multiple projects and no project is
+    specified via argument or config, push_graph_snapshot should raise ValueError.
+    """
+    import pytest
+
+    from metaxy.config import MetaxyConfig
+    from metaxy.models.feature_definition import FeatureDefinition
+    from metaxy.models.feature_spec import FeatureSpec
+
+    # Create a graph with features from different projects
+    graph = FeatureGraph()
+
+    # Manually add features with different projects (simulating multi-project scenario)
+    spec_a = FeatureSpec(
+        key=FeatureKey(["feature_a"]),
+        id_columns=["id"],
+        fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+    )
+    spec_b = FeatureSpec(
+        key=FeatureKey(["feature_b"]),
+        id_columns=["id"],
+        fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+    )
+
+    def_a = FeatureDefinition(
+        spec=spec_a,
+        feature_schema={},
+        feature_class_path="test.FeatureA",
+        project="project_a",
+    )
+    def_b = FeatureDefinition(
+        spec=spec_b,
+        feature_schema={},
+        feature_class_path="test.FeatureB",
+        project="project_b",
+    )
+
+    graph.add_feature_definition(def_a)
+    graph.add_feature_definition(def_b)
+
+    # Ensure config has no project set
+    MetaxyConfig.reset()
+
+    with graph.use():
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            with pytest.raises(ValueError, match="Project is required.*multiple projects"):
+                SystemTableStorage(store).push_graph_snapshot()
