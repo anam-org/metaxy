@@ -62,6 +62,7 @@ from metaxy.models.types import (
     ValidatedFieldKeySequenceAdapter,
 )
 from metaxy.utils import BatchedMetadataWriter
+from metaxy.utils.exceptions import MetaxyMissingFeatureDependency
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -185,6 +186,7 @@ __all__ = [
     "LineageRelationship",
     "AccessMode",
     "current_graph",
+    "MetaxyMissingFeatureDependency",
     "ValidatedFeatureKeyAdapter",
     "ValidatedFieldKeyAdapter",
     "ValidatedFeatureKeySequenceAdapter",

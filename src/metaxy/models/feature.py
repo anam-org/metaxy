@@ -95,10 +95,6 @@ class FeatureGraph:
                     f"Each feature key must be unique within a graph."
                 )
 
-        # Validation happens automatically when FeaturePlan is constructed
-        if definition.spec.deps:
-            self._build_and_validate_plan(definition.spec)
-
         self.feature_definitions_by_key[key] = definition
 
     def get_feature_definition(self, key: CoercibleToFeatureKey) -> FeatureDefinition:
@@ -123,34 +119,6 @@ class FeatureGraph:
                 f"Available keys: {[k.to_string() for k in self.feature_definitions_by_key.keys()]}"
             )
         return self.feature_definitions_by_key[validated_key]
-
-    def _build_and_validate_plan(self, spec: "FeatureSpec") -> None:
-        """Build a FeaturePlan to trigger validation.
-
-        FeaturePlan validates column configuration on construction.
-        We skip validation if upstream specs are missing (will be validated later).
-        """
-        from metaxy.models.feature_spec import FeatureDep
-
-        parent_specs = []
-        for dep in spec.deps or []:
-            if not isinstance(dep, FeatureDep):
-                continue
-            upstream_defn = self.feature_definitions_by_key.get(dep.feature)
-            if upstream_defn:
-                parent_specs.append(upstream_defn.spec)
-
-        # Skip if any upstream spec is missing (will be validated later)
-        feature_dep_count = len([d for d in (spec.deps or []) if isinstance(d, FeatureDep)])
-        if len(parent_specs) != feature_dep_count:
-            return
-
-        # Constructing FeaturePlan triggers validation
-        FeaturePlan(
-            feature=spec,
-            deps=parent_specs or None,
-            feature_deps=spec.deps,
-        )
 
     def remove_feature(self, key: CoercibleToFeatureKey) -> None:
         """Remove a feature from the graph.
@@ -235,21 +203,35 @@ class FeatureGraph:
         """Get a feature plan for a given feature key.
 
         Args:
-            key: Feature key to get plan for. Accepts types that can be converted into a feature key..
+            key: Feature key to get plan for. Accepts types that can be converted into a feature key.
 
         Returns:
             FeaturePlan instance with feature spec and dependencies.
+
+        Raises:
+            MetaxyMissingFeatureDependency: If any dependency is not in the graph.
         """
-        # Validate and coerce the key
+        from metaxy.utils.exceptions import MetaxyMissingFeatureDependency
+
         validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
 
         definition = self.feature_definitions_by_key[validated_key]
         spec = definition.spec
 
+        # Check all dependencies are present and collect their specs
+        dep_specs = []
+        for dep in spec.deps or []:
+            if dep.feature not in self.feature_definitions_by_key:
+                raise MetaxyMissingFeatureDependency(
+                    f"Feature '{validated_key.to_string()}' depends on '{dep.feature.to_string()}' "
+                    f"which is not in the graph."
+                )
+            dep_specs.append(self.feature_definitions_by_key[dep.feature].spec)
+
         return FeaturePlan(
             feature=spec,
-            deps=[self.feature_definitions_by_key[dep.feature].spec for dep in spec.deps or []] or None,
-            feature_deps=spec.deps,  # Pass the actual FeatureDep objects with field mappings
+            deps=dep_specs or None,
+            feature_deps=spec.deps,
         )
 
     def get_field_version(self, key: "FQFieldKey") -> str:

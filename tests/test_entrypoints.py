@@ -9,10 +9,12 @@ from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     BaseFeature,
+    FeatureDep,
     FeatureGraph,
     FeatureKey,
     FieldKey,
     FieldSpec,
+    MetaxyMissingFeatureDependency,
 )
 from metaxy.entrypoints import (
     EntrypointLoadError,
@@ -559,3 +561,94 @@ class DownstreamFeature(BaseFeature, spec=SampleFeatureSpec(
         assert downstream_def.spec.deps[0].feature == FeatureKey(["deps", "upstream"])
     finally:
         sys.path.remove(str(tmp_path))
+
+
+def test_reverse_order_loading(graph: FeatureGraph):
+    """Features can load in reverse dependency order via package entrypoints.
+
+    When features are discovered via importlib.metadata.entry_points(), the
+    loading order is non-deterministic. This test verifies that a downstream
+    feature loading before its upstream dependency still works correctly.
+    """
+    # Create mock entry points that load in reverse dependency order
+    # (downstream before upstream)
+    mock_eps = []
+
+    # Package B (downstream) - loads first
+    mock_ep_downstream = MagicMock()
+    mock_ep_downstream.name = "package_b"
+    mock_ep_downstream.value = "package_b.features"
+
+    def load_downstream():
+        class DownstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["reverse", "downstream"]),
+                deps=[__import__("metaxy").FeatureDep(feature=FeatureKey(["reverse", "upstream"]))],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    mock_ep_downstream.load = load_downstream
+    mock_eps.append(mock_ep_downstream)
+
+    # Package A (upstream) - loads second
+    mock_ep_upstream = MagicMock()
+    mock_ep_upstream.name = "package_a"
+    mock_ep_upstream.value = "package_a.features"
+
+    def load_upstream():
+        class UpstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["reverse", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    mock_ep_upstream.load = load_upstream
+    mock_eps.append(mock_ep_upstream)
+
+    with patch("metaxy.entrypoints.entry_points") as mock_entry_points:
+        mock_eps_group = MagicMock()
+        mock_eps_group.select.return_value = mock_eps
+        mock_entry_points.return_value = mock_eps_group
+
+        # Load features - downstream loads before upstream
+        result_graph = load_features(load_packages=True, load_env=False)
+
+        # Verify both features were registered
+        assert FeatureKey(["reverse", "upstream"]) in result_graph.feature_definitions_by_key
+        assert FeatureKey(["reverse", "downstream"]) in result_graph.feature_definitions_by_key
+
+        # Verify get_feature_plan works for the downstream feature
+        # Dependencies are late-bound, so this works after all features are loaded
+        plan = result_graph.get_feature_plan(FeatureKey(["reverse", "downstream"]))
+        assert plan.feature.key == FeatureKey(["reverse", "downstream"])
+        assert plan.deps is not None
+        assert len(plan.deps) == 1
+        assert plan.deps[0].key == FeatureKey(["reverse", "upstream"])
+
+
+def test_missing_dependency_raises_clear_error(graph: FeatureGraph) -> None:
+    """Accessing feature plan with missing dependency raises MetaxyMissingFeatureDependency."""
+
+    # Create a feature that depends on a non-existent upstream
+    class OrphanFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["orphan", "feature"]),
+            deps=[FeatureDep(feature=FeatureKey(["nonexistent", "upstream"]))],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    # Feature registers fine (no eager validation)
+    assert FeatureKey(["orphan", "feature"]) in graph.feature_definitions_by_key
+
+    # But accessing the plan raises a clear error
+    with pytest.raises(MetaxyMissingFeatureDependency, match="nonexistent/upstream"):
+        graph.get_feature_plan(FeatureKey(["orphan", "feature"]))
