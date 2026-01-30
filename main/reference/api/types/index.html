@@ -5975,9 +5975,7 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
   </span>
 
 <a href="#metaxy.CoercibleToFeatureKey" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">CoercibleToFeatureKey</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.TypeAlias&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.TypeAlias">TypeAlias</a></span> <span class="o">=</span> <span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="#metaxy.FeatureKey">FeatureKey</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="s2">&quot;BaseFeature&quot;</span><span class="p">]</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">CoercibleToFeatureKey</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.TypeAlias&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.TypeAlias">TypeAlias</a></span> <span class="o">=</span> <span class="s2">&quot;str | Sequence[str] | FeatureKey | type[BaseFeature] | FeatureDefinition&quot;</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5994,6 +5992,12 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../definitions/feature/#metaxy.BaseFeature"><code>BaseFeature</code></a> subclass - extracts its key via <code>.spec().key</code></li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureDefinition&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../definitions/feature/#metaxy.FeatureDefinition"><code>FeatureDefinition</code></a>: Extracts its key via <code>.key</code></li>
 </ul>
 
 
@@ -6003,6 +6007,7 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">key2</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">,</span> <span class="s2">&quot;video&quot;</span><span class="p">]</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">key3</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">FeatureKey</span><span class="p">(</span><span class="s2">&quot;raw/video&quot;</span><span class="p">)</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">key4</span> <span class="o">=</span> <span class="n">MyFeatureClass</span>  <span class="c1"># where MyFeatureClass is a BaseFeature subclass</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">key5</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">FeatureDefinition</span><span class="p">(</span><span class="s2">&quot;raw/video&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
     </div>
@@ -6335,7 +6340,7 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
               (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
           –
           <div class="doc-md-description">
-            <p>List of feature keys with updated information (changed full_definition_version)</p>
+            <p>List of feature keys with updated information (changed definition_version)</p>
           </div>
         </li>
     </ul>
