@@ -3603,20 +3603,22 @@
 <hr />
 <h3 id="project"><code>project</code><a class="headerlink" href="#project" title="Permanent link">&para;</a></h3>
 <p>Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (<code>/</code>) or double underscores (<code>__</code>)</p>
-<p><strong>Type:</strong> <code>str</code> | <strong>Default:</strong> <code>"default"</code></p>
+<p><strong>Type:</strong> <code>str | None</code></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="8:3"><input checked="checked" id="project-metaxytoml" name="__tabbed_8" type="radio" /><input id="project-pyprojecttoml" name="__tabbed_8" type="radio" /><input id="project-environment-variable" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="project-metaxytoml">metaxy.toml</label><label for="project-pyprojecttoml">pyproject.toml</label><label for="project-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Optional</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="c1"># project = null</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <div class="language-toml highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="c1"># Optional</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="c1"># project = null</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_PROJECT</span><span class="o">=</span>default
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_PROJECT</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
