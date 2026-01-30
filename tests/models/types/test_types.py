@@ -622,6 +622,14 @@ class TestCoercibleToFeatureKey:
         assert isinstance(result, FeatureKey)
         assert result == feature_key
 
+    def test_coercible_adapter_with_feature_spec(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with FeatureSpec."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        result = ValidatedFeatureKeyAdapter.validate_python(feature_spec)
+        assert isinstance(result, FeatureKey)
+        assert result == feature_key
+
     def test_coercible_adapter_invalid_input(self):
         """Test ValidatedFeatureKeyAdapter.validate_python with invalid input."""
         from metaxy.models.types import ValidatedFeatureKeyAdapter

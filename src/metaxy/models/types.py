@@ -409,6 +409,8 @@ def _coerce_to_feature_key(value: Any) -> FeatureKey:
 
     - `FeatureDefinition`: extracts .key
 
+    - `FeatureSpec`: extracts .key
+
     Args:
         value: Value to coerce to `FeatureKey`
 
@@ -425,6 +427,12 @@ def _coerce_to_feature_key(value: Any) -> FeatureKey:
     from metaxy.models.feature_definition import FeatureDefinition
 
     if isinstance(value, FeatureDefinition):
+        return value.key
+
+    # Check if it's a FeatureSpec
+    from metaxy.models.feature_spec import FeatureSpec
+
+    if isinstance(value, FeatureSpec):
         return value.key
 
     # Check if it's a BaseFeature class
@@ -468,10 +476,13 @@ def _coerce_to_field_key(value: Any) -> FieldKey:
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
     from metaxy.models.feature_definition import FeatureDefinition
+    from metaxy.models.feature_spec import FeatureSpec
 
 # Type unions - what inputs are accepted
-# Note: FeatureDefinition is imported at runtime in _coerce_to_feature_key to avoid circular imports
-CoercibleToFeatureKey: TypeAlias = "str | Sequence[str] | FeatureKey | type[BaseFeature] | FeatureDefinition"
+# Note: FeatureDefinition/FeatureSpec are imported at runtime in _coerce_to_feature_key to avoid circular imports
+CoercibleToFeatureKey: TypeAlias = (
+    "str | Sequence[str] | FeatureKey | type[BaseFeature] | FeatureDefinition | FeatureSpec"
+)
 """Type alias for values that can be coerced to a [`FeatureKey`][metaxy.FeatureKey].
 
 Accepted formats:
@@ -481,6 +492,7 @@ Accepted formats:
 - [`FeatureKey`][metaxy.FeatureKey]: Pass through unchanged
 - `type[BaseFeature]`: Any [`BaseFeature`][metaxy.BaseFeature] subclass - extracts its key via `.spec().key`
 - [`FeatureDefinition`][metaxy.FeatureDefinition]: Extracts its key via `.key`
+- [`FeatureSpec`][metaxy.FeatureSpec]: Extracts its key via `.key`
 
 Example:
     ```python
@@ -489,6 +501,7 @@ Example:
     key3 = mx.FeatureKey("raw/video")
     key4 = MyFeatureClass  # where MyFeatureClass is a BaseFeature subclass
     key5 = mx.FeatureDefinition("raw/video", ...)
+    key6 = mx.FeatureSpec(key="raw/video", id_columns=("id",))
     ```
 """
 

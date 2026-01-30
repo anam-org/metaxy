@@ -96,6 +96,8 @@ def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
     - `Sequence[str]`: `["a", "b", "c"]`
     - `FeatureKey`: pass through
     - `type[BaseFeature]`: extracts `.spec().key`
+    - `FeatureDefinition`: extracts `.key`
+    - `FeatureSpec`: extracts `.key`
 
     Args:
         value: Value to coerce to `FeatureKey`

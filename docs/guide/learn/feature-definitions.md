@@ -206,7 +206,8 @@ Additionally, the following actions always trigger a sync for external feature d
 
 And some other places where it's appropriate and doesn't create an additional overhead.
 
-!!! note
+!!! tip
 
-    [`sync_external_features`][metaxy.sync_external_features] is a no-op most of the time and is very lightweight when it's not.
-    If the current feature graph does not contain any external features, it will not load any feature definitions from the metadata store.
+    This behavior can be disabled by setting `sync=False` in the global Metaxy configuration. However, we advise to keep it enabled,
+    because [`sync_external_features`][metaxy.sync_external_features] is very lightweight on the first call and a no-op on subsequent calls.
+    It only does anything if the current feature graph does not contain any external features.

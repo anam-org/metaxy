@@ -1163,7 +1163,11 @@ def test_sync_flag_loads_external_features(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(downstream_features):
         # WITHOUT --sync: external feature remains unresolved (shows <external>)
         # Use --all-projects to see the external feature which has a different project
-        result_no_sync = metaxy_project.run_cli(["--all-projects", "list", "features"])
+        # Disable auto-sync via METAXY_SYNC=false to test the explicit --sync flag
+        result_no_sync = metaxy_project.run_cli(
+            ["--all-projects", "list", "features"],
+            env={"METAXY_SYNC": "false"},
+        )
         assert result_no_sync.returncode == 0
         assert "<external>" in result_no_sync.stdout  # External feature not resolved
 
@@ -1231,7 +1235,11 @@ def test_sync_flag_warns_on_version_mismatch(metaxy_project: TempMetaxyProject):
     # Now run with mismatched external placeholder
     with metaxy_project.with_features(downstream_with_wrong_external):
         # With --sync, should warn about version mismatch
-        result = metaxy_project.run_cli(["--sync", "graph", "describe"])
+        # Disable auto-sync via METAXY_SYNC=false to ensure --sync flag triggers the sync
+        result = metaxy_project.run_cli(
+            ["--sync", "graph", "describe"],
+            env={"METAXY_SYNC": "false"},
+        )
         assert result.returncode == 0
         # Should still work but with warning in stderr
         assert "mismatch/upstream" in result.stderr or "Version mismatch" in result.stderr
@@ -1294,7 +1302,12 @@ def test_locked_flag_errors_on_version_mismatch(metaxy_project: TempMetaxyProjec
     # Now run with mismatched external placeholder and --locked
     with metaxy_project.with_features(downstream_with_wrong_external):
         # With --sync --locked, should fail due to version mismatch
-        result = metaxy_project.run_cli(["--sync", "--locked", "graph", "describe"], check=False)
+        # Disable auto-sync via METAXY_SYNC=false to ensure --sync flag triggers the sync
+        result = metaxy_project.run_cli(
+            ["--sync", "--locked", "graph", "describe"],
+            check=False,
+            env={"METAXY_SYNC": "false"},
+        )
         assert result.returncode != 0
         assert "Version mismatch" in result.stderr
 
