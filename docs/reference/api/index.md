@@ -17,7 +17,7 @@ import metaxy as mx
 
 ::: metaxy.init_metaxy
 
-::: metaxy.load_feature_definitions
+::: metaxy.sync_external_features
 
 ## Metadata Stores
 

@@ -350,14 +350,13 @@ class MetadataStore(ABC):
 
         import metaxy as mx
 
-        # Load feature definitions from the store to replace any external feature placeholders.
+        # Sync external feature definitions from the store to replace any external feature placeholders.
         # This ensures version hashes are computed correctly against actual stored definitions.
         # it is acceptable to call this here automatically for three reasons:
         # 1. `resolve_update` is typically only called once at the start of the workflow
         # 2. `resolve_update` is already doing heavy computations so an extra little call won't hurt performance
         # 3. it is extremely important to get the result right
-        if mx.FeatureGraph.get_active().has_external_features:
-            mx.load_feature_definitions(self)
+        mx.sync_external_features(self)
 
         # Convert samples to Narwhals frame if not already
         samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None
@@ -708,7 +707,13 @@ class MetadataStore(ABC):
         !!! warning
             The order of rows is not guaranteed.
         """
+        import metaxy as mx
+
         self._check_open()
+
+        # this call is a no-op most of the time
+        # and is very lightweight when it's not
+        mx.sync_external_features(self)
 
         filters = filters or []
         columns = columns or []

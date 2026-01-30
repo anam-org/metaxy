@@ -95,6 +95,7 @@ class MetaxyDatasink(Datasink[_WriteTaskResult]):
         """Write blocks of metadata to the store."""
         # Initialize metaxy on the worker - config and features are needed for write_metadata
         mx.init_metaxy(self.config)
+        mx.sync_external_features(self.store)
 
         rows_written = 0
         rows_failed = 0

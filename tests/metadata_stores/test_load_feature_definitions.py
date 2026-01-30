@@ -5,8 +5,7 @@ from pathlib import Path
 import narwhals as nw
 from metaxy_testing.models import SampleFeatureSpec
 
-import metaxy as mx
-from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec, _load_feature_definitions
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureDefinition, FeatureGraph
@@ -46,7 +45,7 @@ def test_load_feature_definitions_into_graph(tmp_path: Path):
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
             assert len(new_graph.feature_definitions_by_key) == 0
-            definitions = storage.load_feature_definitions(graph=new_graph)
+            definitions = storage._load_feature_definitions(graph=new_graph)
 
             # Returns list of loaded definitions
             assert len(definitions) == 2
@@ -81,7 +80,7 @@ def test_load_feature_definitions_uses_active_graph_by_default(tmp_path: Path):
     with target_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            definitions = storage.load_feature_definitions()
+            definitions = storage._load_feature_definitions()
 
             assert len(definitions) == 1
             assert FeatureKey(["feature_x"]) in target_graph.feature_definitions_by_key
@@ -123,7 +122,7 @@ def test_load_feature_definitions_by_project(tmp_path: Path):
     with new_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            definitions = storage.load_feature_definitions(projects=project, graph=new_graph)
+            definitions = storage._load_feature_definitions(projects=project, graph=new_graph)
 
             assert len(definitions) == 2
 
@@ -134,7 +133,7 @@ def test_load_feature_definitions_returns_empty_list_when_no_features(tmp_path: 
     with new_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            definitions = storage.load_feature_definitions(graph=new_graph)
+            definitions = storage._load_feature_definitions(graph=new_graph)
 
             assert definitions == []
             assert len(new_graph.feature_definitions_by_key) == 0
@@ -178,7 +177,7 @@ def test_load_feature_definitions_preserves_dependencies(tmp_path: Path):
     with new_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            storage.load_feature_definitions(graph=new_graph)
+            storage._load_feature_definitions(graph=new_graph)
 
             downstream_def = new_graph.feature_definitions_by_key[FeatureKey(["downstream"])]
             assert downstream_def.spec.deps is not None
@@ -228,14 +227,14 @@ def test_load_feature_definitions_loads_latest_snapshot(tmp_path: Path):
     with new_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            definitions = storage.load_feature_definitions(graph=new_graph)
+            definitions = storage._load_feature_definitions(graph=new_graph)
 
             assert len(definitions) == 1
             assert definitions[0].spec.fields[0].code_version == "2"
 
 
 def test_mx_load_feature_definitions_public_api(tmp_path: Path):
-    """Test the mx.load_feature_definitions public API."""
+    """Test the _load_feature_definitions public API."""
     graph_v1 = FeatureGraph()
     with graph_v1.use():
 
@@ -256,7 +255,7 @@ def test_mx_load_feature_definitions_public_api(tmp_path: Path):
     new_graph = FeatureGraph()
     with new_graph.use():
         store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        definitions = mx.load_feature_definitions(store)
+        definitions = _load_feature_definitions(store)
 
         assert len(definitions) == 1
         assert definitions[0].key == FeatureKey(["public_api_test"])
@@ -309,7 +308,7 @@ def test_feature_depending_on_loaded_definition(tmp_path: Path):
 
         # Now load the upstream feature from the store
         store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        mx.load_feature_definitions(store)
+        _load_feature_definitions(store)
 
         # Now both features are in the graph
         assert FeatureKey(["upstream"]) in new_graph.feature_definitions_by_key
@@ -362,7 +361,7 @@ def test_load_feature_definitions_with_filters(tmp_path: Path):
     new_graph = FeatureGraph()
     with new_graph.use():
         store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        definitions = mx.load_feature_definitions(
+        definitions = _load_feature_definitions(
             store,
             filters=[nw.col("feature_key").is_in(["alpha", "gamma"])],
         )
@@ -405,7 +404,7 @@ def test_load_feature_definitions_with_filters_via_storage(tmp_path: Path):
     with new_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            definitions = storage.load_feature_definitions(
+            definitions = storage._load_feature_definitions(
                 filters=[nw.col("feature_key") == "one"],
                 graph=new_graph,
             )
@@ -460,7 +459,7 @@ def test_load_feature_definitions_filters_applied_after_deduplication(tmp_path: 
     new_graph = FeatureGraph()
     with new_graph.use():
         store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        definitions = mx.load_feature_definitions(
+        definitions = _load_feature_definitions(
             store,
             filters=[nw.col("feature_key") == "evolving"],
         )
@@ -581,7 +580,7 @@ def test_snapshot_succeeds_after_loading_external_dependencies(tmp_path: Path):
 
         # Load the real feature from the store - this should replace the external placeholder
         store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        mx.load_feature_definitions(store)
+        _load_feature_definitions(store)
 
         # Now the feature should no longer be external
         assert new_graph.get_feature_definition(["shared_upstream"]).is_external is False
@@ -620,7 +619,7 @@ def test_external_features_never_pushed_to_metadata_store(tmp_path: Path):
     with new_graph.use():
         # Load the original feature
         store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        mx.load_feature_definitions(store)
+        _load_feature_definitions(store)
 
         # Add an external feature (from another project we don't control)
         external_def = FeatureDefinition.external(
@@ -788,7 +787,7 @@ def test_load_feature_definitions_warns_on_version_mismatch(tmp_path: Path):
         # Load should warn about version mismatch
         with pytest.warns(UserWarning, match="Version mismatch"):
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            mx.load_feature_definitions(store)
+            _load_feature_definitions(store)
 
         # But the feature should still be loaded (and no longer external)
         assert new_graph.get_feature_definition(["version_mismatch_warn"]).is_external is False
@@ -833,7 +832,7 @@ def test_load_feature_definitions_raises_on_version_mismatch_when_error(tmp_path
         # Load should raise ValueError about version mismatch
         with pytest.raises(ValueError, match="Version mismatch"):
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            mx.load_feature_definitions(store)
+            _load_feature_definitions(store)
 
 
 def test_load_feature_definitions_consolidates_multiple_mismatches(tmp_path: Path):
@@ -894,7 +893,7 @@ def test_load_feature_definitions_consolidates_multiple_mismatches(tmp_path: Pat
         # Should get ONE warning mentioning BOTH features
         with pytest.warns(UserWarning, match="2 external feature") as record:
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            mx.load_feature_definitions(store)
+            _load_feature_definitions(store)
 
         # Verify both features are mentioned in the single warning
         warning_message = str(record[0].message)
@@ -948,7 +947,7 @@ def test_load_feature_definitions_no_warning_when_versions_match(tmp_path: Path)
         with warnings.catch_warnings():
             warnings.simplefilter("error")  # Turn warnings into errors
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            mx.load_feature_definitions(store)
+            _load_feature_definitions(store)
 
         # Feature should be loaded
         assert new_graph.get_feature_definition(["version_match"]).is_external is False
@@ -992,7 +991,7 @@ def test_load_feature_definitions_on_version_mismatch_override_to_error(tmp_path
         # Load with on_version_mismatch="error" override should raise
         with pytest.raises(ValueError, match="Version mismatch"):
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            mx.load_feature_definitions(store, on_version_mismatch="error")
+            _load_feature_definitions(store, on_version_mismatch="error")
 
 
 def test_load_feature_definitions_on_version_mismatch_override_to_warn(tmp_path: Path):
@@ -1033,7 +1032,7 @@ def test_load_feature_definitions_on_version_mismatch_override_to_warn(tmp_path:
         # Load with on_version_mismatch="warn" override should only warn, not raise
         with pytest.warns(UserWarning, match="Version mismatch"):
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            mx.load_feature_definitions(store, on_version_mismatch="warn")
+            _load_feature_definitions(store, on_version_mismatch="warn")
 
         # Feature should still be loaded
         assert new_graph.get_feature_definition(["override_to_warn"]).is_external is False
