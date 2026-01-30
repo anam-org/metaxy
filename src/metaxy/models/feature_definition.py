@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import warnings
 from collections.abc import Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import Field, PrivateAttr
 
@@ -40,6 +41,7 @@ class FeatureDefinition(FrozenBaseModel):
     _feature_class: type[BaseFeature] | None = PrivateAttr(default=None)
     _is_external: bool = PrivateAttr(default=False)
     _provenance_by_field: dict[str, str] | None = PrivateAttr(default=None)
+    _on_version_mismatch: Literal["warn", "error"] = PrivateAttr(default="warn")
 
     @classmethod
     def from_feature_class(cls, feature_cls: type[BaseFeature]) -> FeatureDefinition:
@@ -102,6 +104,7 @@ class FeatureDefinition(FrozenBaseModel):
         project: str,
         feature_schema: dict[str, Any] | None = None,
         provenance_by_field: dict[CoercibleToFieldKey, str] | None = None,
+        on_version_mismatch: Literal["warn", "error"] = "warn",
     ) -> FeatureDefinition:
         """Create an external FeatureDefinition without a Feature class.
 
@@ -112,9 +115,14 @@ class FeatureDefinition(FrozenBaseModel):
             spec: The feature specification.
             project: The metaxy project this feature belongs to.
             feature_schema: Pydantic JSON schema dict describing the feature's fields.
+                Typically doesn't have to be provided, unless some user code attempts
+                to use it before the real feature definition is loaded from the metadata store.
+                This argument is experimental and may be changed in the future.
             provenance_by_field: Optional manually-specified field provenance map.
                 Use this argument to avoid providing too many upstream external features.
                 Make sure to provide the actual values from the real external feature.
+            on_version_mismatch: How to handle a version mismatch if the actual feature loaded from the
+                metadata store has a different version than the version specified in the corresponding external feature.
 
         Returns:
             A new FeatureDefinition marked as external.
@@ -133,6 +141,7 @@ class FeatureDefinition(FrozenBaseModel):
         )
         definition._is_external = True
         definition._provenance_by_field = normalized_provenance
+        definition._on_version_mismatch = on_version_mismatch
         return definition
 
     def _get_feature_class(self) -> type[BaseFeature]:
@@ -245,3 +254,58 @@ class FeatureDefinition(FrozenBaseModel):
                 "Only external features can have provenance overrides."
             )
         return self._provenance_by_field is not None
+
+    @property
+    def on_version_mismatch(self) -> Literal["warn", "error"]:
+        """What to do when actual feature version differs from expected."""
+        return self._on_version_mismatch
+
+    def check_version_mismatch(
+        self,
+        *,
+        expected_version: str,
+        actual_version: str,
+        expected_version_by_field: dict[str, str],
+        actual_version_by_field: dict[str, str],
+    ) -> None:
+        """Check if the actual feature version matches expected version.
+
+        Called by load_feature_definitions after loading external features from
+        the metadata store, comparing provenance-carrying feature versions.
+
+        Args:
+            expected_version: The feature version before loading (from graph).
+            actual_version: The feature version after loading (from graph).
+            expected_version_by_field: Field-level versions before loading.
+            actual_version_by_field: Field-level versions after loading.
+
+        Raises:
+            ValueError: If versions mismatch and on_version_mismatch is "error".
+        """
+        if not self.is_external:
+            return
+
+        if expected_version == actual_version:
+            return
+
+        # Find which fields differ
+        mismatched_fields = []
+        all_fields = set(expected_version_by_field.keys()) | set(actual_version_by_field.keys())
+        for field in sorted(all_fields):
+            expected_field_ver = expected_version_by_field.get(field, "<missing>")
+            actual_field_ver = actual_version_by_field.get(field, "<missing>")
+            if expected_field_ver != actual_field_ver:
+                mismatched_fields.append(f"  - {field}: expected '{expected_field_ver}', got '{actual_field_ver}'")
+
+        field_details = "\n".join(mismatched_fields) if mismatched_fields else "  (no field-level details available)"
+
+        message = (
+            f"Version mismatch for external feature '{self.key}': "
+            f"expected feature version '{expected_version}', got '{actual_version}'.\n"
+            f"Field-level mismatches:\n{field_details}\n"
+            f"The external feature definition may be out of sync with the metadata store."
+        )
+
+        if self._on_version_mismatch == "error":
+            raise ValueError(message)
+        warnings.warn(message, stacklevel=3)

@@ -94,6 +94,9 @@ class FeatureGraph:
             return
         elif not definition.is_external and self.feature_definitions_by_key[key].is_external:
             # Non-external features always replace external features
+            # Note: version mismatch checking is done in load_feature_definitions,
+            # not here, because we need the full graph context to compute
+            # provenance-carrying versions.
             self.feature_definitions_by_key[key] = definition
         elif definition.feature_class_path == self.feature_definitions_by_key[key].feature_class_path:
             # Same class path - allow quiet replacement

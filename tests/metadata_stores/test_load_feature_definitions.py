@@ -747,3 +747,293 @@ def test_resolve_update_loads_external_feature_definitions(tmp_path: Path):
             # The increment should have computed correctly with the real upstream definition
             assert increment.added is not None
             assert len(increment.added) == 2  # Both upstream samples
+
+
+def test_load_feature_definitions_warns_on_version_mismatch(tmp_path: Path):
+    """Test that load_feature_definitions warns when external feature version mismatches."""
+    import pytest
+
+    # First, save a feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class SourceFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["version_mismatch_warn"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create a new graph with a mismatched external feature
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        # Add external feature with different code_version than what's in the store
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["version_mismatch_warn"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Different!
+            ),
+            feature_schema={},
+            project="test-project",
+            on_version_mismatch="warn",  # Should warn
+        )
+        new_graph.add_feature_definition(external_def)
+
+        # Load should warn about version mismatch
+        with pytest.warns(UserWarning, match="Version mismatch"):
+            store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+            mx.load_feature_definitions(store)
+
+        # But the feature should still be loaded (and no longer external)
+        assert new_graph.get_feature_definition(["version_mismatch_warn"]).is_external is False
+
+
+def test_load_feature_definitions_raises_on_version_mismatch_when_error(tmp_path: Path):
+    """Test that load_feature_definitions raises when external feature version mismatches and on_version_mismatch='error'."""
+    import pytest
+
+    # First, save a feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class SourceFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["version_mismatch_error"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create a new graph with a mismatched external feature set to error
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        # Add external feature with different code_version than what's in the store
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["version_mismatch_error"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Different!
+            ),
+            feature_schema={},
+            project="test-project",
+            on_version_mismatch="error",  # Should raise
+        )
+        new_graph.add_feature_definition(external_def)
+
+        # Load should raise ValueError about version mismatch
+        with pytest.raises(ValueError, match="Version mismatch"):
+            store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+            mx.load_feature_definitions(store)
+
+
+def test_load_feature_definitions_consolidates_multiple_mismatches(tmp_path: Path):
+    """Test that load_feature_definitions issues a single consolidated warning for multiple mismatches."""
+    import pytest
+
+    # First, save two features to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class FeatureA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["multi_mismatch", "a"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class FeatureB(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["multi_mismatch", "b"]),
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create a new graph with TWO mismatched external features
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        external_a = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["multi_mismatch", "a"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],
+            ),
+            feature_schema={},
+            project="test-project",
+            on_version_mismatch="warn",
+        )
+        new_graph.add_feature_definition(external_a)
+
+        external_b = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["multi_mismatch", "b"]),
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="999")],
+            ),
+            feature_schema={},
+            project="test-project",
+            on_version_mismatch="warn",
+        )
+        new_graph.add_feature_definition(external_b)
+
+        # Should get ONE warning mentioning BOTH features
+        with pytest.warns(UserWarning, match="2 external feature") as record:
+            store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+            mx.load_feature_definitions(store)
+
+        # Verify both features are mentioned in the single warning
+        warning_message = str(record[0].message)
+        assert "multi_mismatch/a" in warning_message
+        assert "multi_mismatch/b" in warning_message
+
+
+def test_load_feature_definitions_no_warning_when_versions_match(tmp_path: Path):
+    """Test that load_feature_definitions doesn't warn when versions match."""
+    import warnings
+
+    # First, save a feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class SourceFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["version_match"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Get the real feature version to use in our external definition
+        expected_version_by_field = source_graph.get_feature_version_by_field(["version_match"])
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create a new graph with a MATCHING external feature (using provenance override)
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        # Add external feature with provenance override matching the real feature
+        # Convert string keys to FieldKey for type safety
+        provenance_override = {FieldKey([k]): v for k, v in expected_version_by_field.items()}
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["version_match"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+            feature_schema={},
+            project="test-project",
+            provenance_by_field=provenance_override,  # Match the real version
+            on_version_mismatch="error",  # Would raise if there's a mismatch
+        )
+        new_graph.add_feature_definition(external_def)
+
+        # Load should NOT warn or raise
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")  # Turn warnings into errors
+            store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+            mx.load_feature_definitions(store)
+
+        # Feature should be loaded
+        assert new_graph.get_feature_definition(["version_match"]).is_external is False
+
+
+def test_load_feature_definitions_on_version_mismatch_override_to_error(tmp_path: Path):
+    """Test that on_version_mismatch='error' overrides a feature's 'warn' setting."""
+    import pytest
+
+    # First, save a feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class SourceFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["override_to_error"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create a new graph with a mismatched external feature set to "warn"
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["override_to_error"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Different!
+            ),
+            feature_schema={},
+            project="test-project",
+            on_version_mismatch="warn",  # Feature says warn
+        )
+        new_graph.add_feature_definition(external_def)
+
+        # Load with on_version_mismatch="error" override should raise
+        with pytest.raises(ValueError, match="Version mismatch"):
+            store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+            mx.load_feature_definitions(store, on_version_mismatch="error")
+
+
+def test_load_feature_definitions_on_version_mismatch_override_to_warn(tmp_path: Path):
+    """Test that on_version_mismatch='warn' overrides a feature's 'error' setting."""
+    import pytest
+
+    # First, save a feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class SourceFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["override_to_warn"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create a new graph with a mismatched external feature set to "error"
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["override_to_warn"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Different!
+            ),
+            feature_schema={},
+            project="test-project",
+            on_version_mismatch="error",  # Feature says error
+        )
+        new_graph.add_feature_definition(external_def)
+
+        # Load with on_version_mismatch="warn" override should only warn, not raise
+        with pytest.warns(UserWarning, match="Version mismatch"):
+            store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+            mx.load_feature_definitions(store, on_version_mismatch="warn")
+
+        # Feature should still be loaded
+        assert new_graph.get_feature_definition(["override_to_warn"]).is_external is False
