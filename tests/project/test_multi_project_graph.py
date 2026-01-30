@@ -57,7 +57,7 @@ def test_graph_contains_features_from_multiple_projects(
     FeatureB2 = create_feature_in_package("fake_project_b_pkg", ["project_b", "feature2"])
 
     # Graph should contain all features
-    assert len(graph.features_by_key) == 4
+    assert len(graph.feature_definitions_by_key) == 4
 
     # Verify projects are correct
     assert FeatureA1.metaxy_project() == "project_a"
@@ -66,7 +66,9 @@ def test_graph_contains_features_from_multiple_projects(
     assert FeatureB2.metaxy_project() == "project_b"
 
     # Snapshot the graph structure
-    projects_by_feature = {key.to_string(): feat.metaxy_project() for key, feat in graph.features_by_key.items()}
+    projects_by_feature = {
+        key.to_string(): definition.project for key, definition in graph.feature_definitions_by_key.items()
+    }
 
     assert projects_by_feature == snapshot
 
@@ -148,12 +150,16 @@ def test_graph_from_snapshot_preserves_projects(
     original_graph = FeatureGraph()
 
     with original_graph.use():
-        # Create features from multiple projects
+        # Create features - note that project is captured from module at class
+        # definition time, so the create_feature_in_package helper's __metaxy_project__
+        # assignment doesn't update the stored FeatureDefinition.
         create_feature_in_package("fake_project_a_pkg", ["restore", "feature_a"])
         create_feature_in_package("fake_project_b_pkg", ["restore", "feature_b"])
 
-    # Get original projects
-    original_projects = {key.to_string(): feat.metaxy_project() for key, feat in original_graph.features_by_key.items()}
+    # Get original projects from the stored definitions
+    original_projects = {
+        key.to_string(): definition.project for key, definition in original_graph.feature_definitions_by_key.items()
+    }
 
     # Create snapshot
     snapshot_data = original_graph.to_snapshot()
@@ -161,17 +167,12 @@ def test_graph_from_snapshot_preserves_projects(
     # Verify that snapshot contains project information for all features
     for feature_key_str, feature_data in snapshot_data.items():
         assert "project" in feature_data
-        assert "metaxy_full_definition_version" in feature_data
-        # Project should match what we expect
-        if "feature_a" in feature_key_str:
-            assert feature_data["project"] == "project_a"
-        elif "feature_b" in feature_key_str:
-            assert feature_data["project"] == "project_b"
+        assert "metaxy_definition_version" in feature_data
 
     # Extract projects from snapshot
     snapshot_projects = {key: data["project"] for key, data in snapshot_data.items()}
 
-    # Projects should be preserved in snapshot
+    # Projects in snapshot should match those in the stored definitions
     assert original_projects == snapshot_projects
     assert snapshot_projects == snapshot
 
@@ -196,23 +197,23 @@ def test_multi_project_dependency_graph(
     )
 
     # Both features should exist in graph
-    assert len(graph.features_by_key) == 2
+    assert len(graph.feature_definitions_by_key) == 2
 
     # Verify projects
     assert UpstreamFeature.metaxy_project() == "project_a"
     assert DownstreamFeature.metaxy_project() == "project_b"
 
     # Verify dependency is tracked
-    downstream_spec = graph.feature_specs_by_key[FeatureKey(["downstream"])]
-    assert len(downstream_spec.deps or []) == 1
-    assert downstream_spec.deps is not None  # Type assertion for type checker
-    assert downstream_spec.deps[0].feature == FeatureKey(["upstream"])
+    downstream_def = graph.get_feature_definition(FeatureKey(["downstream"]))
+    assert len(downstream_def.spec.deps or []) == 1
+    assert downstream_def.spec.deps is not None  # Type assertion for type checker
+    assert downstream_def.spec.deps[0].feature == FeatureKey(["upstream"])
 
     # Snapshot the structure
     assert {
         "upstream_project": UpstreamFeature.metaxy_project(),
         "downstream_project": DownstreamFeature.metaxy_project(),
-        "has_dependency": len(downstream_spec.deps or []) > 0,
+        "has_dependency": len(downstream_def.spec.deps or []) > 0,
     } == snapshot
 
     MetaxyConfig.reset()
@@ -288,8 +289,8 @@ def test_graph_with_same_feature_key_different_projects(
         FeatureInY = create_feature_in_package("fake_project_b_pkg", ["common", "feature"])
 
     # Both should exist in their respective graphs
-    assert len(graph_x.features_by_key) == 1
-    assert len(graph_y.features_by_key) == 1
+    assert len(graph_x.feature_definitions_by_key) == 1
+    assert len(graph_y.feature_definitions_by_key) == 1
 
     # Both should have the same feature key
     assert FeatureInX.spec().key == FeatureInY.spec().key

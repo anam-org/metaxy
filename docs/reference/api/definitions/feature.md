@@ -15,3 +15,5 @@ Features are defined by extending it.
     Retrieve a feature's code version from its spec: `MyFeature.spec().code_version`.
 
 ::: metaxy.get_feature_by_key
+
+::: metaxy.FeatureDefinition

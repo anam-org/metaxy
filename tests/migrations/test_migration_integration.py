@@ -164,7 +164,7 @@ def test_basic_migration_flow(
     """Test basic end-to-end migration flow: detect → execute → verify."""
     # Step 1: Setup v1 data
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    SimpleV1 = simple_graph_v1.features_by_key[FeatureKey(["test_integration", "simple"])]
+    SimpleV1 = simple_graph_v1.feature_definitions_by_key[FeatureKey(["test_integration", "simple"])]
 
     with simple_graph_v1.use(), store_v1:
         # Write data
@@ -186,7 +186,7 @@ def test_basic_migration_flow(
 
     # Step 2: Migrate to v2 graph
     store_v2 = migrate_store_to_graph(store_v1, simple_graph_v2)
-    SimpleV2 = simple_graph_v2.features_by_key[FeatureKey(["test_integration", "simple"])]
+    SimpleV2 = simple_graph_v2.feature_definitions_by_key[FeatureKey(["test_integration", "simple"])]
 
     with simple_graph_v2.use(), store_v2.open("write"):
         # Step 3: Detect migration (BEFORE recording v2 snapshot)
@@ -253,8 +253,8 @@ def test_upstream_downstream_migration(
     """Test migration with upstream/downstream dependency chain."""
     # Step 1: Setup v1 data
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    UpstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "upstream"])]
-    DownstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "downstream"])]
+    UpstreamV1 = upstream_downstream_v1.feature_definitions_by_key[FeatureKey(["test_integration", "upstream"])]
+    DownstreamV1 = upstream_downstream_v1.feature_definitions_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v1.use(), store_v1:
         # Write upstream (root feature)
@@ -283,8 +283,8 @@ def test_upstream_downstream_migration(
 
     # Step 2: Migrate to v2 graph
     store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
-    UpstreamV2 = upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "upstream"])]
-    upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "downstream"])]
+    UpstreamV2 = upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "upstream"])]
+    upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v2.use(), store_v2.open("write"):
         # Step 3: Detect migration (before recording v2 snapshot)
@@ -351,8 +351,8 @@ def test_migration_idempotency(
     """Test that migrations can be re-run safely (idempotent)."""
     # Setup v1 data with downstream
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    UpstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "upstream"])]
-    DownstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "downstream"])]
+    UpstreamV1 = upstream_downstream_v1.feature_definitions_by_key[FeatureKey(["test_integration", "upstream"])]
+    DownstreamV1 = upstream_downstream_v1.feature_definitions_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v1.use(), store_v1:
         upstream_data = pl.DataFrame(
@@ -373,8 +373,8 @@ def test_migration_idempotency(
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
-    UpstreamV2 = upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "upstream"])]
-    upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "downstream"])]
+    UpstreamV2 = upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "upstream"])]
+    upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v2.use(), store_v2.open("write"):
         # Update upstream manually
@@ -432,8 +432,8 @@ def test_migration_dry_run(
     """Test dry-run mode doesn't modify data."""
     # Setup v1 data
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    UpstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "upstream"])]
-    DownstreamV1 = upstream_downstream_v1.features_by_key[FeatureKey(["test_integration", "downstream"])]
+    UpstreamV1 = upstream_downstream_v1.feature_definitions_by_key[FeatureKey(["test_integration", "upstream"])]
+    DownstreamV1 = upstream_downstream_v1.feature_definitions_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v1.use(), store_v1:
         upstream_data = pl.DataFrame(
@@ -454,8 +454,8 @@ def test_migration_dry_run(
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
-    UpstreamV2 = upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "upstream"])]
-    DownstreamV2 = upstream_downstream_v2.features_by_key[FeatureKey(["test_integration", "downstream"])]
+    UpstreamV2 = upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "upstream"])]
+    DownstreamV2 = upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "downstream"])]
 
     with upstream_downstream_v2.use(), store_v2.open("write"):
         # Update upstream
@@ -575,8 +575,8 @@ def test_field_dependency_change(tmp_path):
 
     # Setup v1 data
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test", "upstream"])]
-    DownstreamV1 = graph_v1.features_by_key[FeatureKey(["test", "downstream"])]
+    UpstreamV1 = graph_v1.feature_definitions_by_key[FeatureKey(["test", "upstream"])]
+    DownstreamV1 = graph_v1.feature_definitions_by_key[FeatureKey(["test", "downstream"])]
 
     with graph_v1.use(), store_v1:
         # Write upstream with both fields
@@ -599,8 +599,8 @@ def test_field_dependency_change(tmp_path):
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, graph_v2)
-    graph_v2.features_by_key[FeatureKey(["test", "upstream"])]
-    graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
+    graph_v2.feature_definitions_by_key[FeatureKey(["test", "upstream"])]
+    graph_v2.feature_definitions_by_key[FeatureKey(["test", "downstream"])]
 
     with graph_v2.use(), store_v2:
         # Detect migration (before recording v2 snapshot)
@@ -691,39 +691,34 @@ def test_feature_dependency_swap(tmp_path):
     graph_v2 = temp_v2.graph
 
     # Verify feature_versions differ
-    down_v1 = graph_v1.features_by_key[FeatureKey(["test", "downstream"])]
-    down_v2 = graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
-    assert down_v1.feature_version() != down_v2.feature_version()
+    downstream_key = FeatureKey(["test", "downstream"])
+    assert graph_v1.get_feature_version(downstream_key) != graph_v2.get_feature_version(downstream_key)
 
     # Setup v1 data
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    upstream_a_v1 = graph_v1.features_by_key[FeatureKey(["test", "upstream_a"])]
-    upstream_b_v1 = graph_v1.features_by_key[FeatureKey(["test", "upstream_b"])]
-    graph_v1.features_by_key[FeatureKey(["test", "downstream"])]
+    upstream_a_key = FeatureKey(["test", "upstream_a"])
+    upstream_b_key = FeatureKey(["test", "upstream_b"])
 
     with graph_v1.use(), store_v1:
         # Write both upstreams
         data_a = pl.DataFrame({"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "ha"}]})
-        data_a = add_metaxy_provenance_column(data_a, upstream_a_v1)
-        store_v1.write_metadata(upstream_a_v1, data_a)
+        data_a = add_metaxy_provenance_column(data_a, upstream_a_key)
+        store_v1.write_metadata(upstream_a_key, data_a)
 
         data_b = pl.DataFrame({"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "hb"}]})
-        data_b = add_metaxy_provenance_column(data_b, upstream_b_v1)
-        store_v1.write_metadata(upstream_b_v1, data_b)
+        data_b = add_metaxy_provenance_column(data_b, upstream_b_key)
+        store_v1.write_metadata(upstream_b_key, data_b)
 
         # Write downstream (depends on A in v1)
         # Let system auto-load upstream and calculate provenance_by_field
-        diff = store_v1.resolve_update(down_v1)
+        diff = store_v1.resolve_update(downstream_key)
         if len(diff.added) > 0:
-            store_v1.write_metadata(down_v1, diff.added)
+            store_v1.write_metadata(downstream_key, diff.added)
 
         SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, graph_v2)
-    graph_v2.features_by_key[FeatureKey(["test", "upstream_a"])]
-    graph_v2.features_by_key[FeatureKey(["test", "upstream_b"])]
-    graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
 
     with graph_v2.use(), store_v2:
         # Detect migration (before recording v2 snapshot)
@@ -746,7 +741,7 @@ def test_feature_dependency_swap(tmp_path):
 def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
     """Test that no migration is generated when nothing changed."""
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    SimpleV1 = simple_graph_v1.features_by_key[FeatureKey(["test_integration", "simple"])]
+    simple_key = FeatureKey(["test_integration", "simple"])
 
     with simple_graph_v1.use(), store:
         # Write data and record snapshot
@@ -756,8 +751,8 @@ def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
                 "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
-        data = add_metaxy_provenance_column(data, SimpleV1)
-        store.write_metadata(SimpleV1, data)
+        data = add_metaxy_provenance_column(data, simple_key)
+        store.write_metadata(simple_key, data)
         SystemTableStorage(store).push_graph_snapshot()
 
         # Try to detect migration (same graph)
@@ -775,7 +770,7 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
     """Test that adding a new feature doesn't trigger migration for it."""
     # Setup v1 data
     store_v1 = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    SimpleV1 = simple_graph_v1.features_by_key[FeatureKey(["test_integration", "simple"])]
+    SimpleV1 = simple_graph_v1.feature_definitions_by_key[FeatureKey(["test_integration", "simple"])]
 
     with simple_graph_v1.use(), store_v1:
         data = pl.DataFrame(
@@ -867,8 +862,8 @@ def test_full_graph_migration_integration(tmp_path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Setup initial data
-        Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
-        Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
+        Upstream = graph.feature_definitions_by_key[FeatureKey(["test", "upstream"])]
+        Downstream = graph.feature_definitions_by_key[FeatureKey(["test", "downstream"])]
 
         upstream_data = pl.DataFrame(
             {
@@ -941,7 +936,7 @@ def test_migration_rerun_flag(tmp_path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Setup initial data
-        Feature = graph.features_by_key[FeatureKey(["test", "rerun_feature"])]
+        Feature = graph.feature_definitions_by_key[FeatureKey(["test", "rerun_feature"])]
 
         feature_data = pl.DataFrame(
             {

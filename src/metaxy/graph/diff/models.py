@@ -269,9 +269,9 @@ class GraphData(FrozenBaseModel):
         edges: list[EdgeData] = []
 
         # Convert each feature to a GraphNode
-        for feature_key, feature_cls in graph.features_by_key.items():
+        for feature_key, definition in graph.feature_definitions_by_key.items():
             feature_key_str = feature_key.to_string()
-            spec = feature_cls.spec()
+            spec = definition.spec
 
             # Get feature version
             feature_version = graph.get_feature_version(feature_key)
@@ -297,8 +297,8 @@ class GraphData(FrozenBaseModel):
             if spec.deps:
                 dependencies = [dep.feature for dep in spec.deps]
 
-            # Get project from feature class
-            feature_project = feature_cls.metaxy_project()
+            # Get project from feature definition
+            feature_project = definition.project
 
             # Create node
             node = GraphNode(
@@ -405,17 +405,13 @@ class GraphData(FrozenBaseModel):
             feature_key = FeatureKey(feature_key_str.split("/"))
 
             # Map status strings to NodeStatus enum
-            status_str = node_data["status"]
-            if status_str == "added":
-                status = NodeStatus.ADDED
-            elif status_str == "removed":
-                status = NodeStatus.REMOVED
-            elif status_str == "changed":
-                status = NodeStatus.CHANGED
-            elif status_str == "unchanged":
-                status = NodeStatus.UNCHANGED
-            else:
-                status = NodeStatus.NORMAL
+            status_map = {
+                "added": NodeStatus.ADDED,
+                "removed": NodeStatus.REMOVED,
+                "changed": NodeStatus.CHANGED,
+                "unchanged": NodeStatus.UNCHANGED,
+            }
+            status = status_map.get(node_data["status"], NodeStatus.NORMAL)
 
             # Convert fields
             fields_dict = node_data.get("fields", {})

@@ -20,15 +20,17 @@ from metaxy.models.constants import (
 )
 
 
-def build_column_schema(feature_cls: type[mx.BaseFeature]) -> dg.TableSchema:
+def build_column_schema(feature: mx.FeatureDefinition | type[mx.BaseFeature]) -> dg.TableSchema:
     """Build a Dagster TableSchema from a Metaxy feature class.
 
     Creates column definitions from Pydantic model fields, including inherited
     system columns. Field types are converted to strings and field descriptions
     are used as column descriptions.
 
+    For FeatureDefinition objects, imports the feature class from its class path.
+
     Args:
-        feature_cls: The Metaxy feature class to extract schema from.
+        feature: The Metaxy feature definition or class to extract schema from.
 
     Returns:
         A TableSchema with columns derived from Pydantic model fields,
@@ -37,6 +39,12 @@ def build_column_schema(feature_cls: type[mx.BaseFeature]) -> dg.TableSchema:
     !!! tip
         This is automatically injected by [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify]
     """
+    # Get the feature class
+    if isinstance(feature, mx.FeatureDefinition):
+        feature_cls = feature._get_feature_class()
+    else:
+        feature_cls = feature
+
     columns: list[dg.TableColumn] = []
     for field_name, field_info in feature_cls.model_fields.items():
         columns.append(
@@ -104,7 +112,7 @@ def _get_type_string(annotation: Any) -> str:
 
 
 def build_column_lineage(
-    feature_cls: type[mx.BaseFeature],
+    feature: mx.FeatureDefinition | type[mx.BaseFeature],
     feature_spec: mx.FeatureSpec | None = None,
 ) -> dg.TableColumnLineage | None:
     """Build column-level lineage from feature dependencies.
@@ -117,8 +125,8 @@ def build_column_lineage(
       from corresponding upstream columns
 
     Args:
-        feature_cls: The downstream feature class.
-        feature_spec: The downstream feature specification. If None, uses feature_cls.spec().
+        feature: The downstream feature definition or class.
+        feature_spec: The downstream feature specification. If None, extracted from feature.
 
     Returns:
         TableColumnLineage mapping downstream columns to their upstream sources,
@@ -127,20 +135,26 @@ def build_column_lineage(
     !!! tip
         This is automatically injected by [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify]
     """
-    if feature_spec is None:
-        feature_spec = feature_cls.spec()
+    # Get spec and columns from either FeatureDefinition or feature class
+    if isinstance(feature, mx.FeatureDefinition):
+        if feature_spec is None:
+            feature_spec = feature.spec
+        downstream_columns = set(feature.columns)
+    else:
+        if feature_spec is None:
+            feature_spec = feature.spec()
+        downstream_columns = set(feature.model_fields.keys())
 
     if not feature_spec.deps:
         return None
 
     deps_by_column: dict[str, list[dg.TableColumnDep]] = {}
-    downstream_columns = set(feature_cls.model_fields.keys())
 
     for dep in feature_spec.deps:
-        upstream_feature_cls = mx.get_feature_by_key(dep.feature)
-        upstream_feature_spec = upstream_feature_cls.spec()
+        upstream_feature_def = mx.get_feature_by_key(dep.feature)
+        upstream_feature_spec = upstream_feature_def.spec
         upstream_asset_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
-        upstream_columns = set(upstream_feature_cls.model_fields.keys())
+        upstream_columns = set(upstream_feature_def.columns)
 
         # Build reverse rename map: downstream_name -> upstream_name
         # FeatureDep.rename is {old_upstream_name: new_downstream_name}

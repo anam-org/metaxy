@@ -320,8 +320,7 @@ def test_resolve_update_downstream_feature(
 
     # Get feature versions
     child_key = child_plan.feature.key
-    ChildFeature = graph.features_by_key[child_key]
-    child_version = ChildFeature.feature_version()
+    child_version = graph.get_feature_version(child_key)
 
     feature_versions = {
         feat_key.to_string(): feat_class.feature_version() for feat_key, feat_class in upstream_features.items()
@@ -346,12 +345,11 @@ def test_resolve_update_downstream_feature(
             # Write all upstream data (includes transitive dependencies)
             for feat_key_str, upstream_df in upstream_data.items():
                 feat_key = FeatureKey([feat_key_str])
-                feat_class = graph.features_by_key[feat_key]
-                store.write_metadata(feat_class, upstream_df)
+                store.write_metadata(feat_key, upstream_df)
 
             # Call resolve_update to compute child metadata
             increment = store.resolve_update(
-                ChildFeature,
+                child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )
@@ -397,8 +395,7 @@ def test_resolve_update_detects_changes(
 
     # Get feature versions
     child_key = child_plan.feature.key
-    ChildFeature = graph.features_by_key[child_key]
-    child_version = ChildFeature.feature_version()
+    child_version = graph.get_feature_version(child_key)
 
     feature_versions = {
         feat_key.to_string(): feat_class.feature_version() for feat_key, feat_class in upstream_features.items()
@@ -423,11 +420,11 @@ def test_resolve_update_detects_changes(
             # Write all upstream data (includes transitive dependencies)
             for feat_key_str, upstream_df in initial_upstream.items():
                 feat_key = FeatureKey([feat_key_str])
-                feat_class = graph.features_by_key[feat_key]
+                feat_class = graph.feature_definitions_by_key[feat_key]
                 store.write_metadata(feat_class, upstream_df)
 
             # Write initial child metadata
-            store.write_metadata(ChildFeature, initial_downstream)
+            store.write_metadata(child_key, initial_downstream)
 
             # Generate new upstream data (simulating changes)
             # The easiest way to test change detection is to generate completely new data
@@ -443,12 +440,11 @@ def test_resolve_update_detects_changes(
             # Write modified upstream data
             for feat_key_str, upstream_df in modified_upstream.items():
                 feat_key = FeatureKey([feat_key_str])
-                feat_class = graph.features_by_key[feat_key]
-                store.write_metadata(feat_class, upstream_df)
+                store.write_metadata(feat_key, upstream_df)
 
             # Call resolve_update - should detect all changes
             increment = store.resolve_update(
-                ChildFeature,
+                child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )
@@ -534,7 +530,7 @@ def test_resolve_update_lazy_execution(
             # Write upstream metadata
             for feat_key_str, upstream_df in upstream_data.items():
                 feat_key = FeatureKey([feat_key_str])
-                feat_class = graph.features_by_key[feat_key]
+                feat_class = graph.feature_definitions_by_key[feat_key]
                 store.write_metadata(feat_class, upstream_df)
 
             # Call resolve_update with lazy=True
@@ -601,8 +597,7 @@ def test_resolve_update_idempotency(
     graph, upstream_features, child_plan = feature_plan_config
 
     child_key = child_plan.feature.key
-    ChildFeature = graph.features_by_key[child_key]
-    child_version = ChildFeature.feature_version()
+    child_version = graph.get_feature_version(child_key)
 
     feature_versions = {
         feat_key.to_string(): feat_class.feature_version() for feat_key, feat_class in upstream_features.items()
@@ -626,12 +621,11 @@ def test_resolve_update_idempotency(
             # Write all upstream data (includes transitive dependencies)
             for feat_key_str, upstream_df in upstream_data.items():
                 feat_key = FeatureKey([feat_key_str])
-                feat_class = graph.features_by_key[feat_key]
-                store.write_metadata(feat_class, upstream_df)
+                store.write_metadata(feat_key, upstream_df)
 
             # First resolve_update
             increment1 = store.resolve_update(
-                ChildFeature,
+                child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )
@@ -640,11 +634,11 @@ def test_resolve_update_idempotency(
 
             # Write the increment
             added_df = increment1.added.lazy().collect().to_polars()
-            store.write_metadata(ChildFeature, added_df)
+            store.write_metadata(child_key, added_df)
 
             # Second resolve_update - should be empty
             increment2 = store.resolve_update(
-                ChildFeature,
+                child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )
@@ -1775,12 +1769,11 @@ def test_resolve_update_optional_dependencies(
     store = any_store
     graph, upstream_features, child_plan = feature_plan_config
     child_key = child_plan.feature.key
-    ChildFeature = graph.features_by_key[child_key]
 
     feature_versions = {
         feat_key.to_string(): feat_class.feature_version() for feat_key, feat_class in upstream_features.items()
     }
-    feature_versions[child_key.to_string()] = ChildFeature.feature_version()
+    feature_versions[child_key.to_string()] = graph.get_feature_version(child_key)
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
@@ -1798,11 +1791,10 @@ def test_resolve_update_optional_dependencies(
             # Write upstream data to store
             for feature_key_str, upstream_df in upstream_data.items():
                 feat_key = FeatureKey([feature_key_str])
-                feat_class = graph.features_by_key[feat_key]
-                store.write_metadata(feat_class, upstream_df)
+                store.write_metadata(feat_key, upstream_df)
 
             # Get store's result
-            increment = store.resolve_update(ChildFeature, lazy=False)
+            increment = store.resolve_update(child_key, lazy=False)
 
             # Compute golden increment using PolarsVersioningEngine
             golden_increment = _compute_golden_increment_for_optional_deps(

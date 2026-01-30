@@ -30,15 +30,14 @@ METAXY_SNAPSHOT_VERSION = f"{SYSTEM_COLUMN_PREFIX}snapshot_version"
 METAXY_FEATURE_SPEC_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_spec_version"
 """Hash of the complete feature specification."""
 
-METAXY_FULL_DEFINITION_VERSION = f"{SYSTEM_COLUMN_PREFIX}full_definition_version"
-"""Hash of the complete feature definition including Pydantic schema, feature spec, and project.
+METAXY_DEFINITION_VERSION = f"{SYSTEM_COLUMN_PREFIX}definition_version"
+"""Hash of the complete feature definition including Pydantic schema and feature spec.
 
-This comprehensive hash captures ALL aspects of a feature definition:
+This comprehensive hash captures the feature definition (excluding project):
 - Pydantic model schema (field types, descriptions, validators, serializers, etc.)
 - Feature specification (dependencies, fields, code_versions, metadata)
-- Project name
 
-Used in system tables to detect when ANY part of a feature changes."""
+Project is stored separately. Used in system tables to detect when ANY part of a feature changes."""
 
 METAXY_DATA_VERSION_BY_FIELD = f"{SYSTEM_COLUMN_PREFIX}data_version_by_field"
 """Field-level data version hashes (struct column mapping field names to version hashes).

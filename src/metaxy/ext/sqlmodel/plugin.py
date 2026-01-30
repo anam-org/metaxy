@@ -490,16 +490,15 @@ def filter_feature_sqlmodel_metadata(
             feature_key = metaxy_info.feature_key
         else:
             continue
-        # Look up the feature class from the FeatureGraph
-        feature_cls = feature_graph.features_by_key.get(feature_key)
-        if feature_cls is None:
+        # Look up the feature definition from the FeatureGraph
+        definition = feature_graph.feature_definitions_by_key.get(feature_key)
+        if definition is None:
             # Skip tables for features that aren't registered
             continue
 
         # Filter by project if requested
         if filter_by_project:
-            feature_project = feature_cls.metaxy_project()
-            if feature_project != project:
+            if definition.project != project:
                 continue
 
         # Compute prefixed name using store's table_prefix
@@ -512,10 +511,9 @@ def filter_feature_sqlmodel_metadata(
         if inject_primary_key or inject_index:
             from metaxy.ext.sqlalchemy.plugin import _inject_constraints
 
-            spec = feature_cls.spec()
             _inject_constraints(
                 table=new_table,
-                spec=spec,
+                spec=definition.spec,
                 inject_primary_key=inject_primary_key,
                 inject_index=inject_index,
             )

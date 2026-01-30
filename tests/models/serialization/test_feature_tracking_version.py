@@ -1,14 +1,14 @@
-"""Tests for full_definition_version that includes project in the hash.
+"""Tests for feature_definition_version (excludes project from the hash).
 
-The tracking version is used for system tables (feature_versions) to isolate
-features from different projects in the same metadata store. It differs from
-feature_version (used for field provenance) in that it includes the project name.
+The definition version is used for system tables (feature_versions) to track when
+the feature definition changes. It differs from feature_version (used for field
+provenance) in that it includes the Pydantic model schema.
 
 Key behaviors:
-1. full_definition_version changes when project changes
+1. feature_definition_version does NOT change when project changes
 2. feature_version does NOT change when project changes
-3. Two identical features in different projects have different tracking versions
-4. full_definition_version is deterministic for the same (feature, project) pair
+3. Two identical features (same spec, same schema) have the same definition version
+4. feature_definition_version is deterministic for the same (spec, schema) pair
 """
 
 from __future__ import annotations
@@ -20,14 +20,14 @@ from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy.models.feature import FeatureGraph
 
 
-def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -> None:
-    """Test that full_definition_version changes when project changes."""
-    # Create same feature in two different projects
+def test_definition_version_excludes_project(snapshot: SnapshotAssertion) -> None:
+    """Test that feature_definition_version does NOT change when project changes."""
+    # Create same feature in two different projects (using same class name for identical schema)
     graph_a = FeatureGraph()
 
     with graph_a.use():
 
-        class FeatureInA(
+        class TestFeature(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
@@ -36,15 +36,11 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
         ):
             pass
 
-        # Override project for testing
-        FeatureInA.__metaxy_project__ = "project_a"
-
-    # Same feature in project_b
     graph_b = FeatureGraph()
 
     with graph_b.use():
-
-        class FeatureInB(
+        # Same class name ensures identical schema
+        class TestFeature(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
@@ -53,32 +49,28 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
         ):
             pass
 
-        # Override project for testing
-        FeatureInB.__metaxy_project__ = "project_b"
+    # Get definitions from both graphs
+    definition_a = graph_a.get_feature_definition(FeatureKey(["test", "feature"]))
+    definition_b = graph_b.get_feature_definition(FeatureKey(["test", "feature"]))
 
-    # The features should have different projects
-    assert FeatureInA.metaxy_project() != FeatureInB.metaxy_project
-    assert FeatureInA.metaxy_project() == "project_a"
-    assert FeatureInB.metaxy_project() == "project_b"
+    # feature_definition_version should be SAME (excludes project)
+    definition_version_a = definition_a.feature_definition_version
+    definition_version_b = definition_b.feature_definition_version
+    assert definition_version_a == definition_version_b
 
-    # full_definition_version should be DIFFERENT (includes project)
-    tracking_version_a = FeatureInA.full_definition_version()
-    tracking_version_b = FeatureInB.full_definition_version()
-    assert tracking_version_a != tracking_version_b
-
-    # But feature_version should be SAME (field provenance unchanged by project)
-    assert FeatureInA.feature_version() == FeatureInB.feature_version()
+    # feature_version should also be SAME (field provenance unchanged by project)
+    feature_version_a = graph_a.get_feature_version(FeatureKey(["test", "feature"]))
+    feature_version_b = graph_b.get_feature_version(FeatureKey(["test", "feature"]))
+    assert feature_version_a == feature_version_b
 
     # Snapshot for verification
     assert {
-        "project_a": FeatureInA.metaxy_project(),
-        "project_b": FeatureInB.metaxy_project(),
-        "tracking_version_a": tracking_version_a,
-        "tracking_version_b": tracking_version_b,
-        "feature_version_a": FeatureInA.feature_version(),
-        "feature_version_b": FeatureInB.feature_version(),
-        "tracking_versions_differ": tracking_version_a != tracking_version_b,
-        "feature_versions_same": FeatureInA.feature_version() == FeatureInB.feature_version(),
+        "definition_version_a": definition_version_a,
+        "definition_version_b": definition_version_b,
+        "feature_version_a": feature_version_a,
+        "feature_version_b": feature_version_b,
+        "definition_versions_same": definition_version_a == definition_version_b,
+        "feature_versions_same": feature_version_a == feature_version_b,
     } == snapshot
 
 
@@ -88,13 +80,13 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
     This is critical: feature_version is used for field provenance and should
     only change when the computational definition changes, not metadata like project.
     """
-    # Define identical feature specs in two projects
+    # Define identical feature specs in two projects (same class name for identical schema)
     graph_1 = FeatureGraph()
     graph_2 = FeatureGraph()
 
     with graph_1.use():
 
-        class Feature1(
+        class DataFeature(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["data", "feature"]),
@@ -105,13 +97,10 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
             ),
         ):
             pass
-
-        # Override project for testing
-        Feature1.__metaxy_project__ = "project_1"
 
     with graph_2.use():
 
-        class Feature2(
+        class DataFeature(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["data", "feature"]),
@@ -123,22 +112,16 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
         ):
             pass
 
-        # Override project for testing
-        Feature2.__metaxy_project__ = "project_2"
-
     # feature_version should be IDENTICAL (field provenance unchanged)
-    version_1 = Feature1.feature_version()
-    version_2 = Feature2.feature_version()
+    version_1 = graph_1.get_feature_version(FeatureKey(["data", "feature"]))
+    version_2 = graph_2.get_feature_version(FeatureKey(["data", "feature"]))
 
     assert version_1 == version_2
     assert version_1 == snapshot
 
-    # But projects should differ
-    assert Feature1.metaxy_project() != Feature2.metaxy_project
 
-
-def test_tracking_version_deterministic(snapshot: SnapshotAssertion) -> None:
-    """Test that tracking version (project + feature) is deterministic."""
+def test_definition_version_deterministic(snapshot: SnapshotAssertion) -> None:
+    """Test that definition version is deterministic."""
     graph = FeatureGraph()
 
     with graph.use():
@@ -152,26 +135,23 @@ def test_tracking_version_deterministic(snapshot: SnapshotAssertion) -> None:
         ):
             pass
 
-        # Override project for testing
-        TestFeature.__metaxy_project__ = "deterministic_project"
+    definition = graph.get_feature_definition(FeatureKey(["test", "deterministic"]))
 
-    # full_definition_version should be deterministic
-    tracking_1 = TestFeature.full_definition_version()
-    tracking_2 = TestFeature.full_definition_version()
+    # feature_definition_version should be deterministic
+    definition_version = definition.feature_definition_version
 
-    assert tracking_1 == tracking_2
-    assert len(tracking_1) == 64  # SHA256 hex
-    assert tracking_1 == snapshot
+    assert len(definition_version) == 64  # SHA256 hex
+    assert definition_version == snapshot
 
 
-def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> None:
-    """Test feature_version stays same across projects even with dependencies."""
+def test_feature_with_deps_same_definition_version(snapshot: SnapshotAssertion) -> None:
+    """Test feature_version and definition_version stay same across identical graphs."""
     # Project A: upstream and downstream
     graph_a = FeatureGraph()
 
     with graph_a.use():
 
-        class UpstreamA(
+        class Upstream(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
@@ -180,7 +160,7 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
         ):
             pass
 
-        class DownstreamA(
+        class Downstream(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
@@ -189,17 +169,13 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
             ),
         ):
             pass
-
-        # Override projects for testing
-        UpstreamA.__metaxy_project__ = "project_a"
-        DownstreamA.__metaxy_project__ = "project_a"
 
     # Project B: same features
     graph_b = FeatureGraph()
 
     with graph_b.use():
 
-        class UpstreamB(
+        class Upstream(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
@@ -208,7 +184,7 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
         ):
             pass
 
-        class DownstreamB(
+        class Downstream(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
@@ -218,30 +194,29 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
         ):
             pass
 
-        # Override projects for testing
-        UpstreamB.__metaxy_project__ = "project_b"
-        DownstreamB.__metaxy_project__ = "project_b"
+    # feature_version should be same across graphs
+    assert graph_a.get_feature_version(FeatureKey(["upstream"])) == graph_b.get_feature_version(
+        FeatureKey(["upstream"])
+    )
+    assert graph_a.get_feature_version(FeatureKey(["downstream"])) == graph_b.get_feature_version(
+        FeatureKey(["downstream"])
+    )
 
-    # feature_version should be same across projects
-    assert UpstreamA.feature_version() == UpstreamB.feature_version()
-    assert DownstreamA.feature_version() == DownstreamB.feature_version()
+    # definition_version should also be same
+    def_a_up = graph_a.get_feature_definition(FeatureKey(["upstream"]))
+    def_b_up = graph_b.get_feature_definition(FeatureKey(["upstream"]))
+    def_a_down = graph_a.get_feature_definition(FeatureKey(["downstream"]))
+    def_b_down = graph_b.get_feature_definition(FeatureKey(["downstream"]))
 
-    # But projects should differ
-    assert UpstreamA.metaxy_project() == "project_a"
-    assert UpstreamB.metaxy_project() == "project_b"
-    assert DownstreamA.metaxy_project() == "project_a"
-    assert DownstreamB.metaxy_project() == "project_b"
+    assert def_a_up.feature_definition_version == def_b_up.feature_definition_version
+    assert def_a_down.feature_definition_version == def_b_down.feature_definition_version
 
     # Snapshot both
     assert {
-        "upstream_a_version": UpstreamA.feature_version(),
-        "upstream_b_version": UpstreamB.feature_version(),
-        "downstream_a_version": DownstreamA.feature_version(),
-        "downstream_b_version": DownstreamB.feature_version(),
-        "upstream_a_project": UpstreamA.metaxy_project(),
-        "upstream_b_project": UpstreamB.metaxy_project(),
-        "downstream_a_project": DownstreamA.metaxy_project(),
-        "downstream_b_project": DownstreamB.metaxy_project(),
+        "upstream_feature_version": graph_a.get_feature_version(FeatureKey(["upstream"])),
+        "downstream_feature_version": graph_a.get_feature_version(FeatureKey(["downstream"])),
+        "upstream_definition_version": def_a_up.feature_definition_version,
+        "downstream_definition_version": def_a_down.feature_definition_version,
     } == snapshot
 
 
@@ -269,42 +244,40 @@ def test_project_in_graph_snapshot(snapshot: SnapshotAssertion) -> None:
         ):
             pass
 
-        # Override projects for testing
-        Feature1.__metaxy_project__ = "snapshot_project"
-        Feature2.__metaxy_project__ = "snapshot_project"
-
     # Get snapshot
     snapshot_data = graph.to_snapshot()
 
-    # Both features should have project in snapshot
-    # The snapshot format should include project information
-    # (Implementation detail for python-dev agent)
+    # Both features should have project in snapshot (from module name)
+    assert "project" in snapshot_data["feature1"]
+    assert "project" in snapshot_data["feature2"]
 
-    # For now, verify features have correct projects
-    assert Feature1.metaxy_project() == "snapshot_project"
-    assert Feature2.metaxy_project() == "snapshot_project"
+    # Both should have definition_version
+    assert "metaxy_definition_version" in snapshot_data["feature1"]
+    assert "metaxy_definition_version" in snapshot_data["feature2"]
 
     # Snapshot the graph structure
     assert {
-        "feature1_project": Feature1.metaxy_project(),
-        "feature2_project": Feature2.metaxy_project(),
-        "feature_keys": list(snapshot_data.keys()),
+        "feature_keys": sorted(snapshot_data.keys()),
+        "has_project_feature1": "project" in snapshot_data["feature1"],
+        "has_project_feature2": "project" in snapshot_data["feature2"],
+        "has_definition_version_feature1": "metaxy_definition_version" in snapshot_data["feature1"],
+        "has_definition_version_feature2": "metaxy_definition_version" in snapshot_data["feature2"],
     } == snapshot
 
 
-def test_provenance_by_field_unchanged_by_project(
+def test_provenance_by_field_unchanged_across_graphs(
     snapshot: SnapshotAssertion,
 ) -> None:
-    """Test that provenance_by_field() method is also unchanged by project.
+    """Test that provenance_by_field is also unchanged across identical graphs.
 
-    This verifies the entire field provenance pipeline ignores project metadata.
+    This verifies the entire field provenance pipeline is deterministic.
     """
     graph_a = FeatureGraph()
     graph_b = FeatureGraph()
 
     with graph_a.use():
 
-        class FeatureA(
+        class MultiFieldFeature(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["multi", "field"]),
@@ -315,13 +288,10 @@ def test_provenance_by_field_unchanged_by_project(
             ),
         ):
             pass
-
-        # Override project for testing
-        FeatureA.__metaxy_project__ = "proj_a"
 
     with graph_b.use():
 
-        class FeatureB(
+        class MultiFieldFeature(
             BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["multi", "field"]),
@@ -333,15 +303,10 @@ def test_provenance_by_field_unchanged_by_project(
         ):
             pass
 
-        # Override project for testing
-        FeatureB.__metaxy_project__ = "proj_b"
-
-    # provenance_by_field() should be identical
-    provenance_a = FeatureA.provenance_by_field()
-    provenance_b = FeatureB.provenance_by_field()
+    # provenance_by_field should be identical across graphs
+    feature_key = FeatureKey(["multi", "field"])
+    provenance_a = graph_a.get_feature_version_by_field(feature_key)
+    provenance_b = graph_b.get_feature_version_by_field(feature_key)
 
     assert provenance_a == provenance_b
     assert provenance_a == snapshot
-
-    # But projects should differ
-    assert FeatureA.metaxy_project() != FeatureB.metaxy_project

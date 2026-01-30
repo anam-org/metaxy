@@ -1,5 +1,7 @@
 """Asset selection helpers for Metaxy assets."""
 
+from __future__ import annotations
+
 import dagster as dg
 
 import metaxy as mx

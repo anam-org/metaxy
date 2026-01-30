@@ -201,7 +201,7 @@ class TestFeaturePlanHelpers:
             pass
 
         # Verify downstream registered in graph
-        assert FeatureKey(["test", "downstream"]) in graph.features_by_key
+        assert FeatureKey(["test", "downstream"]) in graph.feature_definitions_by_key
 
         plan = graph.get_feature_plan(FeatureKey(["test", "downstream"]))
 
@@ -238,7 +238,7 @@ class TestFeaturePlanHelpers:
             pass
 
         # Verify downstream registered in graph
-        assert FeatureKey(["test", "downstream"]) in graph.features_by_key
+        assert FeatureKey(["test", "downstream"]) in graph.feature_definitions_by_key
 
         plan = graph.get_feature_plan(FeatureKey(["test", "downstream"]))
 
@@ -273,7 +273,7 @@ class TestFeaturePlanHelpers:
             pass
 
         # Verify downstream registered in graph
-        assert FeatureKey(["test", "downstream"]) in graph.features_by_key
+        assert FeatureKey(["test", "downstream"]) in graph.feature_definitions_by_key
 
         plan = graph.get_feature_plan(FeatureKey(["test", "downstream"]))
 
@@ -303,7 +303,7 @@ class TestFeaturePlanHelpers:
             pass
 
         # Verify downstream registered in graph
-        assert FeatureKey(["test", "downstream"]) in graph.features_by_key
+        assert FeatureKey(["test", "downstream"]) in graph.feature_definitions_by_key
 
         plan = graph.get_feature_plan(FeatureKey(["test", "downstream"]))
 

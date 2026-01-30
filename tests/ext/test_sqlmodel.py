@@ -67,8 +67,11 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
 
     # Check registration in active graph
     graph = FeatureGraph.get_active()
-    assert FeatureKey(["video"]) in graph.features_by_key
-    assert graph.features_by_key[FeatureKey(["video"])] is VideoFeature
+    assert FeatureKey(["video"]) in graph.feature_definitions_by_key
+    # Graph now stores FeatureDefinition objects, not feature classes
+    defn = graph.feature_definitions_by_key[FeatureKey(["video"])]
+    assert defn.feature_class_path.endswith("VideoFeature")
+    assert defn.spec == VideoFeature.spec()
 
     # Check Metaxy attributes
     assert hasattr(VideoFeature, "spec")
@@ -340,10 +343,10 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
 
     # Check parent registered
     graph = FeatureGraph.get_active()
-    assert FeatureKey(["parent"]) in graph.features_by_key
+    assert FeatureKey(["parent"]) in graph.feature_definitions_by_key
 
     # Check child registered with dependency
-    assert FeatureKey(["child"]) in graph.features_by_key
+    assert FeatureKey(["child"]) in graph.feature_definitions_by_key
     deps = ChildFeature.spec().deps
     assert deps is not None
     assert len(deps) == 1
@@ -499,12 +502,12 @@ def test_custom_graph_context() -> None:
             uid: str = Field(primary_key=True)
 
         # Should be in custom graph
-        assert FeatureKey(["custom", "graph"]) in custom_graph.features_by_key
+        assert FeatureKey(["custom", "graph"]) in custom_graph.feature_definitions_by_key
         assert CustomGraphFeature.graph is custom_graph
 
     # Should NOT be in default graph
     default_graph = FeatureGraph.get_active()
-    assert FeatureKey(["custom", "graph"]) not in default_graph.features_by_key
+    assert FeatureKey(["custom", "graph"]) not in default_graph.feature_definitions_by_key
 
 
 def test_graph_snapshot_inclusion(snapshot: SnapshotAssertion) -> None:
@@ -669,7 +672,7 @@ def test_inheritance_chain() -> None:
 
     # Check concrete feature registered
     graph = FeatureGraph.get_active()
-    assert FeatureKey(["concrete"]) in graph.features_by_key
+    assert FeatureKey(["concrete"]) in graph.feature_definitions_by_key
 
     # Check both SQLModel and Metaxy functionality
     assert hasattr(ConcreteFeature, "metaxy_feature_version")
@@ -784,7 +787,7 @@ def test_basic_custom_id_columns() -> None:
 
     # Verify feature is registered
     graph = FeatureGraph.get_active()
-    assert FeatureKey(["user", "session"]) in graph.features_by_key
+    assert FeatureKey(["user", "session"]) in graph.feature_definitions_by_key
 
     # Verify spec has custom id_columns
     assert UserSessionFeature.spec().id_columns == ["user_id", "session_id"]
@@ -1054,8 +1057,8 @@ def test_parent_child_different_id_columns() -> None:
 
     # Both should be registered
     graph = FeatureGraph.get_active()
-    assert FeatureKey(["detailed", "parent"]) in graph.features_by_key
-    assert FeatureKey(["aggregated", "child"]) in graph.features_by_key
+    assert FeatureKey(["detailed", "parent"]) in graph.feature_definitions_by_key
+    assert FeatureKey(["aggregated", "child"]) in graph.feature_definitions_by_key
 
     # Child should have parent as dependency
     deps = AggregatedChildFeature.spec().deps

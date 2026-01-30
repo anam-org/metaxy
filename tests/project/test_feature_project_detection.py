@@ -266,4 +266,4 @@ class TestFeatureGraphOperations:
 
         assert feature_key_str in snapshot_data
         assert snapshot_data[feature_key_str]["project"] == expected_project
-        assert "metaxy_full_definition_version" in snapshot_data[feature_key_str]
+        assert "metaxy_definition_version" in snapshot_data[feature_key_str]

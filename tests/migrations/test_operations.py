@@ -174,8 +174,8 @@ def test_full_graph_migration_single_operation_single_feature(tmp_path: Path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Setup data
-        Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
-        Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
+        Upstream = graph.feature_definitions_by_key[FeatureKey(["test", "upstream"])]
+        Downstream = graph.feature_definitions_by_key[FeatureKey(["test", "downstream"])]
 
         upstream_data = pl.DataFrame(
             {
@@ -538,8 +538,8 @@ def test_full_graph_migration_resume_after_partial_failure(tmp_path: Path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Setup data
-        Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
-        Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
+        Upstream = graph.feature_definitions_by_key[FeatureKey(["test", "upstream"])]
+        Downstream = graph.feature_definitions_by_key[FeatureKey(["test", "downstream"])]
 
         upstream_data = pl.DataFrame(
             {
@@ -733,7 +733,7 @@ def test_data_version_reconciliation_root_feature_error(tmp_path: Path):
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
-        Root = graph.features_by_key[FeatureKey(["test", "root"])]
+        Root = graph.feature_definitions_by_key[FeatureKey(["test", "root"])]
 
         # Write some data
         data = pl.DataFrame(

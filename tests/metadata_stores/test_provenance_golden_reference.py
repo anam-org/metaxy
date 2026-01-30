@@ -477,10 +477,9 @@ def generate_plan_data(
 
     # Get the child feature from the graph
     child_key = child_feature_plan.feature.key
-    ChildFeature = graph.features_by_key[child_key]
 
     # Feature versions for strategy
-    child_version = ChildFeature.feature_version()
+    child_version = graph.get_feature_version(child_key)
 
     feature_versions = {}
     for feature_key, upstream_feature in upstream_features.items():
@@ -664,14 +663,13 @@ def assert_resolve_update_matches_golden(
 
     # Get the child feature from the graph
     child_key = child_feature_plan.feature.key
-    ChildFeature = graph.features_by_key[child_key]
-    child_version = ChildFeature.feature_version()
+    child_version = graph.get_feature_version(child_key)
 
     # Call resolve_update to compute provenance (uses default/native engine)
     # Use graph.use() to make it the current graph (needed for resolve_update)
     with graph.use():
         actual_increment = store.resolve_update(
-            ChildFeature,
+            child_key,
             target_version=child_version,
             snapshot_version=graph.snapshot_version,
         )
@@ -683,7 +681,7 @@ def assert_resolve_update_matches_golden(
     # This ensures both native and polars engines produce the same result
     with graph.use():
         polars_increment = store.resolve_update(
-            ChildFeature,
+            child_key,
             target_version=child_version,
             snapshot_version=graph.snapshot_version,
             versioning_engine="polars",
@@ -804,8 +802,7 @@ def test_store_resolve_update_matches_golden_provenance(
             for i, plan_config in enumerate(feature_plan_sequence):
                 graph, upstream_features, child_feature_plan = plan_config
                 child_key = child_feature_plan.feature.key
-                ChildFeature = graph.features_by_key[child_key]
-                child_version = ChildFeature.feature_version()
+                child_version = graph.get_feature_version(child_key)
 
                 # Generate upstream data for this plan
                 # For first plan, generate fresh data; for subsequent plans, derive from base
@@ -847,7 +844,7 @@ def test_store_resolve_update_matches_golden_provenance(
 
                 # Also write downstream to store so store can detect changes in next iteration
                 with graph.use():
-                    any_store.write_metadata(ChildFeature, new_downstream)
+                    any_store.write_metadata(child_key, new_downstream)
 
     except HashAlgorithmNotSupportedError:
         pytest.skip(f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}")
@@ -876,8 +873,7 @@ def test_golden_reference_with_duplicate_timestamps(
 
     # Get the child feature from the graph
     child_key = child_feature_plan.feature.key
-    ChildFeature = graph.features_by_key[child_key]
-    child_version = ChildFeature.feature_version()
+    child_version = graph.get_feature_version(child_key)
 
     with store, graph.use():
         try:
@@ -922,7 +918,7 @@ def test_golden_reference_with_duplicate_timestamps(
 
             # Call resolve_update - should use only latest versions
             increment = store.resolve_update(
-                ChildFeature,
+                child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )
@@ -982,7 +978,8 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
     ):
         pass
 
-    child_plan = graph.get_feature_plan(ChildFeature.spec().key)
+    child_key = ChildFeature.spec().key
+    child_plan = graph.get_feature_plan(child_key)
 
     # Generate golden reference data
     feature_versions = {
@@ -1032,7 +1029,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
             # Now every sample has 2 versions with same timestamp
             # Call resolve_update - should pick one deterministically
             increment = empty_store.resolve_update(
-                ChildFeature,
+                child_key,
                 target_version=ChildFeature.feature_version(),
                 snapshot_version=graph.snapshot_version,
             )
@@ -1070,8 +1067,7 @@ def test_golden_reference_partial_duplicates(
     )
 
     child_key = child_feature_plan.feature.key
-    ChildFeature = graph.features_by_key[child_key]
-    child_version = ChildFeature.feature_version()
+    child_version = graph.get_feature_version(child_key)
 
     try:
         with store, graph.use():
@@ -1107,7 +1103,7 @@ def test_golden_reference_partial_duplicates(
 
             # Call resolve_update
             increment = store.resolve_update(
-                ChildFeature,
+                child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )

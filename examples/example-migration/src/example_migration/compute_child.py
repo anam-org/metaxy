@@ -9,37 +9,38 @@ import polars as pl
 # Initialize metaxy (loads config and discovers features)
 config = mx.init_metaxy()
 
-# Get feature class
-ChildFeature = mx.get_feature_by_key(mx.FeatureKey(["examples", "child"]))
+# Get feature key
+child_key = mx.FeatureKey(["examples", "child"])
 
 # Load upstream data for sample_uids (use system temp dir for cross-platform compatibility)
 data_dir = Path(tempfile.gettempdir()) / "migration_example_data"
 upstream_data = pl.read_parquet(data_dir / "upstream_data.parquet")
 with config.get_store() as store:
-    print(f"Computing {ChildFeature.spec().key.to_string()}...")
-    print(f"  feature_version: {ChildFeature.feature_version()[:16]}...")
+    feature_version = mx.current_graph().get_feature_version(child_key)
+    print(f"Computing {child_key.to_string()}...")
+    print(f"  feature_version: {feature_version[:16]}...")
 
     # Use resolve_update to calculate what needs computing
     # Don't pass samples - let system auto-load upstream and calculate provenance_by_field
-    diff_result = store.resolve_update(ChildFeature)
+    diff_result = store.resolve_update(child_key)
 
     print(
         f"Identified: {len(diff_result.added)} new samples, {len(diff_result.changed)} samples with new provenance_by_field"
     )
 
     if len(diff_result.added) > 0:
-        store.write_metadata(ChildFeature, diff_result.added)
+        store.write_metadata(child_key, diff_result.added)
         print(f"[OK] Materialized {len(diff_result.added)} new samples")
 
     if len(diff_result.changed) > 0:
         # This should NOT happen after migration!
-        store.write_metadata(ChildFeature, diff_result.changed)
+        store.write_metadata(child_key, diff_result.changed)
         print(f"[WARN] Recomputed {len(diff_result.changed)} changed samples")
 
     # Show current data
     import narwhals as nw
 
-    child_result = store.read_metadata(ChildFeature, current_only=True)
+    child_result = store.read_metadata(child_key, current_only=True)
     child_eager = nw.from_native(child_result.collect())
     print("\nChild provenance_by_field:")
     for row in child_eager.iter_rows(named=True):

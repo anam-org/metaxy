@@ -15,10 +15,10 @@ from metaxy.metadata_store.system import SystemTableStorage
 # Initialize metaxy (loads config and discovers features)
 config = mx.init_metaxy()
 
-# feature showcase: get feature classes by key. Of course, they can be just imported instead.
+# feature showcase: get feature definitions by key. Of course, feature classes can be just imported instead.
 child_key = mx.FeatureKey(["examples", "child"])
-ChildFeature = mx.get_feature_by_key(child_key)
-ParentFeature = mx.get_feature_by_key(["examples", "parent"])  # or use the list variant
+child_def = mx.get_feature_by_key(child_key)
+parent_key = mx.FeatureKey(["examples", "parent"])
 
 with config.get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
@@ -30,28 +30,28 @@ with config.get_store() as store:
 
     # Compute child feature (e.g., generate predictions from embeddings)
     print(f"\n📊 Computing {child_key.to_string()}...")
-    print(f"  feature_version: {ChildFeature.feature_version()}")
+    print(f"  feature_version: {mx.current_graph().get_feature_version(child_key)}")
 
-    ids_lazy = store.read_metadata(ParentFeature, columns=["sample_uid"])
+    ids_lazy = store.read_metadata(parent_key, columns=["sample_uid"])
     # Materialize for now (samples parameter currently expects eager frames)
     ids = ids_lazy.collect().to_polars()
 
-    diff = store.resolve_update(ChildFeature)
+    diff = store.resolve_update(child_key)
 
     print(f"Identified: {len(diff.added)} new samples, {len(diff.changed)} samples with new provenance_by_field")
 
     if len(diff.added) > 0:
         # diff.added is a Narwhals DataFrame - can pass directly to write_metadata
-        store.write_metadata(ChildFeature, diff.added)
+        store.write_metadata(child_key, diff.added)
         print(f"✓ Materialized {len(diff.added)} new samples")
 
     if len(diff.changed) > 0:
         # diff.changed is a Narwhals DataFrame
-        store.write_metadata(ChildFeature, diff.changed)
+        store.write_metadata(child_key, diff.changed)
         print(f"✓ Recomputed {len(diff.changed)} changed samples")
 
     # Show child provenance_by_field
-    child_result = store.read_metadata(ChildFeature, current_only=True)
+    child_result = store.read_metadata(child_key, current_only=True)
     print("\n📋 Child provenance_by_field:")
     # Materialize Narwhals LazyFrame to Polars DataFrame
     child_df = child_result.collect().to_polars()

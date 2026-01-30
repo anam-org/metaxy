@@ -13,7 +13,7 @@ from metaxy.cli.console import console, data_console, error_console
 from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, OutputFormat
 
 if TYPE_CHECKING:
-    from metaxy import BaseFeature
+    from metaxy import FeatureDefinition
     from metaxy.graph.status import FeatureMetadataStatusWithIncrement
     from metaxy.metadata_store.base import MetadataStore
     from metaxy.models.types import FeatureKey
@@ -128,9 +128,9 @@ def status(
         # Collect status for all features
         needs_update = False
         feature_reps: dict[str, Any] = {}
-        # Each item is (feature_cls, status_with_increment, error_msg)
+        # Each item is (definition, status_with_increment, error_msg)
         # error_msg is None for success, or a string for errors
-        collected_statuses: list[tuple[type[BaseFeature], FeatureMetadataStatusWithIncrement | None, str | None]] = []
+        collected_statuses: list[tuple[FeatureDefinition, FeatureMetadataStatusWithIncrement | None, str | None]] = []
 
         errors: list[tuple[str, str, Exception]] = []
 
@@ -138,10 +138,10 @@ def status(
         compute_progress = progress or verbose
 
         for feature_key in selector:
-            feature_cls = graph.features_by_key[feature_key]
+            definition = graph.get_feature_definition(feature_key)
             try:
                 status_with_increment = get_feature_metadata_status(
-                    feature_cls,
+                    definition,
                     metadata_store,
                     use_fallback=allow_fallback_stores,
                     global_filters=global_filters_list,
@@ -155,7 +155,7 @@ def status(
                 if format == "json":
                     feature_reps[feature_key.to_string()] = status_with_increment.to_representation(verbose=verbose)
                 else:
-                    collected_statuses.append((feature_cls, status_with_increment, None))
+                    collected_statuses.append((definition, status_with_increment, None))
             except Exception as e:
                 # Log the error and continue with other features
                 error_msg = str(e)
@@ -178,8 +178,8 @@ def status(
                         error_message=error_msg,
                     )
                 else:
-                    # For plain format, store (feature_cls, None, error_msg)
-                    collected_statuses.append((feature_cls, None, error_msg))
+                    # For plain format, store (definition, None, error_msg)
+                    collected_statuses.append((definition, None, error_msg))
 
         # Output plain format as Rich Table
         if format == "plain":
@@ -204,11 +204,11 @@ def status(
 
             verbose_details: list[tuple[str, list[str]]] = []
 
-            for feature_cls, status_with_increment, error_msg in collected_statuses:
+            for definition, status_with_increment, error_msg in collected_statuses:
                 # Handle error case
                 if error_msg is not None:
                     icon = _STATUS_ICONS["error"]
-                    feature_key_str = feature_cls.spec().key.to_string()
+                    feature_key_str = definition.key.to_string()
                     # Truncate error message for display
                     truncated_error = error_msg[:60] + "..." if len(error_msg) > 60 else error_msg
                     table.add_row(

@@ -16,7 +16,9 @@ from metaxy.models.constants import (
 )
 
 if TYPE_CHECKING:
+    from metaxy import CoercibleToFeatureKey
     from metaxy.models.feature import BaseFeature
+    from metaxy.models.feature_definition import FeatureDefinition
     from metaxy.versioning.types import HashAlgorithm
 
 FrameT = TypeVar("FrameT", bound=nw.DataFrame | nw.LazyFrame)
@@ -76,7 +78,7 @@ def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:
 
 def add_metaxy_provenance_column(
     df: pl.DataFrame,
-    feature: type[BaseFeature],
+    feature: type[BaseFeature] | FeatureDefinition | CoercibleToFeatureKey,
     hash_algorithm: HashAlgorithm | None = None,
 ) -> pl.DataFrame:
     """Add metaxy_provenance column to a DataFrame based on metaxy_provenance_by_field.
@@ -84,20 +86,24 @@ def add_metaxy_provenance_column(
 
     Args:
         df: Polars DataFrame with metaxy_provenance_by_field column
-        feature: Feature class to get the feature plan from
+        feature: Feature class, FeatureDefinition, or value coercible to FeatureKey
         hash_algorithm: Hash algorithm to use. If None, uses XXHASH64.
 
     Returns:
         Polars DataFrame with metaxy_provenance column added
     """
+    from metaxy import coerce_to_feature_key
+    from metaxy.models.feature import current_graph
     from metaxy.versioning.polars import PolarsVersioningEngine
     from metaxy.versioning.types import HashAlgorithm as HashAlgo
 
     if hash_algorithm is None:
         hash_algorithm = HashAlgo.XXHASH64
 
-    # Get the feature plan from the active graph
-    plan = feature.graph.get_feature_plan(feature.spec().key)
+    # Coerce to feature key and get plan from active graph
+    feature_key = coerce_to_feature_key(feature)
+    graph = current_graph()
+    plan = graph.get_feature_plan(feature_key)
 
     # Create engine
     engine = PolarsVersioningEngine(plan=plan)

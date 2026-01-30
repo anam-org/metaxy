@@ -50,11 +50,11 @@ def test_metadata_status_up_to_date(metaxy_project: TempMetaxyProject, output_fo
         # Now compute and write downstream metadata with correct provenance
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
 
             # Write the computed metadata to the store
-            store.write_metadata(feature_cls, increment.added.to_polars())
+            store.write_metadata(feature_key, increment.added.to_polars())
 
         # Check status for the non-root feature
         result = metaxy_project.run_cli(
@@ -395,11 +395,11 @@ def test_metadata_status_with_explicit_store(metaxy_project: TempMetaxyProject, 
         # Now compute and write downstream metadata with correct provenance
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
 
             # Write the computed metadata to the store
-            store.write_metadata(feature_cls, increment.added.to_polars())
+            store.write_metadata(feature_key, increment.added.to_polars())
 
         # Check status with explicit store
         result = metaxy_project.run_cli(
@@ -704,20 +704,19 @@ def test_metadata_status_with_global_filter(metaxy_project: TempMetaxyProject, o
         )
 
         feature_key_root = FeatureKey(["video", "files_root"])
-        feature_cls_root = graph.get_feature_by_key(feature_key_root)
 
         with graph.use(), store:
-            store.write_metadata(feature_cls_root, upstream_data)
+            store.write_metadata(feature_key_root, upstream_data)
 
         # Write downstream metadata for only category A samples (3 samples)
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
+            # feature_cls removed - using feature_key directly
             # Resolve the full increment first
-            increment = store.resolve_update(feature_cls, lazy=False)
+            increment = store.resolve_update(feature_key, lazy=False)
             # Filter to only category A samples and write
             added_df = increment.added.to_polars().filter(pl.col("category") == "A")
-            store.write_metadata(feature_cls, added_df)
+            store.write_metadata(feature_key, added_df)
 
         # Check status with global-filter for category A - should be up-to-date
         result = metaxy_project.run_cli(
@@ -860,17 +859,16 @@ def test_metadata_status_with_multiple_global_filters(metaxy_project: TempMetaxy
         )
 
         feature_key_root = FeatureKey(["video", "files_root"])
-        feature_cls_root = graph.get_feature_by_key(feature_key_root)
 
         with graph.use(), store:
-            store.write_metadata(feature_cls_root, upstream_data)
+            store.write_metadata(feature_key_root, upstream_data)
 
         # Write downstream metadata for all samples
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
-            store.write_metadata(feature_cls, increment.added.to_polars())
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
+            store.write_metadata(feature_key, increment.added.to_polars())
 
         # Check status with multiple global-filters: category A AND status active
         # Should match sample_uids 1 and 5
@@ -936,7 +934,7 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
         store = metaxy_project.stores["dev"]
 
         feature_key = FeatureKey(["raw_video", "root"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         # Step 1: Write initial data where all rows have height=NULL
         # Cast height to Int64 to avoid DuckDB's NULL-typed column issue
@@ -950,7 +948,7 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
         )
 
         with graph.use(), store:
-            store.write_metadata(feature_cls, initial_data)
+            store.write_metadata(feature_key, initial_data)
 
         # Step 2: Write updated data for samples 1, 2, 3 with height filled
         # (This simulates overwriting the same samples with updated values)
@@ -967,7 +965,7 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
         )
 
         with graph.use(), store:
-            store.write_metadata(feature_cls, updated_data)
+            store.write_metadata(feature_key, updated_data)
 
         # After deduplication:
         # - Samples 1, 2, 3 should have the latest version (height filled)
@@ -1132,10 +1130,10 @@ def test_metadata_status_with_progress_flag(
         # Write downstream metadata for only 2 out of 5 samples (40% processed)
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
             partial_data = increment.added.to_polars().head(2)
-            store.write_metadata(feature_cls, partial_data)
+            store.write_metadata(feature_key, partial_data)
 
         # Check status with --progress flag
         result = metaxy_project.run_cli(
@@ -1211,10 +1209,10 @@ def test_metadata_status_verbose_includes_progress(
         # Write downstream for only 1 out of 3 samples
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
             partial_data = increment.added.to_polars().head(1)
-            store.write_metadata(feature_cls, partial_data)
+            store.write_metadata(feature_key, partial_data)
 
         # Check status with --verbose (should also include progress)
         result = metaxy_project.run_cli(
@@ -1328,9 +1326,9 @@ def test_metadata_status_progress_100_percent(metaxy_project: TempMetaxyProject,
         # Write downstream metadata for all samples
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
-            store.write_metadata(feature_cls, increment.added.to_polars())
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
+            store.write_metadata(feature_key, increment.added.to_polars())
 
         # Check status with --progress flag
         result = metaxy_project.run_cli(
@@ -1428,10 +1426,10 @@ def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProje
         )
 
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            store.write_metadata(feature_cls, test_data)
+            store.write_metadata(feature_key, test_data)
 
         # Soft delete debug logs
         result = metaxy_project.run_cli(
@@ -1452,12 +1450,12 @@ def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProje
 
         # Verify data was soft deleted
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read_metadata(feature_key).collect().to_polars()
             assert remaining.height == 2
             assert set(remaining["level"]) == {"info", "warn"}
 
             # Check soft deleted is still in store when including deleted
-            all_data = store.read_metadata(feature_cls, include_soft_deleted=True).collect().to_polars()
+            all_data = store.read_metadata(feature_key, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 3
 
 
@@ -1499,10 +1497,10 @@ def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProje
         )
 
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            store.write_metadata(feature_cls, test_data)
+            store.write_metadata(feature_key, test_data)
 
         # Hard delete debug logs
         result = metaxy_project.run_cli(
@@ -1523,12 +1521,12 @@ def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProje
 
         # Verify data was physically removed
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read_metadata(feature_key).collect().to_polars()
             assert remaining.height == 2
             assert set(remaining["level"]) == {"info", "warn"}
 
             # Check that hard-deleted row is NOT in store even when including deleted
-            all_data = store.read_metadata(feature_cls, include_soft_deleted=True).collect().to_polars()
+            all_data = store.read_metadata(feature_key, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 2
 
 
@@ -1699,10 +1697,10 @@ def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject
         )
 
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            store.write_metadata(feature_cls, test_data)
+            store.write_metadata(feature_key, test_data)
 
         # Delete debug AND old (should delete only s1)
         result = metaxy_project.run_cli(
@@ -1722,7 +1720,7 @@ def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject
 
         # Verify only s1 was deleted
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read_metadata(feature_key).collect().to_polars()
             assert remaining.height == 3
             assert "s1" not in remaining["sample_uid"].to_list()
 
@@ -1805,10 +1803,10 @@ def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject):
 
         # Verify all rows were deleted
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read_metadata(feature_key).collect().to_polars()
             assert remaining.height == 0
 
 
@@ -1856,14 +1854,14 @@ def test_metadata_delete_soft_delete_without_filter_no_yes_required(
 
         # Verify rows were soft deleted
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read_metadata(feature_key).collect().to_polars()
             assert remaining.height == 0
 
             # Check soft deleted rows still exist
-            all_data = store.read_metadata(feature_cls, include_soft_deleted=True).collect().to_polars()
+            all_data = store.read_metadata(feature_key, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 3
 
 
@@ -1928,10 +1926,10 @@ def test_metadata_delete_dry_run(metaxy_project: TempMetaxyProject):
         )
 
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            store.write_metadata(feature_cls, test_data)
+            store.write_metadata(feature_key, test_data)
 
         # Run dry-run
         result = metaxy_project.run_cli(
@@ -1956,7 +1954,7 @@ def test_metadata_delete_dry_run(metaxy_project: TempMetaxyProject):
 
         # Verify data was NOT deleted
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read_metadata(feature_key).collect().to_polars()
             assert remaining.height == 2  # All rows still present
 
 
@@ -2012,7 +2010,6 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
         graph_v1 = metaxy_project.graph
         store = metaxy_project.stores["dev"]
         feature_key = FeatureKey(["events"])
-        feature_cls_v1 = graph_v1.get_feature_by_key(feature_key)
 
         # Write 3 rows with v1 feature version
         v1_data = pl.DataFrame(
@@ -2023,7 +2020,7 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
             }
         )
         with graph_v1.use(), store:
-            store.write_metadata(feature_cls_v1, v1_data)
+            store.write_metadata(feature_key, v1_data)
 
     # Write v2 metadata (different feature version)
     with metaxy_project.with_features(features_v2):
@@ -2033,7 +2030,6 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
         graph_v2 = metaxy_project.graph
         store = metaxy_project.stores["dev"]
         feature_key = FeatureKey(["events"])
-        feature_cls_v2 = graph_v2.get_feature_by_key(feature_key)
 
         # Write 2 rows with v2 feature version
         v2_data = pl.DataFrame(
@@ -2044,7 +2040,7 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
             }
         )
         with graph_v2.use(), store:
-            store.write_metadata(feature_cls_v2, v2_data)
+            store.write_metadata(feature_key, v2_data)
 
         # Now we have:
         # - 3 rows with v1 feature version (2 active, 1 inactive)
@@ -2084,7 +2080,7 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
         with graph_v2.use(), store:
             before_count = (
                 store.read_metadata(
-                    feature_cls_v2,
+                    feature_key,
                     include_soft_deleted=False,
                     current_only=False,  # count all versions
                 )
@@ -2112,7 +2108,7 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
         with graph_v2.use(), store:
             after_count = (
                 store.read_metadata(
-                    feature_cls_v2,
+                    feature_key,
                     include_soft_deleted=False,
                     current_only=False,  # count all versions
                 )
@@ -2296,20 +2292,18 @@ root_path = "{prod_path}"
         )
 
         upstream_key = FeatureKey(["upstream"])
-        upstream_cls = graph.get_feature_by_key(upstream_key)
 
         with graph.use(), prod_store:
-            prod_store.write_metadata(upstream_cls, upstream_data)
+            prod_store.write_metadata(upstream_key, upstream_data)
 
         # Now compute downstream metadata using dev store (reads upstream from fallback)
         downstream_key = FeatureKey(["downstream"])
-        downstream_cls = graph.get_feature_by_key(downstream_key)
 
         with graph.use(), dev_store:
             # resolve_update should read upstream from fallback (prod) store
-            increment = dev_store.resolve_update(downstream_cls, lazy=False)
+            increment = dev_store.resolve_update(downstream_key, lazy=False)
             # Write downstream to dev store
-            dev_store.write_metadata(downstream_cls, increment.added.to_polars())
+            dev_store.write_metadata(downstream_key, increment.added.to_polars())
 
         # Run CLI status command - should use fallback stores by default
         result = project.run_cli(["metadata", "status", "downstream", "--format", output_format])
@@ -2410,10 +2404,9 @@ root_path = "{prod_path}"
         )
 
         root_key = FeatureKey(["root"])
-        root_cls = graph.get_feature_by_key(root_key)
 
         with graph.use(), prod_store:
-            prod_store.write_metadata(root_cls, root_data)
+            prod_store.write_metadata(root_key, root_data)
 
         # Run CLI status command WITH fallback enabled
         # Should find 3 rows in fallback store

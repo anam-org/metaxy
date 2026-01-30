@@ -112,16 +112,15 @@ def _register_tools(server: FastMCP) -> None:
 
         features_data: list[dict[str, Any]] = []
 
-        for feature_key, feature_spec in graph.feature_specs_by_key.items():
-            feature_cls = graph.get_feature_by_key(feature_key)
-
+        for feature_key, definition in graph.feature_definitions_by_key.items():
             # Filter by project if specified
-            if project and feature_cls.metaxy_project() != project:
+            if project and definition.project != project:
                 continue
 
+            feature_spec = definition.spec
             version = graph.get_feature_version(feature_key)
             is_root = not feature_spec.deps
-            import_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
+            import_path = definition.feature_class_path
 
             # Get the feature plan for resolved field dependencies
             feature_plan = graph.get_feature_plan(feature_key) if verbose else None
@@ -157,7 +156,7 @@ def _register_tools(server: FastMCP) -> None:
                 "key": feature_key.to_string(),
                 "version": version,
                 "is_root": is_root,
-                "project": feature_cls.metaxy_project(),
+                "project": definition.project,
                 "import_path": import_path,
                 "field_count": len(fields_info),
                 "fields": fields_info,
@@ -188,10 +187,9 @@ def _register_tools(server: FastMCP) -> None:
         graph = metaxy_ctx.graph
 
         key = coerce_to_feature_key(feature_key)
-        feature_cls = graph.get_feature_by_key(key)
-        spec = feature_cls.spec()
+        definition = graph.get_feature_definition(key)
 
-        return spec.model_dump(mode="json")
+        return definition.spec.model_dump(mode="json")
 
     @server.tool()
     def list_stores() -> list[dict[str, str]]:
@@ -273,14 +271,14 @@ def _register_tools(server: FastMCP) -> None:
         graph = metaxy_ctx.graph
 
         key = coerce_to_feature_key(feature_key)
-        feature_cls = graph.get_feature_by_key(key)
+        definition = graph.get_feature_definition(key)
         store = config.get_store(store_name)
 
         nw_filters = _parse_filters(filters)
 
         with store:
             lazy_frame = store.read_metadata(
-                feature_cls,
+                definition,
                 columns=columns,
                 filters=nw_filters if nw_filters else None,
                 current_only=current_only,
