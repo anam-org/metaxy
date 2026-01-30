@@ -8,7 +8,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !contains(github.event.pull_request.labels.*.name, 'graphite:merge') }}
 
 on:
   pull_request:
