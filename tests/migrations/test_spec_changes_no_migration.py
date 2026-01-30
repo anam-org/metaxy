@@ -107,15 +107,13 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(tmp_pa
         store_v1.write_metadata(simple_key, data)
         SystemTableStorage(store_v1).push_graph_snapshot()
 
-    # Verify snapshot captures both versions (initialize to satisfy type checker)
+    # Verify snapshot captures the version
     snapshot_data = graph_v1.to_snapshot()
     assert "test/simple" in snapshot_data
     assert "metaxy_feature_version" in snapshot_data["test/simple"]
-    assert "metaxy_feature_spec_version" in snapshot_data["test/simple"]
 
     # Store the versions for comparison
     v1_feature_version: str = snapshot_data["test/simple"]["metaxy_feature_version"]
-    v1_feature_spec_version: str = snapshot_data["test/simple"]["metaxy_feature_spec_version"]
 
     # Create v2: Change code_version (affects feature_version)
     temp_v2 = TempFeatureModule("test_migration_detector_v2")
@@ -128,14 +126,11 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(tmp_pa
     temp_v2.write_features({"Simple": spec_v2})
     graph_v2 = temp_v2.graph
     simple_key = FeatureKey(["test", "simple"])
-    SimpleV2 = graph_v2.feature_definitions_by_key[simple_key]
 
     # Verify feature_version changed
     v2_feature_version = graph_v2.get_feature_version(simple_key)
-    v2_feature_spec_version = SimpleV2.spec.feature_spec_version
 
     assert v1_feature_version != v2_feature_version  # Changed!
-    assert v1_feature_spec_version != v2_feature_spec_version  # Also changed (includes code_version)
 
     # Test migration detection
     # DeltaMetadataStore persists data to disk, so we reuse the same path
@@ -361,7 +356,6 @@ def test_snapshot_stores_both_versions(tmp_path: Path):
     temp_module.write_features({"TestFeature": spec})
     graph = temp_module.graph
     feature_key = FeatureKey(["test", "feature"])
-    TestFeature = graph.feature_definitions_by_key[feature_key]
 
     # Create store and record snapshot
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
@@ -379,41 +373,37 @@ def test_snapshot_stores_both_versions(tmp_path: Path):
         snapshot_data = graph.to_snapshot()
         feature_data = snapshot_data["test/feature"]
 
-        # Both versions should be present
+        # Version fields should be present
         assert "metaxy_feature_version" in feature_data
-        assert "metaxy_feature_spec_version" in feature_data
+        assert "metaxy_definition_version" in feature_data
         assert "feature_spec" in feature_data
         assert "feature_class_path" in feature_data
 
         # Verify they're valid hashes
         assert len(feature_data["metaxy_feature_version"]) == 64
-        assert len(feature_data["metaxy_feature_spec_version"]) == 64
 
         # Check that they match graph methods
         assert feature_data["metaxy_feature_version"] == graph.get_feature_version(feature_key)
-        assert feature_data["metaxy_feature_spec_version"] == TestFeature.spec.feature_spec_version
 
     temp_module.cleanup()
 
 
-def test_graph_differ_compares_feature_version_not_feature_spec_version():
-    """Test that GraphDiffer.diff() uses feature_version for change detection.
+def test_graph_differ_uses_definition_version_for_change_detection():
+    """Test that GraphDiffer.diff() uses definition_version for change detection.
 
-    This is the core of the migration system - it should only consider
-    feature_version when deciding if a feature has changed.
+    The differ tracks definition_version changes, which captures both:
+    - Computational changes (code_version, deps) that affect feature_version
+    - Non-computational changes (schema descriptions, types) that only affect definition_version
     """
     from metaxy.graph.diff.differ import GraphDiffer
 
     differ = GraphDiffer()
 
-    # Create two snapshots with identical feature_version but different feature_spec_version
-    # (This will be possible when SampleFeatureSpec has non-computational properties)
-
-    # For now, we verify the diff logic uses the feature_version field
+    # Create two snapshots with identical feature_version AND definition_version
     snapshot1 = {
         "test/feature": {
-            "metaxy_feature_version": "abc123",  # Same
-            "metaxy_feature_spec_version": "spec_v1",  # Different (if we had metadata/tags)
+            "metaxy_feature_version": "abc123",
+            "metaxy_definition_version": "def_v1",
             "feature_spec": {
                 "key": ["test", "feature"],
                 "deps": None,
@@ -425,32 +415,51 @@ def test_graph_differ_compares_feature_version_not_feature_spec_version():
 
     snapshot2 = {
         "test/feature": {
-            "metaxy_feature_version": "abc123",  # Same - no computational change
-            "metaxy_feature_spec_version": "spec_v2",  # Different - non-computational change
+            "metaxy_feature_version": "abc123",  # Same
+            "metaxy_definition_version": "def_v1",  # Same
             "feature_spec": {
                 "key": ["test", "feature"],
                 "deps": None,
                 "fields": [{"key": ["default"], "code_version": 1}],
-                # In future: "tags": ["important", "v2"] would change feature_spec_version only
             },
             "fields": {"default": "field_v1"},
         }
     }
 
-    # Compute diff
+    # Compute diff - no changes expected
     diff = differ.diff(snapshot1, snapshot2, "snap1", "snap2")
 
-    # No changes should be detected (feature_version is identical)
     assert len(diff.added_nodes) == 0
     assert len(diff.removed_nodes) == 0
-    assert len(diff.changed_nodes) == 0  # Key assertion!
+    assert len(diff.changed_nodes) == 0
     assert not diff.has_changes
 
-    # Now test with feature_version change
+    # Now test with definition_version change (but same feature_version)
     snapshot3 = {
         "test/feature": {
+            "metaxy_feature_version": "abc123",  # Same - no computational change
+            "metaxy_definition_version": "def_v2",  # Different - schema/metadata change
+            "feature_spec": {
+                "key": ["test", "feature"],
+                "deps": None,
+                "fields": [{"key": ["default"], "code_version": 1}],
+            },
+            "fields": {"default": "field_v1"},
+        }
+    }
+
+    diff2 = differ.diff(snapshot1, snapshot3, "snap1", "snap3")
+
+    # Changes should be detected (definition_version differs)
+    assert len(diff2.changed_nodes) == 1
+    assert diff2.has_changes
+    assert diff2.changed_nodes[0].feature_key == FeatureKey(["test", "feature"])
+
+    # Now test with feature_version change (which also changes definition_version)
+    snapshot4 = {
+        "test/feature": {
             "metaxy_feature_version": "xyz789",  # Changed - computational change
-            "metaxy_feature_spec_version": "spec_v3",  # Also changed
+            "metaxy_definition_version": "def_v3",  # Also changed
             "feature_spec": {
                 "key": ["test", "feature"],
                 "deps": None,
@@ -460,11 +469,11 @@ def test_graph_differ_compares_feature_version_not_feature_spec_version():
         }
     }
 
-    diff2 = differ.diff(snapshot1, snapshot3, "snap1", "snap3")
+    diff3 = differ.diff(snapshot1, snapshot4, "snap1", "snap4")
 
-    # Changes should be detected (feature_version differs)
-    assert len(diff2.changed_nodes) == 1
-    assert diff2.has_changes
-    assert diff2.changed_nodes[0].feature_key == FeatureKey(["test", "feature"])
-    assert diff2.changed_nodes[0].old_version == "abc123"
-    assert diff2.changed_nodes[0].new_version == "xyz789"
+    # Changes should be detected
+    assert len(diff3.changed_nodes) == 1
+    assert diff3.has_changes
+    assert diff3.changed_nodes[0].feature_key == FeatureKey(["test", "feature"])
+    assert diff3.changed_nodes[0].old_version == "abc123"
+    assert diff3.changed_nodes[0].new_version == "xyz789"

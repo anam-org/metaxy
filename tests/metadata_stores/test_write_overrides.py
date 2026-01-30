@@ -15,7 +15,6 @@ from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_DELETED_AT,
-    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
@@ -96,7 +95,6 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
 
     # Get version info from the feature class
     feature_version = MyFeature.feature_version()
-    feature_spec_version = MyFeature.feature_spec_version()
 
     # First, write a single row using write_metadata to create the table with proper schema
     with store.open("write"):
@@ -133,7 +131,6 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
                 METAXY_DATA_VERSION: f"data_version_{i}",
                 METAXY_FEATURE_VERSION: feature_version,
                 METAXY_SNAPSHOT_VERSION: snapshot_version,
-                METAXY_FEATURE_SPEC_VERSION: feature_spec_version,
                 METAXY_CREATED_AT: ts,
                 METAXY_UPDATED_AT: ts,
                 METAXY_DELETED_AT: None,

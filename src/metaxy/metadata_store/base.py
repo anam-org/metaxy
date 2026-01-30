@@ -41,7 +41,6 @@ from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_DELETED_AT,
-    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
@@ -115,7 +114,6 @@ VersioningEngineOptions: TypeAlias = Literal["auto", "native", "polars"]
 _SYSTEM_COLUMN_DTYPES = {
     METAXY_PROVENANCE: nw.String,
     METAXY_FEATURE_VERSION: nw.String,
-    METAXY_FEATURE_SPEC_VERSION: nw.String,
     METAXY_SNAPSHOT_VERSION: nw.String,
     METAXY_DATA_VERSION: nw.String,
     METAXY_CREATED_AT: nw.Datetime(time_zone="UTC"),
@@ -1333,15 +1331,9 @@ class MetadataStore(ABC):
         # Check if version columns already exist in DataFrame
         has_feature_version = METAXY_FEATURE_VERSION in columns
         has_snapshot_version = METAXY_SNAPSHOT_VERSION in columns
-        has_feature_spec_version = METAXY_FEATURE_SPEC_VERSION in columns
 
         # In suppression mode (migrations), use existing values as-is
-        if (
-            _suppress_feature_version_warning.get()
-            and has_feature_version
-            and has_snapshot_version
-            and has_feature_spec_version
-        ):
+        if _suppress_feature_version_warning.get() and has_feature_version and has_snapshot_version:
             pass  # Use existing values for migrations
         else:
             # Drop any existing version columns (e.g., from SQLModel with null values)
@@ -1351,26 +1343,21 @@ class MetadataStore(ABC):
                 columns_to_drop.append(METAXY_FEATURE_VERSION)
             if has_snapshot_version:
                 columns_to_drop.append(METAXY_SNAPSHOT_VERSION)
-            if has_feature_spec_version:
-                columns_to_drop.append(METAXY_FEATURE_SPEC_VERSION)
             if columns_to_drop:
                 df = df.drop(*columns_to_drop)
 
-            # Get current feature version, feature_spec_version, and snapshot_version from graph
+            # Get current feature version and snapshot_version from graph
             from metaxy.models.feature import FeatureGraph
 
             graph = FeatureGraph.get_active()
-            definition = graph.get_feature_definition(feature_key)
 
             current_feature_version = graph.get_feature_version(feature_key)
-            current_feature_spec_version = definition.spec.feature_spec_version
             current_snapshot_version = graph.snapshot_version
 
             df = df.with_columns(
                 [
-                    nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),  # ty: ignore[invalid-argument-type]
+                    nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),
                     nw.lit(current_snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
-                    nw.lit(current_feature_spec_version).alias(METAXY_FEATURE_SPEC_VERSION),
                 ]
             )
 

@@ -13,7 +13,6 @@ from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_DELETED_AT,
-    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
@@ -130,7 +129,6 @@ class UpstreamPreparer(Generic[FrameT]):
         columns_to_drop = [
             METAXY_FEATURE_VERSION,
             METAXY_SNAPSHOT_VERSION,
-            METAXY_FEATURE_SPEC_VERSION,
         ]
 
         result = dict(dfs)

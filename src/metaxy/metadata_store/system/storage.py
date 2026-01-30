@@ -520,8 +520,8 @@ class SystemTableStorage:
 
         This method detects three scenarios:
         1. New snapshot (computational changes): No existing rows with this snapshot_version
-        2. Metadata-only changes: Snapshot exists but some features have different feature_spec_version
-        3. No changes: Snapshot exists with identical feature_spec_versions for all features
+        2. Definition changes: Snapshot exists but some features have different definition_version
+        3. No changes: Snapshot exists with identical definition_versions for all features
 
         Args:
             tags: Optional dictionary of custom tags to attach to the snapshot
