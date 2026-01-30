@@ -218,9 +218,7 @@ def render(
 
             formatter = DiffFormatter(console)
 
-            # Determine show_all_fields based on config
-            # TODO: add show_changed_fields_only to config
-            show_all_fields = True  # Default: show all fields
+            show_all_fields = True
 
             try:
                 rendered = formatter.format(

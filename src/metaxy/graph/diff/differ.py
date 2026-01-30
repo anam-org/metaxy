@@ -129,7 +129,6 @@ class GraphDiffer:
             deps = []
             if feature_spec.get("deps"):
                 for dep in feature_spec["deps"]:
-                    # Check for 'feature' field (new format) or 'key' field (old format)
                     dep_key = dep.get("feature") or dep.get("key", [])
                     if isinstance(dep_key, list):
                         deps.append(FeatureKey(dep_key))
@@ -169,7 +168,6 @@ class GraphDiffer:
             deps = []
             if feature_spec.get("deps"):
                 for dep in feature_spec["deps"]:
-                    # Check for 'feature' field (new format) or 'key' field (old format)
                     dep_key = dep.get("feature") or dep.get("key", [])
                     if isinstance(dep_key, list):
                         deps.append(FeatureKey(dep_key))
@@ -259,7 +257,7 @@ class GraphDiffer:
                     old_version=None,
                     new_version=fields2[field_key_str],
                     old_code_version=None,
-                    new_code_version=None,  # TODO: Extract from spec if available
+                    new_code_version=None,
                 )
             )
 
@@ -270,7 +268,7 @@ class GraphDiffer:
                     field_key=FieldKey(field_key_str.split("/")),
                     old_version=fields1[field_key_str],
                     new_version=None,
-                    old_code_version=None,  # TODO: Extract from spec if available
+                    old_code_version=None,
                     new_code_version=None,
                 )
             )
@@ -286,8 +284,8 @@ class GraphDiffer:
                         field_key=FieldKey(field_key_str.split("/")),
                         old_version=version1,
                         new_version=version2,
-                        old_code_version=None,  # TODO: Extract from spec if available
-                        new_code_version=None,  # TODO: Extract from spec if available
+                        old_code_version=None,
+                        new_code_version=None,
                     )
                 )
 
@@ -409,7 +407,6 @@ class GraphDiffer:
 
         dep_keys = []
         for dep in deps:
-            # Check for 'feature' field (new format) or 'key' field (old format)
             dep_key = dep.get("feature") or dep.get("key", [])
             if isinstance(dep_key, list):
                 dep_keys.append("/".join(dep_key))

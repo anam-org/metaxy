@@ -36,7 +36,7 @@ def main():
             print(f"Found {len(diff.added)} new videos")
             store.write_metadata(Video, diff.added)
 
-    # now we are going to resolve the videos that have to be split to chunks
+    # Resolve videos that need to be split into chunks
     with store:
         diff = store.resolve_update(VideoChunk)
         # the DataFrame dimensions matches Video (with ID column renamed)
@@ -73,7 +73,7 @@ def main():
             print(f"Writing {len(chunk_paths)} chunks for video {video_id}")
             store.write_metadata(VideoChunk, nw.from_native(chunk_df))
 
-    # now process face recognition on video chunks
+    # Process face recognition on video chunks
     with store:
         diff = store.resolve_update(FaceRecognition)
         print(f"Found {len(diff.added)} video chunks and {len(diff.changed)} video chunks that need face recognition")

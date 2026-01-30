@@ -68,7 +68,6 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
     # Check registration in active graph
     graph = FeatureGraph.get_active()
     assert FeatureKey(["video"]) in graph.feature_definitions_by_key
-    # Graph now stores FeatureDefinition objects, not feature classes
     defn = graph.feature_definitions_by_key[FeatureKey(["video"])]
     assert defn.feature_class_path.endswith("VideoFeature")
     assert defn.spec == VideoFeature.spec()

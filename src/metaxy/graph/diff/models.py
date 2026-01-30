@@ -65,7 +65,7 @@ class GraphNode(FrozenBaseModel):
     fields: list[FieldNode] = Field(default_factory=list)
     dependencies: list[FeatureKey] = Field(default_factory=list)
     status: NodeStatus = NodeStatus.NORMAL
-    project: str | None = None  # Project name (None for legacy features)
+    project: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

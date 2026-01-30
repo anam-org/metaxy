@@ -59,9 +59,8 @@ class FeatureDefinition(FrozenBaseModel):
     def _get_feature_class(self) -> type[BaseFeature]:
         """Return the feature class, using cached reference or importing by path.
 
-        Internal method - will be removed in a future version.
-        The Dagster integration currently requires feature classes to be
-        importable at runtime (i.e., defined at module level, not inside functions).
+        The Dagster integration requires feature classes to be importable at runtime
+        (i.e., defined at module level, not inside functions).
 
         Returns:
             The feature class.
@@ -93,9 +92,7 @@ class FeatureDefinition(FrozenBaseModel):
         except (ImportError, AttributeError, ValueError) as e:
             raise ImportError(
                 f"Cannot import feature class '{self.feature_class_path}': {e}. "
-                f"The Dagster integration currently only supports inferring column schema "
-                f"from features that are available as classes at runtime. "
-                f"This method will be removed in a future version."
+                f"The Dagster integration requires feature classes to be importable at runtime."
             ) from e
 
     @staticmethod
