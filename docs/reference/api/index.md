@@ -17,6 +17,8 @@ import metaxy as mx
 
 ::: metaxy.init_metaxy
 
+::: metaxy.load_feature_definitions
+
 ## Metadata Stores
 
 Metaxy abstracts interactions with metadata through the [MetadaStore][metaxy.metadata_store.base.MetadataStore] interface.

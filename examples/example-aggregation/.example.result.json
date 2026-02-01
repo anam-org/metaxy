@@ -74,7 +74,7 @@
             }
           }
         },
-        "timestamp": "2026-01-28T15:03:57.823397",
+        "timestamp": "2026-01-28T15:06:37.415622",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -84,7 +84,7 @@
         "returncode": 0,
         "stdout": "Found 4 new audio recordings\nFound 2 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\n  Computing embedding for speaker s2 from 2 audio recordings\nWriting embeddings for 2 speakers\n",
         "stderr": "",
-        "timestamp": "2026-01-28T15:03:58.363696",
+        "timestamp": "2026-01-28T15:06:37.940240",
         "scenario_name": "Initial pipeline run",
         "step_name": "run_pipeline"
       },
@@ -94,7 +94,7 @@
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
         "stderr": "",
-        "timestamp": "2026-01-28T15:03:58.962775",
+        "timestamp": "2026-01-28T15:06:38.480951",
         "scenario_name": "Idempotent rerun",
         "step_name": null
       },
@@ -168,7 +168,7 @@
             }
           }
         },
-        "timestamp": "2026-01-28T15:03:59.617589",
+        "timestamp": "2026-01-28T15:06:39.098895",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -311,7 +311,7 @@
             }
           }
         },
-        "timestamp": "2026-01-28T15:03:59.624764",
+        "timestamp": "2026-01-28T15:06:39.106113",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -321,7 +321,7 @@
         "returncode": 0,
         "stdout": "Found 1 changed audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\nWriting embeddings for 1 speakers\n",
         "stderr": "",
-        "timestamp": "2026-01-28T15:04:00.202920",
+        "timestamp": "2026-01-28T15:06:39.659653",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -395,7 +395,7 @@
             }
           }
         },
-        "timestamp": "2026-01-28T15:04:00.832235",
+        "timestamp": "2026-01-28T15:06:40.269220",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -538,7 +538,7 @@
             }
           }
         },
-        "timestamp": "2026-01-28T15:04:00.839007",
+        "timestamp": "2026-01-28T15:06:40.275731",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -548,7 +548,7 @@
         "returncode": 0,
         "stdout": "Found 1 new audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 3 audio recordings\nWriting embeddings for 1 speakers\n",
         "stderr": "",
-        "timestamp": "2026-01-28T15:04:01.427615",
+        "timestamp": "2026-01-28T15:06:40.836262",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -558,7 +558,7 @@
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
         "stderr": "",
-        "timestamp": "2026-01-28T15:04:02.010363",
+        "timestamp": "2026-01-28T15:06:41.360731",
         "scenario_name": "Final idempotent check",
         "step_name": null
       }

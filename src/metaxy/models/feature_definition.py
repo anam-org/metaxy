@@ -19,6 +19,8 @@ from metaxy.models.types import FeatureKey
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
 
+EXTERNAL_FEATURE_METADATA_KEY = "metaxy/external_feature"
+
 
 @public
 class FeatureDefinition(FrozenBaseModel):
@@ -33,7 +35,7 @@ class FeatureDefinition(FrozenBaseModel):
 
     spec: FeatureSpec = Field(description="Complete feature specification")
     feature_schema: dict[str, Any] = Field(description="Pydantic JSON schema dict")
-    feature_class_path: str = Field(description="Python import path", min_length=2)
+    feature_class_path: str | None = Field(default=None, description="Python import path")
     project: str = Field(description="The metaxy project this feature belongs to", min_length=1)
 
     # Runtime-only reference to the feature class. Not serialized. Will be removed in the future once we figure out a good way to extract Pydantic fields from the serialized schema.
@@ -56,6 +58,71 @@ class FeatureDefinition(FrozenBaseModel):
         definition._feature_class = feature_cls
         return definition
 
+    @classmethod
+    def from_stored_data(
+        cls,
+        feature_spec: dict[str, Any] | str,
+        feature_schema: dict[str, Any] | str,
+        feature_class_path: str,
+        project: str,
+    ) -> FeatureDefinition:
+        """Create a FeatureDefinition from stored data.
+
+        Handles JSON string or dict inputs for spec and schema fields.
+
+        Args:
+            feature_spec: Feature specification as dict or JSON string.
+            feature_schema: Pydantic JSON schema as dict or JSON string.
+            feature_class_path: Python import path of the feature class.
+            project: The metaxy project name.
+
+        Returns:
+            A new FeatureDefinition instance.
+        """
+        import json
+
+        if isinstance(feature_spec, str):
+            feature_spec = json.loads(feature_spec)
+        if isinstance(feature_schema, str):
+            feature_schema = json.loads(feature_schema)
+
+        spec = FeatureSpec.model_validate(feature_spec)
+        return cls(
+            spec=spec,
+            feature_schema=feature_schema,
+            feature_class_path=feature_class_path,
+            project=project,
+        )
+
+    @classmethod
+    def external(
+        cls,
+        *,
+        spec: FeatureSpec,
+        feature_schema: dict[str, Any],
+        project: str,
+    ) -> FeatureDefinition:
+        """Create an external FeatureDefinition without a Feature class.
+
+        External features are definitions loaded from another project or system
+        that don't have corresponding Python Feature classes in the current codebase.
+
+        Args:
+            spec: The feature specification. Will have external marker added to metadata.
+            feature_schema: Pydantic JSON schema dict describing the feature's fields.
+            project: The metaxy project this feature belongs to.
+
+        Returns:
+            A new FeatureDefinition marked as external.
+        """
+
+        return cls(
+            spec=spec.model_copy(update={"metadata": {**spec.metadata, EXTERNAL_FEATURE_METADATA_KEY: True}}),
+            feature_schema=feature_schema,
+            feature_class_path=None,
+            project=project,
+        )
+
     def _get_feature_class(self) -> type[BaseFeature]:
         """Return the feature class, using cached reference or importing by path.
 
@@ -71,6 +138,12 @@ class FeatureDefinition(FrozenBaseModel):
         # Return cached reference if available
         if self._feature_class is not None:
             return self._feature_class
+
+        if self.feature_class_path is None:
+            raise ImportError(
+                f"Cannot get feature class for external feature '{self.key}'. "
+                "External features do not have an associated Python class."
+            )
 
         import sys
 
@@ -127,3 +200,8 @@ class FeatureDefinition(FrozenBaseModel):
     def columns(self) -> Sequence[str]:
         """Get column names from the feature schema."""
         return list(self.feature_schema.get("properties", {}).keys())
+
+    @property
+    def is_external(self) -> bool:
+        """Check if this is an external feature definition."""
+        return self.spec.metadata.get(EXTERNAL_FEATURE_METADATA_KEY, False) is True
