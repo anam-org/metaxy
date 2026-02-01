@@ -5,8 +5,9 @@ Provides type-safe access to migration system tables using struct-based storage.
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import narwhals as nw
 import polars as pl
@@ -38,6 +39,53 @@ from metaxy.models.types import FeatureKey, SnapshotPushResult
 if TYPE_CHECKING:
     from metaxy.metadata_store import MetadataStore
     from metaxy.models.feature_definition import FeatureDefinition
+
+
+def _format_field_mismatches(
+    expected_by_field: dict[str, str],
+    actual_by_field: dict[str, str],
+) -> list[str]:
+    """Format field-level mismatches for a single feature."""
+    mismatched = []
+    all_fields = set(expected_by_field.keys()) | set(actual_by_field.keys())
+    for field in sorted(all_fields):
+        expected = expected_by_field.get(field, "<missing>")
+        actual = actual_by_field.get(field, "<missing>")
+        if expected != actual:
+            mismatched.append(f"      {field}: expected '{expected}', got '{actual}'")
+    return mismatched
+
+
+def _emit_version_mismatch_message(
+    mismatches: list[tuple[FeatureKey, str, str, dict[str, str], dict[str, str]]],
+    mode: Literal["warn", "error"],
+) -> None:
+    """Emit a consolidated warning or error for version mismatches.
+
+    Args:
+        mismatches: List of (key, expected_version, actual_version, expected_by_field, actual_by_field)
+        mode: Whether to warn or raise an error
+    """
+    lines = [
+        f"Version mismatch detected for {len(mismatches)} external feature(s). "
+        "The external feature definition(s) may be out of sync with the metadata store.",
+        "",
+    ]
+
+    for key, expected_version, actual_version, expected_by_field, actual_by_field in mismatches:
+        lines.append(f"  {key.to_string()}:")
+        lines.append(f"    feature version: expected '{expected_version}', got '{actual_version}'")
+        field_mismatches = _format_field_mismatches(expected_by_field, actual_by_field)
+        if field_mismatches:
+            lines.append("    field mismatches:")
+            lines.extend(field_mismatches)
+        lines.append("")
+
+    message = "\n".join(lines)
+
+    if mode == "error":
+        raise ValueError(message)
+    warnings.warn(message, stacklevel=4)
 
 
 class SystemTableStorage:
@@ -906,11 +954,17 @@ class SystemTableStorage:
         projects: str | list[str] | None = None,
         filters: Sequence[nw.Expr] | None = None,
         graph: FeatureGraph | None = None,
+        on_version_mismatch: Literal["warn", "error"] | None = None,
     ) -> list[FeatureDefinition]:
         """Load feature definitions from storage into a graph.
 
         This populates an existing graph with FeatureDefinition objects loaded from
         the metadata store. Loads the latest snapshot for each requested project.
+
+        If external features exist in the graph before loading, their versions are
+        recorded. After loading replaces them with actual definitions, versions are
+        compared using provenance-carrying feature versions. Mismatches trigger
+        warnings or errors based on the external feature's `on_version_mismatch` setting.
 
         Args:
             projects: Project(s) to load features from. Can be a single project name
@@ -919,6 +973,8 @@ class SystemTableStorage:
                 selection and deduplication, ensuring we always load the latest version
                 of each feature before filtering.
             graph: Target graph to populate. If None, uses the current active graph.
+            on_version_mismatch: Optional override for the `on_version_mismatch` setting
+                on [external feature definitions][metaxy.FeatureDefinition.external].
 
         Returns:
             List of FeatureDefinition objects that were loaded. Empty if no features
@@ -973,10 +1029,54 @@ class SystemTableStorage:
         if features_df.height == 0:
             return []
 
+        # Record versions of external features BEFORE loading
+        # These are the versions based on external feature placeholders
+        external_versions_before: dict[FeatureKey, tuple[str, dict[str, str], FeatureDefinition]] = {}
+        for key, defn in graph.feature_definitions_by_key.items():
+            if defn.is_external:
+                external_versions_before[key] = (
+                    graph.get_feature_version(key),
+                    graph.get_feature_version_by_field(key),
+                    defn,
+                )
+
         # Build FeatureDefinitions from rows and add to graph
         definitions = self._definitions_from_dataframe(features_df)
         for definition in definitions:
             graph.add_feature_definition(definition, on_conflict="ignore")
+
+        # Check for version mismatches on external features that were replaced
+        # Collect all mismatches, grouped by on_version_mismatch setting
+        warn_mismatches: list[tuple[FeatureKey, str, str, dict[str, str], dict[str, str]]] = []
+        error_mismatches: list[tuple[FeatureKey, str, str, dict[str, str], dict[str, str]]] = []
+
+        for key, (expected_version, expected_by_field, external_defn) in external_versions_before.items():
+            # Only check if the external feature was replaced (no longer external)
+            current_defn = graph.feature_definitions_by_key.get(key)
+            if current_defn is None or current_defn.is_external:
+                continue
+
+            actual_version = graph.get_feature_version(key)
+            actual_by_field = graph.get_feature_version_by_field(key)
+
+            if expected_version != actual_version:
+                mismatch_data = (key, expected_version, actual_version, expected_by_field, actual_by_field)
+                # Use override if provided, otherwise use the feature's own setting
+                effective_mode = (
+                    on_version_mismatch if on_version_mismatch is not None else external_defn.on_version_mismatch
+                )
+                if effective_mode == "error":
+                    error_mismatches.append(mismatch_data)
+                else:
+                    warn_mismatches.append(mismatch_data)
+
+        # Issue consolidated warning for all "warn" mismatches
+        if warn_mismatches:
+            _emit_version_mismatch_message(warn_mismatches, mode="warn")
+
+        # Raise consolidated error for all "error" mismatches
+        if error_mismatches:
+            _emit_version_mismatch_message(error_mismatches, mode="error")
 
         return definitions
 

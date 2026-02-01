@@ -434,3 +434,111 @@ class TestExternalProvenanceOverride:
             "nested/field": "hash2",
             "another": "hash3",
         }
+
+
+class TestOnVersionMismatch:
+    """Tests for on_version_mismatch behavior."""
+
+    def test_on_version_mismatch_default_is_warn(self):
+        """Default on_version_mismatch is 'warn'."""
+        import metaxy as mx
+
+        spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["external", "default_warn"]),
+            id_columns=["id"],
+        )
+        definition = mx.FeatureDefinition.external(spec=spec, project="proj")
+        assert definition.on_version_mismatch == "warn"
+
+    def test_on_version_mismatch_can_be_set_to_error(self):
+        """on_version_mismatch can be set to 'error'."""
+        import metaxy as mx
+
+        spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["external", "error_mode"]),
+            id_columns=["id"],
+        )
+        definition = mx.FeatureDefinition.external(spec=spec, project="proj", on_version_mismatch="error")
+        assert definition.on_version_mismatch == "error"
+
+    def test_check_version_mismatch_warns_on_difference(self):
+        """check_version_mismatch warns when versions differ and mode is 'warn'."""
+        import metaxy as mx
+
+        external_spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["external", "warn_test"]),
+            id_columns=["id"],
+            fields=["field_a"],
+        )
+        external_def = mx.FeatureDefinition.external(spec=external_spec, project="proj", on_version_mismatch="warn")
+
+        with pytest.warns(UserWarning, match="Version mismatch"):
+            external_def.check_version_mismatch(
+                expected_version="expected_v1",
+                actual_version="actual_v2",
+                expected_version_by_field={"field_a": "field_hash_1"},
+                actual_version_by_field={"field_a": "field_hash_2"},
+            )
+
+    def test_check_version_mismatch_raises_on_difference_when_error(self):
+        """check_version_mismatch raises when versions differ and mode is 'error'."""
+        import metaxy as mx
+
+        external_spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["external", "error_test"]),
+            id_columns=["id"],
+            fields=["field_a"],
+        )
+        external_def = mx.FeatureDefinition.external(spec=external_spec, project="proj", on_version_mismatch="error")
+
+        with pytest.raises(ValueError, match="Version mismatch"):
+            external_def.check_version_mismatch(
+                expected_version="expected_v1",
+                actual_version="actual_v2",
+                expected_version_by_field={"field_a": "field_hash_1"},
+                actual_version_by_field={"field_a": "field_hash_2"},
+            )
+
+    def test_check_version_mismatch_silent_when_versions_match(self):
+        """check_version_mismatch does nothing when versions match."""
+        import metaxy as mx
+
+        spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["external", "match_test"]),
+            id_columns=["id"],
+            fields=["field_a"],
+        )
+        external_def = mx.FeatureDefinition.external(spec=spec, project="proj", on_version_mismatch="error")
+
+        # Should not raise or warn when versions match
+        external_def.check_version_mismatch(
+            expected_version="same_version",
+            actual_version="same_version",
+            expected_version_by_field={"field_a": "same_hash"},
+            actual_version_by_field={"field_a": "same_hash"},
+        )
+
+    def test_check_version_mismatch_shows_field_level_details(self):
+        """check_version_mismatch includes field-level details in the message."""
+        import metaxy as mx
+
+        external_spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["external", "field_details"]),
+            id_columns=["id"],
+            fields=["field_a", "field_b"],
+        )
+        external_def = mx.FeatureDefinition.external(spec=external_spec, project="proj", on_version_mismatch="warn")
+
+        with pytest.warns(UserWarning, match="field_a.*expected.*got") as record:
+            external_def.check_version_mismatch(
+                expected_version="expected_v1",
+                actual_version="actual_v2",
+                expected_version_by_field={"field_a": "hash_a1", "field_b": "hash_b"},
+                actual_version_by_field={"field_a": "hash_a2", "field_b": "hash_b"},
+            )
+
+        # The warning message should mention field_a (which differs) but not field_b (which matches)
+        warning_message = str(record[0].message)
+        assert "field_a" in warning_message
+        assert "hash_a1" in warning_message
+        assert "hash_a2" in warning_message

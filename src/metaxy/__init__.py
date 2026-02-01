@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Literal
 
 import narwhals as nw
 
@@ -145,6 +146,7 @@ def load_feature_definitions(
     *,
     projects: str | list[str] | None = None,
     filters: Sequence[nw.Expr] | None = None,
+    on_version_mismatch: Literal["warn", "error"] | None = None,
 ) -> list[FeatureDefinition]:
     """Load feature definitions from a metadata store into the active graph.
 
@@ -163,6 +165,8 @@ def load_feature_definitions(
             `metaxy_feature_version`, `metaxy_definition_version`, `recorded_at`,
             `feature_spec`, `feature_schema`, `feature_class_path`,
             `metaxy_snapshot_version`, `tags`, `deleted_at`.
+        on_version_mismatch: Optional override for the `on_version_mismatch` setting
+            on [external feature definitions][metaxy.FeatureDefinition.external].
 
     Returns:
         List of loaded FeatureDefinition objects. Empty if no features found.
@@ -198,7 +202,9 @@ def load_feature_definitions(
     cm = nullcontext(store) if store._is_open else store
     with cm:
         storage = SystemTableStorage(store)
-        return storage.load_feature_definitions(projects=projects, filters=filters)
+        return storage.load_feature_definitions(
+            projects=projects, filters=filters, on_version_mismatch=on_version_mismatch
+        )
 
 
 __all__ = [
