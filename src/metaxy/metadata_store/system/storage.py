@@ -5,14 +5,12 @@ Provides type-safe access to migration system tables using struct-based storage.
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
 import polars as pl
 
-from metaxy import MetaxyConfig
 from metaxy.metadata_store.exceptions import SystemDataNotFoundError
 from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
@@ -40,53 +38,6 @@ from metaxy.models.types import FeatureKey, SnapshotPushResult
 if TYPE_CHECKING:
     from metaxy.metadata_store import MetadataStore
     from metaxy.models.feature_definition import FeatureDefinition
-
-
-def _format_field_mismatches(
-    expected_by_field: dict[str, str],
-    actual_by_field: dict[str, str],
-) -> list[str]:
-    """Format field-level mismatches for a single feature."""
-    mismatched = []
-    all_fields = set(expected_by_field.keys()) | set(actual_by_field.keys())
-    for field in sorted(all_fields):
-        expected = expected_by_field.get(field, "<missing>")
-        actual = actual_by_field.get(field, "<missing>")
-        if expected != actual:
-            mismatched.append(f"      {field}: expected '{expected}', got '{actual}'")
-    return mismatched
-
-
-def _emit_version_mismatch_message(
-    mismatches: list[tuple[FeatureKey, str, str, dict[str, str], dict[str, str]]],
-    mode: Literal["warn", "error"],
-) -> None:
-    """Emit a consolidated warning or error for version mismatches.
-
-    Args:
-        mismatches: List of (key, expected_version, actual_version, expected_by_field, actual_by_field)
-        mode: Whether to warn or raise an error
-    """
-    lines = [
-        f"Version mismatch detected for {len(mismatches)} external feature(s). "
-        "The external feature definition(s) may be out of sync with the metadata store.",
-        "",
-    ]
-
-    for key, expected_version, actual_version, expected_by_field, actual_by_field in mismatches:
-        lines.append(f"  {key.to_string()}:")
-        lines.append(f"    feature version: expected '{expected_version}', got '{actual_version}'")
-        field_mismatches = _format_field_mismatches(expected_by_field, actual_by_field)
-        if field_mismatches:
-            lines.append("    field mismatches:")
-            lines.extend(field_mismatches)
-        lines.append("")
-
-    message = "\n".join(lines)
-
-    if mode == "error":
-        raise ValueError(message)
-    warnings.warn(message, stacklevel=4)
 
 
 class SystemTableStorage:
@@ -606,9 +557,10 @@ class SystemTableStorage:
 
         # Load feature definitions from the store to replace any external feature placeholders.
         # This ensures version hashes are computed correctly against actual stored definitions.
-        # Only needed if the graph has external features that need to be resolved.
+        # External feature version checking should be done before calling push_graph_snapshot
+        # via sync_external_features.
         if graph.has_external_features:
-            self._load_feature_definitions()
+            self._load_feature_definitions_raw()
         current_snapshot_dict = graph.to_snapshot()
 
         if not current_snapshot_dict:
@@ -949,141 +901,34 @@ class SystemTableStorage:
             graph.add_feature_definition(definition)
         return graph
 
-    def _load_feature_definitions(
+    def _load_feature_definitions_raw(
         self,
         *,
-        projects: str | list[str] | None = None,
+        projects: list[str] | None = None,
         filters: Sequence[nw.Expr] | None = None,
         graph: FeatureGraph | None = None,
-        on_version_mismatch: Literal["warn", "error"] | None = None,
     ) -> list[FeatureDefinition]:
         """Load feature definitions from storage into a graph.
 
-        This populates an existing graph with FeatureDefinition objects loaded from
-        the metadata store. Loads the latest snapshot for each requested project.
-
-        If external features exist in the graph before loading, their versions are
-        recorded. After loading replaces them with actual definitions, versions are
-        compared using provenance-carrying feature versions. Mismatches trigger
-        warnings or errors based on the external feature's `on_version_mismatch` setting.
-
         Args:
-            projects: Project(s) to load features from. Can be a single project name
-                or a list of project names. If None, loads features from all projects.
-            filters: Narwhals expressions to filter features. Applied after snapshot
-                selection and deduplication, ensuring we always load the latest version
-                of each feature before filtering.
-            graph: Target graph to populate. If None, uses the current active graph.
-            on_version_mismatch: Optional override for the `on_version_mismatch` setting
-                on [external feature definitions][metaxy.FeatureDefinition.external].
-
-                !!! info
-                    Setting [`MetaxyConfig.locked`][metaxy.MetaxyConfig.locked] to `True` will override this setting for all features.
+            projects: Project(s) to load features from. All projects are used by default.
+            filters: Narwhals expressions to filter features.
+            graph: Target graph to populate. Uses the current graph by default.
 
         Returns:
-            List of FeatureDefinition objects that were loaded. Empty if no features
-            found for the specified criteria.
-
-        Note:
-            The store must already be open when calling this method.
-
-        Example:
-            ```python
-            with store:
-                storage = SystemTableStorage(store)
-
-                # Load all features from latest snapshots into active graph
-                definitions = storage.load_feature_definitions()
-                print(f"Loaded {len(definitions)} features")
-
-                # Load features from a specific project
-                definitions = storage.load_feature_definitions(projects="my_project")
-
-                # Load features into a new graph
-                new_graph = FeatureGraph()
-                definitions = storage.load_feature_definitions(
-                    projects=["project_a", "project_b"],
-                    graph=new_graph,
-                )
-
-                # Load specific features by key
-                import narwhals as nw
-
-                definitions = storage.load_feature_definitions(
-                    filters=[nw.col("feature_key").is_in(["my/feature"])],
-                )
-            ```
+            List of `FeatureDefinition` objects that were loaded.
         """
-        # Normalize projects to list
-        project_list: list[str] | None
-        if projects is None:
-            project_list = None
-        elif isinstance(projects, str):
-            project_list = [projects]
-        else:
-            project_list = projects
-
-        # Use active graph if not provided
         if graph is None:
             graph = FeatureGraph.get_active()
 
-        # Load from the latest snapshot for each project
-        features_df = self._read_latest_features_by_project(project_list, filters=filters)
+        features_df = self._read_latest_features_by_project(projects, filters=filters)
 
         if features_df.height == 0:
             return []
 
-        if MetaxyConfig.get().locked:
-            on_version_mismatch = "error"
-
-        # Record versions of external features BEFORE loading
-        # These are the versions based on external feature placeholders
-        external_versions_before: dict[FeatureKey, tuple[str, dict[str, str], FeatureDefinition]] = {}
-        for key, defn in graph.feature_definitions_by_key.items():
-            if defn.is_external:
-                external_versions_before[key] = (
-                    graph.get_feature_version(key),
-                    graph.get_feature_version_by_field(key),
-                    defn,
-                )
-
-        # Build FeatureDefinitions from rows and add to graph
         definitions = self._definitions_from_dataframe(features_df)
         for definition in definitions:
             graph.add_feature_definition(definition, on_conflict="ignore")
-
-        # Check for version mismatches on external features that were replaced
-        # Collect all mismatches, grouped by on_version_mismatch setting
-        warn_mismatches: list[tuple[FeatureKey, str, str, dict[str, str], dict[str, str]]] = []
-        error_mismatches: list[tuple[FeatureKey, str, str, dict[str, str], dict[str, str]]] = []
-
-        for key, (expected_version, expected_by_field, external_defn) in external_versions_before.items():
-            # Only check if the external feature was replaced (no longer external)
-            current_defn = graph.feature_definitions_by_key.get(key)
-            if current_defn is None or current_defn.is_external:
-                continue
-
-            actual_version = graph.get_feature_version(key)
-            actual_by_field = graph.get_feature_version_by_field(key)
-
-            if expected_version != actual_version:
-                mismatch_data = (key, expected_version, actual_version, expected_by_field, actual_by_field)
-                if on_version_mismatch is not None:
-                    effective_mode = on_version_mismatch
-                else:
-                    effective_mode = external_defn.on_version_mismatch
-                if effective_mode == "error":
-                    error_mismatches.append(mismatch_data)
-                else:
-                    warn_mismatches.append(mismatch_data)
-
-        # Issue consolidated warning for all "warn" mismatches
-        if warn_mismatches:
-            _emit_version_mismatch_message(warn_mismatches, mode="warn")
-
-        # Raise consolidated error for all "error" mismatches
-        if error_mismatches:
-            _emit_version_mismatch_message(error_mismatches, mode="error")
 
         return definitions
 

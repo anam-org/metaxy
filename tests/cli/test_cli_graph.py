@@ -1131,13 +1131,14 @@ def test_sync_flag_loads_external_features(metaxy_project: TempMetaxyProject):
         from metaxy import FeatureDefinition, FeatureDep, FeatureKey, FieldKey, FieldSpec
 
         # Define external placeholder for upstream
+        # Note: project doesn't need to match - sync uses feature keys
         external_upstream = FeatureDefinition.external(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["external", "upstream"]),
                 fields=[FieldSpec(key=FieldKey(["data"]))],
             ),
             feature_schema={},
-            project="test-project",
+            project="any-project",
         )
 
         from metaxy.models.feature import FeatureGraph
@@ -1203,13 +1204,14 @@ def test_sync_flag_warns_on_version_mismatch(metaxy_project: TempMetaxyProject):
         from metaxy import FeatureDefinition, FeatureDep, FeatureKey, FieldKey, FieldSpec
 
         # Define external placeholder with DIFFERENT code_version than what's stored
+        # Note: project doesn't need to match - sync uses feature keys
         external_upstream = FeatureDefinition.external(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["mismatch", "upstream"]),
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Wrong!
             ),
             feature_schema={},
-            project="test-project",
+            project="any-project",
             on_version_mismatch="warn",
         )
 
@@ -1270,13 +1272,14 @@ def test_locked_flag_errors_on_version_mismatch(metaxy_project: TempMetaxyProjec
 
         # Define external placeholder with DIFFERENT code_version than what's stored
         # Note: on_version_mismatch="warn" on the feature, but --locked overrides
+        # Note: project doesn't need to match - sync uses feature keys
         external_upstream = FeatureDefinition.external(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["assert_mismatch", "upstream"]),
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Wrong!
             ),
             feature_schema={},
-            project="test-project",
+            project="any-project",
             on_version_mismatch="warn",  # This gets overridden by --locked
         )
 

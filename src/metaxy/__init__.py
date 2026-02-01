@@ -1,11 +1,12 @@
-from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal
-
-import narwhals as nw
 
 from metaxy._decorators import public
+from metaxy._exceptions import ExternalFeatureVersionMismatchError
 from metaxy._version import __version__
+from metaxy._warnings import (
+    ExternalFeatureVersionMismatchWarning,
+    UnresolvedExternalFeatureWarning,
+)
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.entrypoints import (
     load_features,
@@ -67,6 +68,7 @@ from metaxy.models.types import (
 )
 from metaxy.utils import BatchedMetadataWriter
 from metaxy.utils.exceptions import MetaxyMissingFeatureDependency
+from metaxy.utils.external_features import sync_external_features
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -142,61 +144,6 @@ def init_metaxy(
     return config
 
 
-def _load_feature_definitions(
-    store: MetadataStore,
-    *,
-    projects: str | list[str] | None = None,
-    filters: Sequence[nw.Expr] | None = None,
-    on_version_mismatch: Literal["warn", "error"] | None = None,
-) -> list[FeatureDefinition]:
-    """Load feature definitions from a metadata store into the active graph."""
-    from contextlib import nullcontext
-
-    # Use nullcontext if store is already open, otherwise open it
-    cm = nullcontext(store) if store._is_open else store
-    with cm:
-        storage = SystemTableStorage(store)
-        return storage._load_feature_definitions(
-            projects=projects, filters=filters, on_version_mismatch=on_version_mismatch
-        )
-
-
-@public
-def sync_external_features(
-    store: MetadataStore,
-    *,
-    on_version_mismatch: Literal["warn", "error"] | None = None,
-) -> list[FeatureDefinition]:
-    """Sync external feature definitions from a metadata store if the graph has any.
-
-    Args:
-        store: Metadata store to load from. Will be opened automatically if not already open.
-        on_version_mismatch: Optional override for the `on_version_mismatch` setting on external feature definitions.
-
-            !!! info
-                Setting [`MetaxyConfig.locked`][metaxy.MetaxyConfig] to `True` takes precedence over this argument.
-
-    Returns:
-        List of loaded FeatureDefinition objects..
-
-    Example:
-        ```python
-        import metaxy as mx
-
-        # Sync external features before running a pipeline
-        mx.sync_external_features(store)
-
-        # Or with explicit error handling
-        mx.sync_external_features(store, on_version_mismatch="error")
-        ```
-    """
-    graph = FeatureGraph.get_active()
-    if not graph.has_external_features:
-        return []
-
-    return _load_feature_definitions(store, on_version_mismatch=on_version_mismatch)
-
-
 __all__ = [
     "BatchedMetadataWriter",
     "BaseFeature",
@@ -243,6 +190,9 @@ __all__ = [
     "StoreConfig",
     "init_metaxy",
     "sync_external_features",
+    "UnresolvedExternalFeatureWarning",
+    "ExternalFeatureVersionMismatchWarning",
+    "ExternalFeatureVersionMismatchError",
     "IDColumns",
     "HashAlgorithm",
     "LineageRelationship",

@@ -5,13 +5,13 @@ from pathlib import Path
 import narwhals as nw
 from metaxy_testing.models import SampleFeatureSpec
 
-from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec, _load_feature_definitions
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec, sync_external_features
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureDefinition, FeatureGraph
 
 
-def test_load_feature_definitions_into_graph(tmp_path: Path):
+def test_load_feature_definitions_raw_into_graph(tmp_path: Path):
     """Test loading feature definitions into a graph."""
     graph_v1 = FeatureGraph()
     with graph_v1.use():
@@ -45,7 +45,7 @@ def test_load_feature_definitions_into_graph(tmp_path: Path):
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
             assert len(new_graph.feature_definitions_by_key) == 0
-            definitions = storage._load_feature_definitions(graph=new_graph)
+            definitions = storage._load_feature_definitions_raw(graph=new_graph)
 
             # Returns list of loaded definitions
             assert len(definitions) == 2
@@ -57,7 +57,7 @@ def test_load_feature_definitions_into_graph(tmp_path: Path):
             assert FeatureKey(["feature_b"]) in new_graph.feature_definitions_by_key
 
 
-def test_load_feature_definitions_uses_active_graph_by_default(tmp_path: Path):
+def test_load_feature_definitions_raw_uses_active_graph_by_default(tmp_path: Path):
     """Test that load_feature_definitions uses the active graph when none is provided."""
     graph_v1 = FeatureGraph()
     with graph_v1.use():
@@ -80,13 +80,13 @@ def test_load_feature_definitions_uses_active_graph_by_default(tmp_path: Path):
     with target_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            definitions = storage._load_feature_definitions()
+            definitions = storage._load_feature_definitions_raw()
 
             assert len(definitions) == 1
             assert FeatureKey(["feature_x"]) in target_graph.feature_definitions_by_key
 
 
-def test_load_feature_definitions_by_project(tmp_path: Path):
+def test_load_feature_definitions_raw_by_project(tmp_path: Path):
     """Test loading feature definitions filtered by project."""
     graph = FeatureGraph()
     with graph.use():
@@ -122,24 +122,24 @@ def test_load_feature_definitions_by_project(tmp_path: Path):
     with new_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            definitions = storage._load_feature_definitions(projects=project, graph=new_graph)
+            definitions = storage._load_feature_definitions_raw(projects=[project], graph=new_graph)
 
             assert len(definitions) == 2
 
 
-def test_load_feature_definitions_returns_empty_list_when_no_features(tmp_path: Path):
+def test_load_feature_definitions_raw_returns_empty_list_when_no_features(tmp_path: Path):
     """Test that load_feature_definitions returns empty list when no features found."""
     new_graph = FeatureGraph()
     with new_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            definitions = storage._load_feature_definitions(graph=new_graph)
+            definitions = storage._load_feature_definitions_raw(graph=new_graph)
 
             assert definitions == []
             assert len(new_graph.feature_definitions_by_key) == 0
 
 
-def test_load_feature_definitions_preserves_dependencies(tmp_path: Path):
+def test_load_feature_definitions_raw_preserves_dependencies(tmp_path: Path):
     """Test that loaded features preserve their dependency information."""
     graph_v1 = FeatureGraph()
     with graph_v1.use():
@@ -177,7 +177,7 @@ def test_load_feature_definitions_preserves_dependencies(tmp_path: Path):
     with new_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            storage._load_feature_definitions(graph=new_graph)
+            storage._load_feature_definitions_raw(graph=new_graph)
 
             downstream_def = new_graph.feature_definitions_by_key[FeatureKey(["downstream"])]
             assert downstream_def.spec.deps is not None
@@ -186,7 +186,7 @@ def test_load_feature_definitions_preserves_dependencies(tmp_path: Path):
             assert downstream_def.spec.deps[0].rename == {"value": "upstream_value"}
 
 
-def test_load_feature_definitions_loads_latest_snapshot(tmp_path: Path):
+def test_load_feature_definitions_raw_loads_latest_snapshot(tmp_path: Path):
     """Test that load_feature_definitions loads from the latest snapshot."""
     # Create v1
     graph_v1 = FeatureGraph()
@@ -227,14 +227,14 @@ def test_load_feature_definitions_loads_latest_snapshot(tmp_path: Path):
     with new_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            definitions = storage._load_feature_definitions(graph=new_graph)
+            definitions = storage._load_feature_definitions_raw(graph=new_graph)
 
             assert len(definitions) == 1
             assert definitions[0].spec.fields[0].code_version == "2"
 
 
-def test_mx_load_feature_definitions_public_api(tmp_path: Path):
-    """Test the _load_feature_definitions public API."""
+def test_mx_load_feature_definitions_raw_public_api(tmp_path: Path):
+    """Test the _load_feature_definitions_raw public API."""
     graph_v1 = FeatureGraph()
     with graph_v1.use():
 
@@ -251,11 +251,12 @@ def test_mx_load_feature_definitions_public_api(tmp_path: Path):
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
-    # Use public API to load into a new graph (store not pre-opened)
+    # Use storage API to load into a new graph
     new_graph = FeatureGraph()
     with new_graph.use():
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        definitions = _load_feature_definitions(store)
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            definitions = storage._load_feature_definitions_raw(graph=new_graph)
 
         assert len(definitions) == 1
         assert definitions[0].key == FeatureKey(["public_api_test"])
@@ -307,8 +308,9 @@ def test_feature_depending_on_loaded_definition(tmp_path: Path):
         assert FeatureKey(["downstream"]) in new_graph.feature_definitions_by_key
 
         # Now load the upstream feature from the store
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        _load_feature_definitions(store)
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage._load_feature_definitions_raw()
 
         # Now both features are in the graph
         assert FeatureKey(["upstream"]) in new_graph.feature_definitions_by_key
@@ -321,7 +323,7 @@ def test_feature_depending_on_loaded_definition(tmp_path: Path):
         assert plan.deps[0].key == FeatureKey(["upstream"])
 
 
-def test_load_feature_definitions_with_filters(tmp_path: Path):
+def test_load_feature_definitions_raw_with_filters(tmp_path: Path):
     """Test loading feature definitions with narwhals filter expressions."""
     graph_v1 = FeatureGraph()
     with graph_v1.use():
@@ -360,11 +362,12 @@ def test_load_feature_definitions_with_filters(tmp_path: Path):
     # Load only specific features using filter
     new_graph = FeatureGraph()
     with new_graph.use():
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        definitions = _load_feature_definitions(
-            store,
-            filters=[nw.col("feature_key").is_in(["alpha", "gamma"])],
-        )
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            definitions = storage._load_feature_definitions_raw(
+                filters=[nw.col("feature_key").is_in(["alpha", "gamma"])],
+                graph=new_graph,
+            )
 
         assert len(definitions) == 2
         keys = {d.key for d in definitions}
@@ -372,7 +375,7 @@ def test_load_feature_definitions_with_filters(tmp_path: Path):
         assert FeatureKey(["beta"]) not in new_graph.feature_definitions_by_key
 
 
-def test_load_feature_definitions_with_filters_via_storage(tmp_path: Path):
+def test_load_feature_definitions_raw_with_filters_via_storage(tmp_path: Path):
     """Test SystemTableStorage.load_feature_definitions with filters."""
     graph_v1 = FeatureGraph()
     with graph_v1.use():
@@ -404,7 +407,7 @@ def test_load_feature_definitions_with_filters_via_storage(tmp_path: Path):
     with new_graph.use():
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            definitions = storage._load_feature_definitions(
+            definitions = storage._load_feature_definitions_raw(
                 filters=[nw.col("feature_key") == "one"],
                 graph=new_graph,
             )
@@ -414,7 +417,7 @@ def test_load_feature_definitions_with_filters_via_storage(tmp_path: Path):
             assert FeatureKey(["two"]) not in new_graph.feature_definitions_by_key
 
 
-def test_load_feature_definitions_filters_applied_after_deduplication(tmp_path: Path):
+def test_load_feature_definitions_raw_filters_applied_after_deduplication(tmp_path: Path):
     """Test that filters are applied after timestamp deduplication.
 
     This ensures we always load the latest version of a feature, regardless of filters.
@@ -458,11 +461,12 @@ def test_load_feature_definitions_filters_applied_after_deduplication(tmp_path: 
     # Load with filter - should get v2 (latest), not v1
     new_graph = FeatureGraph()
     with new_graph.use():
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        definitions = _load_feature_definitions(
-            store,
-            filters=[nw.col("feature_key") == "evolving"],
-        )
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            definitions = storage._load_feature_definitions_raw(
+                filters=[nw.col("feature_key") == "evolving"],
+                graph=new_graph,
+            )
 
         # Should load exactly one feature
         assert len(definitions) == 1
@@ -579,8 +583,9 @@ def test_snapshot_succeeds_after_loading_external_dependencies(tmp_path: Path):
         assert new_graph.get_feature_definition(["shared_upstream"]).is_external is True
 
         # Load the real feature from the store - this should replace the external placeholder
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        _load_feature_definitions(store)
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage._load_feature_definitions_raw()
 
         # Now the feature should no longer be external
         assert new_graph.get_feature_definition(["shared_upstream"]).is_external is False
@@ -618,8 +623,9 @@ def test_external_features_never_pushed_to_metadata_store(tmp_path: Path):
     new_graph = FeatureGraph()
     with new_graph.use():
         # Load the original feature
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-        _load_feature_definitions(store)
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage._load_feature_definitions_raw()
 
         # Add an external feature (from another project we don't control)
         external_def = FeatureDefinition.external(
@@ -748,8 +754,8 @@ def test_resolve_update_loads_external_feature_definitions(tmp_path: Path):
             assert len(increment.added) == 2  # Both upstream samples
 
 
-def test_load_feature_definitions_warns_on_version_mismatch(tmp_path: Path):
-    """Test that load_feature_definitions warns when external feature version mismatches."""
+def test_sync_external_features_warns_on_version_mismatch(tmp_path: Path):
+    """Test that sync_external_features warns when external feature version mismatches."""
     import pytest
 
     # First, save a feature to the store
@@ -773,28 +779,29 @@ def test_load_feature_definitions_warns_on_version_mismatch(tmp_path: Path):
     new_graph = FeatureGraph()
     with new_graph.use():
         # Add external feature with different code_version than what's in the store
+        # Note: project must match the project of the saved feature (project doesn't need to match - sync uses feature keys)
         external_def = FeatureDefinition.external(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["version_mismatch_warn"]),
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Different!
             ),
             feature_schema={},
-            project="test-project",
+            project="any-project",
             on_version_mismatch="warn",  # Should warn
         )
         new_graph.add_feature_definition(external_def)
 
-        # Load should warn about version mismatch
+        # Sync should warn about version mismatch
         with pytest.warns(UserWarning, match="Version mismatch"):
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            _load_feature_definitions(store)
+            sync_external_features(store)
 
         # But the feature should still be loaded (and no longer external)
         assert new_graph.get_feature_definition(["version_mismatch_warn"]).is_external is False
 
 
-def test_load_feature_definitions_raises_on_version_mismatch_when_error(tmp_path: Path):
-    """Test that load_feature_definitions raises when external feature version mismatches and on_version_mismatch='error'."""
+def test_sync_external_features_raises_on_version_mismatch_when_error(tmp_path: Path):
+    """Test that sync_external_features raises when external feature version mismatches and on_version_mismatch='error'."""
     import pytest
 
     # First, save a feature to the store
@@ -818,24 +825,27 @@ def test_load_feature_definitions_raises_on_version_mismatch_when_error(tmp_path
     new_graph = FeatureGraph()
     with new_graph.use():
         # Add external feature with different code_version than what's in the store
+        # Note: project must match the project of the saved feature (project doesn't need to match - sync uses feature keys)
         external_def = FeatureDefinition.external(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["version_mismatch_error"]),
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Different!
             ),
             feature_schema={},
-            project="test-project",
+            project="any-project",
             on_version_mismatch="error",  # Should raise
         )
         new_graph.add_feature_definition(external_def)
 
-        # Load should raise ValueError about version mismatch
-        with pytest.raises(ValueError, match="Version mismatch"):
+        # Sync should raise error about version mismatch
+        from metaxy import ExternalFeatureVersionMismatchError
+
+        with pytest.raises(ExternalFeatureVersionMismatchError, match="Version mismatch"):
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            _load_feature_definitions(store)
+            sync_external_features(store)
 
 
-def test_load_feature_definitions_consolidates_multiple_mismatches(tmp_path: Path):
+def test_sync_external_features_consolidates_multiple_mismatches(tmp_path: Path):
     """Test that load_feature_definitions issues a single consolidated warning for multiple mismatches."""
     import pytest
 
@@ -868,13 +878,14 @@ def test_load_feature_definitions_consolidates_multiple_mismatches(tmp_path: Pat
     # Create a new graph with TWO mismatched external features
     new_graph = FeatureGraph()
     with new_graph.use():
+        # Note: project must match the project of the saved features (project doesn't need to match - sync uses feature keys)
         external_a = FeatureDefinition.external(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["multi_mismatch", "a"]),
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],
             ),
             feature_schema={},
-            project="test-project",
+            project="any-project",
             on_version_mismatch="warn",
         )
         new_graph.add_feature_definition(external_a)
@@ -885,7 +896,7 @@ def test_load_feature_definitions_consolidates_multiple_mismatches(tmp_path: Pat
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="999")],
             ),
             feature_schema={},
-            project="test-project",
+            project="any-project",
             on_version_mismatch="warn",
         )
         new_graph.add_feature_definition(external_b)
@@ -893,7 +904,7 @@ def test_load_feature_definitions_consolidates_multiple_mismatches(tmp_path: Pat
         # Should get ONE warning mentioning BOTH features
         with pytest.warns(UserWarning, match="2 external feature") as record:
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            _load_feature_definitions(store)
+            sync_external_features(store)
 
         # Verify both features are mentioned in the single warning
         warning_message = str(record[0].message)
@@ -901,7 +912,7 @@ def test_load_feature_definitions_consolidates_multiple_mismatches(tmp_path: Pat
         assert "multi_mismatch/b" in warning_message
 
 
-def test_load_feature_definitions_no_warning_when_versions_match(tmp_path: Path):
+def test_sync_external_features_no_warning_when_versions_match(tmp_path: Path):
     """Test that load_feature_definitions doesn't warn when versions match."""
     import warnings
 
@@ -930,6 +941,7 @@ def test_load_feature_definitions_no_warning_when_versions_match(tmp_path: Path)
     with new_graph.use():
         # Add external feature with provenance override matching the real feature
         # Convert string keys to FieldKey for type safety
+        # Note: project must match the project of the saved feature (project doesn't need to match - sync uses feature keys)
         provenance_override = {FieldKey([k]): v for k, v in expected_version_by_field.items()}
         external_def = FeatureDefinition.external(
             spec=SampleFeatureSpec(
@@ -937,23 +949,23 @@ def test_load_feature_definitions_no_warning_when_versions_match(tmp_path: Path)
                 fields=[FieldSpec(key=FieldKey(["data"]))],
             ),
             feature_schema={},
-            project="test-project",
+            project="any-project",
             provenance_by_field=provenance_override,  # Match the real version
             on_version_mismatch="error",  # Would raise if there's a mismatch
         )
         new_graph.add_feature_definition(external_def)
 
-        # Load should NOT warn or raise
+        # Sync should NOT warn or raise
         with warnings.catch_warnings():
             warnings.simplefilter("error")  # Turn warnings into errors
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            _load_feature_definitions(store)
+            sync_external_features(store)
 
         # Feature should be loaded
         assert new_graph.get_feature_definition(["version_match"]).is_external is False
 
 
-def test_load_feature_definitions_on_version_mismatch_override_to_error(tmp_path: Path):
+def test_sync_external_features_on_version_mismatch_override_to_error(tmp_path: Path):
     """Test that on_version_mismatch='error' overrides a feature's 'warn' setting."""
     import pytest
 
@@ -977,24 +989,27 @@ def test_load_feature_definitions_on_version_mismatch_override_to_error(tmp_path
     # Create a new graph with a mismatched external feature set to "warn"
     new_graph = FeatureGraph()
     with new_graph.use():
+        # Note: project must match the project of the saved feature (project doesn't need to match - sync uses feature keys)
         external_def = FeatureDefinition.external(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["override_to_error"]),
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Different!
             ),
             feature_schema={},
-            project="test-project",
+            project="any-project",
             on_version_mismatch="warn",  # Feature says warn
         )
         new_graph.add_feature_definition(external_def)
 
-        # Load with on_version_mismatch="error" override should raise
-        with pytest.raises(ValueError, match="Version mismatch"):
+        # Sync with on_version_mismatch="error" override should raise
+        from metaxy import ExternalFeatureVersionMismatchError
+
+        with pytest.raises(ExternalFeatureVersionMismatchError, match="Version mismatch"):
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            _load_feature_definitions(store, on_version_mismatch="error")
+            sync_external_features(store, on_version_mismatch="error")
 
 
-def test_load_feature_definitions_on_version_mismatch_override_to_warn(tmp_path: Path):
+def test_sync_external_features_on_version_mismatch_override_to_warn(tmp_path: Path):
     """Test that on_version_mismatch='warn' overrides a feature's 'error' setting."""
     import pytest
 
@@ -1018,21 +1033,22 @@ def test_load_feature_definitions_on_version_mismatch_override_to_warn(tmp_path:
     # Create a new graph with a mismatched external feature set to "error"
     new_graph = FeatureGraph()
     with new_graph.use():
+        # Note: project must match the project of the saved feature (project doesn't need to match - sync uses feature keys)
         external_def = FeatureDefinition.external(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["override_to_warn"]),
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Different!
             ),
             feature_schema={},
-            project="test-project",
+            project="any-project",
             on_version_mismatch="error",  # Feature says error
         )
         new_graph.add_feature_definition(external_def)
 
-        # Load with on_version_mismatch="warn" override should only warn, not raise
+        # Sync with on_version_mismatch="warn" override should only warn, not raise
         with pytest.warns(UserWarning, match="Version mismatch"):
             store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-            _load_feature_definitions(store, on_version_mismatch="warn")
+            sync_external_features(store, on_version_mismatch="warn")
 
         # Feature should still be loaded
         assert new_graph.get_feature_definition(["override_to_warn"]).is_external is False
