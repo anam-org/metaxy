@@ -929,6 +929,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#external-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Features
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3146,6 +3157,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#external-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Features
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3371,6 +3393,50 @@ This metadata does not influence graph topology or the versioning system.</p>
 <p><code>/raw/video:audio/english</code></p>
 </li>
 </ul>
+</div>
+<h2 id="external-features">External Features<a class="headerlink" href="#external-features" title="Permanent link">&para;</a></h2>
+<p>External features are stubs pointing at features actually defined in other projects and not available in Python at runtime.
+They can be used if the actual feature class cannot be imported, for example due to dependency conflicts or for other reasons.</p>
+<p>Externals features can be defined with:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">external_feature</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">FeatureDefinition</span><span class="o">.</span><span class="n">external</span><span class="p">(</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">spec</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;a/b/c&quot;</span><span class="p">,</span> <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]),</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">project</span><span class="o">=</span><span class="s2">&quot;external-project&quot;</span><span class="p">,</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>External features only exist until the actual feature definitions are loaded from the metadata store and replace them. This can be done with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../reference/api/#metaxy.sync_external_features"><code>metaxy.sync_external_features</code></a>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Sync external features from the metadata store</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">mx</span><span class="o">.</span><span class="n">sync_external_features</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Pydantic Schema Limitation</p>
+<p>Features loaded from the metadata store have their JSON schema preserved from when they were originally saved. However, the Pydantic model class is not available. Operations that require the actual Python class, such as model instantiation or validation, will not work for these features.</p>
+</div>
+<p>Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or field versions) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:</p>
+<ul>
+<li>passing <code>on_conflict="raise"</code> to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../reference/api/#metaxy.sync_external_features"><code>sync_external_features</code></a></li>
+<li>passing <code>--locked</code> to Metaxy CLI commands</li>
+<li>setting <code>locked</code> to <code>True</code> in the global Metaxy configuration. This can be done either in the config file or via the <code>METAXY_LOCKED</code> environment variable.</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>We recommend setting <code>METAXY_LOCKED=1</code> in production</p>
+</div>
+<p>Additionally, the following actions always trigger a sync for external feature definitions:</p>
+<ul>
+<li>pushing feature definitions to the metadata store (e.g. <code>metaxy graph push</code> CLI)</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore.resolve_update"><code>MetadataStore.read_metadata</code></a></li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore.resolve_update"><code>MetadataStore.resolve_update</code></a></li>
+</ul>
+<p>And some other places where it's appropriate and doesn't create an additional overhead.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>This behavior can be disabled by setting <code>sync=False</code> in the global Metaxy configuration. However, we advise to keep it enabled,
+because <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../reference/api/#metaxy.sync_external_features"><code>sync_external_features</code></a> is very lightweight on the first call and a no-op on subsequent calls.
+It only does anything if the current feature graph does not contain any external features.</p>
 </div>
 
 
