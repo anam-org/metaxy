@@ -3625,13 +3625,13 @@ flowchart TB
     video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;697d0098&lt;/font&gt; → &lt;font color="#00FF00"&gt;e467986a&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;7132721c&lt;/font&gt; → &lt;font color="#00FF00"&gt;f8e35296&lt;/font&gt;)&lt;br/&gt;- frames (3f6f401c)&lt;/div&gt;"]
     video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;24b73621&lt;/font&gt; → &lt;font color="#00FF00"&gt;850c45aa&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;d6a26940&lt;/font&gt; → &lt;font color="#00FF00"&gt;0295dd38&lt;/font&gt;)&lt;br/&gt;- frames (b3595d64)&lt;/div&gt;"]
     video_faces["&lt;div style="text-align:left"&gt;&lt;b&gt;video/faces&lt;/b&gt;&lt;br/&gt;ffa26c20&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (ffffa4c9)&lt;/div&gt;"]
-    video_raw --&gt; video_chunk
     video_chunk --&gt; video_faces
+    video_raw --&gt; video_chunk
 
 
-    style video_chunk stroke:#FFAA00,stroke-width:2px
     style video_faces stroke:#808080
-    style video_raw stroke:#FFAA00,stroke-width:2px</code></pre>
+    style video_raw stroke:#FFAA00,stroke-width:2px
+    style video_chunk stroke:#FFAA00,stroke-width:2px</code></pre>
 </div>
 </div>
 </div>
