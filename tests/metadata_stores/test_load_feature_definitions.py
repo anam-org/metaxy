@@ -9,7 +9,7 @@ import metaxy as mx
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
-from metaxy.models.feature import FeatureGraph
+from metaxy.models.feature import FeatureDefinition, FeatureGraph
 
 
 def test_load_feature_definitions_into_graph(tmp_path: Path):
@@ -413,3 +413,337 @@ def test_load_feature_definitions_with_filters_via_storage(tmp_path: Path):
             assert len(definitions) == 1
             assert definitions[0].key == FeatureKey(["one"])
             assert FeatureKey(["two"]) not in new_graph.feature_definitions_by_key
+
+
+def test_load_feature_definitions_filters_applied_after_deduplication(tmp_path: Path):
+    """Test that filters are applied after timestamp deduplication.
+
+    This ensures we always load the latest version of a feature, regardless of filters.
+    If filters were applied before deduplication, filtering by feature_key could
+    incorrectly return an older version.
+    """
+    # Create v1 of the feature
+    graph_v1 = FeatureGraph()
+    with graph_v1.use():
+
+        class EvolvingFeatureV1(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["evolving"]),
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create v2 of the feature with different code_version
+    graph_v2 = FeatureGraph()
+    with graph_v2.use():
+
+        class EvolvingFeatureV2(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["evolving"]),
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="2")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Load with filter - should get v2 (latest), not v1
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+        definitions = mx.load_feature_definitions(
+            store,
+            filters=[nw.col("feature_key") == "evolving"],
+        )
+
+        # Should load exactly one feature
+        assert len(definitions) == 1
+        # And it should be the latest version (v2)
+        assert definitions[0].spec.fields[0].code_version == "2"
+
+
+def test_snapshot_with_unresolved_external_dependency_raises_error(tmp_path: Path):
+    """Test that creating a snapshot with unresolved external dependencies raises an error."""
+    import pytest
+
+    from metaxy.models.feature import FeatureDefinition
+    from metaxy.utils.exceptions import MetaxyInvariantViolationError
+
+    # First, save an upstream feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class UpstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["external_upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Now create a new graph with an external feature placeholder and a dependent feature
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        # Add external feature placeholder (simulating a feature we know exists but haven't loaded)
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["external_upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+            feature_schema={"type": "object"},
+            project="other-project",
+        )
+        new_graph.add_feature_definition(external_def)
+
+        # Define a downstream feature that depends on the external placeholder
+        class DownstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["local_downstream"]),
+                deps=[FeatureDep(feature=FeatureKey(["external_upstream"]))],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Attempting to create a snapshot should fail because
+        # local_downstream depends on an external feature
+        with pytest.raises(MetaxyInvariantViolationError) as exc_info:
+            new_graph.to_snapshot()
+
+        assert "local_downstream" in str(exc_info.value)
+        assert "external_upstream" in str(exc_info.value)
+        assert "External dependencies must be replaced" in str(exc_info.value)
+
+
+def test_snapshot_succeeds_after_loading_external_dependencies(tmp_path: Path):
+    """Test that snapshot works after loading external dependencies from the store."""
+    from metaxy.models.feature import FeatureDefinition
+
+    # First, save an upstream feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class UpstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["shared_upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Now create a new graph with an external feature placeholder and a dependent feature
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        # Add external feature placeholder
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["shared_upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+            feature_schema={"type": "object"},
+            project="other-project",
+        )
+        new_graph.add_feature_definition(external_def)
+
+        # Define a downstream feature that depends on the external placeholder
+        class DownstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["local_downstream"]),
+                deps=[FeatureDep(feature=FeatureKey(["shared_upstream"]))],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Verify external is in the graph
+        assert new_graph.get_feature_definition(["shared_upstream"]).is_external is True
+
+        # Load the real feature from the store - this should replace the external placeholder
+        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+        mx.load_feature_definitions(store)
+
+        # Now the feature should no longer be external
+        assert new_graph.get_feature_definition(["shared_upstream"]).is_external is False
+
+        # And creating a snapshot should succeed
+        snapshot = new_graph.to_snapshot()
+
+        # Both features should be in the snapshot
+        assert "shared_upstream" in snapshot
+        assert "local_downstream" in snapshot
+
+
+def test_external_features_never_pushed_to_metadata_store(tmp_path: Path):
+    """Test that external features are never pushed to the metadata store."""
+    from metaxy.models.feature import FeatureDefinition
+
+    # First, save an upstream feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class OriginalFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["original_feature"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create a new graph with the loaded feature plus an external feature
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        # Load the original feature
+        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+        mx.load_feature_definitions(store)
+
+        # Add an external feature (from another project we don't control)
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["external_only"]),
+                fields=[FieldSpec(key=FieldKey(["value"]))],
+            ),
+            feature_schema={"type": "object"},
+            project="external-project",
+        )
+        new_graph.add_feature_definition(external_def)
+
+        # Both features are in the graph
+        assert FeatureKey(["original_feature"]) in new_graph.feature_definitions_by_key
+        assert FeatureKey(["external_only"]) in new_graph.feature_definitions_by_key
+
+        # Snapshot should only contain the non-external feature
+        snapshot = new_graph.to_snapshot()
+        assert "original_feature" in snapshot
+        assert "external_only" not in snapshot
+
+        # Push should succeed and only push the non-external feature
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+            # Verify only original_feature was pushed
+            features_df = storage.read_features(current=True)
+            feature_keys = features_df["feature_key"].to_list()
+            assert "original_feature" in feature_keys
+            assert "external_only" not in feature_keys
+
+
+def test_resolve_update_loads_external_feature_definitions(tmp_path: Path):
+    """Test that resolve_update automatically loads feature definitions from the store.
+
+    This ensures that when a downstream feature depends on an external feature placeholder,
+    the actual feature definition is loaded from the store before computing the update.
+    Without this, version hashes would be computed incorrectly using stale external data.
+    """
+    import polars as pl
+
+    # Step 1: Create and push an upstream feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class UpstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["resolve_test", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+            # Also write some metadata for the upstream feature
+            upstream_metadata = pl.DataFrame(
+                {
+                    "sample_uid": ["sample1", "sample2"],
+                    "metaxy_provenance_by_field": [
+                        {"data": "hash1"},
+                        {"data": "hash2"},
+                    ],
+                    "metaxy_provenance": ["prov1", "prov2"],
+                    "metaxy_data_version_by_field": [
+                        {"data": "hash1"},
+                        {"data": "hash2"},
+                    ],
+                    "metaxy_data_version": ["prov1", "prov2"],
+                }
+            )
+            store.write_metadata(UpstreamFeature, upstream_metadata)
+
+        # Get the expected version when upstream is fully defined
+        expected_upstream_version = source_graph.get_feature_version(["resolve_test", "upstream"])
+
+    # Step 2: Create a new graph with external placeholder for upstream
+    # and define a downstream feature that depends on it
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        # Add external placeholder for upstream (simulating code that doesn't have the upstream class)
+        external_upstream = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["resolve_test", "upstream"]),
+                # Intentionally different field to verify it gets replaced
+                fields=[FieldSpec(key=FieldKey(["different_field"]), code_version="999")],
+            ),
+            feature_schema={"wrong": "schema"},
+            project="placeholder-project",
+        )
+        new_graph.add_feature_definition(external_upstream)
+
+        # Verify it's external before resolve_update
+        assert new_graph.get_feature_definition(["resolve_test", "upstream"]).is_external is True
+
+        # Define downstream feature
+        class DownstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["resolve_test", "downstream"]),
+                deps=[FeatureDep(feature=FeatureKey(["resolve_test", "upstream"]))],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Step 3: Call resolve_update - this should automatically load the real upstream definition
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("write") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+            # resolve_update should load feature definitions, replacing the external placeholder
+            increment = store.resolve_update(DownstreamFeature)
+
+            # Verify the external placeholder was replaced with the real definition
+            upstream_def = new_graph.get_feature_definition(["resolve_test", "upstream"])
+            assert upstream_def.is_external is False
+            assert new_graph.get_feature_version(["resolve_test", "upstream"]) == expected_upstream_version
+
+            # The increment should have computed correctly with the real upstream definition
+            assert increment.added is not None
+            assert len(increment.added) == 2  # Both upstream samples

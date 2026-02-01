@@ -542,13 +542,24 @@ class SystemTableStorage:
         Raises:
             ValueError: If no project is specified and MetaxyConfig.get().project is None.
 
-        Note:
+        !!! note:
             The store must already be open when calling this method.
+
+            This method automatically loads feature definitions from the metadata store
+            before creating the snapshot. This ensures that any external feature dependencies
+            are resolved with their actual definitions, preventing incorrect version
+            calculations from stale external feature definitions.
         """
         from metaxy.config import MetaxyConfig
 
         tags = tags or {}
         graph = FeatureGraph.get_active()
+
+        # Load feature definitions from the store to replace any external feature placeholders.
+        # This ensures version hashes are computed correctly against actual stored definitions.
+        # Only needed if the graph has external features that need to be resolved.
+        if graph.has_external_features:
+            self.load_feature_definitions()
         current_snapshot_dict = graph.to_snapshot()
 
         if not current_snapshot_dict:
@@ -904,8 +915,9 @@ class SystemTableStorage:
         Args:
             projects: Project(s) to load features from. Can be a single project name
                 or a list of project names. If None, loads features from all projects.
-            filters: Narwhals expressions to filter the feature_versions table. Applied
-                after project filtering but before snapshot selection.
+            filters: Narwhals expressions to filter features. Applied after snapshot
+                selection and deduplication, ensuring we always load the latest version
+                of each feature before filtering.
             graph: Target graph to populate. If None, uses the current active graph.
 
         Returns:
@@ -964,7 +976,7 @@ class SystemTableStorage:
         # Build FeatureDefinitions from rows and add to graph
         definitions = self._definitions_from_dataframe(features_df)
         for definition in definitions:
-            graph.add_feature_definition(definition)
+            graph.add_feature_definition(definition, on_conflict="ignore")
 
         return definitions
 
@@ -1003,7 +1015,9 @@ class SystemTableStorage:
         Args:
             projects: Optional list of projects to filter by. If None, returns
                 features from all projects.
-            filters: Narwhals expressions to apply after project filtering.
+            filters: Narwhals expressions to apply after snapshot selection and
+                deduplication. This ensures we always load the latest version of
+                features regardless of filters.
 
         Returns:
             DataFrame with latest features from each project's most recent snapshot.
@@ -1020,16 +1034,6 @@ class SystemTableStorage:
         # Filter by projects if specified
         if projects is not None:
             versions_df = versions_df.filter(pl.col("project").is_in(projects))
-
-        if versions_df.height == 0:
-            return versions_df
-
-        # Apply user filters via narwhals
-        if filters:
-            versions_nw = nw.from_native(versions_df)
-            for expr in filters:
-                versions_nw = versions_nw.filter(expr)
-            versions_df = versions_nw.to_native()
 
         if versions_df.height == 0:
             return versions_df
@@ -1058,4 +1062,14 @@ class SystemTableStorage:
         # Deduplicate by feature_key (keep latest recorded_at)
         result = result.sort("recorded_at", descending=True).unique(subset=["feature_key"], keep="first")
 
-        return result.drop("latest_snapshot")
+        result = result.drop("latest_snapshot")
+
+        # Apply user filters AFTER deduplication to ensure we always get the latest
+        # version of each feature before filtering
+        if filters:
+            result_nw = nw.from_native(result)
+            for expr in filters:
+                result_nw = result_nw.filter(expr)
+            result = result_nw.to_native()
+
+        return result

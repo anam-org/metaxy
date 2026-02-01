@@ -550,9 +550,11 @@ def build_runtime_feature_metadata(
             metadata["dagster/uri"] = dg.MetadataValue.path(store_metadata["uri"])
 
         # Build table preview (from partition-filtered data)
+        # Skip schema extraction for external features (no Python class)
         feature_def = mx.get_feature_by_key(feature_key)
-        schema = build_column_schema(feature_def)
-        metadata["dagster/table"] = build_table_preview_metadata(lazy_df, schema)
+        if not feature_def.is_external:
+            schema = build_column_schema(feature_def)
+            metadata["dagster/table"] = build_table_preview_metadata(lazy_df, schema)
 
         return metadata, stats
     except FeatureNotFoundError:

@@ -219,3 +219,179 @@ def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
         "no_field_deps": no_field_deps,
         "with_field_deps": with_field_deps,
     } == snapshot
+
+
+def test_external_feature_version_matches_normal_feature() -> None:
+    """Test that external features produce the same version as normal features.
+
+    The feature version is computed from field keys and code_versions only.
+    Other properties like the Pydantic schema should not affect the version.
+    """
+    from metaxy.models.feature import FeatureDefinition, FeatureGraph
+
+    graph = FeatureGraph()
+    with graph.use():
+        # Define a normal class-based feature
+        class NormalFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["version_test", "normal"]),
+                fields=[
+                    FieldSpec(key=FieldKey(["data"]), code_version="1"),
+                    FieldSpec(key=FieldKey(["metadata"]), code_version="2"),
+                ],
+            ),
+        ):
+            pass
+
+        # Create an external feature with matching keys and code_versions
+        external_def = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["version_test", "external"]),
+                fields=[
+                    FieldSpec(key=FieldKey(["data"]), code_version="1"),
+                    FieldSpec(key=FieldKey(["metadata"]), code_version="2"),
+                ],
+            ),
+            # Different schema - should NOT affect version
+            feature_schema={"type": "object", "properties": {"different": {"type": "string"}}},
+            project="external-project",
+        )
+        graph.add_feature_definition(external_def)
+
+        # Get versions - they should match because fields and code_versions match
+        # (feature key is different, so the version will be different, but the
+        # computation logic should be identical)
+        normal_version = graph.get_feature_version(["version_test", "normal"])
+        external_version = graph.get_feature_version(["version_test", "external"])
+
+        # Versions are different because feature keys are different
+        # (the key is part of the hash)
+        assert normal_version != external_version
+
+        # But if we create features with the SAME key, versions should match
+        graph2 = FeatureGraph()
+        with graph2.use():
+
+            class SameKeyNormal(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["version_test", "same_key"]),
+                    fields=[
+                        FieldSpec(key=FieldKey(["value"]), code_version="1"),
+                    ],
+                ),
+            ):
+                pass
+
+            normal_version_same_key = graph2.get_feature_version(["version_test", "same_key"])
+
+        graph3 = FeatureGraph()
+        with graph3.use():
+            external_same_key = FeatureDefinition.external(
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["version_test", "same_key"]),
+                    fields=[
+                        FieldSpec(key=FieldKey(["value"]), code_version="1"),
+                    ],
+                ),
+                # Completely different schema
+                feature_schema={"totally": "different", "schema": True},
+                project="another-project",
+            )
+            graph3.add_feature_definition(external_same_key)
+
+            external_version_same_key = graph3.get_feature_version(["version_test", "same_key"])
+
+        # Same key, same fields, same code_versions -> same version
+        assert normal_version_same_key == external_version_same_key
+
+
+def test_external_feature_version_with_dependencies() -> None:
+    """Test that external features used as dependencies produce correct downstream versions.
+
+    When a downstream feature depends on an external feature, the version computation
+    should work the same as if it depended on a normal feature with the same spec.
+    """
+    from metaxy.models.feature import FeatureDefinition, FeatureGraph
+
+    # Graph 1: Normal upstream + downstream
+    graph1 = FeatureGraph()
+    with graph1.use():
+
+        class NormalUpstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["dep_test", "upstream"]),
+                fields=[
+                    FieldSpec(key=FieldKey(["source_data"]), code_version="1"),
+                ],
+            ),
+        ):
+            pass
+
+        class NormalDownstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["dep_test", "downstream"]),
+                deps=[FeatureDep(feature=FeatureKey(["dep_test", "upstream"]))],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["derived"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["dep_test", "upstream"]),
+                                fields=[FieldKey(["source_data"])],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+        ):
+            pass
+
+        normal_downstream_version = graph1.get_feature_version(["dep_test", "downstream"])
+
+    # Graph 2: External upstream + same downstream
+    graph2 = FeatureGraph()
+    with graph2.use():
+        # Add upstream as external feature (same spec)
+        external_upstream = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["dep_test", "upstream"]),
+                fields=[
+                    FieldSpec(key=FieldKey(["source_data"]), code_version="1"),
+                ],
+            ),
+            feature_schema={"different": "schema"},
+            project="external-project",
+        )
+        graph2.add_feature_definition(external_upstream)
+
+        # Define same downstream (must use same spec)
+        class ExternalDownstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["dep_test", "downstream"]),
+                deps=[FeatureDep(feature=FeatureKey(["dep_test", "upstream"]))],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["derived"]),
+                        code_version="1",
+                        deps=[
+                            FieldDep(
+                                feature=FeatureKey(["dep_test", "upstream"]),
+                                fields=[FieldKey(["source_data"])],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+        ):
+            pass
+
+        external_downstream_version = graph2.get_feature_version(["dep_test", "downstream"])
+
+    # Downstream versions should match regardless of whether upstream is external
+    assert normal_downstream_version == external_downstream_version
