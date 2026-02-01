@@ -158,3 +158,56 @@ It consists of the **feature key** and the **field key**, separated by a colon.
     -  `/raw/video:frames`
 
     -  `/raw/video:audio/english`
+
+## External Features
+
+External features are stubs pointing at features actually defined in other projects and not available in Python at runtime.
+They can be used if the actual feature class cannot be imported, for example due to dependency conflicts or for other reasons.
+
+Externals features can be defined with:
+
+```py
+import metaxy as mx
+
+external_feature = mx.FeatureDefinition.external(
+    spec=mx.FeatureSpec(key="a/b/c", id_columns=["id"]),
+    project="external-project",
+)
+```
+
+External features only exist until the actual feature definitions are loaded from the metadata store and replace them. This can be done with [`metaxy.sync_external_features`][metaxy.sync_external_features].
+
+```python
+import metaxy as mx
+
+# Sync external features from the metadata store
+mx.sync_external_features(store)
+```
+
+!!! note "Pydantic Schema Limitation"
+
+    Features loaded from the metadata store have their JSON schema preserved from when they were originally saved. However, the Pydantic model class is not available. Operations that require the actual Python class, such as model instantiation or validation, will not work for these features.
+
+Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or field versions) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:
+
+- passing `on_conflict="raise"` to [`sync_external_features`][metaxy.sync_external_features]
+- passing `--locked` to Metaxy CLI commands
+- setting `locked` to `True` in the global Metaxy configuration. This can be done either in the config file or via the `METAXY_LOCKED` environment variable.
+
+!!! tip
+
+    We recommend setting `METAXY_LOCKED=1` in production
+
+Additionally, the following actions always trigger a sync for external feature definitions:
+
+- pushing feature definitions to the metadata store (e.g. `metaxy graph push` CLI)
+- [`MetadataStore.read_metadata`][metaxy.MetadataStore.resolve_update]
+- [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update]
+
+And some other places where it's appropriate and doesn't create an additional overhead.
+
+!!! tip
+
+    This behavior can be disabled by setting `sync=False` in the global Metaxy configuration. However, we advise to keep it enabled,
+    because [`sync_external_features`][metaxy.sync_external_features] is very lightweight on the first call and a no-op on subsequent calls.
+    It only does anything if the current feature graph does not contain any external features.

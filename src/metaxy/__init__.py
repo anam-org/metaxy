@@ -96,6 +96,8 @@ def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
     - `Sequence[str]`: `["a", "b", "c"]`
     - `FeatureKey`: pass through
     - `type[BaseFeature]`: extracts `.spec().key`
+    - `FeatureDefinition`: extracts `.key`
+    - `FeatureSpec`: extracts `.key`
 
     Args:
         value: Value to coerce to `FeatureKey`
@@ -140,73 +142,59 @@ def init_metaxy(
     return config
 
 
-@public
-def load_feature_definitions(
+def _load_feature_definitions(
     store: MetadataStore,
     *,
     projects: str | list[str] | None = None,
     filters: Sequence[nw.Expr] | None = None,
     on_version_mismatch: Literal["warn", "error"] | None = None,
 ) -> list[FeatureDefinition]:
-    """Load feature definitions from a metadata store into the active graph.
-
-    Loads [`FeatureDefinition`][metaxy.FeatureDefinition] objects from the metadata store
-    without requiring the original Python feature classes to be importable.
-
-    This enables depending on features from external projects or historical snapshots where
-    the source code is not available at runtime.
-
-    Args:
-        store: Metadata store to load from. Will be opened automatically if not already open.
-        projects: Project(s) to load features from. If not provided, loads from all projects.
-        filters: Narwhals expressions to filter features. Applied after snapshot selection
-            and deduplication, ensuring the latest version of each feature is loaded
-            before filtering. Available columns: `project`, `feature_key`,
-            `metaxy_feature_version`, `metaxy_definition_version`, `recorded_at`,
-            `feature_spec`, `feature_schema`, `feature_class_path`,
-            `metaxy_snapshot_version`, `tags`, `deleted_at`.
-        on_version_mismatch: Optional override for the `on_version_mismatch` setting on external feature definitions.
-
-            !!! info
-                Setting [`MetaxyConfig.locked`][metaxy.MetaxyConfig] to `True` will override this setting for all features.
-
-    Returns:
-        List of loaded FeatureDefinition objects. Empty if no features found.
-
-    Note:
-        Features loaded this way have their `feature_schema` preserved from when they
-        were originally saved, but the Pydantic model class is not available. Operations
-        requiring the actual Python class (like schema extraction or model validation)
-        will not work.
-
-    Example:
-        ```python
-        import metaxy as mx
-        import narwhals as nw
-
-        # Load all features from latest snapshots into active graph
-        definitions = mx.load_feature_definitions(store)
-
-        # Load from specific project into a custom graph
-        with mx.FeatureGraph().use():
-            definitions = mx.load_feature_definitions(store, projects="external-project")
-
-        # Load specific features by key
-        definitions = mx.load_feature_definitions(
-            store,
-            filters=[nw.col("feature_key").is_in(["my/feature", "other/feature"])],
-        )
-        ```
-    """
+    """Load feature definitions from a metadata store into the active graph."""
     from contextlib import nullcontext
 
     # Use nullcontext if store is already open, otherwise open it
     cm = nullcontext(store) if store._is_open else store
     with cm:
         storage = SystemTableStorage(store)
-        return storage.load_feature_definitions(
+        return storage._load_feature_definitions(
             projects=projects, filters=filters, on_version_mismatch=on_version_mismatch
         )
+
+
+@public
+def sync_external_features(
+    store: MetadataStore,
+    *,
+    on_version_mismatch: Literal["warn", "error"] | None = None,
+) -> list[FeatureDefinition]:
+    """Sync external feature definitions from a metadata store if the graph has any.
+
+    Args:
+        store: Metadata store to load from. Will be opened automatically if not already open.
+        on_version_mismatch: Optional override for the `on_version_mismatch` setting on external feature definitions.
+
+            !!! info
+                Setting [`MetaxyConfig.locked`][metaxy.MetaxyConfig] to `True` takes precedence over this argument.
+
+    Returns:
+        List of loaded FeatureDefinition objects..
+
+    Example:
+        ```python
+        import metaxy as mx
+
+        # Sync external features before running a pipeline
+        mx.sync_external_features(store)
+
+        # Or with explicit error handling
+        mx.sync_external_features(store, on_version_mismatch="error")
+        ```
+    """
+    graph = FeatureGraph.get_active()
+    if not graph.has_external_features:
+        return []
+
+    return _load_feature_definitions(store, on_version_mismatch=on_version_mismatch)
 
 
 __all__ = [
@@ -254,7 +242,7 @@ __all__ = [
     "MetaxyConfig",
     "StoreConfig",
     "init_metaxy",
-    "load_feature_definitions",
+    "sync_external_features",
     "IDColumns",
     "HashAlgorithm",
     "LineageRelationship",

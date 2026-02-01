@@ -110,7 +110,6 @@ class MetaxyDatasource(Datasource):
         include_soft_deleted: bool = False,
     ):
         self.config = mx.init_metaxy(config)
-
         self.store = store
         self.incremental = incremental
         self.feature_version = feature_version
@@ -180,6 +179,7 @@ class MetaxyDatasource(Datasource):
 
         def read_fn() -> list[pa.Table]:
             mx.init_metaxy(datasource.config)
+
             with datasource.store.open("read"):
                 lf = datasource._read_metadata_lazy()
                 table = lf.collect(backend="pyarrow").to_arrow()

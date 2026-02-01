@@ -51,23 +51,20 @@ class AppContext:
         if _app_context.get() is not None:
             raise RuntimeError("AppContext already initialized. It is not allowed to call AppContext.set() again.")
         else:
-            from metaxy import load_feature_definitions, load_features
+            from metaxy import load_features, sync_external_features
             from metaxy.config import MetaxyConfig
-            from metaxy.models.feature import FeatureGraph
 
             MetaxyConfig.set(config)
             load_features()
 
-            # If --sync is enabled and there are external features, load definitions from the store
+            # If --sync is enabled, sync external features from the store
             if sync:
-                graph = FeatureGraph.get_active()
-                if graph.has_external_features:
-                    store = config.get_store()
-                    # CLI --locked explicitly sets on_version_mismatch, otherwise let load_feature_definitions check config
-                    load_feature_definitions(
-                        store,
-                        on_version_mismatch="error" if locked else None,
-                    )
+                store = config.get_store()
+                # CLI --locked explicitly sets on_version_mismatch, otherwise sync_external_features checks config
+                sync_external_features(
+                    store,
+                    on_version_mismatch="error" if locked else None,
+                )
 
             _app_context.set(AppContext(config, cli_project, all_projects))
 

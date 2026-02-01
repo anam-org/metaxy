@@ -107,7 +107,7 @@ def generate(
         # This ensures version hashes are computed correctly against actual stored definitions
         from metaxy.metadata_store.system.storage import SystemTableStorage
 
-        SystemTableStorage(metadata_store).load_feature_definitions()
+        SystemTableStorage(metadata_store)._load_feature_definitions()
 
         if type == "diff":
             # Detect migration and write YAML
@@ -231,7 +231,7 @@ def apply(
 
         # Load feature definitions from the store to replace any external feature placeholders
         # This ensures version hashes are computed correctly against actual stored definitions
-        storage.load_feature_definitions()
+        storage._load_feature_definitions()
 
         # Build migration chain
         try:

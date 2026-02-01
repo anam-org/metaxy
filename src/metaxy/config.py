@@ -426,7 +426,12 @@ class MetaxyConfig(BaseSettings):
 
     locked: bool | None = PydanticField(
         default=None,
-        description="Whether to raise an error if an external feature doesn't have a matching feature version when [loading external features][metaxy.load_feature_definitions] from the metadata store.",
+        description="Whether to raise an error if an external feature doesn't have a matching feature version when [syncing external features][metaxy.sync_external_features] from the metadata store.",
+    )
+
+    sync: bool = PydanticField(
+        default=True,
+        description="Whether to automatically [sync external feature definitions][metaxy.sync_external_features] from the metadata during some operations. It's recommended to keep this enabled as it ensures versioning correctness for external feature definitions with a negligible performance impact.",
     )
 
     # Private attribute to track which config file was used (set by load())

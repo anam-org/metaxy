@@ -608,7 +608,7 @@ class SystemTableStorage:
         # This ensures version hashes are computed correctly against actual stored definitions.
         # Only needed if the graph has external features that need to be resolved.
         if graph.has_external_features:
-            self.load_feature_definitions()
+            self._load_feature_definitions()
         current_snapshot_dict = graph.to_snapshot()
 
         if not current_snapshot_dict:
@@ -949,7 +949,7 @@ class SystemTableStorage:
             graph.add_feature_definition(definition)
         return graph
 
-    def load_feature_definitions(
+    def _load_feature_definitions(
         self,
         *,
         projects: str | list[str] | None = None,
@@ -1068,10 +1068,10 @@ class SystemTableStorage:
 
             if expected_version != actual_version:
                 mismatch_data = (key, expected_version, actual_version, expected_by_field, actual_by_field)
-                # Use override if provided, otherwise use the feature's own setting
-                effective_mode = (
-                    on_version_mismatch if on_version_mismatch is not None else external_defn.on_version_mismatch
-                )
+                if on_version_mismatch is not None:
+                    effective_mode = on_version_mismatch
+                else:
+                    effective_mode = external_defn.on_version_mismatch
                 if effective_mode == "error":
                     error_mismatches.append(mismatch_data)
                 else:
