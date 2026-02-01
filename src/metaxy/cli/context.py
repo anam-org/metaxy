@@ -29,7 +29,13 @@ class AppContext:
     all_projects: bool = False  # some CLI commands can work with all projects
 
     @classmethod
-    def set(cls, config: "MetaxyConfig", cli_project: str | None, all_projects: bool = False) -> None:
+    def set(
+        cls,
+        config: "MetaxyConfig",
+        cli_project: str | None,
+        all_projects: bool = False,
+        sync: bool = False,
+    ) -> None:
         """Initialize the app context.
 
         Should be called at CLI startup.
@@ -38,15 +44,25 @@ class AppContext:
             config: Metaxy configuration
             cli_project: CLI project override
             all_projects: Whether to include all projects
+            sync: Whether to load external feature definitions from the metadata store
         """
         if _app_context.get() is not None:
             raise RuntimeError("AppContext already initialized. It is not allowed to call AppContext.set() again.")
         else:
-            from metaxy import load_features
+            from metaxy import load_feature_definitions, load_features
             from metaxy.config import MetaxyConfig
+            from metaxy.models.feature import FeatureGraph
 
             MetaxyConfig.set(config)
             load_features()
+
+            # If --sync is enabled and there are external features, load definitions from the store
+            if sync:
+                graph = FeatureGraph.get_active()
+                if graph.has_external_features:
+                    store = config.get_store()
+                    load_feature_definitions(store)
+
             _app_context.set(AppContext(config, cli_project, all_projects))
 
     @classmethod

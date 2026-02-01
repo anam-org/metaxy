@@ -2,6 +2,8 @@
 
 import json
 
+from syrupy.assertion import SnapshotAssertion
+
 from metaxy import FieldKey
 from metaxy.models.fields_mapping import (
     AllFieldsMapping,
@@ -9,6 +11,7 @@ from metaxy.models.fields_mapping import (
     FieldsMapping,
     FieldsMappingAdapter,
     FieldsMappingType,
+    SpecificFieldsMapping,
 )
 
 
@@ -229,3 +232,84 @@ def test_mixed_serialization_formats():
     assert from_old.match_suffix is True
     assert from_new.exclude_fields == []
     assert from_old.exclude_fields == []
+
+
+def test_specific_fields_mapping_serialization_deterministic(snapshot: SnapshotAssertion):
+    """Test that SpecificFieldsMapping serialization is deterministic.
+
+    The mapping values are sets, which have non-deterministic iteration order.
+    Serialization must sort the field keys to ensure deterministic output.
+
+    Uses snapshot testing to catch any future non-determinism regressions.
+    """
+    # Create a mapping with multiple field keys in each set
+    # Using sets means the internal order is non-deterministic
+    mapping = SpecificFieldsMapping(
+        mapping={
+            FieldKey(["scores"]): {
+                FieldKey(["audio"]),
+                FieldKey(["cropped", "frames"]),
+                FieldKey(["video"]),
+            },
+            FieldKey(["summary"]): {
+                FieldKey(["zebra"]),  # Intentionally out of alphabetical order
+                FieldKey(["alpha"]),
+                FieldKey(["middle"]),
+            },
+        }
+    )
+
+    # Serialize multiple times and verify the output is always the same
+    serialized_outputs = []
+    for _ in range(10):
+        serialized = mapping.model_dump(mode="json")
+        serialized_outputs.append(json.dumps(serialized, sort_keys=True))
+
+    # All serializations should be identical
+    assert len(set(serialized_outputs)) == 1, "SpecificFieldsMapping serialization is non-deterministic"
+
+    # Snapshot test ensures determinism across test runs
+    serialized = mapping.model_dump(mode="json")
+    assert serialized == snapshot
+
+
+def test_all_field_mappings_serialization_snapshot(snapshot: SnapshotAssertion):
+    """Snapshot test for all field mapping types to catch serialization changes."""
+    mappings = {
+        "default_basic": DefaultFieldsMapping(),
+        "default_with_config": DefaultFieldsMapping(
+            match_suffix=True,
+            exclude_fields=[FieldKey(["metadata"]), FieldKey(["internal", "field"])],
+        ),
+        "all": AllFieldsMapping(),
+        "specific": SpecificFieldsMapping(
+            mapping={
+                FieldKey(["output"]): {
+                    FieldKey(["input_a"]),
+                    FieldKey(["input_b"]),
+                },
+            }
+        ),
+    }
+
+    serialized = {name: mapping.model_dump(mode="json") for name, mapping in mappings.items()}
+    assert serialized == snapshot
+
+
+def test_fields_mapping_wrapper_serialization_snapshot(snapshot: SnapshotAssertion):
+    """Snapshot test for FieldsMapping wrapper serialization."""
+    mappings = {
+        "default": FieldsMapping.default(),
+        "default_with_suffix": FieldsMapping.default(match_suffix=True),
+        "default_with_excludes": FieldsMapping.default(exclude_fields=[FieldKey(["private"])]),
+        "all": FieldsMapping.all(),
+        "none": FieldsMapping.none(),
+        "specific": FieldsMapping.specific(
+            mapping={
+                FieldKey(["result"]): {FieldKey(["data"]), FieldKey(["config"])},
+            }
+        ),
+    }
+
+    serialized = {name: mapping.model_dump(mode="json") for name, mapping in mappings.items()}
+    assert serialized == snapshot

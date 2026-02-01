@@ -55,6 +55,13 @@ def launcher(
             help="Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.",
         ),
     ] = False,
+    sync: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--sync"],
+            help="Global option. Load external feature definitions from the metadata store before executing the command.",
+        ),
+    ] = False,
 ):
     """Metaxy CLI.
 
@@ -75,7 +82,7 @@ def launcher(
     # Commands will instantiate and open store as needed
     from metaxy.cli.context import AppContext
 
-    AppContext.set(config, cli_project=project, all_projects=all_projects)
+    AppContext.set(config, cli_project=project, all_projects=all_projects, sync=sync)
 
     # Run the actual command
     app(tokens)
