@@ -251,6 +251,17 @@ class FeatureGraph:
         )
 
     def get_field_version(self, key: "FQFieldKey") -> str:
+        definition = self.feature_definitions_by_key.get(key.feature)
+
+        # check for special case: external feature with provenance override
+        # TODO: this has to be done more elegantly
+        # this check doesn't really belong here
+        if definition and definition.is_external and definition.has_provenance_override:
+            provenance = definition.provenance_by_field_override
+            field_str = key.field.to_string()
+            if provenance and field_str in provenance:
+                return provenance[field_str]
+
         hasher = hashlib.sha256()
 
         plan = self.get_feature_plan(key.feature)
@@ -518,11 +529,13 @@ class FeatureGraph:
                 continue
 
             # We should never push a feature if it has an external feature as a dependency
-            # since the version hash might be incorrect (out of sync with the real feature definition)
+            # unless the external feature has a provenance override, which allows version
+            # computation without loading the entire upstream chain.
             for dep in definition.spec.deps or []:
                 from metaxy.utils.exceptions import MetaxyInvariantViolationError
 
-                if self.feature_definitions_by_key[dep.feature].is_external:
+                dep_definition = self.feature_definitions_by_key[dep.feature]
+                if dep_definition.is_external and not dep_definition.has_provenance_override:
                     raise MetaxyInvariantViolationError(
                         f"Feature '{feature_key}' depends on external feature '{dep.feature}'. "
                         "External dependencies must be replaced with actual feature definitions "

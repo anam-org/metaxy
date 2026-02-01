@@ -330,3 +330,107 @@ def test_is_external_property_false_for_regular(graph):
 
     definition = mx.FeatureDefinition.from_feature_class(RegularFeature)
     assert definition.is_external is False
+
+
+class TestExternalProvenanceOverride:
+    """Tests for external features with provenance override."""
+
+    def test_external_with_provenance_override_creation(self):
+        """External definitions can include provenance override."""
+        import metaxy as mx
+
+        spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["external", "with_provenance"]),
+            id_columns=["id"],
+            fields=["value", "other"],
+        )
+        schema = {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"},
+                "value": {"type": "integer"},
+                "other": {"type": "string"},
+            },
+        }
+        provenance = {"value": "abc123", "other": "def456"}
+
+        definition = mx.FeatureDefinition.external(
+            spec=spec,
+            feature_schema=schema,
+            project="external-project",
+            provenance_by_field=provenance,
+        )
+
+        assert definition.is_external is True
+        assert definition.has_provenance_override is True
+        assert definition.provenance_by_field_override == provenance
+
+    def test_external_without_provenance_override_properties(self):
+        """External definitions without provenance override report correctly."""
+        import metaxy as mx
+
+        spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["external", "no_provenance"]),
+            id_columns=["id"],
+        )
+        schema = {"type": "object", "properties": {"id": {"type": "string"}}}
+
+        definition = mx.FeatureDefinition.external(
+            spec=spec,
+            feature_schema=schema,
+            project="proj",
+        )
+
+        assert definition.is_external is True
+        assert definition.has_provenance_override is False
+
+    def test_regular_feature_has_provenance_override_raises(self, graph):
+        """Accessing has_provenance_override on non-external features raises."""
+        from metaxy_testing.models import SampleFeatureSpec
+
+        import metaxy as mx
+        from metaxy.utils.exceptions import MetaxyInvariantViolationError
+
+        class RegularFeatureProvCheck(
+            mx.BaseFeature,
+            spec=SampleFeatureSpec(
+                key=mx.FeatureKey(["test", "no_prov_override"]),
+                fields=[mx.FieldSpec(key=mx.FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        definition = mx.FeatureDefinition.from_feature_class(RegularFeatureProvCheck)
+        with pytest.raises(MetaxyInvariantViolationError, match="not an external feature"):
+            _ = definition.has_provenance_override
+
+    def test_provenance_by_field_accepts_coercible_keys(self):
+        """provenance_by_field accepts various field key formats."""
+        import metaxy as mx
+
+        spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["external", "coercible"]),
+            id_columns=["id"],
+            fields=["simple", "nested/field"],
+        )
+        schema = {"type": "object", "properties": {"id": {}, "simple": {}, "nested/field": {}}}
+
+        # Use different key formats: string, tuple, FieldKey
+        # (lists can't be dict keys since they're unhashable)
+        definition = mx.FeatureDefinition.external(
+            spec=spec,
+            feature_schema=schema,
+            project="proj",
+            provenance_by_field={
+                "simple": "hash1",  # string
+                ("nested", "field"): "hash2",  # tuple
+                mx.FieldKey(["another"]): "hash3",  # FieldKey
+            },
+        )
+
+        # All should be normalized to string format
+        assert definition.provenance_by_field_override == {
+            "simple": "hash1",
+            "nested/field": "hash2",
+            "another": "hash3",
+        }
