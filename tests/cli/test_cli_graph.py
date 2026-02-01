@@ -1235,3 +1235,94 @@ def test_sync_flag_warns_on_version_mismatch(metaxy_project: TempMetaxyProject):
         assert result.returncode == 0
         # Should still work but with warning in stderr
         assert "mismatch/upstream" in result.stderr or "Version mismatch" in result.stderr
+
+
+def test_locked_flag_errors_on_version_mismatch(metaxy_project: TempMetaxyProject):
+    """Test that --locked flag raises an error when external feature version mismatches."""
+
+    def upstream_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureKey, FieldKey, FieldSpec
+
+        class UpstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["assert_mismatch", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    def downstream_with_wrong_external():
+        """Features with external placeholder that has wrong version."""
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureDefinition, FeatureDep, FeatureKey, FieldKey, FieldSpec
+
+        # Define external placeholder with DIFFERENT code_version than what's stored
+        # Note: on_version_mismatch="warn" on the feature, but --locked overrides
+        external_upstream = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["assert_mismatch", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Wrong!
+            ),
+            feature_schema={},
+            project="test-project",
+            on_version_mismatch="warn",  # This gets overridden by --locked
+        )
+
+        from metaxy.models.feature import FeatureGraph
+
+        FeatureGraph.get_active().add_feature_definition(external_upstream)
+
+        class DownstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["local", "assert_downstream"]),
+                deps=[FeatureDep(feature=FeatureKey(["assert_mismatch", "upstream"]))],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    # First, push the upstream feature to the store
+    with metaxy_project.with_features(upstream_features):
+        result = metaxy_project.run_cli(["graph", "push"])
+        assert result.returncode == 0
+
+    # Now run with mismatched external placeholder and --locked
+    with metaxy_project.with_features(downstream_with_wrong_external):
+        # With --sync --locked, should fail due to version mismatch
+        result = metaxy_project.run_cli(["--sync", "--locked", "graph", "describe"], check=False)
+        assert result.returncode != 0
+        assert "Version mismatch" in result.stderr
+
+
+def test_locked_flag_succeeds_when_versions_match(metaxy_project: TempMetaxyProject):
+    """Test that --locked flag succeeds when versions match."""
+
+    def upstream_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureKey, FieldKey, FieldSpec
+
+        class UpstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["assert_match", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    # First, push the upstream feature to the store
+    with metaxy_project.with_features(upstream_features):
+        result = metaxy_project.run_cli(["graph", "push"])
+        assert result.returncode == 0
+
+    # Now run with --sync --locked when there's nothing to mismatch
+    # (no external features with wrong versions)
+    with metaxy_project.with_features(upstream_features):
+        result = metaxy_project.run_cli(["--sync", "--locked", "graph", "describe"])
+        assert result.returncode == 0

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import narwhals as nw
 import polars as pl
 
+from metaxy import MetaxyConfig
 from metaxy.metadata_store.exceptions import SystemDataNotFoundError
 from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
@@ -976,6 +977,9 @@ class SystemTableStorage:
             on_version_mismatch: Optional override for the `on_version_mismatch` setting
                 on [external feature definitions][metaxy.FeatureDefinition.external].
 
+                !!! info
+                    Setting [`MetaxyConfig.locked`][metaxy.MetaxyConfig.locked] to `True` will override this setting for all features.
+
         Returns:
             List of FeatureDefinition objects that were loaded. Empty if no features
             found for the specified criteria.
@@ -1028,6 +1032,9 @@ class SystemTableStorage:
 
         if features_df.height == 0:
             return []
+
+        if MetaxyConfig.get().locked:
+            on_version_mismatch = "error"
 
         # Record versions of external features BEFORE loading
         # These are the versions based on external feature placeholders
