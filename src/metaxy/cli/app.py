@@ -105,6 +105,7 @@ app.command("metaxy.cli.list:app", name="list")
 app.command("metaxy.cli.metadata:app", name="metadata")
 app.command("metaxy.cli.mcp:app", name="mcp")
 app.command("metaxy.cli.push:app", name="push")
+app.command("metaxy.cli.lock:app", name="lock")
 
 
 def main():
