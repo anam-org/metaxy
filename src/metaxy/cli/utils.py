@@ -331,8 +331,11 @@ class FeatureSelector:
             - valid_keys: Keys that exist in the graph
             - missing_keys: Keys that were requested but don't exist
         """
+        from metaxy.cli.context import AppContext
+
         if self.all_features:
-            return graph.list_features(only_current_project=True), []
+            only_current_project = not AppContext.get().all_projects
+            return graph.list_features(only_current_project=only_current_project), []
 
         # Parse explicit feature keys
         parsed_keys: list[FeatureKey] = []

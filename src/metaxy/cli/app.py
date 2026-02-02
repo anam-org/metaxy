@@ -97,6 +97,7 @@ def launcher(
 
 # Register subcommands (lazy loading via import strings)
 app.command("metaxy.cli.config:app", name="config")
+app.command("metaxy.cli.describe:app", name="describe")
 app.command("metaxy.cli.migrations:app", name="migrations")
 app.command("metaxy.cli.graph:app", name="graph")
 app.command("metaxy.cli.graph_diff:app", name="graph-diff")
