@@ -2814,6 +2814,7 @@ dependencies = [
     { name = "sqlglot" },
     { name = "tomli" },
     { name = "tomli-w" },
+    { name = "tomlkit" },
 ]
 
 [package.optional-dependencies]
@@ -2948,6 +2949,7 @@ requires-dist = [
     { name = "sqlmodel", marker = "extra == 'sqlmodel'", specifier = ">=0.0.27" },
     { name = "tomli", specifier = ">=2.3.0" },
     { name = "tomli-w", specifier = ">=1.2.0" },
+    { name = "tomlkit", specifier = ">=0.13.2" },
 ]
 provides-extras = ["ibis", "mermaid", "graphviz", "sqlmodel", "bigquery", "clickhouse", "duckdb", "delta", "dagster", "lancedb", "mcp", "ray"]
 

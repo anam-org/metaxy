@@ -162,9 +162,8 @@ def sync_external_features(
 
     graph = FeatureGraph.get_active()
     config = MetaxyConfig.get(_allow_default_config=True)
-    config_features = config.features
 
-    if not graph.has_external_features and not config_features:
+    if not graph.has_external_features:
         return []
 
     # Check if locked mode is enabled
@@ -183,16 +182,13 @@ def sync_external_features(
             )
             external_keys.append(key.to_string())
 
-    # Combine external feature keys with config feature keys (deduplicated)
-    all_keys_to_load = list(sorted(set(external_keys) | set(config_features)))
-
     # Use nullcontext if store is already open, otherwise open it
     cm = nullcontext(store) if store._is_open else store
     with cm:
         storage = SystemTableStorage(store)
         # Load features by key, not by project - external features may have placeholder projects
         result = storage._load_feature_definitions_raw(
-            filters=[nw.col("feature_key").is_in(all_keys_to_load)],
+            filters=[nw.col("feature_key").is_in(external_keys)],
         )
 
     # Check for version mismatches
@@ -206,18 +202,6 @@ def sync_external_features(
             f"After syncing, {len(remaining_external)} external feature(s) could not be resolved "
             f"from the metadata store: {keys_str}. "
             f"These features may not exist in the store.",
-            UnresolvedExternalFeatureWarning,
-            stacklevel=2,
-        )
-
-    # Warn about config features not found in store
-    loaded_keys = {d.key.to_string() for d in result}
-    missing_config_features = [k for k in config_features if k not in loaded_keys]
-    if missing_config_features:
-        keys_str = ", ".join(missing_config_features)
-        warnings.warn(
-            f"Config feature(s) not found in metadata store: {keys_str}. "
-            f"These features may not exist in the store or may have been deleted.",
             UnresolvedExternalFeatureWarning,
             stacklevel=2,
         )

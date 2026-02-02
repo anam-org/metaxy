@@ -13,6 +13,7 @@ app = cyclopts.App(
     help="Compare and visualize graph snapshots",
     console=console,
     error_console=error_console,
+    show=False,
 )
 
 

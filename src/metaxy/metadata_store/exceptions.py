@@ -1,6 +1,13 @@
 """Exceptions for metadata store operations."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from metaxy._decorators import public
+
+if TYPE_CHECKING:
+    from metaxy.models.types import FeatureKey
 
 
 @public
@@ -14,7 +21,11 @@ class MetadataStoreError(Exception):
 class FeatureNotFoundError(MetadataStoreError):
     """Raised when a feature is not found in the store."""
 
-    pass
+    keys: list[FeatureKey]
+
+    def __init__(self, message: str, *, keys: list[FeatureKey] | None = None):
+        super().__init__(message)
+        self.keys = keys or []
 
 
 @public

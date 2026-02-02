@@ -2,22 +2,68 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import narwhals as nw
 import tomli
-import tomli_w
+import tomlkit
+from pydantic import BaseModel, ConfigDict
 
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
+from metaxy.models.feature_definition import FeatureDefinition
+from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
     from metaxy.config import MetaxyConfig
     from metaxy.metadata_store import MetadataStore
-    from metaxy.models.feature_definition import FeatureDefinition
+    from metaxy.metadata_store.system.storage import SystemTableStorage
+    from metaxy.models.feature import FeatureGraph
 
 LOCK_FILE_NAME = "metaxy.lock"
+
+
+class LockedFeatureInfo(BaseModel):
+    """Version metadata for a locked feature."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: str
+    version_by_field: dict[str, str]
+    definition_version: str
+
+
+class LockedFeature(BaseModel):
+    """A single locked feature entry."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    info: LockedFeatureInfo
+    data: FeatureDefinition
+
+
+class LockFile(BaseModel):
+    """Pydantic model for metaxy.lock file."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    features: dict[str, LockedFeature]
+
+    def to_toml(self) -> str:
+        """Serialize to TOML string."""
+        return tomlkit.dumps(self.model_dump(mode="json", exclude_none=True), sort_keys=True)
+
+    @classmethod
+    def from_toml(cls, content: str, *, path: Path | None = None) -> LockFile:
+        """Parse from TOML string."""
+        from pydantic import ValidationError
+
+        try:
+            data = tomli.loads(content)
+            return cls.model_validate(data)
+        except ValidationError as e:
+            location = f" ({path})" if path else ""
+            raise ValidationError(f"Invalid lock file{location}. Try regenerating it with `metaxy lock`.") from e
 
 
 def load_lock_file(config: MetaxyConfig) -> list[FeatureDefinition]:
@@ -32,8 +78,6 @@ def load_lock_file(config: MetaxyConfig) -> list[FeatureDefinition]:
         List of loaded FeatureDefinition objects. Empty list if no lock file exists.
     """
     from metaxy.models.feature import FeatureGraph
-    from metaxy.models.feature_definition import FeatureDefinition
-    from metaxy.models.feature_spec import FeatureSpec
 
     if config.config_file is None:
         import warnings
@@ -49,44 +93,36 @@ def load_lock_file(config: MetaxyConfig) -> list[FeatureDefinition]:
     if not lock_path.exists():
         return []
 
-    lock_data = tomli.loads(lock_path.read_text())
-    features_data = lock_data.get("features", {})
+    lock_file = LockFile.from_toml(lock_path.read_text())
 
-    if not features_data:
+    if not lock_file.features:
         return []
 
     graph = FeatureGraph.get_active()
     definitions: list[FeatureDefinition] = []
 
-    for feature_key, feature_data in features_data.items():
-        spec_dict = json.loads(feature_data["spec"])
-        schema_dict = json.loads(feature_data["feature_schema"])
-
-        spec = FeatureSpec.model_validate(spec_dict)
-        definition = FeatureDefinition.external(
-            spec=spec,
-            feature_schema=schema_dict,
-            project=feature_data["project"],
-        )
-
-        graph.add_feature_definition(definition)
-        definitions.append(definition)
+    for locked_feature in lock_file.features.values():
+        # Mark as external and add to graph
+        locked_feature.data._is_external = True
+        graph.add_feature_definition(locked_feature.data)
+        definitions.append(locked_feature.data)
 
     return definitions
 
 
 def generate_lock_file(
     store: MetadataStore,
-    feature_keys: list[str],
     output_path: Path,
     *,
     exclude_project: str | None = None,
 ) -> int:
     """Generate a lock file with feature definitions from a metadata store.
 
+    Automatically discovers external dependencies by analyzing the current FeatureGraph.
+    Recursively resolves transitive dependencies.
+
     Args:
         store: Metadata store to fetch features from.
-        feature_keys: List of feature keys to lock.
         output_path: Path to write the lock file.
         exclude_project: Optional project name to exclude from the lock file.
             Features belonging to this project will be skipped.
@@ -95,81 +131,178 @@ def generate_lock_file(
         Number of features locked.
 
     Raises:
-        FeatureNotFoundError: If any requested features are not found in the store.
+        FeatureNotFoundError: If any required features are not found in the store.
     """
     from contextlib import nullcontext
 
     from metaxy.metadata_store.system.storage import SystemTableStorage
-
-    # Handle empty features list
-    if not feature_keys:
-        lock_data = _build_lock_data([])
-        _write_lock_file(output_path, lock_data)
-        return 0
-
-    # Capture features already in the graph as non-external BEFORE loading from store
     from metaxy.models.feature import FeatureGraph
 
     graph = FeatureGraph.get_active()
-    existing_non_external_keys = {key for key, defn in graph.feature_definitions_by_key.items() if not defn.is_external}
+
+    # Find all dependency keys referenced by non-external features in the graph
+    local_keys: set[FeatureKey] = set()
+    referenced_dep_keys: set[FeatureKey] = set()
+
+    for key, defn in graph.feature_definitions_by_key.items():
+        if not defn.is_external:
+            local_keys.add(key)
+            for dep in defn.spec.deps:
+                referenced_dep_keys.add(dep.feature)
+
+    # External deps are those referenced but not defined locally
+    external_keys_needed = referenced_dep_keys - local_keys
+
+    if not external_keys_needed:
+        _write_lock_file(output_path, LockFile(features={}))
+        return 0
 
     # Use nullcontext if store is already open, otherwise open it
     cm = nullcontext(store) if store._is_open else store.open("read")
     with cm:
         storage = SystemTableStorage(store)
+        # Single query: load all features except current project
+        all_store_definitions, db_versions = _load_all_features_from_store(storage, exclude_project)
 
-        # First load all requested features to check for missing ones
-        all_definitions = storage._load_feature_definitions_raw(
-            filters=[nw.col("feature_key").is_in(feature_keys)],
-        )
+    # Resolve transitive dependencies in memory
+    definitions, missing = _resolve_transitive_deps(external_keys_needed, all_store_definitions, local_keys, graph)
 
-    # Check for missing features
-    loaded_keys = {d.key.to_string() for d in all_definitions}
-    missing = [k for k in feature_keys if k not in loaded_keys]
+    # Check for missing features (includes transitive dependencies)
     if missing:
+        sorted_missing = sorted(missing)
         raise FeatureNotFoundError(
-            f"Features not found in metadata store: {', '.join(missing)}. "
-            f"Run `metaxy push` in the project that defines these features."
+            f"Features not found in metadata store: {', '.join(k.to_string() for k in sorted_missing)}",
+            keys=sorted_missing,
         )
 
-    # Filter out features from the excluded project
-    if exclude_project:
-        definitions = [d for d in all_definitions if d.project != exclude_project]
-    else:
-        definitions = all_definitions
-
-    # Filter out features that were already in the graph as non-external before loading
-    definitions = [d for d in definitions if d.key not in existing_non_external_keys]
-
-    # Build and write lock file
-    lock_data = _build_lock_data(definitions)
-    _write_lock_file(output_path, lock_data)
+    # Build and write lock file (validates versions match)
+    lock_file = _build_lock_file(definitions, db_versions, graph)
+    _write_lock_file(output_path, lock_file)
 
     return len(definitions)
 
 
-def _build_lock_data(definitions: list[FeatureDefinition]) -> dict:
-    """Build dict for the lock file."""
-    features = {}
+def _load_all_features_from_store(
+    storage: SystemTableStorage,
+    exclude_project: str | None,
+) -> tuple[dict[FeatureKey, FeatureDefinition], dict[FeatureKey, str]]:
+    """Load all features from store, optionally excluding a project.
+
+    Single query to minimize store access.
+
+    Returns:
+        Tuple of (definitions by key, DB versions by key).
+    """
+    from metaxy.models.feature_definition import FeatureDefinition
+
+    # Build filter to exclude current project
+    filters = []
+    if exclude_project:
+        filters.append(nw.col("project") != exclude_project)
+
+    features_df = storage._read_latest_features_by_project(filters=filters)
+
+    definitions: dict[FeatureKey, FeatureDefinition] = {}
+    db_versions: dict[FeatureKey, str] = {}
+
+    for row in features_df.iter_rows(named=True):
+        defn = FeatureDefinition.from_stored_data(
+            feature_spec=row["feature_spec"],
+            feature_schema=row["feature_schema"],
+            feature_class_path=row["feature_class_path"],
+            project=row["project"],
+        )
+        definitions[defn.key] = defn
+        db_versions[defn.key] = row["metaxy_feature_version"]
+
+    return definitions, db_versions
+
+
+def _resolve_transitive_deps(
+    initial_keys: set[FeatureKey],
+    all_definitions: dict[FeatureKey, FeatureDefinition],
+    local_keys: set[FeatureKey],
+    graph: FeatureGraph,
+) -> tuple[list[FeatureDefinition], set[FeatureKey]]:
+    """Resolve transitive dependencies in memory.
+
+    Adds loaded definitions to the graph for version computation.
+
+    Returns:
+        Tuple of (needed definitions, missing keys).
+    """
+    needed: dict[FeatureKey, FeatureDefinition] = {}
+    keys_to_process = set(initial_keys)
+    all_requested_keys: set[FeatureKey] = set(initial_keys)
+
+    while keys_to_process:
+        new_dep_keys: set[FeatureKey] = set()
+
+        for key in keys_to_process:
+            if key in needed or key in local_keys:
+                continue
+
+            if key not in all_definitions:
+                # Will be reported as missing
+                continue
+
+            defn = all_definitions[key]
+            needed[key] = defn
+            graph.add_feature_definition(defn, on_conflict="ignore")
+
+            for dep in defn.spec.deps:
+                if dep.feature not in needed and dep.feature not in local_keys:
+                    new_dep_keys.add(dep.feature)
+
+        all_requested_keys.update(new_dep_keys)
+        keys_to_process = new_dep_keys - set(needed.keys())
+
+    missing_keys = all_requested_keys - set(needed.keys()) - local_keys
+    return list(needed.values()), missing_keys
+
+
+def _build_lock_file(
+    definitions: list[FeatureDefinition],
+    db_versions: dict[FeatureKey, str],
+    graph: FeatureGraph,
+) -> LockFile:
+    """Build LockFile model.
+
+    Validates that computed versions match DB versions.
+    """
+    from metaxy.utils.exceptions import MetaxyInvariantViolationError
+
+    features: dict[str, LockedFeature] = {}
+
     for defn in sorted(definitions, key=lambda d: d.key.to_string()):
         feature_key = defn.key.to_string()
-        feature_data: dict = {
-            "project": defn.project,
-        }
-        if defn.feature_class_path:
-            feature_data["feature_class_path"] = defn.feature_class_path
 
-        # Serialize spec and schema as JSON strings
-        feature_data["spec"] = json.dumps(defn.spec.model_dump(mode="json"), separators=(",", ":"))
-        feature_data["feature_schema"] = json.dumps(defn.feature_schema, separators=(",", ":"))
+        # Compute version from graph
+        computed_version = graph.get_feature_version(defn.key)
+        db_version = db_versions.get(defn.key)
 
-        features[feature_key] = feature_data
+        # Verify computed version matches DB version
+        if db_version is not None and computed_version != db_version:
+            raise MetaxyInvariantViolationError(
+                f"Version mismatch for feature '{feature_key}': "
+                f"computed={computed_version}, db={db_version}. "
+                f"This may indicate the feature graph is out of sync with the metadata store."
+            )
 
-    return {"features": features}
+        features[feature_key] = LockedFeature(
+            info=LockedFeatureInfo(
+                version=computed_version,
+                version_by_field=graph.get_feature_version_by_field(defn.key),
+                definition_version=defn.feature_definition_version,
+            ),
+            data=defn,
+        )
+
+    return LockFile(features=features)
 
 
-def _write_lock_file(output_path: Path, lock_data: dict) -> None:
+def _write_lock_file(output_path: Path, lock_file: LockFile) -> None:
     """Write lock file with header comment."""
     header = "# Generated by `metaxy lock`.\n\n"
-    content = header + tomli_w.dumps(lock_data)
+    content = header + lock_file.to_toml()
     output_path.write_text(content)

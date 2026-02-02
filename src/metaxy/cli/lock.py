@@ -9,10 +9,9 @@ from metaxy.cli.console import console, error_console
 # Lock subcommand app
 app = cyclopts.App(
     name="lock",
-    help="Generate `metaxy.lock` file with external feature definitions from the metadata store",
+    help="Generate `metaxy.lock` file with external feature definitions fetched from the metadata store.",
     console=console,
     error_console=error_console,
-    show=False,
 )
 
 
@@ -34,16 +33,17 @@ def lock(
         ),
     ] = "",
 ):
-    """Fetch feature definitions for features specified in Metaxy configuration and serialize them to metaxy.lock.
+    """Fetch external feature definitions and serialize them to metaxy.lock.
 
-    Reads the `features` list from `metaxy.toml` (or `tool.metaxy.features` from `pyproject.toml`) and fetches those feature definitions
-    from the metadata store, writing them to a TOML lock file.
+    Analyzes the current feature graph to find external dependencies, then fetches
+    those feature definitions (and their transitive dependencies) from the metadata store.
 
-    Features belonging to the current project are excluded from the lock file.
+    This functionality is currently experimental.
     """
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
+    from metaxy.cli.utils import CLIError, CLIErrorCode
     from metaxy.metadata_store.exceptions import FeatureNotFoundError
     from metaxy.utils.lock_file import generate_lock_file
 
@@ -73,12 +73,17 @@ def lock(
     try:
         count = generate_lock_file(
             metadata_store,
-            config.features,
             output_path,
             exclude_project=config.project,
         )
     except FeatureNotFoundError as e:
-        console.print(f"[red]Error:[/red] {e}")
+        error = CLIError(
+            code=CLIErrorCode.FEATURES_NOT_FOUND,
+            message=str(e),
+            details={"features": [k.to_string() for k in e.keys]},
+            hint="Run `metaxy push` in the project that defines these features.",
+        )
+        console.print(error.to_plain())
         raise SystemExit(1) from None
 
     if count == 0:

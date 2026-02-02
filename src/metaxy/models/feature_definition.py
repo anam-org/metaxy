@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
 
-from pydantic import Field, PrivateAttr
+from pydantic import Field, Json, PrivateAttr, TypeAdapter, field_serializer, field_validator
 
 from metaxy._decorators import public
 from metaxy._hashing import truncate_hash
@@ -33,12 +33,27 @@ class FeatureDefinition(FrozenBaseModel):
     """
 
     spec: FeatureSpec = Field(description="Complete feature specification")
-    feature_schema: dict[str, Any] = Field(description="Pydantic JSON schema dict")
+    feature_schema: Json[dict[str, Any]] = Field(description="Pydantic JSON schema dict")
     feature_class_path: str | None = Field(default=None, description="Python import path")
     project: str = Field(description="The metaxy project this feature belongs to", min_length=1)
 
     # Runtime-only reference to the feature class. Not serialized. Will be removed in the future once we figure out a good way to extract Pydantic fields from the serialized schema.
     _feature_class: type[BaseFeature] | None = PrivateAttr(default=None)
+
+    @field_validator("feature_schema", mode="before")
+    @staticmethod
+    def _convert_dict_to_json(value: dict[str, Any] | str) -> str:
+        """Convert dict to JSON string so Json[...] type can parse it."""
+        if isinstance(value, dict):
+            return TypeAdapter(dict[str, Any]).dump_json(value, exclude_none=True).decode()
+        return value
+
+    @field_serializer("feature_schema", when_used="json")
+    @staticmethod
+    def _serialize_feature_schema(value: dict[str, Any]) -> str:
+        """Serialize feature_schema as JSON string, excluding None values."""
+        return TypeAdapter(dict[str, Any]).dump_json(value, exclude_none=True).decode()
+
     _is_external: bool = PrivateAttr(default=False)
     _provenance_by_field: dict[str, str] | None = PrivateAttr(default=None)
     _on_version_mismatch: Literal["warn", "error"] = PrivateAttr(default="warn")

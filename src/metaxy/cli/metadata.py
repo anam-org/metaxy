@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 # Metadata subcommand app
 app = cyclopts.App(
     name="metadata",
-    help="Manage Metaxy metadata",
+    help="Manage Metaxy metadata in metadata stores.",
     console=console,
     error_console=error_console,
 )
