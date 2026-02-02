@@ -23,7 +23,8 @@ app = cyclopts.App(
 )
 
 
-@app.command()
+@app.command(name="features")
+@app.command(name="feature", show=False)
 def features(
     *,
     verbose: Annotated[
@@ -232,6 +233,7 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
 
 
 @app.command()
+@app.command(name="store", show=False)
 def stores(
     *,
     format: Annotated[

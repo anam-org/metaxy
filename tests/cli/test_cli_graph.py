@@ -165,7 +165,7 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli(["describe", "graph"])
 
         assert result.returncode == 0
-        assert "Describing current graph from code" in result.stderr
+        assert "Describing current feature graph" in result.stderr
         assert "Graph Snapshot:" in result.stderr
         assert "Total Features" in result.stderr
         assert "Graph Depth" in result.stderr
@@ -268,7 +268,7 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
 
         assert result.returncode == 0
         # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
-        assert "Describing snapshot" in result.stderr
+        assert "Describing feature graph snapshot" in result.stderr
         assert snapshot_version in result.stderr
         assert "Graph Snapshot:" in result.stderr
         assert "Total Features" in result.stderr
@@ -347,7 +347,7 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
         # Step 4: Describe historical snapshot
         describe_historical = metaxy_project.run_cli(["describe", "graph", "--snapshot", snapshot_version])
         # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
-        assert "Describing snapshot" in describe_historical.stderr
+        assert "Describing feature graph snapshot" in describe_historical.stderr
         assert snapshot_version in describe_historical.stderr
 
 
