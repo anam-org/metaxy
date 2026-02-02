@@ -26,7 +26,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Parent feature that generates embeddings from raw data."
             }
           },
           "examples/child": {
@@ -67,11 +68,12 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Child feature that uses parent embeddings to generate predictions."
             }
           }
         },
-        "timestamp": "2026-01-31T12:36:10.318974",
+        "timestamp": "2026-02-02T08:12:36.972062",
         "scenario_name": "Setup upstream data",
         "step_name": null
       },
@@ -81,7 +83,7 @@
         "returncode": 0,
         "stdout": "",
         "stderr": "",
-        "timestamp": "2026-01-31T12:36:10.360506",
+        "timestamp": "2026-02-02T08:12:37.014741",
         "scenario_name": "Setup upstream data",
         "step_name": "setup_data"
       },
@@ -91,7 +93,7 @@
         "returncode": 0,
         "stdout": "Graph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\n\n📊 Computing examples/child...\n  feature_version: 467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470123186761611'}\n  sample_uid=2: {'predictions': '17377221795775496311'}\n  sample_uid=3: {'predictions': '11499809972266932532'}\n\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-01-31T12:36:11.499716",
+        "timestamp": "2026-02-02T08:12:38.203227",
         "scenario_name": "Initial pipeline run",
         "step_name": "initial_run"
       },
@@ -101,7 +103,7 @@
         "returncode": 0,
         "stdout": "Graph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\nMetadata already exists for feature examples/parent (feature_version: 0aad9b8a2ea055cd...)\nSkipping write to avoid duplicates\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\n\n📊 Computing examples/child...\n  feature_version: 467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939\nIdentified: 0 new samples, 0 samples with new provenance_by_field\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470123186761611'}\n  sample_uid=2: {'predictions': '17377221795775496311'}\n  sample_uid=3: {'predictions': '11499809972266932532'}\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-01-31T12:36:12.625689",
+        "timestamp": "2026-02-02T08:12:39.363243",
         "scenario_name": "Idempotent rerun",
         "step_name": "idempotent_run"
       },
@@ -127,7 +129,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Parent feature that generates embeddings from raw data."
             }
           },
           "examples/child": {
@@ -168,11 +171,12 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Child feature that uses parent embeddings to generate predictions."
             }
           }
         },
-        "timestamp": "2026-01-31T12:36:13.260590",
+        "timestamp": "2026-02-02T08:12:40.103837",
         "scenario_name": "Code evolution",
         "step_name": "update_parent_version"
       },
@@ -200,7 +204,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Parent feature that generates embeddings from raw data."
             }
           },
           "examples/child": {
@@ -241,7 +246,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Child feature that uses parent embeddings to generate predictions."
             }
           }
         },
@@ -264,7 +270,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Parent feature that generates embeddings from raw data."
             }
           },
           "examples/child": {
@@ -305,11 +312,12 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Child feature that uses parent embeddings to generate predictions."
             }
           }
         },
-        "timestamp": "2026-01-31T12:36:13.273883",
+        "timestamp": "2026-02-02T08:12:40.112540",
         "scenario_name": "Code evolution",
         "step_name": "update_parent_version"
       },
@@ -319,7 +327,7 @@
         "returncode": 0,
         "stdout": "Graph snapshot_version: 1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c\n\n📊 Computing examples/child...\n  feature_version: 415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470123186761611'}\n  sample_uid=2: {'predictions': '17377221795775496311'}\n  sample_uid=3: {'predictions': '11499809972266932532'}\n\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-01-31T12:36:14.419157",
+        "timestamp": "2026-02-02T08:12:41.410428",
         "scenario_name": "Code evolution",
         "step_name": "recompute_after_change"
       }

@@ -8,6 +8,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Audio recordings of different speakers.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -55,6 +56,12 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': '''
+                Speaker embedding aggregated from all their audio recordings.
+                
+                    This demonstrates N:1 aggregation lineage where multiple audio recordings
+                    from the same speaker are aggregated into a single speaker embedding.
+              ''',
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -101,6 +108,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Audio recordings of different speakers.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -148,6 +156,12 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': '''
+                Speaker embedding aggregated from all their audio recordings.
+                
+                    This demonstrates N:1 aggregation lineage where multiple audio recordings
+                    from the same speaker are aggregated into a single speaker embedding.
+              ''',
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -180,6 +194,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Audio recordings of different speakers.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -227,6 +242,12 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': '''
+                Speaker embedding aggregated from all their audio recordings.
+                
+                    This demonstrates N:1 aggregation lineage where multiple audio recordings
+                    from the same speaker are aggregated into a single speaker embedding.
+              ''',
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -254,6 +275,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Audio recordings of different speakers.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -301,6 +323,12 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': '''
+                Speaker embedding aggregated from all their audio recordings.
+                
+                    This demonstrates N:1 aggregation lineage where multiple audio recordings
+                    from the same speaker are aggregated into a single speaker embedding.
+              ''',
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -341,6 +369,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Audio recordings of different speakers.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -388,6 +417,12 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': '''
+                Speaker embedding aggregated from all their audio recordings.
+                
+                    This demonstrates N:1 aggregation lineage where multiple audio recordings
+                    from the same speaker are aggregated into a single speaker embedding.
+              ''',
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -420,6 +455,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Audio recordings of different speakers.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -467,6 +503,12 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': '''
+                Speaker embedding aggregated from all their audio recordings.
+                
+                    This demonstrates N:1 aggregation lineage where multiple audio recordings
+                    from the same speaker are aggregated into a single speaker embedding.
+              ''',
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -494,6 +536,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Audio recordings of different speakers.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -541,6 +584,12 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': '''
+                Speaker embedding aggregated from all their audio recordings.
+                
+                    This demonstrates N:1 aggregation lineage where multiple audio recordings
+                    from the same speaker are aggregated into a single speaker embedding.
+              ''',
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -614,6 +663,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': 'Child feature that uses parent embeddings to generate predictions.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -638,6 +688,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Parent feature that generates embeddings from raw data.',
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -711,6 +762,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': 'Child feature that uses parent embeddings to generate predictions.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -735,6 +787,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Parent feature that generates embeddings from raw data.',
               'fields': list([
                 dict({
                   'code_version': '2',
@@ -787,6 +840,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': 'Child feature that uses parent embeddings to generate predictions.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -811,6 +865,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Parent feature that generates embeddings from raw data.',
               'fields': list([
                 dict({
                   'code_version': '2',
@@ -858,6 +913,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': 'Child feature that uses parent embeddings to generate predictions.',
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -882,6 +938,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Parent feature that generates embeddings from raw data.',
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -952,6 +1009,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -1007,6 +1065,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -1031,6 +1090,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -1108,6 +1168,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -1163,6 +1224,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -1187,6 +1249,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '2',
@@ -1250,6 +1313,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -1305,6 +1369,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -1329,6 +1394,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '2',
@@ -1387,6 +1453,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -1442,6 +1509,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '__metaxy_initial__',
@@ -1466,6 +1534,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -1546,6 +1615,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -1609,6 +1679,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -1659,6 +1730,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -1689,6 +1761,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Video metadata feature (root).',
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -1762,6 +1835,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -1825,6 +1899,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -1875,6 +1950,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -1905,6 +1981,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Video metadata feature (root).',
               'fields': list([
                 dict({
                   'code_version': '2',
@@ -1964,6 +2041,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -2027,6 +2105,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -2077,6 +2156,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -2107,6 +2187,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Video metadata feature (root).',
               'fields': list([
                 dict({
                   'code_version': '2',
@@ -2161,6 +2242,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -2224,6 +2306,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -2274,6 +2357,7 @@
                   'sql_filters': None,
                 }),
               ]),
+              'description': None,
               'fields': list([
                 dict({
                   'code_version': '1',
@@ -2304,6 +2388,7 @@
             'feature_spec': dict({
               'deps': list([
               ]),
+              'description': 'Video metadata feature (root).',
               'fields': list([
                 dict({
                   'code_version': '1',

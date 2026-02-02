@@ -26,7 +26,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Audio recordings of different speakers."
             }
           },
           "speaker/embedding": {
@@ -70,11 +71,12 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Speaker embedding aggregated from all their audio recordings.\n\n    This demonstrates N:1 aggregation lineage where multiple audio recordings\n    from the same speaker are aggregated into a single speaker embedding."
             }
           }
         },
-        "timestamp": "2026-01-31T12:36:05.543781",
+        "timestamp": "2026-02-02T08:12:31.670786",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -84,7 +86,7 @@
         "returncode": 0,
         "stdout": "Found 4 new audio recordings\nFound 2 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\n  Computing embedding for speaker s2 from 2 audio recordings\nWriting embeddings for 2 speakers\n",
         "stderr": "",
-        "timestamp": "2026-01-31T12:36:06.114014",
+        "timestamp": "2026-02-02T08:12:32.263455",
         "scenario_name": "Initial pipeline run",
         "step_name": "run_pipeline"
       },
@@ -94,7 +96,7 @@
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
         "stderr": "",
-        "timestamp": "2026-01-31T12:36:06.657647",
+        "timestamp": "2026-02-02T08:12:32.851621",
         "scenario_name": "Idempotent rerun",
         "step_name": null
       },
@@ -120,7 +122,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Audio recordings of different speakers."
             }
           },
           "speaker/embedding": {
@@ -164,11 +167,12 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Speaker embedding aggregated from all their audio recordings.\n\n    This demonstrates N:1 aggregation lineage where multiple audio recordings\n    from the same speaker are aggregated into a single speaker embedding."
             }
           }
         },
-        "timestamp": "2026-01-31T12:36:07.280957",
+        "timestamp": "2026-02-02T08:12:33.543964",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -196,7 +200,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Audio recordings of different speakers."
             }
           },
           "speaker/embedding": {
@@ -240,7 +245,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Speaker embedding aggregated from all their audio recordings.\n\n    This demonstrates N:1 aggregation lineage where multiple audio recordings\n    from the same speaker are aggregated into a single speaker embedding."
             }
           }
         },
@@ -263,7 +269,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Audio recordings of different speakers."
             }
           },
           "speaker/embedding": {
@@ -307,11 +314,12 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Speaker embedding aggregated from all their audio recordings.\n\n    This demonstrates N:1 aggregation lineage where multiple audio recordings\n    from the same speaker are aggregated into a single speaker embedding."
             }
           }
         },
-        "timestamp": "2026-01-31T12:36:07.288626",
+        "timestamp": "2026-02-02T08:12:33.551613",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -321,7 +329,7 @@
         "returncode": 0,
         "stdout": "Found 1 changed audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\nWriting embeddings for 1 speakers\n",
         "stderr": "",
-        "timestamp": "2026-01-31T12:36:07.873425",
+        "timestamp": "2026-02-02T08:12:34.203412",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -347,7 +355,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Audio recordings of different speakers."
             }
           },
           "speaker/embedding": {
@@ -391,11 +400,12 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Speaker embedding aggregated from all their audio recordings.\n\n    This demonstrates N:1 aggregation lineage where multiple audio recordings\n    from the same speaker are aggregated into a single speaker embedding."
             }
           }
         },
-        "timestamp": "2026-01-31T12:36:08.526017",
+        "timestamp": "2026-02-02T08:12:34.899172",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -423,7 +433,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Audio recordings of different speakers."
             }
           },
           "speaker/embedding": {
@@ -467,7 +478,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Speaker embedding aggregated from all their audio recordings.\n\n    This demonstrates N:1 aggregation lineage where multiple audio recordings\n    from the same speaker are aggregated into a single speaker embedding."
             }
           }
         },
@@ -490,7 +502,8 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Audio recordings of different speakers."
             }
           },
           "speaker/embedding": {
@@ -534,11 +547,12 @@
                   "deps": []
                 }
               ],
-              "metadata": {}
+              "metadata": {},
+              "description": "Speaker embedding aggregated from all their audio recordings.\n\n    This demonstrates N:1 aggregation lineage where multiple audio recordings\n    from the same speaker are aggregated into a single speaker embedding."
             }
           }
         },
-        "timestamp": "2026-01-31T12:36:08.534795",
+        "timestamp": "2026-02-02T08:12:34.907090",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -548,7 +562,7 @@
         "returncode": 0,
         "stdout": "Found 1 new audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 3 audio recordings\nWriting embeddings for 1 speakers\n",
         "stderr": "",
-        "timestamp": "2026-01-31T12:36:09.119925",
+        "timestamp": "2026-02-02T08:12:35.561817",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -558,7 +572,7 @@
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
         "stderr": "",
-        "timestamp": "2026-01-31T12:36:09.667246",
+        "timestamp": "2026-02-02T08:12:36.238161",
         "scenario_name": "Final idempotent check",
         "step_name": null
       }

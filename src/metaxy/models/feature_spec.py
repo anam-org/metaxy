@@ -206,6 +206,10 @@ class FeatureSpec(FrozenBaseModel):
         default_factory=dict,
         description="Metadata attached to this feature.",
     )
+    description: str | None = pydantic.Field(
+        default=None,
+        description="Human-readable description of this feature.",
+    )
 
     if TYPE_CHECKING:
         # Overload for common case: list of FeatureDep instances
@@ -218,6 +222,7 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[FeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
+            description: str | None = None,
         ) -> None: ...
 
         # Overload for flexible case: list of coercible types
@@ -230,6 +235,7 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
+            description: str | None = None,
         ) -> None: ...
 
         # Implementation signature
@@ -241,6 +247,7 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[FeatureDep] | list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
+            description: str | None = None,
         ) -> None: ...
 
     @cached_property

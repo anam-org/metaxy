@@ -47,6 +47,11 @@ class FeatureDefinition(FrozenBaseModel):
     def from_feature_class(cls, feature_cls: type[BaseFeature]) -> FeatureDefinition:
         """Create a FeatureDefinition from a Feature class."""
         spec = feature_cls.spec()
+
+        # Inject class docstring as description if not already set
+        if spec.description is None and feature_cls.__doc__:
+            spec = spec.model_copy(update={"description": feature_cls.__doc__.strip()})
+
         schema = feature_cls.model_json_schema()
         class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
         project = feature_cls.metaxy_project()
