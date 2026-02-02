@@ -3602,30 +3602,28 @@
 </div>
 <hr />
 <h3 id="hash_truncation_length"><code>hash_truncation_length</code><a class="headerlink" href="#hash_truncation_length" title="Permanent link">&para;</a></h3>
-<p>Truncate hash values to this length (minimum 8 characters).</p>
-<p><strong>Type:</strong> <code>int | None</code></p>
+<p>Truncate hash values to this length.</p>
+<p><strong>Type:</strong> <code>int</code> | <strong>Default:</strong> <code>8</code></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="6:3"><input checked="checked" id="hash_truncation_length-metaxytoml" name="__tabbed_6" type="radio" /><input id="hash_truncation_length-pyprojecttoml" name="__tabbed_6" type="radio" /><input id="hash_truncation_length-environment-variable" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="hash_truncation_length-metaxytoml">metaxy.toml</label><label for="hash_truncation_length-pyprojecttoml">pyproject.toml</label><label for="hash_truncation_length-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Optional</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="c1"># hash_truncation_length = null</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">hash_truncation_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <div class="language-toml highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="c1"># Optional</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="c1"># hash_truncation_length = null</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">hash_truncation_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_HASH_TRUNCATION_LENGTH</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_HASH_TRUNCATION_LENGTH</span><span class="o">=</span><span class="m">8</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <hr />
 <h3 id="auto_create_tables"><code>auto_create_tables</code><a class="headerlink" href="#auto_create_tables" title="Permanent link">&para;</a></h3>
-<p>Auto-create tables when opening stores (development/testing only). WARNING: Do not use in production. Use proper database migration tools like Alembic.</p>
+<p>Auto-create tables when opening stores. It is not advised to enable this setting in production.</p>
 <p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>False</code></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="7:3"><input checked="checked" id="auto_create_tables-metaxytoml" name="__tabbed_7" type="radio" /><input id="auto_create_tables-pyprojecttoml" name="__tabbed_7" type="radio" /><input id="auto_create_tables-environment-variable" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="auto_create_tables-metaxytoml">metaxy.toml</label><label for="auto_create_tables-pyprojecttoml">pyproject.toml</label><label for="auto_create_tables-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
