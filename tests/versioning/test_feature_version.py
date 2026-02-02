@@ -26,8 +26,8 @@ def test_feature_version_deterministic(snapshot: SnapshotAssertion) -> None:
     # Should be deterministic
     assert version1 == version2
 
-    # Should be 64 characters
-    assert len(version1) == 64
+    # Should be 8 characters
+    assert len(version1) == 8
 
     # Should be hex string
     assert all(c in "0123456789abcdef" for c in version1)
@@ -146,8 +146,8 @@ def test_feature_version_multi_field(snapshot: SnapshotAssertion) -> None:
 
     version = MultiField.feature_version()
 
-    # Should be 64 characters
-    assert len(version) == 64
+    # Should be 8 characters
+    assert len(version) == 8
 
     # Snapshot
     assert version == snapshot

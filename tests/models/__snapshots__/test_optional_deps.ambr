@@ -1,8 +1,8 @@
 # serializer version: 1
 # name: TestFeatureDepOptional.test_feature_spec_version_changes_when_optional_changes
   dict({
-    'optional': 'd6b761423f5158b9b32144ae4cd27f2b620a6cf681d2d44e0a9c7be56d3c122a',
-    'required': 'c1734810788203cee6b852199091bfac258c21dc54806f30a972dcfa011937fc',
+    'optional': 'd6b76142',
+    'required': 'c1734810',
   })
 # ---
 # name: TestFeatureDepOptional.test_optional_false_serializes_correctly

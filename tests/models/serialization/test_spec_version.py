@@ -27,8 +27,8 @@ def test_feature_spec_version_deterministic(snapshot: SnapshotAssertion) -> None
     # Should be deterministic
     assert version1 == version2
 
-    # Should be 64 characters (SHA256 hex digest)
-    assert len(version1) == 64
+    # Should be 8 characters (SHA256 hex digest)
+    assert len(version1) == 8
 
     # Should be hex string
     assert all(c in "0123456789abcdef" for c in version1)
@@ -65,7 +65,7 @@ def test_feature_spec_version_includes_all_properties(
     version = spec.feature_spec_version
 
     # Verify it's a valid SHA256 hash
-    assert len(version) == 64
+    assert len(version) == 8
     assert all(c in "0123456789abcdef" for c in version)
 
     # Snapshot for stability
@@ -170,7 +170,7 @@ def test_feature_spec_version_manual_verification() -> None:
     # Manually compute what it should be
     spec_dict = spec.model_dump(mode="json")
     spec_json = json.dumps(spec_dict, sort_keys=True)
-    expected_hash = hashlib.sha256(spec_json.encode("utf-8")).hexdigest()
+    expected_hash = hashlib.sha256(spec_json.encode("utf-8")).hexdigest()[:8]
 
     # They should match
     assert feature_spec_version == expected_hash
@@ -197,7 +197,7 @@ def test_feature_spec_version_with_column_selection_and_rename(
     version = spec.feature_spec_version
 
     # Should be valid SHA256
-    assert len(version) == 64
+    assert len(version) == 8
     assert all(c in "0123456789abcdef" for c in version)
 
     # Snapshot for stability
@@ -265,7 +265,7 @@ def test_feature_feature_spec_version_classmethod() -> None:
         assert classmethod_version == direct_version
 
         # Should be valid SHA256
-        assert len(classmethod_version) == 64
+        assert len(classmethod_version) == 8
         assert all(c in "0123456789abcdef" for c in classmethod_version)
 
 
@@ -348,7 +348,7 @@ def test_feature_definition_version_recorded_in_metadata_store(snapshot: Snapsho
             # Get row as dict
             feature_row = features_df.to_dicts()[0]
             assert feature_row["metaxy_definition_version"] is not None
-            assert len(feature_row["metaxy_definition_version"]) == 64
+            assert len(feature_row["metaxy_definition_version"]) == 8
 
             # Snapshot for stability
             assert {
@@ -455,8 +455,8 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
             spec_v = feature_cls.feature_spec_version()
             feature_v = feature_cls.feature_version()
 
-            assert len(spec_v) == 64
-            assert len(feature_v) == 64
+            assert len(spec_v) == 8
+            assert len(feature_v) == 8
             assert all(c in "0123456789abcdef" for c in spec_v)
             assert all(c in "0123456789abcdef" for c in feature_v)
 
@@ -494,7 +494,7 @@ def test_feature_spec_version_with_multiple_complex_deps(
     version = spec.feature_spec_version
 
     # Should be valid SHA256
-    assert len(version) == 64
+    assert len(version) == 8
     assert all(c in "0123456789abcdef" for c in version)
 
     # Snapshot the hash

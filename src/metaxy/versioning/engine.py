@@ -445,7 +445,7 @@ class VersioningEngine(ABC):
         drop_renamed_data_version_col: bool = False,
     ) -> FrameT:
         """Compute provenance columns from a DataFrame with upstream data_version_by_field columns."""
-        hash_length = MetaxyConfig.get().hash_truncation_length or 64
+        hash_length = MetaxyConfig.get().hash_truncation_length
 
         # Build concatenation columns for each field
         temp_concat_cols: dict[str, str] = {}  # field_key_str -> temp_col_name

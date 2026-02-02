@@ -25,9 +25,9 @@
               }),
             }),
             'fields': dict({
-              'default': '80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c',
+              'default': '80200592',
             }),
-            'metaxy_feature_version': 'c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908',
+            'metaxy_feature_version': '3dac67c8',
           }),
           'speaker/embedding': dict({
             'feature_spec': dict({
@@ -78,13 +78,13 @@
               }),
             }),
             'fields': dict({
-              'embedding': '8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a',
+              'embedding': '27a15391',
             }),
-            'metaxy_feature_version': '83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd',
+            'metaxy_feature_version': 'a485fa5b',
           }),
         }),
         'scenario_name': 'Initial pipeline run',
-        'snapshot_version': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'snapshot_version': 'a625ae19',
         'step_name': None,
         'type': 'graph_pushed',
       }),
@@ -125,9 +125,9 @@
               }),
             }),
             'fields': dict({
-              'default': '80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c',
+              'default': '80200592',
             }),
-            'metaxy_feature_version': 'c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908',
+            'metaxy_feature_version': '3dac67c8',
           }),
           'speaker/embedding': dict({
             'feature_spec': dict({
@@ -178,13 +178,13 @@
               }),
             }),
             'fields': dict({
-              'embedding': '8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a',
+              'embedding': '27a15391',
             }),
-            'metaxy_feature_version': '83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd',
+            'metaxy_feature_version': 'a485fa5b',
           }),
         }),
         'scenario_name': 'Update one audio - only affected speaker recomputed',
-        'snapshot_version': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'snapshot_version': 'a625ae19',
         'step_name': None,
         'type': 'graph_pushed',
       }),
@@ -211,9 +211,9 @@
               }),
             }),
             'fields': dict({
-              'default': '80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c',
+              'default': '80200592',
             }),
-            'metaxy_feature_version': 'c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908',
+            'metaxy_feature_version': '3dac67c8',
           }),
           'speaker/embedding': dict({
             'feature_spec': dict({
@@ -264,12 +264,12 @@
               }),
             }),
             'fields': dict({
-              'embedding': '8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a',
+              'embedding': '27a15391',
             }),
-            'metaxy_feature_version': '83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd',
+            'metaxy_feature_version': 'a485fa5b',
           }),
         }),
-        'after_snapshot': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'after_snapshot': 'a625ae19',
         'before_graph': dict({
           'audio': dict({
             'feature_spec': dict({
@@ -292,9 +292,9 @@
               }),
             }),
             'fields': dict({
-              'default': '80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c',
+              'default': '80200592',
             }),
-            'metaxy_feature_version': 'c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908',
+            'metaxy_feature_version': '3dac67c8',
           }),
           'speaker/embedding': dict({
             'feature_spec': dict({
@@ -345,12 +345,12 @@
               }),
             }),
             'fields': dict({
-              'embedding': '8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a',
+              'embedding': '27a15391',
             }),
-            'metaxy_feature_version': '83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd',
+            'metaxy_feature_version': 'a485fa5b',
           }),
         }),
-        'before_snapshot': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'before_snapshot': 'a625ae19',
         'patch_path': 'patches/01_update_audio_provenance.patch',
         'scenario_name': 'Update one audio - only affected speaker recomputed',
         'step_name': None,
@@ -386,9 +386,9 @@
               }),
             }),
             'fields': dict({
-              'default': '80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c',
+              'default': '80200592',
             }),
-            'metaxy_feature_version': 'c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908',
+            'metaxy_feature_version': '3dac67c8',
           }),
           'speaker/embedding': dict({
             'feature_spec': dict({
@@ -439,13 +439,13 @@
               }),
             }),
             'fields': dict({
-              'embedding': '8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a',
+              'embedding': '27a15391',
             }),
-            'metaxy_feature_version': '83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd',
+            'metaxy_feature_version': 'a485fa5b',
           }),
         }),
         'scenario_name': 'Add new audio - only affected speaker recomputed',
-        'snapshot_version': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'snapshot_version': 'a625ae19',
         'step_name': None,
         'type': 'graph_pushed',
       }),
@@ -472,9 +472,9 @@
               }),
             }),
             'fields': dict({
-              'default': '80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c',
+              'default': '80200592',
             }),
-            'metaxy_feature_version': 'c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908',
+            'metaxy_feature_version': '3dac67c8',
           }),
           'speaker/embedding': dict({
             'feature_spec': dict({
@@ -525,12 +525,12 @@
               }),
             }),
             'fields': dict({
-              'embedding': '8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a',
+              'embedding': '27a15391',
             }),
-            'metaxy_feature_version': '83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd',
+            'metaxy_feature_version': 'a485fa5b',
           }),
         }),
-        'after_snapshot': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'after_snapshot': 'a625ae19',
         'before_graph': dict({
           'audio': dict({
             'feature_spec': dict({
@@ -553,9 +553,9 @@
               }),
             }),
             'fields': dict({
-              'default': '80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c',
+              'default': '80200592',
             }),
-            'metaxy_feature_version': 'c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908',
+            'metaxy_feature_version': '3dac67c8',
           }),
           'speaker/embedding': dict({
             'feature_spec': dict({
@@ -606,12 +606,12 @@
               }),
             }),
             'fields': dict({
-              'embedding': '8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a',
+              'embedding': '27a15391',
             }),
-            'metaxy_feature_version': '83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd',
+            'metaxy_feature_version': 'a485fa5b',
           }),
         }),
-        'before_snapshot': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'before_snapshot': 'a625ae19',
         'patch_path': 'patches/02_add_audio.patch',
         'scenario_name': 'Add new audio - only affected speaker recomputed',
         'step_name': None,
@@ -680,9 +680,9 @@
               }),
             }),
             'fields': dict({
-              'predictions': '15e27d1ca8fad19456fd20b59e5904e79181fe6957e7b2e035bd94c6f2aa0643',
+              'predictions': '9cd1c608',
             }),
-            'metaxy_feature_version': '467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939',
+            'metaxy_feature_version': 'b10ea448',
           }),
           'examples/parent': dict({
             'feature_spec': dict({
@@ -705,13 +705,13 @@
               }),
             }),
             'fields': dict({
-              'embeddings': '05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459',
+              'embeddings': '05e66510',
             }),
-            'metaxy_feature_version': '0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8',
+            'metaxy_feature_version': '7de0f5e8',
           }),
         }),
         'scenario_name': 'Setup upstream data',
-        'snapshot_version': '0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3',
+        'snapshot_version': '683bc034',
         'step_name': None,
         'type': 'graph_pushed',
       }),
@@ -779,9 +779,9 @@
               }),
             }),
             'fields': dict({
-              'predictions': '391c5ef3b7b701ddf980431430cb1ed3b8b932c71b659cd53447a5a4a8e8888b',
+              'predictions': '7cef6acb',
             }),
-            'metaxy_feature_version': '415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43',
+            'metaxy_feature_version': 'e5b92b18',
           }),
           'examples/parent': dict({
             'feature_spec': dict({
@@ -804,13 +804,13 @@
               }),
             }),
             'fields': dict({
-              'embeddings': '3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add',
+              'embeddings': '3c8d3e9b',
             }),
-            'metaxy_feature_version': 'a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737',
+            'metaxy_feature_version': '68827f3e',
           }),
         }),
         'scenario_name': 'Code evolution',
-        'snapshot_version': '1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c',
+        'snapshot_version': '9c536014',
         'step_name': 'update_parent_version',
         'type': 'graph_pushed',
       }),
@@ -857,9 +857,9 @@
               }),
             }),
             'fields': dict({
-              'predictions': '391c5ef3b7b701ddf980431430cb1ed3b8b932c71b659cd53447a5a4a8e8888b',
+              'predictions': '7cef6acb',
             }),
-            'metaxy_feature_version': '415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43',
+            'metaxy_feature_version': 'e5b92b18',
           }),
           'examples/parent': dict({
             'feature_spec': dict({
@@ -882,12 +882,12 @@
               }),
             }),
             'fields': dict({
-              'embeddings': '3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add',
+              'embeddings': '3c8d3e9b',
             }),
-            'metaxy_feature_version': 'a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737',
+            'metaxy_feature_version': '68827f3e',
           }),
         }),
-        'after_snapshot': '1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c',
+        'after_snapshot': '9c536014',
         'before_graph': dict({
           'examples/child': dict({
             'feature_spec': dict({
@@ -930,9 +930,9 @@
               }),
             }),
             'fields': dict({
-              'predictions': '15e27d1ca8fad19456fd20b59e5904e79181fe6957e7b2e035bd94c6f2aa0643',
+              'predictions': '9cd1c608',
             }),
-            'metaxy_feature_version': '467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939',
+            'metaxy_feature_version': 'b10ea448',
           }),
           'examples/parent': dict({
             'feature_spec': dict({
@@ -955,12 +955,12 @@
               }),
             }),
             'fields': dict({
-              'embeddings': '05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459',
+              'embeddings': '05e66510',
             }),
-            'metaxy_feature_version': '0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8',
+            'metaxy_feature_version': '7de0f5e8',
           }),
         }),
-        'before_snapshot': '0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3',
+        'before_snapshot': '683bc034',
         'patch_path': 'patches/01_update_parent_algorithm.patch',
         'scenario_name': 'Code evolution',
         'step_name': 'update_parent_version',
@@ -1032,10 +1032,10 @@
               }),
             }),
             'fields': dict({
-              'audio': 'd6a26940ce9ddec3b1668b1e9fbaa8079348d88f8e75a0b414dc23b2acdf62f2',
-              'frames': 'b3595d64c823748e77d7dd84817b551e585ad41eed4104f0a03561698095a004',
+              'audio': '1549b1fa',
+              'frames': 'df8943d3',
             }),
-            'metaxy_feature_version': '24b73621ecb11268cfdeeef9075686ea798ab742ed318e907afc51846d6fc335',
+            'metaxy_feature_version': '7dc3712a',
           }),
           'video/faces': dict({
             'feature_spec': dict({
@@ -1082,9 +1082,9 @@
               }),
             }),
             'fields': dict({
-              'faces': 'ffffa4c911ed0808a4ce160ebee45f5621db42cfedfcd66546b495ca902b8109',
+              'faces': '0561bd8c',
             }),
-            'metaxy_feature_version': 'ffa26c202034caf7b09c99e7c674aad22dbb321e766eb160505c72009c178c69',
+            'metaxy_feature_version': '52f055e3',
           }),
           'video/raw': dict({
             'feature_spec': dict({
@@ -1113,14 +1113,14 @@
               }),
             }),
             'fields': dict({
-              'audio': '7132721c121d323cea63a14fe75588f682c6def20aa566798bc4d39a09ba6829',
-              'frames': '3f6f401c024073a7265874099af43b0f5a99387953e321b8337223ed99fa238b',
+              'audio': '7132721c',
+              'frames': '3f6f401c',
             }),
-            'metaxy_feature_version': '697d0098c9ae72d28c4dbb0ab30d1f0bc19c4f1c65e2b53a587a2f762d6ec897',
+            'metaxy_feature_version': 'd842b740',
           }),
         }),
         'scenario_name': 'Initial pipeline run',
-        'snapshot_version': '39a7f29e64ae839c4711dbc8bc55c4dd35daf0cd33663934d4ef7049e02b2512',
+        'snapshot_version': 'da8e3925',
         'step_name': None,
         'type': 'graph_pushed',
       }),
@@ -1191,10 +1191,10 @@
               }),
             }),
             'fields': dict({
-              'audio': '0295dd3807b0fb3c9cebe4839a8a458b704383552303239e730be079a789c3ed',
-              'frames': 'b3595d64c823748e77d7dd84817b551e585ad41eed4104f0a03561698095a004',
+              'audio': '7948d163',
+              'frames': 'df8943d3',
             }),
-            'metaxy_feature_version': '850c45aafe6e5f8c3c86b43140d0acdda7c09b183e3be03fa181affa149f1245',
+            'metaxy_feature_version': '504507a9',
           }),
           'video/faces': dict({
             'feature_spec': dict({
@@ -1241,9 +1241,9 @@
               }),
             }),
             'fields': dict({
-              'faces': 'ffffa4c911ed0808a4ce160ebee45f5621db42cfedfcd66546b495ca902b8109',
+              'faces': '0561bd8c',
             }),
-            'metaxy_feature_version': 'ffa26c202034caf7b09c99e7c674aad22dbb321e766eb160505c72009c178c69',
+            'metaxy_feature_version': '52f055e3',
           }),
           'video/raw': dict({
             'feature_spec': dict({
@@ -1272,14 +1272,14 @@
               }),
             }),
             'fields': dict({
-              'audio': 'f8e35296ab91bb55e8086317ef2d3be6763c77680390f85111e16213e11cb784',
-              'frames': '3f6f401c024073a7265874099af43b0f5a99387953e321b8337223ed99fa238b',
+              'audio': 'f8e35296',
+              'frames': '3f6f401c',
             }),
-            'metaxy_feature_version': 'e467986af8f5566e1a4597e541851e8ff759552d8d993883effe3f09a17ed9ac',
+            'metaxy_feature_version': '6e5a4ab8',
           }),
         }),
         'scenario_name': 'Code change - audio field only',
-        'snapshot_version': '9f349eecf490e4d105c15621be4f048ea7e163ac97298d695948cffb9e31ce83',
+        'snapshot_version': '66634fde',
         'step_name': 'update_audio_version',
         'type': 'graph_pushed',
       }),
@@ -1336,10 +1336,10 @@
               }),
             }),
             'fields': dict({
-              'audio': '0295dd3807b0fb3c9cebe4839a8a458b704383552303239e730be079a789c3ed',
-              'frames': 'b3595d64c823748e77d7dd84817b551e585ad41eed4104f0a03561698095a004',
+              'audio': '7948d163',
+              'frames': 'df8943d3',
             }),
-            'metaxy_feature_version': '850c45aafe6e5f8c3c86b43140d0acdda7c09b183e3be03fa181affa149f1245',
+            'metaxy_feature_version': '504507a9',
           }),
           'video/faces': dict({
             'feature_spec': dict({
@@ -1386,9 +1386,9 @@
               }),
             }),
             'fields': dict({
-              'faces': 'ffffa4c911ed0808a4ce160ebee45f5621db42cfedfcd66546b495ca902b8109',
+              'faces': '0561bd8c',
             }),
-            'metaxy_feature_version': 'ffa26c202034caf7b09c99e7c674aad22dbb321e766eb160505c72009c178c69',
+            'metaxy_feature_version': '52f055e3',
           }),
           'video/raw': dict({
             'feature_spec': dict({
@@ -1417,13 +1417,13 @@
               }),
             }),
             'fields': dict({
-              'audio': 'f8e35296ab91bb55e8086317ef2d3be6763c77680390f85111e16213e11cb784',
-              'frames': '3f6f401c024073a7265874099af43b0f5a99387953e321b8337223ed99fa238b',
+              'audio': 'f8e35296',
+              'frames': '3f6f401c',
             }),
-            'metaxy_feature_version': 'e467986af8f5566e1a4597e541851e8ff759552d8d993883effe3f09a17ed9ac',
+            'metaxy_feature_version': '6e5a4ab8',
           }),
         }),
-        'after_snapshot': '9f349eecf490e4d105c15621be4f048ea7e163ac97298d695948cffb9e31ce83',
+        'after_snapshot': '66634fde',
         'before_graph': dict({
           'video/chunk': dict({
             'feature_spec': dict({
@@ -1476,10 +1476,10 @@
               }),
             }),
             'fields': dict({
-              'audio': 'd6a26940ce9ddec3b1668b1e9fbaa8079348d88f8e75a0b414dc23b2acdf62f2',
-              'frames': 'b3595d64c823748e77d7dd84817b551e585ad41eed4104f0a03561698095a004',
+              'audio': '1549b1fa',
+              'frames': 'df8943d3',
             }),
-            'metaxy_feature_version': '24b73621ecb11268cfdeeef9075686ea798ab742ed318e907afc51846d6fc335',
+            'metaxy_feature_version': '7dc3712a',
           }),
           'video/faces': dict({
             'feature_spec': dict({
@@ -1526,9 +1526,9 @@
               }),
             }),
             'fields': dict({
-              'faces': 'ffffa4c911ed0808a4ce160ebee45f5621db42cfedfcd66546b495ca902b8109',
+              'faces': '0561bd8c',
             }),
-            'metaxy_feature_version': 'ffa26c202034caf7b09c99e7c674aad22dbb321e766eb160505c72009c178c69',
+            'metaxy_feature_version': '52f055e3',
           }),
           'video/raw': dict({
             'feature_spec': dict({
@@ -1557,13 +1557,13 @@
               }),
             }),
             'fields': dict({
-              'audio': '7132721c121d323cea63a14fe75588f682c6def20aa566798bc4d39a09ba6829',
-              'frames': '3f6f401c024073a7265874099af43b0f5a99387953e321b8337223ed99fa238b',
+              'audio': '7132721c',
+              'frames': '3f6f401c',
             }),
-            'metaxy_feature_version': '697d0098c9ae72d28c4dbb0ab30d1f0bc19c4f1c65e2b53a587a2f762d6ec897',
+            'metaxy_feature_version': 'd842b740',
           }),
         }),
-        'before_snapshot': '39a7f29e64ae839c4711dbc8bc55c4dd35daf0cd33663934d4ef7049e02b2512',
+        'before_snapshot': 'da8e3925',
         'patch_path': 'patches/01_update_video_code_version.patch',
         'scenario_name': 'Code change - audio field only',
         'step_name': 'update_audio_version',
@@ -1650,10 +1650,10 @@
               }),
             }),
             'fields': dict({
-              'audio': '76c8bdc9545524e878ed4d9890587551b6c3154251cdfcca9049cbacf112cc39',
-              'frames': 'abc79017997391ffa25bdf04cbab84d77fdd22f4d2d78b914acad0662915e086',
+              'audio': '4c726c4b',
+              'frames': '2419e09d',
             }),
-            'metaxy_feature_version': '3ac04df8f6503f82cbcd06f0e1cc5f4589c9bacb065b7edf22cd9567ad302c63',
+            'metaxy_feature_version': '34d75856',
           }),
           'example/face_detection': dict({
             'feature_spec': dict({
@@ -1702,9 +1702,9 @@
               }),
             }),
             'fields': dict({
-              'faces': '2d75f0bd5be71867c23389d26bbd00eba2f3498dfff334dc0bbcaa9ec3893b07',
+              'faces': '006efeef',
             }),
-            'metaxy_feature_version': '1ac83b074c018d1524eb51cf7f19734175b34c72f8289b6b90015f4a0ab9e2ce',
+            'metaxy_feature_version': 'f1526ee0',
           }),
           'example/stt': dict({
             'feature_spec': dict({
@@ -1753,9 +1753,9 @@
               }),
             }),
             'fields': dict({
-              'transcription': 'ac412b3c78c2f910127bdd1511cf08ff0fe9324a80c0fe0503f2edabb22960d2',
+              'transcription': '3ec3826d',
             }),
-            'metaxy_feature_version': 'c83a754a1749050d358b0e2572a7f3538ab5e76e18222f4c23dd7ef96e50b162',
+            'metaxy_feature_version': 'd953dea4',
           }),
           'example/video': dict({
             'feature_spec': dict({
@@ -1784,14 +1784,14 @@
               }),
             }),
             'fields': dict({
-              'audio': '2274238132e8ddf5b2f64bd926e35f3dbcf910e45f49a0d1f3383b1a28421b49',
-              'frames': '794116a95021306600942624e8f40f8166c9ff87bb155835685c26a72a32fd85',
+              'audio': '22742381',
+              'frames': '794116a9',
             }),
-            'metaxy_feature_version': 'bc9ca8356b1b8d2e2e25455bc8d0d4c51d00dfe826f08df38bbf8df0042fc890',
+            'metaxy_feature_version': 'c2ac395f',
           }),
         }),
         'scenario_name': 'Initial feature graph',
-        'snapshot_version': '8468950dcc9f75e4089529577e7b8ba044205e16a7c32b54910e7c73b9f7303d',
+        'snapshot_version': '441cc681',
         'step_name': None,
         'type': 'graph_pushed',
       }),
@@ -1870,10 +1870,10 @@
               }),
             }),
             'fields': dict({
-              'audio': 'f3130c0fc1eb3967dbe4ed248be5b935334260f7afc5e0d878a5022c77b3475a',
-              'frames': 'abc79017997391ffa25bdf04cbab84d77fdd22f4d2d78b914acad0662915e086',
+              'audio': 'e2b6ce39',
+              'frames': '2419e09d',
             }),
-            'metaxy_feature_version': '54dc7f8a47f2e4430707310fecc57101785040403680402b0013f5160024ee42',
+            'metaxy_feature_version': 'fe237dc9',
           }),
           'example/face_detection': dict({
             'feature_spec': dict({
@@ -1922,9 +1922,9 @@
               }),
             }),
             'fields': dict({
-              'faces': '2d75f0bd5be71867c23389d26bbd00eba2f3498dfff334dc0bbcaa9ec3893b07',
+              'faces': '006efeef',
             }),
-            'metaxy_feature_version': '1ac83b074c018d1524eb51cf7f19734175b34c72f8289b6b90015f4a0ab9e2ce',
+            'metaxy_feature_version': 'f1526ee0',
           }),
           'example/stt': dict({
             'feature_spec': dict({
@@ -1973,9 +1973,9 @@
               }),
             }),
             'fields': dict({
-              'transcription': '058410137e1449468fe9cc6e170f5fe3182cd12083b2172dd99a9731ebcf5f69',
+              'transcription': '9f7ea40c',
             }),
-            'metaxy_feature_version': '066d34fcb84150b926500d1ba1172f53e3506643c743d4403a19128a6ae17fc1',
+            'metaxy_feature_version': 'e57e7555',
           }),
           'example/video': dict({
             'feature_spec': dict({
@@ -2004,14 +2004,14 @@
               }),
             }),
             'fields': dict({
-              'audio': '09c8398bb8d6ef79c622cec3f7ee402cd55ad577a6002ddb7cd377b1a4af4377',
-              'frames': '794116a95021306600942624e8f40f8166c9ff87bb155835685c26a72a32fd85',
+              'audio': '09c8398b',
+              'frames': '794116a9',
             }),
-            'metaxy_feature_version': '6db302e5be0167551ad6a00df92e10a54ea63d7a6f393d420eeb23f24b540b10',
+            'metaxy_feature_version': '2faffb98',
           }),
         }),
         'scenario_name': 'Code change - audio field',
-        'snapshot_version': '980943fbb9465022ca100716e64670fbbd80ef63636d4c23f18318454a77db4c',
+        'snapshot_version': 'cdd1405e',
         'step_name': 'update_audio_version',
         'type': 'graph_pushed',
       }),
@@ -2076,10 +2076,10 @@
               }),
             }),
             'fields': dict({
-              'audio': 'f3130c0fc1eb3967dbe4ed248be5b935334260f7afc5e0d878a5022c77b3475a',
-              'frames': 'abc79017997391ffa25bdf04cbab84d77fdd22f4d2d78b914acad0662915e086',
+              'audio': 'e2b6ce39',
+              'frames': '2419e09d',
             }),
-            'metaxy_feature_version': '54dc7f8a47f2e4430707310fecc57101785040403680402b0013f5160024ee42',
+            'metaxy_feature_version': 'fe237dc9',
           }),
           'example/face_detection': dict({
             'feature_spec': dict({
@@ -2128,9 +2128,9 @@
               }),
             }),
             'fields': dict({
-              'faces': '2d75f0bd5be71867c23389d26bbd00eba2f3498dfff334dc0bbcaa9ec3893b07',
+              'faces': '006efeef',
             }),
-            'metaxy_feature_version': '1ac83b074c018d1524eb51cf7f19734175b34c72f8289b6b90015f4a0ab9e2ce',
+            'metaxy_feature_version': 'f1526ee0',
           }),
           'example/stt': dict({
             'feature_spec': dict({
@@ -2179,9 +2179,9 @@
               }),
             }),
             'fields': dict({
-              'transcription': '058410137e1449468fe9cc6e170f5fe3182cd12083b2172dd99a9731ebcf5f69',
+              'transcription': '9f7ea40c',
             }),
-            'metaxy_feature_version': '066d34fcb84150b926500d1ba1172f53e3506643c743d4403a19128a6ae17fc1',
+            'metaxy_feature_version': 'e57e7555',
           }),
           'example/video': dict({
             'feature_spec': dict({
@@ -2210,13 +2210,13 @@
               }),
             }),
             'fields': dict({
-              'audio': '09c8398bb8d6ef79c622cec3f7ee402cd55ad577a6002ddb7cd377b1a4af4377',
-              'frames': '794116a95021306600942624e8f40f8166c9ff87bb155835685c26a72a32fd85',
+              'audio': '09c8398b',
+              'frames': '794116a9',
             }),
-            'metaxy_feature_version': '6db302e5be0167551ad6a00df92e10a54ea63d7a6f393d420eeb23f24b540b10',
+            'metaxy_feature_version': '2faffb98',
           }),
         }),
-        'after_snapshot': '980943fbb9465022ca100716e64670fbbd80ef63636d4c23f18318454a77db4c',
+        'after_snapshot': 'cdd1405e',
         'before_graph': dict({
           'example/crop': dict({
             'feature_spec': dict({
@@ -2277,10 +2277,10 @@
               }),
             }),
             'fields': dict({
-              'audio': '76c8bdc9545524e878ed4d9890587551b6c3154251cdfcca9049cbacf112cc39',
-              'frames': 'abc79017997391ffa25bdf04cbab84d77fdd22f4d2d78b914acad0662915e086',
+              'audio': '4c726c4b',
+              'frames': '2419e09d',
             }),
-            'metaxy_feature_version': '3ac04df8f6503f82cbcd06f0e1cc5f4589c9bacb065b7edf22cd9567ad302c63',
+            'metaxy_feature_version': '34d75856',
           }),
           'example/face_detection': dict({
             'feature_spec': dict({
@@ -2329,9 +2329,9 @@
               }),
             }),
             'fields': dict({
-              'faces': '2d75f0bd5be71867c23389d26bbd00eba2f3498dfff334dc0bbcaa9ec3893b07',
+              'faces': '006efeef',
             }),
-            'metaxy_feature_version': '1ac83b074c018d1524eb51cf7f19734175b34c72f8289b6b90015f4a0ab9e2ce',
+            'metaxy_feature_version': 'f1526ee0',
           }),
           'example/stt': dict({
             'feature_spec': dict({
@@ -2380,9 +2380,9 @@
               }),
             }),
             'fields': dict({
-              'transcription': 'ac412b3c78c2f910127bdd1511cf08ff0fe9324a80c0fe0503f2edabb22960d2',
+              'transcription': '3ec3826d',
             }),
-            'metaxy_feature_version': 'c83a754a1749050d358b0e2572a7f3538ab5e76e18222f4c23dd7ef96e50b162',
+            'metaxy_feature_version': 'd953dea4',
           }),
           'example/video': dict({
             'feature_spec': dict({
@@ -2411,13 +2411,13 @@
               }),
             }),
             'fields': dict({
-              'audio': '2274238132e8ddf5b2f64bd926e35f3dbcf910e45f49a0d1f3383b1a28421b49',
-              'frames': '794116a95021306600942624e8f40f8166c9ff87bb155835685c26a72a32fd85',
+              'audio': '22742381',
+              'frames': '794116a9',
             }),
-            'metaxy_feature_version': 'bc9ca8356b1b8d2e2e25455bc8d0d4c51d00dfe826f08df38bbf8df0042fc890',
+            'metaxy_feature_version': 'c2ac395f',
           }),
         }),
-        'before_snapshot': '8468950dcc9f75e4089529577e7b8ba044205e16a7c32b54910e7c73b9f7303d',
+        'before_snapshot': '441cc681',
         'patch_path': 'patches/01_update_audio_version.patch',
         'scenario_name': 'Code change - audio field',
         'step_name': 'update_audio_version',

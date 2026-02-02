@@ -79,7 +79,7 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
 
     # Check feature version
     version = VideoFeature.feature_version()
-    assert len(version) == 64
+    assert len(version) == 8
     assert version == snapshot
 
 
@@ -129,7 +129,7 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
 
     # Check feature version
     version = MultiFieldFeature.feature_version()
-    assert len(version) == 64
+    assert len(version) == 8
     assert version == snapshot
 
 
@@ -260,8 +260,8 @@ def test_feature_version_method(snapshot: SnapshotAssertion) -> None:
     # Should be deterministic
     assert version == VersionedFeature.feature_version()
 
-    # Should be 64-character hex string
-    assert len(version) == 64
+    # Should be 8-character hex string
+    assert len(version) == 8
     assert all(c in "0123456789abcdef" for c in version)
 
     # Snapshot
@@ -273,7 +273,7 @@ def test_provenance_method(snapshot: SnapshotAssertion) -> None:
 
     Verifies that:
     - provenance_by_field() returns dict mapping field keys to hashes
-    - Each hash is 64 characters
+    - Each hash is 8 characters
     """
 
     class DataVersionFeature(
@@ -299,8 +299,8 @@ def test_provenance_method(snapshot: SnapshotAssertion) -> None:
     assert "processed_data" in provenance_by_field
     assert "embeddings" in provenance_by_field
 
-    # Each hash should be 64 characters
-    assert all(len(v) == 64 for v in provenance_by_field.values())
+    # Each hash Should be 8 characters
+    assert all(len(v) == 8 for v in provenance_by_field.values())
 
     # Snapshot
     assert provenance_by_field == snapshot
@@ -425,7 +425,7 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
 
     # Feature version reflects dependencies
     version = DownstreamFeature.feature_version()
-    assert len(version) == 64
+    assert len(version) == 8
     assert version == snapshot
 
 
@@ -988,7 +988,7 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
 
     # Verify feature version is deterministic
     version = MultiKeyFeature.feature_version()
-    assert len(version) == 64
+    assert len(version) == 8
 
     # Verify field provenance structure
     provenance_by_field = MultiKeyFeature.provenance_by_field()

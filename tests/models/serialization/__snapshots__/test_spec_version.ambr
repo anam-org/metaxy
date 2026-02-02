@@ -2,16 +2,16 @@
 # name: test_feature_definition_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'metaxy_definition_version': 'bcf96f96b15042d29d1aaeb7b03c4d874951558337679869b0d89455ca9ffcbe',
-    'metaxy_feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
-    'metaxy_snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
+    'metaxy_definition_version': 'db21445f',
+    'metaxy_feature_version': '3599b5f9',
+    'metaxy_snapshot_version': '0964bdc3',
   })
 # ---
 # name: test_feature_spec_version_deterministic
-  'a5eea97303ca5d59e58e90c9e1f42e0d91c1944603f3b92ecf25d50f07c53b49'
+  'a5eea973'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  '44a8f0127562a990441a06a3fe27ad4a5d79334ff22e6f68e02895a11676d1ec'
+  '44a8f012'
 # ---
 # name: test_feature_spec_version_stored_in_snapshot
   dict({
@@ -145,14 +145,14 @@
       'metadata': dict({
       }),
     }),
-    'metaxy_definition_version': 'c57625aa1f4e04d7ea79a11c2c59783c2c29fc4676f4b3b1d65559fca2e663b7',
-    'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
+    'metaxy_definition_version': '3714d0e0',
+    'metaxy_feature_version': 'd22026d5',
     'project': 'test_spec_version',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  'db9fb3bfc4c9ffbf729f1c065e60dddf17fa4cffb1339a89171e4e99287a0d68'
+  'db9fb3bf'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  'aa24606b3ac44c45d2bc73c3112947cf286c3c64edf51d683055144e05139c71'
+  'aa24606b'
 # ---

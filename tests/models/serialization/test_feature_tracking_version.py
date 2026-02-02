@@ -140,7 +140,7 @@ def test_definition_version_deterministic(snapshot: SnapshotAssertion) -> None:
     # feature_definition_version should be deterministic
     definition_version = definition.feature_definition_version
 
-    assert len(definition_version) == 64  # SHA256 hex
+    assert len(definition_version) == 8  # SHA256 hex
     assert definition_version == snapshot
 
 

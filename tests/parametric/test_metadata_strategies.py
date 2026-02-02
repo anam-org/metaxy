@@ -512,7 +512,6 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
         assert field_names == {"result"}
 
         # Verify provenance is calculated (non-empty hashes)
-        # Note: SHA256 produces 64 hex chars (256 bits)
         for row in downstream_df.iter_rows(named=True):
             provenance = row[METAXY_PROVENANCE_BY_FIELD]
             assert len(provenance["result"]) > 0

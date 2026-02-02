@@ -3,19 +3,19 @@
   list([
     dict({
       'field_data_version': dict({
-        'default': '3403868002304381262',
+        'default': '34038680',
       }),
       'field_provenance': dict({
-        'default': '3403868002304381262',
+        'default': '34038680',
       }),
       'sample_uid': 1,
     }),
     dict({
       'field_data_version': dict({
-        'default': '13044536508083413104',
+        'default': '13044536',
       }),
       'field_provenance': dict({
-        'default': '13044536508083413104',
+        'default': '13044536',
       }),
       'sample_uid': 2,
     }),
@@ -25,49 +25,49 @@
   list([
     dict({
       'field_data_version': dict({
-        'default': '11045469579419104296',
+        'default': '11045469',
       }),
       'field_provenance': dict({
-        'default': '11045469579419104296',
+        'default': '11045469',
       }),
-      'sample_provenance': '17349733036152179338',
+      'sample_provenance': '46772360',
       'sample_uid': 1,
     }),
     dict({
       'field_data_version': dict({
-        'default': '5655355725504109707',
+        'default': '56553557',
       }),
       'field_provenance': dict({
-        'default': '5655355725504109707',
+        'default': '56553557',
       }),
-      'sample_provenance': '17208330944384832911',
+      'sample_provenance': '15275398',
       'sample_uid': 2,
     }),
   ])
 # ---
 # name: test_feature_graph_integration_with_provenance_by_field
   dict({
-    'field_a': '4086c66ae16cbea1e3d2a7243527ce423a20a1d04d1084e39cfbc122fc4fc3aa',
-    'field_b': '7c343b7bf86ffb2c65b888cd9fef2dab7a49cf83ca3678ead24e018ae91f7952',
+    'field_a': '4086c66a',
+    'field_b': '7c343b7b',
   })
 # ---
 # name: test_filters_applied_before_join
   list([
     dict({
       'field_data_version': dict({
-        'default': '176643765444805005',
+        'default': '17664376',
       }),
       'field_provenance': dict({
-        'default': '176643765444805005',
+        'default': '17664376',
       }),
       'sample_uid': 3,
     }),
     dict({
       'field_data_version': dict({
-        'default': '12005045164625407873',
+        'default': '12005045',
       }),
       'field_provenance': dict({
-        'default': '12005045164625407873',
+        'default': '12005045',
       }),
       'sample_uid': 4,
     }),
@@ -77,19 +77,19 @@
   list([
     dict({
       'field_data_version': dict({
-        'default': '17370060903493036894',
+        'default': '17370060',
       }),
       'field_provenance': dict({
-        'default': '17370060903493036894',
+        'default': '17370060',
       }),
       'sample_uid': 2,
     }),
     dict({
       'field_data_version': dict({
-        'default': '14011145748578331224',
+        'default': '14011145',
       }),
       'field_provenance': dict({
-        'default': '14011145748578331224',
+        'default': '14011145',
       }),
       'sample_uid': 3,
     }),

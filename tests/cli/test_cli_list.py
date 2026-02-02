@@ -467,8 +467,7 @@ def test_list_features_json_includes_version(metaxy_project: TempMetaxyProject):
         data = json.loads(result_json.stdout)
         full_version = data["features"][0]["version"]
 
-        # Full version should be a long hash (64 chars for SHA256)
-        assert len(full_version) == 64
+        assert len(full_version) == 8
 
         # JSON should also include project and import_path
         assert "project" in data["features"][0]

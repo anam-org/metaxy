@@ -6,12 +6,12 @@
     "events": [
       {
         "type": "graph_pushed",
-        "snapshot_version": "0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3",
+        "snapshot_version": "683bc034",
         "graph": {
           "examples/parent": {
-            "metaxy_feature_version": "0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8",
+            "metaxy_feature_version": "7de0f5e8",
             "fields": {
-              "embeddings": "05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459"
+              "embeddings": "05e66510"
             },
             "feature_spec": {
               "key": "examples/parent",
@@ -31,9 +31,9 @@
             }
           },
           "examples/child": {
-            "metaxy_feature_version": "467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939",
+            "metaxy_feature_version": "b10ea448",
             "fields": {
-              "predictions": "15e27d1ca8fad19456fd20b59e5904e79181fe6957e7b2e035bd94c6f2aa0643"
+              "predictions": "9cd1c608"
             },
             "feature_spec": {
               "key": "examples/child",
@@ -73,7 +73,7 @@
             }
           }
         },
-        "timestamp": "2026-02-02T08:18:31.679957",
+        "timestamp": "2026-02-02T11:18:21.126877",
         "scenario_name": "Setup upstream data",
         "step_name": null
       },
@@ -83,7 +83,7 @@
         "returncode": 0,
         "stdout": "",
         "stderr": "",
-        "timestamp": "2026-02-02T08:18:31.720816",
+        "timestamp": "2026-02-02T11:18:21.169049",
         "scenario_name": "Setup upstream data",
         "step_name": "setup_data"
       },
@@ -91,9 +91,9 @@
         "type": "command_executed",
         "command": "python -m example_basic.pipeline",
         "returncode": 0,
-        "stdout": "Graph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\n\n📊 Computing examples/child...\n  feature_version: 467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470123186761611'}\n  sample_uid=2: {'predictions': '17377221795775496311'}\n  sample_uid=3: {'predictions': '11499809972266932532'}\n\n\n✅ Pipeline complete!\n",
+        "stdout": "Graph snapshot_version: 683bc034\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 683bc034\n\n📊 Computing examples/child...\n  feature_version: b10ea448\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470'}\n  sample_uid=2: {'predictions': '17377221'}\n  sample_uid=3: {'predictions': '11499809'}\n\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-02T08:18:32.862766",
+        "timestamp": "2026-02-02T11:18:22.277301",
         "scenario_name": "Initial pipeline run",
         "step_name": "initial_run"
       },
@@ -101,20 +101,20 @@
         "type": "command_executed",
         "command": "python -m example_basic.pipeline",
         "returncode": 0,
-        "stdout": "Graph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\nMetadata already exists for feature examples/parent (feature_version: 0aad9b8a2ea055cd...)\nSkipping write to avoid duplicates\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3\n\n📊 Computing examples/child...\n  feature_version: 467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939\nIdentified: 0 new samples, 0 samples with new provenance_by_field\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470123186761611'}\n  sample_uid=2: {'predictions': '17377221795775496311'}\n  sample_uid=3: {'predictions': '11499809972266932532'}\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
+        "stdout": "Graph snapshot_version: 683bc034\nMetadata already exists for feature examples/parent (feature_version: 7de0f5e8...)\nSkipping write to avoid duplicates\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 683bc034\n\n📊 Computing examples/child...\n  feature_version: b10ea448\nIdentified: 0 new samples, 0 samples with new provenance_by_field\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470'}\n  sample_uid=2: {'predictions': '17377221'}\n  sample_uid=3: {'predictions': '11499809'}\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-02T08:18:33.919576",
+        "timestamp": "2026-02-02T11:18:23.340306",
         "scenario_name": "Idempotent rerun",
         "step_name": "idempotent_run"
       },
       {
         "type": "graph_pushed",
-        "snapshot_version": "1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c",
+        "snapshot_version": "9c536014",
         "graph": {
           "examples/parent": {
-            "metaxy_feature_version": "a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737",
+            "metaxy_feature_version": "68827f3e",
             "fields": {
-              "embeddings": "3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add"
+              "embeddings": "3c8d3e9b"
             },
             "feature_spec": {
               "key": "examples/parent",
@@ -134,9 +134,9 @@
             }
           },
           "examples/child": {
-            "metaxy_feature_version": "415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43",
+            "metaxy_feature_version": "e5b92b18",
             "fields": {
-              "predictions": "391c5ef3b7b701ddf980431430cb1ed3b8b932c71b659cd53447a5a4a8e8888b"
+              "predictions": "7cef6acb"
             },
             "feature_spec": {
               "key": "examples/child",
@@ -176,20 +176,20 @@
             }
           }
         },
-        "timestamp": "2026-02-02T08:18:34.593761",
+        "timestamp": "2026-02-02T11:18:23.995442",
         "scenario_name": "Code evolution",
         "step_name": "update_parent_version"
       },
       {
         "type": "patch_applied",
         "patch_path": "patches/01_update_parent_algorithm.patch",
-        "before_snapshot": "0ac29a763c520b92fd66a1622b9f340fc0b139a9134699a67c18a9efdece5cd3",
-        "after_snapshot": "1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c",
+        "before_snapshot": "683bc034",
+        "after_snapshot": "9c536014",
         "before_graph": {
           "examples/parent": {
-            "metaxy_feature_version": "0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8",
+            "metaxy_feature_version": "7de0f5e8",
             "fields": {
-              "embeddings": "05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459"
+              "embeddings": "05e66510"
             },
             "feature_spec": {
               "key": "examples/parent",
@@ -209,9 +209,9 @@
             }
           },
           "examples/child": {
-            "metaxy_feature_version": "467b2c02f5a1629d83fa892000dbc7e441d7ca5e6754d8788a2c93951951f939",
+            "metaxy_feature_version": "b10ea448",
             "fields": {
-              "predictions": "15e27d1ca8fad19456fd20b59e5904e79181fe6957e7b2e035bd94c6f2aa0643"
+              "predictions": "9cd1c608"
             },
             "feature_spec": {
               "key": "examples/child",
@@ -253,9 +253,9 @@
         },
         "after_graph": {
           "examples/parent": {
-            "metaxy_feature_version": "a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737",
+            "metaxy_feature_version": "68827f3e",
             "fields": {
-              "embeddings": "3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add"
+              "embeddings": "3c8d3e9b"
             },
             "feature_spec": {
               "key": "examples/parent",
@@ -275,9 +275,9 @@
             }
           },
           "examples/child": {
-            "metaxy_feature_version": "415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43",
+            "metaxy_feature_version": "e5b92b18",
             "fields": {
-              "predictions": "391c5ef3b7b701ddf980431430cb1ed3b8b932c71b659cd53447a5a4a8e8888b"
+              "predictions": "7cef6acb"
             },
             "feature_spec": {
               "key": "examples/child",
@@ -317,7 +317,7 @@
             }
           }
         },
-        "timestamp": "2026-02-02T08:18:34.600311",
+        "timestamp": "2026-02-02T11:18:24.006255",
         "scenario_name": "Code evolution",
         "step_name": "update_parent_version"
       },
@@ -325,9 +325,9 @@
         "type": "command_executed",
         "command": "python -m example_basic.pipeline",
         "returncode": 0,
-        "stdout": "Graph snapshot_version: 1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 1b0b50c116514994c79e989666226a2f8b2d7c5e42b565bf5779e70f6a80fb5c\n\n📊 Computing examples/child...\n  feature_version: 415c78486684ec5f285b05b4f0043395c0ab2ac193123c3f5b5d6bfb0b145c43\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470123186761611'}\n  sample_uid=2: {'predictions': '17377221795775496311'}\n  sample_uid=3: {'predictions': '11499809972266932532'}\n\n\n✅ Pipeline complete!\n",
+        "stdout": "Graph snapshot_version: 9c536014\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 9c536014\n\n📊 Computing examples/child...\n  feature_version: e5b92b18\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '14324470'}\n  sample_uid=2: {'predictions': '17377221'}\n  sample_uid=3: {'predictions': '11499809'}\n\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-02T08:18:35.761125",
+        "timestamp": "2026-02-02T11:18:25.136964",
         "scenario_name": "Code evolution",
         "step_name": "recompute_after_change"
       }

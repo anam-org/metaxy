@@ -3,19 +3,19 @@
   list([
     dict({
       'field_data_version': dict({
-        'frame_embedding': '1744805689831497403',
+        'frame_embedding': '17448056',
       }),
       'field_provenance': dict({
-        'frame_embedding': '1744805689831497403',
+        'frame_embedding': '17448056',
       }),
       'video_id': 'v1',
     }),
     dict({
       'field_data_version': dict({
-        'frame_embedding': '884350646134689240',
+        'frame_embedding': '88435064',
       }),
       'field_provenance': dict({
-        'frame_embedding': '884350646134689240',
+        'frame_embedding': '88435064',
       }),
       'video_id': 'v2',
     }),
@@ -25,19 +25,19 @@
   list([
     dict({
       'field_data_version': dict({
-        'frame_embedding': '1744805689831497403',
+        'frame_embedding': '17448056',
       }),
       'field_provenance': dict({
-        'frame_embedding': '1744805689831497403',
+        'frame_embedding': '17448056',
       }),
       'video_id': 'v1',
     }),
     dict({
       'field_data_version': dict({
-        'frame_embedding': '884350646134689240',
+        'frame_embedding': '88435064',
       }),
       'field_provenance': dict({
-        'frame_embedding': '884350646134689240',
+        'frame_embedding': '88435064',
       }),
       'video_id': 'v2',
     }),
@@ -47,28 +47,28 @@
   list([
     dict({
       'field_data_version': dict({
-        'default': '9646593030270266913',
+        'default': '96465930',
       }),
       'field_provenance': dict({
-        'default': '9646593030270266913',
+        'default': '96465930',
       }),
       'sample_uid': 1,
     }),
     dict({
       'field_data_version': dict({
-        'default': '6309806401145978549',
+        'default': '63098064',
       }),
       'field_provenance': dict({
-        'default': '6309806401145978549',
+        'default': '63098064',
       }),
       'sample_uid': 2,
     }),
     dict({
       'field_data_version': dict({
-        'default': '7283469191670294049',
+        'default': '72834691',
       }),
       'field_provenance': dict({
-        'default': '7283469191670294049',
+        'default': '72834691',
       }),
       'sample_uid': 3,
     }),

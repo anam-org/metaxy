@@ -31,7 +31,7 @@
   ])
 # ---
 # name: test_graph_snapshot_version_includes_all_projects
-  'c4fab32026447b2afc7cae3c4c0e42044ea9a43a5d2c4454f00a6fb6587277e1'
+  '0771bc97'
 # ---
 # name: test_multi_project_dependency_graph
   dict({

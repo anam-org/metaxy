@@ -1271,15 +1271,12 @@ class TestToToml:
         """Test MetaxyConfig.to_toml() removes None values (TOML doesn't support them)."""
         import tomli
 
-        config = MetaxyConfig(
-            store="dev",
-            hash_truncation_length=None,  # Should be removed
-        )
+        config = MetaxyConfig(store="dev", locked=None)
 
         toml_str = config.to_toml()
         parsed = tomli.loads(toml_str)
 
-        assert "hash_truncation_length" not in parsed
+        assert "locked" not in parsed
 
     def test_metaxy_config_to_toml_roundtrip(self, tmp_path: Path) -> None:
         """Test that to_toml() output can be loaded back."""

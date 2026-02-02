@@ -64,12 +64,12 @@ class TestHashTruncationUtils:
 
     def test_truncate_hash_minimum_length(self):
         """Test minimum truncation length validation in config."""
-        full_hash = "a" * 64
+        full_hash = "a" * 8
 
         # Test that config validation prevents invalid values
-        with pytest.raises(ValueError, match="at least 8 characters"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to 8"):
             MetaxyConfig(hash_truncation_length=7)
-        with pytest.raises(ValueError, match="at least 8 characters"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to 8"):
             MetaxyConfig(hash_truncation_length=0)
 
         # Minimum allowed should work
@@ -79,18 +79,18 @@ class TestHashTruncationUtils:
 
     def test_truncate_hash_none_length(self):
         """Test no truncation when length is None."""
-        full_hash = "a" * 64
+        full_hash = "a" * 8
 
         # With no truncation config
-        config = MetaxyConfig(hash_truncation_length=None)
+        config = MetaxyConfig()
         with config.use():
             assert truncate_hash(full_hash) == full_hash
 
     def test_global_truncation_setting(self):
         """Test global hash truncation via MetaxyConfig."""
-        # Initial state - default truncation (64)
+        # Initial state - default truncation (8)
         MetaxyConfig.reset()
-        assert get_hash_truncation_length() == 64
+        assert get_hash_truncation_length() == 8
 
         # Set truncation length via config
         config = MetaxyConfig(hash_truncation_length=16)
@@ -103,13 +103,13 @@ class TestHashTruncationUtils:
 
         # Reset to None
         MetaxyConfig.reset()
-        assert get_hash_truncation_length() == 64
-        full_hash = "a" * 64
+        assert get_hash_truncation_length() == 8
+        full_hash = "a" * 8
         assert truncate_hash(full_hash) == full_hash
 
     def test_global_truncation_minimum_validation(self):
         """Test validation of global truncation length."""
-        with pytest.raises(ValueError, match="at least 8 characters"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to 8"):
             MetaxyConfig(hash_truncation_length=7)
 
     def test_ensure_hash_compatibility(self):
@@ -162,7 +162,7 @@ class TestNarwhalsFunctions:
         MetaxyConfig.reset()
         # The function accepts the native DataFrame directly, thanks to @nw.narwhalify
         result_pl = truncate_string_column(df, "hash_column")
-        assert result_pl["hash_column"][0] == "a" * 64
+        assert result_pl["hash_column"][0] == "a" * 8
 
         # With truncation
         config = MetaxyConfig(hash_truncation_length=12)
@@ -192,7 +192,7 @@ class TestNarwhalsFunctions:
         # No truncation when config is None
         MetaxyConfig.reset()
         result_pl = truncate_struct_column(df, "metaxy_provenance_by_field")
-        assert result_pl["metaxy_provenance_by_field"][0]["field1"] == "a" * 64
+        assert result_pl["metaxy_provenance_by_field"][0]["field1"] == "a" * 8
 
         # With truncation
         config = MetaxyConfig(hash_truncation_length=16)
@@ -244,7 +244,7 @@ class TestFeatureVersionTruncation:
             pass
 
         version_full = TestFeature1.feature_version()
-        assert len(version_full) == 64  # SHA256 hex digest length
+        assert len(version_full) == 8  # SHA256 hex digest length
 
         # Enable truncation
         config = MetaxyConfig(hash_truncation_length=16)
@@ -273,10 +273,10 @@ class TestFeatureVersionTruncation:
             id_columns=["sample_uid"],
         )
 
-        # Without truncation - full 64 character SHA256 hex digest
-        MetaxyConfig.reset()
-        version_full = spec.feature_spec_version
-        assert len(version_full) == 64
+        # Without truncation - full 8 character SHA256 hex digest
+        with MetaxyConfig(hash_truncation_length=64).use():
+            version_full = spec.feature_spec_version
+            assert len(version_full) == 64
 
         # With truncation enabled
         config = MetaxyConfig(hash_truncation_length=16)
@@ -307,7 +307,7 @@ class TestFeatureVersionTruncation:
 
         # Get snapshot without truncation
         snapshot_full = graph.snapshot_version
-        assert len(snapshot_full) == 64
+        assert len(snapshot_full) == 8
 
         # Enable truncation
         config = MetaxyConfig(hash_truncation_length=12)
@@ -334,7 +334,7 @@ class TestFeatureVersionTruncation:
 
         # Get field versions without truncation
         provenance_full = TestFeature.provenance_by_field()
-        assert all(len(v) == 64 for v in provenance_full.values())
+        assert all(len(v) == 8 for v in provenance_full.values())
 
         # Enable truncation
         config = MetaxyConfig(hash_truncation_length=20)
@@ -374,15 +374,12 @@ root_path = "{delta_path}"
 
     def test_config_validation(self):
         """Test config validation for truncation length."""
-        with pytest.raises(ValueError, match="at least 8 characters"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to 8"):
             MetaxyConfig(hash_truncation_length=7)
 
         # Valid values should work
         config = MetaxyConfig(hash_truncation_length=8)
         assert config.hash_truncation_length == 8
-
-        config = MetaxyConfig(hash_truncation_length=None)
-        assert config.hash_truncation_length is None
 
     def test_environment_variable(self):
         """Test setting truncation via environment variable."""
@@ -406,7 +403,7 @@ class TestMetadataStoreTruncation:
         # Default truncation (64)
         MetaxyConfig.reset()
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
-            assert store.hash_truncation_length == 64
+            assert store.hash_truncation_length == 8
 
         # With global truncation
         config = MetaxyConfig(hash_truncation_length=16)

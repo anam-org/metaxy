@@ -115,7 +115,7 @@ def test_graph_snapshot_version_includes_all_projects(
     snapshot_version = graph.snapshot_version
 
     # Should be deterministic
-    assert len(snapshot_version) == 64  # SHA256 hex
+    assert len(snapshot_version) == 8  # SHA256 hex
     assert snapshot_version == snapshot
 
     # Verify it's based on all features

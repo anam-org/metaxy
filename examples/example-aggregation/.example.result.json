@@ -6,12 +6,12 @@
     "events": [
       {
         "type": "graph_pushed",
-        "snapshot_version": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
+        "snapshot_version": "a625ae19",
         "graph": {
           "audio": {
-            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "metaxy_feature_version": "3dac67c8",
             "fields": {
-              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+              "default": "80200592"
             },
             "feature_spec": {
               "key": "audio",
@@ -31,9 +31,9 @@
             }
           },
           "speaker/embedding": {
-            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "metaxy_feature_version": "a485fa5b",
             "fields": {
-              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+              "embedding": "27a15391"
             },
             "feature_spec": {
               "key": "speaker/embedding",
@@ -76,7 +76,7 @@
             }
           }
         },
-        "timestamp": "2026-02-02T08:18:27.037360",
+        "timestamp": "2026-02-02T11:18:16.436337",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -86,7 +86,7 @@
         "returncode": 0,
         "stdout": "Found 4 new audio recordings\nFound 2 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\n  Computing embedding for speaker s2 from 2 audio recordings\nWriting embeddings for 2 speakers\n",
         "stderr": "",
-        "timestamp": "2026-02-02T08:18:27.572773",
+        "timestamp": "2026-02-02T11:18:16.996892",
         "scenario_name": "Initial pipeline run",
         "step_name": "run_pipeline"
       },
@@ -96,18 +96,18 @@
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
         "stderr": "",
-        "timestamp": "2026-02-02T08:18:28.111342",
+        "timestamp": "2026-02-02T11:18:17.564475",
         "scenario_name": "Idempotent rerun",
         "step_name": null
       },
       {
         "type": "graph_pushed",
-        "snapshot_version": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
+        "snapshot_version": "a625ae19",
         "graph": {
           "audio": {
-            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "metaxy_feature_version": "3dac67c8",
             "fields": {
-              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+              "default": "80200592"
             },
             "feature_spec": {
               "key": "audio",
@@ -127,9 +127,9 @@
             }
           },
           "speaker/embedding": {
-            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "metaxy_feature_version": "a485fa5b",
             "fields": {
-              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+              "embedding": "27a15391"
             },
             "feature_spec": {
               "key": "speaker/embedding",
@@ -172,20 +172,20 @@
             }
           }
         },
-        "timestamp": "2026-02-02T08:18:28.735052",
+        "timestamp": "2026-02-02T11:18:18.198761",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
       {
         "type": "patch_applied",
         "patch_path": "patches/01_update_audio_provenance.patch",
-        "before_snapshot": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
-        "after_snapshot": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
+        "before_snapshot": "a625ae19",
+        "after_snapshot": "a625ae19",
         "before_graph": {
           "audio": {
-            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "metaxy_feature_version": "3dac67c8",
             "fields": {
-              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+              "default": "80200592"
             },
             "feature_spec": {
               "key": "audio",
@@ -205,9 +205,9 @@
             }
           },
           "speaker/embedding": {
-            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "metaxy_feature_version": "a485fa5b",
             "fields": {
-              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+              "embedding": "27a15391"
             },
             "feature_spec": {
               "key": "speaker/embedding",
@@ -252,9 +252,9 @@
         },
         "after_graph": {
           "audio": {
-            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "metaxy_feature_version": "3dac67c8",
             "fields": {
-              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+              "default": "80200592"
             },
             "feature_spec": {
               "key": "audio",
@@ -274,9 +274,9 @@
             }
           },
           "speaker/embedding": {
-            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "metaxy_feature_version": "a485fa5b",
             "fields": {
-              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+              "embedding": "27a15391"
             },
             "feature_spec": {
               "key": "speaker/embedding",
@@ -319,7 +319,7 @@
             }
           }
         },
-        "timestamp": "2026-02-02T08:18:28.742313",
+        "timestamp": "2026-02-02T11:18:18.206510",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -329,18 +329,18 @@
         "returncode": 0,
         "stdout": "Found 1 changed audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\nWriting embeddings for 1 speakers\n",
         "stderr": "",
-        "timestamp": "2026-02-02T08:18:29.328250",
+        "timestamp": "2026-02-02T11:18:18.752629",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
       {
         "type": "graph_pushed",
-        "snapshot_version": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
+        "snapshot_version": "a625ae19",
         "graph": {
           "audio": {
-            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "metaxy_feature_version": "3dac67c8",
             "fields": {
-              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+              "default": "80200592"
             },
             "feature_spec": {
               "key": "audio",
@@ -360,9 +360,9 @@
             }
           },
           "speaker/embedding": {
-            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "metaxy_feature_version": "a485fa5b",
             "fields": {
-              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+              "embedding": "27a15391"
             },
             "feature_spec": {
               "key": "speaker/embedding",
@@ -405,20 +405,20 @@
             }
           }
         },
-        "timestamp": "2026-02-02T08:18:29.950646",
+        "timestamp": "2026-02-02T11:18:19.356319",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
       {
         "type": "patch_applied",
         "patch_path": "patches/02_add_audio.patch",
-        "before_snapshot": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
-        "after_snapshot": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
+        "before_snapshot": "a625ae19",
+        "after_snapshot": "a625ae19",
         "before_graph": {
           "audio": {
-            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "metaxy_feature_version": "3dac67c8",
             "fields": {
-              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+              "default": "80200592"
             },
             "feature_spec": {
               "key": "audio",
@@ -438,9 +438,9 @@
             }
           },
           "speaker/embedding": {
-            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "metaxy_feature_version": "a485fa5b",
             "fields": {
-              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+              "embedding": "27a15391"
             },
             "feature_spec": {
               "key": "speaker/embedding",
@@ -485,9 +485,9 @@
         },
         "after_graph": {
           "audio": {
-            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "metaxy_feature_version": "3dac67c8",
             "fields": {
-              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+              "default": "80200592"
             },
             "feature_spec": {
               "key": "audio",
@@ -507,9 +507,9 @@
             }
           },
           "speaker/embedding": {
-            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "metaxy_feature_version": "a485fa5b",
             "fields": {
-              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+              "embedding": "27a15391"
             },
             "feature_spec": {
               "key": "speaker/embedding",
@@ -552,7 +552,7 @@
             }
           }
         },
-        "timestamp": "2026-02-02T08:18:29.957615",
+        "timestamp": "2026-02-02T11:18:19.363614",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -562,7 +562,7 @@
         "returncode": 0,
         "stdout": "Found 1 new audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 3 audio recordings\nWriting embeddings for 1 speakers\n",
         "stderr": "",
-        "timestamp": "2026-02-02T08:18:30.500858",
+        "timestamp": "2026-02-02T11:18:19.928572",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -572,7 +572,7 @@
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
         "stderr": "",
-        "timestamp": "2026-02-02T08:18:31.036675",
+        "timestamp": "2026-02-02T11:18:20.482621",
         "scenario_name": "Final idempotent check",
         "step_name": null
       }

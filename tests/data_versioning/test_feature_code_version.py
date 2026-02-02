@@ -37,8 +37,8 @@ def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:
     assert code_ver == SingleFieldFeature.spec().code_version
     assert code_ver == feature_instance.spec().code_version
 
-    # Should be 64 characters (SHA256 hex)
-    assert len(code_ver) == 64
+    # Should be 8 characters (SHA256 hex)
+    assert len(code_ver) == 8
 
     # Should be hex string
     assert all(c in "0123456789abcdef" for c in code_ver)
@@ -69,8 +69,8 @@ def test_code_version_multiple_fields(snapshot: SnapshotAssertion) -> None:
     feature_instance = MultiFieldFeature()
     code_ver = MultiFieldFeature.spec().code_version
 
-    # Should be 64 characters
-    assert len(code_ver) == 64
+    # Should be 8 characters
+    assert len(code_ver) == 8
 
     # Should be hex string
     assert all(c in "0123456789abcdef" for c in code_ver)
@@ -262,7 +262,7 @@ def test_code_version_no_dependencies_no_fields_edge_case() -> None:
     code_ver = MinimalFeature.spec().code_version
 
     # Should still produce a valid hash
-    assert len(code_ver) == 64
+    assert len(code_ver) == 8
     assert all(c in "0123456789abcdef" for c in code_ver)
 
 
@@ -428,7 +428,7 @@ def test_property_code_version_multiple_fields(num_fields: int) -> None:
         code_ver = TestFeature.spec().code_version
 
     # Should produce a valid hash
-    assert len(code_ver) == 64
+    assert len(code_ver) == 8
     assert all(c in "0123456789abcdef" for c in code_ver)
 
     # Should be deterministic

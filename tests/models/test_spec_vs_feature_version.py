@@ -28,8 +28,8 @@ def test_feature_spec_version_vs_feature_version() -> None:
     feature_version = TestFeature.feature_version()
 
     # Both should be valid SHA256 hashes
-    assert len(feature_spec_version) == 64
-    assert len(feature_version) == 64
+    assert len(feature_spec_version) == 8
+    assert len(feature_version) == 8
     assert all(c in "0123456789abcdef" for c in feature_spec_version)
     assert all(c in "0123456789abcdef" for c in feature_version)
 

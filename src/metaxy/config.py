@@ -409,14 +409,11 @@ class MetaxyConfig(BaseSettings):
         frozen=False,
     )
 
-    hash_truncation_length: int | None = PydanticField(
-        default=None,
-        description="Truncate hash values to this length (minimum 8 characters).",
-    )
+    hash_truncation_length: int = PydanticField(default=8, description="Truncate hash values to this length.", ge=8)
 
     auto_create_tables: bool = PydanticField(
         default=False,
-        description="Auto-create tables when opening stores (development/testing only). WARNING: Do not use in production. Use proper database migration tools like Alembic.",
+        description="Auto-create tables when opening stores. It is not advised to enable this setting in production.",
     )
 
     project: str | None = PydanticField(
@@ -508,14 +505,6 @@ class MetaxyConfig(BaseSettings):
             # Return default config if plugin not configured
             plugin = plugin_cls()
         return plugin
-
-    @field_validator("hash_truncation_length")
-    @classmethod
-    def validate_hash_truncation_length(cls, v: int | None) -> int | None:
-        """Validate hash truncation length is at least 8 if set."""
-        if v is not None and v < 8:
-            raise ValueError(f"hash_truncation_length must be at least 8 characters, got {v}")
-        return v
 
     @classmethod
     def settings_customise_sources(

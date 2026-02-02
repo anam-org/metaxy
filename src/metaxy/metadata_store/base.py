@@ -1029,7 +1029,7 @@ class MetadataStore(ABC):
 
     @property
     def hash_truncation_length(self) -> int:
-        return MetaxyConfig.get().hash_truncation_length or 64
+        return MetaxyConfig.get().hash_truncation_length
 
     @property
     def materialization_id(self) -> str | None:

@@ -260,7 +260,7 @@ def feature_metadata_strategy(
 
     # Create strategy that generates non-empty hash-like strings
     # Read hash truncation length from global config
-    hash_truncation_length = MetaxyConfig.get().hash_truncation_length or 64
+    hash_truncation_length = MetaxyConfig.get().hash_truncation_length
 
     # Generate fixed-length strings matching the truncation length
     hash_string_strategy = st.text(

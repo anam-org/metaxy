@@ -3,7 +3,7 @@
 from metaxy_testing import TempMetaxyProject
 
 
-def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
+def test_graph_push_first_time(metaxy_project: TempMetaxyProject, snapshot):
     """Test push records snapshot on first run."""
 
     def features():
@@ -26,10 +26,11 @@ def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
         assert result.returncode == 0
         assert "Recorded feature graph" in result.stderr
         # Snapshot version now only goes to stdout, not stderr
-        assert len(result.stdout.strip()) == 64  # Check hash is in stdout
+        assert len(result.stdout.strip()) == 8
+        assert result.stdout.strip() == snapshot
 
 
-def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
+def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject, snapshot):
     """Test push shows 'already recorded' on second run."""
 
     def features():
@@ -55,7 +56,8 @@ def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
         result2 = metaxy_project.run_cli(["push"])
         assert "already recorded" in result2.stderr
         # Snapshot version now only goes to stdout, not stderr
-        assert len(result2.stdout.strip()) == 64  # Check hash is in stdout
+        assert len(result2.stdout.strip()) == 8
+        assert result2.stdout.strip() == snapshot
 
 
 def test_graph_history_empty(metaxy_project: TempMetaxyProject):
@@ -846,7 +848,7 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
         assert result1.returncode == 0
         assert "Recorded feature graph" in result1.stderr
         # Snapshot version now only goes to stdout
-        assert len(result1.stdout.strip()) == 64
+        assert len(result1.stdout.strip()) == 8
 
     with metaxy_project.with_features(features_v2):
         result2 = metaxy_project.run_cli(["push"])
@@ -857,7 +859,7 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
         assert "downstream" in result2.stderr
 
         # Snapshot version should be in stdout
-        assert len(result2.stdout.strip()) == 64
+        assert len(result2.stdout.strip()) == 8
 
 
 def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
@@ -888,7 +890,7 @@ def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
         assert "already recorded" in result2.stderr
         assert "no changes" in result2.stderr
         # Snapshot version now only goes to stdout
-        assert len(result2.stdout.strip()) == 64
+        assert len(result2.stdout.strip()) == 8
 
 
 def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProject):
@@ -963,7 +965,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
         assert result1.returncode == 0
         assert "Recorded feature graph" in result1.stderr
         # Snapshot version now only goes to stdout
-        assert len(result1.stdout.strip()) == 64
+        assert len(result1.stdout.strip()) == 8
 
     # Scenario 2: Metadata change (columns doesn't affect feature_version)
     with metaxy_project.with_features(features_v2):

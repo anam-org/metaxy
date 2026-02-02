@@ -58,8 +58,8 @@ def test_feature_spec_version_exists_and_differs_from_feature_version():
 
     assert isinstance(feature_spec_version, str)
     assert isinstance(feature_version, str)
-    assert len(feature_spec_version) == 64  # SHA256 hex digest
-    assert len(feature_version) == 64  # SHA256 hex digest
+    assert len(feature_spec_version) == 8  # SHA256 hex digest
+    assert len(feature_version) == 8  # SHA256 hex digest
 
     # They are currently the same because SampleFeatureSpec has no non-computational properties yet
     # But architecturally they serve different purposes:
@@ -380,7 +380,7 @@ def test_snapshot_stores_both_versions(tmp_path: Path):
         assert "feature_class_path" in feature_data
 
         # Verify they're valid hashes
-        assert len(feature_data["metaxy_feature_version"]) == 64
+        assert len(feature_data["metaxy_feature_version"]) == 8
 
         # Check that they match graph methods
         assert feature_data["metaxy_feature_version"] == graph.get_feature_version(feature_key)

@@ -119,7 +119,7 @@ def test_hash_algorithm_produces_consistent_hashes(
 # ============= TEST: HASH TRUNCATION =============
 
 
-@pytest.mark.parametrize("truncation_length", [None, 8, 16, 32])
+@pytest.mark.parametrize("truncation_length", [8, 16, 32])
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 def test_hash_truncation(
     config_with_truncation,
