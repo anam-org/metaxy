@@ -104,6 +104,7 @@ def load_lock_file(config: MetaxyConfig) -> list[FeatureDefinition]:
     for locked_feature in lock_file.features.values():
         # Mark as external and add to graph
         locked_feature.data._is_external = True
+        locked_feature.data._source = "metaxy.lock"
         graph.add_feature_definition(locked_feature.data)
         definitions.append(locked_feature.data)
 

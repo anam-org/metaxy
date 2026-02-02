@@ -265,7 +265,7 @@ def _collect_feature_data(graph: FeatureGraph, feature_key: FeatureKey) -> dict[
         "version": version,
         "description": feature_spec.description,
         "is_external": definition.is_external,
-        "import_path": definition.feature_class_path,
+        "source": definition.source,
         "id_columns": list(feature_spec.id_columns),
         "fields": fields_info,
         "dependencies": deps_info,
@@ -294,15 +294,16 @@ def _output_single_feature(feature: dict[str, Any]) -> None:
     key = feature["key"]
     project = feature["project"]
     version = feature["version"][:8]
-    import_path = feature.get("import_path")
+    source = feature.get("source", "?")
     id_columns = feature.get("id_columns", [])
     external_marker = " [yellow](external)[/yellow]" if feature.get("is_external") else ""
 
-    # Compact header: key (version) project import_path
+    # Compact header: key (version) project
     header = f"[bold cyan]{key}[/bold cyan]{external_marker} [dim]({version})[/dim] [green]{project}[/green]"
-    if import_path:
-        header += f" [dim]{import_path}[/dim]"
     data_console.print(header)
+
+    # Source line
+    data_console.print(f"[bold]Source:[/bold] {source}")
 
     # Description block
     description = feature.get("description")

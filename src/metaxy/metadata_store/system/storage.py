@@ -944,12 +944,14 @@ class SystemTableStorage:
         """
         from metaxy.models.feature_definition import FeatureDefinition
 
+        source = self.store.display()
         return [
             FeatureDefinition.from_stored_data(
                 feature_spec=row["feature_spec"],
                 feature_schema=row["feature_schema"],
                 feature_class_path=row["feature_class_path"],
                 project=row["project"],
+                source=source,
             )
             for row in features_df.iter_rows(named=True)
         ]

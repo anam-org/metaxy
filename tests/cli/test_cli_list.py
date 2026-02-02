@@ -31,7 +31,7 @@ def test_list_features_basic(metaxy_project: TempMetaxyProject):
         assert "video/files" in result.stdout
         assert "Feature" in result.stdout  # Table header
         assert "Version" in result.stdout  # Table header
-        assert "Import Path" in result.stdout  # Table header
+        assert "Source" in result.stdout  # Table header
         assert "Total:" in result.stdout  # Summary
 
 
@@ -469,9 +469,9 @@ def test_list_features_json_includes_version(metaxy_project: TempMetaxyProject):
 
         assert len(full_version) == 8
 
-        # JSON should also include project and import_path
+        # JSON should also include project and source
         assert "project" in data["features"][0]
-        assert "import_path" in data["features"][0]
+        assert "source" in data["features"][0]
 
 
 def test_list_features_verbose_auto_field_mapping(metaxy_project: TempMetaxyProject):
@@ -705,7 +705,6 @@ def test_list_features_shows_external_features(metaxy_project: TempMetaxyProject
         assert result.returncode == 0
         assert "local/feature" in result.stdout
         assert "external/feature" in result.stdout
-        assert "<external>" in result.stdout  # Import path shows <external>
         # Summary should mention external count
         assert "1 external" in result.stdout
 
@@ -754,9 +753,9 @@ def test_list_features_external_json_format(metaxy_project: TempMetaxyProject):
         assert local_feature["is_external"] is False
         assert external_feature["is_external"] is True
 
-        # External feature should have None import_path
-        assert local_feature["import_path"] is not None
-        assert external_feature["import_path"] is None
+        # Both should have source
+        assert local_feature["source"] is not None
+        assert external_feature["source"] is not None
 
 
 def test_list_features_external_verbose(metaxy_project: TempMetaxyProject):
@@ -793,6 +792,4 @@ def test_list_features_external_verbose(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         result = metaxy_project.run_cli(["list", "features", "--verbose"])
         assert result.returncode == 0
-        # External marker should be visible in verbose output
-        assert "<external>" in result.stdout  # Import path shows <external>
         assert "external/feature" in result.stdout

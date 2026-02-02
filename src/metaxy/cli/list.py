@@ -67,8 +67,8 @@ def features(
         # Determine if it's a root feature (no deps)
         is_root = not feature_spec.deps
 
-        # Get import path from definition
-        import_path = definition.feature_class_path
+        # Get source from definition
+        source = definition.source
 
         # Get the feature plan for resolved field dependencies
         feature_plan = graph.get_feature_plan(feature_key) if verbose else None
@@ -106,7 +106,7 @@ def features(
             "is_root": is_root,
             "is_external": definition.is_external,
             "project": definition.project,
-            "import_path": import_path,
+            "source": source,
             "field_count": len(fields_info),
             "fields": fields_info,
         }
@@ -151,33 +151,28 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
         )
         table.add_column("Feature", no_wrap=True)
         table.add_column("Version", no_wrap=True)
-        table.add_column("Import Path", no_wrap=True)
+        table.add_column("Source", no_wrap=True)
 
         if verbose:
             table.add_column("Dependencies")
 
         for feature in project_features:
             feature_key_display = feature["key"]
-
-            # Show import path or <external> marker
-            if feature["is_external"]:
-                import_path_display = "[dim]<external>[/dim]"
-            else:
-                import_path_display = feature["import_path"] or "[dim]-[/dim]"
+            source_display = feature["source"]
 
             if verbose:
                 deps_display = ", ".join(feature.get("deps", [])) or "-"
                 table.add_row(
                     feature_key_display,
                     feature["version"],
-                    import_path_display,
+                    source_display,
                     deps_display,
                 )
             else:
                 table.add_row(
                     feature_key_display,
                     feature["version"],
-                    import_path_display,
+                    source_display,
                 )
 
         data_console.print(table)
@@ -196,12 +191,8 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
     if verbose:
         data_console.print()
         for feature in features_data:
-            if feature["is_external"]:
-                import_path = "[dim]<external>[/dim]"
-            else:
-                import_path = feature["import_path"] or "-"
             data_console.print(
-                f"[bold cyan]{feature['key']}[/bold cyan] [dim]({feature['project']})[/dim] {import_path}"
+                f"[bold cyan]{feature['key']}[/bold cyan] [dim]({feature['project']})[/dim] {feature['source']}"
             )
 
             field_table = Table(show_header=True, header_style="bold dim")

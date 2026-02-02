@@ -613,6 +613,7 @@ class FeatureGraph:
                 feature_schema=feature_data["feature_schema"],
                 feature_class_path=feature_data["feature_class_path"],
                 project=feature_data["project"],
+                source="snapshot",
             )
             graph.add_feature_definition(definition)
 

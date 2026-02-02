@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import warnings
 from collections.abc import Sequence
@@ -57,6 +58,7 @@ class FeatureDefinition(FrozenBaseModel):
     _is_external: bool = PrivateAttr(default=False)
     _provenance_by_field: dict[str, str] | None = PrivateAttr(default=None)
     _on_version_mismatch: Literal["warn", "error"] = PrivateAttr(default="warn")
+    _source: str | None = PrivateAttr(default=None)
 
     @classmethod
     def from_feature_class(cls, feature_cls: type[BaseFeature]) -> FeatureDefinition:
@@ -87,6 +89,7 @@ class FeatureDefinition(FrozenBaseModel):
         feature_schema: dict[str, Any] | str,
         feature_class_path: str,
         project: str,
+        source: str | None = None,
     ) -> FeatureDefinition:
         """Create a FeatureDefinition from stored data.
 
@@ -97,6 +100,7 @@ class FeatureDefinition(FrozenBaseModel):
             feature_schema: Pydantic JSON schema as dict or JSON string.
             feature_class_path: Python import path of the feature class.
             project: The metaxy project name.
+            source: Human-readable string describing where this definition came from.
 
         Returns:
             A new FeatureDefinition instance.
@@ -109,12 +113,46 @@ class FeatureDefinition(FrozenBaseModel):
             feature_schema = json.loads(feature_schema)
 
         spec = FeatureSpec.model_validate(feature_spec)
-        return cls(
+        definition = cls(
             spec=spec,
             feature_schema=feature_schema,
             feature_class_path=feature_class_path,
             project=project,
         )
+        definition._source = source
+        return definition
+
+    @staticmethod
+    def _capture_call_site() -> str:
+        """Capture the call site location for external feature definitions.
+
+        Returns a string like "mymodule.submodule:MyClass.method" or
+        "mymodule.submodule:top_level_function" or "mymodule.submodule" for
+        module-level calls.
+        """
+        # Walk up the stack to find the first frame outside this module
+        for frame_info in inspect.stack():
+            if frame_info.filename != __file__:
+                module = inspect.getmodule(frame_info.frame)
+                module_name = module.__name__ if module else frame_info.filename
+                func_name = frame_info.function
+
+                # Try to get class context if we're in a method
+                local_vars = frame_info.frame.f_locals
+                if "self" in local_vars:
+                    class_name = type(local_vars["self"]).__name__
+                    return f"{module_name}:{class_name}.{func_name}"
+                elif "cls" in local_vars:
+                    cls_obj = local_vars["cls"]
+                    if isinstance(cls_obj, type):
+                        return f"{module_name}:{cls_obj.__name__}.{func_name}"
+
+                # Module-level or function-level call
+                if func_name == "<module>":
+                    return module_name
+                return f"{module_name}:{func_name}"
+
+        return "?"
 
     @classmethod
     def external(
@@ -125,6 +163,7 @@ class FeatureDefinition(FrozenBaseModel):
         feature_schema: dict[str, Any] | None = None,
         provenance_by_field: dict[CoercibleToFieldKey, str] | None = None,
         on_version_mismatch: Literal["warn", "error"] = "warn",
+        source: str | None = None,
     ) -> FeatureDefinition:
         """Create an external FeatureDefinition without a Feature class.
 
@@ -143,6 +182,8 @@ class FeatureDefinition(FrozenBaseModel):
                 Make sure to provide the actual values from the real external feature.
             on_version_mismatch: How to handle a version mismatch if the actual feature loaded from the
                 metadata store has a different version than the version specified in the corresponding external feature.
+            source: Human-readable string describing where this definition came from.
+                If not provided, captures the call site location automatically.
 
         Returns:
             A new FeatureDefinition marked as external.
@@ -153,6 +194,10 @@ class FeatureDefinition(FrozenBaseModel):
                 ValidatedFieldKeyAdapter.validate_python(k).to_string(): v for k, v in provenance_by_field.items()
             }
 
+        # Capture call site location if source is not provided
+        if source is None:
+            source = cls._capture_call_site()
+
         definition = cls(
             spec=spec,
             feature_schema=feature_schema or {},
@@ -162,6 +207,7 @@ class FeatureDefinition(FrozenBaseModel):
         definition._is_external = True
         definition._provenance_by_field = normalized_provenance
         definition._on_version_mismatch = on_version_mismatch
+        definition._source = source
         return definition
 
     def _get_feature_class(self) -> type[BaseFeature]:
@@ -279,6 +325,11 @@ class FeatureDefinition(FrozenBaseModel):
     def on_version_mismatch(self) -> Literal["warn", "error"]:
         """What to do when actual feature version differs from expected."""
         return self._on_version_mismatch
+
+    @property
+    def source(self) -> str:
+        """Human-readable string describing where this definition came from."""
+        return self._source or self.feature_class_path or "?"
 
     def check_version_mismatch(
         self,

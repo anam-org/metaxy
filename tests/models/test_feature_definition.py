@@ -542,3 +542,92 @@ class TestOnVersionMismatch:
         assert "field_a" in warning_message
         assert "hash_a1" in warning_message
         assert "hash_a2" in warning_message
+
+
+class TestSourceProperty:
+    """Tests for the source property that tracks where a definition came from."""
+
+    def test_source_returns_explicit_source_when_set(self):
+        """source property returns explicit _source when set."""
+        import metaxy as mx
+
+        spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["test", "explicit_source"]),
+            id_columns=["id"],
+        )
+        definition = mx.FeatureDefinition.external(
+            spec=spec,
+            project="proj",
+            source="my-custom-source",
+        )
+        assert definition.source == "my-custom-source"
+
+    def test_source_returns_feature_class_path_when_no_explicit_source(self):
+        """source property returns feature_class_path when _source is not set."""
+        import metaxy as mx
+
+        spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["test", "class_path_source"]),
+            id_columns=["id"],
+            fields=[mx.FieldSpec(key=mx.FieldKey(["default"]))],
+        )
+        definition = mx.FeatureDefinition(
+            spec=spec,
+            feature_schema={},
+            feature_class_path="mypackage.features.MyFeature",
+            project="proj",
+        )
+        assert definition.source == "mypackage.features.MyFeature"
+
+    def test_source_returns_question_mark_when_nothing_available(self):
+        """source property returns '?' when neither _source nor feature_class_path is set."""
+        import metaxy as mx
+
+        spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["test", "no_source"]),
+            id_columns=["id"],
+        )
+        # Create definition directly without using external() to bypass auto-capture
+        definition = mx.FeatureDefinition(
+            spec=spec,
+            feature_schema={},
+            feature_class_path=None,
+            project="proj",
+        )
+        assert definition.source == "?"
+
+    def test_external_captures_call_site_when_source_not_provided(self):
+        """external() captures call site location when source is not provided."""
+        import metaxy as mx
+
+        spec = mx.FeatureSpec(
+            key=mx.FeatureKey(["test", "auto_capture"]),
+            id_columns=["id"],
+        )
+        # The source should include this test file and function name
+        definition = mx.FeatureDefinition.external(
+            spec=spec,
+            project="proj",
+        )
+        # The source should contain the current module and function name
+        assert "test_feature_definition" in definition.source
+        assert "test_external_captures_call_site_when_source_not_provided" in definition.source
+
+    def test_from_stored_data_accepts_source_parameter(self):
+        """from_stored_data() accepts source parameter."""
+        import metaxy as mx
+
+        spec_dict = {
+            "key": ["test", "stored_source"],
+            "id_columns": ["id"],
+        }
+        schema_dict = {"type": "object", "properties": {"id": {"type": "string"}}}
+
+        definition = mx.FeatureDefinition.from_stored_data(
+            feature_spec=spec_dict,
+            feature_schema=schema_dict,
+            feature_class_path="pkg.Cls",
+            project="proj",
+            source="DuckDBMetadataStore(database=/path/to/db)",
+        )
+        assert definition.source == "DuckDBMetadataStore(database=/path/to/db)"

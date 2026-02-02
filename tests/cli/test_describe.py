@@ -35,6 +35,8 @@ class TestDescribeFeature:
             # Check key elements are present
             assert "test/my_feature" in output
             assert "test" in output  # Project name
+            assert "Source:" in output
+            assert "MyFeature" in output  # Class name in source
             assert "A test feature for validation" in output
             assert "Fields:" in output
             assert "default" in output
@@ -67,6 +69,8 @@ class TestDescribeFeature:
             assert data["key"] == "test/json_feature"
             assert data["description"] == "JSON test description."
             assert data["project"] == "test"
+            assert "source" in data
+            assert "JsonFeature" in data["source"]  # Class name in source
             assert len(data["fields"]) == 1
             assert data["fields"][0]["key"] == "field1"
             assert data["fields"][0]["code_version"] == "v1"

@@ -1164,7 +1164,7 @@ def test_sync_flag_loads_external_features(metaxy_project: TempMetaxyProject):
 
     # Now run with downstream features that have an external placeholder
     with metaxy_project.with_features(downstream_features):
-        # WITHOUT --sync: external feature remains unresolved (shows <external>)
+        # WITHOUT --sync: external feature is present as a placeholder from metaxy.lock
         # Use --all-projects to see the external feature which has a different project
         # Disable auto-sync via METAXY_SYNC=false to test the explicit --sync flag
         result_no_sync = metaxy_project.run_cli(
@@ -1172,14 +1172,18 @@ def test_sync_flag_loads_external_features(metaxy_project: TempMetaxyProject):
             env={"METAXY_SYNC": "false"},
         )
         assert result_no_sync.returncode == 0
-        assert "<external>" in result_no_sync.stdout  # External feature not resolved
+        assert "external/upstream" in result_no_sync.stdout
+        assert "local/downstream" in result_no_sync.stdout
+        # External feature should not show store source (not synced yet)
+        assert "DuckDBMetadataStore" not in result_no_sync.stdout
 
-        # WITH --sync: external feature should be loaded from store (no <external>)
+        # WITH --sync: external feature should be loaded from store
         result_sync = metaxy_project.run_cli(["--all-projects", "--sync", "list", "features"])
         assert result_sync.returncode == 0
-        assert "<external>" not in result_sync.stdout  # External feature resolved
-        assert "external/upstream" in result_sync.stdout  # Feature is present
+        assert "external/upstream" in result_sync.stdout
         assert "local/downstream" in result_sync.stdout
+        # External feature should show metadata store source after sync
+        assert "DuckDBMetadataStore" in result_sync.stdout
 
 
 def test_sync_flag_warns_on_version_mismatch(metaxy_project: TempMetaxyProject):
