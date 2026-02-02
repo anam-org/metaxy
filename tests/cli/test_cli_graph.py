@@ -160,7 +160,7 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "describe"])
+        result = metaxy_project.run_cli(["describe", "graph"])
 
         assert result.returncode == 0
         assert "Describing current graph from code" in result.stderr
@@ -224,7 +224,7 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
     # Load both feature modules
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli(["graph", "describe"])
+            result = metaxy_project.run_cli(["describe", "graph"])
 
             assert result.returncode == 0
             assert "Total Features" in result.stderr
@@ -262,7 +262,7 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
         assert snapshot_version, f"Could not find snapshot version in push output. Output: {push_result.stdout}"
 
         # Describe specific snapshot
-        result = metaxy_project.run_cli(["graph", "describe", "--snapshot", snapshot_version])
+        result = metaxy_project.run_cli(["describe", "graph", "--snapshot", snapshot_version])
 
         assert result.returncode == 0
         # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
@@ -338,12 +338,12 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
         assert "2" in history_result.stderr  # 2 features
 
         # Step 3: Describe should show current graph
-        describe_result = metaxy_project.run_cli(["graph", "describe"])
+        describe_result = metaxy_project.run_cli(["describe", "graph"])
         assert "Total Features" in describe_result.stderr
         assert "2" in describe_result.stderr
 
         # Step 4: Describe historical snapshot
-        describe_historical = metaxy_project.run_cli(["graph", "describe", "--snapshot", snapshot_version])
+        describe_historical = metaxy_project.run_cli(["describe", "graph", "--snapshot", snapshot_version])
         # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
         assert "Describing snapshot" in describe_historical.stderr
         assert snapshot_version in describe_historical.stderr
@@ -1239,7 +1239,7 @@ def test_sync_flag_warns_on_version_mismatch(metaxy_project: TempMetaxyProject):
         # With --sync, should warn about version mismatch
         # Disable auto-sync via METAXY_SYNC=false to ensure --sync flag triggers the sync
         result = metaxy_project.run_cli(
-            ["--sync", "graph", "describe"],
+            ["--sync", "describe", "graph"],
             env={"METAXY_SYNC": "false"},
         )
         assert result.returncode == 0
@@ -1307,7 +1307,7 @@ def test_locked_flag_errors_on_version_mismatch(metaxy_project: TempMetaxyProjec
         # With --sync --locked, should fail due to version mismatch
         # Disable auto-sync via METAXY_SYNC=false to ensure --sync flag triggers the sync
         result = metaxy_project.run_cli(
-            ["--sync", "--locked", "graph", "describe"],
+            ["--sync", "--locked", "describe", "graph"],
             check=False,
             env={"METAXY_SYNC": "false"},
         )
@@ -1340,5 +1340,5 @@ def test_locked_flag_succeeds_when_versions_match(metaxy_project: TempMetaxyProj
     # Now run with --sync --locked when there's nothing to mismatch
     # (no external features with wrong versions)
     with metaxy_project.with_features(upstream_features):
-        result = metaxy_project.run_cli(["--sync", "--locked", "graph", "describe"])
+        result = metaxy_project.run_cli(["--sync", "--locked", "describe", "graph"])
         assert result.returncode == 0

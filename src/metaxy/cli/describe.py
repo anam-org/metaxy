@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING, Annotated, Any
 
 import cyclopts
+from rich.table import Table
 
 from metaxy.cli.console import console, data_console, error_console
 from metaxy.cli.utils import FeatureSelector, OutputFormat
@@ -21,6 +22,145 @@ app = cyclopts.App(
     console=console,
     error_console=error_console,
 )
+
+
+@app.command()
+def graph(
+    snapshot: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--snapshot"],
+            help="Snapshot version to describe (defaults to current graph from code)",
+        ),
+    ] = None,
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--store"],
+            help="Metadata store to use (defaults to configured default store)",
+        ),
+    ] = None,
+):
+    """Describe a graph snapshot.
+
+    Shows detailed information about a graph snapshot including:
+    - Feature count (optionally filtered by project)
+    - Graph depth (longest dependency chain)
+    - Root features (features with no dependencies)
+    - Leaf features (features with no dependents)
+    - Project breakdown (if there some features are defined in different projects)
+
+    Example:
+        $ metaxy describe graph
+
+        Graph Snapshot: abc123def456...
+        ┌─────────────────────┬────────┐
+        │ Metric              │ Value  │
+        ├─────────────────────┼────────┤
+        │ Feature Count       │ 42     │
+        │ Graph Depth         │ 5      │
+        │ Root Features       │ 8      │
+        │ Leaf Features       │ 12     │
+        └─────────────────────┴────────┘
+
+        Root Features:
+        • user__profile
+        • transaction__history
+        ...
+    """
+    from metaxy.cli.context import AppContext
+    from metaxy.graph.describe import describe_graph
+    from metaxy.models.feature import FeatureGraph
+
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+
+    with metadata_store:
+        # Determine which snapshot to describe
+        if snapshot is None:
+            # Use current graph from code
+            feature_graph = FeatureGraph.get_active()
+            snapshot_version = feature_graph.snapshot_version
+            console.print("[cyan]Describing current graph from code[/cyan]")
+        else:
+            # Use specified snapshot
+            snapshot_version = snapshot
+            console.print(f"[cyan]Describing snapshot: {snapshot_version}[/cyan]")
+
+            # Load graph from snapshot
+            from metaxy.metadata_store.system.storage import SystemTableStorage
+
+            storage = SystemTableStorage(metadata_store)
+            features_df = storage.read_features(
+                current=False,
+                snapshot_version=snapshot_version,
+                project=context.project,
+            )
+
+            if features_df.height == 0:
+                console.print(f"[red]✗[/red] No features found for snapshot {snapshot_version}")
+                if context.project:
+                    console.print(f"  (filtered by project: {context.project})")
+                return
+
+            # For historical snapshots, we'll use the current graph structure
+            # but report on the features that were in that snapshot
+            feature_graph = FeatureGraph.get_active()
+
+        # Get graph description with optional project filter
+        info = describe_graph(feature_graph, project=context.project)
+
+        # Display summary table
+        console.print()
+        table_title = f"Graph Snapshot: {info['metaxy_snapshot_version']}"
+        if context.project:
+            table_title += f" (Project: {context.project})"
+
+        summary_table = Table(title=table_title)
+        summary_table.add_column("Metric", style="cyan", no_wrap=False)
+        summary_table.add_column("Value", style="yellow", justify="right", no_wrap=False)
+
+        # Only show filtered view if filtering actually reduces the feature count
+        if "filtered_features" in info and info["filtered_features"] < info["total_features"]:
+            # Show both total and filtered counts when there's actual filtering
+            summary_table.add_row("Total Features", str(info["total_features"]))
+            summary_table.add_row(f"Features in {info['filter_project']}", str(info["filtered_features"]))
+        else:
+            # Show simple count when no filtering or all features are in the project
+            if "filtered_features" in info:
+                # Use filtered count if available (all features are in the project)
+                summary_table.add_row("Total Features", str(info["filtered_features"]))
+            else:
+                # Use total count
+                summary_table.add_row("Total Features", str(info["total_features"]))
+
+        summary_table.add_row("Graph Depth", str(info["graph_depth"]))
+        summary_table.add_row("Root Features", str(len(info["root_features"])))
+        summary_table.add_row("Leaf Features", str(len(info["leaf_features"])))
+
+        console.print(summary_table)
+
+        # Display project breakdown if multi-project
+        if len(info["projects"]) > 1:
+            console.print("\n[bold]Features by Project:[/bold]")
+            for proj, count in sorted(info["projects"].items()):
+                console.print(f"  • {proj}: {count} features")
+
+        # Display root features
+        if info["root_features"]:
+            console.print("\n[bold]Root Features:[/bold]")
+            for feature_key_str in info["root_features"][:10]:  # Limit to 10
+                console.print(f"  • {feature_key_str}")
+            if len(info["root_features"]) > 10:
+                console.print(f"  ... and {len(info['root_features']) - 10} more")
+
+        # Display leaf features
+        if info["leaf_features"]:
+            console.print("\n[bold]Leaf Features:[/bold]")
+            for feature_key_str in info["leaf_features"][:10]:  # Limit to 10
+                console.print(f"  • {feature_key_str}")
+            if len(info["leaf_features"]) > 10:
+                console.print(f"  ... and {len(info['leaf_features']) - 10} more")
 
 
 @app.command()
