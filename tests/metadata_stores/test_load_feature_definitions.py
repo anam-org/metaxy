@@ -1052,3 +1052,179 @@ def test_sync_external_features_on_version_mismatch_override_to_warn(tmp_path: P
 
         # Feature should still be loaded
         assert new_graph.get_feature_definition(["override_to_warn"]).is_external is False
+
+
+def test_sync_external_features_config_features_loaded_from_store(tmp_path: Path):
+    """Test that features specified in config.features are loaded from store."""
+    from metaxy.config import MetaxyConfig
+
+    # First, save a feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class ConfigFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["config_test", "feature_a"]),
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create a new graph with config.features set
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        config = MetaxyConfig(features=["config_test/feature_a"])
+        with config.use():
+            # Graph has no external features
+            assert not new_graph.has_external_features
+
+            # Sync should still load the config feature
+            store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+            result = sync_external_features(store)
+
+            # Feature should be loaded
+            assert len(result) == 1
+            assert result[0].key == FeatureKey(["config_test", "feature_a"])
+            assert FeatureKey(["config_test", "feature_a"]) in new_graph.feature_definitions_by_key
+
+
+def test_sync_external_features_config_features_missing_warns(tmp_path: Path):
+    """Test that missing config features warn and skip."""
+    import pytest
+
+    from metaxy._warnings import UnresolvedExternalFeatureWarning
+    from metaxy.config import MetaxyConfig
+
+    # Create an empty store
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        config = MetaxyConfig(features=["nonexistent/feature"])
+        with config.use():
+            # Sync should warn about missing config feature
+            with pytest.warns(UnresolvedExternalFeatureWarning, match="Config feature.*not found"):
+                store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+                result = sync_external_features(store)
+
+            # No features loaded
+            assert result == []
+
+
+def test_sync_external_features_config_features_with_no_external_features(tmp_path: Path):
+    """Test that config features work when graph has no external features."""
+    from metaxy.config import MetaxyConfig
+
+    # First, save a feature to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class StoredFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["stored_feature"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create a new graph with only config features (no external features in graph)
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        # Define a local feature that does NOT depend on stored_feature
+        class LocalFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["local_feature"]),
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        config = MetaxyConfig(features=["stored_feature"])
+        with config.use():
+            # Graph has no external features
+            assert not new_graph.has_external_features
+
+            # Sync should load the config feature
+            store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+            result = sync_external_features(store)
+
+            # Feature should be loaded
+            assert len(result) == 1
+            assert result[0].key == FeatureKey(["stored_feature"])
+
+
+def test_sync_external_features_config_features_combined_with_external(tmp_path: Path):
+    """Test that config features are combined with external features from graph."""
+    from metaxy.config import MetaxyConfig
+
+    # First, save two features to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class FeatureA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["combined", "feature_a"]),
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class FeatureB(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["combined", "feature_b"]),
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Create a new graph with one external feature and one config feature
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        # Add external feature placeholder for feature_a
+        external_a = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["combined", "feature_a"]),
+                fields=[FieldSpec(key=FieldKey(["value"]))],
+            ),
+            feature_schema={},
+            project="placeholder",
+        )
+        new_graph.add_feature_definition(external_a)
+
+        # Config specifies feature_b
+        config = MetaxyConfig(features=["combined/feature_b"])
+        with config.use():
+            # Graph has external feature
+            assert new_graph.has_external_features
+
+            # Sync should load both features
+            store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
+            result = sync_external_features(store)
+
+            # Both features should be loaded
+            assert len(result) == 2
+            loaded_keys = {d.key for d in result}
+            assert FeatureKey(["combined", "feature_a"]) in loaded_keys
+            assert FeatureKey(["combined", "feature_b"]) in loaded_keys
+
+            # Both should be in the graph
+            assert FeatureKey(["combined", "feature_a"]) in new_graph.feature_definitions_by_key
+            assert FeatureKey(["combined", "feature_b"]) in new_graph.feature_definitions_by_key
+
+            # External feature should no longer be external
+            assert not new_graph.get_feature_definition(["combined", "feature_a"]).is_external

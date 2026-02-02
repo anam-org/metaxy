@@ -431,6 +431,11 @@ class MetaxyConfig(BaseSettings):
         description="Whether to automatically [sync external feature definitions][metaxy.sync_external_features] from the metadata during some operations. It's recommended to keep this enabled as it ensures versioning correctness for external feature definitions with a negligible performance impact.",
     )
 
+    features: list[str] = PydanticField(
+        default_factory=list,
+        description="List of feature keys to load from the metadata store during sync_external_features.",
+    )
+
     # Private attribute to track which config file was used (set by load())
     _config_file: Path | None = PrivateAttr(default=None)
 
