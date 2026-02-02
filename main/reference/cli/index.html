@@ -3133,34 +3133,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy-graph-diff" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        metaxy graph-diff
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="metaxy graph-diff">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#metaxy-graph-diff-render" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        metaxy graph-diff render
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#metaxy-list" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3265,6 +3237,17 @@
     <span class="md-ellipsis">
       
         metaxy push
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metaxy-lock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy lock
       
     </span>
   </a>
@@ -3442,34 +3425,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy-graph-diff" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        metaxy graph-diff
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="metaxy graph-diff">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#metaxy-graph-diff-render" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        metaxy graph-diff render
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#metaxy-list" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3580,6 +3535,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#metaxy-lock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy lock
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3635,10 +3601,6 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><a href="#metaxy-graph-render"><code>render</code></a></li>
 </ul>
 </li>
-<li><a href="#metaxy-graph-diff"><code>graph-diff</code></a><ul>
-<li><a href="#metaxy-graph-diff-render"><code>render</code></a></li>
-</ul>
-</li>
 <li><a href="#metaxy-list"><code>list</code></a><ul>
 <li><a href="#metaxy-list-features"><code>features</code></a></li>
 <li><a href="#metaxy-list-stores"><code>stores</code></a></li>
@@ -3652,16 +3614,17 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 </li>
 <li><a href="#metaxy-mcp"><code>mcp</code></a></li>
 <li><a href="#metaxy-push"><code>push</code></a></li>
+<li><a href="#metaxy-lock"><code>lock</code></a></li>
 </ul>
 <p><strong>Commands</strong>:</p>
 <ul>
 <li><a href="#metaxy-config"><code>config</code></a>: Manage Metaxy configuration</li>
 <li><a href="#metaxy-describe"><code>describe</code></a>: Describe Metaxy entities in detail</li>
 <li><a href="#metaxy-graph"><code>graph</code></a>: Manage feature graphs</li>
-<li><a href="#metaxy-graph-diff"><code>graph-diff</code></a>: Compare and visualize graph snapshots</li>
 <li><a href="#metaxy-list"><code>list</code></a>: List Metaxy entities</li>
+<li><a href="#metaxy-lock"><code>lock</code></a>: Generate <code>metaxy.lock</code> file with external feature definitions fetched from the metadata store.</li>
 <li><a href="#metaxy-mcp"><code>mcp</code></a>: MCP (Model Context Protocol) server commands.</li>
-<li><a href="#metaxy-metadata"><code>metadata</code></a>: Manage Metaxy metadata</li>
+<li><a href="#metaxy-metadata"><code>metadata</code></a>: Manage Metaxy metadata in metadata stores.</li>
 <li><a href="#metaxy-push"><code>push</code></a>: Push feature definitions to the metadata store</li>
 <li><a href="#metaxy-shell"><code>shell</code></a>: Start interactive shell.</li>
 </ul>
@@ -3794,53 +3757,6 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>--show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: True]</em></li>
 <li><code>--title</code>: Custom title for the graph. Defaults to 'Feature Graph' or 'Feature Graph Changes' for diffs.</li>
 </ul>
-<h2 id="metaxy-graph-diff">metaxy graph-diff<a class="headerlink" href="#metaxy-graph-diff" title="Permanent link">&para;</a></h2>
-<p>Compare and visualize graph snapshots</p>
-<p><strong>Parameters</strong>:</p>
-<ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
-</ul>
-<h3 id="metaxy-graph-diff-render">metaxy graph-diff render<a class="headerlink" href="#metaxy-graph-diff-render" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">metaxy graph-diff render [OPTIONS] FROM-SNAPSHOT [ARGS]</span>
-</span></code></pre></div>
-<p>Render merged graph visualization comparing two snapshots.</p>
-<p>Shows all features color-coded by status (added/removed/changed/unchanged).
-Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
-<p>Special snapshot literals:
-- "latest": Most recent snapshot in the store
-- "current": Current graph state from code</p>
-<p>Output formats:
-- terminal: Hierarchical tree view (default)
-- cards: Panel/card-based view
-- mermaid: Mermaid flowchart diagram
-- graphviz: Graphviz DOT format</p>
-<p><strong>Parameters</strong>:</p>
-<ul>
-<li><code>FROM-SNAPSHOT, --from-snapshot</code>: First snapshot to compare (can be "latest", "current", or snapshot hash)  <strong>[required]</strong></li>
-<li><code>TO-SNAPSHOT, --to-snapshot</code>: Second snapshot to compare (can be "latest", "current", or snapshot hash)  <em>[default: current]</em></li>
-<li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
-<li><code>--format, -f</code>: Output format: terminal, cards, mermaid, graphviz, json, or yaml  <em>[choices: terminal, cards, mermaid, graphviz, json, yaml]</em>  <em>[default: terminal]</em></li>
-<li><code>--output, -o</code>: Output file path (default: stdout)</li>
-<li><code>--minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: False]</em></li>
-<li><code>--verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: False]</em></li>
-<li><code>--show-fields, --no-show-fields</code>: Show field-level details within features  <em>[default: True]</em></li>
-<li><code>--show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: True]</em></li>
-<li><code>--show-field-versions, --no-show-field-versions</code>: Show field version hashes (requires --show-fields)  <em>[default: True]</em></li>
-<li><code>--show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: False]</em></li>
-<li><code>--show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: True]</em></li>
-<li><code>--hash-length</code>: Number of characters to show for version hashes (0 for full)  <em>[default: 8]</em></li>
-<li><code>--direction</code>: Graph layout direction: TB (top-bottom) or LR (left-right)  <em>[default: TB]</em></li>
-<li><code>--feature</code>: Focus on a specific feature (e.g., 'video/files' or 'video__files')</li>
-<li><code>--up</code>: Number of dependency levels to render upstream (default: all)</li>
-<li><code>--down</code>: Number of dependency levels to render downstream (default: all)</li>
-<li><code>--project</code>: Filter nodes by project (show only features from this project)</li>
-<li><code>--show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: True]</em></li>
-<li><code>--title</code>: Custom title for the graph. Defaults to 'Feature Graph' or 'Feature Graph Changes' for diffs.</li>
-</ul>
 <h2 id="metaxy-list">metaxy list<a class="headerlink" href="#metaxy-list" title="Permanent link">&para;</a></h2>
 <p>List Metaxy entities</p>
 <p><strong>Parameters</strong>:</p>
@@ -3852,7 +3768,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-list-features">metaxy list features<a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="go">metaxy list features [OPTIONS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">metaxy list features [OPTIONS]</span>
 </span></code></pre></div>
 <p>List Metaxy features in the current project.</p>
 <p><strong>Parameters</strong>:</p>
@@ -3861,7 +3777,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--format, -f</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h3 id="metaxy-list-stores">metaxy list stores<a class="headerlink" href="#metaxy-list-stores" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="go">metaxy list stores [OPTIONS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="go">metaxy list stores [OPTIONS]</span>
 </span></code></pre></div>
 <p>List configured metadata stores.</p>
 <p><strong>Parameters</strong>:</p>
@@ -3869,7 +3785,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--format, -f</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h2 id="metaxy-metadata">metaxy metadata<a class="headerlink" href="#metaxy-metadata" title="Permanent link">&para;</a></h2>
-<p>Manage Metaxy metadata</p>
+<p>Manage Metaxy metadata in metadata stores.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
@@ -3879,7 +3795,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-metadata-status">metaxy metadata status<a class="headerlink" href="#metaxy-metadata-status" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="go">metaxy metadata status [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="go">metaxy metadata status [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Check metadata completeness and freshness for specified features.</p>
 <p><strong>Parameters</strong>:</p>
@@ -3897,7 +3813,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--format</code>:   <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h3 id="metaxy-metadata-delete">metaxy metadata delete<a class="headerlink" href="#metaxy-metadata-delete" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">metaxy metadata delete [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="go">metaxy metadata delete [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Delete metadata rows matching filters.</p>
 <p><strong>Parameters</strong>:</p>
@@ -3912,7 +3828,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--dry-run, --no-dry-run</code>: Preview deletion: show features, filters, and row counts without executing.  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-metadata-copy">metaxy metadata copy<a class="headerlink" href="#metaxy-metadata-copy" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy metadata copy --from STR --to STR [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">metaxy metadata copy --from STR --to STR [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Copy metadata from one store to another.</p>
 <p>Copies metadata for specified features from source to destination store.
@@ -3929,7 +3845,7 @@ keeping only the latest row per sample (--latest-only).</p>
 <li><code>--latest-only, --no-latest-only</code>: Deduplicate samples by keeping only the latest row per id_columns group.  <em>[default: True]</em></li>
 </ul>
 <h2 id="metaxy-mcp">metaxy mcp<a class="headerlink" href="#metaxy-mcp" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy mcp</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy mcp</span>
 </span></code></pre></div>
 <p>MCP (Model Context Protocol) server commands.</p>
 <p><strong>Parameters</strong>:</p>
@@ -3941,7 +3857,7 @@ keeping only the latest row per sample (--latest-only).</p>
 <li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-push">metaxy push<a class="headerlink" href="#metaxy-push" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy push [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy push [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Push feature definitions to the metadata store</p>
 <p><strong>Parameters</strong>:</p>
@@ -3953,6 +3869,20 @@ keeping only the latest row per sample (--latest-only).</p>
 <li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)  <em>[env: METAXY_STORE]</em></li>
 <li><code>--tags, -t</code>: Arbitrary key-value pairs to attach to the pushed snapshot. Example: <code>--tags.git_commit abc123def</code>.  <em>[env: METAXY_TAGS]</em></li>
+</ul>
+<h2 id="metaxy-lock">metaxy lock<a class="headerlink" href="#metaxy-lock" title="Permanent link">&para;</a></h2>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy lock [OPTIONS] [ARGS]</span>
+</span></code></pre></div>
+<p>Generate <code>metaxy.lock</code> file with external feature definitions fetched from the metadata store.</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)  <em>[env: METAXY_STORE]</em></li>
+<li><code>--output, -o</code>: Output file path (defaults to metaxy.lock in config directory)  <em>[env: METAXY_OUTPUT]</em>  <em>[default: ""]</em></li>
 </ul>
 
 
