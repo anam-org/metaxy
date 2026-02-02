@@ -3618,45 +3618,45 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 </ul>
 <p><strong>Commands</strong>:</p>
 <ul>
-<li><a href="#metaxy-config"><code>config</code></a>: Manage Metaxy configuration</li>
+<li><a href="#metaxy-config"><code>config</code></a>: Manage Metaxy <a href="https://docs.metaxy.io/main/reference/configuration/">configuration</a></li>
 <li><a href="#metaxy-describe"><code>describe</code></a>: Describe Metaxy entities in detail</li>
 <li><a href="#metaxy-graph"><code>graph</code></a>: Manage feature graphs</li>
 <li><a href="#metaxy-list"><code>list</code></a>: List Metaxy entities</li>
 <li><a href="#metaxy-lock"><code>lock</code></a>: Generate <code>metaxy.lock</code> file with external feature definitions fetched from the metadata store.</li>
-<li><a href="#metaxy-mcp"><code>mcp</code></a>: MCP (Model Context Protocol) server commands.</li>
+<li><a href="#metaxy-mcp"><code>mcp</code></a>: <a href="https://modelcontextprotocol.io/docs/getting-started/intro">MCP</a> server commands.</li>
 <li><a href="#metaxy-metadata"><code>metadata</code></a>: Manage Metaxy metadata in metadata stores.</li>
 <li><a href="#metaxy-push"><code>push</code></a>: Push feature definitions to the metadata store</li>
 <li><a href="#metaxy-shell"><code>shell</code></a>: Start interactive shell.</li>
 </ul>
-<p><strong>Parameters</strong>:</p>
+<p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-shell">metaxy shell<a class="headerlink" href="#metaxy-shell" title="Permanent link">&para;</a></h2>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="go">metaxy shell</span>
 </span></code></pre></div>
 <p>Start interactive shell.</p>
-<p><strong>Parameters</strong>:</p>
+<p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-config">metaxy config<a class="headerlink" href="#metaxy-config" title="Permanent link">&para;</a></h2>
-<p>Manage Metaxy configuration</p>
-<p><strong>Parameters</strong>:</p>
+<p>Manage Metaxy <a href="https://docs.metaxy.io/main/reference/configuration/">configuration</a></p>
+<p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-config-print">metaxy config print<a class="headerlink" href="#metaxy-config-print" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="go">metaxy config print [OPTIONS]</span>
@@ -3668,13 +3668,13 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 </ul>
 <h2 id="metaxy-describe">metaxy describe<a class="headerlink" href="#metaxy-describe" title="Permanent link">&para;</a></h2>
 <p>Describe Metaxy entities in detail</p>
-<p><strong>Parameters</strong>:</p>
+<p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-describe-graph">metaxy describe graph<a class="headerlink" href="#metaxy-describe-graph" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">metaxy describe graph [ARGS]</span>
@@ -3699,19 +3699,22 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 version, description, fields with their versions and dependencies.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
+<li><code>--format, -f</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
+</ul>
+<p><strong>Feature Selection</strong>:</p>
+<ul>
 <li><code>FEATURES, --features, --empty-features</code>: Feature keys (e.g., 'my_feature' or 'namespace/feature').  <em>[default: ()]</em></li>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
-<li><code>--format, -f</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h2 id="metaxy-graph">metaxy graph<a class="headerlink" href="#metaxy-graph" title="Permanent link">&para;</a></h2>
 <p>Manage feature graphs</p>
-<p><strong>Parameters</strong>:</p>
+<p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-graph-history">metaxy graph history<a class="headerlink" href="#metaxy-graph-history" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">metaxy graph history [ARGS]</span>
@@ -3759,13 +3762,13 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 </ul>
 <h2 id="metaxy-list">metaxy list<a class="headerlink" href="#metaxy-list" title="Permanent link">&para;</a></h2>
 <p>List Metaxy entities</p>
-<p><strong>Parameters</strong>:</p>
+<p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-list-features">metaxy list features<a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">metaxy list features [OPTIONS]</span>
@@ -3786,13 +3789,13 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 </ul>
 <h2 id="metaxy-metadata">metaxy metadata<a class="headerlink" href="#metaxy-metadata" title="Permanent link">&para;</a></h2>
 <p>Manage Metaxy metadata in metadata stores.</p>
-<p><strong>Parameters</strong>:</p>
+<p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-metadata-status">metaxy metadata status<a class="headerlink" href="#metaxy-metadata-status" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="go">metaxy metadata status [OPTIONS] [ARGS]</span>
@@ -3800,8 +3803,6 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <p>Check metadata completeness and freshness for specified features.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>FEATURES, --features, --empty-features</code>: Feature keys (e.g., 'my_feature' or 'namespace/feature').  <em>[default: ()]</em></li>
-<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
 <li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--global-filter, --empty-global-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to all features being selected (including upstream). Can be repeated.</li>
@@ -3812,20 +3813,28 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>--allow-fallback-stores, --no-allow-fallback-stores</code>: Whether to read metadata from fallback stores.  <em>[default: True]</em></li>
 <li><code>--format</code>:   <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
+<p><strong>Feature Selection</strong>:</p>
+<ul>
+<li><code>FEATURES, --features, --empty-features</code>: Feature keys (e.g., 'my_feature' or 'namespace/feature').  <em>[default: ()]</em></li>
+<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
+</ul>
 <h3 id="metaxy-metadata-delete">metaxy metadata delete<a class="headerlink" href="#metaxy-metadata-delete" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="go">metaxy metadata delete [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Delete metadata rows matching filters.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>FEATURES, --features, --empty-features</code>: Feature keys (e.g., 'my_feature' or 'namespace/feature').  <em>[default: ()]</em></li>
-<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
 <li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--soft, --hard</code>: Whether to mark records with deletion timestamps vs physically remove them.  <em>[default: True]</em></li>
 <li><code>--current-only, --no-current-only</code>: Only delete rows with the current feature_version (as defined in loaded feature graph).  <em>[default: True]</em></li>
 <li><code>--yes, --no-yes</code>: Confirm deletion without prompting (required for hard deletes without filters).  <em>[default: False]</em></li>
 <li><code>--dry-run, --no-dry-run</code>: Preview deletion: show features, filters, and row counts without executing.  <em>[default: False]</em></li>
+</ul>
+<p><strong>Feature Selection</strong>:</p>
+<ul>
+<li><code>FEATURES, --features, --empty-features</code>: Feature keys (e.g., 'my_feature' or 'namespace/feature').  <em>[default: ()]</em></li>
+<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-metadata-copy">metaxy metadata copy<a class="headerlink" href="#metaxy-metadata-copy" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">metaxy metadata copy --from STR --to STR [OPTIONS] [ARGS]</span>
@@ -3836,25 +3845,28 @@ By default, copies all versions (--no-current-only) and deduplicates by
 keeping only the latest row per sample (--latest-only).</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>FEATURES, --features, --empty-features</code>: Feature keys (e.g., 'my_feature' or 'namespace/feature').  <em>[default: ()]</em></li>
-<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 <li><code>--from</code>: Source store name to copy metadata from.  <strong>[required]</strong></li>
 <li><code>--to</code>: Destination store name to copy metadata to.  <strong>[required]</strong></li>
 <li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--current-only, --no-current-only</code>: Only copy rows with the current feature_version (as defined in loaded feature graph).  <em>[default: False]</em></li>
 <li><code>--latest-only, --no-latest-only</code>: Deduplicate samples by keeping only the latest row per id_columns group.  <em>[default: True]</em></li>
 </ul>
+<p><strong>Feature Selection</strong>:</p>
+<ul>
+<li><code>FEATURES, --features, --empty-features</code>: Feature keys (e.g., 'my_feature' or 'namespace/feature').  <em>[default: ()]</em></li>
+<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
+</ul>
 <h2 id="metaxy-mcp">metaxy mcp<a class="headerlink" href="#metaxy-mcp" title="Permanent link">&para;</a></h2>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy mcp</span>
 </span></code></pre></div>
-<p>MCP (Model Context Protocol) server commands.</p>
-<p><strong>Parameters</strong>:</p>
+<p><a href="https://modelcontextprotocol.io/docs/getting-started/intro">MCP</a> server commands.</p>
+<p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-push">metaxy push<a class="headerlink" href="#metaxy-push" title="Permanent link">&para;</a></h2>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy push [OPTIONS] [ARGS]</span>
@@ -3862,13 +3874,16 @@ keeping only the latest row per sample (--latest-only).</p>
 <p>Push feature definitions to the metadata store</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)  <em>[env: METAXY_STORE]</em></li>
 <li><code>--tags, -t</code>: Arbitrary key-value pairs to attach to the pushed snapshot. Example: <code>--tags.git_commit abc123def</code>.  <em>[env: METAXY_TAGS]</em></li>
+</ul>
+<p><strong>Global</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-lock">metaxy lock<a class="headerlink" href="#metaxy-lock" title="Permanent link">&para;</a></h2>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy lock [OPTIONS] [ARGS]</span>
@@ -3876,13 +3891,16 @@ keeping only the latest row per sample (--latest-only).</p>
 <p>Generate <code>metaxy.lock</code> file with external feature definitions fetched from the metadata store.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)  <em>[env: METAXY_STORE]</em></li>
 <li><code>--output, -o</code>: Output file path (defaults to metaxy.lock in config directory)  <em>[env: METAXY_OUTPUT]</em>  <em>[default: ""]</em></li>
+</ul>
+<p><strong>Global</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 
 
