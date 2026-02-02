@@ -37,36 +37,37 @@ def launcher(
     config_file: Annotated[
         Path | None,
         cyclopts.Parameter(
-            None,
-            help="Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.",
+            None, help="Path to the Metaxy configuration file. Defaults to auto-discovery.", group="Global"
         ),
     ] = None,
     project: Annotated[
         str | None,
         cyclopts.Parameter(
-            None,
-            help="Global option. Metaxy project to work with. Some commands may forbid setting this argument.",
+            None, help="Metaxy project to work with. Some commands may forbid setting this argument.", group="Global"
         ),
     ] = None,
     all_projects: Annotated[
         bool,
         cyclopts.Parameter(
             name=["--all-projects"],
-            help="Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.",
+            help="Operate on all available Metaxy projects. Some commands may forbid setting this argument.",
+            group="Global",
         ),
     ] = False,
     sync: Annotated[
         bool,
         cyclopts.Parameter(
             name=["--sync"],
-            help="Global option. Load external feature definitions from the metadata store before executing the command.",
+            help="Load external feature definitions from the metadata store before executing the command.",
+            group="Global",
         ),
     ] = False,
     locked: Annotated[
         bool,
         cyclopts.Parameter(
             name=["--locked"],
-            help="Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.",
+            help="When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.",
+            group="Global",
         ),
     ] = False,
 ):

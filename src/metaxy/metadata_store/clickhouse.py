@@ -140,9 +140,9 @@ class ClickHouseMetadataStore(IbisMetadataStore):
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for ClickHouse stores.
 
-        Uses XXHASH64 which is built-in to ClickHouse.
+        Uses XXHASH32 which is built-in to ClickHouse.
         """
-        return HashAlgorithm.XXHASH64
+        return HashAlgorithm.XXHASH32
 
     def _create_hash_functions(self):
         """Create ClickHouse-specific hash functions for Ibis expressions.

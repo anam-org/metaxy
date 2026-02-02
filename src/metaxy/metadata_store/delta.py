@@ -159,8 +159,8 @@ class DeltaMetadataStore(MetadataStore):
         return self._table_exists(feature)
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
-        """Use XXHASH64 by default to match other non-SQL stores."""
-        return HashAlgorithm.XXHASH64
+        """Use XXHASH32 by default."""
+        return HashAlgorithm.XXHASH32
 
     @contextmanager
     def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:

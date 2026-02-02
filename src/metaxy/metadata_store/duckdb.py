@@ -236,11 +236,9 @@ class DuckDBMetadataStore(IbisMetadataStore):
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for DuckDB stores.
 
-        Uses XXHASH64 if hashfuncs extension is available, otherwise falls back to MD5.
+        Uses XXHASH32 which requires the hashfuncs extension.
         """
-        # Default to MD5 which is always available
-        # If hashfuncs loads successfully, the calculator will support XXHASH64 too
-        return HashAlgorithm.MD5
+        return HashAlgorithm.XXHASH32
 
     @contextmanager
     def _create_versioning_engine(self, plan):

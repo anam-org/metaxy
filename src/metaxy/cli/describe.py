@@ -74,6 +74,9 @@ def graph(
 
     context = AppContext.get()
 
+    # Get metadata store - use specified store or default from config
+    metadata_store = context.get_store(store) if store else context.get_store()
+
     # Determine which snapshot to describe
     if snapshot is None:
         # Use current graph from code
@@ -82,8 +85,6 @@ def graph(
     else:
         # Use specified snapshot - requires a metadata store
         console.print(f"[cyan]Describing feature graph snapshot: {snapshot}[/cyan]")
-
-        metadata_store = context.get_store(store)
 
         # Load graph from snapshot
         from metaxy.metadata_store.system.storage import SystemTableStorage

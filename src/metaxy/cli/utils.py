@@ -213,15 +213,14 @@ class FeatureSelector:
 
     features: Annotated[
         tuple[str, ...],
-        cyclopts.Parameter(
-            help="Feature keys (e.g., 'my_feature' or 'namespace/feature').",
-        ),
+        cyclopts.Parameter(help="Feature keys (e.g., 'my_feature' or 'namespace/feature').", group="Feature Selection"),
     ] = ()
     all_features: Annotated[
         bool,
         cyclopts.Parameter(
             name="--all-features",
             help="Apply to all features in the project's feature graph.",
+            group="Feature Selection",
         ),
     ] = False
 

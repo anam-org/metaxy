@@ -41,14 +41,14 @@
   dict({
     'child': list([
       dict({
-        'metaxy_data_version': '4f137406',
+        'metaxy_data_version': '80024271',
         'metaxy_data_version_by_field': dict({
           'total_duration': 'hash_t1',
         }),
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '96611262',
         'metaxy_materialization_id': None,
-        'metaxy_provenance': '4f137406',
+        'metaxy_provenance': '80024271',
         'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t1',
         }),
@@ -59,14 +59,14 @@
         'user_id': 1,
       }),
       dict({
-        'metaxy_data_version': 'ad796a86',
+        'metaxy_data_version': '17182269',
         'metaxy_data_version_by_field': dict({
           'total_duration': 'hash_t2',
         }),
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '96611262',
         'metaxy_materialization_id': None,
-        'metaxy_provenance': 'ad796a86',
+        'metaxy_provenance': '17182269',
         'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t2',
         }),
@@ -77,14 +77,14 @@
         'user_id': 1,
       }),
       dict({
-        'metaxy_data_version': 'f886b7b4',
+        'metaxy_data_version': '44068716',
         'metaxy_data_version_by_field': dict({
           'total_duration': 'hash_t3',
         }),
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '96611262',
         'metaxy_materialization_id': None,
-        'metaxy_provenance': 'f886b7b4',
+        'metaxy_provenance': '44068716',
         'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t3',
         }),
@@ -95,14 +95,14 @@
         'user_id': 2,
       }),
       dict({
-        'metaxy_data_version': 'e25f0d6b',
+        'metaxy_data_version': '71931327',
         'metaxy_data_version_by_field': dict({
           'total_duration': 'hash_t4',
         }),
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '96611262',
         'metaxy_materialization_id': None,
-        'metaxy_provenance': 'e25f0d6b',
+        'metaxy_provenance': '71931327',
         'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t4',
         }),
@@ -117,7 +117,7 @@
       dict({
         'activity_type': 'read',
         'duration': 30.5,
-        'metaxy_data_version': '995a432f',
+        'metaxy_data_version': '42449508',
         'metaxy_data_version_by_field': dict({
           'activity_type': 'hash_a1',
           'duration': 'hash_d1',
@@ -125,7 +125,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '5533def7',
         'metaxy_materialization_id': None,
-        'metaxy_provenance': '995a432f',
+        'metaxy_provenance': '42449508',
         'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a1',
           'duration': 'hash_d1',
@@ -138,7 +138,7 @@
       dict({
         'activity_type': 'write',
         'duration': 45.0,
-        'metaxy_data_version': 'cb6abbd8',
+        'metaxy_data_version': '73436573',
         'metaxy_data_version_by_field': dict({
           'activity_type': 'hash_a2',
           'duration': 'hash_d2',
@@ -146,7 +146,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '5533def7',
         'metaxy_materialization_id': None,
-        'metaxy_provenance': 'cb6abbd8',
+        'metaxy_provenance': '73436573',
         'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a2',
           'duration': 'hash_d2',
@@ -159,7 +159,7 @@
       dict({
         'activity_type': 'read',
         'duration': 15.0,
-        'metaxy_data_version': 'f1348785',
+        'metaxy_data_version': '19169793',
         'metaxy_data_version_by_field': dict({
           'activity_type': 'hash_a3',
           'duration': 'hash_d3',
@@ -167,7 +167,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '5533def7',
         'metaxy_materialization_id': None,
-        'metaxy_provenance': 'f1348785',
+        'metaxy_provenance': '19169793',
         'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a3',
           'duration': 'hash_d3',
@@ -180,7 +180,7 @@
       dict({
         'activity_type': 'read',
         'duration': 60.0,
-        'metaxy_data_version': 'cddc3f00',
+        'metaxy_data_version': '26487761',
         'metaxy_data_version_by_field': dict({
           'activity_type': 'hash_a4',
           'duration': 'hash_d4',
@@ -188,7 +188,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '5533def7',
         'metaxy_materialization_id': None,
-        'metaxy_provenance': 'cddc3f00',
+        'metaxy_provenance': '26487761',
         'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a4',
           'duration': 'hash_d4',
@@ -201,7 +201,7 @@
       dict({
         'activity_type': 'write',
         'duration': 25.5,
-        'metaxy_data_version': 'cc22fa56',
+        'metaxy_data_version': '18670540',
         'metaxy_data_version_by_field': dict({
           'activity_type': 'hash_a5',
           'duration': 'hash_d5',
@@ -209,7 +209,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '5533def7',
         'metaxy_materialization_id': None,
-        'metaxy_provenance': 'cc22fa56',
+        'metaxy_provenance': '18670540',
         'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a5',
           'duration': 'hash_d5',
@@ -291,7 +291,7 @@
   list([
     dict({
       'duration': 120.5,
-      'metaxy_data_version': '053d3dcf',
+      'metaxy_data_version': '20633920',
       'metaxy_data_version_by_field': dict({
         'duration': 'hash1',
         'frames': 'hash1',
@@ -299,7 +299,7 @@
       'metaxy_deleted_at': None,
       'metaxy_feature_version': '8b102a70',
       'metaxy_materialization_id': None,
-      'metaxy_provenance': '053d3dcf',
+      'metaxy_provenance': '20633920',
       'metaxy_provenance_by_field': dict({
         'duration': 'hash1',
         'frames': 'hash1',
@@ -310,7 +310,7 @@
     }),
     dict({
       'duration': 90.0,
-      'metaxy_data_version': '481a8aa0',
+      'metaxy_data_version': '78730964',
       'metaxy_data_version_by_field': dict({
         'duration': 'hash2',
         'frames': 'hash2',
@@ -318,7 +318,7 @@
       'metaxy_deleted_at': None,
       'metaxy_feature_version': '8b102a70',
       'metaxy_materialization_id': None,
-      'metaxy_provenance': '481a8aa0',
+      'metaxy_provenance': '78730964',
       'metaxy_provenance_by_field': dict({
         'duration': 'hash2',
         'frames': 'hash2',
@@ -329,7 +329,7 @@
     }),
     dict({
       'duration': 150.3,
-      'metaxy_data_version': '53bd7b6f',
+      'metaxy_data_version': '15215112',
       'metaxy_data_version_by_field': dict({
         'duration': 'hash3',
         'frames': 'hash3',
@@ -337,7 +337,7 @@
       'metaxy_deleted_at': None,
       'metaxy_feature_version': '8b102a70',
       'metaxy_materialization_id': None,
-      'metaxy_provenance': '53bd7b6f',
+      'metaxy_provenance': '15215112',
       'metaxy_provenance_by_field': dict({
         'duration': 'hash3',
         'frames': 'hash3',

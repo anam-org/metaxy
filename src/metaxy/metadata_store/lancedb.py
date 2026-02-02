@@ -265,8 +265,8 @@ class LanceDBMetadataStore(MetadataStore):
         return self._table_exists(table_name)
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
-        """Use XXHASH64 by default to match other non-SQL stores."""
-        return HashAlgorithm.XXHASH64
+        """Use XXHASH32 by default."""
+        return HashAlgorithm.XXHASH32
 
     # Storage ------------------------------------------------------------------
 

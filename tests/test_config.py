@@ -528,7 +528,7 @@ def test_hash_algorithm_must_match_in_fallback_chain(tmp_path: Path) -> None:
     assert prod_store.hash_algorithm == HashAlgorithm.SHA256
 
 
-def test_hash_algorithm_defaults_to_xxhash64(tmp_path: Path) -> None:
+def test_hash_algorithm_defaults_to_xxhash32(tmp_path: Path) -> None:
     from metaxy.versioning.types import HashAlgorithm
 
     config = MetaxyConfig(
@@ -549,12 +549,12 @@ def test_hash_algorithm_defaults_to_xxhash64(tmp_path: Path) -> None:
 
     dev_store = config.get_store("dev")
 
-    # Should default to XXHASH64
-    assert dev_store.hash_algorithm == HashAlgorithm.XXHASH64
+    # Should default to XXHASH32
+    assert dev_store.hash_algorithm == HashAlgorithm.XXHASH32
 
-    # Fallback should also use XXHASH64
+    # Fallback should also use XXHASH32
     prod_store = dev_store.fallback_stores[0]
-    assert prod_store.hash_algorithm == HashAlgorithm.XXHASH64
+    assert prod_store.hash_algorithm == HashAlgorithm.XXHASH32
 
 
 def test_hash_algorithm_conflict_raises_error(tmp_path: Path) -> None:

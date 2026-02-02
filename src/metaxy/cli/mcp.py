@@ -6,7 +6,7 @@ from metaxy.cli.console import console
 
 app = cyclopts.App(
     name="mcp",
-    help="MCP (Model Context Protocol) server commands.",
+    help="[MCP](https://modelcontextprotocol.io/docs/getting-started/intro) server commands.",
     console=console,
 )
 
