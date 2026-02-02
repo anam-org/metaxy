@@ -3055,6 +3055,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#metaxy-describe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy describe
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="metaxy describe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metaxy-describe-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy describe feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metaxy-migrations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3419,6 +3447,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#metaxy-describe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy describe
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="metaxy describe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metaxy-describe-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy describe feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metaxy-migrations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3735,6 +3791,10 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><a href="#metaxy-config-print"><code>print</code></a></li>
 </ul>
 </li>
+<li><a href="#metaxy-describe"><code>describe</code></a><ul>
+<li><a href="#metaxy-describe-feature"><code>feature</code></a></li>
+</ul>
+</li>
 <li><a href="#metaxy-migrations"><code>migrations</code></a><ul>
 <li><a href="#metaxy-migrations-generate"><code>generate</code></a></li>
 <li><a href="#metaxy-migrations-apply"><code>apply</code></a></li>
@@ -3771,6 +3831,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <p><strong>Commands</strong>:</p>
 <ul>
 <li><a href="#metaxy-config"><code>config</code></a>: Manage Metaxy configuration</li>
+<li><a href="#metaxy-describe"><code>describe</code></a>: Describe Metaxy entities in detail</li>
 <li><a href="#metaxy-graph"><code>graph</code></a>: Manage feature graphs</li>
 <li><a href="#metaxy-graph-diff"><code>graph-diff</code></a>: Compare and visualize graph snapshots</li>
 <li><a href="#metaxy-list"><code>list</code></a>: List Metaxy entities</li>
@@ -3817,6 +3878,28 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <ul>
 <li><code>--format, -f</code>: Output format: 'toml' (with syntax highlighting) or 'json'.  <em>[choices: toml, json]</em>  <em>[default: toml]</em></li>
 </ul>
+<h2 id="metaxy-describe">metaxy describe<a class="headerlink" href="#metaxy-describe" title="Permanent link">&para;</a></h2>
+<p>Describe Metaxy entities in detail</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Global option. Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+</ul>
+<h3 id="metaxy-describe-feature">metaxy describe feature<a class="headerlink" href="#metaxy-describe-feature" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">metaxy describe feature [OPTIONS] [ARGS]</span>
+</span></code></pre></div>
+<p>Describe one or more features in detail.</p>
+<p>Shows comprehensive information about features including project, key,
+version, description, fields with their versions and dependencies.</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>FEATURES, --features, --empty-features</code>: Feature keys (e.g., 'my_feature' or 'namespace/feature').  <em>[default: ()]</em></li>
+<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
+<li><code>--format, -f</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
+</ul>
 <h2 id="metaxy-migrations">metaxy migrations<a class="headerlink" href="#metaxy-migrations" title="Permanent link">&para;</a></h2>
 <p>Metadata migration commands</p>
 <p><strong>Parameters</strong>:</p>
@@ -3828,7 +3911,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-migrations-generate">metaxy migrations generate<a class="headerlink" href="#metaxy-migrations-generate" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">metaxy migrations generate --op LIST[STR] [OPTIONS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="go">metaxy migrations generate --op LIST[STR] [OPTIONS]</span>
 </span></code></pre></div>
 <p>Generate migration from detected feature changes.</p>
 <p>Two migration types are supported:</p>
@@ -3852,7 +3935,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><code>--type</code>: Migration type: 'diff' (compare different graph snapshots) or 'full' (operates on a single graph snapshot)  <em>[choices: diff, full]</em>  <em>[default: diff]</em></li>
 </ul>
 <h3 id="metaxy-migrations-apply">metaxy migrations apply<a class="headerlink" href="#metaxy-migrations-apply" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="go">metaxy migrations apply [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">metaxy migrations apply [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Apply migration(s) from YAML files.</p>
 <p>Reads migration definitions from .metaxy/migrations/ directory (git).
@@ -3866,19 +3949,19 @@ Tracks execution state in database (events).</p>
 <li><code>--rerun, --no-rerun</code>: Re-run all steps, including already completed ones  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-migrations-status">metaxy migrations status<a class="headerlink" href="#metaxy-migrations-status" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">metaxy migrations status</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="go">metaxy migrations status</span>
 </span></code></pre></div>
 <p>Show migrations and execution status.</p>
 <p>Reads migration definitions from YAML files (git).
 Shows execution status from database events.
 Displays the parent chain in order.</p>
 <h3 id="metaxy-migrations-list">metaxy migrations list<a class="headerlink" href="#metaxy-migrations-list" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="go">metaxy migrations list</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">metaxy migrations list</span>
 </span></code></pre></div>
 <p>List all migrations in chain order as defined in code.</p>
 <p>Displays a simple table showing migration ID, creation time, and operations.</p>
 <h3 id="metaxy-migrations-explain">metaxy migrations explain<a class="headerlink" href="#metaxy-migrations-explain" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">metaxy migrations explain [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="go">metaxy migrations explain [ARGS]</span>
 </span></code></pre></div>
 <p>Show detailed diff for a migration.</p>
 <p>Reads migration from YAML file.
@@ -3888,7 +3971,7 @@ Computes and displays the GraphDiff between the two snapshots on-demand.</p>
 <li><code>MIGRATION-ID, --migration-id</code>: Migration ID to explain (explains latest if not specified)</li>
 </ul>
 <h3 id="metaxy-migrations-describe">metaxy migrations describe<a class="headerlink" href="#metaxy-migrations-describe" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="go">metaxy migrations describe [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="go">metaxy migrations describe [ARGS]</span>
 </span></code></pre></div>
 <p>Show verbose description of migration(s).</p>
 <p>Displays detailed information about what the migration will do:
@@ -3912,7 +3995,7 @@ Computes and displays the GraphDiff between the two snapshots on-demand.</p>
 <li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-graph-push">metaxy graph push<a class="headerlink" href="#metaxy-graph-push" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="go">metaxy graph push [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="go">metaxy graph push [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Serialize all Metaxy features to the metadata store.</p>
 <p>This is intended to be invoked in a CD pipeline <strong>before</strong> running Metaxy code in production.</p>
@@ -3922,7 +4005,7 @@ Computes and displays the GraphDiff between the two snapshots on-demand.</p>
 <li><code>--tags, -t</code>: Arbitrary key-value pairs to attach to the pushed snapshot. Example: <code>--tags.git_commit abc123def</code>.</li>
 </ul>
 <h3 id="metaxy-graph-history">metaxy graph history<a class="headerlink" href="#metaxy-graph-history" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="go">metaxy graph history [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">metaxy graph history [ARGS]</span>
 </span></code></pre></div>
 <p>Show history of recorded graph snapshots.</p>
 <p>Displays all recorded graph snapshots from the metadata store,
@@ -3933,7 +4016,7 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>LIMIT, --limit</code>: Limit number of snapshots to show (defaults to all)</li>
 </ul>
 <h3 id="metaxy-graph-describe">metaxy graph describe<a class="headerlink" href="#metaxy-graph-describe" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">metaxy graph describe [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy graph describe [ARGS]</span>
 </span></code></pre></div>
 <p>Describe a graph snapshot.</p>
 <p>Shows detailed information about a graph snapshot including:
@@ -3948,7 +4031,7 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
 </ul>
 <h3 id="metaxy-graph-render">metaxy graph render<a class="headerlink" href="#metaxy-graph-render" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy graph render [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy graph render [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Render feature graph visualization.</p>
 <p>Visualize the feature graph in different formats:
@@ -3991,7 +4074,7 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-graph-diff-render">metaxy graph-diff render<a class="headerlink" href="#metaxy-graph-diff-render" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy graph-diff render [OPTIONS] FROM-SNAPSHOT [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy graph-diff render [OPTIONS] FROM-SNAPSHOT [ARGS]</span>
 </span></code></pre></div>
 <p>Render merged graph visualization comparing two snapshots.</p>
 <p>Shows all features color-coded by status (added/removed/changed/unchanged).
@@ -4038,7 +4121,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-list-features">metaxy list features<a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy list features [OPTIONS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="go">metaxy list features [OPTIONS]</span>
 </span></code></pre></div>
 <p>List Metaxy features in the current project.</p>
 <p><strong>Parameters</strong>:</p>
@@ -4047,7 +4130,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--format, -f</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h3 id="metaxy-list-stores">metaxy list stores<a class="headerlink" href="#metaxy-list-stores" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="go">metaxy list stores [OPTIONS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="go">metaxy list stores [OPTIONS]</span>
 </span></code></pre></div>
 <p>List configured metadata stores.</p>
 <p><strong>Parameters</strong>:</p>
@@ -4065,7 +4148,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--locked, --no-locked</code>: Global option. When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-metadata-status">metaxy metadata status<a class="headerlink" href="#metaxy-metadata-status" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="go">metaxy metadata status [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="go">metaxy metadata status [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Check metadata completeness and freshness for specified features.</p>
 <p><strong>Parameters</strong>:</p>
@@ -4083,7 +4166,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--format</code>:   <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h3 id="metaxy-metadata-delete">metaxy metadata delete<a class="headerlink" href="#metaxy-metadata-delete" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="go">metaxy metadata delete [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="go">metaxy metadata delete [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Delete metadata rows matching filters.</p>
 <p><strong>Parameters</strong>:</p>
@@ -4098,7 +4181,7 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <li><code>--dry-run, --no-dry-run</code>: Preview deletion: show features, filters, and row counts without executing.  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-metadata-copy">metaxy metadata copy<a class="headerlink" href="#metaxy-metadata-copy" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="go">metaxy metadata copy --from STR --to STR [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="go">metaxy metadata copy --from STR --to STR [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Copy metadata from one store to another.</p>
 <p>Copies metadata for specified features from source to destination store.
@@ -4115,7 +4198,7 @@ keeping only the latest row per sample (--latest-only).</p>
 <li><code>--latest-only, --no-latest-only</code>: Deduplicate samples by keeping only the latest row per id_columns group.  <em>[default: True]</em></li>
 </ul>
 <h2 id="metaxy-mcp">metaxy mcp<a class="headerlink" href="#metaxy-mcp" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="go">metaxy mcp</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="go">metaxy mcp</span>
 </span></code></pre></div>
 <p>MCP (Model Context Protocol) server commands.</p>
 <p><strong>Parameters</strong>:</p>
