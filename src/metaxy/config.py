@@ -433,7 +433,7 @@ class MetaxyConfig(BaseSettings):
 
     features: list[str] = PydanticField(
         default_factory=list,
-        description="List of feature keys to load from the metadata store during sync_external_features.",
+        description="List of external feature keys that will be included into `metaxy.lock` (see `metaxy lock --help`) and added to the feature graph as external features. Locking these features is optional: otherwise they won't appear on the feature graph until [loaded with][metaxy.sync_external_features]. This functionality is experimental.",
     )
 
     # Private attribute to track which config file was used (set by load())

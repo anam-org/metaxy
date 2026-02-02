@@ -121,6 +121,7 @@ def init_metaxy(
     """Main user-facing initialization function for Metaxy. It loads feature definitions and Metaxy configuration.
 
     Features are [discovered](../../guide/learn/feature-discovery.md) from installed Python packages metadata.
+    External features are loaded from `metaxy.lock` if present.
 
     Args:
         config: Metaxy configuration to use for initialization. Will be auto-discovered if not provided.
@@ -133,6 +134,8 @@ def init_metaxy(
     Returns:
         The activated Metaxy configuration.
     """
+    from metaxy.utils.lock_file import load_lock_file
+
     if isinstance(config, MetaxyConfig):
         MetaxyConfig.set(config)
     else:
@@ -140,6 +143,7 @@ def init_metaxy(
             config_file=config,
             search_parents=search_parents,
         )
+    load_lock_file(config)
     load_features(config.entrypoints)
     return config
 

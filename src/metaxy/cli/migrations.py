@@ -14,6 +14,7 @@ app = cyclopts.App(
     help="Metadata migration commands",
     console=console,
     error_console=error_console,
+    show=False,
 )
 
 

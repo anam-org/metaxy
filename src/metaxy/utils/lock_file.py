@@ -1,4 +1,4 @@
-"""Lock file generation utilities."""
+"""Lock file generation and loading utilities."""
 
 from __future__ import annotations
 
@@ -7,13 +7,72 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import narwhals as nw
+import tomli
 import tomli_w
 
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
 
 if TYPE_CHECKING:
+    from metaxy.config import MetaxyConfig
     from metaxy.metadata_store import MetadataStore
     from metaxy.models.feature_definition import FeatureDefinition
+
+LOCK_FILE_NAME = "metaxy.lock"
+
+
+def load_lock_file(config: MetaxyConfig) -> list[FeatureDefinition]:
+    """Load external feature definitions from a lock file.
+
+    Looks for `metaxy.lock` next to the config file.
+
+    Args:
+        config: Metaxy configuration (used to locate the lock file).
+
+    Returns:
+        List of loaded FeatureDefinition objects. Empty list if no lock file exists.
+    """
+    from metaxy.models.feature import FeatureGraph
+    from metaxy.models.feature_definition import FeatureDefinition
+    from metaxy.models.feature_spec import FeatureSpec
+
+    if config.config_file is None:
+        import warnings
+
+        warnings.warn(
+            "Cannot load lock file: no config file path available. "
+            "External features from metaxy.lock will not be loaded.",
+            stacklevel=2,
+        )
+        return []
+
+    lock_path = config.config_file.parent / LOCK_FILE_NAME
+    if not lock_path.exists():
+        return []
+
+    lock_data = tomli.loads(lock_path.read_text())
+    features_data = lock_data.get("features", {})
+
+    if not features_data:
+        return []
+
+    graph = FeatureGraph.get_active()
+    definitions: list[FeatureDefinition] = []
+
+    for feature_key, feature_data in features_data.items():
+        spec_dict = json.loads(feature_data["spec"])
+        schema_dict = json.loads(feature_data["feature_schema"])
+
+        spec = FeatureSpec.model_validate(spec_dict)
+        definition = FeatureDefinition.external(
+            spec=spec,
+            feature_schema=schema_dict,
+            project=feature_data["project"],
+        )
+
+        graph.add_feature_definition(definition)
+        definitions.append(definition)
+
+    return definitions
 
 
 def generate_lock_file(
