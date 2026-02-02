@@ -318,7 +318,7 @@ class MetaxyProject:
         """Run CLI command with proper environment setup.
 
         Args:
-            args: CLI command arguments (e.g., ["graph", "push"])
+            args: CLI command arguments (e.g., ["push"])
             check: If True (default), raises CalledProcessError on non-zero exit
             env: Optional dict of additional environment variables
             **kwargs: Additional arguments to pass to subprocess.run()
@@ -397,7 +397,7 @@ class ExternalMetaxyProject(MetaxyProject):
     Example:
         ```py
         project = ExternalMetaxyProject(Path("examples/example-migration"))
-        result = project.run_cli(["graph", "push"], env={"STAGE": "1"})
+        result = project.run_cli(["push"], env={"STAGE": "1"})
         assert result.returncode == 0
         print(project.package_name)  # "example_migration"
         ```
@@ -728,7 +728,7 @@ class ExternalMetaxyProject(MetaxyProject):
         Returns:
             subprocess.CompletedProcess: Result of the push command.
         """
-        return self.run_cli(["graph", "push"], env=env)
+        return self.run_cli(["push"], env=env)
 
     @property
     def graph(self) -> FeatureGraph:
@@ -820,7 +820,7 @@ class TempMetaxyProject(MetaxyProject):
 
 
         with project.with_features(features):
-            result = project.run_cli("graph", "push")
+            result = project.run_cli("push")
             assert result.returncode == 0
         ```
     """
@@ -895,7 +895,7 @@ database = "{staging_db_path}"
 
             with project.with_features(my_features) as module:
                 print(module)  # "features_0"
-                result = project.run_cli(["graph", "push"])
+                result = project.run_cli(["push"])
             ```
         """
 
@@ -957,7 +957,7 @@ database = "{staging_db_path}"
         based on active with_features() context managers.
 
         Args:
-            args: CLI command arguments (e.g., ["graph", "push"])
+            args: CLI command arguments (e.g., ["push"])
             check: If True (default), raises CalledProcessError on non-zero exit
             env: Optional dict of additional environment variables
             **kwargs: Additional arguments to pass to subprocess.run()

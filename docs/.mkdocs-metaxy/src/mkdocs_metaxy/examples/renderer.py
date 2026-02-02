@@ -4,7 +4,7 @@ This module provides rendering utilities for:
 - Scenario lists with descriptions
 - Source code in markdown code blocks
 - Diff patches in markdown code blocks
-- Execution events (commands, patches, graph pushes)
+- Execution events (commands, patches, pushing feature definitions)
 """
 
 from __future__ import annotations
@@ -334,13 +334,13 @@ class ExampleRenderer:
         return "\n".join(md_parts)
 
     def render_graph_pushed(self, event: GraphPushed) -> str:
-        """Render graph push event as markdown.
+        """Render feature definitions push event as markdown.
 
         Args:
             event: GraphPushed event from execution state.
 
         Returns:
-            Markdown string describing the graph push.
+            Markdown string describing the push.
         """
         snapshot_short = event.snapshot_version[:8]
         return f"**Graph snapshot recorded:** `{snapshot_short}...`\n\n"

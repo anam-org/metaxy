@@ -119,11 +119,11 @@ def generate_migration(
             else:
                 raise ValueError(
                     "No feature graph snapshot found in metadata store. "
-                    "Run 'metaxy graph push' first to record feature versions before generating migrations."
+                    "Run 'metaxy push' first to record feature versions before generating migrations."
                 )
         except FeatureNotFoundError:
             raise ValueError(
-                "No feature versions recorded yet. Run 'metaxy graph push' first to record the feature graph snapshot."
+                "No feature versions recorded yet. Run 'metaxy push' first to record the feature graph snapshot."
             )
     else:
         print(f"From: snapshot {from_snapshot_version}...")

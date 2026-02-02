@@ -13,10 +13,15 @@ mx list features           # List all features
 mx list features --verbose # Show field dependencies
 ```
 
+### Push Feature Graph
+
+```bash
+mx push                    # Push feature graph to store
+```
+
 ### Graph Operations
 
 ```bash
-mx graph push              # Push feature graph to store
 mx graph render            # Visualize feature graph in terminal
 mx graph render --format mermaid -o graph.mmd  # Export as Mermaid
 mx graph history           # Show snapshot history

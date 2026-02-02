@@ -24,7 +24,7 @@ def test_graph_diff_render_no_changes(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push snapshot
-        metaxy_project.run_cli(["graph", "push"])
+        metaxy_project.run_cli(["push"])
 
         # Compare latest with current (should be identical)
         result = metaxy_project.run_cli(["graph-diff", "render", "latest", "current"])
@@ -80,14 +80,14 @@ def test_graph_diff_render_added_feature(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot (v1)
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot (v2)
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -143,14 +143,14 @@ def test_graph_diff_render_removed_feature(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot (v1)
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot (v2)
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -197,14 +197,14 @@ def test_graph_diff_render_changed_feature(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot (v1)
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot (v2)
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -256,14 +256,14 @@ def test_graph_diff_render_version_transitions(metaxy_project: TempMetaxyProject
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -323,14 +323,14 @@ def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -387,14 +387,14 @@ def test_graph_diff_render_format_yaml(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -443,14 +443,14 @@ def test_graph_diff_render_format_mermaid(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -498,14 +498,14 @@ def test_graph_diff_render_format_cards(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -552,14 +552,14 @@ def test_graph_diff_render_format_graphviz(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -630,14 +630,14 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -697,14 +697,14 @@ def test_graph_diff_render_output_to_file(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -756,7 +756,7 @@ def test_graph_diff_render_with_store_flag(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push with explicit store
-        metaxy_project.run_cli(["graph", "push", "--store", "dev"])
+        metaxy_project.run_cli(["push", "--store", "dev"])
 
         # Diff with explicit store
         result = metaxy_project.run_cli(["graph-diff", "render", "latest", "current", "--store", "dev"])
@@ -847,14 +847,14 @@ def test_graph_diff_render_verbose_mode(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -899,14 +899,14 @@ def test_graph_diff_render_minimal_mode(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -937,7 +937,7 @@ def test_graph_diff_render_default_to_current(metaxy_project: TempMetaxyProject)
 
     with metaxy_project.with_features(features):
         # Push snapshot
-        metaxy_project.run_cli(["graph", "push"])
+        metaxy_project.run_cli(["push"])
 
         # Render diff with only from_snapshot (should default to_snapshot to "current")
         result = metaxy_project.run_cli(["graph-diff", "render", "latest"])
@@ -997,14 +997,14 @@ def test_graph_diff_render_deterministic_ordering(metaxy_project: TempMetaxyProj
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["graph", "push"])
+        push1_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["graph", "push"])
+        push2_result = metaxy_project.run_cli(["push"])
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2

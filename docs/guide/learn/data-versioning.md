@@ -43,7 +43,7 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 
 ??? "How is snapshot version used?"
 
-    This value is used to uniquely encode versioned feature graph topology. `metaxy graph push` CLI can be used to keep track of previous versions of the feature graph, enabling features such as data version reconciliation migrations.
+    This value is used to uniquely encode versioned feature graph topology. `metaxy push` CLI can be used to keep track of previous versions of the feature graph, enabling features such as data version reconciliation migrations.
 
 ### Samples
 

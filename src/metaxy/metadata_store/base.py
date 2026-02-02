@@ -773,13 +773,13 @@ class MetadataStore(ABC):
             # do not read system features from fallback stores
             if is_system_table:
                 raise SystemDataNotFoundError(
-                    f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
+                    f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy push` before attempting to read system data."
                 ) from e
 
         # Handle case where read_metadata_in_store returns None (no exception raised)
         if lazy_frame is None and is_system_table:
             raise SystemDataNotFoundError(
-                f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
+                f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy push` before attempting to read system data."
             )
 
         if lazy_frame is not None and not is_system_table:

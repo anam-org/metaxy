@@ -54,7 +54,7 @@ class SnapshotResolver:
 
         if snapshots_df.height == 0:
             raise ValueError(
-                "No snapshots found in store. Cannot resolve 'latest'. Run 'metaxy graph push' to record a snapshot."
+                "No snapshots found in store. Cannot resolve 'latest'. Run 'metaxy push' to record a snapshot."
             )
 
         # read_graph_snapshots() returns sorted by recorded_at descending

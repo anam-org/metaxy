@@ -1796,7 +1796,7 @@
         'type': 'graph_pushed',
       }),
       dict({
-        'command': 'metaxy graph push',
+        'command': 'metaxy push',
         'returncode': 0,
         'scenario_name': 'Initial feature graph',
         'step_name': 'push_graph',

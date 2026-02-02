@@ -516,7 +516,7 @@ class SystemTableStorage:
         """Record features for a project with a graph snapshot version.
 
         This should be called during CD (Continuous Deployment) to record what
-        feature versions are being deployed. Typically invoked via `metaxy graph push`.
+        feature versions are being deployed. Typically invoked via `metaxy push`.
 
         Records features for the specified project with the same snapshot_version,
         representing a consistent state of the feature graph based on code definitions.

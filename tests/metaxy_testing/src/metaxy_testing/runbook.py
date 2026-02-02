@@ -326,7 +326,7 @@ class RunbookRunner:
             return snapshots_df["metaxy_snapshot_version"][0]
 
     def push_graph_snapshot(self) -> str | None:
-        """Push the current graph snapshot using metaxy graph push."""
+        """Push the current graph snapshot using metaxy push."""
         if not self.runbook.auto_push_graph:
             return None
 

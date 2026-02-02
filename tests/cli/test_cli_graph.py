@@ -4,7 +4,7 @@ from metaxy_testing import TempMetaxyProject
 
 
 def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
-    """Test graph push records snapshot on first run."""
+    """Test push records snapshot on first run."""
 
     def features():
         from metaxy_testing.models import SampleFeature, SampleFeatureSpec
@@ -21,7 +21,7 @@ def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "push"])
+        result = metaxy_project.run_cli(["push"])
 
         assert result.returncode == 0
         assert "Recorded feature graph" in result.stderr
@@ -30,7 +30,7 @@ def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
 
 
 def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
-    """Test graph push shows 'already recorded' on second run."""
+    """Test push shows 'already recorded' on second run."""
 
     def features():
         from metaxy_testing.models import SampleFeature, SampleFeatureSpec
@@ -48,11 +48,11 @@ def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # First push
-        result1 = metaxy_project.run_cli(["graph", "push"])
+        result1 = metaxy_project.run_cli(["push"])
         assert "Recorded feature graph" in result1.stderr
 
         # Second push - should skip
-        result2 = metaxy_project.run_cli(["graph", "push"])
+        result2 = metaxy_project.run_cli(["push"])
         assert "already recorded" in result2.stderr
         # Snapshot version now only goes to stdout, not stderr
         assert len(result2.stdout.strip()) == 64  # Check hash is in stdout
@@ -101,7 +101,7 @@ def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push to create snapshot
-        metaxy_project.run_cli(["graph", "push"])
+        metaxy_project.run_cli(["push"])
 
         # Check history
         result = metaxy_project.run_cli(["graph", "history"])
@@ -133,7 +133,7 @@ def test_graph_history_with_limit(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push once
-        metaxy_project.run_cli(["graph", "push"])
+        metaxy_project.run_cli(["push"])
 
         # Check history with limit
         result = metaxy_project.run_cli(["graph", "history", "--limit", "1"])
@@ -143,7 +143,7 @@ def test_graph_history_with_limit(metaxy_project: TempMetaxyProject):
 
 
 def test_graph_describe_current(metaxy_project: TempMetaxyProject):
-    """Test graph describe shows current graph metrics."""
+    """Test describe graph shows current graph metrics."""
 
     def features():
         from metaxy_testing.models import SampleFeature, SampleFeatureSpec
@@ -173,7 +173,7 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
 
 
 def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
-    """Test graph describe with dependent features shows correct depth."""
+    """Test describe graph with dependent features shows correct depth."""
 
     def root_features():
         from metaxy_testing.models import SampleFeature, SampleFeatureSpec
@@ -237,7 +237,7 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
 
 
 def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
-    """Test graph describe with specific snapshot version."""
+    """Test describe graph with specific snapshot version."""
 
     def features():
         from metaxy_testing.models import SampleFeature, SampleFeatureSpec
@@ -255,7 +255,7 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push to create snapshot
-        push_result = metaxy_project.run_cli(["graph", "push"])
+        push_result = metaxy_project.run_cli(["push"])
 
         # Extract snapshot version from stdout (just the raw hash)
         snapshot_version = push_result.stdout.strip()
@@ -291,7 +291,7 @@ def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push with explicit store (uses default "dev" store)
-        result = metaxy_project.run_cli(["graph", "push", "--store", "dev"])
+        result = metaxy_project.run_cli(["push", "--store", "dev"])
 
         assert result.returncode == 0
         assert result.stdout
@@ -325,7 +325,7 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Step 1: Push
-        push_result = metaxy_project.run_cli(["graph", "push"])
+        push_result = metaxy_project.run_cli(["push"])
         assert "Recorded feature graph" in push_result.stderr
 
         # Extract snapshot version from stdout (just the raw hash)
@@ -842,14 +842,14 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
 
     # Push v1
     with metaxy_project.with_features(features_v1):
-        result1 = metaxy_project.run_cli(["graph", "push"])
+        result1 = metaxy_project.run_cli(["push"])
         assert result1.returncode == 0
         assert "Recorded feature graph" in result1.stderr
         # Snapshot version now only goes to stdout
         assert len(result1.stdout.strip()) == 64
 
     with metaxy_project.with_features(features_v2):
-        result2 = metaxy_project.run_cli(["graph", "push"])
+        result2 = metaxy_project.run_cli(["push"])
         assert result2.returncode == 0
 
         # Should show metadata update message (rename doesn't change feature_version)
@@ -879,11 +879,11 @@ def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # First push
-        result1 = metaxy_project.run_cli(["graph", "push"])
+        result1 = metaxy_project.run_cli(["push"])
         assert "Recorded feature graph" in result1.stderr
 
         # Second push - no changes
-        result2 = metaxy_project.run_cli(["graph", "push"])
+        result2 = metaxy_project.run_cli(["push"])
         assert result2.returncode == 0
         assert "already recorded" in result2.stderr
         assert "no changes" in result2.stderr
@@ -959,7 +959,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
 
     # Scenario 1: First push (new snapshot)
     with metaxy_project.with_features(features_v1):
-        result1 = metaxy_project.run_cli(["graph", "push"])
+        result1 = metaxy_project.run_cli(["push"])
         assert result1.returncode == 0
         assert "Recorded feature graph" in result1.stderr
         # Snapshot version now only goes to stdout
@@ -967,7 +967,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
 
     # Scenario 2: Metadata change (columns doesn't affect feature_version)
     with metaxy_project.with_features(features_v2):
-        result2 = metaxy_project.run_cli(["graph", "push"])
+        result2 = metaxy_project.run_cli(["push"])
         assert result2.returncode == 0
         assert "Updated feature information" in result2.stderr
         assert "downstream" in result2.stderr
@@ -975,13 +975,13 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
     # Scenario 3: No change
     # Note: Re-pushing the same snapshot shows "already recorded"
     with metaxy_project.with_features(features_v2):
-        result3 = metaxy_project.run_cli(["graph", "push"])
+        result3 = metaxy_project.run_cli(["push"])
         assert result3.returncode == 0
         assert "already recorded" in result3.stderr
 
 
 def test_graph_push_logs_store_metadata(metaxy_project: TempMetaxyProject):
-    """Test that graph push logs store metadata (e.g., table name for DuckDB)."""
+    """Test that push logs store metadata (e.g., table name for DuckDB)."""
 
     def features():
         from metaxy_testing.models import SampleFeature, SampleFeatureSpec
@@ -998,7 +998,7 @@ def test_graph_push_logs_store_metadata(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "push"])
+        result = metaxy_project.run_cli(["push"])
 
         assert result.returncode == 0
         # Should log store metadata (DuckDB shows table_name)
@@ -1094,12 +1094,12 @@ def test_graph_push_multiple_features_metadata_changes(
 
     # Push v1
     with metaxy_project.with_features(features_v1):
-        result1 = metaxy_project.run_cli(["graph", "push"])
+        result1 = metaxy_project.run_cli(["push"])
         assert "Recorded feature graph" in result1.stderr
 
     # Push v2 - multiple metadata changes (rename and columns don't affect feature_version)
     with metaxy_project.with_features(features_v2):
-        result2 = metaxy_project.run_cli(["graph", "push"])
+        result2 = metaxy_project.run_cli(["push"])
         assert result2.returncode == 0
         assert "Updated feature information" in result2.stderr
         # Should list both changed features
@@ -1157,7 +1157,7 @@ def test_sync_flag_loads_external_features(metaxy_project: TempMetaxyProject):
 
     # First, push the upstream feature to the store
     with metaxy_project.with_features(upstream_features):
-        result = metaxy_project.run_cli(["graph", "push"])
+        result = metaxy_project.run_cli(["push"])
         assert result.returncode == 0
 
     # Now run with downstream features that have an external placeholder
@@ -1231,7 +1231,7 @@ def test_sync_flag_warns_on_version_mismatch(metaxy_project: TempMetaxyProject):
 
     # First, push the upstream feature to the store
     with metaxy_project.with_features(upstream_features_v1):
-        result = metaxy_project.run_cli(["graph", "push"])
+        result = metaxy_project.run_cli(["push"])
         assert result.returncode == 0
 
     # Now run with mismatched external placeholder
@@ -1299,7 +1299,7 @@ def test_locked_flag_errors_on_version_mismatch(metaxy_project: TempMetaxyProjec
 
     # First, push the upstream feature to the store
     with metaxy_project.with_features(upstream_features):
-        result = metaxy_project.run_cli(["graph", "push"])
+        result = metaxy_project.run_cli(["push"])
         assert result.returncode == 0
 
     # Now run with mismatched external placeholder and --locked
@@ -1334,7 +1334,7 @@ def test_locked_flag_succeeds_when_versions_match(metaxy_project: TempMetaxyProj
 
     # First, push the upstream feature to the store
     with metaxy_project.with_features(upstream_features):
-        result = metaxy_project.run_cli(["graph", "push"])
+        result = metaxy_project.run_cli(["push"])
         assert result.returncode == 0
 
     # Now run with --sync --locked when there's nothing to mismatch
