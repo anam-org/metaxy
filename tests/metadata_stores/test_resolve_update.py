@@ -1449,7 +1449,7 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
     # Use DeltaMetadataStore which has append mode by default
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
-    with store.open(mode="write"), graph.use():
+    with store.open(mode="w"), graph.use():
         import narwhals as nw
 
         # Write upstream metadata for 10 chunks

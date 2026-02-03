@@ -81,7 +81,7 @@ def delete(
 
     context.log.info(f"Executing {'soft' if config.soft else 'hard'} delete for {feature_key.to_string()}")
 
-    with store.open("write"):
+    with store.open("w"):
         store.delete(feature_key, filters=filter_exprs, soft=config.soft)
 
     context.log.info(f"Successfully completed delete for {feature_key.to_string()}")

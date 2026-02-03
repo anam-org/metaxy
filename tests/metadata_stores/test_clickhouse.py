@@ -80,7 +80,7 @@ def test_clickhouse_conn_property_enforcement(
         conn = store.conn
         assert conn is not None
 
-    with store.open("write"):
+    with store.open("w"):
         conn = store.conn
         assert conn is not None
 
@@ -176,7 +176,7 @@ def test_clickhouse_config_instantiation(
     assert isinstance(store, ClickHouseMetadataStore)
 
     # Verify store can be opened
-    with store.open("write"):
+    with store.open("w"):
         assert store._is_open
 
 
@@ -228,7 +228,7 @@ def test_clickhouse_config_with_hash_algorithm(
     assert isinstance(store, ClickHouseMetadataStore)
     assert store.hash_algorithm == HashAlgorithm.MD5
 
-    with store.open("write"):
+    with store.open("w"):
         assert store._is_open
 
 
@@ -261,7 +261,7 @@ def test_clickhouse_config_with_fallback_stores(
     assert len(dev_store.fallback_stores) == 1
     assert isinstance(dev_store.fallback_stores[0], ClickHouseMetadataStore)
 
-    with dev_store.open("write"):
+    with dev_store.open("w"):
         assert dev_store._is_open
 
 

@@ -128,7 +128,7 @@ def populated_store(
     """Store with sample upstream data."""
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
-    with store.open("write"):
+    with store.open("w"):
         # Add upstream feature A
         upstream_a_data = make_upstream_a_data(
             sample_uids=[1, 2, 3],
@@ -166,7 +166,7 @@ def multi_env_stores(
 
 def test_write_and_read(empty_store: DeltaMetadataStore, UpstreamFeatureA, make_upstream_a_data) -> None:
     """Test basic write and read operations."""
-    with empty_store.open("write"):
+    with empty_store.open("w"):
         metadata = make_upstream_a_data(
             sample_uids=[1, 2, 3],
             prefix="hash",
@@ -183,7 +183,7 @@ def test_write_and_read(empty_store: DeltaMetadataStore, UpstreamFeatureA, make_
 
 def test_write_invalid_schema(empty_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test that writing without provenance_by_field column raises error."""
-    with empty_store.open("write"):
+    with empty_store.open("w"):
         invalid_df = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -201,7 +201,7 @@ def test_write_append(
     make_upstream_a_data,
 ) -> None:
     """Test that writes are append-only."""
-    with empty_store.open("write"):
+    with empty_store.open("w"):
         df1 = make_upstream_a_data(
             sample_uids=[1, 2],
             prefix="h",
@@ -223,7 +223,7 @@ def test_write_append(
 
 def test_read_with_filters(populated_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test reading with Polars filter expressions."""
-    with populated_store.open("write"):
+    with populated_store.open("w"):
         result = collect_to_polars(populated_store.read(UpstreamFeatureA, filters=[nw.col("sample_uid") > 1]))
 
         assert len(result) == 2
@@ -232,7 +232,7 @@ def test_read_with_filters(populated_store: DeltaMetadataStore, UpstreamFeatureA
 
 def test_read_with_column_selection(populated_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test reading specific columns."""
-    with populated_store.open("write"):
+    with populated_store.open("w"):
         result = collect_to_polars(
             populated_store.read(UpstreamFeatureA, columns=["sample_uid", "metaxy_provenance_by_field"])
         )
@@ -243,7 +243,7 @@ def test_read_with_column_selection(populated_store: DeltaMetadataStore, Upstrea
 
 def test_read_nonexistent_feature(empty_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
     """Test that reading nonexistent feature raises error."""
-    with empty_store.open("write"):
+    with empty_store.open("w"):
         with pytest.raises(FeatureNotFoundError):
             empty_store.read(UpstreamFeatureA)
 
@@ -253,7 +253,7 @@ def test_read_nonexistent_feature(empty_store: DeltaMetadataStore, UpstreamFeatu
 
 def test_has_feature_local(populated_store: DeltaMetadataStore, UpstreamFeatureA, UpstreamFeatureB) -> None:
     """Test has_feature for local store."""
-    with populated_store.open("write"):
+    with populated_store.open("w"):
         assert populated_store.has_feature(UpstreamFeatureA, check_fallback=False)
         assert not populated_store.has_feature(UpstreamFeatureB, check_fallback=False)
 
@@ -406,7 +406,7 @@ def test_store_context_manager_opens_and_closes(
     # Initially closed
     assert not empty_store._is_open
 
-    with empty_store.open("write"):
+    with empty_store.open("w"):
         # Should be open inside context
         assert empty_store._is_open
 
@@ -443,7 +443,7 @@ def test_write_casts_null_typed_system_columns(empty_store: DeltaMetadataStore, 
     assert df.schema["metaxy_created_at"] == pl.Null
     assert df.schema["metaxy_materialization_id"] == pl.Null
 
-    with empty_store.open("write"):
+    with empty_store.open("w"):
         empty_store.write(UpstreamFeatureA, df)
 
         # Read back and verify columns are now correctly typed
@@ -464,7 +464,7 @@ def test_resolve_update_accepts_feature_key(
     # UpstreamFeatureA = features["UpstreamFeatureA"]
     DownstreamFeature = features["DownstreamFeature"]
 
-    with populated_store.open("write"):
+    with populated_store.open("w"):
         # Test with feature class (existing behavior)
         increment_from_class = populated_store.resolve_update(DownstreamFeature)
         assert increment_from_class.added is not None

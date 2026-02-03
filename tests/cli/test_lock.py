@@ -531,7 +531,7 @@ def test_generate_lock_file_errors_on_missing_transitive_dependency(tmp_path: Pa
             storage.push_graph_snapshot()
 
     # Now delete chain/c from the store to simulate missing transitive dep
-    with DuckDBMetadataStore(database=store_path).open("write") as store:
+    with DuckDBMetadataStore(database=store_path).open("w") as store:
         store._duckdb_raw_connection().execute(
             "DELETE FROM metaxy_system__feature_versions WHERE feature_key = 'chain/c'"
         )

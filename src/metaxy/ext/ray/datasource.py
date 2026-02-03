@@ -157,7 +157,7 @@ class MetaxyDatasource(Datasource):
 
     def _get_row_count(self) -> int:
         """Get the row count by executing a lightweight count query."""
-        with self.store.open("read"):
+        with self.store:
             return self._read_lazy().select(nw.len()).collect().item()
 
     def get_read_tasks(self, parallelism: int, per_task_row_limit: int | None = None) -> list[ReadTask]:
@@ -180,7 +180,7 @@ class MetaxyDatasource(Datasource):
         def read_fn() -> list[pa.Table]:
             mx.init_metaxy(datasource.config)
 
-            with datasource.store.open("read"):
+            with datasource.store:
                 lf = datasource._read_lazy()
                 table = lf.collect(backend="pyarrow").to_arrow()
                 batches = table.to_batches(max_chunksize=row_limit)

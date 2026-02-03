@@ -169,7 +169,7 @@ class DeltaMetadataStore(MetadataStore):
             yield engine
 
     @contextmanager
-    def open(self, mode: AccessMode = "read") -> Iterator[Self]:  # noqa: ARG002
+    def open(self, mode: AccessMode = "r") -> Iterator[Self]:  # noqa: ARG002
         """Open the Delta Lake store.
 
         Delta-rs opens connections lazily per operation, so no connection state management needed.

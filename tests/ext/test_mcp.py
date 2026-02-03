@@ -260,7 +260,7 @@ class TestGetMetadata:
             }
         )
 
-        with store.open("write"):
+        with store.open("w"):
             store.write(parent_cls, test_data)
 
         result = await _call_tool(
@@ -288,7 +288,7 @@ class TestGetMetadata:
             }
         )
 
-        with store.open("write"):
+        with store.open("w"):
             store.write(parent_cls, test_data)
 
         result = await _call_tool(
@@ -317,7 +317,7 @@ class TestGetMetadata:
             }
         )
 
-        with store.open("write"):
+        with store.open("w"):
             store.write(parent_cls, test_data)
 
         result = await _call_tool(
@@ -347,7 +347,7 @@ class TestGetMetadata:
             }
         )
 
-        with store.open("write"):
+        with store.open("w"):
             store.write(parent_cls, test_data)
 
         # Sort ascending

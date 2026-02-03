@@ -408,7 +408,7 @@ def delete(
 
         errors: dict[str, str] = {}
 
-        with metadata_store.open("write"):
+        with metadata_store.open("w"):
             for feature_key in selector:
                 try:
                     metadata_store.delete(
@@ -466,7 +466,7 @@ def _count_rows_to_delete(
     row_counts: dict[FeatureKey, int | str] = {}
     count_frames: list[tuple[FeatureKey, nw.LazyFrame]] = []
 
-    with store.open("read"):
+    with store:
         # Build count lazy frames for all features
         for feature_key in selector:
             try:
@@ -615,7 +615,7 @@ def copy(
         console=data_console,
         spinner="dots",
     ):
-        with source_store.open("read"), dest_store.open("write"):
+        with source_store, dest_store.open("w"):
             stats = dest_store.copy_metadata(
                 from_store=source_store,
                 features=list(selector),

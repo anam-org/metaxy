@@ -35,7 +35,7 @@ def test_datasource_reads_metadata(
     mx.init_metaxy(ray_config)
 
     # First, write some data to the store
-    with delta_store.open("write"):
+    with delta_store.open("w"):
         delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read using datasource
@@ -74,7 +74,7 @@ def test_datasource_feature_key_formats(
     mx.init_metaxy(ray_config)
 
     # Write data to the store
-    with delta_store.open("write"):
+    with delta_store.open("w"):
         delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read using different feature key format
@@ -102,7 +102,7 @@ def test_datasource_single_row(
 
     single_row_data = make_test_data(sample_uids=["single"], values=[42])
 
-    with delta_store.open("write"):
+    with delta_store.open("w"):
         delta_store.write(FEATURE_KEY, single_row_data.to_arrow())
 
     datasource = MetaxyDatasource(
@@ -185,7 +185,7 @@ def test_datasource_with_filters(
     mx.init_metaxy(ray_config)
 
     # Write data to the store
-    with delta_store.open("write"):
+    with delta_store.open("w"):
         delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read with filter: value > 2
@@ -217,7 +217,7 @@ def test_datasource_with_columns(
     mx.init_metaxy(ray_config)
 
     # Write data to the store
-    with delta_store.open("write"):
+    with delta_store.open("w"):
         delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read with column selection
@@ -250,7 +250,7 @@ def test_datasource_with_filters_and_columns(
     mx.init_metaxy(ray_config)
 
     # Write data to the store
-    with delta_store.open("write"):
+    with delta_store.open("w"):
         delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read with filter and column selection
@@ -304,7 +304,7 @@ root_path = "{delta_root}"
     mx.init_metaxy(config)
 
     # Write data first
-    with delta_store.open("write"):
+    with delta_store.open("w"):
         delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Create datasource with explicit config
@@ -379,7 +379,7 @@ def test_datasource_and_datasink_end_to_end(
     transformed_ds.write_datasink(dest_sink)
 
     # Verify the result by reading from destination
-    with dest_store.open("read"):
+    with dest_store:
         result = dest_store.read(FEATURE_KEY)
         df = result.collect()
 
@@ -401,7 +401,7 @@ def test_datasource_incremental_all_new(
     mx.init_metaxy(ray_config)
 
     # Write upstream data (root feature)
-    with delta_store.open("write"):
+    with delta_store.open("w"):
         delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read incrementally from derived feature - all samples should be "new"
@@ -432,11 +432,11 @@ def test_datasource_incremental_up_to_date(
     mx.init_metaxy(ray_config)
 
     # Write upstream data (root feature)
-    with delta_store.open("write"):
+    with delta_store.open("w"):
         delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Compute and write derived data with correct provenance
-    with delta_store.open("write"):
+    with delta_store.open("w"):
         increment = delta_store.resolve_update(DERIVED_FEATURE_KEY)
         derived_data = increment.added.with_columns(nw.lit(100).alias("derived_value"))
         delta_store.write(DERIVED_FEATURE_KEY, derived_data.to_arrow())

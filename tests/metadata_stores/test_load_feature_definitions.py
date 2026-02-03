@@ -719,7 +719,7 @@ def test_resolve_update_loads_external_feature_definitions(tmp_path: Path):
             pass
 
         # Step 3: Call resolve_update - this should automatically load the real upstream definition
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("write") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 

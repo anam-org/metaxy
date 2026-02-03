@@ -93,7 +93,7 @@ if (len(increment.added) + len(increment.changed)) > 0:
 <!-- skip: next -->
 
 ```py {title="script.py"}
-with store.open("write"):
+with store.open("w"):
     store.write(VoiceDetection, results)
 ```
 

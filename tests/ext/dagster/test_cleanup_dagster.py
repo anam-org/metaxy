@@ -113,7 +113,7 @@ def test_delete_integration(feature_cls, tmp_path):
         }
     )
 
-    with store.open("write"):
+    with store.open("w"):
         store.write(feature_cls, test_data)
 
     # Verify data was written
@@ -174,7 +174,7 @@ def test_delete_integration_hard_delete(feature_cls, tmp_path):
         }
     )
 
-    with store.open("write"):
+    with store.open("w"):
         store.write(feature_cls, test_data)
 
     # Execute the job with hard delete

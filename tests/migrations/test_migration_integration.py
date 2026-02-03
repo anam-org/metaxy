@@ -188,7 +188,7 @@ def test_basic_migration_flow(
     store_v2 = migrate_store_to_graph(store_v1, simple_graph_v2)
     SimpleV2 = simple_graph_v2.feature_definitions_by_key[FeatureKey(["test_integration", "simple"])]
 
-    with simple_graph_v2.use(), store_v2.open("write"):
+    with simple_graph_v2.use(), store_v2.open("w"):
         # Step 3: Detect migration (BEFORE recording v2 snapshot)
         # This compares latest snapshot in store (v1) with active graph (v2)
         migration = detect_diff_migration(
@@ -286,7 +286,7 @@ def test_upstream_downstream_migration(
     UpstreamV2 = upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "upstream"])]
     upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "downstream"])]
 
-    with upstream_downstream_v2.use(), store_v2.open("write"):
+    with upstream_downstream_v2.use(), store_v2.open("w"):
         # Step 3: Detect migration (before recording v2 snapshot)
         migration = detect_diff_migration(
             store_v2,
@@ -376,7 +376,7 @@ def test_migration_idempotency(
     UpstreamV2 = upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "upstream"])]
     upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "downstream"])]
 
-    with upstream_downstream_v2.use(), store_v2.open("write"):
+    with upstream_downstream_v2.use(), store_v2.open("w"):
         # Update upstream manually
         new_upstream_data = pl.DataFrame(
             {
@@ -457,7 +457,7 @@ def test_migration_dry_run(
     UpstreamV2 = upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "upstream"])]
     DownstreamV2 = upstream_downstream_v2.feature_definitions_by_key[FeatureKey(["test_integration", "downstream"])]
 
-    with upstream_downstream_v2.use(), store_v2.open("write"):
+    with upstream_downstream_v2.use(), store_v2.open("w"):
         # Update upstream
         new_upstream_data = pl.DataFrame(
             {

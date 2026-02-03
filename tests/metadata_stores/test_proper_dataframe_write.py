@@ -125,7 +125,7 @@ class TestProperDataframeWrite:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            with any_store.open("write"):
+            with any_store.open("w"):
                 any_store.write(RootFeature, df)
 
                 # Verify write succeeded
@@ -174,7 +174,7 @@ class TestProperDataframeWrite:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            with any_store.open("write"):
+            with any_store.open("w"):
                 any_store.write(RootFeature, root_df)
                 any_store.write(DownstreamFeature, downstream_df)
 
@@ -192,6 +192,6 @@ class TestProperDataframeWrite:
 
 
 def test_sql_dialect_uses_connection(ibis_store: DuckDBMetadataStore) -> None:
-    with ibis_store.open("write"):
+    with ibis_store.open("w"):
         expected = ibis_store.conn.name
         assert ibis_store._sql_dialect == expected

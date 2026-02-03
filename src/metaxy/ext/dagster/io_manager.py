@@ -166,7 +166,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
 
         if obj is not None:
             context.log.debug(f'Writing metadata for Metaxy feature "{key.to_string()}" into {self.metadata_store}')
-            with self.metadata_store.open("write"):
+            with self.metadata_store.open("w"):
                 self.metadata_store.write(feature=feature, df=obj)
             context.log.debug(f'Metadata written for Metaxy feature "{key.to_string()}" into {self.metadata_store}')
         else:

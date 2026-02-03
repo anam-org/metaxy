@@ -55,7 +55,7 @@ class TestMetaxyIOManagerHandleOutput:
         """Test that handle_output with None logs metadata when feature data exists externally."""
         # First write data externally (not via IOManager)
         store = mx.MetaxyConfig.get().get_store("dev")
-        with store.open("write"):
+        with store.open("w"):
             store.write(
                 upstream_feature,
                 pl.DataFrame(
@@ -135,7 +135,7 @@ class TestMetaxyIOManagerHandleOutput:
         )
         def my_asset(store: dg.ResourceParam[mx.MetadataStore]):
             # Write data directly to store inside the asset
-            with store.open("write"):
+            with store.open("w"):
                 store.write(
                     upstream_feature,
                     pl.DataFrame(
@@ -244,7 +244,7 @@ class TestMetaxyIOManagerLoadInput:
         fallback_store = DeltaMetadataStore(root_path=fallback_path)
 
         # Write upstream data to fallback store only
-        with fallback_store.open("write"):
+        with fallback_store.open("w"):
             fallback_store.write(
                 upstream_feature,
                 pl.DataFrame(
@@ -410,7 +410,7 @@ class TestMetaxyIOManagerMetadata:
         """Test that output metadata includes feature version info."""
         # First write data externally so metadata can be read
         store = mx.MetaxyConfig.get().get_store("dev")
-        with store.open("write"):
+        with store.open("w"):
             store.write(
                 upstream_feature,
                 pl.DataFrame(

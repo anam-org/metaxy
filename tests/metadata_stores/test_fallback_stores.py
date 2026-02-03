@@ -630,7 +630,7 @@ def test_fallback_stores_opened_on_demand_when_reading(tmp_path, graph: FeatureG
     dev_store = DeltaMetadataStore(root_path=dev_path, fallback_stores=[branch_store])
 
     # Write data to the fallback (branch) store
-    with branch_store.open(mode="write"):
+    with branch_store.open(mode="w"):
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -681,7 +681,7 @@ def test_get_store_metadata_respects_fallback_stores(tmp_path, graph: FeatureGra
     primary_store = DeltaMetadataStore(root_path=primary_path, fallback_stores=[fallback_store])
 
     # Write data to the fallback store only
-    with fallback_store.open(mode="write"):
+    with fallback_store.open(mode="w"):
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -765,10 +765,10 @@ def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph)
     )
 
     # Write data to both stores
-    with fallback_store.open(mode="write"):
+    with fallback_store.open(mode="w"):
         fallback_store.write(TestFeature, metadata)
 
-    with primary_store.open(mode="write"):
+    with primary_store.open(mode="w"):
         primary_store.write(TestFeature, metadata)
 
     # get_store_metadata should return metadata from primary (current) store
@@ -814,7 +814,7 @@ def test_read_with_store_info(tmp_path, graph: FeatureGraph) -> None:
     primary_store = DeltaMetadataStore(root_path=primary_path, name="primary", fallback_stores=[fallback_store])
 
     # Write data to the fallback store only
-    with fallback_store.open(mode="write"):
+    with fallback_store.open(mode="w"):
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -837,7 +837,7 @@ def test_read_with_store_info(tmp_path, graph: FeatureGraph) -> None:
         assert len(collected) == 3
 
     # Now write to primary store too
-    with primary_store.open(mode="write"):
+    with primary_store.open(mode="w"):
         primary_store.write(TestFeature, metadata)
 
     # Read from primary with with_store_info=True - should resolve to primary

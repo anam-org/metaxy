@@ -334,7 +334,7 @@ def test_hard_delete_memory_store_only(
         email: str | None = None
         status: str | None = None
 
-    with any_store.open("write"):
+    with any_store.open("w"):
         any_store.write(UserProfile, user_profile_df)
         any_store.delete(
             UserProfile,
@@ -366,7 +366,7 @@ def test_hard_delete(
         email: str | None = None
         status: str | None = None
 
-    with any_store.open("write"):
+    with any_store.open("w"):
         any_store.write(UserProfile, user_profile_df)
         any_store.delete(
             UserProfile,

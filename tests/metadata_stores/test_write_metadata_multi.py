@@ -124,7 +124,7 @@ class TestBasicFunctionality:
             )
         }
 
-        with store.open("write"):
+        with store.open("w"):
             store.write_multi(metadata)
 
         # Verify data was written
@@ -156,7 +156,7 @@ class TestBasicFunctionality:
             ),
         }
 
-        with store.open("write"):
+        with store.open("w"):
             store.write_multi(metadata)
 
         # Verify both features were written
@@ -228,7 +228,7 @@ class TestReverseTopologicalOrder:
             return original_write(feature, df, materialization_id)
 
         with patch.object(store, "write", side_effect=tracked_write):
-            with store.open("write"):
+            with store.open("w"):
                 store.write_multi(metadata)
 
         # Verify D was written before C, and C before A
@@ -290,7 +290,7 @@ class TestReverseTopologicalOrder:
             return original_write(feature, df, materialization_id)
 
         with patch.object(store, "write", side_effect=tracked_write):
-            with store.open("write"):
+            with store.open("w"):
                 store.write_multi(metadata)
 
         # Verify reverse order: C, B, A
@@ -319,7 +319,7 @@ class TestInputVariations:
             )
         }
 
-        with store.open("write"):
+        with store.open("w"):
             store.write_multi(metadata)
 
         result = collect_to_polars(store.read(FeatureA))
@@ -342,7 +342,7 @@ class TestInputVariations:
             )
         }
 
-        with store.open("write"):
+        with store.open("w"):
             store.write_multi(metadata)
 
         result = collect_to_polars(store.read(FeatureA))
@@ -365,7 +365,7 @@ class TestInputVariations:
             )
         }
 
-        with store.open("write"):
+        with store.open("w"):
             store.write_multi(metadata)
 
         result = collect_to_polars(store.read(FeatureA))
@@ -395,7 +395,7 @@ class TestInputVariations:
             ),
         }
 
-        with store.open("write"):
+        with store.open("w"):
             store.write_multi(metadata)
 
         result_a = collect_to_polars(store.read(FeatureA))
@@ -436,7 +436,7 @@ class TestMaterializationId:
             return original_write(feature, df, materialization_id)
 
         with patch.object(store, "write", side_effect=tracked_write):
-            with store.open("write"):
+            with store.open("w"):
                 store.write_multi(metadata, materialization_id=materialization_id)
 
         # Verify materialization_id was passed
@@ -478,7 +478,7 @@ class TestMaterializationId:
             return original_write(feature, df, materialization_id)
 
         with patch.object(store, "write", side_effect=tracked_write):
-            with store.open("write"):
+            with store.open("w"):
                 store.write_multi(metadata, materialization_id=materialization_id)
 
         # Verify materialization_id was passed to all writes
@@ -520,7 +520,7 @@ class TestDataIntegrity:
             ),
         }
 
-        with store.open("write"):
+        with store.open("w"):
             store.write_multi(metadata)
 
         # Read back and verify
@@ -583,7 +583,7 @@ class TestErrorHandling:
         }
 
         with pytest.raises(MetadataSchemaError, match="metaxy_provenance_by_field"):
-            with store.open("write"):
+            with store.open("w"):
                 store.write_multi(metadata)
 
 
@@ -615,7 +615,7 @@ class TestSubsetOfFeatures:
             ),
         }
 
-        with store.open("write"):
+        with store.open("w"):
             store.write_multi(metadata)
 
         # Verify A and C were written

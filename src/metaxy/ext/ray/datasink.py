@@ -106,7 +106,7 @@ class MetaxyDatasink(Datasink[_WriteTaskResult]):
             num_rows = block_accessor.num_rows()
 
             try:
-                with self.store.open("write"):
+                with self.store.open("w"):
                     self.store.write(self._feature_key, block)
                 rows_written += num_rows
             except Exception:

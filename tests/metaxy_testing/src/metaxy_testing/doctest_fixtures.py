@@ -115,7 +115,7 @@ class DocsStoreFixtures:
             }
         )
 
-        with self._store_with_data.open("write"):
+        with self._store_with_data.open("w"):
             self._store_with_data.write(MyFeature, sample_data)
 
     def teardown(self) -> None:

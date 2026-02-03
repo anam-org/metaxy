@@ -58,7 +58,7 @@ def push(
 
     assert METAXY_TAG not in tags, "`metaxy` tag is reserved for internal use"
 
-    with metadata_store.open("write"):
+    with metadata_store.open("w"):
         storage = SystemTableStorage(metadata_store)
         result = storage.push_graph_snapshot(
             project=context.config.project,

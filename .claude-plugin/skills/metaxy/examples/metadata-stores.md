@@ -17,7 +17,7 @@ with store:
     result = store.read_metadata(MyFeature, current_only=True)
     df = result.collect().to_polars()
 
-with store.open("write"):
+with store.open("w"):
     # Write metadata
     store.write_metadata(MyFeature, df)
 ```

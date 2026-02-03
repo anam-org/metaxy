@@ -42,7 +42,7 @@ def test_subsequent_writes_override_previous(store: MetadataStore):
         id: str
         value: int
 
-    with store.open("write"):
+    with store.open("w"):
         # Perform 5 writes with incrementing values
         for i in range(1, 6):
             data = pl.DataFrame(
@@ -97,7 +97,7 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
     feature_version = MyFeature.feature_version()
 
     # First, write a single row using write to create the table with proper schema
-    with store.open("write"):
+    with store.open("w"):
         init_data = pl.DataFrame(
             {
                 "id": ["init"],
@@ -150,11 +150,11 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
     )
 
     # Use _write_feature to bypass timestamp auto-generation
-    with store.open("write"):
+    with store.open("w"):
         store._write_feature(key, nw.from_native(data))
 
     # Read and verify
-    with store.open("read"):
+    with store:
         # Read all rows for "same_id" (excluding our init row)
         all_rows = store.read(key, with_sample_history=True).collect().to_polars().filter(pl.col("id") == "same_id")
         assert all_rows.shape[0] == num_rows, f"Expected {num_rows} rows, got {all_rows.shape[0]}"
@@ -218,10 +218,10 @@ def test_write_overwrites_user_provided_timestamp(store: MetadataStore):
         }
     )
 
-    with store.open("write"):
+    with store.open("w"):
         store.write(key, data)
 
-    with store.open("read"):
+    with store:
         result = store.read(key, with_sample_history=True).collect().to_polars()
         actual_ts = result[METAXY_UPDATED_AT][0]
 
@@ -255,7 +255,7 @@ def test_multiple_ids_each_get_latest_value(store: MetadataStore):
         id: str
         value: int
 
-    with store.open("write"):
+    with store.open("w"):
         # Write 3 versions for each of 3 IDs
         for version in range(1, 4):
             data = pl.DataFrame(

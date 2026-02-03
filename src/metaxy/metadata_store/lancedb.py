@@ -164,7 +164,7 @@ class LanceDBMetadataStore(MetadataStore):
             pass
 
     @contextmanager
-    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
+    def open(self, mode: AccessMode = "r") -> Iterator[Self]:
         """Open LanceDB connection.
 
         For local filesystem paths, creates the directory if it doesn't exist.

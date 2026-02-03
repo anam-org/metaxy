@@ -17,7 +17,7 @@ It looks more or less like this:
     with store:
         df = store.read(MyFeature)
 
-    with store.open("write"):
+    with store.open("w"):
         store.write(MyFeature, df)
     ```
 
@@ -75,7 +75,7 @@ from datetime import datetime, timedelta, timezone
 
 import narwhals as nw
 
-with store.open("write"):
+with store.open("w"):
     store.delete(
         MyFeature,
         filters=[nw.col("metaxy_created_at") < datetime.now(timezone.utc) - timedelta(days=30)],

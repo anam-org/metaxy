@@ -367,7 +367,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
     # ------------------------------------------------------------------ DuckLake
     @contextmanager
-    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
+    def open(self, mode: AccessMode = "r") -> Iterator[Self]:
         """Open DuckDB connection with specified access mode.
 
         Args:
@@ -378,7 +378,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
             Self: The store instance with connection open
         """
         # Setup: Configure connection params based on mode
-        if mode == "read":
+        if mode == "r":
             self.connection_params["read_only"] = True
         else:
             # Remove read_only if present (switching to WRITE)

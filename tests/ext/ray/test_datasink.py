@@ -43,7 +43,7 @@ def test_datasink_writes_metadata(
 
     ds.write_datasink(datasink)
 
-    with delta_store.open("read"):
+    with delta_store:
         result = delta_store.read(FEATURE_KEY)
         assert result is not None
         df = result.collect()
@@ -84,7 +84,7 @@ def test_datasink_with_multiple_blocks(
 
     ds.write_datasink(datasink)
 
-    with delta_store.open("read"):
+    with delta_store:
         result = delta_store.read(FEATURE_KEY)
         assert result is not None
         df = result.collect()
@@ -124,7 +124,7 @@ def test_datasink_feature_key_formats(
 
     ds.write_datasink(datasink)
 
-    with delta_store.open("read"):
+    with delta_store:
         result = delta_store.read(FEATURE_KEY)
         assert result is not None
         df = result.collect()
@@ -173,7 +173,7 @@ root_path = "{delta_root}"
 
     ds.write_datasink(datasink)
 
-    with delta_store.open("read"):
+    with delta_store:
         result = delta_store.read(FEATURE_KEY)
         assert result is not None
         df = result.collect()
@@ -202,7 +202,7 @@ def test_datasink_single_row(
 
     ds.write_datasink(datasink)
 
-    with delta_store.open("read"):
+    with delta_store:
         result = delta_store.read(FEATURE_KEY)
         assert result is not None
         df = result.collect()
@@ -328,7 +328,7 @@ def test_datasink_result_aggregates_across_multiple_write_tasks(
     assert datasink.result.rows_failed == 0
 
     # Verify the data was actually written
-    with delta_store.open("read"):
+    with delta_store:
         result = delta_store.read(FEATURE_KEY)
         assert result is not None
         df = result.collect()

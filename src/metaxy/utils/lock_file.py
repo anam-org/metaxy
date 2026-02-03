@@ -157,7 +157,7 @@ def generate_lock_file(
         return 0
 
     # Use nullcontext if store is already open, otherwise open it
-    cm = nullcontext(store) if store._is_open else store.open("read")
+    cm = nullcontext(store) if store._is_open else store
     with cm:
         storage = SystemTableStorage(store)
         # Single query: load all features except current project

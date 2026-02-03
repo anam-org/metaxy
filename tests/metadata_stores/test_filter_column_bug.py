@@ -64,7 +64,7 @@ def test_read_with_filter_on_own_column(store: MetadataStore):
             height: int  # Child's OWN height column (different from parent's)
             width: int
 
-        with store.open("write"):
+        with store.open("w"):
             # Write parent data first
             parent_data = pl.DataFrame(
                 {
@@ -148,7 +148,7 @@ def test_read_with_filter_after_dedup(store: MetadataStore):
             height: int
             width: int
 
-        with store.open("write"):
+        with store.open("w"):
             # Write parent data
             parent_data = pl.DataFrame(
                 {
@@ -236,7 +236,7 @@ def test_read_with_columns_and_filter_on_different_column(store: MetadataStore):
             height: int | None
             width: int
 
-        with store.open("write"):
+        with store.open("w"):
             # Write data with some NULL heights
             data = pl.DataFrame(
                 {
@@ -321,7 +321,7 @@ def test_read_with_deps_columns_and_filter_on_own_column(store: MetadataStore):
             height: int | None  # Child's OWN height column (nullable)
             width: int
 
-        with store.open("write"):
+        with store.open("w"):
             # Write parent data first
             parent_data = pl.DataFrame(
                 {
@@ -421,7 +421,7 @@ def test_resolve_update_with_target_filter_on_child_only_column(store: MetadataS
             height: int | None  # Child's OWN height column
             width: int
 
-        with store.open("write"):
+        with store.open("w"):
             # Write parent data
             parent_data = pl.DataFrame(
                 {
@@ -512,7 +512,7 @@ def test_resolve_update_with_global_filter_on_child_only_column_fails(store: Met
             height: int | None  # Child's OWN height column
             width: int
 
-        with store.open("write"):
+        with store.open("w"):
             # Write parent data
             parent_data = pl.DataFrame(
                 {

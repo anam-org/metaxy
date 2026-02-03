@@ -103,7 +103,7 @@ def generate(
     # Reconstruct CLI command for YAML comment
     cli_command = shlex.join(sys.argv)
 
-    with metadata_store.open("write"):
+    with metadata_store.open("w"):
         # Load feature definitions from the store to ensure version hashes are computed
         # correctly against actual stored definitions. External feature version checking
         # is handled by sync_external_features when --sync flag is used.
@@ -228,7 +228,7 @@ def apply(
     metadata_store = context.get_store(store)
     migrations_dir = Path(".metaxy/migrations")
 
-    with metadata_store.open("write"):
+    with metadata_store.open("w"):
         storage = SystemTableStorage(metadata_store)
 
         # Load feature definitions from the store to ensure version hashes are computed

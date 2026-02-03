@@ -121,7 +121,7 @@ def test_duckdb_conn_property_enforcement(tmp_path: Path, test_graph, test_featu
         _ = store.conn
 
     # Should work when open
-    with store.open("write"):
+    with store.open("w"):
         conn = store.conn
         assert conn is not None
 
@@ -211,7 +211,7 @@ def test_duckdb_config_instantiation() -> None:
     assert store.database == ":memory:"
 
     # Verify store can be opened
-    with store.open("write"):
+    with store.open("w"):
         assert store._is_open
 
 
@@ -245,7 +245,7 @@ def test_duckdb_config_with_extensions() -> None:
             extension_names.append(ext.name)
     assert "hashfuncs" in extension_names
 
-    with store.open("write"):
+    with store.open("w"):
         assert store._is_open
 
 
@@ -270,7 +270,7 @@ def test_duckdb_config_with_hash_algorithm() -> None:
     assert isinstance(store, DuckDBMetadataStore)
     assert store.hash_algorithm == HashAlgorithm.MD5
 
-    with store.open("write"):
+    with store.open("w"):
         assert store._is_open
 
 
@@ -301,5 +301,5 @@ def test_duckdb_config_with_fallback_stores() -> None:
     assert len(dev_store.fallback_stores) == 1
     assert isinstance(dev_store.fallback_stores[0], DuckDBMetadataStore)
 
-    with dev_store.open("write"):
+    with dev_store.open("w"):
         assert dev_store._is_open

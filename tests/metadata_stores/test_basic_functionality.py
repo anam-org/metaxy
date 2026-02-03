@@ -136,7 +136,7 @@ def test_read_filters_applied_after_deduplication(store: MetadataStore):
         id: str
         status: int | None
 
-    with store.open("write"):
+    with store.open("w"):
         # Step 1: Write initial data where all rows have status=NULL
         initial_data = pl.DataFrame(
             {
@@ -215,7 +215,7 @@ def test_metaxy_updated_at_column(store: MetadataStore):
         id: str
         value: int
 
-    with store.open("write"):
+    with store.open("w"):
         # Step 1: Write initial data
         initial_data = pl.DataFrame(
             {
@@ -279,7 +279,7 @@ def test_soft_delete_preserves_original_updated_at(store: MetadataStore):
         id: str
         value: int
 
-    with store.open("write"):
+    with store.open("w"):
         # Write initial data
         initial_data = pl.DataFrame(
             {
@@ -333,7 +333,7 @@ def test_soft_delete_timestamps_consistency(store: MetadataStore):
         id: str
         value: int
 
-    with store.open("write"):
+    with store.open("w"):
         # Write initial data
         initial_data = pl.DataFrame(
             {

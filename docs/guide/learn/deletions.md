@@ -11,7 +11,7 @@ By default, `read` filters out soft-deleted records automatically. You only see 
 ```python
 import narwhals as nw
 
-with store.open("write"):
+with store.open("w"):
     store.delete(
         MyFeature,
         filters=nw.col("status") == "pending",
@@ -31,7 +31,7 @@ Hard deletes permanently remove rows from storage. Use them when you need to phy
 ```python
 import narwhals as nw
 
-with store.open("write"):
+with store.open("w"):
     store.delete(
         MyFeature,
         filters=nw.col("quality") < 0.8,

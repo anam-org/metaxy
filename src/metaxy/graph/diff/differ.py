@@ -606,7 +606,7 @@ class GraphDiffer:
 
         # Auto-open store if not already open
         if not store._is_open:
-            with store.open("read"):
+            with store:
                 return self.load_snapshot_data(store, snapshot_version, project)
 
         storage = SystemTableStorage(store)

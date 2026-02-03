@@ -104,7 +104,7 @@ def test_delete_accepts_predicate_cases(
     base_delete_filter_df: pl.DataFrame,
     soft: bool,
 ) -> None:
-    with any_store.open("write"):
+    with any_store.open("w"):
         any_store.write(delete_filter_feature, base_delete_filter_df)
         any_store.delete(
             delete_filter_feature,
@@ -120,7 +120,7 @@ def test_delete_datetime_filter_hard_delete(
     base_delete_filter_df: pl.DataFrame,
 ) -> None:
     cutoff = datetime(2024, 1, 5, tzinfo=timezone.utc)
-    with any_store.open("write"):
+    with any_store.open("w"):
         any_store.write(delete_filter_feature, base_delete_filter_df)
         any_store.delete(
             delete_filter_feature,
@@ -142,7 +142,7 @@ def test_delete_with_none_filters(
     soft: bool,
 ) -> None:
     """Test that delete accepts None as filters to delete all records."""
-    with any_store.open("write"):
+    with any_store.open("w"):
         any_store.write(delete_filter_feature, base_delete_filter_df)
         any_store.delete(
             delete_filter_feature,

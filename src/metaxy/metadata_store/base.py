@@ -345,7 +345,7 @@ class MetadataStore(ABC):
                     ],
                 }
             )
-            with store.open(mode="write"):
+            with store.open(mode="w"):
                 result = store.resolve_update(MyFeature, samples=nw.from_native(samples))
             ```
         """
@@ -919,7 +919,7 @@ class MetadataStore(ABC):
             MetadataSchemaError: If DataFrame schema is invalid
             StoreNotOpenError: If store is not open
         Note:
-            - Must be called within a `MetadataStore.open(mode="write")` context manager.
+            - Must be called within a `MetadataStore.open(mode="w")` context manager.
 
             - Metaxy always performs an "append" operation. Metadata is never deleted or mutated.
 
@@ -986,7 +986,7 @@ class MetadataStore(ABC):
             ValueError: If writing to a feature from a different project than expected
 
         Note:
-            - Must be called within a `MetadataStore.open(mode="write")` context manager.
+            - Must be called within a `MetadataStore.open(mode="w")` context manager.
             - Empty mappings are handled gracefully (no-op).
             - Each feature's metadata is written via `write`, so all
               validation and system column handling from that method applies.
@@ -994,7 +994,7 @@ class MetadataStore(ABC):
         Example:
             <!-- skip next -->
             ```py
-            with store.open(mode="write"):
+            with store.open(mode="w"):
                 store.write_multi(
                     {
                         ChildFeature: child_df,
@@ -1210,7 +1210,7 @@ class MetadataStore(ABC):
 
     @abstractmethod
     @contextmanager
-    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
+    def open(self, mode: AccessMode = "r") -> Iterator[Self]:
         """Open/initialize the store for operations.
 
         Context manager that opens the store with specified access mode.
@@ -1237,7 +1237,7 @@ class MetadataStore(ABC):
             Self: The opened store instance
         """
         # Determine mode based on auto_create_tables
-        mode = "write" if self.auto_create_tables else "read"
+        mode = "w" if self.auto_create_tables else "r"
 
         # Open the store (open() manages _context_depth internally)
         self._open_cm = self.open(mode)  # ty: ignore[invalid-assignment]
@@ -1283,7 +1283,7 @@ class MetadataStore(ABC):
         if not self._is_open:
             raise StoreNotOpenError(
                 f"{self.__class__.__name__} must be opened before use. "
-                'Use it as a context manager: `with store: ...` or `with store.open(mode="write"): ...`'
+                'Use it as a context manager: `with store: ...` or `with store.open(mode="w"): ...`'
             )
 
     # ========== Hash Algorithm Validation ==========
@@ -1627,7 +1627,7 @@ class MetadataStore(ABC):
 
         Example:
             ```py
-            with store_with_data.open(mode="write"):
+            with store_with_data.open(mode="w"):
                 assert store_with_data.has_feature(MyFeature)
                 store_with_data.drop_feature_metadata(MyFeature)
             ```
@@ -1985,14 +1985,14 @@ class MetadataStore(ABC):
             <!-- skip next -->
             ```py
             # Copy all features
-            with source_store.open("read"), dest_store.open("write"):
+            with source_store, dest_store.open("w"):
                 stats = dest_store.copy_metadata(from_store=source_store)
             ```
 
             <!-- skip next -->
             ```py
             # Copy specific features
-            with source_store.open("read"), dest_store.open("write"):
+            with source_store, dest_store.open("w"):
                 stats = dest_store.copy_metadata(
                     from_store=source_store,
                     features=[mx.FeatureKey("my_feature")],
@@ -2002,7 +2002,7 @@ class MetadataStore(ABC):
             <!-- skip next -->
             ```py
             # Copy with global filters applied to all features
-            with source_store.open("read"), dest_store.open("write"):
+            with source_store, dest_store.open("w"):
                 stats = dest_store.copy_metadata(
                     from_store=source_store,
                     global_filters=[nw.col("id").is_in(["a", "b"])],
@@ -2012,7 +2012,7 @@ class MetadataStore(ABC):
             <!-- skip next -->
             ```py
             # Copy specific features with per-feature filters
-            with source_store.open("read"), dest_store.open("write"):
+            with source_store, dest_store.open("w"):
                 stats = dest_store.copy_metadata(
                     from_store=source_store,
                     features=[
@@ -2032,9 +2032,9 @@ class MetadataStore(ABC):
 
         # Validate both stores are open
         if not self._is_open:
-            raise ValueError('Destination store must be opened with store.open("write") before use')
+            raise ValueError('Destination store must be opened with store.open("w") before use')
         if not from_store._is_open:
-            raise ValueError('Source store must be opened with store.open("read") before use')
+            raise ValueError("Source store must be opened with store before use")
 
         return self._copy_metadata_impl(
             from_store=from_store,

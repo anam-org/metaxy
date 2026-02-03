@@ -291,7 +291,7 @@ class BatchedMetadataWriter:
             return {}
 
         # Write to store
-        with self._store.open("write"):
+        with self._store.open("w"):
             self._store.write_multi(combined)
 
         total_rows = sum(rows_per_feature.values())
