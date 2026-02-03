@@ -783,3 +783,75 @@ def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph)
         # Should be the primary store's path, not the fallback
         assert "primary" in resolved_from["uri"]
         assert "fallback" not in resolved_from["uri"]
+
+
+def test_read_metadata_with_store_info(tmp_path, graph: FeatureGraph) -> None:
+    """Test read_metadata with_store_info returns the resolved store.
+
+    When with_store_info=True, read_metadata should return a tuple of
+    (LazyFrame, MetadataStore) where the MetadataStore is the store that
+    actually contained the feature (which may be a fallback store).
+    """
+    from metaxy_testing.models import SampleFeatureSpec
+
+    from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+    from metaxy.metadata_store.delta import DeltaMetadataStore
+
+    class TestFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["read_metadata_with_store_info_test", "feature"]),
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    primary_path = tmp_path / "primary"
+    fallback_path = tmp_path / "fallback"
+
+    # Create stores with fallback chain
+    fallback_store = DeltaMetadataStore(root_path=fallback_path, name="fallback")
+    primary_store = DeltaMetadataStore(root_path=primary_path, name="primary", fallback_stores=[fallback_store])
+
+    # Write data to the fallback store only
+    with fallback_store.open(mode="write"):
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
+            }
+        )
+        fallback_store.write_metadata(TestFeature, metadata)
+
+    # Read from primary with with_store_info=True - should resolve to fallback
+    with primary_store:
+        df, resolved_store = primary_store.read_metadata(TestFeature, with_store_info=True)
+        assert resolved_store.name == "fallback"
+        assert resolved_store is not primary_store
+        # Verify the data is correct
+        collected = df.collect()
+        assert len(collected) == 3
+
+    # Now write to primary store too
+    with primary_store.open(mode="write"):
+        primary_store.write_metadata(TestFeature, metadata)
+
+    # Read from primary with with_store_info=True - should resolve to primary
+    with primary_store:
+        df, resolved_store = primary_store.read_metadata(TestFeature, with_store_info=True)
+        assert resolved_store.name == "primary"
+        assert resolved_store is primary_store
+        collected = df.collect()
+        assert len(collected) == 3
+
+    # Verify default behavior (with_store_info=False) still works
+    with primary_store:
+        df = primary_store.read_metadata(TestFeature)
+        # Should return just LazyFrame, not tuple
+        assert hasattr(df, "collect")
+        collected = df.collect()
+        assert len(collected) == 3

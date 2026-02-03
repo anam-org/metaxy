@@ -668,6 +668,7 @@ class MetadataStore(ABC):
 
             return engine.compute_provenance_columns(df, hash_algo=self.hash_algorithm)  # ty: ignore[invalid-argument-type]
 
+    @overload
     def read_metadata(
         self,
         feature: CoercibleToFeatureKey,
@@ -679,11 +680,44 @@ class MetadataStore(ABC):
         current_only: bool = True,
         latest_only: bool = True,
         include_soft_deleted: bool = False,
-    ) -> nw.LazyFrame[Any]:
+        with_store_info: Literal[False] = False,
+    ) -> nw.LazyFrame[Any]: ...
+
+    @overload
+    def read_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        *,
+        feature_version: str | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
+        allow_fallback: bool = True,
+        current_only: bool = True,
+        latest_only: bool = True,
+        include_soft_deleted: bool = False,
+        with_store_info: Literal[True],
+    ) -> tuple[nw.LazyFrame[Any], MetadataStore]: ...
+
+    def read_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        *,
+        feature_version: str | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
+        allow_fallback: bool = True,
+        current_only: bool = True,
+        latest_only: bool = True,
+        include_soft_deleted: bool = False,
+        with_store_info: bool = False,
+    ) -> nw.LazyFrame[Any] | tuple[nw.LazyFrame[Any], MetadataStore]:
         """
         Read metadata with optional fallback to upstream stores.
 
-        By default, soft-deleted rows (where `metaxy_deleted_at` is non-NULL) are filtered out.
+        By default, does not include:
+           - rows from historical feature versions (configured via `current_only=True`)
+           - rows that have been overwritten by subsequent writes with the same feature version (configured via `latest_only=True`)
+           - soft-deleted with `metaxy_deleted_at` set to a non-null value (configured via `include_soft_deleted=False`)
 
         Args:
             feature: Feature to read metadata for
@@ -691,13 +725,16 @@ class MetadataStore(ABC):
             filters: Sequence of Narwhals filter expressions to apply to this feature.
                 Example: `[nw.col("x") > 10, nw.col("y") < 5]`
             columns: Subset of columns to include. Metaxy's system columns are always included.
-            allow_fallback: If `True`, check fallback stores on local miss
-            current_only: If `True`, only return rows with current feature_version
+            allow_fallback: Whether to allow fallback to upstream stores if the requested feature is not found in the current store.
+            current_only: Whether to only return rows with the currently registered feature version.
             latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
             include_soft_deleted: If `True`, include soft-deleted rows in the result. Previous historical materializations of the same feature version will be effectively removed from the output otherwise.
+            with_store_info: If `True`, return a tuple of (LazyFrame, MetadataStore) where
+                the MetadataStore is the store that actually contained the feature (which
+                may be a fallback store if allow_fallback=True).
 
         Returns:
-            Narwhals LazyFrame with metadata
+            Narwhals `LazyFrame` with metadata, or, if `with_store_info=True`, a tuple of (`LazyFrame`, `MetadataStore`) containing the metadata store which has been actually used to retrieve the feature (may be a fallback store).
 
         Raises:
             FeatureNotFoundError: If feature not found in any store
@@ -814,6 +851,8 @@ class MetadataStore(ABC):
             if columns:
                 lazy_frame = lazy_frame.select(columns)
 
+            if with_store_info:
+                return lazy_frame, self
             return lazy_frame
 
         # Try fallback stores (opened on demand)
@@ -823,6 +862,18 @@ class MetadataStore(ABC):
                     # Open fallback store on demand for reading
                     with store:
                         # Use full read_metadata to handle nested fallback chains
+                        if with_store_info:
+                            return store.read_metadata(
+                                feature,
+                                feature_version=feature_version,
+                                filters=filters,
+                                columns=columns,
+                                allow_fallback=True,
+                                current_only=current_only,
+                                latest_only=latest_only,
+                                include_soft_deleted=include_soft_deleted,
+                                with_store_info=True,
+                            )
                         return store.read_metadata(
                             feature,
                             feature_version=feature_version,
