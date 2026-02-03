@@ -37,7 +37,7 @@ jobs:
         with:
           filters: |
             test:
-              - '.github/workflows/**'
+              - '.github/**'
               - .envrc
               - devenv.nix
               - devenv.lock
@@ -48,7 +48,7 @@ jobs:
               - 'pyproject.toml'
               - 'uv.lock'
             docs:
-              - '.github/workflows/**'
+              - '.github/**'
               - mkdocs.yml
               - 'docs/**'
 
