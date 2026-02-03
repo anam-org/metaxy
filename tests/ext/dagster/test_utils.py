@@ -191,6 +191,12 @@ class TestGenerateMaterializationEvents:
         assert store_meta["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
         assert store_meta["display"] == metadata_store.display()
         assert store_meta["versioning_engine"] == metadata_store._versioning_engine
+        # Check resolved_from contains where feature was found
+        assert "resolved_from" in store_meta
+        resolved_from = store_meta["resolved_from"]
+        assert resolved_from["name"] == metadata_store.name
+        assert resolved_from["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
+        assert resolved_from["display"] == metadata_store.display()
 
     def test_uses_asset_spec_key(
         self,
@@ -385,6 +391,12 @@ class TestGenerateObservationEvents:
         assert store_meta["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
         assert store_meta["display"] == metadata_store.display()
         assert store_meta["versioning_engine"] == metadata_store._versioning_engine
+        # Check resolved_from contains where feature was found
+        assert "resolved_from" in store_meta
+        resolved_from = store_meta["resolved_from"]
+        assert resolved_from["name"] == metadata_store.name
+        assert resolved_from["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
+        assert resolved_from["display"] == metadata_store.display()
 
     def test_uses_asset_spec_key(
         self,

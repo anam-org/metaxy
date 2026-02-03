@@ -1792,16 +1792,25 @@ class MetadataStore(ABC):
                 is not found in the current store
 
         Returns:
-            Dictionary with store-specific metadata (e.g., `"display"`, `"table_name"`, `"uri"`)
+            Dictionary with store-specific metadata. Contains:
+            - `name`, `display`: The queried store (self)
+            - `resolved_from`: Where the feature was actually found (may be a fallback store),
+                includes `name`, `display`, and store-specific fields like `table_name` or `uri`
         """
-        store = self.find_store_for_feature(feature_key, check_fallback=check_fallback)
-        if store is None:
-            return {}
-        return {
-            "name": store.name,
-            "display": store.display(),
-            **store._get_store_metadata_impl(feature_key),
+        resolved_store = self.find_store_for_feature(feature_key, check_fallback=check_fallback)
+        result: dict[str, Any] = {
+            "name": self.name,
+            "display": self.display(),
         }
+        if resolved_store is not None:
+            resolved_cls = resolved_store.__class__
+            result["resolved_from"] = {
+                "name": resolved_store.name,
+                "type": f"{resolved_cls.__module__}.{resolved_cls.__qualname__}",
+                "display": resolved_store.display(),
+                **resolved_store._get_store_metadata_impl(feature_key),
+            }
+        return result
 
     def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
         """Implementation of get_store_metadata for this specific store type.

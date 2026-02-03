@@ -695,22 +695,35 @@ def test_get_store_metadata_respects_fallback_stores(tmp_path, graph: FeatureGra
         fallback_store.write_metadata(TestFeature, metadata)
 
     # Now open only the primary store and call get_store_metadata
-    # It should return metadata from the fallback store
+    # It should return metadata showing both primary and resolved_from (fallback) stores
     with primary_store:
         store_metadata = primary_store.get_store_metadata(TestFeature)
 
-        # Should return the fallback store's metadata (uri pointing to fallback location)
-        assert store_metadata is not None
-        assert "uri" in store_metadata
-        assert "fallback" in store_metadata["uri"]
-        # Should include display from fallback store
+        # Should include info about the queried store (primary)
+        assert "name" in store_metadata
         assert "display" in store_metadata
-        assert "fallback" in store_metadata["display"]
+        assert "primary" in store_metadata["display"]
 
-    # Test check_fallback=False - should return empty dict when feature not in primary
+        # Should include resolved_from with info about where the feature was found
+        assert "resolved_from" in store_metadata
+        resolved_from = store_metadata["resolved_from"]
+        assert "name" in resolved_from
+        assert "type" in resolved_from
+        assert "display" in resolved_from
+        assert "fallback" in resolved_from["display"]
+
+        # Store-specific metadata (uri) should be inside resolved_from
+        assert "uri" in resolved_from
+        assert "fallback" in resolved_from["uri"]
+
+    # Test check_fallback=False - should return only queried store info when feature not found
     with primary_store:
         store_metadata_no_fallback = primary_store.get_store_metadata(TestFeature, check_fallback=False)
-        assert store_metadata_no_fallback == {}
+        # Should still return the queried store's info
+        assert "name" in store_metadata_no_fallback
+        assert "display" in store_metadata_no_fallback
+        # But no resolved_from since feature wasn't found
+        assert "resolved_from" not in store_metadata_no_fallback
 
 
 def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph) -> None:
@@ -763,7 +776,10 @@ def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph)
         store_metadata = primary_store.get_store_metadata(TestFeature)
 
         assert store_metadata is not None
-        assert "uri" in store_metadata
+        # resolved_from should point to primary store since feature exists there
+        assert "resolved_from" in store_metadata
+        resolved_from = store_metadata["resolved_from"]
+        assert "uri" in resolved_from
         # Should be the primary store's path, not the fallback
-        assert "primary" in store_metadata["uri"]
-        assert "fallback" not in store_metadata["uri"]
+        assert "primary" in resolved_from["uri"]
+        assert "fallback" not in resolved_from["uri"]

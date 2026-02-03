@@ -525,7 +525,7 @@ def build_runtime_feature_metadata(
                 "type": f"{store_cls.__module__}.{store_cls.__qualname__}",
                 "display": store.display(),  # ty: ignore[possibly-missing-attribute]
                 "versioning_engine": store._versioning_engine,  # ty: ignore[possibly-missing-attribute]
-                **store_metadata,
+                "resolved_from": store_metadata.get("resolved_from"),
             },
         }
 
@@ -543,12 +543,13 @@ def build_runtime_feature_metadata(
             # dagster/row_count should reflect what this asset sees
             metadata["dagster/row_count"] = stats.row_count
 
-        # Map store metadata to dagster standard keys
-        if "table_name" in store_metadata:
-            metadata["dagster/table_name"] = store_metadata["table_name"]
+        # Map store metadata to dagster standard keys (from resolved_from)
+        resolved_from = store_metadata.get("resolved_from", {})
+        if "table_name" in resolved_from:
+            metadata["dagster/table_name"] = resolved_from["table_name"]
 
-        if "uri" in store_metadata:
-            metadata["dagster/uri"] = dg.MetadataValue.path(store_metadata["uri"])
+        if "uri" in resolved_from:
+            metadata["dagster/uri"] = dg.MetadataValue.path(resolved_from["uri"])
 
         # Build table preview (from partition-filtered data)
         # Skip schema extraction for external features (no Python class)
