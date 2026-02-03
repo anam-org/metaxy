@@ -63,10 +63,10 @@ def lock(
     # Determine output path
     if output:
         output_path = Path(output)
-    elif config.config_file:
-        output_path = config.config_file.parent / "metaxy.lock"
+    elif config.lock_file:
+        output_path = config.lock_file
     else:
-        output_path = Path.cwd() / "metaxy.lock"
+        output_path = Path.cwd() / config.metaxy_lock_path
 
     metadata_store = context.get_store(store)
 

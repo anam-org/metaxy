@@ -898,6 +898,47 @@ def test_config_file_attribute_none_when_created_directly() -> None:
     assert config.config_file is None
 
 
+def test_metaxy_lock_path_default() -> None:
+    """Test that metaxy_lock_path defaults to 'metaxy.lock'."""
+    config = MetaxyConfig()
+
+    assert config.metaxy_lock_path == "metaxy.lock"
+
+
+def test_lock_file_with_config_file_relative_path(tmp_path: Path) -> None:
+    """Test lock_file resolves relative path from config file directory."""
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text('project = "test"')
+
+    config = MetaxyConfig.load(config_file)
+
+    assert config.lock_file == tmp_path / "metaxy.lock"
+
+
+def test_lock_file_with_config_file_custom_relative_path(tmp_path: Path) -> None:
+    """Test lock_file resolves custom relative path from config file directory."""
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text('project = "test"\nmetaxy_lock_path = "locks/external.lock"')
+
+    config = MetaxyConfig.load(config_file)
+
+    assert config.lock_file == tmp_path / "locks" / "external.lock"
+
+
+def test_lock_file_with_absolute_path() -> None:
+    """Test lock_file returns absolute path directly when metaxy_lock_path is absolute."""
+    config = MetaxyConfig(metaxy_lock_path="/absolute/path/to/metaxy.lock")
+
+    assert config.lock_file == Path("/absolute/path/to/metaxy.lock")
+
+
+def test_lock_file_none_when_no_config_file_and_relative_path() -> None:
+    """Test lock_file returns None when no config file and path is relative."""
+    config = MetaxyConfig()
+
+    assert config.lock_file is None
+
+
 def test_get_store_error_includes_config_file_path(tmp_path: Path) -> None:
     """Test that get_store error messages include the config file path."""
     # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
