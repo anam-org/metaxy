@@ -1,6 +1,6 @@
 """Type-safe migration models with Python class paths.
 
-Refactored migration system using:
+Migration system features:
 - Python class paths for polymorphic deserialization via discriminated unions
 - Struct-based storage for graph data
 - Event-based status tracking
@@ -331,10 +331,14 @@ class DiffMigration(Migration):
         except ValueError:
             # Snapshot not recorded yet, use active graph
             active_graph = FeatureGraph.get_active()
-            if active_graph.snapshot_version != self.to_snapshot_version:
+            # Use project-scoped snapshot version for comparison (matches migration detection)
+            active_snapshot_version = (
+                active_graph.get_project_snapshot_version(project) if project else active_graph.snapshot_version
+            )
+            if active_snapshot_version != self.to_snapshot_version:
                 raise ValueError(
                     f"to_snapshot {self.to_snapshot_version} not found in store "
-                    f"and doesn't match active graph ({active_graph.snapshot_version})"
+                    f"and doesn't match active graph ({active_snapshot_version})"
                 )
             to_snapshot_data = active_graph.to_snapshot()
 

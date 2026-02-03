@@ -1531,10 +1531,13 @@ class TestExternalProvenanceOverride:
         # External feature is NOT in snapshot (still external)
         assert "ext/snap_parent" not in snapshot
 
-    def test_snapshot_fails_without_provenance_override(self, graph: FeatureGraph):
-        """to_snapshot fails when external deps lack provenance override."""
-        from metaxy.utils.exceptions import MetaxyInvariantViolationError
+    def test_snapshot_succeeds_without_provenance_override(self, graph: FeatureGraph):
+        """to_snapshot succeeds even when external deps lack provenance override.
 
+        This enables entangled multi-project setups where projects can push
+        to fresh stores without requiring external dependencies to be resolved first.
+        External features are excluded from the snapshot.
+        """
         # Add external feature WITHOUT provenance override
         external_spec = FeatureSpec(
             key=FeatureKey(["ext", "no_override"]),
@@ -1550,22 +1553,22 @@ class TestExternalProvenanceOverride:
         graph.add_feature_definition(external_def)
 
         # Add downstream feature that depends on external
-        class FailingSnapshotFeature(
+        class SnapshotFeature(
             BaseFeature,
             spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "failing_snap"]),
+                key=FeatureKey(["test", "snap_feature"]),
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
                 deps=[FeatureDep(feature=FeatureKey(["ext", "no_override"]))],
             ),
         ):
             pass
 
-        # Snapshot should fail
-        with pytest.raises(MetaxyInvariantViolationError) as exc_info:
-            graph.to_snapshot()
+        # Snapshot should succeed - external features are excluded
+        snapshot = graph.to_snapshot()
 
-        assert "ext/no_override" in str(exc_info.value)
-        assert "loaded from the metadata store" in str(exc_info.value)
+        # Only the non-external feature should be in snapshot
+        assert "test/snap_feature" in snapshot
+        assert "ext/no_override" not in snapshot
 
     def test_external_without_override_works_when_chain_loaded(self, graph: FeatureGraph):
         """External feature without override works when full chain is loaded in graph."""

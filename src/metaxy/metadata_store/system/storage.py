@@ -555,23 +555,15 @@ class SystemTableStorage:
         tags = tags or {}
         graph = FeatureGraph.get_active()
 
-        # Load feature definitions from the store to replace any external feature placeholders.
-        # This ensures version hashes are computed correctly against actual stored definitions.
-        # External feature version checking should be done before calling push_graph_snapshot
-        # via sync_external_features.
-        if graph.has_external_features:
-            self._load_feature_definitions_raw()
-        current_snapshot_dict = graph.to_snapshot()
-
-        if not current_snapshot_dict:
-            raise ValueError("No features in active graph to push.")
-
-        # Resolve project: argument > infer from graph (if single project) > config
         if project is None:
-            # Try to infer from graph - only works if all features share the same project
-            projects_in_graph = {v["project"] for v in current_snapshot_dict.values()}
+            # Try to infer from graph - only works if all non-external features share the same project
+            projects_in_graph = {
+                defn.project for defn in graph.feature_definitions_by_key.values() if not defn.is_external
+            }
             if len(projects_in_graph) == 1:
                 project = projects_in_graph.pop()
+            elif len(projects_in_graph) == 0:
+                raise ValueError("No features in active graph to push.")
             else:
                 # Multiple projects in graph - try config
                 project = MetaxyConfig.get().project
@@ -582,14 +574,17 @@ class SystemTableStorage:
                         f"Set 'project' in metaxy.toml or pass project argument."
                     )
 
-        # Filter to only features for this project
-        project_features = {k: v for k, v in current_snapshot_dict.items() if v["project"] == project}
+        # Now generate snapshot for only this project's features
+        project_features = graph.to_snapshot(project=project)
 
         if not project_features:
             raise ValueError(f"No features found for project '{project}' in the active graph.")
 
+        # Compute project-scoped snapshot version (uses feature_definition_version, excludes external features)
+        snapshot_version = graph.get_project_snapshot_version(project)
+
         # Check if this exact snapshot already exists for this project
-        latest_pushed_snapshot = self._read_latest_snapshot_data(graph.snapshot_version, project)
+        latest_pushed_snapshot = self._read_latest_snapshot_data(snapshot_version, project)
 
         # Convert to DataFrame - need to serialize feature_spec dict to JSON string
         # and add metaxy_snapshot_version and recorded_at columns
@@ -605,7 +600,7 @@ class SystemTableStorage:
                             field: (json.dumps(val) if field in ("feature_spec", "feature_schema") else val)
                             for field, val in v.items()
                         },
-                        METAXY_SNAPSHOT_VERSION: graph.snapshot_version,
+                        METAXY_SNAPSHOT_VERSION: snapshot_version,
                         "recorded_at": datetime.now(timezone.utc),
                         "tags": json.dumps(tags),
                     }
@@ -648,7 +643,7 @@ class SystemTableStorage:
         updated_features = to_push["feature_key"].to_list() if already_pushed and len(to_push) > 0 else []
 
         return SnapshotPushResult(
-            snapshot_version=graph.snapshot_version,
+            snapshot_version=snapshot_version,
             already_pushed=already_pushed,
             updated_features=updated_features,
         )
@@ -827,9 +822,18 @@ class SystemTableStorage:
             raise ValueError("Must provide snapshot_version when current=False")
 
         if current:
-            # Get current snapshot from active graph
+            # Get current snapshot from active graph, using project-scoped version if project specified
             graph = FeatureGraph.get_active()
-            snapshot_version = graph.snapshot_version
+            if project is not None:
+                snapshot_version = graph.get_project_snapshot_version(project)
+            else:
+                # Infer project from graph if single project, otherwise use global snapshot
+                snapshot_dict = graph.to_snapshot()
+                projects_in_graph = {v["project"] for v in snapshot_dict.values()} if snapshot_dict else set()
+                if len(projects_in_graph) == 1:
+                    snapshot_version = graph.get_project_snapshot_version(projects_in_graph.pop())
+                else:
+                    snapshot_version = graph.snapshot_version
 
         # Read system metadata
         versions_lazy = self._read_system_metadata(FEATURE_VERSIONS_KEY)
@@ -962,19 +966,20 @@ class SystemTableStorage:
         *,
         filters: Sequence[nw.Expr] | None = None,
     ) -> pl.DataFrame:
-        """Read the latest feature versions for each project.
+        """Read the latest version of each feature.
 
-        For each project, finds the latest snapshot and returns all features from it.
+        Returns the most recently recorded version of each feature across all snapshots.
+        This ensures that features from earlier snapshots are included even if later
+        snapshots don't contain them (e.g., in multi-project entangled setups).
 
         Args:
             projects: Optional list of projects to filter by. If None, returns
                 features from all projects.
-            filters: Narwhals expressions to apply after snapshot selection and
-                deduplication. This ensures we always load the latest version of
-                features regardless of filters.
+            filters: Narwhals expressions to apply after deduplication. This ensures
+                we always load the latest version of features regardless of filters.
 
         Returns:
-            DataFrame with latest features from each project's most recent snapshot.
+            DataFrame with the latest version of each feature.
         """
         # Read all feature versions
         versions_lazy = self._read_system_metadata(FEATURE_VERSIONS_KEY)
@@ -992,31 +997,8 @@ class SystemTableStorage:
         if versions_df.height == 0:
             return versions_df
 
-        # For each project, find the latest snapshot_version by recorded_at
-        latest_snapshots = (
-            versions_df.group_by("project")
-            .agg(
-                [
-                    pl.col(METAXY_SNAPSHOT_VERSION)
-                    .sort_by("recorded_at", descending=True)
-                    .first()
-                    .alias("latest_snapshot"),
-                ]
-            )
-            .select(["project", "latest_snapshot"])
-        )
-
-        # Join back to get all features from latest snapshots
-        result = versions_df.join(
-            latest_snapshots,
-            on="project",
-            how="inner",
-        ).filter(pl.col(METAXY_SNAPSHOT_VERSION) == pl.col("latest_snapshot"))
-
-        # Deduplicate by feature_key (keep latest recorded_at)
-        result = result.sort("recorded_at", descending=True).unique(subset=["feature_key"], keep="first")
-
-        result = result.drop("latest_snapshot")
+        # Get the latest version of each feature by recorded_at (across all snapshots)
+        result = versions_df.sort("recorded_at", descending=True).unique(subset=["feature_key"], keep="first")
 
         # Apply user filters AFTER deduplication to ensure we always get the latest
         # version of each feature before filtering

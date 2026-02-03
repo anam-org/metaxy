@@ -147,10 +147,10 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(tmp_pa
 
         # Migration should be detected (feature_version changed)
         assert migration is not None
-        assert migration.from_snapshot_version == graph_v1.snapshot_version
-        assert migration.to_snapshot_version == graph_v2.snapshot_version
+        assert migration.from_snapshot_version == graph_v1.get_project_snapshot_version("default")
+        assert migration.to_snapshot_version == graph_v2.get_project_snapshot_version("default")
 
-        affected_features = migration.get_affected_features(store_v2, "test")
+        affected_features = migration.get_affected_features(store_v2, "default")
         assert affected_features == snapshot
 
     temp_v1.cleanup()

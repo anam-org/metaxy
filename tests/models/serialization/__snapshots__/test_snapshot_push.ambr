@@ -16,11 +16,9 @@
         ]),
       }),
       dict({
-        'already_pushed': True,
+        'already_pushed': False,
         'push': 3,
         'updated_features': list([
-          'upstream',
-          'downstream',
         ]),
       }),
     ]),
@@ -29,25 +27,25 @@
         'feature_key': 'upstream',
         'metaxy_definition_version': '37bd1d8c',
         'metaxy_feature_version': '414ff48a',
-        'metaxy_snapshot_version': 'a84a45ae',
+        'metaxy_snapshot_version': '924169f3',
       }),
       dict({
         'feature_key': 'downstream',
         'metaxy_definition_version': 'cf4b6f3b',
         'metaxy_feature_version': 'd4bebcbe',
-        'metaxy_snapshot_version': 'a84a45ae',
+        'metaxy_snapshot_version': '924169f3',
       }),
       dict({
         'feature_key': 'upstream',
         'metaxy_definition_version': '8fde957b',
         'metaxy_feature_version': '414ff48a',
-        'metaxy_snapshot_version': 'a84a45ae',
+        'metaxy_snapshot_version': '6b6bcd25',
       }),
       dict({
         'feature_key': 'downstream',
         'metaxy_definition_version': '438350e9',
         'metaxy_feature_version': 'd4bebcbe',
-        'metaxy_snapshot_version': 'a84a45ae',
+        'metaxy_snapshot_version': '6b6bcd25',
       }),
     ]),
   })

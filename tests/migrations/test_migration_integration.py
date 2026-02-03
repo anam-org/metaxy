@@ -199,8 +199,8 @@ def test_basic_migration_flow(
         )
 
         assert migration is not None
-        assert migration.from_snapshot_version == simple_graph_v1.snapshot_version
-        assert migration.to_snapshot_version == simple_graph_v2.snapshot_version
+        assert migration.from_snapshot_version == simple_graph_v1.get_project_snapshot_version("default")
+        assert migration.to_snapshot_version == simple_graph_v2.get_project_snapshot_version("default")
 
         # Snapshot migration structure
         affected_features = migration.get_affected_features(store_v2, "default")

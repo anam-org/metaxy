@@ -6,7 +6,7 @@
     "events": [
       {
         "type": "graph_pushed",
-        "snapshot_version": "441cc681",
+        "snapshot_version": "4b946d29",
         "graph": {
           "example/video": {
             "metaxy_feature_version": "c2ac395f",
@@ -197,7 +197,7 @@
             }
           }
         },
-        "timestamp": "2026-02-02T19:20:09.532578",
+        "timestamp": "2026-02-03T09:42:57.709590",
         "scenario_name": "Initial feature graph",
         "step_name": null
       },
@@ -205,9 +205,9 @@
         "type": "command_executed",
         "command": "metaxy push",
         "returncode": 0,
-        "stdout": "441cc681\n",
-        "stderr": "Recorded at: {'display': \n'DeltaMetadataStore(path=/tmp/pytest-of-dan/pytest-811/test_example_snapshot_exa\nmple_3/example-overview, layout=nested)', 'uri': \n'/tmp/pytest-of-dan/pytest-811/test_example_snapshot_example_3/example-overview/\nmetaxy-system/feature_versions.delta'}\n✓ Snapshot already recorded (no changes)\n",
-        "timestamp": "2026-02-02T19:20:10.235980",
+        "stdout": "4b946d29\n",
+        "stderr": "Recorded at: {'display': \n'DeltaMetadataStore(path=/tmp/pytest-of-dan/pytest-941/test_example_snapshot_exa\nmple_0/example-overview, layout=nested)', 'uri': \n'/tmp/pytest-of-dan/pytest-941/test_example_snapshot_example_0/example-overview/\nmetaxy-system/feature_versions.delta'}\n✓ Snapshot already recorded (no changes)\n",
+        "timestamp": "2026-02-03T09:42:58.372790",
         "scenario_name": "Initial feature graph",
         "step_name": "push_graph"
       },
@@ -217,13 +217,13 @@
         "returncode": 0,
         "stdout": "---\ntitle: Feature Graph\n---\nflowchart TB\n    %% Snapshot version: 441cc681\n    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%\n        example_video[\"<div style=\"text-align:left\"><b>example/video</b><br/><small><font color=\"#666\">Project: example_overview</font></small><br/>c2ac395f<br/><font color=\"#999\">---</font><br/>- \naudio (22742381)<br/>- frames (794116a9)</div>\"]\n        example_crop[\"<div style=\"text-align:left\"><b>example/crop</b><br/><small><font color=\"#666\">Project: example_overview</font></small><br/>34d75856<br/><font color=\"#999\">---</font><br/>- audio\n(4c726c4b)<br/>- frames (2419e09d)</div>\"]\n        example_face_detection[\"<div style=\"text-align:left\"><b>example/face_detection</b><br/><small><font color=\"#666\">Project: example_overview</font></small><br/>f1526ee0<br/><font \ncolor=\"#999\">---</font><br/>- faces (006efeef)</div>\"]\n        example_stt[\"<div style=\"text-align:left\"><b>example/stt</b><br/><small><font color=\"#666\">Project: example_overview</font></small><br/>d953dea4<br/><font color=\"#999\">---</font><br/>- \ntranscription (3ec3826d)</div>\"]\n        example_video --> example_crop\n        example_crop --> example_face_detection\n        example_video --> example_stt\n\n",
         "stderr": "",
-        "timestamp": "2026-02-02T19:20:11.168410",
+        "timestamp": "2026-02-03T09:42:59.256990",
         "scenario_name": "Initial feature graph",
         "step_name": "render_graph"
       },
       {
         "type": "graph_pushed",
-        "snapshot_version": "cdd1405e",
+        "snapshot_version": "c6f1cd92",
         "graph": {
           "example/video": {
             "metaxy_feature_version": "2faffb98",
@@ -414,15 +414,15 @@
             }
           }
         },
-        "timestamp": "2026-02-02T19:20:12.254928",
+        "timestamp": "2026-02-03T09:42:59.940327",
         "scenario_name": "Code change - audio field",
         "step_name": "update_audio_version"
       },
       {
         "type": "patch_applied",
         "patch_path": "patches/01_update_audio_version.patch",
-        "before_snapshot": "441cc681",
-        "after_snapshot": "cdd1405e",
+        "before_snapshot": "4b946d29",
+        "after_snapshot": "c6f1cd92",
         "before_graph": {
           "example/video": {
             "metaxy_feature_version": "c2ac395f",
@@ -803,7 +803,7 @@
             }
           }
         },
-        "timestamp": "2026-02-02T19:20:12.274111",
+        "timestamp": "2026-02-03T09:42:59.954079",
         "scenario_name": "Code change - audio field",
         "step_name": "update_audio_version"
       },
@@ -811,9 +811,9 @@
         "type": "command_executed",
         "command": "metaxy graph-diff render latest current --format mermaid",
         "returncode": 0,
-        "stdout": "---\ntitle: Feature Graph Changes\n---\nflowchart TB\n    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%\n\n    example_video[\"<div style=\"text-align:left\"><b>example/video</b><br/>2faffb<br/><font color=\"#999\">---</font><br/>- audio (09c839)<br/>- frames (794116)</div>\"]\n    example_stt[\"<div style=\"text-align:left\"><b>example/stt</b><br/>e57e75<br/><font color=\"#999\">---</font><br/>- transcription (9f7ea4)</div>\"]\n    example_crop[\"<div style=\"text-align:left\"><b>example/crop</b><br/>fe237d<br/><font color=\"#999\">---</font><br/>- audio (e2b6ce)<br/>- frames (2419e0)</div>\"]\n    example_face_detection[\"<div style=\"text-align:left\"><b>example/face_detection</b><br/>f1526e<br/><font color=\"#999\">---</font><br/>- faces (006efe)</div>\"]\n\n    example_video --> example_stt\n    example_video --> example_crop\n    example_crop --> example_face_detection\n\n",
+        "stdout": "---\ntitle: Feature Graph Changes\n---\nflowchart TB\n    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%\n\n    example_face_detection[\"<div style=\"text-align:left\"><b>example/face_detection</b><br/>f1526e<br/><font color=\"#999\">---</font><br/>- faces (006efe)</div>\"]\n    example_video[\"<div style=\"text-align:left\"><b>example/video</b><br/>2faffb<br/><font color=\"#999\">---</font><br/>- audio (09c839)<br/>- frames (794116)</div>\"]\n    example_stt[\"<div style=\"text-align:left\"><b>example/stt</b><br/>e57e75<br/><font color=\"#999\">---</font><br/>- transcription (9f7ea4)</div>\"]\n    example_crop[\"<div style=\"text-align:left\"><b>example/crop</b><br/>fe237d<br/><font color=\"#999\">---</font><br/>- audio (e2b6ce)<br/>- frames (2419e0)</div>\"]\n\n    example_crop --> example_face_detection\n    example_video --> example_stt\n    example_video --> example_crop\n\n",
         "stderr": "",
-        "timestamp": "2026-02-02T19:20:12.984787",
+        "timestamp": "2026-02-03T09:43:00.610135",
         "scenario_name": "Code change - audio field",
         "step_name": "render_diff"
       }

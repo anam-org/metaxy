@@ -111,10 +111,10 @@ def test_load_feature_definitions_raw_by_project(tmp_path: Path):
 
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            storage.push_graph_snapshot()
+            result = storage.push_graph_snapshot()
 
             # Get the project name from stored features
-            features_df = storage.read_features(current=False, snapshot_version=graph.snapshot_version)
+            features_df = storage.read_features(current=False, snapshot_version=result.snapshot_version)
             project = features_df["project"][0]
 
     # Load filtering by project
@@ -474,31 +474,15 @@ def test_load_feature_definitions_raw_filters_applied_after_deduplication(tmp_pa
         assert definitions[0].spec.fields[0].code_version == "2"
 
 
-def test_snapshot_with_unresolved_external_dependency_raises_error(tmp_path: Path):
-    """Test that creating a snapshot with unresolved external dependencies raises an error."""
-    import pytest
+def test_snapshot_with_unresolved_external_dependency_succeeds(tmp_path: Path):
+    """Test that creating a snapshot with unresolved external dependencies succeeds.
 
+    This enables entangled multi-project setups where projects can push independently
+    without requiring all external dependencies to be resolved first.
+    """
     from metaxy.models.feature import FeatureDefinition
-    from metaxy.utils.exceptions import MetaxyInvariantViolationError
 
-    # First, save an upstream feature to the store
-    source_graph = FeatureGraph()
-    with source_graph.use():
-
-        class UpstreamFeature(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["external_upstream"]),
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
-            ),
-        ):
-            pass
-
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
-            storage = SystemTableStorage(store)
-            storage.push_graph_snapshot()
-
-    # Now create a new graph with an external feature placeholder and a dependent feature
+    # Create a new graph with an external feature placeholder and a dependent feature
     new_graph = FeatureGraph()
     with new_graph.use():
         # Add external feature placeholder (simulating a feature we know exists but haven't loaded)
@@ -523,14 +507,12 @@ def test_snapshot_with_unresolved_external_dependency_raises_error(tmp_path: Pat
         ):
             pass
 
-        # Attempting to create a snapshot should fail because
-        # local_downstream depends on an external feature
-        with pytest.raises(MetaxyInvariantViolationError) as exc_info:
-            new_graph.to_snapshot()
+        # Creating a snapshot should succeed - external features are excluded
+        snapshot = new_graph.to_snapshot()
 
-        assert "local_downstream" in str(exc_info.value)
-        assert "external_upstream" in str(exc_info.value)
-        assert "External dependencies must be replaced" in str(exc_info.value)
+        # Only the non-external feature should be in the snapshot
+        assert "local_downstream" in snapshot
+        assert "external_upstream" not in snapshot
 
 
 def test_snapshot_succeeds_after_loading_external_dependencies(tmp_path: Path):
@@ -650,10 +632,10 @@ def test_external_features_never_pushed_to_metadata_store(tmp_path: Path):
         # Push should succeed and only push the non-external feature
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             storage = SystemTableStorage(store)
-            storage.push_graph_snapshot()
+            result = storage.push_graph_snapshot()
 
             # Verify only original_feature was pushed
-            features_df = storage.read_features(current=True)
+            features_df = storage.read_features(current=False, snapshot_version=result.snapshot_version)
             feature_keys = features_df["feature_key"].to_list()
             assert "original_feature" in feature_keys
             assert "external_only" not in feature_keys
