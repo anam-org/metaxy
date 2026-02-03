@@ -472,6 +472,9 @@ class TestMetaxyIOManagerMetadata:
         expected_type = f"{store_cls.__module__}.{store_cls.__qualname__}"
         assert store_meta["type"] == expected_type
 
+        # Name should match store.name (from config key)
+        assert store_meta["name"] == actual_store.name
+
         # Display should match store.display()
         assert store_meta["display"] == actual_store.display()
 

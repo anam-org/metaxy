@@ -13,9 +13,10 @@ from .conftest import AllStoresCases
 
 @parametrize_with_cases("store", cases=AllStoresCases)
 def test_repr(store: MetadataStore, snapshot: SnapshotAssertion) -> None:
-    """Test that repr() returns display() for all store types."""
-    # repr() should delegate to display()
-    assert repr(store) == store.display()
+    """Test that repr() contains display() for all store types."""
+    # For unnamed stores, repr() equals display()
+    # For named stores, repr() wraps display() with [name] prefix
+    assert store.display() in repr(store)
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)

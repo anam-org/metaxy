@@ -159,17 +159,13 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         feature = mx.get_feature_by_key(key)
 
         if obj is not None:
-            context.log.debug(
-                f'Writing metadata for Metaxy feature "{key.to_string()}" into {self.metadata_store.display()}'
-            )
+            context.log.debug(f'Writing metadata for Metaxy feature "{key.to_string()}" into {self.metadata_store}')
             with self.metadata_store.open("write"):
                 self.metadata_store.write_metadata(feature=feature, df=obj)
-            context.log.debug(
-                f'Metadata written for Metaxy feature "{key.to_string()}" into {self.metadata_store.display()}'
-            )
+            context.log.debug(f'Metadata written for Metaxy feature "{key.to_string()}" into {self.metadata_store}')
         else:
             context.log.debug(
-                f'The output corresponds to Metaxy feature "{key.to_string()}" stored in {self.metadata_store.display()}'
+                f'The output corresponds to Metaxy feature "{key.to_string()}" stored in {self.metadata_store}'
             )
 
         self._log_output_metadata(context)

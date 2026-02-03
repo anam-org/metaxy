@@ -869,7 +869,7 @@ class MetaxyConfig(BaseSettings):
         # Use self.use() to ensure this config is available for fallback resolution
         try:
             with self.use():
-                store = store_class.from_config(typed_config, **extra_kwargs)
+                store = store_class.from_config(typed_config, name=name, **extra_kwargs)
         except InvalidConfigError:
             # Don't re-wrap InvalidConfigError (e.g., from nested fallback store resolution)
             raise

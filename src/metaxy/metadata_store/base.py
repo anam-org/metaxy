@@ -167,6 +167,7 @@ class MetadataStore(ABC):
     def __init__(
         self,
         *,
+        name: str | None = None,
         hash_algorithm: HashAlgorithm | None = None,
         versioning_engine: VersioningEngineOptions = "auto",
         fallback_stores: list[MetadataStore] | None = None,
@@ -177,27 +178,28 @@ class MetadataStore(ABC):
         Initialize the metadata store.
 
         Args:
+            name: Optional name for this store. For representation purposes only.
+                Is typically included into `.display()`.
             hash_algorithm: Hash algorithm to use for the versioning engine.
-
             versioning_engine: Which versioning engine to use.
 
-                - "auto": Prefer the store's native engine, fall back to Polars if needed
+                - "auto": Prefer the store's native engine and fall back to Polars if needed
 
                 - "native": Always use the store's native engine, raise `VersioningEngineMismatchError`
-                    if provided dataframes are incompatible
+                    if at some point the metadata store has to switch to Polars
 
                 - "polars": Always use the Polars engine
 
             fallback_stores: Ordered list of read-only fallback stores.
                 Used when upstream features are not in this store.
                 `VersioningEngineMismatchError` is not raised when reading from fallback stores.
-            auto_create_tables: If True, automatically create tables when opening the store.
-                If None (default), reads from global MetaxyConfig (which reads from METAXY_AUTO_CREATE_TABLES env var).
-                If False, never auto-create tables.
+            auto_create_tables: Whether to automatically create tables when writing new features.
+                If not provided, the global Metaxy configuration `auto_created_tables` option will
+                be used (which can be set via `METAXY_AUTO_CREATE_TABLES` env var).
 
                 !!! warning
-                    Auto-create is intended for development/testing only.
-                    Use proper database migration tools like Alembic for production deployments.
+                    This is intended for development/testing purposes.
+                    Use proper database migration tools like Alembic to manage table infrastructure in production.
 
             materialization_id: Optional external orchestration ID.
                 If provided, all metadata writes will include this ID in the `metaxy_materialization_id` column.
@@ -205,10 +207,11 @@ class MetadataStore(ABC):
 
         Raises:
             ValueError: If fallback stores use different hash algorithms or truncation lengths
-            VersioningEngineMismatchError: If a user-provided dataframe has a wrong implementation
-                and versioning_engine is set to `native`
+            VersioningEngineMismatchError: If the versioning engine is attempted to be switched
+                to Polars and `versioning_engine` is set to `native`.
         """
         # Initialize state early so properties can check it
+        self._name = name
         self._is_open = False
         self._context_depth = 0
         self._versioning_engine = versioning_engine
@@ -773,13 +776,13 @@ class MetadataStore(ABC):
             # do not read system features from fallback stores
             if is_system_table:
                 raise SystemDataNotFoundError(
-                    f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy push` before attempting to read system data."
+                    f"System Metaxy data with key {feature_key} is missing in {self}. Invoke `metaxy push` before attempting to read system data."
                 ) from e
 
         # Handle case where read_metadata_in_store returns None (no exception raised)
         if lazy_frame is None and is_system_table:
             raise SystemDataNotFoundError(
-                f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy push` before attempting to read system data."
+                f"System Metaxy data with key {feature_key} is missing in {self}. Invoke `metaxy push` before attempting to read system data."
             )
 
         if lazy_frame is not None and not is_system_table:
@@ -1039,6 +1042,17 @@ class MetadataStore(ABC):
         allowing filtering of rows written during a specific materialization run.
         """
         return self._materialization_id
+
+    @property
+    def name(self) -> str | None:
+        """The configured name of this store, if any."""
+        return self._name
+
+    def _format_display_with_name(self, display_str: str) -> str:
+        """Format display string with optional name prefix."""
+        if self._name is not None:
+            return f"[{self._name}] {display_str}"
+        return display_str
 
     @abstractmethod
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
@@ -1727,8 +1741,8 @@ class MetadataStore(ABC):
         pass
 
     def __repr__(self) -> str:
-        """Return the display string as the repr."""
-        return self.display()
+        """Return the display string with optional name prefix."""
+        return self._format_display_with_name(self.display())
 
     def find_store_for_feature(
         self,
@@ -1784,6 +1798,7 @@ class MetadataStore(ABC):
         if store is None:
             return {}
         return {
+            "name": store.name,
             "display": store.display(),
             **store._get_store_metadata_impl(feature_key),
         }

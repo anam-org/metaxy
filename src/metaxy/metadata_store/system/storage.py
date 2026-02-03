@@ -948,7 +948,7 @@ class SystemTableStorage:
         """
         from metaxy.models.feature_definition import FeatureDefinition
 
-        source = self.store.display()
+        source = str(self.store)
         return [
             FeatureDefinition.from_stored_data(
                 feature_spec=row["feature_spec"],

@@ -187,6 +187,7 @@ class TestGenerateMaterializationEvents:
         store_meta = metadata["metaxy/store"]
         assert isinstance(store_meta, dict)
         store_cls = metadata_store.__class__
+        assert store_meta["name"] == metadata_store.name
         assert store_meta["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
         assert store_meta["display"] == metadata_store.display()
         assert store_meta["versioning_engine"] == metadata_store._versioning_engine
@@ -380,6 +381,7 @@ class TestGenerateObservationEvents:
         store_meta = metadata["metaxy/store"]
         assert isinstance(store_meta, dict)
         store_cls = metadata_store.__class__
+        assert store_meta["name"] == metadata_store.name
         assert store_meta["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
         assert store_meta["display"] == metadata_store.display()
         assert store_meta["versioning_engine"] == metadata_store._versioning_engine

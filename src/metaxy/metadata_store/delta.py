@@ -417,9 +417,7 @@ class DeltaMetadataStore(MetadataStore):
 
     def display(self) -> str:
         """Return human-readable representation of the store."""
-        details = [f"path={self._root_uri}"]
-        details.append(f"layout={self.layout}")
-        return f"DeltaMetadataStore({', '.join(details)})"
+        return f"DeltaMetadataStore(path={self._root_uri})"
 
     def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
         return {"uri": self._feature_uri(self._resolve_feature_key(feature_key))}

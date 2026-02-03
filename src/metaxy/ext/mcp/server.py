@@ -226,7 +226,7 @@ def _register_tools(server: FastMCP) -> None:
         config = metaxy_ctx.config
 
         store = config.get_store(store_name)
-        return store.display()
+        return str(store)
 
     @server.tool()
     def get_metadata(
