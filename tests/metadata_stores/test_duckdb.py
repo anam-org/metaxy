@@ -34,7 +34,7 @@ def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict[str
                 METAXY_PROVENANCE_BY_FIELD: [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
         # Check table was created with correct name using Ibis
         table_names = store.conn.list_tables()
@@ -54,7 +54,7 @@ def test_duckdb_table_prefix_applied(tmp_path: Path, test_graph, test_features: 
                 METAXY_PROVENANCE_BY_FIELD: [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(feature, metadata)
+        store.write(feature, metadata)
 
         expected_feature_table = table_prefix + feature.spec.key.table_name
         expected_system_table = table_prefix + FEATURE_VERSIONS_KEY.table_name
@@ -148,11 +148,11 @@ def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_fe
                 ],
             }
         )
-        store1.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store1.write(test_features["UpstreamFeatureA"], metadata)
 
     # Read data in second instance
     with DuckDBMetadataStore(db_path, auto_create_tables=True) as store2:
-        result = collect_to_polars(store2.read_metadata(test_features["UpstreamFeatureA"]))
+        result = collect_to_polars(store2.read(test_features["UpstreamFeatureA"]))
 
         assert len(result) == 3
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}

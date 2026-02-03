@@ -73,7 +73,7 @@ def test_record_snapshot_first_time(tmp_path: Path):
             # Verify data was written to feature_versions table
             from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -133,7 +133,7 @@ def test_record_snapshot_metadata_only_changes(tmp_path: Path):
             assert result1.snapshot_version == snapshot_v1
 
             # Verify initial state
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
             assert versions_df.height == 2  # upstream + downstream
@@ -192,7 +192,7 @@ def test_record_snapshot_metadata_only_changes(tmp_path: Path):
                 assert result2.snapshot_version == snapshot_v2
 
                 # Verify new rows were added (new snapshot)
-                versions_lazy_after = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+                versions_lazy_after = store._read_feature(FEATURE_VERSIONS_KEY)
                 assert versions_lazy_after is not None
                 versions_df_after = versions_lazy_after.collect().to_polars()
                 # Old rows (2) + new rows (2) = 4
@@ -242,7 +242,7 @@ def test_record_snapshot_no_changes(tmp_path: Path):
             # Verify no new rows appended
             from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
             assert versions_df.height == 1  # Still only 1 row
@@ -354,7 +354,7 @@ def test_record_snapshot_partial_metadata_changes(tmp_path: Path):
                 assert result2.snapshot_version == snapshot_v2
 
                 # Verify correct rows appended (3 original + 3 new = 6)
-                versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+                versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
                 assert versions_lazy is not None
                 versions_df = versions_lazy.collect().to_polars()
                 assert versions_df.height == 6
@@ -399,7 +399,7 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.snapshot_version == snapshot_v1
 
-            versions_lazy_v1 = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy_v1 = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy_v1 is not None
             versions_df_v1 = versions_lazy_v1.collect().to_polars()
             assert versions_df_v1.height == 2  # upstream + my_feature
@@ -445,7 +445,7 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
                 assert result2.snapshot_version == snapshot_v2
 
                 # Verify append-only: old rows still exist
-                versions_lazy_v2 = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+                versions_lazy_v2 = store._read_feature(FEATURE_VERSIONS_KEY)
                 assert versions_lazy_v2 is not None
                 versions_df_v2 = versions_lazy_v2.collect().to_polars()
 
@@ -611,7 +611,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion, t
                 )
 
                 # Get final feature_versions table state
-                versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+                versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
                 assert versions_lazy is not None
                 versions_df = versions_lazy.collect().to_polars()
 
@@ -668,7 +668,7 @@ def test_feature_info_changes_trigger_repush(tmp_path: Path):
             assert result1.snapshot_version == snapshot_v1
 
             # Get initial recorded_at
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df1 = versions_lazy.collect().to_polars()
             assert versions_df1.height == 1
@@ -709,7 +709,7 @@ def test_feature_info_changes_trigger_repush(tmp_path: Path):
                 assert result2.snapshot_version == snapshot_v2
 
                 # Verify new row was appended
-                versions_lazy2 = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+                versions_lazy2 = store._read_feature(FEATURE_VERSIONS_KEY)
                 assert versions_lazy2 is not None
                 versions_df2 = versions_lazy2.collect().to_polars()
                 assert versions_df2.height == 2  # Original + new

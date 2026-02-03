@@ -104,7 +104,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
 
             # Verify system columns are present in added
             # Note: resolve_update returns provenance and data_version columns,
-            # but feature_version and snapshot_version are added by write_metadata
+            # but feature_version and snapshot_version are added by write
             assert METAXY_PROVENANCE in result.added.columns
             assert METAXY_PROVENANCE_BY_FIELD in result.added.columns
             assert METAXY_DATA_VERSION in result.added.columns
@@ -166,7 +166,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
                 }
             )
             initial_metadata = add_metaxy_provenance_column(initial_metadata, VideoEmbeddingsFeature)
-            store.write_metadata(VideoEmbeddingsFeature, initial_metadata)
+            store.write(VideoEmbeddingsFeature, initial_metadata)
 
             # Now resolve_update with skip_comparison=True
             # Provide the same samples plus a new one
@@ -253,7 +253,7 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamFeature)
-            store.write_metadata(UpstreamFeature, upstream_data)
+            store.write(UpstreamFeature, upstream_data)
 
             # Call resolve_update on downstream with skip_comparison=True
             result = store.resolve_update(
@@ -328,7 +328,7 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamFeature)
-            store.write_metadata(UpstreamFeature, upstream_data)
+            store.write(UpstreamFeature, upstream_data)
 
             # Write some downstream metadata (simulate existing data)
             existing_downstream = pl.DataFrame(
@@ -341,7 +341,7 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
                 }
             )
             existing_downstream = add_metaxy_provenance_column(existing_downstream, DownstreamFeature)
-            store.write_metadata(DownstreamFeature, existing_downstream)
+            store.write(DownstreamFeature, existing_downstream)
 
             # Call resolve_update with skip_comparison=True
             result = store.resolve_update(
@@ -480,7 +480,7 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
                 }
             )
             initial_metadata = add_metaxy_provenance_column(initial_metadata, RootFeature)
-            store.write_metadata(RootFeature, initial_metadata)
+            store.write(RootFeature, initial_metadata)
 
             # Provide samples with skip_comparison=False (explicit, but it's the default)
             user_samples = pl.DataFrame(
@@ -550,7 +550,7 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
                 }
             )
             initial_metadata = add_metaxy_provenance_column(initial_metadata, RootFeature)
-            store.write_metadata(RootFeature, initial_metadata)
+            store.write(RootFeature, initial_metadata)
 
             # Provide samples with explicit skip_comparison=False
             user_samples = pl.DataFrame(
@@ -650,7 +650,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                 }
             )
             root_data = add_metaxy_provenance_column(root_data, RootFeature)
-            store.write_metadata(RootFeature, root_data)
+            store.write(RootFeature, root_data)
 
             # Write intermediate metadata
             intermediate_data = pl.DataFrame(
@@ -664,7 +664,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                 }
             )
             intermediate_data = add_metaxy_provenance_column(intermediate_data, IntermediateFeature)
-            store.write_metadata(IntermediateFeature, intermediate_data)
+            store.write(IntermediateFeature, intermediate_data)
 
             # Call resolve_update on leaf with skip_comparison=True
             result = store.resolve_update(
@@ -759,7 +759,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                 }
             )
             root_data = add_metaxy_provenance_column(root_data, RootFeature)
-            store.write_metadata(RootFeature, root_data)
+            store.write(RootFeature, root_data)
 
             # Write branch A metadata
             branch_a_data = pl.DataFrame(
@@ -773,7 +773,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                 }
             )
             branch_a_data = add_metaxy_provenance_column(branch_a_data, BranchAFeature)
-            store.write_metadata(BranchAFeature, branch_a_data)
+            store.write(BranchAFeature, branch_a_data)
 
             # Write branch B metadata
             branch_b_data = pl.DataFrame(
@@ -787,7 +787,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                 }
             )
             branch_b_data = add_metaxy_provenance_column(branch_b_data, BranchBFeature)
-            store.write_metadata(BranchBFeature, branch_b_data)
+            store.write(BranchBFeature, branch_b_data)
 
             # Call resolve_update on leaf with skip_comparison=True
             result = store.resolve_update(

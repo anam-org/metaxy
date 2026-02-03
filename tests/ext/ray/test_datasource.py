@@ -36,7 +36,7 @@ def test_datasource_reads_metadata(
 
     # First, write some data to the store
     with delta_store.open("write"):
-        delta_store.write_metadata(FEATURE_KEY, test_data.to_arrow())
+        delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read using datasource
     datasource = MetaxyDatasource(
@@ -75,7 +75,7 @@ def test_datasource_feature_key_formats(
 
     # Write data to the store
     with delta_store.open("write"):
-        delta_store.write_metadata(FEATURE_KEY, test_data.to_arrow())
+        delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read using different feature key format
     datasource = MetaxyDatasource(
@@ -103,7 +103,7 @@ def test_datasource_single_row(
     single_row_data = make_test_data(sample_uids=["single"], values=[42])
 
     with delta_store.open("write"):
-        delta_store.write_metadata(FEATURE_KEY, single_row_data.to_arrow())
+        delta_store.write(FEATURE_KEY, single_row_data.to_arrow())
 
     datasource = MetaxyDatasource(
         feature=FEATURE_KEY,
@@ -186,7 +186,7 @@ def test_datasource_with_filters(
 
     # Write data to the store
     with delta_store.open("write"):
-        delta_store.write_metadata(FEATURE_KEY, test_data.to_arrow())
+        delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read with filter: value > 2
     datasource = MetaxyDatasource(
@@ -218,7 +218,7 @@ def test_datasource_with_columns(
 
     # Write data to the store
     with delta_store.open("write"):
-        delta_store.write_metadata(FEATURE_KEY, test_data.to_arrow())
+        delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read with column selection
     datasource = MetaxyDatasource(
@@ -251,7 +251,7 @@ def test_datasource_with_filters_and_columns(
 
     # Write data to the store
     with delta_store.open("write"):
-        delta_store.write_metadata(FEATURE_KEY, test_data.to_arrow())
+        delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read with filter and column selection
     datasource = MetaxyDatasource(
@@ -305,7 +305,7 @@ root_path = "{delta_root}"
 
     # Write data first
     with delta_store.open("write"):
-        delta_store.write_metadata(FEATURE_KEY, test_data.to_arrow())
+        delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Create datasource with explicit config
     datasource = MetaxyDatasource(
@@ -380,7 +380,7 @@ def test_datasource_and_datasink_end_to_end(
 
     # Verify the result by reading from destination
     with dest_store.open("read"):
-        result = dest_store.read_metadata(FEATURE_KEY)
+        result = dest_store.read(FEATURE_KEY)
         df = result.collect()
 
         assert len(df) == 3
@@ -402,7 +402,7 @@ def test_datasource_incremental_all_new(
 
     # Write upstream data (root feature)
     with delta_store.open("write"):
-        delta_store.write_metadata(FEATURE_KEY, test_data.to_arrow())
+        delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Read incrementally from derived feature - all samples should be "new"
     datasource = MetaxyDatasource(
@@ -433,13 +433,13 @@ def test_datasource_incremental_up_to_date(
 
     # Write upstream data (root feature)
     with delta_store.open("write"):
-        delta_store.write_metadata(FEATURE_KEY, test_data.to_arrow())
+        delta_store.write(FEATURE_KEY, test_data.to_arrow())
 
     # Compute and write derived data with correct provenance
     with delta_store.open("write"):
         increment = delta_store.resolve_update(DERIVED_FEATURE_KEY)
         derived_data = increment.added.with_columns(nw.lit(100).alias("derived_value"))
-        delta_store.write_metadata(DERIVED_FEATURE_KEY, derived_data.to_arrow())
+        delta_store.write(DERIVED_FEATURE_KEY, derived_data.to_arrow())
 
     # Read incrementally - should return empty since data is up-to-date
     datasource = MetaxyDatasource(

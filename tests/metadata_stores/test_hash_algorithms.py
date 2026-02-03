@@ -85,7 +85,7 @@ def test_hash_algorithm_produces_consistent_hashes(
 
     with store, graph.use():
         # Write parent metadata
-        store.write_metadata(ParentFeature, parent_df)
+        store.write(ParentFeature, parent_df)
 
         # Compute child metadata twice
         increment1 = store.resolve_update(
@@ -186,7 +186,7 @@ def test_hash_truncation(
 
     with store, graph.use():
         # Write parent metadata
-        store.write_metadata(ParentFeature, parent_df)
+        store.write(ParentFeature, parent_df)
 
         # Compute child metadata
         increment = store.resolve_update(
@@ -263,7 +263,7 @@ def test_field_level_provenance_structure(
         parent_df = upstream_data["parent"]
 
         # Write parent and compute child
-        store.write_metadata(ParentFeature, parent_df)
+        store.write(ParentFeature, parent_df)
         increment = store.resolve_update(
             ChildFeature,
             target_version=ChildFeature.feature_version(),
@@ -341,7 +341,7 @@ def test_hash_truncation_any_store(config_with_truncation, any_store: MetadataSt
 
     with any_store, graph.use():
         # Write parent metadata
-        any_store.write_metadata(ParentFeature, parent_df)
+        any_store.write(ParentFeature, parent_df)
 
         # Compute child metadata
         increment = any_store.resolve_update(

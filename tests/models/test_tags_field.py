@@ -35,7 +35,7 @@ def test_push_graph_snapshot_with_default_tags(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot()
 
             # Read and verify tags field
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -74,7 +74,7 @@ def test_push_graph_snapshot_with_custom_tags(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot(tags=custom_tags)
 
             # Read and verify tags field
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -114,7 +114,7 @@ def test_push_graph_snapshot_tags_persist_across_pushes(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot(tags={"environment": "production"})
 
             # Read and verify - should only have one row (no changes)
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -168,7 +168,7 @@ def test_push_graph_snapshot_tags_updated_with_feature_changes(tmp_path: Path):
                 SystemTableStorage(store).push_graph_snapshot(tags={"environment": "production", "build": "124"})
 
                 # Read and verify - should have two rows
-                versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+                versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
                 assert versions_lazy is not None
                 versions_df = versions_lazy.collect().to_polars()
 

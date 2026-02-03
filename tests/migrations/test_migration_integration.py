@@ -179,7 +179,7 @@ def test_basic_migration_flow(
             }
         )
         data = add_metaxy_provenance_column(data, SimpleV1)
-        store_v1.write_metadata(SimpleV1, data)
+        store_v1.write(SimpleV1, data)
 
         # Record v1 snapshot
         SystemTableStorage(store_v1).push_graph_snapshot()
@@ -237,7 +237,7 @@ def test_basic_migration_flow(
         assert result_summary == snapshot(name="migration_result")
 
         # Step 6: Verify data unchanged (root feature cannot be reconciled)
-        final_data = collect_to_polars(store_v2.read_metadata(SimpleV2, current_only=False))
+        final_data = collect_to_polars(store_v2.read(SimpleV2, with_feature_history=True))
 
         # Should still have v1 data (root features can't auto-reconcile)
         assert len(final_data) == 3
@@ -270,13 +270,13 @@ def test_upstream_downstream_migration(
         )
         # Add metaxy_provenance column using the helper
         upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
-        store_v1.write_metadata(UpstreamV1, upstream_data)
+        store_v1.write(UpstreamV1, upstream_data)
 
         # Write downstream (derived feature)
         # Don't provide samples - let system auto-load upstream and calculate provenance_by_field
         diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
-            store_v1.write_metadata(DownstreamV1, diff.added)
+            store_v1.write(DownstreamV1, diff.added)
 
         # Record v1 snapshot
         SystemTableStorage(store_v1).push_graph_snapshot()
@@ -321,7 +321,7 @@ def test_upstream_downstream_migration(
             }
         )
         new_upstream_data = add_metaxy_provenance_column(new_upstream_data, UpstreamV2)
-        store_v2.write_metadata(UpstreamV2, new_upstream_data)
+        store_v2.write(UpstreamV2, new_upstream_data)
 
         # Step 6: Execute migration (will reconcile downstream)
         storage = SystemTableStorage(store_v2)
@@ -362,12 +362,12 @@ def test_migration_idempotency(
             }
         )
         upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
-        store_v1.write_metadata(UpstreamV1, upstream_data)
+        store_v1.write(UpstreamV1, upstream_data)
 
         # Write downstream - let system auto-load upstream and calculate provenance_by_field
         diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
-            store_v1.write_metadata(DownstreamV1, diff.added)
+            store_v1.write(DownstreamV1, diff.added)
 
         SystemTableStorage(store_v1).push_graph_snapshot()
 
@@ -388,7 +388,7 @@ def test_migration_idempotency(
             }
         )
         new_upstream_data = add_metaxy_provenance_column(new_upstream_data, UpstreamV2)
-        store_v2.write_metadata(UpstreamV2, new_upstream_data)
+        store_v2.write(UpstreamV2, new_upstream_data)
 
         # Create downstream-only migration (detect before recording v2 snapshot)
         migration = detect_diff_migration(
@@ -443,12 +443,12 @@ def test_migration_dry_run(
             }
         )
         upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
-        store_v1.write_metadata(UpstreamV1, upstream_data)
+        store_v1.write(UpstreamV1, upstream_data)
 
         # Write downstream - let system auto-load upstream and calculate provenance_by_field
         diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
-            store_v1.write_metadata(DownstreamV1, diff.added)
+            store_v1.write(DownstreamV1, diff.added)
 
         SystemTableStorage(store_v1).push_graph_snapshot()
 
@@ -469,7 +469,7 @@ def test_migration_dry_run(
             }
         )
         new_upstream_data = add_metaxy_provenance_column(new_upstream_data, UpstreamV2)
-        store_v2.write_metadata(UpstreamV2, new_upstream_data)
+        store_v2.write(UpstreamV2, new_upstream_data)
 
         # Detect and execute with dry_run=True (detect before recording v2 snapshot)
         migration = detect_diff_migration(
@@ -484,7 +484,7 @@ def test_migration_dry_run(
         SystemTableStorage(store_v2).push_graph_snapshot()
 
         # Get initial downstream data AFTER upstream write and snapshot, BEFORE migration
-        initial_data = collect_to_polars(store_v2.read_metadata(DownstreamV2, current_only=False))
+        initial_data = collect_to_polars(store_v2.read(DownstreamV2, with_feature_history=True))
 
         # Test dry-run mode
         storage = SystemTableStorage(store_v2)
@@ -500,7 +500,7 @@ def test_migration_dry_run(
         assert result.features_skipped == 1  # Downstream skipped
 
         # Verify data unchanged - read in same context
-        final_data = collect_to_polars(store_v2.read_metadata(DownstreamV2, current_only=False))
+        final_data = collect_to_polars(store_v2.read(DownstreamV2, with_feature_history=True))
 
         assert len(final_data) == len(initial_data)
 
@@ -587,13 +587,13 @@ def test_field_dependency_change(tmp_path):
             }
         )
         upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
-        store_v1.write_metadata(UpstreamV1, upstream_data)
+        store_v1.write(UpstreamV1, upstream_data)
 
         # Write downstream
         # Write downstream - let system auto-load upstream and calculate provenance_by_field
         diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
-            store_v1.write_metadata(DownstreamV1, diff.added)
+            store_v1.write(DownstreamV1, diff.added)
 
         SystemTableStorage(store_v1).push_graph_snapshot()
 
@@ -703,17 +703,17 @@ def test_feature_dependency_swap(tmp_path):
         # Write both upstreams
         data_a = pl.DataFrame({"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "ha"}]})
         data_a = add_metaxy_provenance_column(data_a, upstream_a_key)
-        store_v1.write_metadata(upstream_a_key, data_a)
+        store_v1.write(upstream_a_key, data_a)
 
         data_b = pl.DataFrame({"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "hb"}]})
         data_b = add_metaxy_provenance_column(data_b, upstream_b_key)
-        store_v1.write_metadata(upstream_b_key, data_b)
+        store_v1.write(upstream_b_key, data_b)
 
         # Write downstream (depends on A in v1)
         # Let system auto-load upstream and calculate provenance_by_field
         diff = store_v1.resolve_update(downstream_key)
         if len(diff.added) > 0:
-            store_v1.write_metadata(downstream_key, diff.added)
+            store_v1.write(downstream_key, diff.added)
 
         SystemTableStorage(store_v1).push_graph_snapshot()
 
@@ -752,7 +752,7 @@ def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
             }
         )
         data = add_metaxy_provenance_column(data, simple_key)
-        store.write_metadata(simple_key, data)
+        store.write(simple_key, data)
         SystemTableStorage(store).push_graph_snapshot()
 
         # Try to detect migration (same graph)
@@ -780,7 +780,7 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
             }
         )
         data = add_metaxy_provenance_column(data, SimpleV1)
-        store_v1.write_metadata(SimpleV1, data)
+        store_v1.write(SimpleV1, data)
         SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Create v2 with additional feature
@@ -876,12 +876,12 @@ def test_full_graph_migration_integration(tmp_path):
             }
         )
         upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
-        store.write_metadata(Upstream, upstream_data)
+        store.write(Upstream, upstream_data)
 
         # Write downstream
         diff = store.resolve_update(Downstream)
         if len(diff.added) > 0:
-            store.write_metadata(Downstream, diff.added)
+            store.write(Downstream, diff.added)
 
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
@@ -949,7 +949,7 @@ def test_migration_rerun_flag(tmp_path):
             }
         )
         feature_data = add_metaxy_provenance_column(feature_data, Feature)
-        store.write_metadata(Feature, feature_data)
+        store.write(Feature, feature_data)
 
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version

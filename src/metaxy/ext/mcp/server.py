@@ -234,8 +234,8 @@ def _register_tools(server: FastMCP) -> None:
         store_name: str,
         columns: list[str] | None = None,
         filters: list[str] | None = None,
-        current_only: bool = True,
-        latest_only: bool = True,
+        with_feature_history: bool = False,
+        with_sample_history: bool = False,
         include_soft_deleted: bool = False,
         allow_fallback: bool = True,
         sort_by: list[str] | None = None,
@@ -249,8 +249,8 @@ def _register_tools(server: FastMCP) -> None:
             store_name: Name of the metadata store to read from
             columns: List of columns to select (None for all)
             filters: List of SQL-like filter expressions (e.g., "column > 5", "name == 'foo'")
-            current_only: Only return current (non-superseded) rows (default: True)
-            latest_only: Only return latest version of each row (default: True)
+            with_feature_history: Only return current (non-superseded) rows (default: True)
+            with_sample_history: Only return latest version of each row (default: True)
             include_soft_deleted: Include soft-deleted rows (default: False)
             allow_fallback: If True, check fallback stores when feature is not found
                 in the primary store (default: True)
@@ -277,12 +277,12 @@ def _register_tools(server: FastMCP) -> None:
         nw_filters = _parse_filters(filters)
 
         with store:
-            lazy_frame = store.read_metadata(
+            lazy_frame = store.read(
                 definition,
                 columns=columns,
                 filters=nw_filters if nw_filters else None,
-                current_only=current_only,
-                latest_only=latest_only,
+                with_feature_history=with_feature_history,
+                with_sample_history=with_sample_history,
                 include_soft_deleted=include_soft_deleted,
                 allow_fallback=allow_fallback,
             )

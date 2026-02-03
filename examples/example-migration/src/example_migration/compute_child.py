@@ -29,18 +29,18 @@ with config.get_store() as store:
     )
 
     if len(diff_result.added) > 0:
-        store.write_metadata(child_key, diff_result.added)
+        store.write(child_key, diff_result.added)
         print(f"[OK] Materialized {len(diff_result.added)} new samples")
 
     if len(diff_result.changed) > 0:
         # This should NOT happen after migration!
-        store.write_metadata(child_key, diff_result.changed)
+        store.write(child_key, diff_result.changed)
         print(f"[WARN] Recomputed {len(diff_result.changed)} changed samples")
 
     # Show current data
     import narwhals as nw
 
-    child_result = store.read_metadata(child_key, current_only=True)
+    child_result = store.read(child_key, with_feature_history=False)
     child_eager = nw.from_native(child_result.collect())
     print("\nChild provenance_by_field:")
     for row in child_eager.iter_rows(named=True):

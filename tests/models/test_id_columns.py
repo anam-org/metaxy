@@ -444,10 +444,10 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph, 
                 }
             )
         )
-        store.write_metadata(UserFeature, user_df)
+        store.write(UserFeature, user_df)
 
         # Read it back and verify
-        read_user = store.read_metadata(UserFeature).collect()
+        read_user = store.read(UserFeature).collect()
         assert "user_id" in read_user.columns
         assert "sample_uid" not in read_user.columns
         assert len(read_user) == 3
@@ -472,10 +472,10 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph, 
                 }
             )
         )
-        store.write_metadata(SessionFeature, session_df)
+        store.write(SessionFeature, session_df)
 
         # Read session metadata
-        read_session = store.read_metadata(SessionFeature).collect()
+        read_session = store.read(SessionFeature).collect()
         assert "user_id" in read_session.columns
         assert "session_id" in read_session.columns
         assert "sample_uid" not in read_session.columns
@@ -623,8 +623,8 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph, tmp_pat
                 }
             )
         )
-        store.write_metadata(LegacyFeature, df)
+        store.write(LegacyFeature, df)
 
-        result = store.read_metadata(LegacyFeature).collect()
+        result = store.read(LegacyFeature).collect()
         assert "sample_uid" in result.columns
         assert len(result) == 3

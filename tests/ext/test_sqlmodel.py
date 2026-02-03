@@ -730,10 +730,10 @@ def test_sqlmodel_feature_with_duckdb_store(tmp_path: Path, snapshot: SnapshotAs
         )
 
         # Write metadata
-        store.write_metadata(VideoFeature, nw.from_native(metadata_df))
+        store.write(VideoFeature, nw.from_native(metadata_df))
 
         # Read metadata back
-        result = store.read_metadata(VideoFeature)
+        result = store.read(VideoFeature)
         result_df = collect_to_polars(result)
 
         # Verify data
@@ -880,10 +880,10 @@ def test_sqlmodel_duckdb_custom_id_columns(tmp_path: Path, snapshot: SnapshotAss
         )
 
         # Write parent metadata
-        store.write_metadata(UserActivityFeature, nw.from_native(parent_df))
+        store.write(UserActivityFeature, nw.from_native(parent_df))
 
         # Read back parent metadata
-        parent_result = store.read_metadata(UserActivityFeature)
+        parent_result = store.read(UserActivityFeature)
         parent_result_df = collect_to_polars(parent_result)
 
         # Verify parent data
@@ -926,10 +926,10 @@ def test_sqlmodel_duckdb_custom_id_columns(tmp_path: Path, snapshot: SnapshotAss
         )
 
         # Write child metadata
-        store.write_metadata(UserSummaryFeature, nw.from_native(child_df))
+        store.write(UserSummaryFeature, nw.from_native(child_df))
 
         # Read back child metadata
-        child_result = store.read_metadata(UserSummaryFeature)
+        child_result = store.read(UserSummaryFeature)
         child_result_df = collect_to_polars(child_result)
 
         # Verify child data
@@ -1171,7 +1171,7 @@ def test_sqlmodel_feature_id_columns_with_joins(tmp_path: Path, snapshot: Snapsh
                 ],
             }
         )
-        store.write_metadata(FeatureA, nw.from_native(df_a))
+        store.write(FeatureA, nw.from_native(df_a))
 
         # Write metadata for FeatureB (missing some combinations)
         df_b = pl.DataFrame(
@@ -1187,15 +1187,15 @@ def test_sqlmodel_feature_id_columns_with_joins(tmp_path: Path, snapshot: Snapsh
                 ],
             }
         )
-        store.write_metadata(FeatureB, nw.from_native(df_b))
+        store.write(FeatureB, nw.from_native(df_b))
 
         # Now test that joining works correctly
         # Inner join should only keep rows present in both A and B
         # Expected matches: (1, 2024-01-01), (1, 2024-01-02), (2, 2024-01-01), (3, 2024-01-01)
 
         # Read both features to verify
-        result_a = collect_to_polars(store.read_metadata(FeatureA))
-        result_b = collect_to_polars(store.read_metadata(FeatureB))
+        result_a = collect_to_polars(store.read(FeatureA))
+        result_b = collect_to_polars(store.read(FeatureB))
 
         # Verify the data was written correctly
         assert len(result_a) == 5
@@ -1664,7 +1664,7 @@ def test_sqlmodel_rename_validation_with_store(tmp_path: Path, snapshot: Snapsho
                 ],
             }
         )
-        store.write_metadata(SourceFeature, nw.from_native(source_df))
+        store.write(SourceFeature, nw.from_native(source_df))
 
         # Write target metadata
         target_df = pl.DataFrame(
@@ -1679,7 +1679,7 @@ def test_sqlmodel_rename_validation_with_store(tmp_path: Path, snapshot: Snapsho
                 ],
             }
         )
-        store.write_metadata(TargetFeature, nw.from_native(target_df))
+        store.write(TargetFeature, nw.from_native(target_df))
 
         # When loading input for TargetFeature, the rename should be applied
         # This would be used in the actual pipeline when computing features

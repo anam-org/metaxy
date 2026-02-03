@@ -31,7 +31,7 @@ with config.get_store() as store:
     print(f"\n📊 Computing {child_key.to_string()}...")
     print(f"  feature_version: {mx.current_graph().get_feature_version(child_key)}")
 
-    ids_lazy = store.read_metadata(parent_key, columns=["sample_uid"])
+    ids_lazy = store.read(parent_key, columns=["sample_uid"])
     ids = ids_lazy.collect().to_polars()
 
     diff = store.resolve_update(child_key)
@@ -41,17 +41,17 @@ with config.get_store() as store:
     )
 
     if len(diff.added) > 0:
-        # diff.added is a Narwhals DataFrame - can pass directly to write_metadata
-        store.write_metadata(child_key, diff.added)
+        # diff.added is a Narwhals DataFrame - can pass directly to write
+        store.write(child_key, diff.added)
         print(f"✓ Materialized {len(diff.added)} new samples")
 
     if len(diff.changed) > 0:
         # diff.changed is a Narwhals DataFrame
-        store.write_metadata(child_key, diff.changed)
+        store.write(child_key, diff.changed)
         print(f"✓ Recomputed {len(diff.changed)} changed samples")
 
     # Show child provenance_by_field
-    child_result = store.read_metadata(child_key, current_only=True)
+    child_result = store.read(child_key, with_feature_history=False)
     print("\n📋 Child provenance_by_field:")
     # Materialize Narwhals LazyFrame to Polars DataFrame
     child_df = child_result.collect().to_polars()

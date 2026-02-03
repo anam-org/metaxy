@@ -174,7 +174,7 @@ def test_feature_dep_filters_integration(any_store: MetadataStore) -> None:
             from metaxy.metadata_store import HashAlgorithmNotSupportedError
 
             try:
-                store.write_metadata(UpstreamFeature, upstream_data)
+                store.write(UpstreamFeature, upstream_data)
 
                 # Resolve downstream feature - this should trigger FeatureDepTransformer
                 # which will read upstream data and apply filters

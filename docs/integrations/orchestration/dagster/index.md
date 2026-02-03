@@ -141,7 +141,7 @@ The observation automatically tracks:
 
 ## Deletion workflows with Dagster ops
 
-The Dagster integration provides a `delete_metadata` op:
+The Dagster integration provides a `delete` op:
 
 ```python
 import dagster as dg
@@ -151,7 +151,7 @@ import metaxy.ext.dagster as mxd
 # Define a job with the delete op
 @dg.job(resource_defs={"metaxy_store": mxd.MetaxyStoreFromConfigResource(name="default")})
 def cleanup_job():
-    mxd.delete_metadata()
+    mxd.delete()
 ```
 
 `filters` is a list of SQL WHERE clause strings (e.g., `["status = 'inactive'", "age > 18"]`) that are parsed into Narwhals expressions. Multiple filters are combined with AND logic. See the [filter expressions guide](../../../guide/learn/filters.md) for supported syntax.

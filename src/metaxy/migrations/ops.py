@@ -195,9 +195,9 @@ class DataVersionReconciliation(BaseOperation):
 
         # 2. Query feature versions from snapshot metadata
         try:
-            from_version_data = store.read_metadata(
+            from_version_data = store.read(
                 FEATURE_VERSIONS_KEY,
-                current_only=False,
+                with_feature_history=True,
                 allow_fallback=False,
                 filters=[
                     (nw.col("metaxy_snapshot_version") == from_snapshot_version)
@@ -208,9 +208,9 @@ class DataVersionReconciliation(BaseOperation):
             from_version_data = None
 
         try:
-            to_version_data = store.read_metadata(
+            to_version_data = store.read(
                 FEATURE_VERSIONS_KEY,
-                current_only=False,
+                with_feature_history=True,
                 allow_fallback=False,
                 filters=[
                     (nw.col("metaxy_snapshot_version") == to_snapshot_version)
@@ -249,9 +249,9 @@ class DataVersionReconciliation(BaseOperation):
 
         # 3. Load existing metadata with old feature_version
         try:
-            existing_metadata = store.read_metadata(
+            existing_metadata = store.read(
                 feature_key_obj,
-                current_only=False,
+                with_feature_history=True,
                 filters=[nw.col("metaxy_feature_version") == from_feature_version],
                 allow_fallback=False,
             )
@@ -301,7 +301,7 @@ class DataVersionReconciliation(BaseOperation):
             return 0
 
         # 6. Write with new feature_version and snapshot_version
-        # Wrap in Narwhals for write_metadata
+        # Wrap in Narwhals for write
         df_to_write_nw = nw.from_native(df_to_write)
         df_to_write_nw = df_to_write_nw.with_columns(
             nw.lit(to_feature_version).alias("metaxy_feature_version"),
@@ -309,7 +309,7 @@ class DataVersionReconciliation(BaseOperation):
         )
 
         with allow_feature_version_override():
-            store.write_metadata(feature_key_obj, df_to_write_nw)
+            store.write(feature_key_obj, df_to_write_nw)
 
         return len(df_to_write)
 
@@ -382,7 +382,7 @@ class MetadataBackfill(BaseOperation, ABC):
                 to_write = external_df.join(diff.added, on="sample_uid", how="inner")
 
                 # Write
-                store.write_metadata(feature_key_obj, to_write)
+                store.write(feature_key_obj, to_write)
                 return len(to_write)
 
     Example YAML:

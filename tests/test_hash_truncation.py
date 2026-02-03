@@ -445,11 +445,11 @@ class TestMetadataStoreTruncation:
                         ],
                     }
                 )
-                store.write_metadata(TestFeature, metadata)
+                store.write(TestFeature, metadata)
 
                 # Read back and verify
 
-                result = store.read_metadata(TestFeature).collect()
+                result = store.read(TestFeature).collect()
                 result_pl = result.to_polars()
                 assert result_pl.height == 2
 
@@ -580,11 +580,11 @@ class TestEndToEnd:
                         ],
                     }
                 )
-                store.write_metadata(ParentFeature, parent_data)
+                store.write(ParentFeature, parent_data)
 
                 # Verify stored versions are truncated
 
-                result = store.read_metadata(ParentFeature).collect()
+                result = store.read(ParentFeature).collect()
                 result_pl = result.to_polars()
 
                 for row in result_pl.iter_rows(named=True):

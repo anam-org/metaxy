@@ -72,7 +72,7 @@ class TestExpansionRelationships:
                 }
             )
             video_data = add_metaxy_provenance_column(video_data, Video)
-            store.write_metadata(Video, nw.from_native(video_data))
+            store.write(Video, nw.from_native(video_data))
 
             # Write child metadata (multiple frames per video)
             frames_data = pl.DataFrame(
@@ -91,7 +91,7 @@ class TestExpansionRelationships:
                 }
             )
             frames_data = add_metaxy_provenance_column(frames_data, VideoFrames)
-            store.write_metadata(VideoFrames, nw.from_native(frames_data))
+            store.write(VideoFrames, nw.from_native(frames_data))
 
             # Resolve update
             diff = store.resolve_update(VideoFrames)
@@ -145,7 +145,7 @@ class TestExpansionRelationships:
                 }
             )
             article_data = add_metaxy_provenance_column(article_data, Article)
-            store.write_metadata(Article, nw.from_native(article_data))
+            store.write(Article, nw.from_native(article_data))
 
             # Child metadata (existing)
             para_data = pl.DataFrame(
@@ -163,7 +163,7 @@ class TestExpansionRelationships:
                 }
             )
             para_data = add_metaxy_provenance_column(para_data, ArticleParagraphs)
-            store.write_metadata(ArticleParagraphs, nw.from_native(para_data))
+            store.write(ArticleParagraphs, nw.from_native(para_data))
 
             # Resolve update
             diff = store.resolve_update(ArticleParagraphs)

@@ -56,7 +56,7 @@ class TestMetaxyIOManagerHandleOutput:
         # First write data externally (not via IOManager)
         store = mx.MetaxyConfig.get().get_store("dev")
         with store.open("write"):
-            store.write_metadata(
+            store.write(
                 upstream_feature,
                 pl.DataFrame(
                     {
@@ -136,7 +136,7 @@ class TestMetaxyIOManagerHandleOutput:
         def my_asset(store: dg.ResourceParam[mx.MetadataStore]):
             # Write data directly to store inside the asset
             with store.open("write"):
-                store.write_metadata(
+                store.write(
                     upstream_feature,
                     pl.DataFrame(
                         {
@@ -206,7 +206,7 @@ class TestMetaxyIOManagerHandleOutput:
         @dg.asset(deps=[my_asset])
         def verify_asset(store: dg.ResourceParam[mx.MetadataStore]):
             with store:
-                captured_data["rows"] = len(store.read_metadata(upstream_feature).collect())
+                captured_data["rows"] = len(store.read(upstream_feature).collect())
 
         result2 = dg.materialize(
             [verify_asset],
@@ -245,7 +245,7 @@ class TestMetaxyIOManagerLoadInput:
 
         # Write upstream data to fallback store only
         with fallback_store.open("write"):
-            fallback_store.write_metadata(
+            fallback_store.write(
                 upstream_feature,
                 pl.DataFrame(
                     {
@@ -372,7 +372,7 @@ class TestMetaxyIOManagerLoadInput:
         def downstream_asset(store: dg.ResourceParam[mx.MetadataStore]):
             # Manually load the upstream data to verify it works
             with store:
-                upstream_data = store.read_metadata(upstream_feature).collect()
+                upstream_data = store.read(upstream_feature).collect()
                 captured_input["data"] = upstream_data
             return None
 
@@ -411,7 +411,7 @@ class TestMetaxyIOManagerMetadata:
         # First write data externally so metadata can be read
         store = mx.MetaxyConfig.get().get_store("dev")
         with store.open("write"):
-            store.write_metadata(
+            store.write(
                 upstream_feature,
                 pl.DataFrame(
                     {
@@ -631,7 +631,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify all data was written (6 rows total: 2 per partition)
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(UpstreamPartitioned).collect()
+            all_data = store.read(UpstreamPartitioned).collect()
             assert len(all_data) == 6
 
         # Materialize downstream for partition "b" only
@@ -735,7 +735,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify all data was written (6 rows total: 2 per partition)
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(UpstreamPartToUnpart).collect()
+            all_data = store.read(UpstreamPartToUnpart).collect()
             assert len(all_data) == 6
 
         # Materialize unpartitioned downstream
@@ -838,7 +838,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify upstream data was written
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(UpstreamUnpart).collect()
+            all_data = store.read(UpstreamUnpart).collect()
             assert len(all_data) == 4
 
         # Materialize downstream for partition "b"
@@ -956,7 +956,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify all upstream data was written (6 rows total)
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(UpstreamSpecificMapping).collect()
+            all_data = store.read(UpstreamSpecificMapping).collect()
             assert len(all_data) == 6
 
         # Materialize downstream for partition "q1"
@@ -1111,7 +1111,7 @@ class TestMultipleAssetsPerFeature:
 
         # Verify first asset's data is in the store
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            data_after_a = store.read_metadata(shared_feature).collect()
+            data_after_a = store.read(shared_feature).collect()
             assert len(data_after_a) == 3
 
         # Materialize second asset
@@ -1124,7 +1124,7 @@ class TestMultipleAssetsPerFeature:
 
         # Verify both assets' data is now in the store (append-only behavior)
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(shared_feature).collect()
+            all_data = store.read(shared_feature).collect()
             assert len(all_data) == 5  # 3 from A + 2 from B
 
             # Verify all IDs are present (convert to list via Narwhals for backend compatibility)
@@ -1194,7 +1194,7 @@ class TestMultipleAssetsPerFeature:
 
         # Verify all data is in the store
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(shared_feature).collect()
+            all_data = store.read(shared_feature).collect()
             assert len(all_data) == 5  # 2 from producer_one + 3 from producer_two
 
     def test_downstream_reads_from_multi_producer_feature(
@@ -1234,7 +1234,7 @@ class TestMultipleAssetsPerFeature:
         def consumer(store: dg.ResourceParam[mx.MetadataStore]):
             """Consumes all data from the shared feature."""
             with store:
-                data = store.read_metadata(shared_feature).collect()
+                data = store.read(shared_feature).collect()
                 captured_data["count"] = len(data)
                 captured_data["ids"] = set(data["id"].to_list())
 

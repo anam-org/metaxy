@@ -47,10 +47,10 @@ def main():
         diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)
         if len(diff.added) > 0:
             print(f"Found {len(diff.added)} new audio recordings")
-            store.write_metadata(Audio, diff.added)
+            store.write(Audio, diff.added)
         elif len(diff.changed) > 0:
             print(f"Found {len(diff.changed)} changed audio recordings")
-            store.write_metadata(Audio, diff.changed)
+            store.write(Audio, diff.changed)
         else:
             print("No new or changed audio recordings")
 
@@ -102,7 +102,7 @@ def main():
 
             embedding_df = pl.DataFrame(embedding_data)
             print(f"Writing embeddings for {len(embedding_data)} speakers")
-            store.write_metadata(SpeakerEmbedding, embedding_df)
+            store.write(SpeakerEmbedding, embedding_df)
 
 
 if __name__ == "__main__":

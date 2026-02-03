@@ -116,7 +116,7 @@ class DocsStoreFixtures:
         )
 
         with self._store_with_data.open("write"):
-            self._store_with_data.write_metadata(MyFeature, sample_data)
+            self._store_with_data.write(MyFeature, sample_data)
 
     def teardown(self) -> None:
         """Clean up all resources via ExitStack."""

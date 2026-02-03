@@ -126,10 +126,10 @@ class TestProperDataframeWrite:
             warnings.simplefilter("always")
 
             with any_store.open("write"):
-                any_store.write_metadata(RootFeature, df)
+                any_store.write(RootFeature, df)
 
                 # Verify write succeeded
-                result = collect_to_polars(any_store.read_metadata(RootFeature))
+                result = collect_to_polars(any_store.read(RootFeature))
                 assert len(result) == 3
 
             # Check for MetaxyColumnMissingWarning
@@ -175,11 +175,11 @@ class TestProperDataframeWrite:
             warnings.simplefilter("always")
 
             with any_store.open("write"):
-                any_store.write_metadata(RootFeature, root_df)
-                any_store.write_metadata(DownstreamFeature, downstream_df)
+                any_store.write(RootFeature, root_df)
+                any_store.write(DownstreamFeature, downstream_df)
 
                 # Verify write succeeded
-                result = collect_to_polars(any_store.read_metadata(DownstreamFeature))
+                result = collect_to_polars(any_store.read(DownstreamFeature))
                 assert len(result) == 3
 
             # Check for MetaxyColumnMissingWarning

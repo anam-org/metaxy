@@ -340,7 +340,7 @@ def test_resolve_update_downstream_feature(
             # Write all upstream data (includes transitive dependencies)
             for feat_key_str, upstream_df in upstream_data.items():
                 feat_key = FeatureKey([feat_key_str])
-                store.write_metadata(feat_key, upstream_df)
+                store.write(feat_key, upstream_df)
 
             # Call resolve_update to compute child metadata
             increment = store.resolve_update(
@@ -416,10 +416,10 @@ def test_resolve_update_detects_changes(
             for feat_key_str, upstream_df in initial_upstream.items():
                 feat_key = FeatureKey([feat_key_str])
                 feat_class = graph.feature_definitions_by_key[feat_key]
-                store.write_metadata(feat_class, upstream_df)
+                store.write(feat_class, upstream_df)
 
             # Write initial child metadata
-            store.write_metadata(child_key, initial_downstream)
+            store.write(child_key, initial_downstream)
 
             # Generate new upstream data (simulating changes)
             # The easiest way to test change detection is to generate completely new data
@@ -435,7 +435,7 @@ def test_resolve_update_detects_changes(
             # Write modified upstream data
             for feat_key_str, upstream_df in modified_upstream.items():
                 feat_key = FeatureKey([feat_key_str])
-                store.write_metadata(feat_key, upstream_df)
+                store.write(feat_key, upstream_df)
 
             # Call resolve_update - should detect all changes
             increment = store.resolve_update(
@@ -526,7 +526,7 @@ def test_resolve_update_lazy_execution(
             for feat_key_str, upstream_df in upstream_data.items():
                 feat_key = FeatureKey([feat_key_str])
                 feat_class = graph.feature_definitions_by_key[feat_key]
-                store.write_metadata(feat_class, upstream_df)
+                store.write(feat_class, upstream_df)
 
             # Call resolve_update with lazy=True
             lazy_increment = store.resolve_update(
@@ -616,7 +616,7 @@ def test_resolve_update_idempotency(
             # Write all upstream data (includes transitive dependencies)
             for feat_key_str, upstream_df in upstream_data.items():
                 feat_key = FeatureKey([feat_key_str])
-                store.write_metadata(feat_key, upstream_df)
+                store.write(feat_key, upstream_df)
 
             # First resolve_update
             increment1 = store.resolve_update(
@@ -629,7 +629,7 @@ def test_resolve_update_idempotency(
 
             # Write the increment
             added_df = increment1.added.lazy().collect().to_polars()
-            store.write_metadata(child_key, added_df)
+            store.write(child_key, added_df)
 
             # Second resolve_update - should be empty
             increment2 = store.resolve_update(
@@ -693,7 +693,7 @@ def test_resolve_update_filters_with_feature_class_key(
     )
 
     with store, graph.use():
-        store.write_metadata(UpstreamFeature, upstream_df)
+        store.write(UpstreamFeature, upstream_df)
 
         # Use feature class as filter key - should filter upstream to only value > 15
         increment = store.resolve_update(
@@ -751,7 +751,7 @@ def test_resolve_update_filters_with_feature_key_object(
     )
 
     with store, graph.use():
-        store.write_metadata(UpstreamFeature, upstream_df)
+        store.write(UpstreamFeature, upstream_df)
 
         # Use FeatureKey as filter key
         upstream_key = FeatureKey(["upstream_fk"])
@@ -810,7 +810,7 @@ def test_resolve_update_global_filters(
     )
 
     with store, graph.use():
-        store.write_metadata(UpstreamFeature, upstream_df)
+        store.write(UpstreamFeature, upstream_df)
 
         # Use global_filters to filter by sample_uid across all features
         increment = store.resolve_update(
@@ -869,7 +869,7 @@ def test_resolve_update_global_filters_combined_with_filters(
     )
 
     with store, graph.use():
-        store.write_metadata(UpstreamFeature, upstream_df)
+        store.write(UpstreamFeature, upstream_df)
 
         # Use both global_filters and feature-specific filters
         # global_filters: sample_uid in [s2, s3, s4, s5]
@@ -899,7 +899,7 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
     """Test that resolve_update orphaned count is correct after multiple writes with expansion lineage.
 
     This test simulates a realistic scenario where:
-    1. A user writes frames multiple times using resolve_update -> write_metadata
+    1. A user writes frames multiple times using resolve_update -> write
     2. Each write might add different frames for the same parent videos
     3. When checking status, orphaned should only count PARENT-level removals
 
@@ -957,7 +957,7 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
                 "metaxy_provenance": ["video_prov_1", "video_prov_2"],
             }
         )
-        store.write_metadata(Video, video_data)
+        store.write(Video, video_data)
 
         import narwhals as nw
 
@@ -971,7 +971,7 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
             }
         )
         # Join with upstream to get proper data_version columns
-        upstream_df = store.read_metadata(Video).collect().to_polars()
+        upstream_df = store.read(Video).collect().to_polars()
         first_batch_joined = first_batch.join(
             upstream_df.select(["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
@@ -983,7 +983,7 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
         )
         # Use compute_provenance to get proper provenance from upstream
         first_batch_with_prov = store.compute_provenance(VideoFrames, nw.from_native(first_batch_joined))
-        store.write_metadata(VideoFrames, first_batch_with_prov)
+        store.write(VideoFrames, first_batch_with_prov)
 
         # Second write: add more frames (simulating re-running the pipeline)
         second_batch = pl.DataFrame(
@@ -1003,7 +1003,7 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
             on="video_id",
         )
         second_batch_with_prov = store.compute_provenance(VideoFrames, nw.from_native(second_batch_joined))
-        store.write_metadata(VideoFrames, second_batch_with_prov)
+        store.write(VideoFrames, second_batch_with_prov)
 
         # Now we have 7 total frames in the store:
         # v1: frames 0, 1, 2, 3 (4 frames)
@@ -1094,7 +1094,7 @@ def test_expansion_lineage_orphaned_when_upstream_removed(
                 "metaxy_provenance": [f"video_prov_{i}" for i in range(1, 6)],
             }
         )
-        store.write_metadata(Video, video_data)
+        store.write(Video, video_data)
 
         # Write frames for ALL 5 videos (10 frames each = 50 total frames)
         frame_rows = []
@@ -1110,7 +1110,7 @@ def test_expansion_lineage_orphaned_when_upstream_removed(
         frames_df = pl.DataFrame(frame_rows)
 
         # Join with upstream to compute proper provenance
-        upstream_df = store.read_metadata(Video).collect().to_polars()
+        upstream_df = store.read(Video).collect().to_polars()
         frames_joined = frames_df.join(
             upstream_df.select(["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
@@ -1121,7 +1121,7 @@ def test_expansion_lineage_orphaned_when_upstream_removed(
             on="video_id",
         )
         frames_with_prov = store.compute_provenance(VideoFrames, nw.from_native(frames_joined))
-        store.write_metadata(VideoFrames, frames_with_prov)
+        store.write(VideoFrames, frames_with_prov)
 
         # Now REMOVE 3 videos from upstream (simulating upstream data change)
         # This is like the user's scenario where upstream was filtered/changed
@@ -1137,7 +1137,7 @@ def test_expansion_lineage_orphaned_when_upstream_removed(
                 "metaxy_provenance": ["video_prov_1", "video_prov_2"],
             }
         )
-        store.write_metadata(Video, reduced_video_data)
+        store.write(Video, reduced_video_data)
 
         # Check status - current has frames for 5 videos, upstream only has 2
         # Expected: 3 orphaned PARENTS (v3, v4, v5)
@@ -1166,9 +1166,9 @@ def test_expansion_lineage_orphaned_with_duplicate_writes(
     This test reproduces the user's scenario where they wrote to the feature
     multiple times (without deduplication) and see incorrect orphaned counts.
 
-    The issue: resolve_update uses read_metadata_in_store (no deduplication)
-    while get_feature_metadata_status.store_row_count uses read_metadata
-    (which has latest_only=True deduplication).
+    The issue: resolve_update uses _read_feature (no deduplication)
+    while get_feature_metadata_status.store_row_count uses read
+    (which has with_sample_history=False deduplication).
 
     This can cause orphaned_count to be larger than store_row_count if there
     are duplicate writes with the same id_columns.
@@ -1225,7 +1225,7 @@ def test_expansion_lineage_orphaned_with_duplicate_writes(
                 "metaxy_provenance": ["video_prov_1", "video_prov_2"],
             }
         )
-        store.write_metadata(Video, video_data)
+        store.write(Video, video_data)
 
         # Write frames for both videos - FIRST WRITE
         first_batch = pl.DataFrame(
@@ -1235,7 +1235,7 @@ def test_expansion_lineage_orphaned_with_duplicate_writes(
                 "embedding": ["emb_v1_0", "emb_v1_1", "emb_v2_0", "emb_v2_1"],
             }
         )
-        upstream_df = store.read_metadata(Video).collect().to_polars()
+        upstream_df = store.read(Video).collect().to_polars()
         first_batch_joined = first_batch.join(
             upstream_df.select(["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
@@ -1246,25 +1246,25 @@ def test_expansion_lineage_orphaned_with_duplicate_writes(
             on="video_id",
         )
         first_batch_with_prov = store.compute_provenance(VideoFrames, nw.from_native(first_batch_joined))
-        store.write_metadata(VideoFrames, first_batch_with_prov)
+        store.write(VideoFrames, first_batch_with_prov)
 
         # Write SAME frames again - SECOND WRITE (duplicate rows)
         # This simulates user writing multiple times without deduplication
-        store.write_metadata(VideoFrames, first_batch_with_prov)
+        store.write(VideoFrames, first_batch_with_prov)
 
         # Write SAME frames a THIRD time
-        store.write_metadata(VideoFrames, first_batch_with_prov)
+        store.write(VideoFrames, first_batch_with_prov)
 
         # Now the store has 12 rows (4 frames x 3 writes)
-        # But read_metadata with latest_only=True should show 4 rows
+        # But read with with_sample_history=False should show 4 rows
         # Let's verify this
-        current_deduplicated = store.read_metadata(VideoFrames).collect()
-        current_all = store.read_metadata(VideoFrames, latest_only=False).collect()
+        current_deduplicated = store.read(VideoFrames).collect()
+        current_all = store.read(VideoFrames, with_sample_history=True).collect()
 
         assert len(current_deduplicated) == 4, f"Expected 4 deduplicated rows, got {len(current_deduplicated)}"
         assert len(current_all) == 12, f"Expected 12 total rows (with duplicates), got {len(current_all)}"
 
-        # Now check resolve_update - it uses read_metadata_in_store (no dedup)
+        # Now check resolve_update - it uses _read_feature (no dedup)
         # So it might see more rows than expected
         increment = store.resolve_update(VideoFrames, lazy=False)
 
@@ -1295,8 +1295,8 @@ def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
     3. Store uses append mode (no deduplication)
     4. When checking status, orphaned count is inflated
 
-    The bug: resolve_update uses read_metadata_in_store (no deduplication by default)
-    while metadata status store_row_count uses read_metadata with latest_only=True.
+    The bug: resolve_update uses _read_feature (no deduplication by default)
+    while metadata status store_row_count uses read with with_sample_history=False.
 
     User reported: 151152 materialized, 755755 orphaned
     This suggests ~5x more rows in the store than unique samples.
@@ -1345,7 +1345,7 @@ def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
                 "metaxy_provenance": [f"upstream_prov_{i}" for i in range(10)],
             }
         )
-        store.write_metadata(Upstream, upstream_data)
+        store.write(Upstream, upstream_data)
 
         # First materialization: write downstream for all 10 chunks
         downstream_batch = pl.DataFrame(
@@ -1354,7 +1354,7 @@ def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
                 "result": [f"result_{i}" for i in range(10)],
             }
         )
-        upstream_df = store.read_metadata(Upstream).collect().to_polars()
+        upstream_df = store.read(Upstream).collect().to_polars()
         downstream_joined = downstream_batch.join(
             upstream_df.select(["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
@@ -1365,16 +1365,16 @@ def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
             on="chunk_id",
         )
         downstream_with_prov = store.compute_provenance(Downstream, nw.from_native(downstream_joined))
-        store.write_metadata(Downstream, downstream_with_prov)
+        store.write(Downstream, downstream_with_prov)
 
         # Write SAME data 4 more times (5 total writes, like the user scenario)
         for _ in range(4):
-            store.write_metadata(Downstream, downstream_with_prov)
+            store.write(Downstream, downstream_with_prov)
 
         # Now we have 50 rows (10 chunks x 5 writes) in the store
-        # But read_metadata with latest_only=True should show 10 rows
-        current_deduplicated = store.read_metadata(Downstream).collect()
-        current_all = store.read_metadata(Downstream, latest_only=False).collect()
+        # But read with with_sample_history=False should show 10 rows
+        current_deduplicated = store.read(Downstream).collect()
+        current_all = store.read(Downstream, with_sample_history=True).collect()
 
         assert len(current_deduplicated) == 10, f"Expected 10 deduplicated rows, got {len(current_deduplicated)}"
         assert len(current_all) == 50, f"Expected 50 total rows (with duplicates), got {len(current_all)}"
@@ -1410,8 +1410,8 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
     - 151152 materialized rows became 755755+ total rows (with duplicates)
     - resolve_update saw all rows (not deduplicated) and reported 755755 orphaned
 
-    The fix: resolve_update now uses read_metadata() with latest_only=True
-    instead of read_metadata_in_store() which doesn't deduplicate.
+    The fix: resolve_update now uses read() with with_sample_history=False
+    instead of _read_feature() which doesn't deduplicate.
 
     This test MUST use DeltaMetadataStore because:
     - DeltaMetadataStore uses append mode, preserving duplicates
@@ -1461,7 +1461,7 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
                 "metaxy_provenance": [f"upstream_prov_{i}" for i in range(10)],
             }
         )
-        store.write_metadata(Upstream, upstream_data)
+        store.write(Upstream, upstream_data)
 
         # First materialization: compute downstream for all 10 chunks
         downstream_batch = pl.DataFrame(
@@ -1470,7 +1470,7 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
                 "result": [f"result_{i}" for i in range(10)],
             }
         )
-        upstream_df = store.read_metadata(Upstream).collect().to_polars()
+        upstream_df = store.read(Upstream).collect().to_polars()
         downstream_joined = downstream_batch.join(
             upstream_df.select(["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                 {
@@ -1482,28 +1482,28 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
             on="chunk_id",
         )
         downstream_with_prov = store.compute_provenance(Downstream, nw.from_native(downstream_joined))
-        store.write_metadata(Downstream, downstream_with_prov)
+        store.write(Downstream, downstream_with_prov)
 
         # Write SAME data 4 more times (5 total writes, like the user scenario)
         # This simulates the user materializing the same feature multiple times
         for _ in range(4):
-            store.write_metadata(Downstream, downstream_with_prov)
+            store.write(Downstream, downstream_with_prov)
 
         # Verify we have 50 total rows but only 10 unique after deduplication
-        current_all = store.read_metadata(Downstream, latest_only=False).collect()
-        current_dedup = store.read_metadata(Downstream, latest_only=True).collect()
+        current_all = store.read(Downstream, with_sample_history=True).collect()
+        current_dedup = store.read(Downstream, with_sample_history=False).collect()
 
-        # Debug: check what read_metadata_in_store returns
+        # Debug: check what _read_feature returns
         from metaxy.models.constants import METAXY_FEATURE_VERSION
 
-        raw_metadata = store.read_metadata_in_store(
+        raw_metadata = store._read_feature(
             Downstream,
             filters=[nw.col(METAXY_FEATURE_VERSION) == Downstream.feature_version()],
         )
         raw_count = len(raw_metadata.collect()) if raw_metadata else 0
-        print(f"\nDEBUG: Total rows (latest_only=False): {len(current_all)}")
-        print(f"DEBUG: Deduplicated rows (latest_only=True): {len(current_dedup)}")
-        print(f"DEBUG: read_metadata_in_store rows: {raw_count}")
+        print(f"\nDEBUG: Total rows (with_sample_history=True): {len(current_all)}")
+        print(f"DEBUG: Deduplicated rows (with_sample_history=False): {len(current_dedup)}")
+        print(f"DEBUG: _read_feature rows: {raw_count}")
 
         assert len(current_all) == 50, f"Expected 50 total rows, got {len(current_all)}"
         assert len(current_dedup) == 10, f"Expected 10 deduplicated rows, got {len(current_dedup)}"
@@ -1588,11 +1588,11 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
                 "metaxy_provenance": [f"upstream_prov_{i}" for i in range(100)],
             }
         )
-        fallback_store.write_metadata(Upstream, fallback_upstream_data)
+        fallback_store.write(Upstream, fallback_upstream_data)
 
         # User reads upstream from fallback (via local_store) and materializes downstream
         # This should read 100 chunks from fallback
-        upstream_df = local_store.read_metadata(Upstream).collect().to_polars()
+        upstream_df = local_store.read(Upstream).collect().to_polars()
         assert len(upstream_df) == 100, f"Expected 100 upstream rows from fallback, got {len(upstream_df)}"
 
         # User computes and writes downstream for all 100 chunks
@@ -1612,7 +1612,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
             on="chunk_id",
         )
         downstream_with_prov = local_store.compute_provenance(Downstream, nw.from_native(downstream_joined))
-        local_store.write_metadata(Downstream, downstream_with_prov)
+        local_store.write(Downstream, downstream_with_prov)
 
         # Now write LOCAL upstream with FEWER samples (only 20 chunks)
         # This simulates the scenario where local upstream is out of sync with fallback
@@ -1624,19 +1624,19 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
                 "metaxy_provenance": [f"upstream_prov_{i}" for i in range(20)],
             }
         )
-        local_store.write_metadata(Upstream, local_upstream_data)
+        local_store.write(Upstream, local_upstream_data)
 
         # Now check status WITHOUT fallback
         # Create a new store without fallback to simulate checking local-only status
         local_only_store = DeltaMetadataStore(root_path=tmp_path / "delta_local_only")
         with local_only_store:
             # Copy upstream and downstream from local_store to local_only_store
-            upstream_data = local_store.read_metadata_in_store(Upstream)
-            downstream_data = local_store.read_metadata_in_store(Downstream)
+            upstream_data = local_store._read_feature(Upstream)
+            downstream_data = local_store._read_feature(Downstream)
             assert upstream_data is not None
             assert downstream_data is not None
-            local_only_store.write_metadata(Upstream, upstream_data.collect())
-            local_only_store.write_metadata(Downstream, downstream_data.collect())
+            local_only_store.write(Upstream, upstream_data.collect())
+            local_only_store.write(Downstream, downstream_data.collect())
 
             # Check status:
             # - Downstream has 100 chunks
@@ -1786,7 +1786,7 @@ def test_resolve_update_optional_dependencies(
             # Write upstream data to store
             for feature_key_str, upstream_df in upstream_data.items():
                 feat_key = FeatureKey([feature_key_str])
-                store.write_metadata(feat_key, upstream_df)
+                store.write(feat_key, upstream_df)
 
             # Get store's result
             increment = store.resolve_update(child_key, lazy=False)
@@ -1917,7 +1917,7 @@ def test_optional_dependency_null_handling_and_provenance_stability(
                     ],
                 }
             )
-            any_store.write_metadata(RequiredParent, required_df)
+            any_store.write(RequiredParent, required_df)
 
             # Optional parent has only s1 and s3 (s2 is MISSING)
             optional_df = pl.DataFrame(
@@ -1933,7 +1933,7 @@ def test_optional_dependency_null_handling_and_provenance_stability(
                     ],
                 }
             )
-            any_store.write_metadata(OptionalParent, optional_df)
+            any_store.write(OptionalParent, optional_df)
 
             # Initial resolve
             increment_v1 = any_store.resolve_update(ChildFeature)
@@ -1956,7 +1956,7 @@ def test_optional_dependency_null_handling_and_provenance_stability(
             }
 
             # Write initial downstream
-            any_store.write_metadata(ChildFeature, initial_downstream)
+            any_store.write(ChildFeature, initial_downstream)
 
             # === UPDATE OPTIONAL PARENT (version change) ===
             # Only change the optional parent's provenance (simulates code_version bump)
@@ -1973,7 +1973,7 @@ def test_optional_dependency_null_handling_and_provenance_stability(
                     ],
                 }
             )
-            any_store.write_metadata(OptionalParent, optional_df_v2)
+            any_store.write(OptionalParent, optional_df_v2)
 
             # Resolve after optional parent change
             increment_v2 = any_store.resolve_update(ChildFeature)
@@ -2097,7 +2097,7 @@ def test_all_optional_deps_outer_join_behavior(
                     ],
                 }
             )
-            any_store.write_metadata(OptionalA, optional_a_df)
+            any_store.write(OptionalA, optional_a_df)
 
             # OptionalB has s2, s3
             optional_b_df = pl.DataFrame(
@@ -2113,7 +2113,7 @@ def test_all_optional_deps_outer_join_behavior(
                     ],
                 }
             )
-            any_store.write_metadata(OptionalB, optional_b_df)
+            any_store.write(OptionalB, optional_b_df)
 
             # Resolve
             increment = any_store.resolve_update(ChildFeature)
@@ -2216,7 +2216,7 @@ def test_aggregation_lineage_field_level_provenance_isolation(
     try:
         with any_store:
             # Initial upstream data - using minimal required columns
-            # write_metadata fills in missing metaxy columns
+            # write fills in missing metaxy columns
             upstream_v1 = pl.DataFrame(
                 {
                     "sensor_id": ["s1", "s1"],
@@ -2231,12 +2231,12 @@ def test_aggregation_lineage_field_level_provenance_isolation(
                     ],
                 }
             )
-            any_store.write_metadata(SensorReadings, upstream_v1)
+            any_store.write(SensorReadings, upstream_v1)
 
             # Initial resolve - creates downstream
             increment_v1 = any_store.resolve_update(HourlyStats)
             initial_downstream = increment_v1.added.lazy().collect().to_polars()
-            any_store.write_metadata(HourlyStats, initial_downstream)
+            any_store.write(HourlyStats, initial_downstream)
 
             # Get initial provenance
             initial_prov_by_field = initial_downstream["metaxy_provenance_by_field"][0]
@@ -2259,7 +2259,7 @@ def test_aggregation_lineage_field_level_provenance_isolation(
                     ],
                 }
             )
-            any_store.write_metadata(SensorReadings, upstream_v2)
+            any_store.write(SensorReadings, upstream_v2)
 
             # Resolve after upstream change
             increment_v2 = any_store.resolve_update(HourlyStats)
@@ -2395,7 +2395,7 @@ def test_aggregation_lineage_field_level_provenance_definition_change(
 
         try:
             with any_store:  # Store ops inside FeatureGraph context!
-                any_store.write_metadata(SensorReadingsV1, upstream_v1)
+                any_store.write(SensorReadingsV1, upstream_v1)
 
                 increment_v1 = any_store.resolve_update(HourlyStatsV1)
 
@@ -2485,7 +2485,7 @@ def test_aggregation_lineage_field_level_provenance_definition_change(
 
         try:
             with any_store:  # Store ops inside FeatureGraph context!
-                any_store.write_metadata(SensorReadingsV2, upstream_v2)
+                any_store.write(SensorReadingsV2, upstream_v2)
 
                 increment_v2 = any_store.resolve_update(HourlyStatsV2)
 
@@ -2597,7 +2597,7 @@ def test_aggregation_lineage_preserves_user_columns(
                 ],
             }
         )
-        store.write_metadata(DirectorNotesTexts, upstream_df)
+        store.write(DirectorNotesTexts, upstream_df)
 
         # Call resolve_update - should work and include 'dataset' column
         increment = store.resolve_update(DirectorNotesAggregated, lazy=False)
@@ -2692,7 +2692,7 @@ def test_aggregation_lineage_preserves_columns_with_global_filter(
                 "metaxy_provenance_by_field": [{"value": f"hash{i}"} for i in range(1, 7)],
             }
         )
-        store.write_metadata(UpstreamWithDataset, upstream_df)
+        store.write(UpstreamWithDataset, upstream_df)
 
         # Call resolve_update with global_filters filtering by dataset
         increment = store.resolve_update(

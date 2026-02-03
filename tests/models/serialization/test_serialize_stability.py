@@ -86,7 +86,7 @@ def test_serialize_uses_to_snapshot(store: MetadataStore, test_graph: FeatureGra
             # Read back the serialized data from the store
             from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None, "Feature versions should be recorded"
 
             versions_df = versions_lazy.collect().to_polars()

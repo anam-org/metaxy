@@ -7,7 +7,7 @@ description: "How Metaxy abstracts metadata storage and versioning."
 
 Metaxy abstracts interactions with metadata stored in external systems such as databases, files, or object stores, through a unified interface: [`MetadataStore`][metaxy.MetadataStore].
 
-Metadata stores expose methods for [reading][metaxy.MetadataStore.read_metadata], [writing][metaxy.MetadataStore.write_metadata], deleting metadata, and the most important one: [resolve_update][metaxy.MetadataStore.resolve_update] for receiving a metadata increment.
+Metadata stores expose methods for [reading][metaxy.MetadataStore.read], [writing][metaxy.MetadataStore.write], deleting metadata, and the most important one: [resolve_update][metaxy.MetadataStore.resolve_update] for receiving a metadata increment.
 
 It looks more or less like this:
 
@@ -15,10 +15,10 @@ It looks more or less like this:
 
     ```py
     with store:
-        df = store.read_metadata(MyFeature)
+        df = store.read(MyFeature)
 
     with store.open("write"):
-        store.write_metadata(MyFeature, df)
+        store.write(MyFeature, df)
     ```
 
 Metadata stores implement an append-only storage model and rely on [Metaxy system columns](system-columns.md).
@@ -76,7 +76,7 @@ from datetime import datetime, timedelta, timezone
 import narwhals as nw
 
 with store.open("write"):
-    store.delete_metadata(
+    store.delete(
         MyFeature,
         filters=[nw.col("metaxy_created_at") < datetime.now(timezone.utc) - timedelta(days=30)],
     )

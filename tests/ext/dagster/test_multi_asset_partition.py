@@ -188,7 +188,7 @@ class TestMultiAssetPartitionMaterialization:
 
         # Verify only US data is in the store so far
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            data_after_a = store.read_metadata(shared_feature).collect()
+            data_after_a = store.read(shared_feature).collect()
             assert len(data_after_a) == 2
             assert set(data_after_a["region"].to_list()) == {"us"}
 
@@ -202,7 +202,7 @@ class TestMultiAssetPartitionMaterialization:
 
         # Verify both US and EU data are now in the store
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(shared_feature).collect()
+            all_data = store.read(shared_feature).collect()
             assert len(all_data) == 5  # 2 US + 3 EU
             assert set(all_data["region"].to_list()) == {"us", "eu"}
             assert set(all_data["id"].to_list()) == {
@@ -414,7 +414,7 @@ class TestCompleteScenario:
 
         # Verify the feature has all 5 records in the store
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(shared_feature).collect()
+            all_data = store.read(shared_feature).collect()
             assert len(all_data) == 5
             assert set(all_data["region"].to_list()) == {"us", "eu"}
             assert set(all_data["id"].to_list()) == {
@@ -511,5 +511,5 @@ class TestMetaxyPartitionWithMultipleColumns:
 
         # Verify both partitions are in the store
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(multi_partition_feature).collect()
+            all_data = store.read(multi_partition_feature).collect()
             assert len(all_data) == 5

@@ -145,7 +145,7 @@ class TestResolveUpdateRootFeatures:
                 }
             )
             initial_metadata = add_metaxy_provenance_column(initial_metadata, video_feature)
-            store.write_metadata(video_feature, initial_metadata)
+            store.write(video_feature, initial_metadata)
 
             # User provides updated samples
             import narwhals as nw

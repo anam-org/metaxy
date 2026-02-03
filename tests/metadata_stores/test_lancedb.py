@@ -46,7 +46,7 @@ def test_lancedb_table_naming(tmp_path, test_graph, test_features) -> None:
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(feature_cls, metadata)
+        store.write(feature_cls, metadata)
 
         # Verify table was created (uses optimized _table_exists internally)
         assert store.has_feature(feature_cls, check_fallback=False)
@@ -219,7 +219,7 @@ def test_lancedb_has_feature_without_listing_tables(tmp_path, test_features) -> 
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(feature_cls, metadata)
+        store.write(feature_cls, metadata)
 
         original_table_names = store.conn.table_names
         table_names_mock = Mock(side_effect=original_table_names)
@@ -251,10 +251,10 @@ def test_lancedb_s3_storage_options_passed(s3_bucket_and_storage_options, test_f
                 ],
             }
         )
-        store.write_metadata(feature_cls, metadata)
+        store.write(feature_cls, metadata)
 
         assert store.has_feature(feature_cls, check_fallback=False)
 
-        result = collect_to_polars(store.read_metadata(feature_cls))
+        result = collect_to_polars(store.read(feature_cls))
         assert len(result) == 2
         assert set(result["sample_uid"].to_list()) == {1, 2}

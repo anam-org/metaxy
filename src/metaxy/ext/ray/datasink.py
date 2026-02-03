@@ -93,7 +93,7 @@ class MetaxyDatasink(Datasink[_WriteTaskResult]):
         ctx: TaskContext,
     ) -> _WriteTaskResult:
         """Write blocks of metadata to the store."""
-        # Initialize metaxy on the worker - config and features are needed for write_metadata
+        # Initialize metaxy on the worker - config and features are needed for write
         config = mx.init_metaxy(self.config)
         if config.sync:
             mx.sync_external_features(self.store)
@@ -107,7 +107,7 @@ class MetaxyDatasink(Datasink[_WriteTaskResult]):
 
             try:
                 with self.store.open("write"):
-                    self.store.write_metadata(self._feature_key, block)
+                    self.store.write(self._feature_key, block)
                 rows_written += num_rows
             except Exception:
                 logger.exception(

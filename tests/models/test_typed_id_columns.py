@@ -298,10 +298,10 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph, tmp_path: Pa
             )
         )
 
-        store.write_metadata(CustomIDFeature, df)
+        store.write(CustomIDFeature, df)
 
         # Read back and verify
-        result = store.read_metadata(CustomIDFeature).collect()
+        result = store.read(CustomIDFeature).collect()
 
         assert "uuid" in result.columns
         assert len(result) == 3

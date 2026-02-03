@@ -683,7 +683,7 @@ def test_resolve_update_loads_external_feature_definitions(tmp_path: Path):
                     "metaxy_data_version": ["prov1", "prov2"],
                 }
             )
-            store.write_metadata(UpstreamFeature, upstream_metadata)
+            store.write(UpstreamFeature, upstream_metadata)
 
         # Get the expected version when upstream is fully defined
         expected_upstream_version = source_graph.get_feature_version(["resolve_test", "upstream"])

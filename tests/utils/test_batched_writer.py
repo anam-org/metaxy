@@ -120,7 +120,7 @@ def test_batched_writer_basic(store: MetadataStore, writer_feature: type[BaseFea
         assert rows_written[writer_feature.spec().key] == 3
 
         # Verify data was written
-        result = store.read_metadata(writer_feature).collect().to_polars()
+        result = store.read(writer_feature).collect().to_polars()
         assert len(result) == 3
         assert set(result["id"].to_list()) == {"a", "b", "c"}
 
@@ -139,7 +139,7 @@ def test_batched_writer_context_manager(store: MetadataStore, writer_feature: ty
             writer.put({writer_feature: batch})
 
         # Verify data was written after context exit
-        result = store.read_metadata(writer_feature).collect().to_polars()
+        result = store.read(writer_feature).collect().to_polars()
         assert len(result) == 2
 
 
@@ -167,7 +167,7 @@ def test_batched_writer_batch_size_trigger(store: MetadataStore, writer_feature:
             assert writer.num_written.get(feature_key, 0) >= 5  # At least one batch should have been flushed
 
         # Verify all data was written after stop
-        result = store.read_metadata(writer_feature).collect().to_polars()
+        result = store.read(writer_feature).collect().to_polars()
         assert len(result) == 10
 
 
@@ -200,7 +200,7 @@ def test_batched_writer_interval_trigger(store: MetadataStore, writer_feature: t
             assert writer.num_written.get(feature_key, 0) == 1
 
         # Verify data was written
-        result = store.read_metadata(writer_feature).collect().to_polars()
+        result = store.read(writer_feature).collect().to_polars()
         assert len(result) == 1
 
 
@@ -225,7 +225,7 @@ def test_batched_writer_no_batch_size(store: MetadataStore, writer_feature: type
             assert writer.num_written == {}
 
         # After stop, all data should be written
-        result = store.read_metadata(writer_feature).collect().to_polars()
+        result = store.read(writer_feature).collect().to_polars()
         assert len(result) == 20
 
 
@@ -251,7 +251,7 @@ def test_batched_writer_accepts_dataframe_types(
             writer.put({writer_feature: batch})
 
         # Verify data was written
-        result = store.read_metadata(writer_feature).collect().to_polars()
+        result = store.read(writer_feature).collect().to_polars()
         assert len(result) == 2
         assert set(result["id"].to_list()) == {"df1", "df2"}
 
@@ -311,7 +311,7 @@ def test_batched_writer_multiple_batches(store: MetadataStore, writer_feature: t
                 writer.put({writer_feature: batch})
 
         # Verify all data was written
-        result = store.read_metadata(writer_feature).collect().to_polars()
+        result = store.read(writer_feature).collect().to_polars()
         assert len(result) == 10
 
 
@@ -397,7 +397,7 @@ def test_batched_writer_feature_key_string(store: MetadataStore, writer_feature:
             writer.put({"test/batched_writer": batch})
 
         # Verify data was written
-        result = store.read_metadata(writer_feature).collect().to_polars()
+        result = store.read(writer_feature).collect().to_polars()
         assert len(result) == 1
 
 
@@ -431,7 +431,7 @@ def test_batched_writer_thread_safety(store: MetadataStore, writer_feature: type
             assert not errors, f"Errors during concurrent writes: {errors}"
 
         # Verify all data was written (5 threads * 10 rows each = 50 rows)
-        result = store.read_metadata(writer_feature).collect().to_polars()
+        result = store.read(writer_feature).collect().to_polars()
         assert len(result) == 50
 
 
@@ -459,8 +459,8 @@ def test_batched_writer_multi_feature(
             writer.put({writer_feature: batch1, second_feature: batch2})
 
         # Verify both features have data
-        result1 = store.read_metadata(writer_feature).collect().to_polars()
-        result2 = store.read_metadata(second_feature).collect().to_polars()
+        result1 = store.read(writer_feature).collect().to_polars()
+        result2 = store.read(second_feature).collect().to_polars()
         assert len(result1) == 2
         assert len(result2) == 2
 
@@ -502,8 +502,8 @@ def test_batched_writer_multi_feature_accumulated(
             writer.put({writer_feature: batch3})
 
         # Verify all data was written
-        result1 = store.read_metadata(writer_feature).collect().to_polars()
-        result2 = store.read_metadata(second_feature).collect().to_polars()
+        result1 = store.read(writer_feature).collect().to_polars()
+        result2 = store.read(second_feature).collect().to_polars()
         assert len(result1) == 2  # acc_a and acc_b
         assert len(result2) == 1  # acc_x
 

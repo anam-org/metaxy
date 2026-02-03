@@ -34,7 +34,7 @@ def main():
         diff = store.resolve_update(Video, samples=nw.from_native(samples))
         if len(diff.added) > 0:
             print(f"Found {len(diff.added)} new videos")
-            store.write_metadata(Video, diff.added)
+            store.write(Video, diff.added)
 
     # Resolve videos that need to be split into chunks
     with store:
@@ -76,7 +76,7 @@ def main():
                 }
             )
             print(f"Writing {len(chunk_paths)} chunks for video {video_id}")
-            store.write_metadata(VideoChunk, nw.from_native(chunk_df))
+            store.write(VideoChunk, nw.from_native(chunk_df))
 
     # Process face recognition on video chunks
     with store:
@@ -109,7 +109,7 @@ def main():
 
             face_df = pl.DataFrame(face_data)
             print(f"Writing face recognition results for {len(face_data)} chunks")
-            store.write_metadata(FaceRecognition, nw.from_native(face_df))
+            store.write(FaceRecognition, nw.from_native(face_df))
 
 
 if __name__ == "__main__":

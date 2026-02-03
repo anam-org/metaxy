@@ -23,19 +23,35 @@ description: "A high level introduction to Metaxy."
 
 ## Metaxy
 
-Metaxy is a pluggable metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](guide/learn/data-versioning.md), dependencies, and data lineage across complex computational graphs. Metaxy gives you quite a few superpowers:
-
 <div class="annotate" markdown>
 
-- Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second. (1)
-- Swap [storage backends](./guide/learn/metadata-stores.md) in dev, testing and production environments without changing a single line of code.
-- Use the [`mx` CLI](./reference/cli.md) to observe and manage metadata without leaving your terminal
-- Metaxy is **composable** and **extensible** (2): use it to build custom integrations and workflows!
+Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipelines that manages and tracks **metadata** across complex computational graphs, including row-level [versions](guide/learn/data-versioning.md) (1), while allowing the codebase to evolve over time without friction. Metaxy gives you quite a few superpowers:
+
+- Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second. (2)
+- Freedom from storage lock-in. Swap [storage backends](./integrations/metadata-stores/index.md) in development and production environments without breaking a sweat (3).
+- Use the [`mx` CLI](./reference/cli.md) to observe and manage metadata without leaving the comfort of your terminal.
+- Metaxy is **composable** and **extensible** (4): use it to build custom integrations and workflows!
 
 </div>
 
-1. Our experience at [Anam](https://anam.ai/) with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md)
-2. See our official integrations [here](./integrations/index.md)
+1. And even more granular [partial data versions](http://localhost:8000/guide/learn/data-versioning/#samples)
+2. Our experience at [Anam](https://anam.ai/) with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md)
+3. For example, develop against [DeltaLake](./integrations/metadata-stores/storage/delta.md) and scale production with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md) without code changes.
+4. See our official integrations [here](./integrations/index.md)
+
+
+!!! tip annotate "Granular Data Versioning"
+
+    The feature that makes Metaxy really stand out is the ability to track **partial data dependencies** (1) and **skip downstream updates** unless the exactly required subset of upstream data has changed. At the moment of writing, Metaxy is the only available tool that tackles these problems.
+
+1.  which are **very common** in multi-modal pipelines, for example when you only need to process video frames and not the audio tracks
+
+
+All of this is possible thanks to (1) [Narwhals](https://narwhals-dev.github.io/narwhals/), [Ibis](https://ibis-project.org/), and a few clever tricks.
+{ .annotate }
+
+1. we really do stand on the shoulders of giants
+
 
 ??? abstract annotate "Data vs Metadata Clarifications"
 
@@ -56,20 +72,18 @@ Metaxy is a pluggable metadata layer for multi-modal Data and ML pipelines that 
     | **Data** | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform. |
     | **Metadata** | Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes. |
 
-1. Unless you are a [LanceDB](https://lancedb.com/) fan, in which case [we got you covered](./integrations/metadata-stores/databases/lancedb.md)
+1.  Unless you are a [LanceDB](https://lancedb.com/) fan, in which case [we got you covered](./integrations/metadata-stores/databases/lancedb.md)
 
-The feature that makes Metaxy stand out is the ability to track **partial data dependencies** (1) and **skip downstream updates** unless the exactly required subset of upstream data has changed. At the moment of writing, Metaxy is the only available tool that tackles these problems.
+## Reliability
+
+Metaxy is fanatically tested across all supported metadata stores, Python versions and platforms [^1]. We guarantee versioning consistency across the supported metadata stores.
+
+Metaxy was built to handle large amounts of **big metadata** in distributed environments, makes very little assumptions about usage patterns and cannot enter an inconsistent state.
+
+We have been dogfooding Metaxy since December 2025 at Anam. We are running it in production with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md), [Dagster](./integrations/orchestration/dagster/index.md), and [Ray](./integrations/compute/ray.md) (1).
 { .annotate }
 
-1. which are **very common** in multi-modal pipelines, for example when you only need to process video frames and not the audio tracks
-
-!!! tip
-    Metaxy is [agnostic](./overview.md#composable) to orchestration frameworks, compute engines, data or [metadata storage](guide/learn/metadata-stores.md). Metaxy has no strict infrastructure requirements, and can scale to handle large amounts of **big metadata**. Metaxy is fanatically tested across all supported Python versions and platforms [^1].
-
-All of this is possible thanks to (1) [Narwhals](https://narwhals-dev.github.io/narwhals/), [Ibis](https://ibis-project.org/), and a few clever tricks.
-{ .annotate }
-
-1. we really do stand on the shoulders of giants
+1. and integrations with these tools are probably the most complete at the moment
 
 ## Installation
 
@@ -132,7 +146,7 @@ Sounds really bad, right? Yes, and it is (1). Until recently, a general solution
 
 ## More Information
 
-Because every main page needs this section.
+Here are a few more useful links:
 
 <div class="annotate" markdown>
 
@@ -147,6 +161,6 @@ Because every main page needs this section.
 
 </div>
 
-1. just one more page, I promise
+1. just one more page, I promise, just one more page
 
 [^1]: The CLI is not tested on Windows yet.

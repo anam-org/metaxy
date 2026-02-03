@@ -432,7 +432,7 @@ def _build_observation_op_for_specs(
 
         with store:
             try:
-                lazy_df = store.read_metadata(feature_key, filters=all_filters)
+                lazy_df = store.read(feature_key, filters=all_filters)
             except FeatureNotFoundError:
                 context.log.warning(
                     f"Feature {feature_key.to_string()} not found in store, returning empty observation"
@@ -452,7 +452,7 @@ def _build_observation_op_for_specs(
 
             if context.has_partition_key:
                 # Read entire feature (no partition filter) for total count
-                full_lazy_df = store.read_metadata(feature_key)
+                full_lazy_df = store.read(feature_key)
                 metadata["dagster/row_count"] = compute_row_count(full_lazy_df)
                 metadata["dagster/partition_row_count"] = partition_row_count
             else:

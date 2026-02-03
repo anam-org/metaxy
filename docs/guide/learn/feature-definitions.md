@@ -201,7 +201,7 @@ Metaxy has a few safe guards in order to combat incorrect versioning information
 Additionally, the following actions always trigger a sync for external feature definitions:
 
 - pushing feature definitions to the metadata store (e.g. `metaxy push` CLI)
-- [`MetadataStore.read_metadata`][metaxy.MetadataStore.resolve_update]
+- [`MetadataStore.read`][metaxy.MetadataStore.resolve_update]
 - [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update]
 
 And some other places where it's appropriate and doesn't create an additional overhead.

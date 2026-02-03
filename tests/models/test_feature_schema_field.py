@@ -38,7 +38,7 @@ def test_push_graph_snapshot_stores_feature_schema(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot()
 
             # Read and verify feature_schema field
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -106,7 +106,7 @@ def test_feature_schema_differs_between_features(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot()
 
             # Read and verify
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -237,7 +237,7 @@ def test_feature_schema_for_feature_without_custom_fields(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot()
 
             # Read and verify
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 

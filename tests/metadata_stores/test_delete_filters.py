@@ -97,7 +97,7 @@ def base_delete_filter_df() -> pl.DataFrame:
     ids=[case.name for case in PREDICATE_CASES],
 )
 @pytest.mark.parametrize("soft", [True, False], ids=["soft", "hard"])
-def test_delete_metadata_accepts_predicate_cases(
+def test_delete_accepts_predicate_cases(
     any_store: MetadataStore,
     case,
     delete_filter_feature,
@@ -105,57 +105,57 @@ def test_delete_metadata_accepts_predicate_cases(
     soft: bool,
 ) -> None:
     with any_store.open("write"):
-        any_store.write_metadata(delete_filter_feature, base_delete_filter_df)
-        any_store.delete_metadata(
+        any_store.write(delete_filter_feature, base_delete_filter_df)
+        any_store.delete(
             delete_filter_feature,
             filters=case.exprs,
             soft=soft,
-            current_only=True,
+            with_feature_history=False,
         )
 
 
-def test_delete_metadata_datetime_filter_hard_delete(
+def test_delete_datetime_filter_hard_delete(
     any_store: MetadataStore,
     delete_filter_feature,
     base_delete_filter_df: pl.DataFrame,
 ) -> None:
     cutoff = datetime(2024, 1, 5, tzinfo=timezone.utc)
     with any_store.open("write"):
-        any_store.write_metadata(delete_filter_feature, base_delete_filter_df)
-        any_store.delete_metadata(
+        any_store.write(delete_filter_feature, base_delete_filter_df)
+        any_store.delete(
             delete_filter_feature,
             filters=nw.col("ts_tz") > cutoff,
             soft=False,
-            current_only=True,
+            with_feature_history=False,
         )
 
     with any_store:
-        remaining = any_store.read_metadata(delete_filter_feature).collect().to_polars()
+        remaining = any_store.read(delete_filter_feature).collect().to_polars()
         assert remaining.height == 5
 
 
 @pytest.mark.parametrize("soft", [True, False], ids=["soft", "hard"])
-def test_delete_metadata_with_none_filters(
+def test_delete_with_none_filters(
     any_store: MetadataStore,
     delete_filter_feature,
     base_delete_filter_df: pl.DataFrame,
     soft: bool,
 ) -> None:
-    """Test that delete_metadata accepts None as filters to delete all records."""
+    """Test that delete accepts None as filters to delete all records."""
     with any_store.open("write"):
-        any_store.write_metadata(delete_filter_feature, base_delete_filter_df)
-        any_store.delete_metadata(
+        any_store.write(delete_filter_feature, base_delete_filter_df)
+        any_store.delete(
             delete_filter_feature,
             filters=None,
             soft=soft,
-            current_only=True,
+            with_feature_history=False,
         )
 
     with any_store:
-        remaining = any_store.read_metadata(delete_filter_feature).collect().to_polars()
+        remaining = any_store.read(delete_filter_feature).collect().to_polars()
         if soft:
             # Soft delete: records still exist when include_soft_deleted=True
-            all_data = any_store.read_metadata(delete_filter_feature, include_soft_deleted=True).collect().to_polars()
+            all_data = any_store.read(delete_filter_feature, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 10
             # But not returned by default
             assert remaining.height == 0

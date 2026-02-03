@@ -52,7 +52,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
         When tables are partitioned (e.g., by date or ingestion time with _PARTITIONTIME), BigQuery will
         automatically prune partitions based on WHERE clauses in queries, without needing
         explicit configuration in the metadata store.
-        Make sure to use appropriate `filters` when calling [BigQueryMetadataStore.read_metadata][metaxy.metadata_store.bigquery.BigQueryMetadataStore.read_metadata].
+        Make sure to use appropriate `filters` when calling [BigQueryMetadataStore.read][metaxy.metadata_store.bigquery.BigQueryMetadataStore.read].
 
     Example: Basic Connection
         <!-- skip next -->

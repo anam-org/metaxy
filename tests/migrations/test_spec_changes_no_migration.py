@@ -104,7 +104,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(tmp_pa
                 ],
             }
         )
-        store_v1.write_metadata(simple_key, data)
+        store_v1.write(simple_key, data)
         SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Verify snapshot captures the version
@@ -192,7 +192,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path: Pa
                 "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
-        store.write_metadata(feature_key, data)
+        store.write(feature_key, data)
         SystemTableStorage(store).push_graph_snapshot()
 
     # Currently, there's no way to change spec without changing feature_version
@@ -366,7 +366,7 @@ def test_snapshot_stores_both_versions(tmp_path: Path):
                 "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
-        store.write_metadata(feature_key, data)
+        store.write(feature_key, data)
         SystemTableStorage(store).push_graph_snapshot()
 
         # Check snapshot data structure

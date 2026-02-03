@@ -38,8 +38,8 @@ def test_explicit_write_mode(tmp_path: Path) -> None:
         assert store._is_open
 
 
-def test_write_metadata_in_write_mode(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
-    """Test that write_metadata works when opened in WRITE mode."""
+def test_write_in_write_mode(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+    """Test that write works when opened in WRITE mode."""
     db_path = tmp_path / "test.duckdb"
     store = DuckDBMetadataStore(db_path, auto_create_tables=True)
 
@@ -51,11 +51,11 @@ def test_write_metadata_in_write_mode(tmp_path: Path, test_graph, test_features:
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
     # Verify data was written
     with store.open("read"):
-        df = store.read_metadata_in_store(test_features["UpstreamFeatureA"])
+        df = store._read_feature(test_features["UpstreamFeatureA"])
         assert df is not None
         result = df.collect().to_polars()
         assert result.height == 1
@@ -73,12 +73,12 @@ def test_read_in_read_mode(tmp_path: Path, test_graph, test_features: dict[str, 
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
     # Now open in READ mode and read
     store = DuckDBMetadataStore(db_path, auto_create_tables=False)
     with store.open("read"):
-        df = store.read_metadata_in_store(test_features["UpstreamFeatureA"])
+        df = store._read_feature(test_features["UpstreamFeatureA"])
         assert df is not None
 
 
@@ -106,7 +106,7 @@ def test_concurrent_read_access_duckdb(tmp_path: Path, test_graph, test_features
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
     # Now try to read from multiple processes concurrently
     queue = multiprocessing.Queue()
@@ -171,7 +171,7 @@ def _write_to_store(db_path: Path, sample_id: str, result_queue: Any) -> None:
                 }
             )
             with graph.use():
-                store.write_metadata(UpstreamFeatureA, metadata)
+                store.write(UpstreamFeatureA, metadata)
             result_queue.put(("success", sample_id))
     except Exception as e:
         result_queue.put(("error", str(e)))
@@ -193,7 +193,7 @@ def test_write_mode_exclusive_lock_duckdb(tmp_path: Path, test_graph, test_featu
                 "metaxy_provenance_by_field": [{"frames": "h0", "audio": "h0"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
     # Open in WRITE mode explicitly
     with DuckDBMetadataStore(db_path, auto_create_tables=True).open("write") as store:
@@ -204,7 +204,7 @@ def test_write_mode_exclusive_lock_duckdb(tmp_path: Path, test_graph, test_featu
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata2)
+        store.write(test_features["UpstreamFeatureA"], metadata2)
 
 
 def test_mode_parameter_passed_to_open(tmp_path: Path) -> None:
@@ -247,7 +247,7 @@ def test_delta_store_modes(test_graph, test_features: dict[str, Any], tmp_path: 
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store_write.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store_write.write(test_features["UpstreamFeatureA"], metadata)
 
 
 def test_mode_reset_between_opens(tmp_path: Path) -> None:
@@ -300,7 +300,7 @@ def test_drop_feature_metadata_in_write_mode(tmp_path: Path, test_graph, test_fe
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
     # Now open in WRITE mode to drop
     store = DuckDBMetadataStore(db_path, auto_create_tables=False)

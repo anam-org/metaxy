@@ -97,11 +97,11 @@ class TestCalculateInputProgress:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
-            store.write_metadata(Upstream, nw.from_native(upstream_data))
+            store.write(Upstream, nw.from_native(upstream_data))
 
             # Write downstream metadata for all samples
             increment = store.resolve_update(Downstream, lazy=False)
-            store.write_metadata(Downstream, increment.added)
+            store.write(Downstream, increment.added)
 
             # Now check progress - should be 100%
             lazy_increment = store.resolve_update(Downstream, lazy=True)
@@ -142,12 +142,12 @@ class TestCalculateInputProgress:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
-            store.write_metadata(Upstream, nw.from_native(upstream_data))
+            store.write(Upstream, nw.from_native(upstream_data))
 
             # Write downstream metadata for only 3 samples
             increment = store.resolve_update(Downstream, lazy=False)
             partial_data = increment.added.to_polars().head(3)
-            store.write_metadata(Downstream, partial_data)
+            store.write(Downstream, partial_data)
 
             # Check progress - should be 30% (3/10)
             lazy_increment = store.resolve_update(Downstream, lazy=True)
@@ -188,7 +188,7 @@ class TestCalculateInputProgress:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
-            store.write_metadata(Upstream, nw.from_native(upstream_data))
+            store.write(Upstream, nw.from_native(upstream_data))
 
             # Resolve update - should have no input to process
             lazy_increment = store.resolve_update(Downstream, lazy=True)
@@ -234,12 +234,12 @@ class TestCalculateInputProgress:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
-            store.write_metadata(Upstream, nw.from_native(upstream_data))
+            store.write(Upstream, nw.from_native(upstream_data))
 
             # Write downstream for 2 out of 3 samples
             increment = store.resolve_update(Downstream, lazy=False)
             partial_data = increment.added.to_polars().head(2)
-            store.write_metadata(Downstream, partial_data)
+            store.write(Downstream, partial_data)
 
             # Check progress - should be 66.67% (2/3)
             lazy_increment = store.resolve_update(Downstream, lazy=True)
@@ -303,12 +303,12 @@ class TestCalculateInputProgress:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, SensorReadings)
-            store.write_metadata(SensorReadings, nw.from_native(upstream_data))
+            store.write(SensorReadings, nw.from_native(upstream_data))
 
             # Write downstream for only 1 hour (1 out of 2 groups)
             increment = store.resolve_update(HourlyStats, lazy=False)
             partial_data = increment.added.to_polars().head(1)
-            store.write_metadata(HourlyStats, partial_data)
+            store.write(HourlyStats, partial_data)
 
             # Progress should count by aggregation groups, not individual readings
             # 1 hour processed out of 2 hours = 50%
@@ -355,7 +355,7 @@ class TestCalculateInputProgress:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, Video)
-            store.write_metadata(Video, nw.from_native(upstream_data))
+            store.write(Video, nw.from_native(upstream_data))
 
             # Write frames for 2 videos (multiple frames per video)
             # For expansion lineage, user must manually create expanded rows with frame_id
@@ -368,7 +368,7 @@ class TestCalculateInputProgress:
                 }
             )
             # Read upstream from store to get metaxy_data_version_by_field column
-            upstream_from_store = store.read_metadata(Video).collect().to_polars()
+            upstream_from_store = store.read(Video).collect().to_polars()
             # Join with upstream to get provenance info
             frames_with_upstream = frames_data.join(
                 upstream_from_store.select(
@@ -381,7 +381,7 @@ class TestCalculateInputProgress:
             )
             # Compute provenance for VideoFrames
             frames_with_prov = store.compute_provenance(VideoFrames, nw.from_native(frames_with_upstream))
-            store.write_metadata(VideoFrames, frames_with_prov)
+            store.write(VideoFrames, frames_with_prov)
 
             # Progress should count by parent videos, not individual frames
             # 2 videos processed out of 3 = 66.67%
@@ -429,12 +429,12 @@ class TestCalculateInputProgress:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
-            store.write_metadata(Upstream, nw.from_native(upstream_data))
+            store.write(Upstream, nw.from_native(upstream_data))
 
             # Write downstream for 2 out of 4 samples
             increment = store.resolve_update(Downstream, lazy=False)
             partial_data = increment.added.to_polars().head(2)
-            store.write_metadata(Downstream, partial_data)
+            store.write(Downstream, partial_data)
 
             # Check progress - should be 50% (2/4)
             lazy_increment = store.resolve_update(Downstream, lazy=True)
@@ -485,7 +485,7 @@ class TestCalculateInputProgress:
                 }
             )
             upstream_a_data = add_metaxy_provenance_column(upstream_a_data, UpstreamA)
-            store.write_metadata(UpstreamA, nw.from_native(upstream_a_data))
+            store.write(UpstreamA, nw.from_native(upstream_a_data))
 
             # Write upstream B
             upstream_b_data = pl.DataFrame(
@@ -496,12 +496,12 @@ class TestCalculateInputProgress:
                 }
             )
             upstream_b_data = add_metaxy_provenance_column(upstream_b_data, UpstreamB)
-            store.write_metadata(UpstreamB, nw.from_native(upstream_b_data))
+            store.write(UpstreamB, nw.from_native(upstream_b_data))
 
             # Write downstream for 1 out of 3 samples
             increment = store.resolve_update(Downstream, lazy=False)
             partial_data = increment.added.to_polars().head(1)
-            store.write_metadata(Downstream, partial_data)
+            store.write(Downstream, partial_data)
 
             # Check progress - should be 33.33% (1/3)
             lazy_increment = store.resolve_update(Downstream, lazy=True)

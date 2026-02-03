@@ -110,7 +110,7 @@ def generate_migration(
         from metaxy.metadata_store.system.keys import FEATURE_VERSIONS_KEY
 
         try:
-            feature_versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+            feature_versions = store.read(FEATURE_VERSIONS_KEY, with_feature_history=True)
             # Get most recent snapshot - only collect the top row
             latest_snapshot = nw.from_native(feature_versions.sort("recorded_at", descending=True).head(1).collect())
             if latest_snapshot.shape[0] > 0:
@@ -219,9 +219,9 @@ def generate_migration(
 
         # Check if feature exists in from_snapshot (if not, it's new - skip)
         try:
-            from_metadata = store.read_metadata(
+            from_metadata = store.read(
                 downstream_key,
-                current_only=False,
+                with_feature_history=True,
                 allow_fallback=False,
                 filters=[nw.col("metaxy_snapshot_version") == from_snapshot_version],
             )
@@ -272,7 +272,7 @@ def generate_migration(
 
     parent_migration_id = None
     try:
-        existing_migrations = store.read_metadata(EVENTS_KEY, current_only=False)
+        existing_migrations = store.read(EVENTS_KEY, with_feature_history=True)
         # Get most recent migration by timestamp - only collect the top row
         latest = nw.from_native(existing_migrations.sort("timestamp", descending=True).head(1).collect())
         if latest.shape[0] > 0:

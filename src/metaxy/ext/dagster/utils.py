@@ -244,7 +244,7 @@ def compute_feature_stats(
         FeatureStats with row_count and data_version.
     """
     with store:
-        lazy_df = store.read_metadata(feature)
+        lazy_df = store.read(feature)
         return compute_stats_from_lazy_frame(lazy_df)
 
 
@@ -358,7 +358,7 @@ def generate_materialize_results(
 
             # Get materialized-in-run count if materialization_id is set
             if store.materialization_id is not None:  # ty: ignore[possibly-missing-attribute]
-                mat_df = store.read_metadata(  # ty: ignore[possibly-missing-attribute]
+                mat_df = store.read(  # ty: ignore[possibly-missing-attribute]
                     key,
                     filters=[
                         nw.col(METAXY_MATERIALIZATION_ID) == store.materialization_id  # ty: ignore[possibly-missing-attribute]
@@ -507,7 +507,7 @@ def build_runtime_feature_metadata(
     all_filters = dagster_partition_filters + metaxy_partition_filters
 
     # Read metadata with store info in a single call (avoids extra network round-trip)
-    lazy_df, resolved_store = store.read_metadata(  # ty: ignore[possibly-missing-attribute]
+    lazy_df, resolved_store = store.read(  # ty: ignore[possibly-missing-attribute]
         feature_key, filters=all_filters, with_store_info=True
     )
 
@@ -535,7 +535,7 @@ def build_runtime_feature_metadata(
         # with only Dagster partition filters (not metaxy partition)
         if context.has_partition_key:
             # Read with only dagster partition filter for total count
-            full_lazy_df = store.read_metadata(  # ty: ignore[possibly-missing-attribute]
+            full_lazy_df = store.read(  # ty: ignore[possibly-missing-attribute]
                 feature_key, filters=metaxy_partition_filters
             )
             metadata["dagster/row_count"] = compute_row_count(full_lazy_df)

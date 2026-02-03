@@ -116,7 +116,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             filters = build_partition_filter_from_input_context(context)
 
             # Read metadata with store info in a single call (avoids extra network round-trip)
-            lazy_frame, resolved_store = self.metadata_store.read_metadata(
+            lazy_frame, resolved_store = self.metadata_store.read(
                 feature=feature_key,
                 filters=filters,
                 with_store_info=True,
@@ -167,7 +167,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         if obj is not None:
             context.log.debug(f'Writing metadata for Metaxy feature "{key.to_string()}" into {self.metadata_store}')
             with self.metadata_store.open("write"):
-                self.metadata_store.write_metadata(feature=feature, df=obj)
+                self.metadata_store.write(feature=feature, df=obj)
             context.log.debug(f'Metadata written for Metaxy feature "{key.to_string()}" into {self.metadata_store}')
         else:
             context.log.debug(
@@ -209,7 +209,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
                 )
                 context.add_output_metadata(runtime_metadata)
 
-                mat_lazy_df = self.metadata_store.read_metadata(
+                mat_lazy_df = self.metadata_store.read(
                     feature,
                     filters=[nw.col(METAXY_MATERIALIZATION_ID) == context.run_id],
                 )

@@ -94,7 +94,7 @@ if (len(increment.added) + len(increment.changed)) > 0:
 
 ```py {title="script.py"}
 with store.open("write"):
-    store.write_metadata(VoiceDetection, results)
+    store.write(VoiceDetection, results)
 ```
 
 We have now successfully recorded the metadata for the computed samples! Processed samples will no longer be returned by `MetadataStore.resolve_update` during future pipeline runs.

@@ -338,13 +338,13 @@ def delete(
             help="Whether to mark records with deletion timestamps vs physically remove them.",
         ),
     ] = True,
-    current_only: Annotated[
+    with_feature_history: Annotated[
         bool,
         cyclopts.Parameter(
-            name=["--current-only"],
-            help="Only delete rows with the current feature_version (as defined in loaded feature graph).",
+            name=["--with-feature-history"],
+            help="Include rows from all historical feature versions (by default, only current version is affected).",
         ),
-    ] = True,
+    ] = False,
     yes: Annotated[
         bool,
         cyclopts.Parameter(
@@ -402,8 +402,8 @@ def delete(
         # Dry-run mode: count rows, print features and filters, then exit
         if dry_run:
             store_name = store if store else context.config.store
-            row_counts = _count_rows_to_delete(metadata_store, selector, filters, soft, current_only)
-            _print_dry_run_info(selector, filters, soft, current_only, store_name, row_counts)
+            row_counts = _count_rows_to_delete(metadata_store, selector, filters, soft, with_feature_history)
+            _print_dry_run_info(selector, filters, soft, with_feature_history, store_name, row_counts)
             return
 
         errors: dict[str, str] = {}
@@ -411,11 +411,11 @@ def delete(
         with metadata_store.open("write"):
             for feature_key in selector:
                 try:
-                    metadata_store.delete_metadata(
+                    metadata_store.delete(
                         feature_key,
                         filters=filters,
                         soft=soft,
-                        current_only=current_only,
+                        with_feature_history=with_feature_history,
                     )
                 except Exception as e:  # pragma: no cover - CLI surface
                     error_msg = str(e)
@@ -452,7 +452,7 @@ def _count_rows_to_delete(
     selector: FeatureSelector,
     filters: list[nw.Expr],
     soft: bool,
-    current_only: bool,
+    with_feature_history: bool,
 ) -> dict[FeatureKey, int | str]:
     """Count rows that would be deleted for each feature.
 
@@ -470,15 +470,15 @@ def _count_rows_to_delete(
         # Build count lazy frames for all features
         for feature_key in selector:
             try:
-                # Match the same parameters as delete_metadata uses for soft deletes
+                # Match the same parameters as delete uses for soft deletes
                 # For hard deletes, this is an approximation since hard delete uses
-                # _delete_metadata_impl directly, but this gives a reasonable count
-                lazy = store.read_metadata(
+                # _delete_feature directly, but this gives a reasonable count
+                lazy = store.read(
                     feature_key,
                     filters=filters,
                     include_soft_deleted=False,
-                    current_only=current_only,
-                    latest_only=True,  # matches delete_metadata default
+                    with_feature_history=with_feature_history,
+                    with_sample_history=False,  # matches delete default
                     allow_fallback=soft,  # soft deletes use fallback, hard deletes don't
                 )
                 # Pre-aggregate to count per feature
@@ -503,14 +503,14 @@ def _print_dry_run_info(
     selector: FeatureSelector,
     filters: list[nw.Expr],
     soft: bool,
-    current_only: bool,
+    with_feature_history: bool,
     store_name: str,
     row_counts: dict[FeatureKey, int | str],
 ) -> None:
     """Print dry-run information for delete command."""
     mode_str = "[yellow]soft[/yellow]" if soft else "[red]hard[/red]"
-    current_only_str = "[green]yes[/green]" if current_only else "[yellow]no[/yellow]"
-    console.print(f"[bold cyan]Dry run[/bold cyan] ({mode_str} delete, current_only={current_only_str})")
+    history_str = "[yellow]yes[/yellow]" if with_feature_history else "[green]no[/green]"
+    console.print(f"[bold cyan]Dry run[/bold cyan] ({mode_str} delete, with_feature_history={history_str})")
     console.print()
 
     console.print(f"[bold]Store:[/bold] [blue]{store_name}[/blue]")
@@ -559,26 +559,26 @@ def copy(
         ),
     ],
     filters: FilterArgs | None = None,
-    current_only: Annotated[
+    with_feature_history: Annotated[
         bool,
         cyclopts.Parameter(
-            name=["--current-only"],
-            help="Only copy rows with the current feature_version (as defined in loaded feature graph).",
-        ),
-    ] = False,
-    latest_only: Annotated[
-        bool,
-        cyclopts.Parameter(
-            name=["--latest-only"],
-            help="Deduplicate samples by keeping only the latest row per id_columns group.",
+            name=["--with-feature-history"],
+            help="Include rows from all historical feature versions (by default, only current version is copied).",
         ),
     ] = True,
+    with_sample_history: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--with-sample-history"],
+            help="Include all historical materializations per sample (by default, deduplicates by id_columns).",
+        ),
+    ] = False,
 ) -> None:
     """Copy metadata from one store to another.
 
     Copies metadata for specified features from source to destination store.
-    By default, copies all versions (--no-current-only) and deduplicates by
-    keeping only the latest row per sample (--latest-only).
+    By default, copies all versions (--with-feature-history) and deduplicates by
+    keeping only the latest row per sample (--no-with-sample-history).
 
     Examples:
         $ metaxy metadata copy my/feature --from prod --to dev
@@ -620,8 +620,8 @@ def copy(
                 from_store=source_store,
                 features=list(selector),
                 global_filters=global_filters,
-                current_only=current_only,
-                latest_only=latest_only,
+                with_feature_history=with_feature_history,
+                with_sample_history=with_sample_history,
             )
 
     data_console.print(

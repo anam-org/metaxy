@@ -28,7 +28,7 @@ with config.get_store() as store:
 
     # Check if metadata already exists for current feature_version (avoid duplicates)
     try:
-        existing = store.read_metadata(parent_key, current_only=True)
+        existing = store.read(parent_key, with_feature_history=False)
         feature_version = mx.current_graph().get_feature_version(parent_key)
         if existing.collect().shape[0] > 0:
             print(
@@ -56,6 +56,6 @@ with config.get_store() as store:
             "metaxy_provenance_by_field": pl.Struct({"embeddings": pl.Utf8}),
         },
     )
-    store.write_metadata(parent_key, parent_metadata)
+    store.write(parent_key, parent_metadata)
 
     print(f"Written {len(parent_metadata)} rows for feature {parent_key}")

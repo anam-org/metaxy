@@ -30,5 +30,5 @@ with config.get_store() as store:
         }
     )
 
-    store.write_metadata(parent_key, parent_data)
+    store.write(parent_key, parent_data)
     print(f"[OK] Materialized {len(parent_data)} samples")

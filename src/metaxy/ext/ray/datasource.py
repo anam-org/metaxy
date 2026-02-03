@@ -88,9 +88,9 @@ class MetaxyDatasource(Datasource):
         filters: Sequence of Narwhals filter expressions to apply.
         columns: Subset of columns to include. Metaxy's system columns are always included.
         allow_fallback: If `True`, check fallback stores on main store miss.
-        current_only: If `True`, only return rows with current feature version.
-        feature_version: Explicit feature version to filter by (mutually exclusive with `current_only=True`).
-        latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
+        with_feature_history: If `True`, only return rows with current feature version.
+        feature_version: Explicit feature version to filter by (mutually exclusive with `with_feature_history=False`).
+        with_sample_history: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
         include_soft_deleted: If `True`, include soft-deleted rows in the result.
     """
 
@@ -105,8 +105,8 @@ class MetaxyDatasource(Datasource):
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
         allow_fallback: bool = True,
-        current_only: bool = True,
-        latest_only: bool = True,
+        with_feature_history: bool = False,
+        with_sample_history: bool = False,
         include_soft_deleted: bool = False,
     ):
         self.config = mx.init_metaxy(config)
@@ -116,25 +116,25 @@ class MetaxyDatasource(Datasource):
         self.filters = list(filters) if filters else None
         self.columns = list(columns) if columns else None
         self.allow_fallback = allow_fallback
-        self.current_only = current_only
-        self.latest_only = latest_only
+        self.with_feature_history = with_feature_history
+        self.with_sample_history = with_sample_history
         self.include_soft_deleted = include_soft_deleted
 
         self._feature_key = mx.coerce_to_feature_key(feature)
 
-    def _read_metadata_lazy(self) -> nw.LazyFrame[Any]:
+    def _read_lazy(self) -> nw.LazyFrame[Any]:
         """Create a lazy frame for reading metadata with all configured options."""
         if self.incremental:
             return self._read_incremental_lazy()
         else:
-            return self.store.read_metadata(
+            return self.store.read(
                 self._feature_key,
                 feature_version=self.feature_version,
                 filters=self.filters,
                 columns=self.columns,
                 allow_fallback=self.allow_fallback,
-                current_only=self.current_only,
-                latest_only=self.latest_only,
+                with_feature_history=self.with_feature_history,
+                with_sample_history=self.with_sample_history,
                 include_soft_deleted=self.include_soft_deleted,
             )
 
@@ -158,7 +158,7 @@ class MetaxyDatasource(Datasource):
     def _get_row_count(self) -> int:
         """Get the row count by executing a lightweight count query."""
         with self.store.open("read"):
-            return self._read_metadata_lazy().select(nw.len()).collect().item()
+            return self._read_lazy().select(nw.len()).collect().item()
 
     def get_read_tasks(self, parallelism: int, per_task_row_limit: int | None = None) -> list[ReadTask]:
         """Return read tasks for the feature metadata.
@@ -181,7 +181,7 @@ class MetaxyDatasource(Datasource):
             mx.init_metaxy(datasource.config)
 
             with datasource.store.open("read"):
-                lf = datasource._read_metadata_lazy()
+                lf = datasource._read_lazy()
                 table = lf.collect(backend="pyarrow").to_arrow()
                 batches = table.to_batches(max_chunksize=row_limit)
                 return [pa.Table.from_batches([b]) for b in batches]

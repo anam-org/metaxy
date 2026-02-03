@@ -19,13 +19,13 @@ from .conftest import AllStoresCases
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
-def test_read_metadata_with_filter_on_own_column(store: MetadataStore):
+def test_read_with_filter_on_own_column(store: MetadataStore):
     """Test filtering on a feature's OWN column when the feature has dependencies.
 
     This reproduces the bug where:
     1. ChildFeature has its own 'height' column (not inherited from parent)
     2. ChildFeature depends on ParentFeature with columns=("dataset", "path", "size")
-    3. User calls read_metadata on ChildFeature with a filter on 'height'
+    3. User calls read on ChildFeature with a filter on 'height'
     4. The filter fails because column inference goes wrong
 
     The error was: IbisTypeError: Column 'height' is not found in table.
@@ -80,7 +80,7 @@ def test_read_metadata_with_filter_on_own_column(store: MetadataStore):
                     ],
                 }
             )
-            store.write_metadata(ParentFeature, parent_data)
+            store.write(ParentFeature, parent_data)
 
             # Write child data with its own height values
             child_data = pl.DataFrame(
@@ -95,10 +95,10 @@ def test_read_metadata_with_filter_on_own_column(store: MetadataStore):
                     ],
                 }
             )
-            store.write_metadata(ChildFeature, child_data)
+            store.write(ChildFeature, child_data)
 
             # Now try to READ ChildFeature with a filter on its OWN 'height' column
-            result = store.read_metadata(
+            result = store.read(
                 ChildFeature,
                 filters=[nw.col("height") > 500],
             )
@@ -110,7 +110,7 @@ def test_read_metadata_with_filter_on_own_column(store: MetadataStore):
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
-def test_read_metadata_with_filter_after_dedup(store: MetadataStore):
+def test_read_with_filter_after_dedup(store: MetadataStore):
     """Test filtering on a feature's column after deduplication.
 
     This tests the scenario where:
@@ -163,7 +163,7 @@ def test_read_metadata_with_filter_after_dedup(store: MetadataStore):
                     ],
                 }
             )
-            store.write_metadata(ParentFeature, parent_data)
+            store.write(ParentFeature, parent_data)
 
             # Write first version of child data
             child_data_v1 = pl.DataFrame(
@@ -178,7 +178,7 @@ def test_read_metadata_with_filter_after_dedup(store: MetadataStore):
                     ],
                 }
             )
-            store.write_metadata(ChildFeature, child_data_v1)
+            store.write(ChildFeature, child_data_v1)
 
             # Wait and write updated version for c1 and c2
             time.sleep(0.01)
@@ -193,12 +193,12 @@ def test_read_metadata_with_filter_after_dedup(store: MetadataStore):
                     ],
                 }
             )
-            store.write_metadata(ChildFeature, child_data_v2)
+            store.write(ChildFeature, child_data_v2)
 
             # Filter on height > 600 - should see LATEST versions
             # c1 has height=500 (updated), c2 has height=800 (updated), c3 has height=1080
             # Only c2 and c3 should match
-            result = store.read_metadata(
+            result = store.read(
                 ChildFeature,
                 filters=[nw.col("height") > 600],
             )
@@ -210,7 +210,7 @@ def test_read_metadata_with_filter_after_dedup(store: MetadataStore):
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
-def test_read_metadata_with_columns_and_filter_on_different_column(store: MetadataStore):
+def test_read_with_columns_and_filter_on_different_column(store: MetadataStore):
     """Test reading with specific columns but filtering on a column NOT in that list.
 
     This reproduces the exact bug from the CLI:
@@ -251,11 +251,11 @@ def test_read_metadata_with_columns_and_filter_on_different_column(store: Metada
                     ],
                 }
             )
-            store.write_metadata(MyFeature, data)
+            store.write(MyFeature, data)
 
             # Read with columns=["chunk_id"] but filter on "height IS NULL"
             # This is what `mx metadata status --feature X --filter "height IS NULL"` does
-            result = store.read_metadata(
+            result = store.read(
                 MyFeature,
                 columns=["chunk_id"],  # Only request ID column
                 filters=[nw.col("height").is_null()],  # But filter on height!
@@ -271,12 +271,12 @@ def test_read_metadata_with_columns_and_filter_on_different_column(store: Metada
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
-def test_read_metadata_with_deps_columns_and_filter_on_own_column(store: MetadataStore):
+def test_read_with_deps_columns_and_filter_on_own_column(store: MetadataStore):
     """Test the EXACT scenario: feature with deps, columns param, filter on own column.
 
     This combines all the conditions from the bug report:
     1. Feature has dependencies with restricted columns (FeatureDep with columns=(...))
-    2. User calls read_metadata with columns=["chunk_id"] (ID columns only)
+    2. User calls read with columns=["chunk_id"] (ID columns only)
     3. User passes filter on "height" which is the feature's OWN column (not from parent)
     4. Filter column is NOT in the requested columns list
 
@@ -337,7 +337,7 @@ def test_read_metadata_with_deps_columns_and_filter_on_own_column(store: Metadat
                     ],
                 }
             )
-            store.write_metadata(ParentFeature, parent_data)
+            store.write(ParentFeature, parent_data)
 
             # Write child data with some NULL heights
             child_data = pl.DataFrame(
@@ -353,13 +353,13 @@ def test_read_metadata_with_deps_columns_and_filter_on_own_column(store: Metadat
                     ],
                 }
             )
-            store.write_metadata(ChildFeature, child_data)
+            store.write(ChildFeature, child_data)
 
             # The EXACT bug scenario:
             # - columns=["chunk_id"] (only ID column)
             # - filter on "height IS NULL" (filter column NOT in columns list)
             # - feature has dependencies with restricted columns
-            result = store.read_metadata(
+            result = store.read(
                 ChildFeature,
                 columns=["chunk_id"],  # Only request ID column
                 filters=[nw.col("height").is_null()],  # Filter on height (not in columns)
@@ -437,7 +437,7 @@ def test_resolve_update_with_target_filter_on_child_only_column(store: MetadataS
                     ],
                 }
             )
-            store.write_metadata(ParentFeature, parent_data)
+            store.write(ParentFeature, parent_data)
 
             # Write child data with some NULL heights
             child_data = pl.DataFrame(
@@ -453,7 +453,7 @@ def test_resolve_update_with_target_filter_on_child_only_column(store: MetadataS
                     ],
                 }
             )
-            store.write_metadata(ChildFeature, child_data)
+            store.write(ChildFeature, child_data)
 
             # Using target_filters should work - it only applies to the target feature
             result = store.resolve_update(
@@ -528,7 +528,7 @@ def test_resolve_update_with_global_filter_on_child_only_column_fails(store: Met
                     ],
                 }
             )
-            store.write_metadata(ParentFeature, parent_data)
+            store.write(ParentFeature, parent_data)
 
             # Write child data with some NULL heights
             child_data = pl.DataFrame(
@@ -544,7 +544,7 @@ def test_resolve_update_with_global_filter_on_child_only_column_fails(store: Met
                     ],
                 }
             )
-            store.write_metadata(ChildFeature, child_data)
+            store.write(ChildFeature, child_data)
 
             # Using global_filters with a column that doesn't exist in parent SHOULD FAIL
             # This is the expected behavior - global_filters apply to ALL features

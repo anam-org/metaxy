@@ -268,7 +268,7 @@ class DeltaMetadataStore(MetadataStore):
 
     # ===== Storage operations =====
 
-    def write_metadata_to_store(
+    def _write_feature(
         self,
         feature_key: FeatureKey,
         df: Frame,
@@ -319,7 +319,7 @@ class DeltaMetadataStore(MetadataStore):
                 delta_write_options=write_opts or None,
             )
 
-    def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
+    def _drop_feature(self, feature_key: FeatureKey) -> None:
         """Drop Delta table for the specified feature using soft delete.
 
         Uses Delta's delete operation which marks rows as deleted in the transaction log
@@ -336,12 +336,12 @@ class DeltaMetadataStore(MetadataStore):
         # This marks rows as deleted in transaction log without physically removing files
         delta_table.delete()
 
-    def _delete_metadata_impl(
+    def _delete_feature(
         self,
         feature_key: FeatureKey,
         filters: Sequence[nw.Expr] | None = None,
         *,
-        current_only: bool,
+        with_feature_history: bool,
     ) -> None:
         """Hard-delete rows from a Delta table using the native DELETE operation.
 
@@ -372,7 +372,7 @@ class DeltaMetadataStore(MetadataStore):
         # Use Delta's native DELETE operation
         delta_table.delete(predicate=predicate)
 
-    def read_metadata_in_store(
+    def _read_feature(
         self,
         feature: CoercibleToFeatureKey,
         *,

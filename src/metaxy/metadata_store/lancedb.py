@@ -270,7 +270,7 @@ class LanceDBMetadataStore(MetadataStore):
 
     # Storage ------------------------------------------------------------------
 
-    def write_metadata_to_store(
+    def _write_feature(
         self,
         feature_key: FeatureKey,
         df: Frame,
@@ -296,7 +296,7 @@ class LanceDBMetadataStore(MetadataStore):
         else:
             self.conn.create_table(table_name, data=df_polars)
 
-    def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
+    def _drop_feature(self, feature_key: FeatureKey) -> None:
         """Drop Lance table for feature.
 
         Permanently removes the Lance table from the database directory.
@@ -309,12 +309,12 @@ class LanceDBMetadataStore(MetadataStore):
         if self._table_exists(table_name):
             self.conn.drop_table(table_name)
 
-    def _delete_metadata_impl(
+    def _delete_feature(
         self,
         feature_key: FeatureKey,
         filters: Sequence[nw.Expr] | None,
         *,
-        current_only: bool,
+        with_feature_history: bool,
     ) -> None:
         """Hard deletion for LanceDB. Calls the delete method on the Lance table.
 
@@ -352,7 +352,7 @@ class LanceDBMetadataStore(MetadataStore):
         # Use native LanceDB delete for efficient in-place deletion
         table.delete(filter_str)
 
-    def read_metadata_in_store(
+    def _read_feature(
         self,
         feature: CoercibleToFeatureKey,
         *,

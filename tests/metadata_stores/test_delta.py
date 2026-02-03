@@ -29,7 +29,7 @@ def test_delta_local_absolute_path(tmp_path, test_features) -> None:
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(feature_cls, metadata)
+        store.write(feature_cls, metadata)
 
         # Verify the table was created under the store path, not current directory
         expected_path = store_path / "test_stores" / "upstream_a.delta"
@@ -38,7 +38,7 @@ def test_delta_local_absolute_path(tmp_path, test_features) -> None:
         )
 
         # Verify we can read the data back
-        result = store.read_metadata(feature_cls)
+        result = store.read(feature_cls)
         assert result is not None
         assert result.collect().to_native().height == 1
 
@@ -103,7 +103,7 @@ def test_delta_s3_storage_options_passed(s3_bucket_and_storage_options, test_fea
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(feature_cls, metadata)
+        store.write(feature_cls, metadata)
         assert store.has_feature(feature_cls, check_fallback=False)
 
 
@@ -128,14 +128,14 @@ def test_delta_sink_lazyframe_local(tmp_path, test_features) -> None:
     )
 
     with DeltaMetadataStore(store_path) as store:
-        store.write_metadata(feature_cls, metadata_lazy)
+        store.write(feature_cls, metadata_lazy)
 
         # Verify the table was created
         expected_path = store_path / "test_stores" / "upstream_a.delta"
         assert expected_path.exists()
 
         # Verify we can read the data back
-        result = store.read_metadata(feature_cls)
+        result = store.read(feature_cls)
         assert result is not None
         assert result.collect().to_native().height == 3
 
@@ -162,12 +162,12 @@ def test_delta_sink_lazyframe_s3(s3_bucket_and_storage_options, test_features) -
     )
 
     with DeltaMetadataStore(store_path, storage_options=storage_options) as store:
-        store.write_metadata(feature_cls, metadata_lazy)
+        store.write(feature_cls, metadata_lazy)
 
         # Verify the feature exists
         assert store.has_feature(feature_cls, check_fallback=False)
 
         # Verify we can read the data back
-        result = store.read_metadata(feature_cls)
+        result = store.read(feature_cls)
         assert result is not None
         assert result.collect().to_native().height == 3

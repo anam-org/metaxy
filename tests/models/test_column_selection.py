@@ -1063,7 +1063,7 @@ class TestColumnSelection:
             _ = SystemTableStorage(store).push_graph_snapshot()
 
             # Read the snapshot from feature_versions table
-            versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False).collect().to_polars()
+            versions = store.read(FEATURE_VERSIONS_KEY, with_feature_history=True).collect().to_polars()
 
             # Find the downstream feature record
             downstream_record = versions.filter(pl.col("feature_key") == "test/downstream")

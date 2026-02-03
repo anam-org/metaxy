@@ -24,10 +24,10 @@ def test_lancedb_s3_roundtrip_with_moto(s3_bucket_and_storage_options, test_feat
                 ],
             }
         )
-        store.write_metadata(feature_cls, metadata)
+        store.write(feature_cls, metadata)
 
         assert store.has_feature(feature_cls, check_fallback=False)
 
-        result = collect_to_polars(store.read_metadata(feature_cls))
+        result = collect_to_polars(store.read(feature_cls))
         assert result.shape[0] == 2
         assert set(result["sample_uid"].to_list()) == {1, 2}

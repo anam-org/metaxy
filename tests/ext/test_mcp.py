@@ -261,7 +261,7 @@ class TestGetMetadata:
         )
 
         with store.open("write"):
-            store.write_metadata(parent_cls, test_data)
+            store.write(parent_cls, test_data)
 
         result = await _call_tool(
             mcp_client,
@@ -289,7 +289,7 @@ class TestGetMetadata:
         )
 
         with store.open("write"):
-            store.write_metadata(parent_cls, test_data)
+            store.write(parent_cls, test_data)
 
         result = await _call_tool(
             mcp_client,
@@ -318,7 +318,7 @@ class TestGetMetadata:
         )
 
         with store.open("write"):
-            store.write_metadata(parent_cls, test_data)
+            store.write(parent_cls, test_data)
 
         result = await _call_tool(
             mcp_client,
@@ -348,7 +348,7 @@ class TestGetMetadata:
         )
 
         with store.open("write"):
-            store.write_metadata(parent_cls, test_data)
+            store.write(parent_cls, test_data)
 
         # Sort ascending
         result = await _call_tool(

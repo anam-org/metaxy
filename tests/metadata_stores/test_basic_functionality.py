@@ -50,7 +50,7 @@ def test_has_feature(store: MetadataStore):
         assert not store.has_feature(key)
         assert not store.has_feature(MyFeature)
 
-        store.write_metadata(
+        store.write(
             key,
             pl.DataFrame([{"id": "1", "metaxy_provenance_by_field": {"default": "asd"}}]),
         )
@@ -60,8 +60,8 @@ def test_has_feature(store: MetadataStore):
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
-def test_read_metadata_raises_store_not_open(store: MetadataStore):
-    """Test that read_metadata raises StoreNotOpenError when store is not open."""
+def test_read_raises_store_not_open(store: MetadataStore):
+    """Test that read raises StoreNotOpenError when store is not open."""
     key = FeatureKey(["test_not_open"])
 
     class MyFeature(
@@ -72,12 +72,12 @@ def test_read_metadata_raises_store_not_open(store: MetadataStore):
 
     # Store is not open - should raise StoreNotOpenError
     with pytest.raises(StoreNotOpenError, match="must be opened before use"):
-        store.read_metadata(key)
+        store.read(key)
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
-def test_write_metadata_raises_store_not_open(store: MetadataStore):
-    """Test that write_metadata raises StoreNotOpenError when store is not open."""
+def test_write_raises_store_not_open(store: MetadataStore):
+    """Test that write raises StoreNotOpenError when store is not open."""
     key = FeatureKey(["test_not_open"])
 
     class MyFeature(
@@ -90,7 +90,7 @@ def test_write_metadata_raises_store_not_open(store: MetadataStore):
 
     # Store is not open - should raise StoreNotOpenError
     with pytest.raises(StoreNotOpenError, match="must be opened before use"):
-        store.write_metadata(key, metadata)
+        store.write(key, metadata)
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
@@ -110,8 +110,8 @@ def test_has_feature_raises_store_not_open(store: MetadataStore):
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
-def test_read_metadata_filters_applied_after_deduplication(store: MetadataStore):
-    """Test that user filters in read_metadata are applied AFTER timestamp-based deduplication.
+def test_read_filters_applied_after_deduplication(store: MetadataStore):
+    """Test that user filters in read are applied AFTER timestamp-based deduplication.
 
     This tests the critical behavior where:
     1. Initial write has rows with a column as NULL
@@ -145,7 +145,7 @@ def test_read_metadata_filters_applied_after_deduplication(store: MetadataStore)
                 "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in range(1, 6)],
             }
         )
-        store.write_metadata(key, initial_data)
+        store.write(key, initial_data)
 
         # Step 2: Write updated data for rows a, b, c with status filled
         time.sleep(0.01)  # Ensure different metaxy_created_at timestamps
@@ -156,7 +156,7 @@ def test_read_metadata_filters_applied_after_deduplication(store: MetadataStore)
                 "metaxy_provenance_by_field": [{"default": f"hash{i}_v2"} for i in range(1, 4)],
             }
         )
-        store.write_metadata(key, updated_data)
+        store.write(key, updated_data)
 
         # After deduplication:
         # - Rows a, b, c should have the latest version (status filled)
@@ -164,12 +164,12 @@ def test_read_metadata_filters_applied_after_deduplication(store: MetadataStore)
         # Total: 5 unique rows
 
         # Test 1: Read without filter - should get 5 rows
-        result_all = store.read_metadata(key)
+        result_all = store.read(key)
         assert result_all.collect().shape[0] == 5
 
         # Test 2: Read with filter "status IS NULL" - should get 2 rows (d, e)
         # This is the key test: filter must be applied AFTER deduplication
-        result_null = store.read_metadata(key, filters=[nw.col("status").is_null()])
+        result_null = store.read(key, filters=[nw.col("status").is_null()])
         result_null_df = result_null.collect()
         assert result_null_df.shape[0] == 2, (
             f"Expected 2 rows with status IS NULL (d, e), got {result_null_df.shape[0]}. "
@@ -180,7 +180,7 @@ def test_read_metadata_filters_applied_after_deduplication(store: MetadataStore)
         assert ids == {"d", "e"}, f"Expected rows d, e but got {ids}"
 
         # Test 3: Read with filter "status IS NOT NULL" - should get 3 rows (a, b, c)
-        result_not_null = store.read_metadata(key, filters=[~nw.col("status").is_null()])
+        result_not_null = store.read(key, filters=[~nw.col("status").is_null()])
         result_not_null_df = result_not_null.collect()
         assert result_not_null_df.shape[0] == 3, (
             f"Expected 3 rows with status IS NOT NULL (a, b, c), got {result_not_null_df.shape[0]}. "
@@ -224,10 +224,10 @@ def test_metaxy_updated_at_column(store: MetadataStore):
                 "metaxy_provenance_by_field": [{"default": "hash1"}],
             }
         )
-        store.write_metadata(key, initial_data)
+        store.write(key, initial_data)
 
         # Read back to check metaxy_updated_at was populated
-        result1 = store.read_metadata(key, latest_only=False).collect().to_polars()
+        result1 = store.read(key, with_sample_history=True).collect().to_polars()
         assert METAXY_UPDATED_AT in result1.columns, "metaxy_updated_at should be present"
         assert METAXY_CREATED_AT in result1.columns, "metaxy_created_at should be present"
         updated_at_1 = result1[METAXY_UPDATED_AT][0]
@@ -244,18 +244,18 @@ def test_metaxy_updated_at_column(store: MetadataStore):
                 "metaxy_provenance_by_field": [{"default": "hash1_v2"}],
             }
         )
-        store.write_metadata(key, updated_data)
+        store.write(key, updated_data)
 
         # Read all versions (without deduplication) to verify both rows exist
-        all_versions = store.read_metadata(key, latest_only=False).collect().to_polars()
+        all_versions = store.read(key, with_sample_history=True).collect().to_polars()
         assert all_versions.shape[0] == 2, "Should have 2 versions of the row"
 
         # The newer row should have a later updated_at timestamp
         updated_ats = all_versions[METAXY_UPDATED_AT].sort()
         assert updated_ats[1] > updated_ats[0], "Second write should have later updated_at"
 
-        # Read with deduplication (latest_only=True) - should get 1 row with value=2
-        latest = store.read_metadata(key, latest_only=True).collect().to_polars()
+        # Read with deduplication (with_sample_history=False) - should get 1 row with value=2
+        latest = store.read(key, with_sample_history=False).collect().to_polars()
         assert latest.shape[0] == 1, "Should get 1 row after deduplication"
         assert latest["value"][0] == 2, "Should get the latest value"
 
@@ -288,17 +288,17 @@ def test_soft_delete_preserves_original_updated_at(store: MetadataStore):
                 "metaxy_provenance_by_field": [{"default": "hash1"}],
             }
         )
-        store.write_metadata(key, initial_data)
+        store.write(key, initial_data)
 
         # Read to get the original updated_at
-        before_delete = store.read_metadata(key, latest_only=True).collect().to_polars()
+        before_delete = store.read(key, with_sample_history=False).collect().to_polars()
         original_updated_at = before_delete[METAXY_UPDATED_AT][0]
 
         # Soft delete the row (filters=None deletes all rows)
-        store.delete_metadata(key, filters=None, soft=True)
+        store.delete(key, filters=None, soft=True)
 
         # Read including soft-deleted rows
-        result = store.read_metadata(key, include_soft_deleted=True, latest_only=True).collect().to_polars()
+        result = store.read(key, include_soft_deleted=True, with_sample_history=False).collect().to_polars()
 
         assert result.shape[0] == 1, "Should have 1 row"
         deleted_at = result[METAXY_DELETED_AT][0]
@@ -342,18 +342,18 @@ def test_soft_delete_timestamps_consistency(store: MetadataStore):
                 "metaxy_provenance_by_field": [{"default": "hash1"}],
             }
         )
-        store.write_metadata(key, initial_data)
+        store.write(key, initial_data)
 
         # Read the original row to get its timestamps
-        original_row = store.read_metadata(key, latest_only=True).collect().to_polars()
+        original_row = store.read(key, with_sample_history=False).collect().to_polars()
         original_created_at = original_row[METAXY_CREATED_AT][0]
         original_updated_at = original_row[METAXY_UPDATED_AT][0]
 
         # Soft delete the row
-        store.delete_metadata(key, filters=None, soft=True)
+        store.delete(key, filters=None, soft=True)
 
         # Read all rows including soft-deleted, without deduplication
-        all_rows = store.read_metadata(key, include_soft_deleted=True, latest_only=False).collect().to_polars()
+        all_rows = store.read(key, include_soft_deleted=True, with_sample_history=True).collect().to_polars()
 
         # Should have 2 rows: original and soft-deleted
         assert all_rows.shape[0] == 2, f"Expected 2 rows, got {all_rows.shape[0]}"

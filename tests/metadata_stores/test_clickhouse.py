@@ -33,7 +33,7 @@ def test_clickhouse_table_naming(clickhouse_db: str, test_graph, test_features: 
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
         # Check table was created with correct name using Ibis
         table_names = store.conn.list_tables()
@@ -106,11 +106,11 @@ def test_clickhouse_persistence(clickhouse_db: str, test_graph, test_features: d
                 ],
             }
         )
-        store1.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store1.write(test_features["UpstreamFeatureA"], metadata)
 
     # Read data in second instance
     with ClickHouseMetadataStore(clickhouse_db) as store2:
-        result = collect_to_polars(store2.read_metadata(test_features["UpstreamFeatureA"]))
+        result = collect_to_polars(store2.read(test_features["UpstreamFeatureA"]))
 
         assert len(result) == 3
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
@@ -149,9 +149,9 @@ def test_clickhouse_hash_algorithms(
                     ],
                 }
             )
-            store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+            store.write(test_features["UpstreamFeatureA"], metadata)
 
-            result = collect_to_polars(store.read_metadata(test_features["UpstreamFeatureA"]))
+            result = collect_to_polars(store.read(test_features["UpstreamFeatureA"]))
             assert len(result) == 2
 
 
@@ -336,11 +336,11 @@ def test_clickhouse_json_column_type(
         """
         )
 
-        # Read via read_metadata_in_store (no feature_version filter)
+        # Read via _read_feature (no feature_version filter)
         # This uses transform_after_read internally
         # Without the fix, this would raise:
         # "pyarrow.lib.ArrowTypeError: Expected bytes, got a 'dict' object"
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -421,9 +421,9 @@ def test_clickhouse_map_column_type(
         """
         )
 
-        # Read via read_metadata_in_store
+        # Read via _read_feature
         # This uses transform_after_read which should convert Map to Struct
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -492,7 +492,7 @@ def test_clickhouse_map_column_empty_table_read(
         # This should NOT raise KeyError even though the Map is empty
         # The error was: KeyError: 'frames'
         # Because the Map->Struct conversion couldn't handle empty maps
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
 
         # Reading from an empty table should return None or empty result
         if read_result is not None:
@@ -503,15 +503,15 @@ def test_clickhouse_map_column_empty_table_read(
         conn.drop_table(table_name)
 
 
-def test_clickhouse_map_column_resolve_update_write_metadata(
+def test_clickhouse_map_column_resolve_update_write(
     clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
-    """Test resolve_update and write_metadata with Map(String, String) columns.
+    """Test resolve_update and write with Map(String, String) columns.
 
     This tests the full workflow that was failing in production:
     1. Create table with Map columns
     2. Call resolve_update with Polars DataFrame (has Struct columns)
-    3. Call write_metadata which should transform Struct -> JSON for Map insertion
+    3. Call write which should transform Struct -> JSON for Map insertion
     4. Read back and verify data
 
     The key issue was that Polars Struct -> pl.Object conversion failed because
@@ -566,12 +566,12 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
         assert len(increment.changed) == 0
         assert len(increment.removed) == 0
 
-        # write_metadata should work (Struct -> JSON string for Map columns)
+        # write should work (Struct -> JSON string for Map columns)
         # This is where the original error occurred: KeyError: Object
-        store.write_metadata(feature_cls, samples)
+        store.write(feature_cls, samples)
 
         # Read back and verify
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -681,10 +681,10 @@ def test_clickhouse_map_column_write_from_ibis_struct(
         # Write to the store - this should transform Ibis Struct -> Map
         # Before the fix, this raised:
         # "CAST AS Map from tuple requires 2 elements. Left type: Tuple(Nullable(String)), right type: Map(String, String)"
-        store.write_metadata(feature_cls, nw_df)
+        store.write(feature_cls, nw_df)
 
         # Read back and verify
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -772,11 +772,11 @@ def test_clickhouse_user_defined_map_column(
         """
         )
 
-        # Read via read_metadata_in_store
+        # Read via _read_feature
         # This uses transform_after_read which should:
         # - Convert metaxy Map columns to Struct (dict)
         # - Leave user_metadata Map column as-is (List[Struct{key,value}])
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -857,10 +857,10 @@ def test_clickhouse_auto_cast_struct_for_map_true(
         )
 
         # Write should succeed - user Struct is auto-converted to Map
-        store.write_metadata(feature_cls, samples)
+        store.write(feature_cls, samples)
 
         # Read back and verify data was written
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -931,7 +931,7 @@ def test_clickhouse_auto_cast_struct_for_map_false(
         # Write should FAIL because user Struct won't be converted to Map
         # ClickHouse will reject the insert with a type mismatch error
         with pytest.raises(Exception):  # Ibis/ClickHouse error on type mismatch
-            store.write_metadata(feature_cls, samples)
+            store.write(feature_cls, samples)
 
         # Clean up
         if table_name in conn.list_tables():
@@ -1010,10 +1010,10 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
         assert nw_df.implementation == nw.Implementation.IBIS
 
         # Write should succeed - both user and metaxy Struct columns are converted to Map
-        store.write_metadata(feature_cls, nw_df)
+        store.write(feature_cls, nw_df)
 
         # Read back and verify
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -1091,10 +1091,10 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
         )
 
         # Write should succeed - Struct int values are cast to Int64 for Map(String, Int64)
-        store.write_metadata(feature_cls, samples)
+        store.write(feature_cls, samples)
 
         # Read back and verify
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -1169,10 +1169,10 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
         assert len(samples.schema["empty_metadata"].fields) == 0
 
         # Write should succeed - empty struct is skipped, other structs converted
-        store.write_metadata(feature_cls, samples)
+        store.write(feature_cls, samples)
 
         # Read back and verify data was written
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -1257,10 +1257,10 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
         assert isinstance(struct_type, pl.Struct)
 
         # Write should succeed - NULL values are filtered out
-        store.write_metadata(feature_cls, samples)
+        store.write(feature_cls, samples)
 
         # Read back and verify data was written
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 

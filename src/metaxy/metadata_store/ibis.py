@@ -113,7 +113,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         store = IbisMetadataStore("duckdb:///metadata.db")
 
         with store:
-            store.write_metadata(MyFeature, df)
+            store.write(MyFeature, df)
         ```
     """
 
@@ -368,7 +368,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             f"IbisMetadataStore(backend='{self.backend}', connection_params={{...}})"
         )
 
-    def write_metadata_to_store(
+    def _write_feature(
         self,
         feature_key: FeatureKey,
         df: Frame,
@@ -427,7 +427,7 @@ class IbisMetadataStore(MetadataStore, ABC):
                     f"or use proper database migration tools like Alembic to create the table first."
                 ) from e
 
-    def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
+    def _drop_feature(self, feature_key: FeatureKey) -> None:
         """Drop the table for a feature.
 
         Args:
@@ -439,12 +439,12 @@ class IbisMetadataStore(MetadataStore, ABC):
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
 
-    def _delete_metadata_impl(
+    def _delete_feature(
         self,
         feature_key: FeatureKey,
         filters: Sequence[nw.Expr] | None,
         *,
-        current_only: bool,  # noqa: ARG002 - version filtering handled by base class
+        with_feature_history: bool,  # noqa: ARG002 - version filtering handled by base class
     ) -> None:
         """Backend-specific hard delete implementation for SQL databases.
 
@@ -453,7 +453,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Args:
             feature_key: Feature to delete from
             filters: Narwhals expressions to filter records
-            current_only: Not used here - version filtering handled by base class
+            with_feature_history: Not used here - version filtering handled by base class
         """
         from metaxy.metadata_store.utils import (
             _extract_where_expression,
@@ -471,7 +471,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             return
 
         # Read and filter using store's lazy path to build WHERE clause
-        filtered = self.read_metadata_in_store(feature_key, filters=filter_list)
+        filtered = self._read_feature(feature_key, filters=filter_list)
         if filtered is None:
             raise FeatureNotFoundError(f"Feature {feature_key.to_string()} not found in store")
 
@@ -496,7 +496,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         """Extract SQL dialect from the active backend connection."""
         return self.conn.name
 
-    def read_metadata_in_store(
+    def _read_feature(
         self,
         feature: CoercibleToFeatureKey,
         *,

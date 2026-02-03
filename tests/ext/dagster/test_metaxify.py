@@ -791,7 +791,7 @@ class TestMetaxifyMaterialization:
         def downstream_asset(store: dg.ResourceParam[mx.MetadataStore]):
             # Read upstream data and verify it exists
             with store:
-                upstream_data = store.read_metadata(upstream_feature).collect()
+                upstream_data = store.read(upstream_feature).collect()
                 assert len(upstream_data) == 3
             return pl.DataFrame(
                 {
@@ -861,7 +861,7 @@ class TestMetaxifyMaterialization:
         def downstream_asset(store: dg.ResourceParam[mx.MetadataStore]):
             # Read upstream data via the store resource
             with store:
-                upstream_data = store.read_metadata(upstream_feature).collect()
+                upstream_data = store.read(upstream_feature).collect()
                 captured_data["rows"] = len(upstream_data)
                 captured_data["ids"] = upstream_data["id"].to_list()
             return pl.DataFrame(
@@ -912,7 +912,7 @@ class TestMetaxifyMaterialization:
 
         # First, write data directly to the store (simulating external feature population)
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            store.write_metadata(
+            store.write(
                 feature=upstream_feature,
                 df=pl.DataFrame(
                     {

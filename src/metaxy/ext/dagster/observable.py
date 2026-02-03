@@ -102,7 +102,7 @@ def observable_metaxy_asset(
             filters = build_metaxy_partition_filter(metaxy_partition)
 
             with store:
-                lazy_df = store.read_metadata(feature_key, filters=filters)
+                lazy_df = store.read(feature_key, filters=filters)
                 stats = compute_stats_from_lazy_frame(lazy_df)
 
                 # Call the user's function - it can return additional metadata

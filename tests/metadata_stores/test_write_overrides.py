@@ -52,12 +52,12 @@ def test_subsequent_writes_override_previous(store: MetadataStore):
                     METAXY_PROVENANCE_BY_FIELD: [{"default": f"hash_v{i}"}],
                 }
             )
-            store.write_metadata(key, data)
+            store.write(key, data)
             # Small delay to ensure different timestamps
             time.sleep(0.01)
 
         # Read with deduplication (default behavior)
-        result = store.read_metadata(key, latest_only=True).collect().to_polars()
+        result = store.read(key, with_sample_history=False).collect().to_polars()
 
         # Should get exactly 1 row
         assert result.shape[0] == 1, f"Expected 1 row, got {result.shape[0]}"
@@ -66,17 +66,17 @@ def test_subsequent_writes_override_previous(store: MetadataStore):
         assert result["value"][0] == 50, f"Expected value=50, got {result['value'][0]}"
 
         # Verify all 5 versions exist when reading without deduplication
-        all_versions = store.read_metadata(key, latest_only=False).collect().to_polars()
+        all_versions = store.read(key, with_sample_history=True).collect().to_polars()
         assert all_versions.shape[0] == 5, f"Expected 5 versions, got {all_versions.shape[0]}"
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
 def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
-    """Test that read_metadata returns the row with the latest timestamp.
+    """Test that read returns the row with the latest timestamp.
 
     Writes 100 rows with controlled metaxy_updated_at timestamps using
-    write_metadata_to_store (bypassing timestamp auto-generation). The row with
-    the latest timestamp should be returned by read_metadata with latest_only=True.
+    _write_feature (bypassing timestamp auto-generation). The row with
+    the latest timestamp should be returned by read with with_sample_history=False.
     """
     key = FeatureKey(["test_latest_timestamp"])
 
@@ -96,7 +96,7 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
     # Get version info from the feature class
     feature_version = MyFeature.feature_version()
 
-    # First, write a single row using write_metadata to create the table with proper schema
+    # First, write a single row using write to create the table with proper schema
     with store.open("write"):
         init_data = pl.DataFrame(
             {
@@ -105,7 +105,7 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
                 METAXY_PROVENANCE_BY_FIELD: [{"default": "init_hash"}],
             }
         )
-        store.write_metadata(key, init_data)
+        store.write(key, init_data)
 
     # Get snapshot version from the graph after first write
     from metaxy.models.feature import FeatureGraph
@@ -124,7 +124,7 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
             {
                 "id": "same_id",
                 "value": i,
-                # All required system columns for write_metadata_to_store
+                # All required system columns for _write_feature
                 METAXY_PROVENANCE_BY_FIELD: {"default": f"hash_{i}"},
                 METAXY_PROVENANCE: f"provenance_{i}",
                 METAXY_DATA_VERSION_BY_FIELD: {"default": f"hash_{i}"},
@@ -149,14 +149,14 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
         }
     )
 
-    # Use write_metadata_to_store to bypass timestamp auto-generation
+    # Use _write_feature to bypass timestamp auto-generation
     with store.open("write"):
-        store.write_metadata_to_store(key, nw.from_native(data))
+        store._write_feature(key, nw.from_native(data))
 
     # Read and verify
     with store.open("read"):
         # Read all rows for "same_id" (excluding our init row)
-        all_rows = store.read_metadata(key, latest_only=False).collect().to_polars().filter(pl.col("id") == "same_id")
+        all_rows = store.read(key, with_sample_history=True).collect().to_polars().filter(pl.col("id") == "same_id")
         assert all_rows.shape[0] == num_rows, f"Expected {num_rows} rows, got {all_rows.shape[0]}"
 
         # Verify timestamps are what we set (not auto-generated)
@@ -172,7 +172,7 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
         assert max_ts == latest_time, f"Expected max timestamp {latest_time}, got {max_ts}"
 
         # Read with deduplication - should get only the row with latest timestamp
-        result = store.read_metadata(key, latest_only=True).collect().to_polars().filter(pl.col("id") == "same_id")
+        result = store.read(key, with_sample_history=False).collect().to_polars().filter(pl.col("id") == "same_id")
 
         # Should get exactly 1 row
         assert result.shape[0] == 1, f"Expected 1 row, got {result.shape[0]}"
@@ -189,12 +189,12 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
-def test_write_metadata_overwrites_user_provided_timestamp(store: MetadataStore):
-    """Verify that write_metadata overwrites user-provided metaxy_updated_at.
+def test_write_overwrites_user_provided_timestamp(store: MetadataStore):
+    """Verify that write overwrites user-provided metaxy_updated_at.
 
-    Users should not be able to set arbitrary timestamps via write_metadata.
+    Users should not be able to set arbitrary timestamps via write.
     The system always sets metaxy_updated_at to the current time on write.
-    To preserve custom timestamps, use write_metadata_to_store directly.
+    To preserve custom timestamps, use _write_feature directly.
     """
     key = FeatureKey(["test_timestamp_overwrite"])
 
@@ -219,10 +219,10 @@ def test_write_metadata_overwrites_user_provided_timestamp(store: MetadataStore)
     )
 
     with store.open("write"):
-        store.write_metadata(key, data)
+        store.write(key, data)
 
     with store.open("read"):
-        result = store.read_metadata(key, latest_only=False).collect().to_polars()
+        result = store.read(key, with_sample_history=True).collect().to_polars()
         actual_ts = result[METAXY_UPDATED_AT][0]
 
         # The timestamp should be overwritten to current time, NOT preserved
@@ -265,11 +265,11 @@ def test_multiple_ids_each_get_latest_value(store: MetadataStore):
                     METAXY_PROVENANCE_BY_FIELD: [{"default": f"hash_{id_}_v{version}"} for id_ in ["a", "b", "c"]],
                 }
             )
-            store.write_metadata(key, data)
+            store.write(key, data)
             time.sleep(0.01)
 
         # Read with deduplication
-        result = store.read_metadata(key, latest_only=True).collect().to_polars()
+        result = store.read(key, with_sample_history=False).collect().to_polars()
 
         # Should get 3 rows (one per ID)
         assert result.shape[0] == 3, f"Expected 3 rows, got {result.shape[0]}"
@@ -283,5 +283,5 @@ def test_multiple_ids_each_get_latest_value(store: MetadataStore):
         assert result_dict["c"] == 3000, f"Expected c=3000, got {result_dict['c']}"
 
         # Verify all 9 versions exist when reading without deduplication
-        all_versions = store.read_metadata(key, latest_only=False).collect().to_polars()
+        all_versions = store.read(key, with_sample_history=True).collect().to_polars()
         assert all_versions.shape[0] == 9, f"Expected 9 versions, got {all_versions.shape[0]}"

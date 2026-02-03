@@ -113,7 +113,7 @@ class SystemTableStorage:
             ```
         """
         record = event.to_polars()
-        self.store.write_metadata(EVENTS_KEY, record)
+        self.store.write(EVENTS_KEY, record)
 
     def get_migration_events(self, migration_id: str, project: str | None = None) -> pl.DataFrame:
         """Get all events for a migration.
@@ -637,7 +637,7 @@ class SystemTableStorage:
             ).drop(f"{METAXY_DEFINITION_VERSION}_pushed")
 
         if len(to_push) > 0:
-            self.store.write_metadata(FEATURE_VERSIONS_KEY, to_push)
+            self.store.write(FEATURE_VERSIONS_KEY, to_push)
 
         # updated_features only populated when updating existing features
         updated_features = to_push["feature_key"].to_list() if already_pushed and len(to_push) > 0 else []
@@ -651,8 +651,8 @@ class SystemTableStorage:
     def _read_system_metadata(self, key: FeatureKey) -> nw.LazyFrame[Any]:
         """Read system metadata.
 
-        System tables are handled specially by MetadataStore.read_metadata - they don't
-        require feature plan resolution when current_only=False.
+        System tables are handled specially by MetadataStore.read - they don't
+        require feature plan resolution when with_feature_history=True.
 
         Note:
             The store must already be open when calling this method.
@@ -661,8 +661,8 @@ class SystemTableStorage:
             LazyFrame if table exists, empty LazyFrame with correct schema if it doesn't
         """
         try:
-            # read_metadata handles system tables specially (no feature plan needed)
-            return self.store.read_metadata(key, current_only=False)
+            # read handles system tables specially (no feature plan needed)
+            return self.store.read(key, with_feature_history=True)
         except SystemDataNotFoundError:
             return nw.from_native(pl.DataFrame(schema=POLARS_SCHEMAS[key])).lazy()
 

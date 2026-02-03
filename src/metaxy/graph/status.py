@@ -300,8 +300,8 @@ def get_feature_metadata_status(
     # Get store metadata (table_name, uri, etc.)
     store_metadata = metadata_store.get_store_metadata(key)
 
-    # Combine global_filters and target_filters for read_metadata
-    # (read_metadata doesn't distinguish them - it only reads the target feature)
+    # Combine global_filters and target_filters for read
+    # (read doesn't distinguish them - it only reads the target feature)
     combined_filters: list[nw.Expr] = []
     if global_filters:
         combined_filters.extend(global_filters)
@@ -309,7 +309,7 @@ def get_feature_metadata_status(
         combined_filters.extend(target_filters)
 
     try:
-        metadata_lazy = metadata_store.read_metadata(
+        metadata_lazy = metadata_store.read(
             key,
             columns=list(id_columns_seq) if id_columns_seq is not None else None,
             allow_fallback=use_fallback,

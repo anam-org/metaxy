@@ -1115,7 +1115,7 @@ database = "{staging_db_path}"
         # Use the project's graph context so the store can resolve feature plans
         with graph.use():
             with store.open("write"):
-                store.write_metadata(feature_key, sample_data)
+                store.write(feature_key, sample_data)
                 # Record the feature graph snapshot so copy_metadata can determine snapshot_version
                 SystemTableStorage(store).push_graph_snapshot()
 
@@ -1139,4 +1139,4 @@ database = "{staging_db_path}"
         store = self.stores[store_name]
 
         with graph.use(), store.open("write"):
-            store.write_metadata(feature_key, data)
+            store.write(feature_key, data)

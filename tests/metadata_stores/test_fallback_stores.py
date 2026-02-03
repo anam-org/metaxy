@@ -190,7 +190,7 @@ def test_fallback_store_warning_issued(
     # Setup: Write root feature to fallback store
     with fallback_store:
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
-        fallback_store.write_metadata(RootFeature, root_data)
+        fallback_store.write(RootFeature, root_data)
 
     # Test with versioning_engine="native" and versioning_engine="polars"
     for versioning_engine in ["native", "polars"]:
@@ -286,7 +286,7 @@ def test_no_fallback_warning_when_all_local(
             }
         )
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
-        store.write_metadata(RootFeature, root_data)
+        store.write(RootFeature, root_data)
 
         # Resolve downstream feature - all upstream is local
         # No warning should be issued
@@ -347,7 +347,7 @@ def test_fallback_store_switches_to_polars_components(
 
     with store_all_local:
         root_data_with_prov = add_metaxy_provenance_column(root_data, RootFeature)
-        store_all_local.write_metadata(RootFeature, root_data_with_prov)
+        store_all_local.write(RootFeature, root_data_with_prov)
 
         # Should be no warnings
         import warnings
@@ -378,7 +378,7 @@ def test_fallback_store_switches_to_polars_components(
     # Write root to fallback store
     with fallback_store:
         root_data_with_prov = add_metaxy_provenance_column(root_data, RootFeature)
-        fallback_store.write_metadata(RootFeature, root_data_with_prov)
+        fallback_store.write(RootFeature, root_data_with_prov)
 
     # Create primary store with fallback configured
     primary_store = create_store_for_fallback(
@@ -464,7 +464,7 @@ def test_versioning_engine_polars_no_warning_even_without_fallback(
             }
         )
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
-        store.write_metadata(RootFeature, root_data)
+        store.write(RootFeature, root_data)
 
         # Should be no warnings - versioning_engine="polars" is intentional, not a fallback
         import warnings
@@ -521,7 +521,7 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
             }
         )
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
-        primary_store.write_metadata(RootFeature, root_data)
+        primary_store.write(RootFeature, root_data)
 
         # Data is local, so versioning_engine="native" should work without errors or warnings
         import warnings
@@ -568,7 +568,7 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
             }
         )
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
-        fallback_store.write_metadata(RootFeature, root_data)
+        fallback_store.write(RootFeature, root_data)
 
     # Create primary store with fallback configured and versioning_engine="native"
     primary_store = create_store_for_fallback(
@@ -641,12 +641,12 @@ def test_fallback_stores_opened_on_demand_when_reading(tmp_path, graph: FeatureG
                 ],
             }
         )
-        branch_store.write_metadata(TestFeature, metadata)
+        branch_store.write(TestFeature, metadata)
 
     # Now open only the dev store and try to read - it should find data in fallback
     # The fallback store should be opened on demand
     with dev_store:
-        result = dev_store.read_metadata(TestFeature)
+        result = dev_store.read(TestFeature)
         assert result is not None
         collected = result.collect()
         assert len(collected) == 3
@@ -692,7 +692,7 @@ def test_get_store_metadata_respects_fallback_stores(tmp_path, graph: FeatureGra
                 ],
             }
         )
-        fallback_store.write_metadata(TestFeature, metadata)
+        fallback_store.write(TestFeature, metadata)
 
     # Now open only the primary store and call get_store_metadata
     # It should return metadata showing both primary and resolved_from (fallback) stores
@@ -766,10 +766,10 @@ def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph)
 
     # Write data to both stores
     with fallback_store.open(mode="write"):
-        fallback_store.write_metadata(TestFeature, metadata)
+        fallback_store.write(TestFeature, metadata)
 
     with primary_store.open(mode="write"):
-        primary_store.write_metadata(TestFeature, metadata)
+        primary_store.write(TestFeature, metadata)
 
     # get_store_metadata should return metadata from primary (current) store
     with primary_store:
@@ -785,10 +785,10 @@ def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph)
         assert "fallback" not in resolved_from["uri"]
 
 
-def test_read_metadata_with_store_info(tmp_path, graph: FeatureGraph) -> None:
-    """Test read_metadata with_store_info returns the resolved store.
+def test_read_with_store_info(tmp_path, graph: FeatureGraph) -> None:
+    """Test read with_store_info returns the resolved store.
 
-    When with_store_info=True, read_metadata should return a tuple of
+    When with_store_info=True, read should return a tuple of
     (LazyFrame, MetadataStore) where the MetadataStore is the store that
     actually contained the feature (which may be a fallback store).
     """
@@ -800,7 +800,7 @@ def test_read_metadata_with_store_info(tmp_path, graph: FeatureGraph) -> None:
     class TestFeature(
         BaseFeature,
         spec=SampleFeatureSpec(
-            key=FeatureKey(["read_metadata_with_store_info_test", "feature"]),
+            key=FeatureKey(["read_with_store_info_test", "feature"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
@@ -825,11 +825,11 @@ def test_read_metadata_with_store_info(tmp_path, graph: FeatureGraph) -> None:
                 ],
             }
         )
-        fallback_store.write_metadata(TestFeature, metadata)
+        fallback_store.write(TestFeature, metadata)
 
     # Read from primary with with_store_info=True - should resolve to fallback
     with primary_store:
-        df, resolved_store = primary_store.read_metadata(TestFeature, with_store_info=True)
+        df, resolved_store = primary_store.read(TestFeature, with_store_info=True)
         assert resolved_store.name == "fallback"
         assert resolved_store is not primary_store
         # Verify the data is correct
@@ -838,11 +838,11 @@ def test_read_metadata_with_store_info(tmp_path, graph: FeatureGraph) -> None:
 
     # Now write to primary store too
     with primary_store.open(mode="write"):
-        primary_store.write_metadata(TestFeature, metadata)
+        primary_store.write(TestFeature, metadata)
 
     # Read from primary with with_store_info=True - should resolve to primary
     with primary_store:
-        df, resolved_store = primary_store.read_metadata(TestFeature, with_store_info=True)
+        df, resolved_store = primary_store.read(TestFeature, with_store_info=True)
         assert resolved_store.name == "primary"
         assert resolved_store is primary_store
         collected = df.collect()
@@ -850,7 +850,7 @@ def test_read_metadata_with_store_info(tmp_path, graph: FeatureGraph) -> None:
 
     # Verify default behavior (with_store_info=False) still works
     with primary_store:
-        df = primary_store.read_metadata(TestFeature)
+        df = primary_store.read(TestFeature)
         # Should return just LazyFrame, not tuple
         assert hasattr(df, "collect")
         collected = df.collect()

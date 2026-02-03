@@ -184,12 +184,12 @@ def test_full_graph_migration_single_operation_single_feature(tmp_path: Path):
             }
         )
         upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
-        store.write_metadata(Upstream, upstream_data)
+        store.write(Upstream, upstream_data)
 
         # Write downstream
         diff = store.resolve_update(Downstream)
         if len(diff.added) > 0:
-            store.write_metadata(Downstream, diff.added)
+            store.write(Downstream, diff.added)
 
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
@@ -548,11 +548,11 @@ def test_full_graph_migration_resume_after_partial_failure(tmp_path: Path):
             }
         )
         upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
-        store.write_metadata(Upstream, upstream_data)
+        store.write(Upstream, upstream_data)
 
         diff = store.resolve_update(Downstream)
         if len(diff.added) > 0:
-            store.write_metadata(Downstream, diff.added)
+            store.write(Downstream, diff.added)
 
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
@@ -743,7 +743,7 @@ def test_data_version_reconciliation_root_feature_error(tmp_path: Path):
             }
         )
         data = add_metaxy_provenance_column(data, Root)
-        store.write_metadata(Root, data)
+        store.write(Root, data)
 
         SystemTableStorage(store).push_graph_snapshot()
         from_snapshot = graph.snapshot_version

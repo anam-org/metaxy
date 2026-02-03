@@ -550,7 +550,7 @@ def write_upstream_to_store(
 
     for feature_key, upstream_feature in upstream_features.items():
         upstream_df = upstream_data[feature_key.to_string()]
-        store.write_metadata(upstream_feature, upstream_df)
+        store.write(upstream_feature, upstream_df)
 
 
 def setup_store_with_data(
@@ -563,7 +563,7 @@ def setup_store_with_data(
 
     try:
         with empty_store:
-            # Use graph.use() to make it the current graph (needed for write_metadata)
+            # Use graph.use() to make it the current graph (needed for write)
             with graph.use():
                 write_upstream_to_store(empty_store, feature_plan_config, upstream_data)
     except HashAlgorithmNotSupportedError:
@@ -834,7 +834,7 @@ def test_store_resolve_update_matches_golden_provenance(
 
                 # Also write downstream to store so store can detect changes in next iteration
                 with graph.use():
-                    any_store.write_metadata(child_key, new_downstream)
+                    any_store.write(child_key, new_downstream)
 
     except HashAlgorithmNotSupportedError:
         pytest.skip(f"Hash algorithm {any_store.hash_algorithm} not supported by {any_store}")
@@ -876,7 +876,7 @@ def test_golden_reference_with_duplicate_timestamps(
             # Add older duplicates to upstream metadata
             for feature_key, upstream_feature in upstream_features.items():
                 # Read existing upstream data
-                existing_df = store.read_metadata(upstream_feature).lazy().collect().to_polars()
+                existing_df = store.read(upstream_feature).lazy().collect().to_polars()
 
                 # Create older duplicates (same IDs, older timestamps)
                 older_df = existing_df.clone()
@@ -900,7 +900,7 @@ def test_golden_reference_with_duplicate_timestamps(
                     )
 
                 # Write the older duplicates
-                store.write_metadata(upstream_feature, older_df)
+                store.write(upstream_feature, older_df)
 
                 # Now store has 2 versions per sample:
                 # - Original (newer) - should be used
@@ -1003,7 +1003,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
 
             # Write first version
             version1 = parent_df.with_columns(pl.lit(same_timestamp).alias(METAXY_CREATED_AT))
-            empty_store.write_metadata(ParentFeature, version1)
+            empty_store.write(ParentFeature, version1)
 
             # Create second version with same timestamp but different provenance
             # We modify the provenance columns to simulate different data
@@ -1014,7 +1014,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
             )
 
             # Write duplicates with same timestamp
-            empty_store.write_metadata(ParentFeature, version2)
+            empty_store.write(ParentFeature, version2)
 
             # Now every sample has 2 versions with same timestamp
             # Call resolve_update - should pick one deterministically
@@ -1069,7 +1069,7 @@ def test_golden_reference_partial_duplicates(
 
             # Add older duplicates for only HALF of the samples in each upstream
             for feature_key, upstream_feature in upstream_features.items():
-                existing_df = store.read_metadata(upstream_feature).lazy().collect().to_polars()
+                existing_df = store.read(upstream_feature).lazy().collect().to_polars()
 
                 # Get half of samples
                 num_samples = len(existing_df)
@@ -1085,7 +1085,7 @@ def test_golden_reference_partial_duplicates(
                     )
 
                     # Write older duplicates
-                    store.write_metadata(upstream_feature, older_df)
+                    store.write(upstream_feature, older_df)
 
                 # Now store has:
                 # - First half of samples: 2 versions each (newer and older)
@@ -1396,7 +1396,7 @@ def test_expansion_changed_rows_not_duplicated(
                     ],
                 }
             )
-            any_store.write_metadata(Video, video_df)
+            any_store.write(Video, video_df)
 
             # First resolve_update - get parent-level rows
             increment = any_store.resolve_update(
@@ -1424,10 +1424,10 @@ def test_expansion_changed_rows_not_duplicated(
                     )
 
             expanded_df = pl.DataFrame(expanded_rows)
-            any_store.write_metadata(VideoFrames, expanded_df)
+            any_store.write(VideoFrames, expanded_df)
 
             # Verify 6 rows stored (2 videos × 3 frames)
-            stored_df = any_store.read_metadata(VideoFrames).lazy().collect().to_polars()
+            stored_df = any_store.read(VideoFrames).lazy().collect().to_polars()
             assert len(stored_df) == 6, f"Expected 6 expanded rows, got {len(stored_df)}"
 
             # === CHANGE UPSTREAM ===
@@ -1441,7 +1441,7 @@ def test_expansion_changed_rows_not_duplicated(
                     ],
                 }
             )
-            any_store.write_metadata(Video, updated_video_df)
+            any_store.write(Video, updated_video_df)
 
             # Resolve update after upstream change
             increment_after_change = any_store.resolve_update(

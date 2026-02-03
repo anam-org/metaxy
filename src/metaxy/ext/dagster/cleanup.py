@@ -8,7 +8,7 @@ from metaxy.models.types import FeatureKey, ValidatedFeatureKeyList
 
 
 class DeleteMetadataConfig(dg.Config):
-    """Configuration for delete_metadata op.
+    """Configuration for delete op.
 
     Attributes:
         feature_key: Feature key validated using ValidatedFeatureKey semantics.
@@ -28,7 +28,7 @@ class DeleteMetadataConfig(dg.Config):
 
 
 @dg.op
-def delete_metadata(
+def delete(
     context: dg.OpExecutionContext,
     config: DeleteMetadataConfig,
     metaxy_store: dg.ResourceParam[mx.MetadataStore],
@@ -43,21 +43,21 @@ def delete_metadata(
     Example:
         ```python
         import dagster as dg
-        from metaxy.ext.dagster import delete_metadata
+        from metaxy.ext.dagster import delete
         from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 
 
         # Define a job with the delete op
         @dg.job(resource_defs={"metaxy_store": MetaxyStoreFromConfigResource(name="dev")})
         def cleanup_job():
-            delete_metadata()
+            delete()
 
 
         # Execute with config to delete inactive customer segments
         cleanup_job.execute_in_process(
             run_config={
                 "ops": {
-                    "delete_metadata": {
+                    "delete": {
                         "config": {
                             "feature_key": ["customer", "segment"],
                             "filters": ["status = 'inactive'"],
@@ -82,6 +82,6 @@ def delete_metadata(
     context.log.info(f"Executing {'soft' if config.soft else 'hard'} delete for {feature_key.to_string()}")
 
     with store.open("write"):
-        store.delete_metadata(feature_key, filters=filter_exprs, soft=config.soft)
+        store.delete(feature_key, filters=filter_exprs, soft=config.soft)
 
     context.log.info(f"Successfully completed delete for {feature_key.to_string()}")

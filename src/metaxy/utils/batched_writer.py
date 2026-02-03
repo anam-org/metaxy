@@ -65,7 +65,7 @@ class BatchedMetadataWriter:
             writer.put(batch)
 
         with store:
-            assert len(store.read_metadata(MyFeature).collect()) == 1
+            assert len(store.read(MyFeature).collect()) == 1
         ```
 
     ??? example "Manual lifecycle management"
@@ -140,7 +140,7 @@ class BatchedMetadataWriter:
         """Queue batches for writing.
 
         The batches are accumulated per-feature and written together using
-        `[MetadataStore.write_metadata_multi][]`.
+        `[MetadataStore.write_multi][]`.
 
         Args:
             batches: Mapping from feature keys to dataframes.
@@ -292,7 +292,7 @@ class BatchedMetadataWriter:
 
         # Write to store
         with self._store.open("write"):
-            self._store.write_metadata_multi(combined)
+            self._store.write_multi(combined)
 
         total_rows = sum(rows_per_feature.values())
         feature_count = len(combined)

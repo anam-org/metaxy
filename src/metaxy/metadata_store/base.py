@@ -203,7 +203,7 @@ class MetadataStore(ABC):
 
             materialization_id: Optional external orchestration ID.
                 If provided, all metadata writes will include this ID in the `metaxy_materialization_id` column.
-                Can be overridden per [`MetadataStore.write_metadata`][metaxy.MetadataStore.write_metadata] call.
+                Can be overridden per [`MetadataStore.write`][metaxy.MetadataStore.write] call.
 
         Raises:
             ValueError: If fallback stores use different hash algorithms or truncation lengths
@@ -404,16 +404,16 @@ class MetadataStore(ABC):
             *target_filter_list,
         ]
 
-        # Read current metadata with deduplication (latest_only=True by default)
+        # Read current metadata with deduplication (with_sample_history=False by default)
         # Use allow_fallback=False since we only want metadata from THIS store
         # to determine what needs to be updated locally
         try:
-            current_metadata: nw.LazyFrame[Any] | None = self.read_metadata(
+            current_metadata: nw.LazyFrame[Any] | None = self.read(
                 feature_key,
                 filters=current_feature_filters if current_feature_filters else None,
                 allow_fallback=False,
-                current_only=True,  # filters by current feature_version
-                latest_only=True,  # deduplicates by id_columns, keeping latest
+                with_feature_history=False,  # filters by current feature_version
+                with_sample_history=False,  # deduplicates by id_columns, keeping latest
             )
         except FeatureNotFoundError:
             current_metadata = None
@@ -451,7 +451,7 @@ class MetadataStore(ABC):
                     *normalized_filters.get(upstream_spec.key, []),
                     *global_filter_list,
                 ]
-                upstream_feature_metadata = self.read_metadata(
+                upstream_feature_metadata = self.read(
                     upstream_spec.key,
                     filters=upstream_filters if upstream_filters else None,
                 )
@@ -609,8 +609,8 @@ class MetadataStore(ABC):
             ```py
 
                 # Read upstream metadata
-                video_df = store.read_metadata(VideoFeature).collect()
-                audio_df = store.read_metadata(AudioFeature).collect()
+                video_df = store.read(VideoFeature).collect()
+                audio_df = store.read(AudioFeature).collect()
 
                 # Rename data_version_by_field columns to the expected convention
                 video_df = video_df.rename({
@@ -669,7 +669,7 @@ class MetadataStore(ABC):
             return engine.compute_provenance_columns(df, hash_algo=self.hash_algorithm)  # ty: ignore[invalid-argument-type]
 
     @overload
-    def read_metadata(
+    def read(
         self,
         feature: CoercibleToFeatureKey,
         *,
@@ -677,14 +677,14 @@ class MetadataStore(ABC):
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
         allow_fallback: bool = True,
-        current_only: bool = True,
-        latest_only: bool = True,
+        with_feature_history: bool = False,
+        with_sample_history: bool = False,
         include_soft_deleted: bool = False,
         with_store_info: Literal[False] = False,
     ) -> nw.LazyFrame[Any]: ...
 
     @overload
-    def read_metadata(
+    def read(
         self,
         feature: CoercibleToFeatureKey,
         *,
@@ -692,13 +692,13 @@ class MetadataStore(ABC):
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
         allow_fallback: bool = True,
-        current_only: bool = True,
-        latest_only: bool = True,
+        with_feature_history: bool = False,
+        with_sample_history: bool = False,
         include_soft_deleted: bool = False,
         with_store_info: Literal[True],
     ) -> tuple[nw.LazyFrame[Any], MetadataStore]: ...
 
-    def read_metadata(
+    def read(
         self,
         feature: CoercibleToFeatureKey,
         *,
@@ -706,8 +706,8 @@ class MetadataStore(ABC):
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
         allow_fallback: bool = True,
-        current_only: bool = True,
-        latest_only: bool = True,
+        with_feature_history: bool = False,
+        with_sample_history: bool = False,
         include_soft_deleted: bool = False,
         with_store_info: bool = False,
     ) -> nw.LazyFrame[Any] | tuple[nw.LazyFrame[Any], MetadataStore]:
@@ -715,19 +715,21 @@ class MetadataStore(ABC):
         Read metadata with optional fallback to upstream stores.
 
         By default, does not include:
-           - rows from historical feature versions (configured via `current_only=True`)
-           - rows that have been overwritten by subsequent writes with the same feature version (configured via `latest_only=True`)
+           - rows from historical feature versions (configured via `with_feature_history=False`)
+           - rows that have been overwritten by subsequent writes with the same feature version (configured via `with_sample_history=False`)
            - soft-deleted with `metaxy_deleted_at` set to a non-null value (configured via `include_soft_deleted=False`)
 
         Args:
             feature: Feature to read metadata for
-            feature_version: Explicit feature_version to filter by (mutually exclusive with current_only=True)
+            feature_version: Explicit feature_version to filter by (mutually exclusive with with_feature_history=False)
             filters: Sequence of Narwhals filter expressions to apply to this feature.
                 Example: `[nw.col("x") > 10, nw.col("y") < 5]`
             columns: Subset of columns to include. Metaxy's system columns are always included.
             allow_fallback: Whether to allow fallback to upstream stores if the requested feature is not found in the current store.
-            current_only: Whether to only return rows with the currently registered feature version.
-            latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
+            with_feature_history: If True, include rows from all historical feature versions.
+                By default (False), only returns rows with the currently registered feature version.
+            with_sample_history: If True, include all historical materializations per sample.
+                By default (False), deduplicates samples within `id_columns` groups ordered by `metaxy_created_at`.
             include_soft_deleted: If `True`, include soft-deleted rows in the result. Previous historical materializations of the same feature version will be effectively removed from the output otherwise.
             with_store_info: If `True`, return a tuple of (LazyFrame, MetadataStore) where
                 the MetadataStore is the store that actually contained the feature (which
@@ -739,7 +741,7 @@ class MetadataStore(ABC):
         Raises:
             FeatureNotFoundError: If feature not found in any store
             SystemDataNotFoundError: When attempting to read non-existent Metaxy system data
-            ValueError: If both feature_version and current_only=True are provided
+            ValueError: If both feature_version and with_feature_history=False are provided
 
         !!! info
             When this method is called with default arguments, it will return the latest (by `metaxy_created_at`)
@@ -770,10 +772,10 @@ class MetadataStore(ABC):
         filter_deleted = not include_soft_deleted and not is_system_table
 
         # Validate mutually exclusive parameters
-        if feature_version is not None and current_only:
+        if feature_version is not None and not with_feature_history:
             raise ValueError(
-                "Cannot specify both feature_version and current_only=True. "
-                "Use current_only=False with feature_version parameter."
+                "Cannot specify both feature_version and with_feature_history=False. "
+                "Use with_feature_history=True with feature_version parameter."
             )
 
         # Separate system filters (applied before dedup) from user filters (applied after dedup)
@@ -783,9 +785,9 @@ class MetadataStore(ABC):
         user_filters = list(filters) if filters else []
 
         # Add feature_version filter only when needed (this is a system filter)
-        if current_only or feature_version is not None and not is_system_table:
+        if not with_feature_history or feature_version is not None and not is_system_table:
             version_filter = nw.col(METAXY_FEATURE_VERSION) == (
-                current_graph().get_feature_version(feature_key) if current_only else feature_version
+                current_graph().get_feature_version(feature_key) if not with_feature_history else feature_version
             )
             system_filters.append(version_filter)
 
@@ -804,9 +806,9 @@ class MetadataStore(ABC):
 
         lazy_frame = None
         try:
-            # Only pass system filters to read_metadata_in_store
+            # Only pass system filters to _read_feature
             # User filters will be applied after deduplication
-            lazy_frame = self.read_metadata_in_store(
+            lazy_frame = self._read_feature(
                 feature, filters=system_filters if system_filters else None, columns=read_columns
             )
         except FeatureNotFoundError as e:
@@ -816,7 +818,7 @@ class MetadataStore(ABC):
                     f"System Metaxy data with key {feature_key} is missing in {self}. Invoke `metaxy push` before attempting to read system data."
                 ) from e
 
-        # Handle case where read_metadata_in_store returns None (no exception raised)
+        # Handle case where _read_feature returns None (no exception raised)
         if lazy_frame is None and is_system_table:
             raise SystemDataNotFoundError(
                 f"System Metaxy data with key {feature_key} is missing in {self}. Invoke `metaxy push` before attempting to read system data."
@@ -824,7 +826,7 @@ class MetadataStore(ABC):
 
         if lazy_frame is not None and not is_system_table:
             # Deduplicate first, then filter soft-deleted rows
-            if latest_only:
+            if not with_sample_history:
                 id_cols = list(self._resolve_feature_plan(feature_key).feature.id_columns)
                 # Treat soft-deletes like hard deletes by ordering on the
                 # most recent lifecycle timestamp.
@@ -861,27 +863,27 @@ class MetadataStore(ABC):
                 try:
                     # Open fallback store on demand for reading
                     with store:
-                        # Use full read_metadata to handle nested fallback chains
+                        # Use full read to handle nested fallback chains
                         if with_store_info:
-                            return store.read_metadata(
+                            return store.read(
                                 feature,
                                 feature_version=feature_version,
                                 filters=filters,
                                 columns=columns,
                                 allow_fallback=True,
-                                current_only=current_only,
-                                latest_only=latest_only,
+                                with_feature_history=with_feature_history,
+                                with_sample_history=with_sample_history,
                                 include_soft_deleted=include_soft_deleted,
                                 with_store_info=True,
                             )
-                        return store.read_metadata(
+                        return store.read(
                             feature,
                             feature_version=feature_version,
                             filters=filters,
                             columns=columns,
                             allow_fallback=True,
-                            current_only=current_only,
-                            latest_only=latest_only,
+                            with_feature_history=with_feature_history,
+                            with_sample_history=with_sample_history,
                             include_soft_deleted=include_soft_deleted,
                         )
                 except FeatureNotFoundError:
@@ -893,7 +895,7 @@ class MetadataStore(ABC):
             f"Feature {feature_key.to_string()} not found in store" + (" or fallback stores" if allow_fallback else "")
         )
 
-    def write_metadata(
+    def write(
         self,
         feature: CoercibleToFeatureKey,
         df: IntoFrame,
@@ -938,7 +940,7 @@ class MetadataStore(ABC):
         # For system tables, write directly without feature_version tracking
         if is_system_table:
             self._validate_schema_system_table(df_nw)
-            self.write_metadata_to_store(feature_key, df_nw)
+            self._write_feature(feature_key, df_nw)
             return
 
         # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
@@ -954,9 +956,9 @@ class MetadataStore(ABC):
         df_nw = self._add_system_columns(df_nw, feature, materialization_id=materialization_id)
 
         self._validate_schema(df_nw)
-        self.write_metadata_to_store(feature_key, df_nw)
+        self._write_feature(feature_key, df_nw)
 
-    def write_metadata_multi(
+    def write_multi(
         self,
         metadata: Mapping[Any, IntoFrame],
         materialization_id: str | None = None,
@@ -986,14 +988,14 @@ class MetadataStore(ABC):
         Note:
             - Must be called within a `MetadataStore.open(mode="write")` context manager.
             - Empty mappings are handled gracefully (no-op).
-            - Each feature's metadata is written via `write_metadata`, so all
+            - Each feature's metadata is written via `write`, so all
               validation and system column handling from that method applies.
 
         Example:
             <!-- skip next -->
             ```py
             with store.open(mode="write"):
-                store.write_metadata_multi(
+                store.write_multi(
                     {
                         ChildFeature: child_df,
                         ParentFeature: parent_df,
@@ -1015,7 +1017,7 @@ class MetadataStore(ABC):
 
         # Write metadata in reverse topological order
         for feature_key in sorted_keys:
-            self.write_metadata(
+            self.write(
                 feature_key,
                 resolved_metadata[feature_key],
                 materialization_id=materialization_id,
@@ -1355,7 +1357,7 @@ class MetadataStore(ABC):
     def _shared_transaction_timestamp(self, *, soft_delete: bool = False) -> Iterator[datetime]:
         """Context manager that establishes a shared timestamp for a write transaction.
 
-        All write operations (write_metadata, delete_metadata with soft=True) within
+        All write operations (write, delete with soft=True) within
         this context share the same timestamp for metaxy_created_at and metaxy_deleted_at
         columns. This ensures consistency when a single logical operation affects
         multiple system columns.
@@ -1384,7 +1386,7 @@ class MetadataStore(ABC):
                 self._soft_delete_in_progress = False
 
     @abstractmethod
-    def write_metadata_to_store(
+    def _write_feature(
         self,
         feature_key: FeatureKey,
         df: Frame,
@@ -1584,7 +1586,7 @@ class MetadataStore(ABC):
         pass
 
     @abstractmethod
-    def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
+    def _drop_feature(self, feature_key: FeatureKey) -> None:
         """Drop/delete all metadata for a feature.
 
         Backend-specific implementation for dropping feature metadata.
@@ -1595,19 +1597,19 @@ class MetadataStore(ABC):
         pass
 
     @abstractmethod
-    def _delete_metadata_impl(
+    def _delete_feature(
         self,
         feature_key: FeatureKey,
         filters: Sequence[nw.Expr] | None,
         *,
-        current_only: bool,
+        with_feature_history: bool,
     ) -> None:
         """Backend-specific hard delete implementation.
 
         Args:
             feature_key: Feature to delete from
             filters: Optional Narwhals expressions to filter records; None or empty deletes all
-            current_only: Whether to only affect the records with the current feature version
+            with_feature_history: If True, delete across all feature versions. If False, only current version.
         """
         raise NotImplementedError(f"{self.__class__.__name__} does not yet support hard delete.")
 
@@ -1634,32 +1636,32 @@ class MetadataStore(ABC):
         feature_key = self._resolve_feature_key(feature)
         if self._is_system_table(feature_key):
             raise NotImplementedError(f"{self.__class__.__name__} does not support deletes for system tables")
-        self._drop_feature_metadata_impl(feature_key)
+        self._drop_feature(feature_key)
 
-    def delete_metadata(
+    def delete(
         self,
         feature: CoercibleToFeatureKey,
         filters: Sequence[nw.Expr] | nw.Expr | None,
         *,
         soft: bool = True,
-        current_only: bool = True,
-        latest_only: bool = True,
+        with_feature_history: bool = False,
+        with_sample_history: bool = False,
     ) -> None:
         """Delete records matching provided filters.
 
         Performs a soft delete by default. This is achieved by setting metaxy_deleted_at to the current timestamp.
-        Subsequent [[MetadataStore.read_metadata]] calls would ignore these records by default.
+        Subsequent [[MetadataStore.read]] calls would ignore these records by default.
 
         Args:
             feature: Feature to delete from.
             filters: One or more Narwhals expressions or a sequence of expressions that determine which records to delete.
-                If `None`, deletes all records (subject to `current_only` and `latest_only` constraints).
+                If `None`, deletes all records (subject to `with_feature_history` and `with_sample_history` constraints).
             soft: Whether to perform a soft delete.
-            current_only: Whether to only affect the records with the current feature version. Set this to False to also affect historical metadata.
-            latest_only: Whether to deduplicate to the latest rows before soft deletion.
+            with_feature_history: If True, delete across all historical feature versions. If False (default), only current version.
+            with_sample_history: If True, include all historical materializations. If False (default), deduplicate to latest rows.
 
         !!! critical
-            By default, deletions target historical records. Even when `current_only` is set to `True`,
+            By default, deletions target historical records. Even when `with_feature_history` is `False`,
             records with the same feature version but an older `metaxy_created_at` would be targeted as
             well. Consider adding additional conditions to `filters` if you want to avoid that.
         """
@@ -1676,29 +1678,29 @@ class MetadataStore(ABC):
 
         if soft:
             # Soft delete: mark records with deletion timestamp, preserving original updated_at
-            lazy = self.read_metadata(
+            lazy = self.read(
                 feature_key,
                 filters=filter_list,
                 include_soft_deleted=False,
-                current_only=current_only,
-                latest_only=latest_only,
+                with_feature_history=with_feature_history,
+                with_sample_history=with_sample_history,
                 allow_fallback=True,
             )
             with self._shared_transaction_timestamp(soft_delete=True) as ts:
                 soft_deletion_marked = lazy.with_columns(
                     nw.lit(ts).alias(METAXY_DELETED_AT),
                 )
-                self.write_metadata(feature_key, soft_deletion_marked.to_native())
+                self.write(feature_key, soft_deletion_marked.to_native())
         else:
             # Hard delete: add version filter if needed, then delegate to backend
-            if current_only and not self._is_system_table(feature_key):
+            if not with_feature_history and not self._is_system_table(feature_key):
                 version_filter = nw.col(METAXY_FEATURE_VERSION) == current_graph().get_feature_version(feature_key)
                 filter_list = [version_filter, *filter_list]
 
-            self._delete_metadata_impl(feature_key, filter_list, current_only=current_only)
+            self._delete_feature(feature_key, filter_list, with_feature_history=with_feature_history)
 
     @abstractmethod
-    def read_metadata_in_store(
+    def _read_feature(
         self,
         feature: CoercibleToFeatureKey,
         *,
@@ -1735,7 +1737,7 @@ class MetadataStore(ABC):
         Raises:
             FeatureNotFoundError: If feature not found in the store
         """
-        lazy = self.read_metadata(
+        lazy = self.read(
             feature,
             allow_fallback=False,
         )
@@ -1761,7 +1763,7 @@ class MetadataStore(ABC):
         """
         self._check_open()
 
-        if self.read_metadata_in_store(feature) is not None:
+        if self._read_feature(feature) is not None:
             return True
 
         # Check fallback stores
@@ -1948,8 +1950,8 @@ class MetadataStore(ABC):
         *,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         global_filters: Sequence[nw.Expr] | None = None,
-        current_only: bool = False,
-        latest_only: bool = True,
+        with_feature_history: bool = True,
+        with_sample_history: bool = False,
     ) -> dict[str, int]:
         """Copy metadata from another store.
 
@@ -1967,10 +1969,10 @@ class MetadataStore(ABC):
             global_filters: Sequence of Narwhals filter expressions applied to all features.
                 These filters are combined with any feature-specific filters from `filters`.
                 Example: [nw.col("sample_uid").is_in(["s1", "s2"])]
-            current_only: If True, only copy rows with the current feature_version (as defined
-                in the loaded feature graph). Defaults to False to copy all versions.
-            latest_only: If True (default), deduplicate samples within `id_columns` groups
-                by keeping only the latest row per group (ordered by `metaxy_created_at`).
+            with_feature_history: If True (default), include rows from all historical feature versions.
+                If False, only copy rows with the current feature_version.
+            with_sample_history: If True, include all historical materializations per sample.
+                If False (default), deduplicate within `id_columns` groups by keeping latest.
 
         Returns:
             Dict with statistics: {"features_copied": int, "rows_copied": int}
@@ -2039,8 +2041,8 @@ class MetadataStore(ABC):
             features=features,
             filters=filters,
             global_filters=global_filters,
-            current_only=current_only,
-            latest_only=latest_only,
+            with_feature_history=with_feature_history,
+            with_sample_history=with_sample_history,
             logger=logger,
         )
 
@@ -2050,8 +2052,8 @@ class MetadataStore(ABC):
         features: Sequence[CoercibleToFeatureKey] | None,
         filters: Mapping[str, Sequence[nw.Expr]] | None,
         global_filters: Sequence[nw.Expr] | None,
-        current_only: bool,
-        latest_only: bool,
+        with_feature_history: bool,
+        with_sample_history: bool,
         logger,
     ) -> dict[str, int]:
         """Internal implementation of copy_metadata."""
@@ -2090,12 +2092,12 @@ class MetadataStore(ABC):
                             feature_filters.extend(filters[feature_key_str])
 
                     # Read metadata from source with all filters applied
-                    source_lazy = from_store.read_metadata(
+                    source_lazy = from_store.read(
                         feature_key,
                         filters=feature_filters if feature_filters else None,
                         allow_fallback=False,
-                        current_only=current_only,
-                        latest_only=latest_only,
+                        with_feature_history=with_feature_history,
+                        with_sample_history=with_sample_history,
                     )
 
                     # Collect to narwhals DataFrame to get row count
@@ -2107,7 +2109,7 @@ class MetadataStore(ABC):
                         continue
 
                     # Write to destination (preserving snapshot_version and feature_version)
-                    self.write_metadata(feature_key, source_df)
+                    self.write(feature_key, source_df)
 
                     features_copied += 1
                     total_rows += row_count
