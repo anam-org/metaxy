@@ -221,7 +221,6 @@ class TestMetaxyIOManagerHandleOutput:
 class TestMetaxyIOManagerLoadInput:
     """Test load_input functionality."""
 
-    @pytest.mark.skip(reason="returned upstack")
     def test_load_input_from_fallback_store(
         self,
         upstream_feature: type[mx.BaseFeature],
@@ -333,7 +332,7 @@ class TestMetaxyIOManagerLoadInput:
             # The store display should reference the fallback path
             store_display = input_metadata["metaxy/store"].value
             assert "fallback" in store_display
-            assert "primary" in store_display
+            assert "primary" not in store_display
 
             # Also verify dagster/uri points to fallback
             assert "dagster/uri" in input_metadata
