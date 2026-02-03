@@ -20,8 +20,6 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.system.storage import SystemTableStorage
     from metaxy.models.feature import FeatureGraph
 
-LOCK_FILE_NAME = "metaxy.lock"
-
 
 class LockedFeatureInfo(BaseModel):
     """Version metadata for a locked feature."""
@@ -79,17 +77,17 @@ def load_lock_file(config: MetaxyConfig) -> list[FeatureDefinition]:
     """
     from metaxy.models.feature import FeatureGraph
 
-    if config.config_file is None:
+    lock_path = config.lock_file
+    if lock_path is None:
         import warnings
 
         warnings.warn(
-            "Cannot load lock file: no config file path available. "
+            "Cannot load lock file: no config file path available and metaxy_lock_path is relative. "
             "External features from metaxy.lock will not be loaded.",
             stacklevel=2,
         )
         return []
 
-    lock_path = config.config_file.parent / LOCK_FILE_NAME
     if not lock_path.exists():
         return []
 

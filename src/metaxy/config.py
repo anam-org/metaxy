@@ -431,6 +431,11 @@ class MetaxyConfig(BaseSettings):
         description="Whether to automatically [sync external feature definitions][metaxy.sync_external_features] from the metadata during some operations. It's recommended to keep this enabled as it ensures versioning correctness for external feature definitions with a negligible performance impact.",
     )
 
+    metaxy_lock_path: str = PydanticField(
+        default="metaxy.lock",
+        description="Relative or absolute path to the lock file, resolved from the config file's location.",
+    )
+
     # Private attribute to track which config file was used (set by load())
     _config_file: Path | None = PrivateAttr(default=None)
 
@@ -441,6 +446,22 @@ class MetaxyConfig(BaseSettings):
         Returns None if the config was created directly (not via load()).
         """
         return self._config_file
+
+    @property
+    def lock_file(self) -> Path | None:
+        """The resolved lock file path.
+
+        Returns the absolute path if `metaxy_lock_path` is absolute, otherwise
+        resolves it relative to the config file's directory.
+
+        Returns None if the path is relative and no config file is set.
+        """
+        lock_path = Path(self.metaxy_lock_path)
+        if lock_path.is_absolute():
+            return lock_path
+        if self._config_file is None:
+            return None
+        return self._config_file.parent / lock_path
 
     def _load_plugins(self) -> None:
         """Load enabled plugins. Must be called after config is set."""
