@@ -1,12 +1,4 @@
-extend = "../pyproject.toml"
-
-# docs often benefit from shorter lines
-line-length = 88
-
-[lint]
-ignore = [
-  "E402", # examples often have imports in the middle
-]
+extend = "../../pyproject.toml"
 
 [lint.flake8-import-conventions]
 # Declare the banned `from` imports.

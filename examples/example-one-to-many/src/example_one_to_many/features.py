@@ -52,7 +52,9 @@ class FaceRecognition(
         deps=[
             mx.FeatureDep(
                 feature=VideoChunk,
-                fields_mapping=mx.FieldsMapping.specific(mapping={mx.FieldKey("faces"): {mx.FieldKey("frames")}}),
+                fields_mapping=mx.FieldsMapping.specific(
+                    mapping={mx.FieldKey("faces"): {mx.FieldKey("frames")}}
+                ),
             )
         ],
         fields=["faces"],

@@ -31,7 +31,9 @@ with config.get_store() as store:
         existing = store.read_metadata(parent_key, current_only=True)
         feature_version = mx.current_graph().get_feature_version(parent_key)
         if existing.collect().shape[0] > 0:
-            print(f"Metadata already exists for feature {parent_key} (feature_version: {feature_version[:16]}...)")
+            print(
+                f"Metadata already exists for feature {parent_key} (feature_version: {feature_version[:16]}...)"
+            )
             print("Skipping write to avoid duplicates")
             exit(0)
     except Exception:

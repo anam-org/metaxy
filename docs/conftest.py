@@ -9,15 +9,17 @@ they are tested via their source files.
 
 import re
 
+import metaxy as mx
+from metaxy.models.feature import FeatureGraph
 from sybil import Sybil
 from sybil.evaluators.python import PythonEvaluator
 from sybil.parsers.abstract.codeblock import AbstractCodeBlockParser
-from sybil.parsers.markdown.lexers import DirectiveInHTMLCommentLexer, RawFencedCodeBlockLexer
+from sybil.parsers.markdown.lexers import (
+    DirectiveInHTMLCommentLexer,
+    RawFencedCodeBlockLexer,
+)
 from sybil.parsers.markdown.skip import SkipParser
 from sybil.typing import Evaluator
-
-import metaxy as mx
-from metaxy.models.feature import FeatureGraph
 
 
 # Workaround for pytest-cases compatibility issue
@@ -35,7 +37,9 @@ def _patch_pytest_cases():
 
     original_getfixtureclosure = pc_plugin._getfixtureclosure
 
-    def patched_getfixtureclosure(fm, fixturenames, parentnode, ignore_args=frozenset()):
+    def patched_getfixtureclosure(
+        fm, fixturenames, parentnode, ignore_args=frozenset()
+    ):
         # Check if this is a SybilItem or similar non-function item
         # These don't have proper funcargs and cause assertion failures in pytest-cases
         from sybil.integration.pytest import SybilItem
@@ -43,9 +47,13 @@ def _patch_pytest_cases():
         if isinstance(parentnode, SybilItem):
             # Bypass pytest-cases entirely for Sybil items - use pytest's native implementation
             if pc_plugin.PYTEST8_OR_GREATER:
-                return fm.__class__.getfixtureclosure(fm, parentnode, fixturenames, ignore_args=ignore_args)
+                return fm.__class__.getfixtureclosure(
+                    fm, parentnode, fixturenames, ignore_args=ignore_args
+                )
             elif pc_plugin.PYTEST46_OR_GREATER:
-                return fm.__class__.getfixtureclosure(fm, fixturenames, parentnode, ignore_args=ignore_args)
+                return fm.__class__.getfixtureclosure(
+                    fm, fixturenames, parentnode, ignore_args=ignore_args
+                )
             else:
                 return fm.__class__.getfixtureclosure(fm, fixturenames, parentnode)
 
@@ -58,7 +66,10 @@ def _patch_pytest_cases():
 
         def patched_wrapper(fm, parentnode, initialnames, ignore_args):
             return patched_getfixtureclosure(
-                fm, fixturenames=initialnames, parentnode=parentnode, ignore_args=ignore_args
+                fm,
+                fixturenames=initialnames,
+                parentnode=parentnode,
+                ignore_args=ignore_args,
             )
 
         pc_plugin.getfixtureclosure = patched_wrapper  # type: ignore[invalid-assignment]
@@ -96,7 +107,9 @@ class CodeBlockWithAttributesParser(AbstractCodeBlockParser):
     additional attributes that MkDocs uses for styling.
     """
 
-    def __init__(self, language: str | None = None, evaluator: Evaluator | None = None) -> None:
+    def __init__(
+        self, language: str | None = None, evaluator: Evaluator | None = None
+    ) -> None:
         super().__init__(
             [
                 FencedCodeBlockWithAttributesLexer(),
@@ -141,13 +154,12 @@ def sybil_setup(namespace):
     banned in documentation examples.
     """
     import narwhals as nw
+    from metaxy.models import feature as feature_module
     from metaxy_testing.doctest_fixtures import (
         DocsStoreFixtures,
         MyFeature,
         register_doctest_fixtures,
     )
-
-    from metaxy.models import feature as feature_module
 
     # Create isolated graph and enter its context
     isolated_graph = FeatureGraph()

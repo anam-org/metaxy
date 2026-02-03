@@ -18,7 +18,12 @@ repos:
       entry: uv run ruff check --fix
       language: system
       pass_filenames: false
-    - id: format
+    - id: ruff-format
+      name: Ruff Format
+      entry: uv run ruff format
+      language: system
+      pass_filenames: false
+    - id: dprint-format
       name: Dprint Format
       entry: uv run dprint fmt
       language: system

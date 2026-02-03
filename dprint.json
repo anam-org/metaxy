@@ -3,9 +3,6 @@
   },
   "toml": {
   },
-  "ruff": {
-    "lineLength": 120
-  },
   "excludes": [
     "**/*.lock",
     "docs/reference/**",
@@ -15,7 +12,6 @@
   "plugins": [
     "https://plugins.dprint.dev/markdown-0.20.0.wasm",
     "https://plugins.dprint.dev/toml-0.7.0.wasm",
-    "https://plugins.dprint.dev/ruff-0.6.2.wasm",
     "https://plugins.dprint.dev/json-0.21.0.wasm"
   ]
 }

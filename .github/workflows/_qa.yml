@@ -76,6 +76,8 @@ jobs:
       - uses: dprint/check@v2.3
         with:
           dprint-version: 0.50.2
+      - name: Ruff Format
+        run: uv run --no-sync --with ruff ruff format --check --output-format=github
 
   typecheck:
     runs-on: depot-ubuntu-latest
@@ -263,6 +265,8 @@ jobs:
       - name: Build Docs
         id: docs
         run: uv run mkdocs build --strict
+      - name: Format Docs
+        run: uv run --no-sync --with ruff --with mdformat-ruff --with mdformat mdformat
 
   check:
     permissions: {}

@@ -41,7 +41,10 @@ def define_env(env):
                 index_file = item / "index.md"
                 if index_file.exists():
                     # Get the title from the first H1 heading in the file
-                    title = _get_page_title(index_file) or item.name.replace("-", " ").title()
+                    title = (
+                        _get_page_title(index_file)
+                        or item.name.replace("-", " ").title()
+                    )
                     rel_path = f"./{item.name}/index.md"
                     children.append(f"- [{title}]({rel_path})")
 

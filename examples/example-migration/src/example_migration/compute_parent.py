@@ -24,7 +24,9 @@ with config.get_store() as store:
     parent_data = pl.DataFrame(
         {
             "sample_uid": upstream_data["sample_uid"],
-            "metaxy_provenance_by_field": [{"embeddings": f"embed_{sid}"} for sid in upstream_data["sample_uid"]],
+            "metaxy_provenance_by_field": [
+                {"embeddings": f"embed_{sid}"} for sid in upstream_data["sample_uid"]
+            ],
         }
     )
 

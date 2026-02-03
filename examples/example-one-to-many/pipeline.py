@@ -41,9 +41,13 @@ def main():
         diff = store.resolve_update(VideoChunk)
         # the DataFrame dimensions matches Video (with ID column renamed)
 
-        print(f"Found {len(diff.added)} videos and {len(diff.changed)} videos that need chunking")
+        print(
+            f"Found {len(diff.added)} videos and {len(diff.changed)} videos that need chunking"
+        )
 
-        for row_dict in pl.concat([diff.added.to_polars(), diff.changed.to_polars()]).iter_rows(named=True):
+        for row_dict in pl.concat(
+            [diff.added.to_polars(), diff.changed.to_polars()]
+        ).iter_rows(named=True):
             print(f"Processing video: {row_dict}")
             # let's split each video to 3-5 chunks randomly
 
@@ -66,7 +70,8 @@ def main():
                     "video_id": [video_id] * len(chunk_paths),
                     "video_chunk_id": chunk_ids,
                     "path": chunk_paths,
-                    "metaxy_provenance_by_field": [provenance_by_field] * len(chunk_paths),
+                    "metaxy_provenance_by_field": [provenance_by_field]
+                    * len(chunk_paths),
                     "metaxy_provenance": [provenance] * len(chunk_paths),
                 }
             )
@@ -76,12 +81,16 @@ def main():
     # Process face recognition on video chunks
     with store:
         diff = store.resolve_update(FaceRecognition)
-        print(f"Found {len(diff.added)} video chunks and {len(diff.changed)} video chunks that need face recognition")
+        print(
+            f"Found {len(diff.added)} video chunks and {len(diff.changed)} video chunks that need face recognition"
+        )
 
         if len(diff.added) > 0:
             # simulate face detection on each chunk
             face_data = []
-            for row_dict in pl.concat([diff.added.to_polars(), diff.changed.to_polars()]).iter_rows(named=True):
+            for row_dict in pl.concat(
+                [diff.added.to_polars(), diff.changed.to_polars()]
+            ).iter_rows(named=True):
                 video_chunk_id = row_dict["video_chunk_id"]
                 provenance_by_field = row_dict["metaxy_provenance_by_field"]
                 provenance = row_dict["metaxy_provenance"]
