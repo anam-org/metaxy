@@ -310,7 +310,7 @@ class TestFeatureVersionTruncation:
         assert len(snapshot_full) == 8
 
         # Enable truncation
-        config = MetaxyConfig(hash_truncation_length=12)
+        config = MetaxyConfig(project="test", hash_truncation_length=12)
         with config.use():
             snapshot_truncated = graph.snapshot_version
             assert len(snapshot_truncated) == 12

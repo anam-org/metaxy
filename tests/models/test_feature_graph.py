@@ -1197,10 +1197,12 @@ class TestExternalDefinitions:
         )
 
         graph.add_feature_definition(external_def)
-        snapshot = graph.to_snapshot()
+        # Pass project explicitly since graph only has external features
+        snapshot = graph.to_snapshot(project="snapshot-proj")
 
         # External features should NOT be in the snapshot
         assert "snap/external" not in snapshot
+        assert len(snapshot) == 0
 
     def test_external_definition_coexists_with_class_definitions(self, graph: FeatureGraph):
         """External definitions and class-based definitions can coexist in the same graph."""

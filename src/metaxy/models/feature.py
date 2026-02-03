@@ -535,20 +535,42 @@ class FeatureGraph:
 
     @property
     def snapshot_version(self) -> str:
-        """Generate a snapshot version representing the current topology + versions of the feature graph.
+        """Generate a snapshot version for the current project's features.
 
-        Uses feature_version (includes dependency provenance) for all non-external features.
+        Uses feature_definition_version (spec + schema only), excluding external features.
+        The project is determined from MetaxyConfig.project if set, otherwise from the graph's
+        single project (via the `project` property).
+
+        Raises:
+            RuntimeError: If MetaxyConfig.project is not set and the graph is empty or spans multiple projects.
         """
-        all_features = sorted(
-            ((key, defn) for key, defn in self.feature_definitions_by_key.items() if not defn.is_external),
-            key=lambda x: x[0],
-        )
-        return self._compute_snapshot_version(all_features, use_definition_version=False)
+        from metaxy.config import MetaxyConfig
+
+        return self.get_project_snapshot_version(MetaxyConfig.get().project or self.project)
 
     @property
     def has_external_features(self) -> bool:
         """Check if any feature in the graph is an external feature."""
         return any(d.is_external for d in self.feature_definitions_by_key.values())
+
+    @property
+    def project(self) -> str:
+        """The single project for all non-external features in this graph.
+
+        Returns the project name if all non-external features belong to a single project.
+
+        Raises:
+            RuntimeError: If the graph is empty or features span multiple projects.
+        """
+        projects = {defn.project for defn in self.feature_definitions_by_key.values() if not defn.is_external}
+        if len(projects) == 0:
+            raise RuntimeError("FeatureGraph contains no non-external features.")
+        if len(projects) == 1:
+            return projects.pop()
+        raise RuntimeError(
+            f"FeatureGraph contains features from multiple projects ({', '.join(sorted(projects))}). "
+            "Use get_project_snapshot_version(project) to get the snapshot for a specific project."
+        )
 
     def to_snapshot(self, *, project: str | None = None) -> dict[str, SerializedFeature]:
         """Serialize graph to snapshot format.
@@ -560,9 +582,13 @@ class FeatureGraph:
         pushed to the metadata store.
 
         Args:
-            project: If provided, only include features from this project.
+            project: Only include features from this project. If not provided,
+                uses the graph's single project (via the `project` property).
 
         Returns: dictionary mapping feature_key (string) to feature data dict
+
+        Raises:
+            RuntimeError: If no project is provided and features span multiple projects.
 
         Example:
             ```py
@@ -575,6 +601,9 @@ class FeatureGraph:
             # True
             ```
         """
+        if project is None:
+            project = self.project
+
         snapshot: dict[str, SerializedFeature] = {}
 
         for feature_key, definition in self.feature_definitions_by_key.items():
@@ -582,8 +611,8 @@ class FeatureGraph:
             if definition.is_external:
                 continue
 
-            # Skip features from other projects if filtering by project
-            if project is not None and definition.project != project:
+            # Skip features from other projects
+            if definition.project != project:
                 continue
 
             feature_key_str = feature_key.to_string()

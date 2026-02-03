@@ -11,6 +11,7 @@ from pathlib import Path
 from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureDefinition, FeatureGraph
@@ -236,8 +237,8 @@ def test_project_snapshot_version_changes_when_own_feature_changes(tmp_path: Pat
     )
 
 
-def test_global_snapshot_version_still_includes_all_features(tmp_path: Path) -> None:
-    """Test that the global snapshot_version still includes all non-external features."""
+def test_snapshot_version_uses_configured_project(tmp_path: Path) -> None:
+    """Test that snapshot_version returns the project-specific version for the configured project."""
     graph = FeatureGraph()
     with graph.use():
 
@@ -259,15 +260,20 @@ def test_global_snapshot_version_still_includes_all_features(tmp_path: Path) -> 
         ):
             __metaxy_project__ = "project_b"
 
-        global_snapshot = graph.snapshot_version
         project_a_snapshot = graph.get_project_snapshot_version("project_a")
         project_b_snapshot = graph.get_project_snapshot_version("project_b")
 
-        # Global should be different from project-specific versions
-        assert global_snapshot != project_a_snapshot
-        assert global_snapshot != project_b_snapshot
+        # When project_a is configured, snapshot_version should match project_a's version
+        config_a = MetaxyConfig(project="project_a")
+        with config_a.use():
+            assert graph.snapshot_version == project_a_snapshot
 
-        # Project-specific versions should also be different from each other
+        # When project_b is configured, snapshot_version should match project_b's version
+        config_b = MetaxyConfig(project="project_b")
+        with config_b.use():
+            assert graph.snapshot_version == project_b_snapshot
+
+        # Project-specific versions should be different from each other
         assert project_a_snapshot != project_b_snapshot
 
 

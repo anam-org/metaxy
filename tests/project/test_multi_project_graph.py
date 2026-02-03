@@ -100,43 +100,114 @@ def test_graph_snapshot_includes_all_projects(
     MetaxyConfig.reset()
 
 
-def test_graph_snapshot_version_includes_all_projects(
-    snapshot: SnapshotAssertion,
+def test_graph_snapshot_version_uses_configured_project(
     graph: FeatureGraph,
-    project_a_package: ModuleType,
-    project_b_package: ModuleType,
 ) -> None:
-    """Test that graph.snapshot_version is computed from all features regardless of project."""
-    # Add features from multiple projects
-    create_feature_in_package("fake_project_a_pkg", ["feature_a"])
-    create_feature_in_package("fake_project_b_pkg", ["feature_b"])
+    """Test that graph.snapshot_version only includes features from the configured project."""
 
-    # Get snapshot version
-    snapshot_version = graph.snapshot_version
+    # Add features from multiple projects with __metaxy_project__ defined in class body
+    class FeatureA(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["feature_a"]),
+            fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+        ),
+    ):
+        __metaxy_project__ = "project_a"
 
-    # Should be deterministic
-    assert len(snapshot_version) == 8  # SHA256 hex
-    assert snapshot_version == snapshot
+    class FeatureB(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["feature_b"]),
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+        ),
+    ):
+        __metaxy_project__ = "project_b"
 
-    # Verify it's based on all features
-    # If we create a graph with only one feature, it should be different
-    graph_single = FeatureGraph()
+    # With project_a configured, snapshot_version should only include project_a features
+    config_a = MetaxyConfig(project="project_a")
+    with config_a.use():
+        snapshot_a = graph.snapshot_version
+        assert len(snapshot_a) == 8  # SHA256 hex truncated
 
-    with graph_single.use():
+    # With project_b configured, snapshot should be different
+    config_b = MetaxyConfig(project="project_b")
+    with config_b.use():
+        snapshot_b = graph.snapshot_version
+        assert len(snapshot_b) == 8
 
-        class FeatureSingle(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["feature_a"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
+    # Different projects should produce different snapshots
+    assert snapshot_a != snapshot_b
 
-    snapshot_version_single = graph_single.snapshot_version
+    # Verify snapshot matches project-specific version
+    assert snapshot_a == graph.get_project_snapshot_version("project_a")
+    assert snapshot_b == graph.get_project_snapshot_version("project_b")
 
-    # Should be different (only one feature vs two)
-    assert snapshot_version != snapshot_version_single
+    MetaxyConfig.reset()
+
+
+def test_graph_snapshot_version_raises_with_multiple_projects_and_no_config(
+    graph: FeatureGraph,
+) -> None:
+    """Test that graph.snapshot_version raises when features span multiple projects and no project is configured."""
+    import pytest
+
+    class FeatureA(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["feature_a"]),
+            fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+        ),
+    ):
+        __metaxy_project__ = "project_a"
+
+    class FeatureB(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["feature_b"]),
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+        ),
+    ):
+        __metaxy_project__ = "project_b"
+
+    # Without a project configured and multiple projects in graph, snapshot_version should raise
+    config = MetaxyConfig()
+    with config.use():
+        with pytest.raises(RuntimeError, match="multiple projects"):
+            _ = graph.snapshot_version
+
+    MetaxyConfig.reset()
+
+
+def test_graph_snapshot_version_works_with_single_project_no_config(
+    graph: FeatureGraph,
+) -> None:
+    """Test that graph.snapshot_version works when all features belong to a single project."""
+
+    class FeatureA(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["feature_a"]),
+            fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+        ),
+    ):
+        __metaxy_project__ = "project_a"
+
+    class FeatureA2(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["feature_a2"]),
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+        ),
+    ):
+        __metaxy_project__ = "project_a"
+
+    # With single project in graph, snapshot_version should work without config
+    config = MetaxyConfig()
+    with config.use():
+        snapshot = graph.snapshot_version
+        assert len(snapshot) == 8
+        assert snapshot == graph.get_project_snapshot_version("project_a")
 
     MetaxyConfig.reset()
 
