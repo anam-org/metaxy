@@ -6,7 +6,7 @@
     "events": [
       {
         "type": "graph_pushed",
-        "snapshot_version": "da8e3925",
+        "snapshot_version": "e19d5566",
         "graph": {
           "video/raw": {
             "metaxy_feature_version": "d842b740",
@@ -136,7 +136,7 @@
             }
           }
         },
-        "timestamp": "2026-02-02T19:20:05.471293",
+        "timestamp": "2026-02-03T13:26:28.609914",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -146,7 +146,7 @@
         "returncode": 0,
         "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '23124187', 'frames': '24116928'}, 'metaxy_provenance': '40433844', 'metaxy_data_version': '40433844', 'metaxy_data_version_by_field': {'audio': '23124187', 'frames': '24116928'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '18611808', 'frames': '18345318'}, 'metaxy_provenance': '12032307', 'metaxy_data_version': '12032307', 'metaxy_data_version_by_field': {'audio': '18611808', 'frames': '18345318'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '24638180', 'frames': '16645902'}, 'metaxy_provenance': '21310928', 'metaxy_data_version': '21310928', 'metaxy_data_version_by_field': {'audio': '24638180', 'frames': '16645902'}}\nWriting 3 chunks for video 3\nFound 11 video chunks and 0 video chunks that need face recognition\nWriting face recognition results for 11 chunks\n",
         "stderr": "",
-        "timestamp": "2026-02-02T19:20:06.145555",
+        "timestamp": "2026-02-03T13:26:29.257573",
         "scenario_name": "Initial pipeline run",
         "step_name": "initial_run"
       },
@@ -156,13 +156,13 @@
         "returncode": 0,
         "stdout": "Found 0 videos and 0 videos that need chunking\nFound 0 video chunks and 0 video chunks that need face recognition\n",
         "stderr": "",
-        "timestamp": "2026-02-02T19:20:06.756549",
+        "timestamp": "2026-02-03T13:26:29.869841",
         "scenario_name": "Idempotent rerun",
         "step_name": "idempotent_run"
       },
       {
         "type": "graph_pushed",
-        "snapshot_version": "66634fde",
+        "snapshot_version": "5ddc1a84",
         "graph": {
           "video/raw": {
             "metaxy_feature_version": "6e5a4ab8",
@@ -292,15 +292,15 @@
             }
           }
         },
-        "timestamp": "2026-02-02T19:20:07.487095",
+        "timestamp": "2026-02-03T13:26:30.559714",
         "scenario_name": "Code change - audio field only",
         "step_name": "update_audio_version"
       },
       {
         "type": "patch_applied",
         "patch_path": "patches/01_update_video_code_version.patch",
-        "before_snapshot": "da8e3925",
-        "after_snapshot": "66634fde",
+        "before_snapshot": "e19d5566",
+        "after_snapshot": "5ddc1a84",
         "before_graph": {
           "video/raw": {
             "metaxy_feature_version": "d842b740",
@@ -559,7 +559,7 @@
             }
           }
         },
-        "timestamp": "2026-02-02T19:20:07.500753",
+        "timestamp": "2026-02-03T13:26:30.571262",
         "scenario_name": "Code change - audio field only",
         "step_name": "update_audio_version"
       },
@@ -569,7 +569,7 @@
         "returncode": 0,
         "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '23124187', 'frames': '24116928'}, 'metaxy_provenance': '40433844', 'metaxy_data_version': '40433844', 'metaxy_data_version_by_field': {'audio': '23124187', 'frames': '24116928'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '18611808', 'frames': '18345318'}, 'metaxy_provenance': '12032307', 'metaxy_data_version': '12032307', 'metaxy_data_version_by_field': {'audio': '18611808', 'frames': '18345318'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '24638180', 'frames': '16645902'}, 'metaxy_provenance': '21310928', 'metaxy_data_version': '21310928', 'metaxy_data_version_by_field': {'audio': '24638180', 'frames': '16645902'}}\nWriting 3 chunks for video 3\nFound 0 video chunks and 0 video chunks that need face recognition\n",
         "stderr": "",
-        "timestamp": "2026-02-02T19:20:08.183364",
+        "timestamp": "2026-02-03T13:26:31.209305",
         "scenario_name": "Code change - audio field only",
         "step_name": "recompute_after_audio_change"
       },
@@ -579,7 +579,7 @@
         "returncode": 0,
         "stdout": "Found 0 videos and 0 videos that need chunking\nFound 0 video chunks and 0 video chunks that need face recognition\n",
         "stderr": "",
-        "timestamp": "2026-02-02T19:20:08.830087",
+        "timestamp": "2026-02-03T13:26:31.806794",
         "scenario_name": "Final idempotent check",
         "step_name": "final_idempotent_check"
       }

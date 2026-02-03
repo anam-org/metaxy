@@ -4,7 +4,7 @@
     'feature_key': 'recorded/feature',
     'metaxy_definition_version': 'db21445f',
     'metaxy_feature_version': '3599b5f9',
-    'metaxy_snapshot_version': '0964bdc3',
+    'metaxy_snapshot_version': 'd63c89ea',
   })
 # ---
 # name: test_feature_spec_version_deterministic

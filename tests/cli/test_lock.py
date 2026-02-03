@@ -80,7 +80,7 @@ database = "{store_path}"
         with consumer_project.with_features(consumer_features):
             result = consumer_project.run_cli(["lock"])
         assert result.returncode == 0
-        assert "Locked 1 feature(s)" in result.stderr
+        assert "Written 1 external feature(s)" in result.stderr
 
         # Verify lock file was created
         lock_file = consumer_project.project_dir / "metaxy.lock"
@@ -210,7 +210,7 @@ database = "{store_path}"
         with project.with_features(local_features):
             result = project.run_cli(["lock"], check=False)
         assert result.returncode == 0
-        assert "Created empty lock file" in result.stderr
+        assert "Written 0 external feature(s)" in result.stderr
 
         # Verify lock file was created with empty features
         lock_file = project.project_dir / "metaxy.lock"
@@ -298,7 +298,7 @@ database = "{store_path}"
         with consumer_project.with_features(consumer_features):
             result = consumer_project.run_cli(["lock"])
         assert result.returncode == 0
-        assert "Locked 2 feature(s)" in result.stderr
+        assert "Written 2 external feature(s)" in result.stderr
 
         # Verify lock file content
         lock_file = consumer_project.project_dir / "metaxy.lock"
@@ -398,7 +398,7 @@ database = "{store_path}"
         with consumer_project.with_features(consumer_features):
             result = consumer_project.run_cli(["lock"])
         assert result.returncode == 0
-        assert "Locked 3 feature(s)" in result.stderr
+        assert "Written 3 external feature(s)" in result.stderr
 
         # Verify all three features are in lock file
         lock_file = consumer_project.project_dir / "metaxy.lock"

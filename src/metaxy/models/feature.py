@@ -485,24 +485,87 @@ class FeatureGraph:
             return list(reversed(result))
         return result
 
-    @property
-    def snapshot_version(self) -> str:
-        """Generate a snapshot version representing the current topology + versions of the feature graph"""
-        if len(self.feature_definitions_by_key) == 0:
+    def _compute_snapshot_version(
+        self,
+        features: list[tuple[FeatureKey, FeatureDefinition]],
+    ) -> str:
+        """Compute a snapshot version hash for a list of features.
+
+        Args:
+            features: List of (key, definition) tuples, should be sorted by key.
+        """
+        if not features:
             return "empty"
 
         hasher = hashlib.sha256()
-        for feature_key in sorted(self.feature_definitions_by_key.keys()):
+        for feature_key, definition in features:
             hasher.update(feature_key.to_string().encode("utf-8"))
-            hasher.update(self.get_feature_version(feature_key).encode("utf-8"))
+            hasher.update(definition.feature_definition_version.encode("utf-8"))
+
         return truncate_hash(hasher.hexdigest())
+
+    def get_project_snapshot_version(self, project: str) -> str:
+        """Generate a snapshot version for features belonging to a specific project.
+
+        Uses feature_definition_version (spec + schema only), excluding external features.
+        This makes the project snapshot independent of external feature changes.
+
+        Args:
+            project: The project name to compute snapshot version for.
+
+        Returns:
+            A hash representing the project's feature definitions.
+        """
+        project_features = sorted(
+            (
+                (key, defn)
+                for key, defn in self.feature_definitions_by_key.items()
+                if defn.project == project and not defn.is_external
+            ),
+            key=lambda x: x[0],
+        )
+        return self._compute_snapshot_version(project_features)
+
+    @property
+    def snapshot_version(self) -> str:
+        """Generate a snapshot version for the current project's features.
+
+        Uses feature_definition_version (spec + schema only), excluding external features.
+        The project is determined from MetaxyConfig.project if set, otherwise from the graph's
+        single project (via the `project` property).
+
+        Raises:
+            RuntimeError: If MetaxyConfig.project is not set and the graph is empty or spans multiple projects.
+        """
+        from metaxy.config import MetaxyConfig
+
+        return self.get_project_snapshot_version(MetaxyConfig.get().project or self.project)
 
     @property
     def has_external_features(self) -> bool:
         """Check if any feature in the graph is an external feature."""
         return any(d.is_external for d in self.feature_definitions_by_key.values())
 
-    def to_snapshot(self) -> dict[str, SerializedFeature]:
+    @property
+    def project(self) -> str:
+        """The single project for all non-external features in this graph.
+
+        Returns the project name if all non-external features belong to a single project.
+
+        Raises:
+            RuntimeError: If the graph is empty or features span multiple projects.
+        """
+        projects = {defn.project for defn in self.feature_definitions_by_key.values() if not defn.is_external}
+        if len(projects) == 0:
+            raise RuntimeError("FeatureGraph contains no non-external features.")
+        if len(projects) == 1:
+            return projects.pop()
+        raise RuntimeError(
+            f"FeatureGraph contains features from multiple projects ({', '.join(sorted(projects))}). "
+            "Use get_project_snapshot_version(project) to get the snapshot for a specific project."
+        )
+
+    def to_snapshot(self, *, project: str | None = None) -> dict[str, SerializedFeature]:
         """Serialize graph to snapshot format.
 
         Returns a dict mapping feature_key (string) to feature data dict,
@@ -511,19 +574,19 @@ class FeatureGraph:
         External features are excluded from the snapshot as they should not be
         pushed to the metadata store.
 
-        Returns: dictionary mapping feature_key (string) to feature data dict
+        Args:
+            project: Only include features from this project. If not provided,
+                uses the graph's single project (via the `project` property).
 
-        Example:
-            ```py
-            class VideoProcessing(mx.BaseFeature, spec=mx.FeatureSpec(key="video_processing", id_columns=["id"])):
-                id: str
+        Returns:
+            Dictionary mapping feature_key (string) to feature data dict.
 
-
-            snapshot = graph.to_snapshot()
-            "video_processing" in snapshot
-            # True
-            ```
+        Raises:
+            RuntimeError: If no project is provided and features span multiple projects.
         """
+        if project is None:
+            project = self.project
+
         snapshot: dict[str, SerializedFeature] = {}
 
         for feature_key, definition in self.feature_definitions_by_key.items():
@@ -531,19 +594,9 @@ class FeatureGraph:
             if definition.is_external:
                 continue
 
-            # We should never push a feature if it has an external feature as a dependency
-            # unless the external feature has a provenance override, which allows version
-            # computation without loading the entire upstream chain.
-            for dep in definition.spec.deps or []:
-                from metaxy.utils.exceptions import MetaxyInvariantViolationError
-
-                dep_definition = self.feature_definitions_by_key[dep.feature]
-                if dep_definition.is_external and not dep_definition.has_provenance_override:
-                    raise MetaxyInvariantViolationError(
-                        f"Feature '{feature_key}' depends on external feature '{dep.feature}'. "
-                        "External dependencies must be replaced with actual feature definitions "
-                        "loaded from the metadata store prior to creating a snapshot."
-                    )
+            # Skip features from other projects
+            if definition.project != project:
+                continue
 
             feature_key_str = feature_key.to_string()
             feature_spec_dict = definition.spec.model_dump(mode="json")

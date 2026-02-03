@@ -66,7 +66,9 @@ def test_record_snapshot_first_time(tmp_path: Path):
             assert isinstance(result, SnapshotPushResult)
             assert result.already_pushed is False
             assert result.updated_features == []
-            assert result.snapshot_version == graph.snapshot_version
+            # push_graph_snapshot now returns project-scoped snapshot version
+            project = graph.feature_definitions_by_key[FeatureKey(["video", "files"])].project
+            assert result.snapshot_version == graph.get_project_snapshot_version(project)
 
             # Verify data was written to feature_versions table
             from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
@@ -77,7 +79,7 @@ def test_record_snapshot_first_time(tmp_path: Path):
 
             assert versions_df.height == 1
             assert versions_df["feature_key"][0] == "video/files"
-            assert versions_df["metaxy_snapshot_version"][0] == graph.snapshot_version
+            assert versions_df["metaxy_snapshot_version"][0] == graph.get_project_snapshot_version(project)
 
 
 def test_record_snapshot_metadata_only_changes(tmp_path: Path):
@@ -88,6 +90,10 @@ def test_record_snapshot_metadata_only_changes(tmp_path: Path):
 
     Example: Adding rename={"old": "new"} to a FeatureDep
     This changes feature_spec_version but NOT feature_version.
+
+    Note: With project-scoped snapshot versions, spec changes (like adding rename)
+    now create a NEW snapshot version since we use feature_definition_version
+    (which includes the full spec) instead of feature_version (provenance only).
     """
     from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
@@ -114,7 +120,9 @@ def test_record_snapshot_metadata_only_changes(tmp_path: Path):
         ):
             pass
 
-        snapshot_v1 = graph_v1.snapshot_version
+        # Get project from the features
+        project = graph_v1.feature_definitions_by_key[FeatureKey(["upstream"])].project
+        snapshot_v1 = graph_v1.get_project_snapshot_version(project)
         feature_version_v1 = Downstream.feature_version()
         spec_version_v1 = Downstream.feature_spec_version()
 
@@ -122,6 +130,7 @@ def test_record_snapshot_metadata_only_changes(tmp_path: Path):
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
+            assert result1.snapshot_version == snapshot_v1
 
             # Verify initial state
             versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
@@ -129,8 +138,9 @@ def test_record_snapshot_metadata_only_changes(tmp_path: Path):
             versions_df = versions_lazy.collect().to_polars()
             assert versions_df.height == 2  # upstream + downstream
 
-            # Version 2: Add rename (metadata-only change)
-            # This changes spec_version but NOT feature_version or snapshot_version
+            # Version 2: Add rename (spec change)
+            # This changes spec_version and feature_definition_version,
+            # which means the project snapshot version also changes
             graph_v2 = FeatureGraph()
             with graph_v2.use():
 
@@ -158,42 +168,42 @@ def test_record_snapshot_metadata_only_changes(tmp_path: Path):
                 ):
                     pass
 
-                snapshot_v2 = graph_v2.snapshot_version
+                project2 = graph_v2.feature_definitions_by_key[FeatureKey(["upstream"])].project
+                snapshot_v2 = graph_v2.get_project_snapshot_version(project2)
                 feature_version_v2 = Downstream2.feature_version()
                 spec_version_v2 = Downstream2.feature_spec_version()
 
-                # Verify: snapshot_version and feature_version are SAME
-                assert snapshot_v2 == snapshot_v1, "Snapshot version should be unchanged (metadata-only change)"
+                # feature_version stays the same (rename doesn't affect provenance)
                 assert feature_version_v2 == feature_version_v1, (
-                    "Feature version should be unchanged (metadata-only change)"
+                    "Feature version should be unchanged (rename doesn't affect provenance)"
                 )
 
-                # But spec_version is DIFFERENT
+                # But spec_version is DIFFERENT (spec changed)
                 assert spec_version_v2 != spec_version_v1, "Spec version should change (metadata changed)"
 
-                # Second push - should detect metadata-only change
+                # And project snapshot version is DIFFERENT (uses definition_version which includes spec)
+                assert snapshot_v2 != snapshot_v1, "Project snapshot version should change (definition_version changed)"
+
+                # Second push - this is now a NEW snapshot, not just a metadata update
                 result2 = SystemTableStorage(store).push_graph_snapshot()
 
-                # Verify result
-                # Class name changes update feature info but don't change snapshot_version
-                assert result2.already_pushed is True  # Same snapshot_version
-                assert "downstream" in result2.updated_features
-                assert "upstream" in result2.updated_features  # Class name changed
+                # Verify result - this is a new snapshot, not already pushed
+                assert result2.already_pushed is False
                 assert result2.snapshot_version == snapshot_v2
 
-                # Verify new rows were appended
+                # Verify new rows were added (new snapshot)
                 versions_lazy_after = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
                 assert versions_lazy_after is not None
                 versions_df_after = versions_lazy_after.collect().to_polars()
-                # Old rows + new rows for both (class names changed)
+                # Old rows (2) + new rows (2) = 4
                 assert versions_df_after.height == 4
 
-                # Verify both have new rows
+                # Verify both features have rows for both snapshots
                 downstream_rows = versions_df_after.filter(pl.col("feature_key") == "downstream")
-                assert downstream_rows.height == 2  # Two versions of downstream
+                assert downstream_rows.height == 2
 
                 upstream_rows = versions_df_after.filter(pl.col("feature_key") == "upstream")
-                assert upstream_rows.height == 2  # Two versions of upstream (class name changed)
+                assert upstream_rows.height == 2
 
 
 def test_record_snapshot_no_changes(tmp_path: Path):
@@ -224,9 +234,10 @@ def test_record_snapshot_no_changes(tmp_path: Path):
             result2 = SystemTableStorage(store).push_graph_snapshot()
 
             # Verify result
+            project = graph.feature_definitions_by_key[FeatureKey(["video", "files"])].project
             assert result2.already_pushed is True
             assert result2.updated_features == []
-            assert result2.snapshot_version == graph.snapshot_version
+            assert result2.snapshot_version == graph.get_project_snapshot_version(project)
 
             # Verify no new rows appended
             from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
@@ -238,9 +249,10 @@ def test_record_snapshot_no_changes(tmp_path: Path):
 
 
 def test_record_snapshot_partial_metadata_changes(tmp_path: Path):
-    """Test metadata changes for SOME features (not all).
+    """Test spec changes for SOME features create a new snapshot version.
 
-    Only changed features should appear in updated_features.
+    With project-scoped snapshot versions, spec changes (like adding rename)
+    now create a NEW snapshot version since we use feature_definition_version.
     """
     from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
@@ -277,11 +289,16 @@ def test_record_snapshot_partial_metadata_changes(tmp_path: Path):
         ):
             pass
 
+        project = graph_v1.feature_definitions_by_key[FeatureKey(["feature_a"])].project
+        snapshot_v1 = graph_v1.get_project_snapshot_version(project)
+
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
+            assert result1.snapshot_version == snapshot_v1
 
-            # Version 2: Change metadata for FeatureB and FeatureC (not FeatureA)
+            # Version 2: Change specs for FeatureB and FeatureC (add rename/columns)
+            # This creates a NEW snapshot version since definition_version changes
             graph_v2 = FeatureGraph()
             with graph_v2.use():
 
@@ -324,28 +341,34 @@ def test_record_snapshot_partial_metadata_changes(tmp_path: Path):
                 ):
                     pass
 
+                project2 = graph_v2.feature_definitions_by_key[FeatureKey(["feature_a"])].project
+                snapshot_v2 = graph_v2.get_project_snapshot_version(project2)
+
+                # Snapshot version should be different (spec changes affect definition_version)
+                assert snapshot_v2 != snapshot_v1, "Spec changes should create new snapshot_version"
+
                 result2 = SystemTableStorage(store).push_graph_snapshot()
 
-                # Verify: all changed due to class name changes (info updates, not computational)
-                assert result2.already_pushed is True  # Same snapshot_version
-                assert "feature_b" in result2.updated_features
-                assert "feature_c" in result2.updated_features
-                assert "feature_a" in result2.updated_features  # Class name changed
-                assert len(result2.updated_features) == 3
+                # This is a NEW snapshot, not just a metadata update
+                assert result2.already_pushed is False
+                assert result2.snapshot_version == snapshot_v2
 
-                # Verify correct rows appended
+                # Verify correct rows appended (3 original + 3 new = 6)
                 versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
                 assert versions_lazy is not None
                 versions_df = versions_lazy.collect().to_polars()
-                # Original 3 + 3 new rows (all class names changed)
                 assert versions_df.height == 6
 
 
 def test_record_snapshot_append_only_behavior(tmp_path: Path):
-    """Test append-only behavior: old rows preserved, new rows added with same snapshot_version."""
+    """Test append-only behavior: old rows preserved when new snapshot is pushed.
+
+    With project-scoped snapshot versions, spec changes create new snapshot versions.
+    This test verifies that multiple snapshots can coexist in the store.
+    """
     from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
-    # Start with a proper setup for metadata-only change
+    # Start with version 1
     graph_v1 = FeatureGraph()
     with graph_v1.use():
 
@@ -368,7 +391,8 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
         ):
             pass
 
-        snapshot_v1 = graph_v1.snapshot_version
+        project = graph_v1.feature_definitions_by_key[FeatureKey(["upstream"])].project
+        snapshot_v1 = graph_v1.get_project_snapshot_version(project)
 
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # Push v1
@@ -384,7 +408,7 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
             assert my_feature_rows_v1.height == 1
             timestamp_v1 = my_feature_rows_v1["recorded_at"][0]
 
-            # Change metadata (rename in FeatureDep)
+            # Change spec (rename in FeatureDep) - creates NEW snapshot version
             graph_v2 = FeatureGraph()
             with graph_v2.use():
 
@@ -404,7 +428,7 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
                         deps=[
                             FeatureDep(
                                 feature=FeatureKey(["upstream"]),
-                                rename={"value": "new_name"},  # Metadata change
+                                rename={"value": "new_name"},  # Spec change
                             )
                         ],
                         fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
@@ -412,30 +436,33 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
                 ):
                     pass
 
-                snapshot_v2 = graph_v2.snapshot_version
-                assert snapshot_v2 == snapshot_v1, "Metadata-only change should keep same snapshot_version"
+                project2 = graph_v2.feature_definitions_by_key[FeatureKey(["upstream"])].project
+                snapshot_v2 = graph_v2.get_project_snapshot_version(project2)
+                # Spec changes now create new snapshot versions
+                assert snapshot_v2 != snapshot_v1, "Spec change should create new snapshot_version"
 
-                SystemTableStorage(store).push_graph_snapshot()
+                result2 = SystemTableStorage(store).push_graph_snapshot()
+                assert result2.snapshot_version == snapshot_v2
 
                 # Verify append-only: old rows still exist
                 versions_lazy_v2 = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
                 assert versions_lazy_v2 is not None
                 versions_df_v2 = versions_lazy_v2.collect().to_polars()
 
-                # Total rows: original 2 (upstream + my_feature) + 2 new (upstream2 + my_feature2)
-                # Class name changes trigger re-push even with same feature_key
+                # Total rows: original 2 + 2 new = 4
                 assert versions_df_v2.height == 4
 
                 # Find my_feature rows
                 my_feature_rows = versions_df_v2.filter(pl.col("feature_key") == "my_feature")
 
-                # Should have 2 rows: old + new
+                # Should have 2 rows: one for each snapshot
                 assert my_feature_rows.height == 2
 
-                # All rows have same snapshot_version
-                assert my_feature_rows["metaxy_snapshot_version"].unique().to_list() == [snapshot_v1]
+                # Different snapshot_versions
+                snapshot_versions = set(my_feature_rows["metaxy_snapshot_version"].to_list())
+                assert snapshot_versions == {snapshot_v1, snapshot_v2}
 
-                # But different definition_versions
+                # Different definition_versions
                 definition_versions = sorted(my_feature_rows["metaxy_definition_version"].to_list())
                 assert len(definition_versions) == 2
                 assert definition_versions[0] != definition_versions[1]
@@ -463,7 +490,8 @@ def test_record_snapshot_computational_change(tmp_path: Path):
         ):
             pass
 
-        snapshot_v1 = graph_v1.snapshot_version
+        project = graph_v1.feature_definitions_by_key[FeatureKey(["my_feature"])].project
+        snapshot_v1 = graph_v1.get_project_snapshot_version(project)
 
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
@@ -482,7 +510,8 @@ def test_record_snapshot_computational_change(tmp_path: Path):
                 ):
                     pass
 
-                snapshot_v2 = graph_v2.snapshot_version
+                project2 = graph_v2.feature_definitions_by_key[FeatureKey(["my_feature"])].project
+                snapshot_v2 = graph_v2.get_project_snapshot_version(project2)
 
                 # Verify snapshot_version changed
                 assert snapshot_v2 != snapshot_v1, "Computational change should create new snapshot_version"
@@ -605,13 +634,11 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion, t
 
 
 def test_feature_info_changes_trigger_repush(tmp_path: Path):
-    """Test that changing feature info (metadata, descriptions) triggers feature repush.
+    """Test that changing feature info (metadata in spec) creates a new snapshot.
 
-    Verifies that:
-    1. Feature info changes (like metadata) are detected as updates
-    2. recorded_at timestamp is updated on repush
-    3. already_pushed=True (same snapshot_version)
-    4. Feature appears in updated_features
+    With project-scoped snapshot versions using feature_definition_version,
+    spec.metadata changes now create NEW snapshot versions since they change
+    the spec hash.
     """
     import time
 
@@ -631,7 +658,8 @@ def test_feature_info_changes_trigger_repush(tmp_path: Path):
         ):
             pass
 
-        snapshot_v1 = graph_v1.snapshot_version
+        project = graph_v1.feature_definitions_by_key[FeatureKey(["test_feature"])].project
+        snapshot_v1 = graph_v1.get_project_snapshot_version(project)
 
         # First push
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
@@ -667,24 +695,24 @@ def test_feature_info_changes_trigger_repush(tmp_path: Path):
                 ):
                     pass
 
-                snapshot_v2 = graph_v2.snapshot_version
+                project2 = graph_v2.feature_definitions_by_key[FeatureKey(["test_feature"])].project
+                snapshot_v2 = graph_v2.get_project_snapshot_version(project2)
 
-                # Snapshot version should be same (metadata not in feature_version)
-                assert snapshot_v1 == snapshot_v2
+                # Snapshot version should be DIFFERENT (metadata is part of spec which affects definition_version)
+                assert snapshot_v1 != snapshot_v2, "Metadata changes should create new snapshot_version"
 
-                # Second push - should detect info change
+                # Second push - this is a NEW snapshot
                 result2 = SystemTableStorage(store).push_graph_snapshot()
 
-                # Verify result
-                assert result2.already_pushed is True  # Same snapshot_version
-                assert "test_feature" in result2.updated_features  # Feature info updated
+                # Verify result - new snapshot
+                assert result2.already_pushed is False
                 assert result2.snapshot_version == snapshot_v2
 
-                # Verify new row was appended with updated recorded_at
+                # Verify new row was appended
                 versions_lazy2 = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
                 assert versions_lazy2 is not None
                 versions_df2 = versions_lazy2.collect().to_polars()
-                assert versions_df2.height == 2  # Original + updated
+                assert versions_df2.height == 2  # Original + new
 
                 # Get both recorded_at timestamps
                 feature_rows = versions_df2.filter(pl.col("feature_key") == "test_feature").sort("recorded_at")
@@ -748,3 +776,67 @@ def test_push_graph_snapshot_requires_project_for_multi_project_graph(tmp_path: 
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             with pytest.raises(ValueError, match="Project is required.*multiple projects"):
                 SystemTableStorage(store).push_graph_snapshot()
+
+
+def test_push_ignores_other_project_features_with_unresolved_deps(tmp_path: Path):
+    """Test push succeeds even when graph has features from other projects with unresolved deps.
+
+    Regression test for bug where feature discovery picks up features from other projects
+    in the same codebase. When those features have dependencies on other features from their
+    own project (not in the graph), push should succeed by only computing versions for
+    the target project's features.
+
+    The bug occurred because to_snapshot() processed ALL non-external features, including
+    features from other projects that were discovered but had unresolved dependencies.
+    """
+    from metaxy.models.feature_definition import FeatureDefinition
+    from metaxy.models.feature_spec import FeatureSpec
+
+    graph = FeatureGraph()
+
+    # Create a feature from "my_project" that we want to push
+    my_spec = FeatureSpec(
+        key=FeatureKey(["my_feature"]),
+        id_columns=["id"],
+        fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+    )
+    my_def = FeatureDefinition(
+        spec=my_spec,
+        feature_schema={"properties": {"value": {"type": "string"}}},
+        feature_class_path="my_project.MyFeature",
+        project="my_project",
+    )
+    graph.add_feature_definition(my_def)
+
+    # Create a feature from "other_project" that depends on a feature NOT in the graph.
+    # This simulates the bug scenario: feature discovery picks up a feature from another
+    # project that has dependencies on its own project's features (not available here).
+    other_spec = FeatureSpec(
+        key=FeatureKey(["other_feature"]),
+        id_columns=["id"],
+        fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+        # This depends on a feature that's NOT in the graph
+        deps=[FeatureDep(feature=FeatureKey(["missing", "dependency"]))],
+    )
+    other_def = FeatureDefinition(
+        spec=other_spec,
+        feature_schema={"properties": {"data": {"type": "string"}}},
+        feature_class_path="other_project.OtherFeature",
+        project="other_project",
+    )
+    graph.add_feature_definition(other_def)
+
+    with graph.use():
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            # This should succeed: we're only pushing my_project, so the unresolved
+            # dependency in other_project's feature should be ignored
+            result = SystemTableStorage(store).push_graph_snapshot(project="my_project")
+
+            assert not result.already_pushed
+            # Only my_feature should be in the pushed snapshot
+            features_df = SystemTableStorage(store).read_features(
+                current=False, snapshot_version=result.snapshot_version
+            )
+            assert features_df.height == 1
+            assert features_df["feature_key"][0] == "my_feature"
+            assert features_df["project"][0] == "my_project"

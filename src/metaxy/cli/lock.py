@@ -3,6 +3,7 @@
 from typing import Annotated
 
 import cyclopts
+from rich.status import Status
 
 from metaxy.cli.console import console, error_console
 
@@ -71,11 +72,16 @@ def lock(
     metadata_store = context.get_store(store)
 
     try:
-        count = generate_lock_file(
-            metadata_store,
-            output_path,
-            exclude_project=config.project,
-        )
+        with Status(
+            f"Loading external feature definitions from {metadata_store}...",
+            console=console,
+            spinner="dots",
+        ):
+            count = generate_lock_file(
+                metadata_store,
+                output_path,
+                exclude_project=config.project,
+            )
     except FeatureNotFoundError as e:
         error = CLIError(
             code=CLIErrorCode.FEATURES_NOT_FOUND,
@@ -86,7 +92,8 @@ def lock(
         console.print(error.to_plain())
         raise SystemExit(1) from None
 
-    if count == 0:
-        console.print(f"[green]✓[/green] Created empty lock file at {output_path}")
-    else:
-        console.print(f"[green]✓[/green] Locked {count} feature(s) to {output_path}")
+    console.print(f"[dim]Loaded from {metadata_store}[/dim]")
+    relative_path = output_path.relative_to(Path.cwd()) if output_path.is_relative_to(Path.cwd()) else output_path
+    console.print(
+        f"[green]✓[/green] Written {count} external feature(s) to [link={output_path.as_uri()}]{relative_path}[/link]"
+    )

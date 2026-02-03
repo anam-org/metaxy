@@ -775,8 +775,8 @@ def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapsho
 def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
     """Test CLI output for metadata-only changes (GitHub issue #86).
 
-    When FeatureDep metadata changes (e.g., rename added) without computational
-    changes, the CLI should display a different message than computational changes.
+    With project-scoped snapshot versions using feature_definition_version,
+    any definition change (including rename) creates a new snapshot.
     """
 
     def features_v1():
@@ -854,11 +854,10 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
         result2 = metaxy_project.run_cli(["push"])
         assert result2.returncode == 0
 
-        # Should show metadata update message (rename doesn't change feature_version)
-        assert "Updated feature information" in result2.stderr
-        assert "downstream" in result2.stderr
+        # Definition change (rename) creates a new snapshot with project-scoped versions
+        assert "Recorded feature graph" in result2.stderr
 
-        # Snapshot version should be in stdout
+        # Snapshot version should be in stdout (different from v1)
         assert len(result2.stdout.strip()) == 8
 
 
@@ -894,7 +893,11 @@ def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
 
 
 def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProject):
-    """Test complete workflow: new → metadata change → no change (GitHub issue #86)."""
+    """Test complete workflow: new → definition change → no change (GitHub issue #86).
+
+    With project-scoped snapshot versions using feature_definition_version,
+    definition changes (like columns) create new snapshots.
+    """
 
     def features_v1():
         from metaxy_testing.models import SampleFeature, SampleFeatureSpec
@@ -967,12 +970,11 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
         # Snapshot version now only goes to stdout
         assert len(result1.stdout.strip()) == 8
 
-    # Scenario 2: Metadata change (columns doesn't affect feature_version)
+    # Scenario 2: Definition change (columns) creates new snapshot with project-scoped versions
     with metaxy_project.with_features(features_v2):
         result2 = metaxy_project.run_cli(["push"])
         assert result2.returncode == 0
-        assert "Updated feature information" in result2.stderr
-        assert "downstream" in result2.stderr
+        assert "Recorded feature graph" in result2.stderr
 
     # Scenario 3: No change
     # Note: Re-pushing the same snapshot shows "already recorded"
@@ -1099,14 +1101,12 @@ def test_graph_push_multiple_features_metadata_changes(
         result1 = metaxy_project.run_cli(["push"])
         assert "Recorded feature graph" in result1.stderr
 
-    # Push v2 - multiple metadata changes (rename and columns don't affect feature_version)
+    # Push v2 - definition changes (rename and columns) create new snapshot with project-scoped versions
     with metaxy_project.with_features(features_v2):
         result2 = metaxy_project.run_cli(["push"])
         assert result2.returncode == 0
-        assert "Updated feature information" in result2.stderr
-        # Should list both changed features
-        assert "feature_b" in result2.stderr
-        assert "feature_c" in result2.stderr
+        # Definition changes create a new snapshot
+        assert "Recorded feature graph" in result2.stderr
 
 
 def test_sync_flag_loads_external_features(metaxy_project: TempMetaxyProject):

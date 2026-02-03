@@ -166,8 +166,8 @@ def render(
         # Resolve snapshot versions
         resolver = SnapshotResolver()
         try:
-            from_snapshot_version = resolver.resolve_snapshot(from_snapshot, metadata_store, graph)
-            to_snapshot_version = resolver.resolve_snapshot(to_snapshot, metadata_store, graph)
+            from_snapshot_version = resolver.resolve_snapshot(from_snapshot, metadata_store, graph, project)
+            to_snapshot_version = resolver.resolve_snapshot(to_snapshot, metadata_store, graph, project)
         except ValueError as e:
             console.print(f"[red]Error:[/red] {e}")
             raise SystemExit(1)
@@ -217,17 +217,13 @@ def render(
         if format in ("terminal", "mermaid", "json", "yaml"):
             from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
-            formatter = DiffFormatter(console)
-
-            show_all_fields = True
-
             try:
-                rendered = formatter.format(
+                rendered = DiffFormatter(console).format(
                     merged_data=merged_data,
                     format=format,
                     verbose=verbose,
                     diff_only=False,  # Always use merged view for graph-diff render
-                    show_all_fields=show_all_fields,
+                    show_all_fields=True,
                 )
             except Exception as e:
                 from metaxy.cli.utils import print_error
@@ -242,12 +238,13 @@ def render(
             from metaxy.graph.diff.rendering.theme import Theme
 
             theme = Theme.default()
-            graph_data = GraphData.from_merged_diff(merged_data)
 
             if format == "cards":
-                renderer = CardsRenderer(graph_data=graph_data, config=config, theme=theme)
+                renderer = CardsRenderer(graph_data=GraphData.from_merged_diff(merged_data), config=config, theme=theme)
             elif format == "graphviz":
-                renderer = GraphvizRenderer(graph_data=graph_data, config=config, theme=theme)
+                renderer = GraphvizRenderer(
+                    graph_data=GraphData.from_merged_diff(merged_data), config=config, theme=theme
+                )
             else:
                 console.print(f"[red]Error:[/red] Unknown format: {format}")
                 raise SystemExit(1)

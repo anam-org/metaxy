@@ -336,8 +336,8 @@ def test_feature_definition_version_recorded_in_metadata_store(snapshot: Snapsho
             # Should be a new snapshot
             assert not is_existing
 
-            # Read the feature_versions system table
-            features_df = storage.read_features(current=True)
+            # Read the feature_versions system table using the snapshot version from push
+            features_df = storage.read_features(current=False, snapshot_version=result.snapshot_version)
 
             # Should have one feature
             assert len(features_df) == 1
@@ -390,7 +390,7 @@ def test_feature_definition_version_idempotent_snapshot_recording(tmp_path: Path
             is_existing_1 = result.already_pushed
             assert not is_existing_1
 
-            features_df_1 = storage.read_features(current=True)
+            features_df_1 = storage.read_features(current=False, snapshot_version=snapshot_v1)
             definition_version_1 = features_df_1.to_dicts()[0]["metaxy_definition_version"]
 
             # Second push (identical graph)
@@ -402,7 +402,7 @@ def test_feature_definition_version_idempotent_snapshot_recording(tmp_path: Path
             assert is_existing_2  # Should detect existing snapshot
             assert snapshot_v1 == snapshot_v2  # Same snapshot version
 
-            features_df_2 = storage.read_features(current=True)
+            features_df_2 = storage.read_features(current=False, snapshot_version=snapshot_v2)
             definition_version_2 = features_df_2.to_dicts()[0]["metaxy_definition_version"]
 
             # definition_version should be identical

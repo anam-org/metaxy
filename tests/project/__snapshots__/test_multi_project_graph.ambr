@@ -30,9 +30,6 @@
     'feature_b',
   ])
 # ---
-# name: test_graph_snapshot_version_includes_all_projects
-  '0771bc97'
-# ---
 # name: test_multi_project_dependency_graph
   dict({
     'downstream_project': 'project_b',

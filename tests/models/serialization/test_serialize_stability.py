@@ -10,7 +10,7 @@ def test_push_graph_snapshot_stability(store: MetadataStore, test_graph: Feature
 
     Verifies that:
     1. push_graph_snapshot uses to_snapshot() internally
-    2. The snapshot_version from push_graph_snapshot matches graph.snapshot_version
+    2. The snapshot_version from push_graph_snapshot matches graph.get_project_snapshot_version()
     3. Serializing the same graph multiple times produces the same snapshot_version
     4. The snapshot can be deserialized and produces the same snapshot_version
     """
@@ -19,8 +19,12 @@ def test_push_graph_snapshot_stability(store: MetadataStore, test_graph: Feature
     # Ensure this graph is active so push_graph_snapshot uses it
     with graph.use():
         with store:
-            # Get the original snapshot_version from the graph
-            original_snapshot_version = graph.snapshot_version
+            # Infer project from graph (all features share same project in test_graph)
+            snapshot_dict = graph.to_snapshot()
+            project = next(iter(snapshot_dict.values()))["project"]
+
+            # Get the project-scoped snapshot_version from the graph
+            original_snapshot_version = graph.get_project_snapshot_version(project)
 
             # Serialize the graph for the first time
             result_1 = SystemTableStorage(store).push_graph_snapshot()
@@ -30,9 +34,9 @@ def test_push_graph_snapshot_stability(store: MetadataStore, test_graph: Feature
             # Should not be recorded yet (first time)
             assert not was_already_pushed_1, "First serialization should not be marked as already recorded"
 
-            # Should match the graph's snapshot_version
+            # Should match the graph's project snapshot_version
             assert snapshot_version_1 == original_snapshot_version, (
-                f"Serialized snapshot_version {snapshot_version_1} doesn't match graph.snapshot_version {original_snapshot_version}"
+                f"Serialized snapshot_version {snapshot_version_1} doesn't match graph.get_project_snapshot_version() {original_snapshot_version}"
             )
 
             # Serialize again - should be idempotent
@@ -49,13 +53,11 @@ def test_push_graph_snapshot_stability(store: MetadataStore, test_graph: Feature
             )
 
             # Read the snapshot back and verify it can be reconstructed
-            snapshot_dict = graph.to_snapshot()
-
             # Reconstruct graph from snapshot
             reconstructed_graph = FeatureGraph.from_snapshot(snapshot_dict)
-            reconstructed_snapshot_version = reconstructed_graph.snapshot_version
+            reconstructed_snapshot_version = reconstructed_graph.get_project_snapshot_version(project)
 
-            # Reconstructed graph should have the same snapshot_version
+            # Reconstructed graph should have the same project snapshot_version
             assert reconstructed_snapshot_version == original_snapshot_version, (
                 f"Reconstructed snapshot_version {reconstructed_snapshot_version} doesn't match original {original_snapshot_version}"
             )

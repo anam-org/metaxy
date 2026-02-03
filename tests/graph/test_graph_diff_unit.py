@@ -117,7 +117,7 @@ class TestSnapshotResolver:
             resolver.resolve_snapshot("current", None, graph)
 
     def test_resolve_current_with_graph(self, graph):
-        """Test resolving 'current' with active graph."""
+        """Test resolving 'current' with active graph returns project-scoped version."""
         resolver = SnapshotResolver()
 
         class TestFeature(
@@ -130,7 +130,9 @@ class TestSnapshotResolver:
             pass
 
         result = resolver.resolve_snapshot("current", None, graph)
-        assert result == graph.snapshot_version
+        # Single-project graph uses project-scoped snapshot version
+        project = next(iter({d.project for d in graph.feature_definitions_by_key.values()}))
+        assert result == graph.get_project_snapshot_version(project)
         assert result != "empty"
 
     def test_resolve_latest_empty_store(self, tmp_path):

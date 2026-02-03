@@ -1,15 +1,15 @@
 # serializer version: 1
 # name: test_graph_push_already_recorded
-  '450f060c'
+  'e5672955'
 # ---
 # name: test_graph_push_first_time
-  '450f060c'
+  'e5672955'
 # ---
 # name: test_graph_render_graphviz_format
   '''
   strict digraph {
       rankdir=TB;
-      label="Graph (snapshot: a6b7f865)";
+      label="Graph (snapshot: 55688fef)";
       labelloc=t;
       fontsize=14;
       fontname=helvetica;

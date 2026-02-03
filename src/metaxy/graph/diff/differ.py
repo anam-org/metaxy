@@ -18,13 +18,20 @@ from metaxy.models.types import FeatureKey, FieldKey
 class SnapshotResolver:
     """Resolves snapshot version literals to actual snapshot hashes."""
 
-    def resolve_snapshot(self, literal: str, store: MetadataStore | None, graph: FeatureGraph | None) -> str:
+    def resolve_snapshot(
+        self,
+        literal: str,
+        store: MetadataStore | None,
+        graph: FeatureGraph | None,
+        project: str | None = None,
+    ) -> str:
         """Resolve a snapshot literal to its actual version hash.
 
         Args:
             literal: Snapshot identifier ("latest", "current", or version hash)
             store: Metadata store to query for snapshots (required for "latest")
             graph: Optional active graph for "current" resolution
+            project: Optional project name for project-scoped version resolution
 
         Returns:
             Resolved snapshot version hash
@@ -37,20 +44,19 @@ class SnapshotResolver:
                 raise ValueError(
                     "Cannot resolve 'latest': no metadata store provided. Provide a store to query for snapshots."
                 )
-            return self._resolve_latest(store)
+            return self._resolve_latest(store, project)
         elif literal == "current":
-            return self._resolve_current(graph)
+            return self._resolve_current(graph, project)
         else:
             # Treat as explicit snapshot version
             return literal
 
-    def _resolve_latest(self, store: MetadataStore) -> str:
+    def _resolve_latest(self, store: MetadataStore, project: str | None = None) -> str:
         """Resolve 'latest' to most recent snapshot in store."""
         from metaxy.metadata_store.system.storage import SystemTableStorage
 
         with store:
-            storage = SystemTableStorage(store)
-            snapshots_df = storage.read_graph_snapshots()
+            snapshots_df = SystemTableStorage(store).read_graph_snapshots(project=project)
 
         if snapshots_df.height == 0:
             raise ValueError(
@@ -58,10 +64,9 @@ class SnapshotResolver:
             )
 
         # read_graph_snapshots() returns sorted by recorded_at descending
-        latest_snapshot = snapshots_df["metaxy_snapshot_version"][0]
-        return latest_snapshot
+        return snapshots_df["metaxy_snapshot_version"][0]
 
-    def _resolve_current(self, graph: FeatureGraph | None) -> str:
+    def _resolve_current(self, graph: FeatureGraph | None, project: str | None = None) -> str:
         """Resolve 'current' to active graph's snapshot version."""
         if graph is None:
             raise ValueError(
@@ -72,6 +77,16 @@ class SnapshotResolver:
             raise ValueError(
                 "Cannot resolve 'current': active graph is empty. Ensure features are loaded before using 'current'."
             )
+
+        # Use project-scoped version if project is specified
+        if project is not None:
+            return graph.get_project_snapshot_version(project)
+
+        # Otherwise infer from graph if single project
+        snapshot_dict = graph.to_snapshot()
+        projects_in_graph = {v["project"] for v in snapshot_dict.values()} if snapshot_dict else set()
+        if len(projects_in_graph) == 1:
+            return graph.get_project_snapshot_version(projects_in_graph.pop())
 
         return graph.snapshot_version
 
