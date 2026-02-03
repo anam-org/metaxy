@@ -506,26 +506,28 @@ def build_runtime_feature_metadata(
     # Combine both filter types for reading this asset's view of the data
     all_filters = dagster_partition_filters + metaxy_partition_filters
 
-    lazy_df = store.read_metadata(feature_key, filters=all_filters)  # ty: ignore[possibly-missing-attribute]
+    # Read metadata with store info in a single call (avoids extra network round-trip)
+    lazy_df, resolved_store = store.read_metadata(  # ty: ignore[possibly-missing-attribute]
+        feature_key, filters=all_filters, with_store_info=True
+    )
 
     try:
         # Compute stats from filtered data (includes data_version for callers)
         stats = compute_stats_from_lazy_frame(lazy_df)
 
-        # Get store metadata
-        store_metadata = store.get_store_metadata(feature_key)  # ty: ignore[possibly-missing-attribute]
+        # Build resolved_from metadata from the resolved store
+        resolved_from = resolved_store.get_store_info(feature_key)
 
         # Build metadata dict with metaxy info and store info
-        store_cls = store.__class__
         metadata: dict[str, Any] = {
             "metaxy/feature": feature_key.to_string(),
             "metaxy/info": build_feature_info_metadata(feature_key),
             "metaxy/store": {
                 "name": store.name,  # ty: ignore[possibly-missing-attribute]
-                "type": f"{store_cls.__module__}.{store_cls.__qualname__}",
+                "type": store.qualified_class_name,  # ty: ignore[possibly-missing-attribute]
                 "display": store.display(),  # ty: ignore[possibly-missing-attribute]
                 "versioning_engine": store._versioning_engine,  # ty: ignore[possibly-missing-attribute]
-                "resolved_from": store_metadata.get("resolved_from"),
+                "resolved_from": resolved_from,
             },
         }
 
@@ -543,13 +545,12 @@ def build_runtime_feature_metadata(
             # dagster/row_count should reflect what this asset sees
             metadata["dagster/row_count"] = stats.row_count
 
-        # Map store metadata to dagster standard keys (from resolved_from)
-        resolved_from = store_metadata.get("resolved_from", {})
+        # Map resolved_from metadata to dagster standard keys
         if "table_name" in resolved_from:
             metadata["dagster/table_name"] = resolved_from["table_name"]
 
-        if "uri" in resolved_from:
-            metadata["dagster/uri"] = dg.MetadataValue.path(resolved_from["uri"])
+        if (uri := resolved_from.get("uri")) is not None:
+            metadata["dagster/uri"] = dg.MetadataValue.path(uri)
 
         # Build table preview (from partition-filtered data)
         # Skip schema extraction for external features (no Python class)

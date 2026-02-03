@@ -111,19 +111,31 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         """
         with self.metadata_store:
             feature_key = self._feature_key_from_context(context)
-            store_metadata = self.metadata_store.get_store_metadata(feature_key)
 
-            # Build input metadata, transforming special keys to dagster standard format
-            input_metadata: dict[str, Any] = {}
-            for key, value in store_metadata.items():
-                if key == "display":
-                    input_metadata["metaxy/store"] = value
-                elif key == "table_name":
-                    input_metadata["dagster/table_name"] = value
-                elif key == "uri":
-                    input_metadata["dagster/uri"] = dg.MetadataValue.path(value)
-                else:
-                    input_metadata[key] = value
+            # Build partition filters from context (handles partition_by and metaxy/partition)
+            filters = build_partition_filter_from_input_context(context)
+
+            # Read metadata with store info in a single call (avoids extra network round-trip)
+            lazy_frame, resolved_store = self.metadata_store.read_metadata(
+                feature=feature_key,
+                filters=filters,
+                with_store_info=True,
+            )
+
+            # Build input metadata from resolved store
+            # metaxy/store shows where data was actually found (may be a fallback store)
+            resolved_from = resolved_store.get_store_info(feature_key)
+            input_metadata: dict[str, Any] = {
+                "name": self.metadata_store.name,
+                "metaxy/store": resolved_store.display(),
+                "resolved_from": resolved_from,
+            }
+
+            # Map resolved store metadata to dagster standard keys
+            if "table_name" in resolved_from:
+                input_metadata["dagster/table_name"] = resolved_from["table_name"]
+            if "uri" in resolved_from:
+                input_metadata["dagster/uri"] = dg.MetadataValue.path(resolved_from["uri"])
 
             # Only add input metadata if we have exactly one partition key
             # (add_input_metadata internally uses asset_partition_key which fails with multiple)
@@ -131,13 +143,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             if input_metadata and (not context.has_asset_partitions or has_single_partition):
                 context.add_input_metadata(input_metadata, description="Metadata Store Info")
 
-            # Build partition filters from context (handles partition_by and metaxy/partition)
-            filters = build_partition_filter_from_input_context(context)
-
-            return self.metadata_store.read_metadata(
-                feature=feature_key,
-                filters=filters,
-            )
+            return lazy_frame
 
     def handle_output(self, context: "dg.OutputContext", obj: MetaxyOutput) -> None:
         """Write feature metadata to [`MetadataStore`][metaxy.MetadataStore].

@@ -1099,6 +1099,12 @@ class MetadataStore(ABC):
         """The configured name of this store, if any."""
         return self._name
 
+    @property
+    def qualified_class_name(self) -> str:
+        """The fully qualified class name (module.classname)."""
+        cls = self.__class__
+        return f"{cls.__module__}.{cls.__qualname__}"
+
     def _format_display_with_name(self, display_str: str) -> str:
         """Format display string with optional name prefix."""
         if self._name is not None:
@@ -1854,13 +1860,7 @@ class MetadataStore(ABC):
             "display": self.display(),
         }
         if resolved_store is not None:
-            resolved_cls = resolved_store.__class__
-            result["resolved_from"] = {
-                "name": resolved_store.name,
-                "type": f"{resolved_cls.__module__}.{resolved_cls.__qualname__}",
-                "display": resolved_store.display(),
-                **resolved_store._get_store_metadata_impl(feature_key),
-            }
+            result["resolved_from"] = resolved_store.get_store_info(feature_key)
         return result
 
     def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
@@ -1875,6 +1875,26 @@ class MetadataStore(ABC):
             Dictionary with store-specific metadata
         """
         return {}
+
+    def get_store_info(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
+        """Build a dictionary with store identification and feature-specific metadata.
+
+        Args:
+            feature_key: Feature to get metadata for
+
+        Returns:
+            Dictionary containing:
+            - `name`: The store name
+            - `type`: The fully qualified class name (module.classname)
+            - `display`: Human-readable store description
+            - Store-specific metadata from `_get_store_metadata_impl` (e.g., `table_name`, `uri`)
+        """
+        return {
+            "name": self.name,
+            "type": self.qualified_class_name,
+            "display": self.display(),
+            **self._get_store_metadata_impl(feature_key),
+        }
 
     def calculate_input_progress(
         self,
