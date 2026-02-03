@@ -3372,7 +3372,7 @@ For other backends, override the calculator instance variable with backend-speci
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">store</span> <span class="o">=</span> <span class="n">IbisMetadataStore</span><span class="p">(</span><span class="s2">&quot;duckdb:///metadata.db&quot;</span><span class="p">)</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write_metadata</span><span class="p">(</span><span class="n">MyFeature</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">MyFeature</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 

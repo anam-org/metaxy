@@ -3542,7 +3542,7 @@ main thread to continue processing data without blocking on writes.</p>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">writer</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read_metadata</span><span class="p">(</span><span class="n">MyFeature</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">())</span> <span class="o">==</span> <span class="mi">1</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">MyFeature</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">())</span> <span class="o">==</span> <span class="mi">1</span>
 </span></code></pre></div>
 </details>        <details class="example">
 <summary>Manual lifecycle management</summary>
@@ -3806,7 +3806,7 @@ as a context manager, this is called automatically on entry.</p>
 
         <p>Queue batches for writing.</p>
 <p>The batches are accumulated per-feature and written together using
-<code>[MetadataStore.write_metadata_multi][]</code>.</p>
+<code>[MetadataStore.write_multi][]</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3847,7 +3847,7 @@ or encountered an error.</p>
 </span><span id="__span-0-140"><a id="__codelineno-0-140" name="__codelineno-0-140"></a><a href="#__codelineno-0-140"><span class="linenos" data-linenos="140 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Queue batches for writing.</span>
 </span><span id="__span-0-141"><a id="__codelineno-0-141" name="__codelineno-0-141"></a><a href="#__codelineno-0-141"><span class="linenos" data-linenos="141 "></span></a>
 </span><span id="__span-0-142"><a id="__codelineno-0-142" name="__codelineno-0-142"></a><a href="#__codelineno-0-142"><span class="linenos" data-linenos="142 "></span></a><span class="sd">    The batches are accumulated per-feature and written together using</span>
-</span><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a><a href="#__codelineno-0-143"><span class="linenos" data-linenos="143 "></span></a><span class="sd">    `[MetadataStore.write_metadata_multi][]`.</span>
+</span><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a><a href="#__codelineno-0-143"><span class="linenos" data-linenos="143 "></span></a><span class="sd">    `[MetadataStore.write_multi][]`.</span>
 </span><span id="__span-0-144"><a id="__codelineno-0-144" name="__codelineno-0-144"></a><a href="#__codelineno-0-144"><span class="linenos" data-linenos="144 "></span></a>
 </span><span id="__span-0-145"><a id="__codelineno-0-145" name="__codelineno-0-145"></a><a href="#__codelineno-0-145"><span class="linenos" data-linenos="145 "></span></a><span class="sd">    Args:</span>
 </span><span id="__span-0-146"><a id="__codelineno-0-146" name="__codelineno-0-146"></a><a href="#__codelineno-0-146"><span class="linenos" data-linenos="146 "></span></a><span class="sd">        batches: Mapping from feature keys to dataframes.</span>

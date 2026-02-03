@@ -3392,7 +3392,7 @@ Such features do not have upstream dependencies and act as inputs to the feature
 <!-- skip: next -->
 
 <div class="language-py highlight"><span class="filename">script.py</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;write&quot;</span><span class="p">):</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write_metadata</span><span class="p">(</span><span class="n">VoiceDetection</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">VoiceDetection</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
 </span></code></pre></div>
 <p>We have now successfully recorded the metadata for the computed samples! Processed samples will no longer be returned by <code>MetadataStore.resolve_update</code> during future pipeline runs.</p>
 <hr />

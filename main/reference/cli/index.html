@@ -3827,7 +3827,7 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
 <li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--soft, --hard</code>: Whether to mark records with deletion timestamps vs physically remove them.  <em>[default: True]</em></li>
-<li><code>--current-only, --no-current-only</code>: Only delete rows with the current feature_version (as defined in loaded feature graph).  <em>[default: True]</em></li>
+<li><code>--with-feature-history, --no-with-feature-history</code>: Include rows from all historical feature versions (by default, only current version is affected).  <em>[default: False]</em></li>
 <li><code>--yes, --no-yes</code>: Confirm deletion without prompting (required for hard deletes without filters).  <em>[default: False]</em></li>
 <li><code>--dry-run, --no-dry-run</code>: Preview deletion: show features, filters, and row counts without executing.  <em>[default: False]</em></li>
 </ul>
@@ -3841,15 +3841,15 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 </span></code></pre></div>
 <p>Copy metadata from one store to another.</p>
 <p>Copies metadata for specified features from source to destination store.
-By default, copies all versions (--no-current-only) and deduplicates by
-keeping only the latest row per sample (--latest-only).</p>
+By default, copies all versions (--with-feature-history) and deduplicates by
+keeping only the latest row per sample (--no-with-sample-history).</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--from</code>: Source store name to copy metadata from.  <strong>[required]</strong></li>
 <li><code>--to</code>: Destination store name to copy metadata to.  <strong>[required]</strong></li>
 <li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/learn/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
-<li><code>--current-only, --no-current-only</code>: Only copy rows with the current feature_version (as defined in loaded feature graph).  <em>[default: False]</em></li>
-<li><code>--latest-only, --no-latest-only</code>: Deduplicate samples by keeping only the latest row per id_columns group.  <em>[default: True]</em></li>
+<li><code>--with-feature-history, --no-with-feature-history</code>: Include rows from all historical feature versions (by default, only current version is copied).  <em>[default: True]</em></li>
+<li><code>--with-sample-history, --no-with-sample-history</code>: Include all historical materializations per sample (by default, deduplicates by id_columns).  <em>[default: False]</em></li>
 </ul>
 <p><strong>Feature Selection</strong>:</p>
 <ul>
