@@ -3347,19 +3347,21 @@ As an edge case, Metaxy features may also be pure <strong>metadata</strong> with
 </li>
 <li>
 <p>can store <em>map-like elements</em> (e.g. dictionaries)</p>
+<details class="note">
+<summary>Removing This Requirement</summary>
+<p>This requirement may be lifted in the future.
+Unfortunately, the most popular storage solution - PostgreSQL - does not satisfy it.
+While PostgreSQL is not an ideal choice for a Metaxy <a href="../../guide/learn/metadata-stores/">Metadata Store</a>
+for other reasons (mainly analytical queries performance), we recognize the need to support it and are exploring a solution in <a href="https://github.com/anam-org/metaxy/issues/223"><code>anam-org/metaxy#223</code></a>.</p>
+</details>
 </li>
 </ul>
-<p>??? note "Removing This Requirement"</p>
-<div class="language-python highlight"><pre><span></span><code>  <span class="n">This</span> <span class="n">requirement</span> <span class="n">may</span> <span class="n">be</span> <span class="n">lifted</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">future</span><span class="o">.</span>
-  <span class="n">Unfortunately</span><span class="p">,</span> <span class="n">the</span> <span class="n">most</span> <span class="n">popular</span> <span class="n">storage</span> <span class="n">solution</span> <span class="o">-</span> <span class="n">PostgreSQL</span> <span class="o">-</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">satisfy</span> <span class="n">it</span><span class="o">.</span>
-  <span class="n">While</span> <span class="n">PostgreSQL</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">an</span> <span class="n">ideal</span> <span class="n">choice</span> <span class="k">for</span> <span class="n">a</span> <span class="n">Metaxy</span> <span class="p">[</span><span class="n">Metadata</span> <span class="n">Store</span><span class="p">](</span><span class="o">../</span><span class="n">guide</span><span class="o">/</span><span class="n">learn</span><span class="o">/</span><span class="n">metadata</span><span class="o">-</span><span class="n">stores</span><span class="o">.</span><span class="n">md</span><span class="p">)</span>
-  <span class="k">for</span> <span class="n">other</span> <span class="n">reasons</span> <span class="p">(</span><span class="n">mainly</span> <span class="n">analytical</span> <span class="n">queries</span> <span class="n">performance</span><span class="p">),</span> <span class="n">we</span> <span class="n">recognize</span> <span class="n">the</span> <span class="n">need</span> <span class="n">to</span> <span class="n">support</span> <span class="n">it</span> <span class="ow">and</span> <span class="n">are</span> <span class="n">exploring</span> <span class="n">a</span> <span class="n">solution</span> <span class="ow">in</span> <span class="p">[</span><span class="err">`</span><span class="n">anam</span><span class="o">-</span><span class="n">org</span><span class="o">/</span><span class="n">metaxy</span><span class="c1">#223`](https://github.com/anam-org/metaxy/issues/223).</span>
-</code></pre></div>
 </div>
 <p>This allows Metaxy to target modern data warehouses (e.g. ClickHouse, BigQuery, Snowflake, or the more minimalistic DuckDB) and storage formats such as DeltaLake, Iceberg, DuckLake, and anything compatible with Apache Arrow.</p>
 <p>The Metaxy abstraction that implements these design choices and is used to interact with storage systems is known as <a href="../../guide/learn/metadata-stores/">Metadata Store</a>.</p>
 <h3 id="table-schema">Table Schema<a class="headerlink" href="#table-schema" title="Permanent link">&para;</a></h3>
-<p>Metaxy uses the same storage layout for all storage systems. Each <a href="../../guide/learn/feature-definitions/">feature</a> gets a separate table. Here is how a typical Metaxy feature table looks like:</p>
+<p>Metaxy uses the same storage layout for all storage systems. Each <a href="../../guide/learn/feature-definitions/">feature</a> gets a separate table.</p>
+<p>Here is how a typical Metaxy feature table looks like:</p>
 <table>
 <thead>
 <tr>
@@ -3421,7 +3423,10 @@ As an edge case, Metaxy features may also be pure <strong>metadata</strong> with
 </tr>
 </tbody>
 </table>
-<p>It can also contain custom user-defined columns.</p>
+<p class="annotate">It can also contain custom user-defined columns (1).</p>
+<ol>
+<li>and in fact, <code>id</code> is such a column, because ID columns are customizable</li>
+</ol>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
 <p><code>metaxy_data_version</code>/<code>metaxy_data_version_by_field</code> and <code>metaxy_provenance</code>/<code>metaxy_provenance_by_field</code> serve a slightly different purpose.
