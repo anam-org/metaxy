@@ -3356,15 +3356,7 @@ As an edge case, Metaxy features may also be pure <strong>metadata</strong> with
   <span class="k">for</span> <span class="n">other</span> <span class="n">reasons</span> <span class="p">(</span><span class="n">mainly</span> <span class="n">analytical</span> <span class="n">queries</span> <span class="n">performance</span><span class="p">),</span> <span class="n">we</span> <span class="n">recognize</span> <span class="n">the</span> <span class="n">need</span> <span class="n">to</span> <span class="n">support</span> <span class="n">it</span> <span class="ow">and</span> <span class="n">are</span> <span class="n">exploring</span> <span class="n">a</span> <span class="n">solution</span> <span class="ow">in</span> <span class="p">[</span><span class="err">`</span><span class="n">anam</span><span class="o">-</span><span class="n">org</span><span class="o">/</span><span class="n">metaxy</span><span class="c1">#223`](https://github.com/anam-org/metaxy/issues/223).</span>
 </code></pre></div>
 </div>
-<p>This allows Metaxy to target the following systems:</p>
-<ul>
-<li>
-<p>modern data warehouses (e.g. ClickHouse, BigQuery, Snowflake, or the more minimalistic DuckDB)</p>
-</li>
-<li>
-<p>modern storage formats like DeltaLake, Iceberg, DuckLake, or anything compatible with Apache Arrow</p>
-</li>
-</ul>
+<p>This allows Metaxy to target modern data warehouses (e.g. ClickHouse, BigQuery, Snowflake, or the more minimalistic DuckDB) and storage formats such as DeltaLake, Iceberg, DuckLake, and anything compatible with Apache Arrow.</p>
 <p>The Metaxy abstraction that implements these design choices and is used to interact with storage systems is known as <a href="../../guide/learn/metadata-stores/">Metadata Store</a>.</p>
 <h3 id="table-schema">Table Schema<a class="headerlink" href="#table-schema" title="Permanent link">&para;</a></h3>
 <p>Metaxy uses the same storage layout for all storage systems. Each <a href="../../guide/learn/feature-definitions/">feature</a> gets a separate table. Here is how a typical Metaxy feature table looks like:</p>
