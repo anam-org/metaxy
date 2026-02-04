@@ -1,0 +1,44 @@
+name: Setup Devbox
+description: Install Devbox and activate the development environment
+
+inputs:
+  python-version:
+    description: Python version to use (e.g., 3.10, 3.11, 3.12, 3.13)
+    required: false
+    default: "3.10"
+  install-deps:
+    description: Whether to run uv sync
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Install Devbox
+      uses: jetify-com/devbox-install-action@v0.14.0
+      with:
+        enable-cache: true
+
+    - name: Install direnv
+      shell: bash
+      run: |
+        # Install direnv if not present (devbox-install-action includes it via nix)
+        nix profile install nixpkgs#direnv || true
+
+    - name: Pin Python version (if not default)
+      if: inputs.python-version != '3.10'
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: managed
+      run: |
+        # Run uv inside devbox to pin Python version before direnv activation
+        devbox run -- uv python pin ${{ inputs.python-version }}
+
+    - name: Activate Devbox environment
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: ${{ inputs.python-version == '3.10' && 'only-system' || 'managed' }}
+        SKIP_UV_SYNC: ${{ inputs.install-deps == 'false' && '1' || '' }}
+      run: |
+        direnv allow .
+        direnv export gha >> "$GITHUB_ENV"

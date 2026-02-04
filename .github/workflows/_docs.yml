@@ -32,8 +32,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup devenv
-        uses: ./.github/actions/setup-devenv
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
 
       - name: Build documentation
         run: uv run mkdocs build --strict

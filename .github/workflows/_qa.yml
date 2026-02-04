@@ -39,9 +39,8 @@ jobs:
             test:
               - '.github/workflows/**'
               - .envrc
-              - devenv.nix
-              - devenv.lock
-              - devenv.yaml
+              - devbox.json
+              - devbox.lock
               - 'src/metaxy/**'
               - 'tests/**'
               - 'examples/**'
@@ -83,8 +82,6 @@ jobs:
     runs-on: depot-ubuntu-latest
     needs: filter
     if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
-    env:
-      DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
     strategy:
       fail-fast: false
       matrix:
@@ -92,8 +89,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      - name: Setup devenv
-        uses: ./.github/actions/setup-devenv
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Run ty
         run: uv run ty check
 
@@ -106,8 +105,6 @@ jobs:
       issues: write
       checks: write
     runs-on: depot-ubuntu-latest
-    env:
-      DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
     strategy:
       fail-fast: false
       matrix:
@@ -115,8 +112,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      - name: Setup devenv
-        uses: ./.github/actions/setup-devenv
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Run Tests with Coverage
         id: pytest
@@ -271,13 +270,11 @@ jobs:
     needs:
       - filter
     if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' || needs.filter.outputs.docs == 'true' }}
-    env:
-      DEVENV_PYTHON_VERSION: "3.10"
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      - name: Setup devenv
-        uses: ./.github/actions/setup-devenv
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
       - name: Build Docs
         id: docs
         run: uv run mkdocs build --strict
