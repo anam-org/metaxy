@@ -3472,6 +3472,10 @@
 
 
 <h1 id="lancedb">LanceDB<a class="headerlink" href="#lancedb" title="Permanent link">&para;</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Experimental</p>
+<p>This functionality is experimental.</p>
+</div>
 <p><a href="https://lancedb.github.io/lancedb/">LanceDB</a> is an vector database built on the Lance columnar format. To use Metaxy with LanceDB, configure <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.lancedb.LanceDBMetadataStore&lt;/span&gt;" href="#metaxy.metadata_store.lancedb.LanceDBMetadataStore"><code>LanceDBMetadataStore</code></a>. It uses the in-memory Polars engine for versioning computations. LanceDB handles schema evolution, transactions, and compaction automatically.</p>
 <p>It runs embedded (local directory) or against external storage (object stores, HTTP endpoints, LanceDB Cloud), so you can use the same store type for local development and cloud workloads.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
