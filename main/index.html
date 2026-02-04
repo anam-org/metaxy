@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="overview/">
+        <link rel="next" href="metaxy/pitch/">
       
       
         
@@ -479,6 +479,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -543,14 +547,70 @@
   
   
     <li class="md-nav__item">
-      <a href="overview/" class="md-nav__link">
+      <a href="metaxy/pitch/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Overview
+    Pitch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="metaxy/design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Choices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="metaxy/explore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explore
   
 
     
@@ -3074,10 +3134,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#more-information" class="md-nav__link">
+  <a href="#whats-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        More Information
+        What's Next?
       
     </span>
   </a>
@@ -3207,16 +3267,7 @@
 </ol>
 <details class="abstract annotate">
 <summary>Data vs Metadata Clarifications</summary>
-<p>Metaxy manages <strong>metadata</strong> while <strong>data</strong> typically (1) lives elsewhere:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="err">┌─────────────────────────────────┐</span>          <span class="err">┌─────────────────────────┐</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="err">│</span>      <span class="n">Metadata</span> <span class="p">(</span><span class="n">Metaxy</span><span class="p">)</span>          <span class="err">│</span>          <span class="err">│</span>   <span class="n">Data</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="p">,</span> <span class="n">S3</span><span class="p">)</span>       <span class="err">│</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="err">├──────┬──────────┬──────┬────────┤</span>          <span class="err">│</span>                         <span class="err">│</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="err">│</span>  <span class="n">ID</span>  <span class="err">│</span>   <span class="n">path</span>   <span class="err">│</span> <span class="n">size</span> <span class="err">│</span><span class="n">version</span> <span class="err">│</span>          <span class="err">│</span>  <span class="err">📦</span> <span class="n">s3</span><span class="p">:</span><span class="o">//</span><span class="n">my</span><span class="o">-</span><span class="n">bucket</span><span class="o">/</span>     <span class="err">│</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="err">├──────┼──────────┼──────┼────────┤</span>          <span class="err">│</span>                         <span class="err">│</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="err">│</span> <span class="n">img1</span> <span class="err">│</span> <span class="n">s3</span><span class="p">:</span><span class="o">//...</span> <span class="err">│</span> <span class="mf">2.1</span><span class="n">M</span> <span class="err">│</span><span class="n">a3fdsf</span>  <span class="err">│</span> <span class="err">────────</span><span class="o">&gt;</span><span class="err">│</span>    <span class="err">├─</span> <span class="n">img1</span><span class="o">.</span><span class="n">jpg</span>          <span class="err">│</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="err">│</span> <span class="n">img2</span> <span class="err">│</span> <span class="n">s3</span><span class="p">:</span><span class="o">//...</span> <span class="err">│</span> <span class="mf">1.8</span><span class="n">M</span> <span class="err">│</span><span class="n">b7e123</span>  <span class="err">│</span> <span class="err">────────</span><span class="o">&gt;</span><span class="err">│</span>    <span class="err">├─</span> <span class="n">img2</span><span class="o">.</span><span class="n">jpg</span>          <span class="err">│</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="err">└──────┴──────────┴──────┴────────┘</span>          <span class="err">└─────────────────────────┘</span>
-</span></code></pre></div></p>
+<p>Metaxy features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.</p>
 <table>
 <thead>
 <tr>
@@ -3231,10 +3282,12 @@
 </tr>
 <tr>
 <td><strong>Metadata</strong></td>
-<td>Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes.</td>
+<td>Information about the data, typically (1) including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes.</td>
 </tr>
 </tbody>
 </table>
+<p>Metaxy does not interact with <strong>data</strong>.
+As an edge case, Metaxy features may also be pure <strong>metadata</strong> without any references to external <strong>data</strong>.</p>
 </details>
 <ol>
 <li>Unless you are a <a href="https://lancedb.com/">LanceDB</a> fan, in which case <a href="integrations/metadata-stores/databases/lancedb/">we got you covered</a></li>
@@ -3250,7 +3303,7 @@
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Metaxy hasn't been publicly released yet, but you can try the latest dev release:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--pre<span class="w"> </span>metaxy
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--pre<span class="w"> </span>metaxy
 </span></code></pre></div>
 </div>
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
@@ -3302,18 +3355,13 @@ Therefore, it becomes crucially important to correctly implement incremental pro
 <ol>
 <li>for example, a <code>video</code> sample could independently version the frames and the audio track: <code>{"audio": "asddsa", "frames": "joasdb"}</code></li>
 </ol>
-<h2 id="more-information">More Information<a class="headerlink" href="#more-information" title="Permanent link">&para;</a></h2>
+<h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
 <p>Here are a few more useful links:</p>
 <div class="annotate">
 <ul>
-<li>Take your time and read a bit more (1) about Metaxy <a href="overview/">here</a></li>
-<li>Jump to <a href="guide/overview/quickstart/">Quickstart</a> if you just can't wait (WIP!)</li>
-<li>Abstract Metaxy concepts are <a href="guide/learn/">discussed here</a></li>
-<li>View complete, end-to-end <a href="examples/">examples</a></li>
-<li>Explore <a href="integrations/">Metaxy integrations</a></li>
-<li>Use Metaxy <a href="reference/cli/">from the command line</a></li>
-<li>Learn how to <a href="reference/configuration/">configure Metaxy</a></li>
-<li>Get lost in our <a href="reference/api/">API Reference</a></li>
+<li>Read the <a href="metaxy/pitch/">Metaxy Pitch</a> (1)</li>
+<li>Learn about <a href="metaxy/design/">design choices</a></li>
+<li><a href="metaxy/explore/">Explore</a> other Metaxy components</li>
 </ul>
 </div>
 <ol>

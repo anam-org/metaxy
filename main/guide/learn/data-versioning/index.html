@@ -479,6 +479,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -543,14 +547,70 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../overview/" class="md-nav__link">
+      <a href="../../../metaxy/pitch/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Overview
+    Pitch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../metaxy/design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Choices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../metaxy/explore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explore
   
 
     
@@ -980,6 +1040,17 @@
     <span class="md-ellipsis">
       
         Samples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#content-based-versioning-data-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content-Based Versioning (Data Version)
       
     </span>
   </a>
@@ -3242,6 +3313,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#content-based-versioning-data-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content-Based Versioning (Data Version)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3399,7 +3481,7 @@
 <table>
 <thead>
 <tr>
-<th>sample_uid</th>
+<th>id</th>
 <th>metaxy_provenance_by_field</th>
 </tr>
 </thead>
@@ -3426,10 +3508,10 @@
 <li><strong>Sample Version</strong> is derived from the <strong>Provenance By Field</strong> by simply hashing it.</li>
 </ul>
 <p>Computing this value is the goal of the entire versioning engine. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.</p>
-<div class="admonition tip">
-<p class="admonition-title">Customizing Sample Versions</p>
-<p>Users can override the computed sample-level versions by setting <code>metaxy_data_version_by_field</code> on their metadata. This can be used for eliminating false-positives (e.g. content-based hashing), when sometimes data stays the same even after upstream has changed. This customization only affects how downstream increments are calculated.</p>
-</div>
+<h3 id="content-based-versioning-data-version">Content-Based Versioning (Data Version)<a class="headerlink" href="#content-based-versioning-data-version" title="Permanent link">&para;</a></h3>
+<p>Users can override the computed sample-level versions by setting <code>metaxy_data_version_by_field</code> on their metadata, effectively providing a <strong>Data Version</strong> for the sample. This can be used for preventing unnecessary downstream updates, if the computed sample stays the same even after upstream data has changed.</p>
+<p>For example, the data version can be calculated with <code>sha256</code>, or a <a href="https://en.wikipedia.org/wiki/Perceptual_hashing">perceptual hashing</a> method for images and videos.</p>
+<p>This customization only affects how downstream increments are calculated, as the data version cannot be known until the feature is computed.</p>
 <h2 id="practical-example">Practical Example<a class="headerlink" href="#practical-example" title="Permanent link">&para;</a></h2>
 <p>Consider a video processing pipeline with these features:</p>
 <details class="tip">

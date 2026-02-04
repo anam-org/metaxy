@@ -101,7 +101,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#system-column-registry" class="md-skip">
+        <a href="#system-columns" class="md-skip">
           Skip to content
         </a>
       
@@ -479,6 +479,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -543,14 +547,70 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../overview/" class="md-nav__link">
+      <a href="../../../metaxy/pitch/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Overview
+    Pitch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../metaxy/design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Choices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../metaxy/explore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explore
   
 
     
@@ -1114,6 +1174,17 @@
     <span class="md-ellipsis">
       
         Canonical column names
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Table
       
     </span>
   </a>
@@ -3080,6 +3151,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#example-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Table
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3157,11 +3239,10 @@
   
 
 
-<h1 id="system-column-registry">System Column Registry<a class="headerlink" href="#system-column-registry" title="Permanent link">&para;</a></h1>
+<h1 id="system-columns">System Columns<a class="headerlink" href="#system-columns" title="Permanent link">&para;</a></h1>
 <p>Metaxy reserves a set of <a href="../../../reference/api/constants/">system-managed columns</a> that it attaches to user-defined feature
-metadata tables. These columns are part of the platform contract and are used by
-the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore">metadata store</a>, versioning engine, and migration tooling.</p>
-<p>All system column names start with the <code>metaxy_</code> prefix.</p>
+metadata tables. These columns are part of the storage interface and are used by
+the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore">metadata store</a>. Learn more about the storage layout design <a href="../../../metaxy/design/#storage">here</a>.</p>
 <h2 id="canonical-column-names">Canonical column names<a class="headerlink" href="#canonical-column-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -3205,13 +3286,13 @@ the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol
 </tr>
 <tr>
 <td><code>metaxy_snapshot_version</code></td>
-<td>Derived from the entire Metaxy feature graph</td>
-<td>graph</td>
+<td>Derived from all Metaxy features which belong to the same Project</td>
+<td>project</td>
 <td>string</td>
 </tr>
 <tr>
 <td><code>metaxy_definition_version</code></td>
-<td>Hash of the feature spec and Pydantic model schema (excludes project)</td>
+<td>Hash of the feature spec and Pydantic model schema</td>
 <td>feature</td>
 <td>string</td>
 </tr>
@@ -3241,6 +3322,70 @@ the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol
 </tr>
 </tbody>
 </table>
+<p>All system column names start with the <code>metaxy_</code> prefix.</p>
+<h2 id="example-table">Example Table<a class="headerlink" href="#example-table" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>metaxy_feature_version</th>
+<th>metaxy_data_version</th>
+<th>metaxy_data_version_by_field</th>
+<th>metaxy_provenance</th>
+<th>metaxy_provenance_by_field</th>
+<th>metaxy_created_at</th>
+<th>metaxy_updated_at</th>
+<th>metaxy_deleted_at</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>video_001</td>
+<td>a1b2c3d4</td>
+<td>e7f8a9b0</td>
+<td><code>{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}</code></td>
+<td>e7f8a9b0</td>
+<td><code>{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}</code></td>
+<td>2024-01-15T10:30:00Z</td>
+<td>2024-01-15T10:30:00Z</td>
+<td>null</td>
+</tr>
+<tr>
+<td>video_002</td>
+<td>a1b2c3d4</td>
+<td>c1e4b9d8</td>
+<td><code>{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}</code></td>
+<td>c1e4b9d8</td>
+<td><code>{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}</code></td>
+<td>2024-01-15T10:31:00Z</td>
+<td>2024-01-15T10:31:00Z</td>
+<td>null</td>
+</tr>
+<tr>
+<td>video_003</td>
+<td>a1b2c3d4</td>
+<td>k1j2ah7v</td>
+<td><code>{"audio": "custom01", "frames": "custom02"}</code></td>
+<td>a8e2f4c9</td>
+<td><code>{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}</code></td>
+<td>2024-01-15T10:32:00Z</td>
+<td>2024-01-16T14:20:00Z</td>
+<td>null</td>
+</tr>
+<tr>
+<td>video_001</td>
+<td>f5d6e7c8</td>
+<td>b2c3d4e5</td>
+<td><code>{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}</code></td>
+<td>b2c3d4e5</td>
+<td><code>{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}</code></td>
+<td>2024-01-18T09:00:00Z</td>
+<td>2024-01-18T09:00:00Z</td>
+<td>null</td>
+</tr>
+</tbody>
+</table>
+<p>It can also contain custom user-defined columns.</p>
 
 
 

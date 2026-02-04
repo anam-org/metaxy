@@ -5,10 +5,6 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/overview/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://docs.metaxy.io/main/examples/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
@@ -158,6 +154,18 @@
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/plugins/sqlmodel/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/metaxy/design/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/metaxy/explore/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/metaxy/pitch/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>

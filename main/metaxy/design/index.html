@@ -6,35 +6,35 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Metadata stores using storage formats with embedded compute.">
+        <meta name="description" content="Explanation of design choices and architectural decisions in Metaxy.">
       
       
       
-        <link rel="canonical" href="https://docs.metaxy.io/main/integrations/metadata-stores/storage/">
+        <link rel="canonical" href="https://docs.metaxy.io/main/metaxy/design/">
       
       
-        <link rel="prev" href="../databases/ibis/">
+        <link rel="prev" href="../pitch/">
       
       
-        <link rel="next" href="delta/">
+        <link rel="next" href="../explore/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/favicon.ico">
+      <link rel="icon" href="../../assets/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
     
     
       
-        <title>Storage Metadata Stores - Metaxy</title>
+        <title>Design Choices - Metaxy</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -59,11 +59,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../css/code_select.css">
+      <link rel="stylesheet" href="../../css/code_select.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -71,17 +71,17 @@
     
   
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Storage Metadata Stores - Metaxy" />
-<meta property="og:description" content="Metadata stores using storage formats with embedded compute." />
-<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/integrations/metadata-stores/storage/index.png" />
+<meta property="og:title" content="Design Choices - Metaxy" />
+<meta property="og:description" content="Explanation of design choices and architectural decisions in Metaxy." />
+<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/metaxy/design.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://docs.metaxy.io/main/integrations/metadata-stores/storage/" />
+<meta property="og:url" content="https://docs.metaxy.io/main/metaxy/design/" />
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:title" content="Storage Metadata Stores - Metaxy" />
-<meta property="twitter:description" content="Metadata stores using storage formats with embedded compute." />
-<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/integrations/metadata-stores/storage/index.png" />
+<meta property="twitter:title" content="Design Choices - Metaxy" />
+<meta property="twitter:description" content="Explanation of design choices and architectural decisions in Metaxy." />
+<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/metaxy/design.png" />
 </head>
   
   
@@ -101,7 +101,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#storage-only-metadata-stores" class="md-skip">
+        <a href="#design-choices" class="md-skip">
           Skip to content
         </a>
       
@@ -121,9 +121,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
-  <img src="../../../assets/metaxy.svg" alt="logo">
+  <img src="../../assets/metaxy.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -140,7 +140,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Storage Metadata Stores
+              Design Choices
             
           </span>
         </div>
@@ -260,6 +260,8 @@
   
   
   
+    
+  
   
     
     
@@ -267,11 +269,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../.." class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -292,11 +296,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="../../" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../integrations/" class="md-tabs__link">
         
   
   
@@ -315,7 +317,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../examples/" class="md-tabs__link">
+      <a href="../../examples/" class="md-tabs__link">
         
   
   
@@ -334,7 +336,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../reference/" class="md-tabs__link">
+      <a href="../../reference/" class="md-tabs__link">
         
   
   
@@ -375,9 +377,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
-  <img src="../../../assets/metaxy.svg" alt="logo">
+  <img src="../../assets/metaxy.svg" alt="logo">
 
     </a>
     Metaxy
@@ -401,8 +403,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -416,19 +420,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
             
   
   
@@ -446,7 +453,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -461,6 +468,8 @@
                 
   
   
+    
+  
   
   
     
@@ -482,18 +491,21 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_1" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../.." class="md-nav__link ">
+            <a href="../.." class="md-nav__link ">
               
   
   
@@ -511,13 +523,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_1_1" id="__nav_1_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_1_1" id="__nav_1_1_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_1_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -537,7 +549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../metaxy/pitch/" class="md-nav__link">
+      <a href="../pitch/" class="md-nav__link">
         
   
   
@@ -562,10 +574,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../metaxy/design/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Choices
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -581,6 +620,87 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#table-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table Schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dataframe-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DataFrame API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compute
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -593,7 +713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../metaxy/explore/" class="md-nav__link">
+      <a href="../explore/" class="md-nav__link">
         
   
   
@@ -641,17 +761,20 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_2" >
         
           
-          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="">
             
   
   
@@ -687,7 +810,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/overview/quickstart/" class="md-nav__link">
+      <a href="../../guide/overview/quickstart/" class="md-nav__link">
         
   
   
@@ -715,7 +838,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/overview/feature-dependencies/" class="md-nav__link">
+      <a href="../../guide/overview/feature-dependencies/" class="md-nav__link">
         
   
   
@@ -785,10 +908,13 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
@@ -796,7 +922,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../guide/learn/" class="md-nav__link ">
+            <a href="../../guide/learn/" class="md-nav__link ">
               
   
   
@@ -814,7 +940,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_1_3" id="__nav_1_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_1_3" id="__nav_1_3_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -840,7 +966,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/metadata-stores/" class="md-nav__link">
+      <a href="../../guide/learn/metadata-stores/" class="md-nav__link">
         
   
   
@@ -868,7 +994,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/feature-definitions/" class="md-nav__link">
+      <a href="../../guide/learn/feature-definitions/" class="md-nav__link">
         
   
   
@@ -896,7 +1022,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/data-versioning/" class="md-nav__link">
+      <a href="../../guide/learn/data-versioning/" class="md-nav__link">
         
   
   
@@ -924,7 +1050,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/feature-discovery/" class="md-nav__link">
+      <a href="../../guide/learn/feature-discovery/" class="md-nav__link">
         
   
   
@@ -952,7 +1078,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/syntactic-sugar/" class="md-nav__link">
+      <a href="../../guide/learn/syntactic-sugar/" class="md-nav__link">
         
   
   
@@ -980,7 +1106,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/relationship/" class="md-nav__link">
+      <a href="../../guide/learn/relationship/" class="md-nav__link">
         
   
   
@@ -1008,7 +1134,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/optional-dependencies/" class="md-nav__link">
+      <a href="../../guide/learn/optional-dependencies/" class="md-nav__link">
         
   
   
@@ -1036,7 +1162,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/filters/" class="md-nav__link">
+      <a href="../../guide/learn/filters/" class="md-nav__link">
         
   
   
@@ -1064,7 +1190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/deletions/" class="md-nav__link">
+      <a href="../../guide/learn/deletions/" class="md-nav__link">
         
   
   
@@ -1092,7 +1218,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/system-columns/" class="md-nav__link">
+      <a href="../../guide/learn/system-columns/" class="md-nav__link">
         
   
   
@@ -1120,7 +1246,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/learn/testing/" class="md-nav__link">
+      <a href="../../guide/learn/testing/" class="md-nav__link">
         
   
   
@@ -1160,10 +1286,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1181,23 +1305,20 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../integrations/" class="md-nav__link ">
               
   
   
@@ -1215,13 +1336,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1249,13 +1370,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -1263,7 +1381,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../orchestration/" class="md-nav__link ">
+            <a href="../../integrations/orchestration/" class="md-nav__link ">
               
   
   
@@ -1281,7 +1399,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2_1" id="__nav_2_1_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -1328,7 +1446,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../orchestration/dagster/" class="md-nav__link ">
+            <a href="../../integrations/orchestration/dagster/" class="md-nav__link ">
               
   
   
@@ -1370,7 +1488,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../orchestration/dagster/metaxify/" class="md-nav__link">
+      <a href="../../integrations/orchestration/dagster/metaxify/" class="md-nav__link">
         
   
   
@@ -1398,7 +1516,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../orchestration/dagster/api/" class="md-nav__link">
+      <a href="../../integrations/orchestration/dagster/api/" class="md-nav__link">
         
   
   
@@ -1439,10 +1557,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -1456,21 +1572,18 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/" class="md-nav__link ">
               
   
   
@@ -1488,13 +1601,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2_2" id="__nav_2_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1541,7 +1654,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../databases/" class="md-nav__link ">
+            <a href="../../integrations/metadata-stores/databases/" class="md-nav__link ">
               
   
   
@@ -1583,7 +1696,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../databases/bigquery/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/bigquery/" class="md-nav__link">
         
   
   
@@ -1611,7 +1724,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../databases/clickhouse/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/clickhouse/" class="md-nav__link">
         
   
   
@@ -1639,7 +1752,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../databases/duckdb/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/duckdb/" class="md-nav__link">
         
   
   
@@ -1667,7 +1780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../databases/lancedb/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/lancedb/" class="md-nav__link">
         
   
   
@@ -1695,7 +1808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../databases/ibis/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/databases/ibis/" class="md-nav__link">
         
   
   
@@ -1728,10 +1841,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -1746,15 +1857,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../../integrations/metadata-stores/storage/" class="md-nav__link ">
               
   
   
@@ -1772,13 +1883,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_2_2_2" id="__nav_2_2_2_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2_2_2" id="__nav_2_2_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_2_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1796,7 +1907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="delta/" class="md-nav__link">
+      <a href="../../integrations/metadata-stores/storage/delta/" class="md-nav__link">
         
   
   
@@ -1850,20 +1961,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
             
   
   
@@ -1899,7 +2007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../compute/ray/" class="md-nav__link">
+      <a href="../../integrations/compute/ray/" class="md-nav__link">
         
   
   
@@ -1947,13 +2055,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -1961,7 +2066,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../plugins/" class="md-nav__link ">
+            <a href="../../integrations/plugins/" class="md-nav__link ">
               
   
   
@@ -1979,7 +2084,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2_4" id="__nav_2_4_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -2003,7 +2108,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../plugins/sqlmodel/" class="md-nav__link">
+      <a href="../../integrations/plugins/sqlmodel/" class="md-nav__link">
         
   
   
@@ -2031,7 +2136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../plugins/sqlalchemy/" class="md-nav__link">
+      <a href="../../integrations/plugins/sqlalchemy/" class="md-nav__link">
         
   
   
@@ -2079,20 +2184,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
         
           
-          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
             
   
   
@@ -2128,7 +2230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ai/claude/" class="md-nav__link">
+      <a href="../../integrations/ai/claude/" class="md-nav__link">
         
   
   
@@ -2156,7 +2258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ai/mcp/" class="md-nav__link">
+      <a href="../../integrations/ai/mcp/" class="md-nav__link">
         
   
   
@@ -2224,7 +2326,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../examples/" class="md-nav__link ">
+            <a href="../../examples/" class="md-nav__link ">
               
   
   
@@ -2266,7 +2368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/basic/" class="md-nav__link">
+      <a href="../../examples/basic/" class="md-nav__link">
         
   
   
@@ -2294,7 +2396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/aggregation/" class="md-nav__link">
+      <a href="../../examples/aggregation/" class="md-nav__link">
         
   
   
@@ -2322,7 +2424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/expansion/" class="md-nav__link">
+      <a href="../../examples/expansion/" class="md-nav__link">
         
   
   
@@ -2382,7 +2484,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../reference/" class="md-nav__link ">
+            <a href="../../reference/" class="md-nav__link ">
               
   
   
@@ -2455,7 +2557,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../reference/api/" class="md-nav__link ">
+            <a href="../../reference/api/" class="md-nav__link ">
               
   
   
@@ -2530,7 +2632,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../reference/api/definitions/" class="md-nav__link ">
+            <a href="../../reference/api/definitions/" class="md-nav__link ">
               
   
   
@@ -2572,7 +2674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/definitions/feature-spec/" class="md-nav__link">
+      <a href="../../reference/api/definitions/feature-spec/" class="md-nav__link">
         
   
   
@@ -2600,7 +2702,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/definitions/feature/" class="md-nav__link">
+      <a href="../../reference/api/definitions/feature/" class="md-nav__link">
         
   
   
@@ -2628,7 +2730,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/definitions/field/" class="md-nav__link">
+      <a href="../../reference/api/definitions/field/" class="md-nav__link">
         
   
   
@@ -2656,7 +2758,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/definitions/fields-mapping/" class="md-nav__link">
+      <a href="../../reference/api/definitions/fields-mapping/" class="md-nav__link">
         
   
   
@@ -2684,7 +2786,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/definitions/relationship/" class="md-nav__link">
+      <a href="../../reference/api/definitions/relationship/" class="md-nav__link">
         
   
   
@@ -2712,7 +2814,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/definitions/graph/" class="md-nav__link">
+      <a href="../../reference/api/definitions/graph/" class="md-nav__link">
         
   
   
@@ -2740,7 +2842,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/definitions/filters/" class="md-nav__link">
+      <a href="../../reference/api/definitions/filters/" class="md-nav__link">
         
   
   
@@ -2776,7 +2878,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/config/" class="md-nav__link">
+      <a href="../../reference/api/config/" class="md-nav__link">
         
   
   
@@ -2825,7 +2927,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../reference/api/metadata-stores/" class="md-nav__link ">
+            <a href="../../reference/api/metadata-stores/" class="md-nav__link ">
               
   
   
@@ -2867,7 +2969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/metadata-stores/exceptions/" class="md-nav__link">
+      <a href="../../reference/api/metadata-stores/exceptions/" class="md-nav__link">
         
   
   
@@ -2903,7 +3005,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/types/" class="md-nav__link">
+      <a href="../../reference/api/types/" class="md-nav__link">
         
   
   
@@ -2931,7 +3033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/constants/" class="md-nav__link">
+      <a href="../../reference/api/constants/" class="md-nav__link">
         
   
   
@@ -2959,7 +3061,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/utils/" class="md-nav__link">
+      <a href="../../reference/api/utils/" class="md-nav__link">
         
   
   
@@ -2995,7 +3097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/configuration/" class="md-nav__link">
+      <a href="../../reference/configuration/" class="md-nav__link">
         
   
   
@@ -3023,7 +3125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/cli/" class="md-nav__link">
+      <a href="../../reference/cli/" class="md-nav__link">
         
   
   
@@ -3078,10 +3180,60 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#available-metadata-stores" class="md-nav__link">
+  <a href="#storage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Available Metadata Stores
+        Storage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#table-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table Schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dataframe-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DataFrame API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compute
       
     </span>
   </a>
@@ -3118,23 +3270,15 @@
   
     
     
-      
-  
-  
-    
-    
       <li class="md-path__item">
-        <a href="../../orchestration/dagster/metaxify/" class="md-path__link">
+        <a href="../.." class="md-path__link">
           
   <span class="md-ellipsis">
-    Integrations
+    User Guide
   </span>
 
         </a>
       </li>
-    
-  
-
     
   
 
@@ -3147,23 +3291,15 @@
   
     
     
-      
-  
-  
-    
-    
       <li class="md-path__item">
-        <a href="../databases/bigquery/" class="md-path__link">
+        <a href="../.." class="md-path__link">
           
   <span class="md-ellipsis">
-    Metadata Stores
+    Metaxy
   </span>
 
         </a>
       </li>
-    
-  
-
     
   
 
@@ -3181,16 +3317,205 @@
   
 
 
-<h1 id="storage-only-metadata-stores">Storage-Only Metadata Stores<a class="headerlink" href="#storage-only-metadata-stores" title="Permanent link">&para;</a></h1>
-<p>These metadata stores only provide storage and rely on <strong>local</strong> (also referred to as <strong>embedded</strong>) <strong>compute</strong>.</p>
-<div class="admonition success">
-<p class="admonition-title">Recommended</p>
-<p><a href="delta/">DeltaLake</a> is an excellent choice for a storage-only metadata store.</p>
-</div>
-<h2 id="available-metadata-stores">Available Metadata Stores<a class="headerlink" href="#available-metadata-stores" title="Permanent link">&para;</a></h2>
+<h1 id="design-choices">Design Choices<a class="headerlink" href="#design-choices" title="Permanent link">&para;</a></h1>
+<p>As discussed on the <a href="../../">front page</a> and <a href="../pitch/">the Pitch</a>, Metaxy aims to be pluggable, reliable, scalable, and developer-friendly. Here are some of the design choices we made to achieve these goals.</p>
+<h2 id="storage">Storage<a class="headerlink" href="#storage" title="Permanent link">&para;</a></h2>
+<details class="abstract annotate">
+<summary>Data vs Metadata Clarifications</summary>
+<p>Metaxy features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Subject</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data</strong></td>
+<td>The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform.</td>
+</tr>
+<tr>
+<td><strong>Metadata</strong></td>
+<td>Information about the data, typically (1) including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes.</td>
+</tr>
+</tbody>
+</table>
+<p>Metaxy does not interact with <strong>data</strong>.
+As an edge case, Metaxy features may also be pure <strong>metadata</strong> without any references to external <strong>data</strong>.</p>
+</details>
+<ol>
+<li>Unless you are a <a href="https://lancedb.com/">LanceDB</a> fan, in which case <a href="../../integrations/metadata-stores/databases/lancedb/">we got you covered</a></li>
+</ol>
+<p>Metaxy is designed to be compatible with storage systems which satisfy the following requirements:</p>
+<div class="annotate">
 <ul>
-<li><a href="delta/">Delta Lake</a></li>
+<li>has an <em>append</em> operation</li>
+<li>can store <em>map-like elements</em> (e.g. dictionaries)</li>
 </ul>
+<p>??? note "Supporting JSON columns instead of maps"
+  This requirement may be lifted in the future.
+  Unfortunately, the most popular storage solution - PostgreSQL - does not support storing structs or maps.
+  While PostgreSQL is not an ideal choice for a Metaxy <a href="../../guide/learn/metadata-stores/">Metadata Store</a>
+  for other reasons (mainly analytical queries performance), we recognize the need to support it and are exploring a solution in <a href="https://github.com/anam-org/metaxy/issues/223"><code>anam-org/metaxy#223</code></a>.</p>
+</div>
+<p>This allows Metaxy to target the following systems:</p>
+<ul>
+<li>
+<p>modern data warehouses (e.g. ClickHouse, BigQuery, Snowflake, or the more minimalistic DuckDB)</p>
+</li>
+<li>
+<p>modern storage formats like DeltaLake, Iceberg, DuckLake, or anything compatible with Apache Arrow</p>
+</li>
+</ul>
+<p>The Metaxy abstraction that implements these design choices and is used to interact with storage systems is known as <a href="../../guide/learn/metadata-stores/">Metadata Store</a>.</p>
+<h3 id="table-schema">Table Schema<a class="headerlink" href="#table-schema" title="Permanent link">&para;</a></h3>
+<p>Metaxy uses the same storage layout for all storage systems. Each <a href="../../guide/learn/feature-definitions/">feature</a> gets a separate table. Here is how a typical Metaxy feature table looks like:</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>metaxy_feature_version</th>
+<th>metaxy_data_version</th>
+<th>metaxy_data_version_by_field</th>
+<th>metaxy_provenance</th>
+<th>metaxy_provenance_by_field</th>
+<th>metaxy_created_at</th>
+<th>metaxy_updated_at</th>
+<th>metaxy_deleted_at</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>video_001</td>
+<td>a1b2c3d4</td>
+<td>e7f8a9b0</td>
+<td><code>{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}</code></td>
+<td>e7f8a9b0</td>
+<td><code>{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}</code></td>
+<td>2024-01-15T10:30:00Z</td>
+<td>2024-01-15T10:30:00Z</td>
+<td>null</td>
+</tr>
+<tr>
+<td>video_002</td>
+<td>a1b2c3d4</td>
+<td>c1e4b9d8</td>
+<td><code>{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}</code></td>
+<td>c1e4b9d8</td>
+<td><code>{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}</code></td>
+<td>2024-01-15T10:31:00Z</td>
+<td>2024-01-15T10:31:00Z</td>
+<td>null</td>
+</tr>
+<tr>
+<td>video_003</td>
+<td>a1b2c3d4</td>
+<td>k1j2ah7v</td>
+<td><code>{"audio": "custom01", "frames": "custom02"}</code></td>
+<td>a8e2f4c9</td>
+<td><code>{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}</code></td>
+<td>2024-01-15T10:32:00Z</td>
+<td>2024-01-16T14:20:00Z</td>
+<td>null</td>
+</tr>
+<tr>
+<td>video_001</td>
+<td>f5d6e7c8</td>
+<td>b2c3d4e5</td>
+<td><code>{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}</code></td>
+<td>b2c3d4e5</td>
+<td><code>{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}</code></td>
+<td>2024-01-18T09:00:00Z</td>
+<td>2024-01-18T09:00:00Z</td>
+<td>null</td>
+</tr>
+</tbody>
+</table>
+<p>It can also contain custom user-defined columns.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p><code>metaxy_data_version</code>/<code>metaxy_data_version_by_field</code> and <code>metaxy_provenance</code>/<code>metaxy_provenance_by_field</code> serve a slightly different purpose.
+Provenance columns hold <strong>static</strong> versioning information entirely defined by the Metaxy framework. Data version defaults to the same value as provenance, but can be customized by the user <strong>at runtime</strong>, for example derived from the <strong>contents</strong> of the computed sample. Learn more <a href="../../guide/learn/data-versioning/">here</a>.</p>
+</div>
+<p>All historical records for a given feature are stored in the same table. They can be separated by the following <a href="../../guide/learn/system-columns/">system columns</a>:</p>
+<ul>
+<li>
+<p><code>metaxy_feature_version</code> is shared among multiple rows and is changed on any of the feature or upstream feature <code>code_version</code> changes</p>
+</li>
+<li>
+<p><code>metaxy_data_version</code>, <code>metaxy_data_version_by_field</code>, <code>metaxy_provenance</code>, <code>metaxy_provenance_by_field</code> carry versioning and provenance information about the specific row</p>
+</li>
+<li>
+<p><code>metaxy_created_at</code>, <code>metaxy_updated_at</code>, <code>metaxy_deleted_at</code> allow to identify the latest active row for a given feature version</p>
+</li>
+</ul>
+<h3 id="metadata-operations">Metadata Operations<a class="headerlink" href="#metadata-operations" title="Permanent link">&para;</a></h3>
+<p class="annotate">Metaxy tables are <strong>immutable</strong>. Once written, a row is never modified or deleted (1).</p>
+<ol>
+<li>but users can <a href="../../guide/learn/deletions/#hard-deletes">delete rows</a> manually if needed</li>
+</ol>
+<p class="annotate">As discussed earlier, writing metadata in Metaxy is done by <strong>appending</strong> to a feature table. Subsequent writes with the same feature version effectively act as overwrites. This is achieved by filtering out older rows using the <code>metaxy_updated_at</code> columns (1). <a href="../../guide/learn/deletions/#soft-deletes">Soft-deletes</a> are implemented as appends as well.</p>
+<ol>
+<li>also known as merge-on-read</li>
+</ol>
+<p>The append-only design choice has a few significant benefits:</p>
+<ul>
+<li>
+<p>unlocks easier and lock-free setups for multiple writers</p>
+</li>
+<li>
+<p>ensures existing and historical metadata can never be lost or corrupted</p>
+</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Users can implement <a href="../../guide/learn/deletions/#hard-deletes">storage cleanup</a> based on their specific needs and constraints.</p>
+</div>
+<ul>
+<li>
+<p>avoids additional write-time checks or operations, which has performance benefits</p>
+</li>
+<li>
+<p>allows Metaxy to be used with storage systems which lack ACID guarantees and do not support transactions</p>
+</li>
+</ul>
+<hr />
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>These design choices come with a cost of increased storage usage. But storage is cheap while mistakes aren't.</p>
+</div>
+<h2 id="dataframe-api">DataFrame API<a class="headerlink" href="#dataframe-api" title="Permanent link">&para;</a></h2>
+<p>In order to be versatile and support different compute engines, Metaxy uses <a href="https://github.com/narwhals/narwhals">Narwhals</a> for DataFrame manipulations.</p>
+<p class="annotate">This allows metadata store implementations to reuse the same code. Currently only a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../reference/api/metadata-stores/#metaxy.MetadataStore">thin subset</a> requires storage-specific implementations (1).</p>
+<p>(1) such as providing database-specific hashing syntax and some other operations</p>
+<h2 id="compute">Compute<a class="headerlink" href="#compute" title="Permanent link">&para;</a></h2>
+<p class="annotate">Increment resolution in Metaxy involves running computations: every time the user requests an increment for a given <a href="../../guide/learn/feature-definitions/">feature</a>, Metaxy has to join upstream features, hash their versions, and filter out samples that have already been processed. This can be performed either <strong>locally</strong> (typically favored in development environments) or <strong>remotely</strong> (achieves better performance in production). Metaxy supports both options: <a href="../../integrations/metadata-stores/databases/">databases</a> for remote compute and <a href="../../integrations/metadata-stores/storage/">storage-only</a> metadata stores for embedded compute (1).</p>
+<ol>
+<li>e.g. Polars or Duckdb</li>
+</ol>
+<p>When resolving incremental updates for a <a href="../../guide/learn/feature-definitions/">feature</a>, Metaxy attempts to perform all computations such as <a href="../../guide/learn/data-versioning/">sample version calculations</a> within the metadata store.</p>
+<div class="admonition note">
+<p class="admonition-title">When can <strong>local</strong> computations happen instead</p>
+<p>Metaxy's versioning engine runs <strong>locally</strong> instead:</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>The <strong>local</strong> versioning engine is implemented with <a href="https://github.com/ion-elgreco/polars-hash"><code>polars-hash</code></a> and benefits from parallelism, predicate pushdown, and other features of <a href="https://pola.rs/">Polars</a>.</p>
+</div>
+<ol>
+<li>
+<p>If the metadata store does not have a compute engine at all: for example, <a href="https://delta.io/">DeltaLake</a> is just a storage format.</p>
+</li>
+<li>
+<p>If the user explicitly requested to keep the computations <strong>local</strong> by setting <code>versioning_engine="polars"</code> when instantiating the metadata store.</p>
+</li>
+<li>
+<p>If a <strong>fallback store</strong> had to be used to retrieve one of the parent features missing in the current store.</p>
+</li>
+</ol>
+<p>All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.</p>
+</div>
+<p>All metadata store implementations are guaranteed to return equivalent results. They are continuously tested against the reference Polars implementation.</p>
 
 
 
@@ -3267,12 +3592,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
-        <script src="../../../javascripts/telemetry.js"></script>
+        <script src="../../javascripts/telemetry.js"></script>
       
     
   </body>
