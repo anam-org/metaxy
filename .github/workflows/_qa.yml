@@ -167,6 +167,22 @@ jobs:
           report-only-changed-files: true
           unique-id-for-comment: ${{ matrix.python-version }}
 
+      - name: Generate Test Timing Report
+        if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
+        id: timing
+        run: |
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          uv run mxtest-analyze-timings ./junit.xml -f markdown >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post Test Timing Comment
+        if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.timing.outputs.report }}
+          comment-tag: test-timing-report
+
   test-windows:
     needs: filter
     if: ${{ inputs.run-windows && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}

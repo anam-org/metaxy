@@ -3013,10 +3013,16 @@ version = "0.0.1"
 source = { editable = "tests/metaxy_testing" }
 dependencies = [
     { name = "metaxy" },
+    { name = "pydantic" },
+    { name = "tabulate" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "metaxy", editable = "." }]
+requires-dist = [
+    { name = "metaxy", editable = "." },
+    { name = "pydantic" },
+    { name = "tabulate" },
+]
 
 [[package]]
 name = "mike"

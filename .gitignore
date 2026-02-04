@@ -1,4 +1,5 @@
 .coverage
+.test-timing
 
 # Python-generated files
 __pycache__/
