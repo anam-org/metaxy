@@ -53,26 +53,8 @@ All of this is possible thanks to (1) [Narwhals](https://narwhals-dev.github.io/
 1. we really do stand on the shoulders of giants
 
 
-??? abstract annotate "Data vs Metadata Clarifications"
+--8<-- "data-vs-metadata.md"
 
-    Metaxy manages **metadata** while **data** typically (1) lives elsewhere:
-    ```
-    ┌─────────────────────────────────┐          ┌─────────────────────────┐
-    │      Metadata (Metaxy)          │          │   Data (e.g., S3)       │
-    ├──────┬──────────┬──────┬────────┤          │                         │
-    │  ID  │   path   │ size │version │          │  📦 s3://my-bucket/     │
-    ├──────┼──────────┼──────┼────────┤          │                         │
-    │ img1 │ s3://... │ 2.1M │a3fdsf  │ ────────>│    ├─ img1.jpg          │
-    │ img2 │ s3://... │ 1.8M │b7e123  │ ────────>│    ├─ img2.jpg          │
-    └──────┴──────────┴──────┴────────┘          └─────────────────────────┘
-    ```
-
-    | **Subject** | **Description** |
-    |---------|-------------|
-    | **Data** | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform. |
-    | **Metadata** | Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes. |
-
-1.  Unless you are a [LanceDB](https://lancedb.com/) fan, in which case [we got you covered](./integrations/metadata-stores/databases/lancedb.md)
 
 ## Reliability
 
@@ -144,20 +126,15 @@ Sounds really bad, right? Yes, and it is (1). Until recently, a general solution
 
 1. for example, a `video` sample could independently version the frames and the audio track: `{"audio": "asddsa", "frames": "joasdb"}`
 
-## More Information
+## What's Next?
 
 Here are a few more useful links:
 
 <div class="annotate" markdown>
 
-- Take your time and read a bit more (1) about Metaxy [here](./overview.md)
-- Jump to [Quickstart](./guide/overview/quickstart.md) if you just can't wait (WIP!)
-- Abstract Metaxy concepts are [discussed here](./guide/learn/index.md)
-- View complete, end-to-end [examples](./examples/index.md)
-- Explore [Metaxy integrations](integrations/index.md)
-- Use Metaxy [from the command line](./reference/cli.md)
-- Learn how to [configure Metaxy](./reference/configuration.md)
-- Get lost in our [API Reference](./reference/api/index.md)
+- Read the [Metaxy Pitch](./metaxy/pitch.md) (1)
+- Learn about [design choices](./metaxy/design.md)
+- [Explore](./metaxy/explore.md) other Metaxy components
 
 </div>
 

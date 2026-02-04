@@ -1,70 +1,68 @@
 ---
 title: "Metadata Stores"
-description: "How Metaxy abstracts metadata storage and versioning."
+description: "Learn how to use Metadata Stores."
 ---
 
 # Metadata Stores
 
-Metaxy abstracts interactions with metadata stored in external systems such as databases, files, or object stores, through a unified interface: [`MetadataStore`][metaxy.MetadataStore].
+Metaxy abstracts interactions with metadata stored in external systems such as databases, files, or object stores, through a unified interface: [`MetadataStore`][metaxy.MetadataStore]. `MetadataStore` is implemented to satisfy [storage design choices](../../metaxy/design.md#storage).
 
-Metadata stores expose methods for [reading][metaxy.MetadataStore.read], [writing][metaxy.MetadataStore.write], deleting metadata, and the most important one: [resolve_update][metaxy.MetadataStore.resolve_update] for receiving a metadata increment.
+All operations with metadata stores may reference features as one of the supported [syntactic sugar](./syntactic-sugar.md#features) alternatives. In practice, it is typically convenient to either use feature classes or stringified feature keys.
 
-It looks more or less like this:
+Metadata accept [Narwhals-compatible](https://narwhals-dev.github.io/narwhals/) dataframes and return Narwhals dataframes.
+
+## Writes
+
+In order to save metadata into a metadata store, you can use the [`write`][metaxy.MetadataStore.write] method:
 
 !!! example
 
     ```py
-    with store:
-        df = store.read(MyFeature)
-
     with store.open("w"):
         store.write(MyFeature, df)
     ```
 
-Metadata stores implement an append-only storage model and rely on [Metaxy system columns](system-columns.md).
+Subsequent writes effectively overwrite the previous metadata, while actually [appending](../../metaxy/design.md#metadata-operations) to the same table.
 
-!!! note
+## Reads
 
-    Metaxy never mutates metadata in-place (1)
-    { .annotate }
+Metadata can be retrieved using the [`read`][metaxy.MetadataStore.read] method:
 
-    1. :fire: safety and performance reasons
+!!! example
 
-!!! warning "Forged About ACID"
+    ```py
+    with store.open("w"):
+        df = store.write("my/feature", df)  # string keys work as well
 
-    Metadata reads/writes **are not guaranteed to be ACID**: Metaxy is designed to interact with analytical databases which lack ACID guarantees by definition and design. (1)
-    { .annotate }
+    with store:
+        df = store.read("my/feature")
+    ```
 
-    1. for - you've guessed it right - :fire: performance reasons
+## Resolving Increments
 
-    However, Metaxy never retrieves the same sample version twice, and performs read-time deduplication (1) by the combination of the feature version, ID columns, and `metaxy_created_at`.
-    { .annotate }
+Increments can be computed using the [`resolve_update`][metaxy.MetadataStore.resolve_update] method:
 
-    1. also known as **merge-on-read**
+!!! example
 
-When resolving incremental updates for a [feature](feature-definitions.md), Metaxy attempts to perform all computations such as [sample version calculations](data-versioning.md) within the metadata store.
-This includes joining upstream features, hashing their versions, and filtering out samples that have already been processed - everything is pushed into the DB.
+    <!-- skip next -->
+    ```py
+    with store.open("w"):
+        inc = store.resolve_update("my/feature")
+    ```
 
-!!! note "When can **local** computations happen instead"
+The returned [`Increment`][metaxy.Increment] or [`LazyIncrement`][metaxy.LazyIncrement] contains fresh samples that haven't been processed yet, stale samples which require to be processed again, and orphaned samples which are no longer present in upstream features and may be deleted.
 
-    Metaxy's versioning engine runs **locally** instead:
+It is up to the caller to decide how to handle the processing and potential deletion of orphaned samples.
 
-    !!! info
+Once processing is complete, the caller is expected to call `MetadataStore.write` to record metadata about the processed samples.
 
-        The **local** versioning engine is implemented with [`polars-hash`](https://github.com/ion-elgreco/polars-hash) and benefits from parallelism, predicate pushdown, and other features of [Polars](https://pola.rs/).
+!!! tip
 
-    1. If the metadata store does not have a compute engine at all: for example, [DeltaLake](https://delta.io/) is just a storage format.
-
-    2. If the user explicitly requested to keep the computations **local** by setting `versioning_engine="polars"` when instantiating the metadata store.
-
-    3. If a **fallback store** had to be used to retrieve one of the parent features missing in the current store.
-
-    All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.
+    Learn more about how increments are computed [here](../../metaxy/design.md#compute).
 
 ## Deletions
 
-Deletes are typically not required during normal operations, but they are still supported for cleanup purposes. (1)
-{ .annotate }
+Metadata stores support deletions, which are not required during normal Metaxy operations (1).
 
 1. deletions might be necessary when working with [expansion linear relationships](relationship.md).
 
@@ -81,6 +79,8 @@ with store.open("w"):
         filters=[nw.col("metaxy_created_at") < datetime.now(timezone.utc) - timedelta(days=30)],
     )
 ```
+
+Learn more about deletions [here](./deletions.md).
 
 ## Metadata Store Implementations
 

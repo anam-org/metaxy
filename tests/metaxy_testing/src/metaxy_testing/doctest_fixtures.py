@@ -22,6 +22,20 @@ if TYPE_CHECKING:
 # Define spec at module level for stable reference
 _MY_FEATURE_SPEC = FeatureSpec(key="my/feature", id_columns=["id"], fields=["part/1", "part/2"])
 
+sample_data = pl.DataFrame(
+    {
+        "id": ["a", "b", "c"],
+        "status": ["active", "pending", "active"],
+        "is_valid": [True, False, True],
+        "quality": [0.95, 0.72, 0.88],
+        "metaxy_provenance_by_field": [
+            {"part_1": "hash_a1", "part_2": "hash_a2"},
+            {"part_1": "hash_b1", "part_2": "hash_b2"},
+            {"part_1": "hash_c1", "part_2": "hash_c2"},
+        ],
+    }
+)
+
 
 class MyFeature(BaseFeature, spec=None):
     """Pre-populated feature for docstring examples.
@@ -101,19 +115,6 @@ class DocsStoreFixtures:
         # Write sample data to store_with_data
         # Include required metaxy_provenance_by_field column with struct matching feature fields
         # Field keys use underscores in struct keys (part/1 -> part_1)
-        sample_data = pl.DataFrame(
-            {
-                "id": ["a", "b", "c"],
-                "status": ["active", "pending", "active"],
-                "is_valid": [True, False, True],
-                "quality": [0.95, 0.72, 0.88],
-                "metaxy_provenance_by_field": [
-                    {"part_1": "hash_a1", "part_2": "hash_a2"},
-                    {"part_1": "hash_b1", "part_2": "hash_b2"},
-                    {"part_1": "hash_c1", "part_2": "hash_c2"},
-                ],
-            }
-        )
 
         with self._store_with_data.open("w"):
             self._store_with_data.write(MyFeature, sample_data)

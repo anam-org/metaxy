@@ -51,20 +51,24 @@ These versions are sample-level and require access to the metadata store in orde
 
 - **Provenance By Field** is computed from the upstream **Provenance By Field** (with respect to defined [field-level dependencies](feature-definitions.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
 
-| sample_uid | metaxy_provenance_by_field                    |
-| ---------- | --------------------------------------------- |
-| video_001  | `{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}` |
-| video_002  | `{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}` |
-| video_003  | `{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}` |
-| video_004  | `{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}` |
+| id        | metaxy_provenance_by_field                    |
+| --------- | --------------------------------------------- |
+| video_001 | `{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}` |
+| video_002 | `{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}` |
+| video_003 | `{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}` |
+| video_004 | `{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}` |
 
 - **Sample Version** is derived from the **Provenance By Field** by simply hashing it.
 
 Computing this value is the goal of the entire versioning engine. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.
 
-!!! tip "Customizing Sample Versions"
+### Content-Based Versioning (Data Version)
 
-    Users can override the computed sample-level versions by setting `metaxy_data_version_by_field` on their metadata. This can be used for eliminating false-positives (e.g. content-based hashing), when sometimes data stays the same even after upstream has changed. This customization only affects how downstream increments are calculated.
+Users can override the computed sample-level versions by setting `metaxy_data_version_by_field` on their metadata, effectively providing a **Data Version** for the sample. This can be used for preventing unnecessary downstream updates, if the computed sample stays the same even after upstream data has changed.
+
+For example, the data version can be calculated with `sha256`, or a [perceptual hashing](https://en.wikipedia.org/wiki/Perceptual_hashing) method for images and videos.
+
+This customization only affects how downstream increments are calculated, as the data version cannot be known until the feature is computed.
 
 ## Practical Example
 

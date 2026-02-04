@@ -7,72 +7,40 @@ description: "Shorthand syntax for feature definitions."
 
 ## Type Coercion For Input Types
 
-Internally, Metaxy uses strongly typed Pydantic models to represent feature keys, their fields, and the dependencies between them.
+Internally, Metaxy uses strongly typed Pydantic models to represent features, feature keys, their fields, and dependencies between them. But specifying all of these models can be very verbose and cumbersome.
 
-To avoid boilerplate, Metaxy also has syntactic sugar for construction of these classes.
-Different ways to provide them are automatically coerced into canonical internal models.
-This is fully typed and only affects **constructor arguments**, so accessing **attributes** on Metaxy models will always return only the canonical types.
+Because Metaxy loves its users, we provide syntactic sugar for simplified construction of these models, and various Metaxy APIs typically accept unions of equivalent types.
+Metaxy coerces them into canonical internal models.
 
-Some examples:
+This is fully typed and only affects constructor arguments. Attributes on Metaxy objects will always return only the canonical type.
 
-```py
-import metaxy as mx
+## Features
 
-key = mx.FeatureKey("prefix/feature")
-key = mx.FeatureKey(["prefix", "feature"])
-same_key = mx.FeatureKey(key)
-```
+APIs that require feature references accept the following equivalent objects:
 
-Metaxy really loves you, the user!
+- **slash-separated strings**: `"my/feature"`
+
+- **sequence of strings**: `["my", "feature"]`
+
+- [`FeatureKey`][metaxy.FeatureKey]: `mx.FeatureKey("my/feature")`
+
+- [`FeatureSpec`][metaxy.FeatureSpec]: `mx.FeatureSpec(key="my/feature", ...)`
+
+- [`BaseFeature`] types: `Myfeature`, where `Myfeature` is a subclass of `BaseFeature`
 
 ## Keys
 
-Both `FeatureKey` and `FieldKey` accept:
+Both `FeatureKey` and `FieldKey` can be constructed from:
 
-- **String format**: `FeatureKey("prefix/feature")`
+- **slash-separated strings**: `FeatureKey("prefix/feature")`
 
-- **Sequence format**: `FeatureKey(["prefix", "feature"])`
+- **sequence of strings**: `FeatureKey(["prefix", "feature"])`
 
-- **Same type**: `FeatureKey(another_feature_key)` -- for full Inception mode
+Internally they are represented as a sequence of parts.
 
-All formats produce equivalent keys, internally represented as a sequence of parts.
+## Fields
 
-## Feature Dep
-
-[`FeatureDep`][metaxy.FeatureDep] accepts types coercible to `FeatureKey` and additionally subclasses of `BaseFeature`:
-
-```py
-import metaxy as mx
-
-dep = mx.FeatureDep(feature=MyFeature)
-```
-
-## Feature Spec
-
-[`FeatureSpec`][metaxy.FeatureSpec] has some syntactic sugar implemented as well.
-
-### Deps
-
-The `deps` argument accepts a sequence of types coercible to `FeatureDep`:
-
-```py
-import metaxy as mx
-
-spec = mx.FeatureSpec(
-    key="example/spec",
-    id_columns=["id"],
-    deps=[
-        MyFeature,
-        mx.FeatureDep(feature=["my", "feature", "key"]),  # sequence format
-        ["another", "key"],  # also sequence format
-        "very/nice",  # string format with slash separator
-    ],
-)
-```
-
-### Fields
-
-`fields` elements can omit the full `FieldsSpec` and be strings (field keys) instead:
+`fields` argument of `FeatureSpec` can omit the full `FieldsSpec`:
 
 ```python
 import metaxy as mx
@@ -84,7 +52,7 @@ spec = mx.FeatureSpec(
 )
 ```
 
-### Fields Mapping
+## Fields Mapping
 
 Metaxy uses a bunch of common sense heuristics [automatically find parent fields](../../reference/api/definitions/fields-mapping.md) by matching on their names. This is enabled by default. For example, using the same field names in upstream and downstream features will automatically create a dependency between these fields:
 

@@ -9,7 +9,6 @@ they are tested via their source files.
 
 import re
 
-import metaxy as mx
 from metaxy.models.feature import FeatureGraph
 from sybil import Sybil
 from sybil.evaluators.python import PythonEvaluator
@@ -20,6 +19,8 @@ from sybil.parsers.markdown.lexers import (
 )
 from sybil.parsers.markdown.skip import SkipParser
 from sybil.typing import Evaluator
+
+import metaxy as mx
 
 
 # Workaround for pytest-cases compatibility issue
@@ -159,6 +160,7 @@ def sybil_setup(namespace):
         DocsStoreFixtures,
         MyFeature,
         register_doctest_fixtures,
+        sample_data,
     )
 
     # Create isolated graph and enter its context
@@ -189,6 +191,7 @@ def sybil_setup(namespace):
     namespace["nw"] = nw
     namespace["graph"] = isolated_graph
     namespace["MyFeature"] = MyFeature
+    namespace["df"] = sample_data
     # `store` is pre-populated with MyFeature data for examples that need existing data
     namespace["store"] = store_fixtures.store_with_data
     namespace["empty_store"] = store_fixtures.store

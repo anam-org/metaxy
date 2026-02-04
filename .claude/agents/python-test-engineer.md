@@ -152,8 +152,11 @@ def test_write_and_read(store: MetadataStore, snapshot: SnapshotAssertion):
         pass
 
     df = nw.from_native(pl.DataFrame({...}))
-    store.write_metadata(TestFeature, df)
-    result = store.read_metadata(TestFeature)
+    with store.open("w"):
+        store.write(TestFeature, df)
+
+    with store:
+        result = store.read(TestFeature)
 
     assert result.to_native().to_dicts() == snapshot
 ```

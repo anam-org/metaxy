@@ -13,8 +13,9 @@ with store:
     # diff.added - new samples
     # diff.changed - samples with changed provenance
 
+with store:
     # Read metadata
-    result = store.read_metadata(MyFeature, current_only=True)
+    result = store.read(MyFeature, current_only=True)
     df = result.collect().to_polars()
 
 with store.open("w"):

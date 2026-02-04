@@ -7,6 +7,7 @@ repo_name: anam-org/metaxy
 theme:
   name: material
   custom_dir: docs/.overrides
+  homepage: index.md
   logo: assets/metaxy.svg
   favicon: assets/favicon.ico
   icon:
@@ -60,6 +61,9 @@ hooks:
 
 plugins:
   - search
+  - exclude:
+      glob:
+        - snippets/*
   - metaxy-examples:
       examples_dir: "../examples"
   - cyclopts
@@ -177,7 +181,7 @@ markdown_extensions:
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.snippets:
-      base_path: ['examples']
+      base_path: ['examples', 'docs/snippets']
   # Metaxy custom extensions (must be before superfences to inject fenced code blocks)
   - metaxy_config
   - metaxy_examples
@@ -201,7 +205,9 @@ nav:
   - User Guide:
     - Metaxy:
       - Introduction: index.md
-      - Overview: overview.md
+      - Pitch: metaxy/pitch.md
+      - Design Choices: metaxy/design.md
+      - Explore: metaxy/explore.md
     - Getting Started:
       - Quickstart: guide/overview/quickstart.md
       - Feature Dependencies: guide/overview/feature-dependencies.md
@@ -284,7 +290,7 @@ extra:
 
 validation:
   omitted_files: warn
-  absolute_links: warn
+  absolute_links: relative_to_docs
   unrecognized_links: warn
   anchors: warn
 

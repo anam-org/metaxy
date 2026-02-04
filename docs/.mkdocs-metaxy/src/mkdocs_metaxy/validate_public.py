@@ -19,6 +19,11 @@ log = logging.getLogger("mkdocs.hooks.validate_public")
 # Excludes custom directives like `metaxy-config`, `metaxy-mcp-tools`, `metaxy-example`
 MKDOCSTRINGS_PATTERN = re.compile(r"^::: ([\w.]+)$", re.MULTILINE)
 
+# Cache the griffe loader to avoid re-parsing on every rebuild during mkdocs serve.
+# Creating a new GriffeLoader on each rebuild leaks memory due to AST objects
+# with circular references not being garbage collected.
+_griffe_loader: griffe.GriffeLoader | None = None
+
 # Identifiers that are not Python objects (custom markdown extensions)
 SKIP_IDENTIFIERS = frozenset(
     {
@@ -38,12 +43,13 @@ def _has_public_decorator(obj: griffe.Object) -> bool:
     Returns:
         True if the object has @public decorator, False otherwise.
     """
-    if not hasattr(obj, "decorators"):
+    decorators = getattr(obj, "decorators", None)
+    if decorators is None:
         # Modules, attributes, etc. don't have decorators
         # They are considered public if explicitly documented
         return True
 
-    for decorator in obj.decorators:
+    for decorator in decorators:
         if decorator.callable_path in ("metaxy._decorators.public",):
             return True
 
@@ -63,6 +69,31 @@ def _is_module_documentation(identifier: str, obj: griffe.Object) -> bool:
     return isinstance(obj, griffe.Module)
 
 
+def _get_griffe_loader() -> griffe.GriffeLoader | None:
+    """Get or create the cached griffe loader."""
+    global _griffe_loader
+    if _griffe_loader is not None:
+        return _griffe_loader
+
+    loader = griffe.GriffeLoader(search_paths=["src"])
+
+    try:
+        loader.load("metaxy")
+    except griffe.LoadingError as e:
+        log.warning(f"Could not load metaxy package for validation: {e}")
+        return None
+
+    # Also load extension packages
+    for ext_name in ("metaxy.ext", "metaxy.metadata_store"):
+        try:
+            loader.load(ext_name)
+        except griffe.LoadingError:
+            pass
+
+    _griffe_loader = loader
+    return loader
+
+
 def on_files(files: list, config: dict) -> list:
     """MkDocs hook called after files are collected.
 
@@ -75,21 +106,9 @@ def on_files(files: list, config: dict) -> list:
     Returns:
         The unmodified files list.
     """
-    # Load the metaxy package for inspection
-    loader = griffe.GriffeLoader(search_paths=["src"])
-
-    try:
-        loader.load("metaxy")
-    except griffe.LoadingError as e:
-        log.warning(f"Could not load metaxy package for validation: {e}")
+    loader = _get_griffe_loader()
+    if loader is None:
         return files
-
-    # Also load extension packages
-    for ext_name in ("metaxy.ext", "metaxy.metadata_store"):
-        try:
-            loader.load(ext_name)
-        except griffe.LoadingError:
-            pass
 
     errors: list[tuple[str, str]] = []  # (file_path, identifier)
 
