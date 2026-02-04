@@ -5,4 +5,7 @@
 | video_003 | a1b2c3d4               | k1j2ah7v            | `{"audio": "custom01", "frames": "custom02"}` | a8e2f4c9          | `{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}` | 2024-01-15T10:32:00Z | 2024-01-16T14:20:00Z | null              |
 | video_001 | f5d6e7c8               | b2c3d4e5            | `{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}` | b2c3d4e5          | `{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}` | 2024-01-18T09:00:00Z | 2024-01-18T09:00:00Z | null              |
 
-It can also contain custom user-defined columns.
+It can also contain custom user-defined columns (1).
+{ .annotate }
+
+1. and in fact, `id` is such a column, because ID columns are customizable

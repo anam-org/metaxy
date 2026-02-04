@@ -19,12 +19,12 @@ Metaxy is designed to be compatible with storage systems which satisfy the follo
 
 - can store _map-like elements_ (e.g. dictionaries)
 
-  ??? note "Removing This Requirement"
+    ??? note "Removing This Requirement"
 
-      This requirement may be lifted in the future.
-      Unfortunately, the most popular storage solution - PostgreSQL - does not satisfy it.
-      While PostgreSQL is not an ideal choice for a Metaxy [Metadata Store](../guide/learn/metadata-stores.md)
-      for other reasons (mainly analytical queries performance), we recognize the need to support it and are exploring a solution in [`anam-org/metaxy#223`](https://github.com/anam-org/metaxy/issues/223).
+        This requirement may be lifted in the future.
+        Unfortunately, the most popular storage solution - PostgreSQL - does not satisfy it.
+        While PostgreSQL is not an ideal choice for a Metaxy [Metadata Store](../guide/learn/metadata-stores.md)
+        for other reasons (mainly analytical queries performance), we recognize the need to support it and are exploring a solution in [`anam-org/metaxy#223`](https://github.com/anam-org/metaxy/issues/223).
 
 </div>
 
@@ -34,7 +34,9 @@ The Metaxy abstraction that implements these design choices and is used to inter
 
 ### Table Schema
 
-Metaxy uses the same storage layout for all storage systems. Each [feature](../guide/learn/feature-definitions.md) gets a separate table. Here is how a typical Metaxy feature table looks like:
+Metaxy uses the same storage layout for all storage systems. Each [feature](../guide/learn/feature-definitions.md) gets a separate table.
+
+Here is how a typical Metaxy feature table looks like:
 
 --8<-- "table.md"
 

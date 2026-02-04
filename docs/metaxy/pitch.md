@@ -65,4 +65,4 @@ Hopefully this was impressive enough and has sparked some interest in Metaxy!
 ## 🚀 What's Next?
 
 - Learn about Metaxy [design choices](./design.md)
-  --8<-- "whats-next.md"
+--8<-- "whats-next.md"
