@@ -25,7 +25,7 @@ description: "A high level introduction to Metaxy."
 
 <div class="annotate" markdown>
 
-Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipelines that manages and tracks **metadata** across complex computational graphs, including row-level [versions](guide/learn/data-versioning.md) (1), while allowing the codebase to evolve over time without friction. Metaxy gives you quite a few superpowers:
+Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipelines that manages and tracks **metadata** across complex computational graphs, including row-level [versions](guide/learn/data-versioning.md) (1), allowing the codebase to evolve over time without friction. Metaxy gives you quite a few superpowers:
 
 - Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second. (2)
 - Freedom from storage lock-in. Swap [storage backends](./integrations/metadata-stores/index.md) in development and production environments without breaking a sweat (3).
@@ -40,7 +40,7 @@ Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipeli
 4. See our official integrations [here](./integrations/index.md)
 
 
-!!! tip annotate "Granular Data Versioning"
+!!! tip annotate "Super Granular Data Versioning"
 
     The feature that makes Metaxy really stand out is the ability to track **partial data dependencies** (1) and **skip downstream updates** unless the exactly required subset of upstream data has changed. At the moment of writing, Metaxy is the only available tool that tackles these problems.
 
@@ -58,9 +58,9 @@ All of this is possible thanks to (1) [Narwhals](https://narwhals-dev.github.io/
 
 ## Reliability
 
-Metaxy is fanatically tested across all supported metadata stores, Python versions and platforms [^1]. We guarantee versioning consistency across the supported metadata stores.
+Metaxy was [designed](./metaxy/design.md) to handle large amounts of **big metadata** in distributed environments, makes very little assumptions about usage patterns and cannot enter an inconsistent state.
 
-Metaxy was built to handle large amounts of **big metadata** in distributed environments, makes very little assumptions about usage patterns and cannot enter an inconsistent state.
+Metaxy is fanatically tested across all supported metadata stores, Python versions and platforms [^1]. We guarantee versioning consistency across the supported metadata stores.
 
 We have been dogfooding Metaxy since December 2025 at Anam. We are running it in production with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md), [Dagster](./integrations/orchestration/dagster/index.md), and [Ray](./integrations/compute/ray.md) (1).
 { .annotate }
@@ -126,18 +126,12 @@ Sounds really bad, right? Yes, and it is (1). Until recently, a general solution
 
 1. for example, a `video` sample could independently version the frames and the audio track: `{"audio": "asddsa", "frames": "joasdb"}`
 
-## What's Next?
+## 🚀 What's Next?
 
 Here are a few more useful links:
 
-<div class="annotate" markdown>
-
-- Read the [Metaxy Pitch](./metaxy/pitch.md) (1)
-- Learn about [design choices](./metaxy/design.md)
-- [Explore](./metaxy/explore.md) other Metaxy components
-
-</div>
-
-1. just one more page, I promise, just one more page
+- Read the [Metaxy Pitch](./metaxy/pitch.md)
+- Learn about Metaxy [design choices](./metaxy/design.md)
+--8<-- "whats-next.md"
 
 [^1]: The CLI is not tested on Windows yet.

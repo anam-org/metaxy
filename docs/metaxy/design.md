@@ -120,3 +120,7 @@ When resolving incremental updates for a [feature](../guide/learn/feature-defini
     All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.
 
 All metadata store implementations are guaranteed to return equivalent results. They are continuously tested against the reference Polars implementation.
+
+## 🚀 What's Next?
+
+--8<-- "whats-next.md"

@@ -64,10 +64,5 @@ Hopefully this was impressive enough and has sparked some interest in Metaxy!
 
 ## 🚀 What's Next?
 
-- Itching to write some Metaxy code? Continue to [Quickstart](../guide/overview/quickstart.md) (WIP!).
-- Learn more about [feature definitions](../guide/learn/feature-definitions.md) or [versioning](../guide/learn/data-versioning.md)
-- View complete, end-to-end [examples](../examples/index.md)
-- Explore [Metaxy integrations](../integrations/index.md)
-- Use Metaxy [from the command line](../reference/cli.md)
-- Learn how to [configure Metaxy](../reference/configuration.md)
-- Get lost in our [API Reference](../reference/api/index.md)
+- Learn about Metaxy [design choices](./design.md)
+  --8<-- "whats-next.md"

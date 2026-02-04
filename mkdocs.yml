@@ -207,7 +207,6 @@ nav:
       - Introduction: index.md
       - Pitch: metaxy/pitch.md
       - Design Choices: metaxy/design.md
-      - Explore: metaxy/explore.md
     - Getting Started:
       - Quickstart: guide/overview/quickstart.md
       - Feature Dependencies: guide/overview/feature-dependencies.md
