@@ -5,6 +5,10 @@ description: "SQLAlchemy integration for database migrations."
 
 # SQLAlchemy
 
+!!! warning "Experimental"
+
+    This functionality is experimental.
+
 Metaxy provides helpers for integrating with [SQLAlchemy](https://www.sqlalchemy.org/).
 These helpers allow to construct `sqlalchemy.MetaData` objects for user-defined feature tables and for Metaxy system tables.
 

@@ -5,6 +5,10 @@ description: "BigQuery as a metadata store backend."
 
 # BigQuery
 
+!!! warning "Experimental"
+
+    This functionality is experimental.
+
 [BigQuery](https://cloud.google.com/bigquery) is a serverless data warehouse managed by Google Cloud. To use Metaxy with BigQuery, configure [`BigQueryMetadataStore`][metaxy.metadata_store.bigquery.BigQueryMetadataStore]. Versioning computations run natively in BigQuery.
 
 ## Installation

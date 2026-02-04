@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from metaxy._decorators import public
+from metaxy._decorators import experimental, public
 from metaxy._exceptions import ExternalFeatureVersionMismatchError
 from metaxy._version import __version__
 from metaxy._warnings import (
@@ -151,6 +151,7 @@ def init_metaxy(
 __all__ = [
     "BatchedMetadataWriter",
     "BaseFeature",
+    "experimental",
     "FeatureDefinition",
     "FeatureGraph",
     "graph",

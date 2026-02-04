@@ -281,8 +281,8 @@ jobs:
       - name: Build Docs
         id: docs
         run: uv run mkdocs build --strict
-      - name: Format Docs
-        run: uv run --no-sync --with ruff --with mdformat-ruff --with mdformat mdformat
+      - name: Test Docs Snippets
+        run: uv run pytest ./docs
 
   check:
     permissions: {}

@@ -5,6 +5,10 @@ description: "LanceDB as a metadata store backend."
 
 # LanceDB
 
+!!! warning "Experimental"
+
+    This functionality is experimental.
+
 [LanceDB](https://lancedb.github.io/lancedb/) is an vector database built on the Lance columnar format. To use Metaxy with LanceDB, configure [`LanceDBMetadataStore`][metaxy.metadata_store.lancedb.LanceDBMetadataStore]. It uses the in-memory Polars engine for versioning computations. LanceDB handles schema evolution, transactions, and compaction automatically.
 
 It runs embedded (local directory) or against external storage (object stores, HTTP endpoints, LanceDB Cloud), so you can use the same store type for local development and cloud workloads.

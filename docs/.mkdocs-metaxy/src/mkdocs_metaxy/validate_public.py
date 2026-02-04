@@ -50,7 +50,10 @@ def _has_public_decorator(obj: griffe.Object) -> bool:
         return True
 
     for decorator in decorators:
-        if decorator.callable_path in ("metaxy._decorators.public",):
+        if decorator.callable_path in (
+            "metaxy._decorators.public",
+            "metaxy._decorators.experimental",
+        ):
             return True
 
     return False

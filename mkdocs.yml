@@ -132,6 +132,7 @@ plugins:
               - griffe_pydantic:
                   schema: true
               - docs/.mkdocs-metaxy/src/mkdocs_metaxy/griffe_public.py:PublicAPIExtension
+              - docs/.mkdocs-metaxy/src/mkdocs_metaxy/griffe_experimental.py:ExperimentalAPIExtension
           inventories:
             - https://docs.python.org/3/objects.inv
             - https://docs.pydantic.dev/latest/objects.inv

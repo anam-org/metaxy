@@ -47,3 +47,31 @@ def public(obj: _T) -> _T:
     """
     obj.__metaxy_public__ = True  # type: ignore[attr-defined]
     return obj
+
+
+def experimental(obj: _T) -> _T:
+    """Mark an API as experimental.
+
+    Experimental APIs may change or be removed without notice.
+    This decorator adds a warning admonition to documentation.
+
+    Note: Experimental APIs must also use @public to appear in docs.
+
+    Args:
+        obj: The class, function, or other object to mark as experimental.
+
+    Returns:
+        The same object, unchanged except for the `__metaxy_experimental__` attribute.
+
+    Example:
+        ```python
+        @mx.public
+        @mx.experimental
+        class ExperimentalFeature(mx.BaseFeature):
+            '''This feature is still experimental.'''
+
+            pass
+        ```
+    """
+    obj.__metaxy_experimental__ = True  # type: ignore[attr-defined]
+    return obj
