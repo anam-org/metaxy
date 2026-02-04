@@ -9,7 +9,12 @@ Metaxy abstracts interactions with metadata behind an interface called [`Metadat
 
 Users can extend this class to implement support for arbitrary metadata storage such as databases, lakehouse formats, or really any kind of external system.
 
-Here are some of the built-in metadata store types:
+Learn how to use metadata stores [here](../../../guide/learn/metadata-stores.md).
+
+Here are some of the built-in metadata store types (1):
+{ .annotate }
+
+1. the full list can be found [here](../../../integrations/metadata-stores/index.md)
 
 ## Databases
 
@@ -17,17 +22,17 @@ Here are some of the built-in metadata store types:
 
 - [ClickHouse](../../../integrations/metadata-stores/databases/clickhouse.md)
 
-- [DuckDB](../../../integrations/metadata-stores/databases/duckdb.md)
+- [DuckDB](../../../integrations/metadata-stores/databases/duckdb.md) - if used with Motherduck
 
-- [LanceDB](../../../integrations/metadata-stores/databases/lancedb.md)
+- [LanceDB](../../../integrations/metadata-stores/databases/lancedb.md) - if used with LanceDB Cloud
 
-- [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] (a base class) - see [Ibis integration](../../../integrations/metadata-stores/databases/ibis.md)
-
-## Storage Only
+## Storage
 
 - [DeltaMetadataStore](../../../integrations/metadata-stores/storage/delta.md)
 
-The full list can be found [here](../../../integrations/metadata-stores/index.md)
+- [DuckDB](../../../integrations/metadata-stores/databases/duckdb.md) - if used with a local file
+
+- [LanceDB](../../../integrations/metadata-stores/databases/lancedb.md) - if used with a local file
 
 ---
 

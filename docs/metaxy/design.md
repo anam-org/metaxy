@@ -16,13 +16,15 @@ Metaxy is designed to be compatible with storage systems which satisfy the follo
 <div class="annotate" markdown>
 
 - has an _append_ operation
+
 - can store _map-like elements_ (e.g. dictionaries)
 
-  ??? note "Supporting JSON columns instead of maps"
-  This requirement may be lifted in the future.
-  Unfortunately, the most popular storage solution - PostgreSQL - does not support storing structs or maps.
-  While PostgreSQL is not an ideal choice for a Metaxy [Metadata Store](../guide/learn/metadata-stores.md)
-  for other reasons (mainly analytical queries performance), we recognize the need to support it and are exploring a solution in [`anam-org/metaxy#223`](https://github.com/anam-org/metaxy/issues/223).
+  ??? note "Removing This Requirement"
+
+      This requirement may be lifted in the future.
+      Unfortunately, the most popular storage solution - PostgreSQL - does not satisfy it.
+      While PostgreSQL is not an ideal choice for a Metaxy [Metadata Store](../guide/learn/metadata-stores.md)
+      for other reasons (mainly analytical queries performance), we recognize the need to support it and are exploring a solution in [`anam-org/metaxy#223`](https://github.com/anam-org/metaxy/issues/223).
 
 </div>
 
