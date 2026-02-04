@@ -1,9 +1,4 @@
 # Nix inputs (flake sources)
 inputs:
   nixpkgs:
-    url: github:cachix/devenv-nixpkgs/rolling
-  nixpkgs-python:
-    url: github:cachix/nixpkgs-python
-    inputs:
-      nixpkgs:
-        follows: nixpkgs
+    url: github:NixOS/nixpkgs/nixos-25.11

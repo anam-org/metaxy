@@ -1,16 +1,23 @@
 { pkgs, lib, config, inputs, ... }:
 
 let
-  # Allow overriding Python version via DEVENV_PYTHON_VERSION env var
-  # Default to 3.10, but support 3.10, 3.11, 3.12, 3.13
-  pythonVersion = builtins.getEnv "DEVENV_PYTHON_VERSION";
-  defaultPythonVersion = if pythonVersion == "" then "3.10" else pythonVersion;
+  # Map DEVENV_PYTHON_VERSION to nixpkgs packages (all pre-built)
+  pythonVersionEnv = builtins.getEnv "DEVENV_PYTHON_VERSION";
+  pythonVersion = if pythonVersionEnv == "" then "3.10" else pythonVersionEnv;
+  pythonPackages = {
+    "3.10" = pkgs.python310;
+    "3.11" = pkgs.python311;
+    "3.12" = pkgs.python312;
+    "3.13" = pkgs.python313;
+  };
+  selectedPython = pythonPackages.${pythonVersion} or (throw "Unsupported Python version: ${pythonVersion}");
 in
 {
   # https://devenv.sh/languages/
+  # Use nixpkgs' pre-built Python (faster CI, no compilation from source)
   languages.python = {
     enable = true;
-    version = defaultPythonVersion;
+    package = selectedPython;
   };
 
   dotenv.enable = true;

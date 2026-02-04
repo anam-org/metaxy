@@ -73,7 +73,7 @@
             }
           }
         },
-        "timestamp": "2026-02-04T09:35:28.672603",
+        "timestamp": "2026-02-04T17:45:33.189938",
         "scenario_name": "Setup upstream data",
         "step_name": null
       },
@@ -83,7 +83,7 @@
         "returncode": 0,
         "stdout": "",
         "stderr": "",
-        "timestamp": "2026-02-04T09:35:28.713309",
+        "timestamp": "2026-02-04T17:45:33.231397",
         "scenario_name": "Setup upstream data",
         "step_name": "setup_data"
       },
@@ -93,7 +93,7 @@
         "returncode": 0,
         "stdout": "Graph snapshot_version: 740b3420\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 740b3420\n\n📊 Computing examples/child...\n  feature_version: b10ea448\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '24503967'}\n  sample_uid=2: {'predictions': '24458329'}\n  sample_uid=3: {'predictions': '26963083'}\n\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-04T09:35:29.793732",
+        "timestamp": "2026-02-04T17:45:34.517750",
         "scenario_name": "Initial pipeline run",
         "step_name": "initial_run"
       },
@@ -103,7 +103,7 @@
         "returncode": 0,
         "stdout": "Graph snapshot_version: 740b3420\nMetadata already exists for feature examples/parent (feature_version: 7de0f5e8...)\nSkipping write to avoid duplicates\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 740b3420\n\n📊 Computing examples/child...\n  feature_version: b10ea448\nIdentified: 0 new samples, 0 samples with new provenance_by_field\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '24503967'}\n  sample_uid=2: {'predictions': '24458329'}\n  sample_uid=3: {'predictions': '26963083'}\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-04T09:35:30.841993",
+        "timestamp": "2026-02-04T17:45:35.740424",
         "scenario_name": "Idempotent rerun",
         "step_name": "idempotent_run"
       },
@@ -176,7 +176,7 @@
             }
           }
         },
-        "timestamp": "2026-02-04T09:35:31.461143",
+        "timestamp": "2026-02-04T17:45:36.451114",
         "scenario_name": "Code evolution",
         "step_name": "update_parent_version"
       },
@@ -317,7 +317,7 @@
             }
           }
         },
-        "timestamp": "2026-02-04T09:35:31.467897",
+        "timestamp": "2026-02-04T17:45:36.458010",
         "scenario_name": "Code evolution",
         "step_name": "update_parent_version"
       },
@@ -327,7 +327,7 @@
         "returncode": 0,
         "stdout": "Graph snapshot_version: 165989b6\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 165989b6\n\n📊 Computing examples/child...\n  feature_version: e5b92b18\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '24503967'}\n  sample_uid=2: {'predictions': '24458329'}\n  sample_uid=3: {'predictions': '26963083'}\n\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-04T09:35:32.547353",
+        "timestamp": "2026-02-04T17:45:37.762596",
         "scenario_name": "Code evolution",
         "step_name": "recompute_after_change"
       }

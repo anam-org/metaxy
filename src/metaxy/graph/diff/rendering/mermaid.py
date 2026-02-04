@@ -34,7 +34,9 @@ class MermaidRenderer(BaseRenderer):
         nodes = []
         node_map = {}  # feature_key string -> Node
 
-        for graph_node in walker.topological_sort():
+        # Use topological sort for deterministic output
+        sorted_nodes = walker.topological_sort()
+        for graph_node in sorted_nodes:
             node_id = self._node_id_from_key(graph_node.key)
 
             # Build label with fields inside
@@ -47,9 +49,9 @@ class MermaidRenderer(BaseRenderer):
             nodes.append(node)
             node_map[graph_node.key.to_string()] = node
 
-        # Create links for dependencies
+        # Create links for dependencies (use sorted nodes for deterministic output)
         links = []
-        for graph_node in filtered_graph.nodes.values():
+        for graph_node in sorted_nodes:
             if graph_node.dependencies:
                 target_node = node_map.get(graph_node.key.to_string())
                 if target_node:
@@ -162,8 +164,9 @@ class MermaidRenderer(BaseRenderer):
 
         style_lines = []
 
-        # Add style classes for each node based on status
-        for node in graph_data.nodes.values():
+        # Add style classes for each node based on status (sorted for deterministic output)
+        sorted_nodes = sorted(graph_data.nodes.values(), key=lambda n: n.key.to_string().lower())
+        for node in sorted_nodes:
             if node.status == NodeStatus.NORMAL:
                 continue
 

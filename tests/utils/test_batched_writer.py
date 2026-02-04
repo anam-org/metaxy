@@ -143,7 +143,6 @@ def test_batched_writer_context_manager(store: MetadataStore, writer_feature: ty
         assert len(result) == 2
 
 
-@pytest.mark.flaky(reruns=3)
 def test_batched_writer_batch_size_trigger(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that flush is triggered when batch size is reached."""
     with store.open("w"):
@@ -159,11 +158,14 @@ def test_batched_writer_batch_size_trigger(store: MetadataStore, writer_feature:
                 )
                 writer.put({writer_feature: batch})
 
-            # Wait a bit for the background thread to process
-            time.sleep(0.15)
-
-            # Check progress during write
+            # Poll for flush completion with timeout (handles slow CI/Windows)
             feature_key = writer_feature.spec().key
+            deadline = time.time() + 5.0  # 5 second timeout
+            while time.time() < deadline:
+                if writer.num_written.get(feature_key, 0) >= 5:
+                    break
+                time.sleep(0.05)
+
             assert writer.num_written.get(feature_key, 0) >= 5  # At least one batch should have been flushed
 
         # Verify all data was written after stop
@@ -171,7 +173,6 @@ def test_batched_writer_batch_size_trigger(store: MetadataStore, writer_feature:
         assert len(result) == 10
 
 
-@pytest.mark.flaky(reruns=3)
 def test_batched_writer_interval_trigger(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that flush is triggered after interval."""
     flush_interval = 0.1
@@ -192,11 +193,15 @@ def test_batched_writer_interval_trigger(store: MetadataStore, writer_feature: t
             )
             writer.put({writer_feature: batch})
 
-            # Wait well beyond the interval to ensure flush has time to complete
-            time.sleep(flush_interval + 0.5)
+            # Poll for flush completion with timeout (handles slow CI/Windows)
+            feature_key = writer_feature.spec().key
+            deadline = time.time() + 5.0  # 5 second timeout
+            while time.time() < deadline:
+                if writer.num_written.get(feature_key, 0) == 1:
+                    break
+                time.sleep(0.05)
 
             # Should have flushed due to interval (not batch size)
-            feature_key = writer_feature.spec().key
             assert writer.num_written.get(feature_key, 0) == 1
 
         # Verify data was written
@@ -204,11 +209,11 @@ def test_batched_writer_interval_trigger(store: MetadataStore, writer_feature: t
         assert len(result) == 1
 
 
-@pytest.mark.flaky(reruns=3)
 def test_batched_writer_no_batch_size(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that flush_batch_size=None only flushes on interval or stop."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_interval=0.5) as writer:
+        # Use a long interval so it won't trigger during test
+        with BatchedMetadataWriter(store, flush_interval=10.0) as writer:
             # Write many batches (should not trigger flush since no batch size)
             for i in range(20):
                 batch = pl.DataFrame(
@@ -220,8 +225,7 @@ def test_batched_writer_no_batch_size(store: MetadataStore, writer_feature: type
                 )
                 writer.put({writer_feature: batch})
 
-            # Wait a bit - should NOT have flushed yet (interval not reached)
-            time.sleep(0.1)
+            # Should NOT have flushed yet (no batch size trigger, interval is long)
             assert writer.num_written == {}
 
         # After stop, all data should be written
@@ -256,7 +260,6 @@ def test_batched_writer_accepts_dataframe_types(
         assert set(result["id"].to_list()) == {"df1", "df2"}
 
 
-@pytest.mark.flaky(reruns=3)
 def test_batched_writer_num_written_property(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that num_written is updated correctly."""
     feature_key = writer_feature.spec().key
@@ -274,8 +277,12 @@ def test_batched_writer_num_written_property(store: MetadataStore, writer_featur
             )
             writer.put({writer_feature: batch1})
 
-            # Wait for flush
-            time.sleep(0.15)
+            # Poll for flush completion
+            deadline = time.time() + 5.0
+            while time.time() < deadline:
+                if writer.num_written.get(feature_key, 0) == 2:
+                    break
+                time.sleep(0.05)
             assert writer.num_written[feature_key] == 2
 
             # Write second batch
@@ -288,8 +295,12 @@ def test_batched_writer_num_written_property(store: MetadataStore, writer_featur
             )
             writer.put({writer_feature: batch2})
 
-            # Wait for flush
-            time.sleep(0.15)
+            # Poll for flush completion
+            deadline = time.time() + 5.0
+            while time.time() < deadline:
+                if writer.num_written.get(feature_key, 0) == 4:
+                    break
+                time.sleep(0.05)
             assert writer.num_written[feature_key] == 4
 
 
@@ -508,7 +519,6 @@ def test_batched_writer_multi_feature_accumulated(
         assert len(result2) == 1  # acc_x
 
 
-@pytest.mark.flaky(reruns=3)
 def test_batched_writer_flush_error_sets_has_error(
     store: MetadataStore, writer_feature: type[BaseFeature], monkeypatch: pytest.MonkeyPatch
 ):
@@ -533,8 +543,12 @@ def test_batched_writer_flush_error_sets_has_error(
         )
         writer.put({writer_feature: batch})
 
-        # Wait for the interval to trigger a flush attempt
-        time.sleep(0.1)
+        # Poll for error to be set
+        deadline = time.time() + 5.0
+        while time.time() < deadline:
+            if writer.has_error:
+                break
+            time.sleep(0.05)
 
         # Verify has_error is True
         assert writer.has_error
@@ -544,7 +558,6 @@ def test_batched_writer_flush_error_sets_has_error(
             writer.stop()
 
 
-@pytest.mark.flaky(reruns=3)
 def test_batched_writer_flush_error_prevents_further_puts(
     store: MetadataStore, writer_feature: type[BaseFeature], monkeypatch: pytest.MonkeyPatch
 ):
@@ -569,8 +582,12 @@ def test_batched_writer_flush_error_prevents_further_puts(
         )
         writer.put({writer_feature: batch})
 
-        # Wait for the flush error to occur
-        time.sleep(0.1)
+        # Poll for error to be set
+        deadline = time.time() + 5.0
+        while time.time() < deadline:
+            if writer.has_error:
+                break
+            time.sleep(0.05)
 
         # Subsequent puts should raise
         with pytest.raises(RuntimeError, match="Writer encountered an error"):

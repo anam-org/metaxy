@@ -345,8 +345,11 @@ class GraphDiffer:
         removed_keys = {node.feature_key.to_string() for node in diff.removed_nodes}
         changed_keys = {node.feature_key.to_string(): node for node in diff.changed_nodes}
 
-        # Get all feature keys from both snapshots
-        all_keys = set(snapshot1_data.keys()) | set(snapshot2_data.keys())
+        # Get all feature keys from both snapshots (sorted for deterministic output)
+        all_keys = sorted(
+            set(snapshot1_data.keys()) | set(snapshot2_data.keys()),
+            key=str.lower,
+        )
 
         nodes = {}
         edges = []
