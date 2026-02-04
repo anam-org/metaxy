@@ -2,10 +2,11 @@
 
 import json
 
+import pytest
 from metaxy_testing import TempMetaxyProject
 
 
-def test_cli_loads_dotenv_file(metaxy_project: TempMetaxyProject):
+def test_cli_loads_dotenv_file(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that CLI loads .env file and environment variables are available."""
     # Create a .env file with a test variable
     env_file = metaxy_project.project_dir / ".env"
@@ -31,7 +32,7 @@ def test_cli_loads_dotenv_file(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"], capsys=capsys)
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -42,7 +43,7 @@ def test_cli_loads_dotenv_file(metaxy_project: TempMetaxyProject):
         assert feature["fields"][0]["code_version"] == "hello_from_dotenv"
 
 
-def test_cli_env_vars_override_dotenv(metaxy_project: TempMetaxyProject):
+def test_cli_env_vars_override_dotenv(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that explicit environment variables take precedence over .env file."""
     # Create a .env file
     env_file = metaxy_project.project_dir / ".env"
@@ -71,6 +72,7 @@ def test_cli_env_vars_override_dotenv(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli(
             ["list", "features", "--format", "json"],
             env={"METAXY_TEST_VAR": "from_explicit_env"},
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -81,7 +83,7 @@ def test_cli_env_vars_override_dotenv(metaxy_project: TempMetaxyProject):
         assert feature["fields"][0]["code_version"] == "from_explicit_env"
 
 
-def test_cli_works_without_dotenv_file(metaxy_project: TempMetaxyProject):
+def test_cli_works_without_dotenv_file(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that CLI works normally when no .env file exists."""
     # Ensure no .env file exists
     env_file = metaxy_project.project_dir / ".env"
@@ -103,7 +105,7 @@ def test_cli_works_without_dotenv_file(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"], capsys=capsys)
 
         assert result.returncode == 0
         data = json.loads(result.stdout)

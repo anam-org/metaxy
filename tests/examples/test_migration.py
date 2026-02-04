@@ -62,6 +62,7 @@ def test_pipeline(tmp_path, snapshot):
     result = project.run_cli(
         ["push"],
         env={**base_env, "STAGE": "1"},
+        subprocess=True,
     )
     assert result.returncode == 0, f"Push v1 failed: {result.stderr}"
 
@@ -88,6 +89,7 @@ def test_pipeline(tmp_path, snapshot):
     result = project.run_cli(
         ["push"],
         env={**base_env, "STAGE": "2"},
+        subprocess=True,
     )
     assert result.returncode == 0, f"Push v2 failed: {result.stderr}"
 
@@ -124,6 +126,7 @@ def test_pipeline(tmp_path, snapshot):
     result = project.run_cli(
         ["migrations", "apply"],
         env={**base_env, "STAGE": "2"},
+        subprocess=True,
     )
     assert result.returncode == 0, f"Migration apply failed: {result.stderr}\nstdout: {result.stdout}"
     print(result.stderr)  # Migration status messages go to stderr now

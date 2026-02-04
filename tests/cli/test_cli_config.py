@@ -2,18 +2,19 @@
 
 import json
 
+import pytest
 import tomli
 from metaxy_testing import TempMetaxyProject
 
 
-def test_config_print_toml(metaxy_project: TempMetaxyProject):
+def test_config_print_toml(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test config print with TOML output produces valid, parseable TOML."""
 
     def features():
         pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["config", "print"])
+        result = metaxy_project.run_cli(["config", "print"], capsys=capsys)
 
         assert result.returncode == 0
 
@@ -32,14 +33,14 @@ def test_config_print_toml(metaxy_project: TempMetaxyProject):
         assert "DuckDBMetadataStore" in config["stores"]["dev"]["type"]
 
 
-def test_config_print_json(metaxy_project: TempMetaxyProject):
+def test_config_print_json(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test config print with JSON output produces valid JSON with expected structure."""
 
     def features():
         pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["config", "print", "--format", "json"])
+        result = metaxy_project.run_cli(["config", "print", "--format", "json"], capsys=capsys)
 
         assert result.returncode == 0
         config = json.loads(result.stdout)

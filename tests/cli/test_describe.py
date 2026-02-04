@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 
 class TestDescribeFeature:
     """Tests for metaxy describe feature command."""
 
-    def test_describe_single_feature_plain(self, metaxy_project):
+    def test_describe_single_feature_plain(self, metaxy_project, capsys: pytest.CaptureFixture[str]):
         """Test describing a single feature in plain format."""
 
         def features():
@@ -27,7 +29,7 @@ class TestDescribeFeature:
                 """Docstring that should be overridden by explicit description."""
 
         with metaxy_project.with_features(features):
-            result = metaxy_project.run_cli(["describe", "feature", "test/my_feature"])
+            result = metaxy_project.run_cli(["describe", "feature", "test/my_feature"], capsys=capsys)
 
             assert result.returncode == 0
             output = result.stdout
@@ -42,7 +44,7 @@ class TestDescribeFeature:
             assert "default" in output
             assert "Dependencies:" in output
 
-    def test_describe_single_feature_json(self, metaxy_project):
+    def test_describe_single_feature_json(self, metaxy_project, capsys: pytest.CaptureFixture[str]):
         """Test describing a single feature in JSON format."""
 
         def features():
@@ -61,7 +63,9 @@ class TestDescribeFeature:
                 pass
 
         with metaxy_project.with_features(features):
-            result = metaxy_project.run_cli(["describe", "feature", "test/json_feature", "--format", "json"])
+            result = metaxy_project.run_cli(
+                ["describe", "feature", "test/json_feature", "--format", "json"], capsys=capsys
+            )
 
             assert result.returncode == 0
             data = json.loads(result.stdout)
@@ -76,7 +80,7 @@ class TestDescribeFeature:
             assert data["fields"][0]["code_version"] == "v1"
             assert data["dependencies"] == []
 
-    def test_describe_feature_with_dependencies(self, metaxy_project):
+    def test_describe_feature_with_dependencies(self, metaxy_project, capsys: pytest.CaptureFixture[str]):
         """Test describing a feature with dependencies."""
 
         def features():
@@ -104,7 +108,9 @@ class TestDescribeFeature:
                 pass
 
         with metaxy_project.with_features(features):
-            result = metaxy_project.run_cli(["describe", "feature", "test/downstream", "--format", "json"])
+            result = metaxy_project.run_cli(
+                ["describe", "feature", "test/downstream", "--format", "json"], capsys=capsys
+            )
 
             assert result.returncode == 0
             data = json.loads(result.stdout)
@@ -113,7 +119,7 @@ class TestDescribeFeature:
             assert len(data["dependencies"]) == 1
             assert data["dependencies"][0]["feature"] == "test/upstream"
 
-    def test_describe_multiple_features(self, metaxy_project):
+    def test_describe_multiple_features(self, metaxy_project, capsys: pytest.CaptureFixture[str]):
         """Test describing multiple features."""
 
         def features():
@@ -141,7 +147,8 @@ class TestDescribeFeature:
 
         with metaxy_project.with_features(features):
             result = metaxy_project.run_cli(
-                ["describe", "feature", "test/feature1", "test/feature2", "--format", "json"]
+                ["describe", "feature", "test/feature1", "test/feature2", "--format", "json"],
+                capsys=capsys,
             )
 
             assert result.returncode == 0
@@ -152,7 +159,7 @@ class TestDescribeFeature:
             keys = {f["key"] for f in data["features"]}
             assert keys == {"test/feature1", "test/feature2"}
 
-    def test_describe_nonexistent_feature(self, metaxy_project):
+    def test_describe_nonexistent_feature(self, metaxy_project, capsys: pytest.CaptureFixture[str]):
         """Test describing a feature that doesn't exist."""
 
         def features():
@@ -173,13 +180,14 @@ class TestDescribeFeature:
             result = metaxy_project.run_cli(
                 ["describe", "feature", "test/nonexistent", "--format", "json"],
                 check=False,
+                capsys=capsys,
             )
 
             assert result.returncode == 1
             data = json.loads(result.stdout)
             assert data["error"] == "FEATURES_NOT_FOUND"
 
-    def test_describe_feature_with_docstring_extraction(self, metaxy_project):
+    def test_describe_feature_with_docstring_extraction(self, metaxy_project, capsys: pytest.CaptureFixture[str]):
         """Test that docstrings are extracted as descriptions."""
 
         def features():
@@ -197,13 +205,15 @@ class TestDescribeFeature:
                 """This is extracted from the docstring."""
 
         with metaxy_project.with_features(features):
-            result = metaxy_project.run_cli(["describe", "feature", "test/docstring_feature", "--format", "json"])
+            result = metaxy_project.run_cli(
+                ["describe", "feature", "test/docstring_feature", "--format", "json"], capsys=capsys
+            )
 
             assert result.returncode == 0
             data = json.loads(result.stdout)
             assert data["description"] == "This is extracted from the docstring."
 
-    def test_describe_feature_with_metadata(self, metaxy_project):
+    def test_describe_feature_with_metadata(self, metaxy_project, capsys: pytest.CaptureFixture[str]):
         """Test describing a feature with metadata."""
 
         def features():
@@ -222,7 +232,9 @@ class TestDescribeFeature:
                 pass
 
         with metaxy_project.with_features(features):
-            result = metaxy_project.run_cli(["describe", "feature", "test/metadata_feature", "--format", "json"])
+            result = metaxy_project.run_cli(
+                ["describe", "feature", "test/metadata_feature", "--format", "json"], capsys=capsys
+            )
 
             assert result.returncode == 0
             data = json.loads(result.stdout)

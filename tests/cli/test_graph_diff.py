@@ -2,10 +2,11 @@
 
 import json
 
+import pytest
 from metaxy_testing import TempMetaxyProject
 
 
-def test_graph_diff_render_no_changes(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_no_changes(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render shows no changes when snapshots are identical."""
 
     def features():
@@ -24,10 +25,10 @@ def test_graph_diff_render_no_changes(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push snapshot
-        metaxy_project.run_cli(["push"])
+        metaxy_project.run_cli(["push"], capsys=capsys)
 
         # Compare latest with current (should be identical)
-        result = metaxy_project.run_cli(["graph-diff", "render", "latest", "current"])
+        result = metaxy_project.run_cli(["graph-diff", "render", "latest", "current"], capsys=capsys)
 
         assert result.returncode == 0
         assert "merged view" in result.stdout
@@ -38,7 +39,7 @@ def test_graph_diff_render_no_changes(metaxy_project: TempMetaxyProject):
         assert "~ video/files" not in result.stdout
 
 
-def test_graph_diff_render_added_feature(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_added_feature(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render detects added features."""
 
     def features_v1():
@@ -80,20 +81,20 @@ def test_graph_diff_render_added_feature(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot (v1)
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot (v2)
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Compare the two snapshots
-        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2])
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2], capsys=capsys)
 
         assert result.returncode == 0
         # Check for added feature (with Rich markup or plain text)
@@ -101,7 +102,7 @@ def test_graph_diff_render_added_feature(metaxy_project: TempMetaxyProject):
         assert "(added)" in result.stdout or "[green]+[/green]" in result.stdout
 
 
-def test_graph_diff_render_removed_feature(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_removed_feature(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render detects removed features."""
 
     def features_v1():
@@ -143,20 +144,20 @@ def test_graph_diff_render_removed_feature(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot (v1)
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot (v2)
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Compare the two snapshots
-        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2])
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2], capsys=capsys)
 
         assert result.returncode == 0
         # Check for removed feature
@@ -164,7 +165,7 @@ def test_graph_diff_render_removed_feature(metaxy_project: TempMetaxyProject):
         assert "(removed)" in result.stdout or "[red]-[/red]" in result.stdout
 
 
-def test_graph_diff_render_changed_feature(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_changed_feature(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render detects changed features."""
 
     def features_v1():
@@ -197,20 +198,20 @@ def test_graph_diff_render_changed_feature(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot (v1)
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot (v2)
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Compare the two snapshots
-        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2])
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2], capsys=capsys)
 
         assert result.returncode == 0
         # Check for changed feature
@@ -220,7 +221,7 @@ def test_graph_diff_render_changed_feature(metaxy_project: TempMetaxyProject):
         assert "→" in result.stdout
 
 
-def test_graph_diff_render_version_transitions(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_version_transitions(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render shows version transitions with proper colors."""
 
     def features_v1():
@@ -256,20 +257,20 @@ def test_graph_diff_render_version_transitions(metaxy_project: TempMetaxyProject
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Compare snapshots
-        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2])
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2], capsys=capsys)
 
         assert result.returncode == 0
         # Changed feature should show status
@@ -281,7 +282,7 @@ def test_graph_diff_render_version_transitions(metaxy_project: TempMetaxyProject
         assert "size" in result.stdout
 
 
-def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render with JSON format output."""
 
     def features_v1():
@@ -323,14 +324,14 @@ def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -339,6 +340,7 @@ def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli(
             ["graph-diff", "render", snapshot1, snapshot2, "--format", "json"],
             check=False,
+            capsys=capsys,
         )
 
         # Debug output if failed
@@ -354,7 +356,7 @@ def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject):
         assert data["nodes"]["audio/files"]["status"] == "added"
 
 
-def test_graph_diff_render_format_yaml(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_format_yaml(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render with YAML format output."""
 
     def features_v1():
@@ -387,20 +389,22 @@ def test_graph_diff_render_format_yaml(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Compare with YAML format
-        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--format", "yaml"])
+        result = metaxy_project.run_cli(
+            ["graph-diff", "render", snapshot1, snapshot2, "--format", "yaml"], capsys=capsys
+        )
 
         assert result.returncode == 0
         # Just check that output looks like YAML (don't parse it - PyYAML has issues with long strings)
@@ -410,7 +414,7 @@ def test_graph_diff_render_format_yaml(metaxy_project: TempMetaxyProject):
         assert "status:" in result.stdout
 
 
-def test_graph_diff_render_format_mermaid(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_format_mermaid(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render with Mermaid format output."""
 
     def features_v1():
@@ -443,20 +447,22 @@ def test_graph_diff_render_format_mermaid(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Compare with Mermaid format
-        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--format", "mermaid"])
+        result = metaxy_project.run_cli(
+            ["graph-diff", "render", snapshot1, snapshot2, "--format", "mermaid"], capsys=capsys
+        )
 
         assert result.returncode == 0
         assert "flowchart TB" in result.stdout
@@ -465,7 +471,7 @@ def test_graph_diff_render_format_mermaid(metaxy_project: TempMetaxyProject):
         assert "fill:" in result.stdout or "stroke:" in result.stdout
 
 
-def test_graph_diff_render_format_cards(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_format_cards(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render with cards format output."""
 
     def features_v1():
@@ -498,20 +504,22 @@ def test_graph_diff_render_format_cards(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Compare with cards format
-        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--format", "cards"])
+        result = metaxy_project.run_cli(
+            ["graph-diff", "render", snapshot1, snapshot2, "--format", "cards"], capsys=capsys
+        )
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
@@ -519,7 +527,7 @@ def test_graph_diff_render_format_cards(metaxy_project: TempMetaxyProject):
         assert "Features:" in result.stdout or "Graph" in result.stdout
 
 
-def test_graph_diff_render_format_graphviz(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_format_graphviz(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render with Graphviz format output."""
 
     def features_v1():
@@ -552,27 +560,29 @@ def test_graph_diff_render_format_graphviz(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Compare with Graphviz format
-        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--format", "graphviz"])
+        result = metaxy_project.run_cli(
+            ["graph-diff", "render", snapshot1, snapshot2, "--format", "graphviz"], capsys=capsys
+        )
 
         assert result.returncode == 0
         assert "digraph" in result.stdout
         assert "video/files" in result.stdout
 
 
-def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render with feature filtering."""
 
     def features_v1():
@@ -630,14 +640,14 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -653,7 +663,8 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
                 "video/processing",
                 "--up",
                 "1",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -664,7 +675,7 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
         assert "audio/files" not in result.stdout
 
 
-def test_graph_diff_render_output_to_file(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_output_to_file(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render outputs to file."""
 
     def features_v1():
@@ -697,14 +708,14 @@ def test_graph_diff_render_output_to_file(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
@@ -721,7 +732,8 @@ def test_graph_diff_render_output_to_file(metaxy_project: TempMetaxyProject):
                 "json",
                 "--output",
                 str(output_file),
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -737,7 +749,7 @@ def test_graph_diff_render_output_to_file(metaxy_project: TempMetaxyProject):
         assert "audio/files" in data["nodes"]
 
 
-def test_graph_diff_render_with_store_flag(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_with_store_flag(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render works with --store flag."""
 
     def features():
@@ -756,16 +768,16 @@ def test_graph_diff_render_with_store_flag(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push with explicit store
-        metaxy_project.run_cli(["push", "--store", "dev"])
+        metaxy_project.run_cli(["push", "--store", "dev"], capsys=capsys)
 
         # Diff with explicit store
-        result = metaxy_project.run_cli(["graph-diff", "render", "latest", "current", "--store", "dev"])
+        result = metaxy_project.run_cli(["graph-diff", "render", "latest", "current", "--store", "dev"], capsys=capsys)
 
         assert result.returncode == 0
         assert "merged view" in result.stdout or "video/files" in result.stdout
 
 
-def test_graph_diff_render_invalid_snapshot(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_invalid_snapshot(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render fails gracefully with invalid snapshot."""
 
     def features():
@@ -783,13 +795,15 @@ def test_graph_diff_render_invalid_snapshot(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph-diff", "render", "nonexistent_snapshot", "current"], check=False)
+        result = metaxy_project.run_cli(
+            ["graph-diff", "render", "nonexistent_snapshot", "current"], check=False, capsys=capsys
+        )
 
         assert result.returncode == 1
         assert "Error:" in result.stderr
 
 
-def test_graph_diff_render_latest_empty_store(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_latest_empty_store(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render fails when no snapshots exist in store."""
 
     def features():
@@ -807,14 +821,14 @@ def test_graph_diff_render_latest_empty_store(metaxy_project: TempMetaxyProject)
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph-diff", "render", "latest", "current"], check=False)
+        result = metaxy_project.run_cli(["graph-diff", "render", "latest", "current"], check=False, capsys=capsys)
 
         assert result.returncode == 1
         assert "Error:" in result.stderr
         assert "No snapshots found" in result.stderr
 
 
-def test_graph_diff_render_verbose_mode(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_verbose_mode(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render verbose mode shows more details."""
 
     def features_v1():
@@ -847,26 +861,26 @@ def test_graph_diff_render_verbose_mode(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Compare with verbose mode
-        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--verbose"])
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--verbose"], capsys=capsys)
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
 
 
-def test_graph_diff_render_minimal_mode(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_minimal_mode(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render minimal mode hides version information."""
 
     def features_v1():
@@ -899,26 +913,26 @@ def test_graph_diff_render_minimal_mode(metaxy_project: TempMetaxyProject):
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Compare with minimal mode
-        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--minimal"])
+        result = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2, "--minimal"], capsys=capsys)
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
 
 
-def test_graph_diff_render_default_to_current(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_default_to_current(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph-diff render defaults to 'current' for to_snapshot."""
 
     def features():
@@ -937,16 +951,18 @@ def test_graph_diff_render_default_to_current(metaxy_project: TempMetaxyProject)
 
     with metaxy_project.with_features(features):
         # Push snapshot
-        metaxy_project.run_cli(["push"])
+        metaxy_project.run_cli(["push"], capsys=capsys)
 
         # Render diff with only from_snapshot (should default to_snapshot to "current")
-        result = metaxy_project.run_cli(["graph-diff", "render", "latest"])
+        result = metaxy_project.run_cli(["graph-diff", "render", "latest"], capsys=capsys)
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
 
 
-def test_graph_diff_render_deterministic_ordering(metaxy_project: TempMetaxyProject):
+def test_graph_diff_render_deterministic_ordering(
+    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]
+):
     """Test graph-diff render produces deterministic node ordering."""
 
     def features_v1():
@@ -997,21 +1013,21 @@ def test_graph_diff_render_deterministic_ordering(metaxy_project: TempMetaxyProj
 
     # Record first snapshot
     with metaxy_project.with_features(features_v1):
-        push1_result = metaxy_project.run_cli(["push"])
+        push1_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot1 = push1_result.stdout.strip()
         assert snapshot1
 
     # Record second snapshot
     with metaxy_project.with_features(features_v2):
-        push2_result = metaxy_project.run_cli(["push"])
+        push2_result = metaxy_project.run_cli(["push"], capsys=capsys)
         # Get snapshot version from stdout (raw hash)
         snapshot2 = push2_result.stdout.strip()
         assert snapshot2
 
         # Render diff multiple times - should get identical output
-        result1 = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2])
-        result2 = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2])
+        result1 = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2], capsys=capsys)
+        result2 = metaxy_project.run_cli(["graph-diff", "render", snapshot1, snapshot2], capsys=capsys)
 
         assert result1.returncode == 0
         assert result2.returncode == 0

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import tomli
 
 
 class TestLockCommand:
     """Tests for metaxy lock command."""
 
-    def test_lock_creates_lock_file(self, tmp_path: Path):
+    def test_lock_creates_lock_file(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
         """Test that lock command creates metaxy.lock file with feature definitions."""
         from metaxy_testing import TempMetaxyProject
 
@@ -45,7 +46,7 @@ database = "{store_path}"
                 pass
 
         with source_project.with_features(source_features):
-            result = source_project.run_cli(["push"])
+            result = source_project.run_cli(["push"], capsys=capsys)
             assert result.returncode == 0
 
         # Second project: define a feature that depends on the shared feature
@@ -78,7 +79,7 @@ database = "{store_path}"
 
         # Run lock command
         with consumer_project.with_features(consumer_features):
-            result = consumer_project.run_cli(["lock"])
+            result = consumer_project.run_cli(["lock"], capsys=capsys)
         assert result.returncode == 0
         assert "Written 1 external feature(s)" in result.stderr
 
@@ -105,7 +106,7 @@ database = "{store_path}"
         assert "spec" in feature_data["data"]
         assert "feature_schema" in feature_data["data"]
 
-    def test_lock_errors_on_missing_feature(self, tmp_path: Path):
+    def test_lock_errors_on_missing_feature(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
         """Test that lock command errors when a dependency is not in store."""
         from metaxy_testing import TempMetaxyProject
 
@@ -139,7 +140,7 @@ database = "{store_path}"
                 pass
 
         with source_project.with_features(source_features):
-            source_project.run_cli(["push"])
+            source_project.run_cli(["push"], capsys=capsys)
 
         # Consumer project depends on a non-existent feature
         consumer_config = f'''project = "consumer"
@@ -170,11 +171,13 @@ database = "{store_path}"
                 pass
 
         with project.with_features(consumer_features):
-            result = project.run_cli(["lock"], check=False)
+            result = project.run_cli(["lock"], check=False, capsys=capsys)
         assert result.returncode != 0
         assert "not found in metadata store" in result.stderr
 
-    def test_lock_creates_empty_lock_file_when_no_external_deps(self, tmp_path: Path):
+    def test_lock_creates_empty_lock_file_when_no_external_deps(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ):
         """Test that lock command creates empty lock file when no external dependencies."""
         from metaxy_testing import TempMetaxyProject
 
@@ -208,7 +211,7 @@ database = "{store_path}"
                 pass
 
         with project.with_features(local_features):
-            result = project.run_cli(["lock"], check=False)
+            result = project.run_cli(["lock"], check=False, capsys=capsys)
         assert result.returncode == 0
         assert "Written 0 external feature(s)" in result.stderr
 
@@ -218,7 +221,7 @@ database = "{store_path}"
         lock_content = tomli.loads(lock_file.read_text())
         assert lock_content["features"] == {}
 
-    def test_lock_multiple_features(self, tmp_path: Path):
+    def test_lock_multiple_features(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
         """Test that lock command handles multiple external dependencies."""
         from metaxy_testing import TempMetaxyProject
 
@@ -261,7 +264,7 @@ database = "{store_path}"
                 pass
 
         with source_project.with_features(source_features):
-            result = source_project.run_cli(["push"])
+            result = source_project.run_cli(["push"], capsys=capsys)
             assert result.returncode == 0
 
         # Consumer project depends on both features
@@ -296,7 +299,7 @@ database = "{store_path}"
                 pass
 
         with consumer_project.with_features(consumer_features):
-            result = consumer_project.run_cli(["lock"])
+            result = consumer_project.run_cli(["lock"], capsys=capsys)
         assert result.returncode == 0
         assert "Written 2 external feature(s)" in result.stderr
 
@@ -307,7 +310,7 @@ database = "{store_path}"
         assert "multi/feature_a" in lock_content["features"]
         assert "multi/feature_b" in lock_content["features"]
 
-    def test_lock_transitive_dependencies(self, tmp_path: Path):
+    def test_lock_transitive_dependencies(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
         """Test that lock command resolves transitive dependencies."""
         from metaxy_testing import TempMetaxyProject
 
@@ -364,7 +367,7 @@ database = "{store_path}"
                 pass
 
         with source_project.with_features(source_features):
-            result = source_project.run_cli(["push"])
+            result = source_project.run_cli(["push"], capsys=capsys)
             assert result.returncode == 0
 
         # Consumer depends only on A, but should get B and C transitively
@@ -396,7 +399,7 @@ database = "{store_path}"
                 pass
 
         with consumer_project.with_features(consumer_features):
-            result = consumer_project.run_cli(["lock"])
+            result = consumer_project.run_cli(["lock"], capsys=capsys)
         assert result.returncode == 0
         assert "Written 3 external feature(s)" in result.stderr
 
@@ -408,7 +411,7 @@ database = "{store_path}"
         assert "chain/b" in lock_content["features"]
         assert "chain/c" in lock_content["features"]
 
-    def test_lock_custom_output_path(self, tmp_path: Path):
+    def test_lock_custom_output_path(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
         """Test that lock command respects custom output path."""
         from metaxy_testing import TempMetaxyProject
 
@@ -442,7 +445,7 @@ database = "{store_path}"
                 pass
 
         with source_project.with_features(source_features):
-            source_project.run_cli(["push"])
+            source_project.run_cli(["push"], capsys=capsys)
 
         # Consumer with custom output path
         consumer_config = f'''project = "consumer"
@@ -474,7 +477,7 @@ database = "{store_path}"
                 pass
 
         with consumer_project.with_features(consumer_features):
-            result = consumer_project.run_cli(["lock", "--output", str(custom_output)])
+            result = consumer_project.run_cli(["lock", "--output", str(custom_output)], capsys=capsys)
         assert result.returncode == 0
         assert custom_output.exists()
         assert not (consumer_project.project_dir / "metaxy.lock").exists()

@@ -9,7 +9,9 @@ from metaxy_testing import TempMetaxyProject
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_up_to_date(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_up_to_date(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Status command when metadata is up-to-date for both formats."""
 
     def features():
@@ -64,7 +66,8 @@ def test_metadata_status_up_to_date(metaxy_project: TempMetaxyProject, output_fo
                 "video/files",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -85,7 +88,9 @@ def test_metadata_status_up_to_date(metaxy_project: TempMetaxyProject, output_fo
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_missing_metadata(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_missing_metadata(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Status command when metadata is missing."""
 
     def features():
@@ -124,7 +129,8 @@ def test_metadata_status_missing_metadata(metaxy_project: TempMetaxyProject, out
                 "video/files",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -144,7 +150,7 @@ def test_metadata_status_missing_metadata(metaxy_project: TempMetaxyProject, out
             assert "3" in result.stdout  # Missing count
 
 
-def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject):
+def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that --assert-in-sync fails when metadata needs updates."""
 
     def features():
@@ -179,13 +185,16 @@ def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject)
         result = metaxy_project.run_cli(
             ["metadata", "status", "video/files", "--assert-in-sync"],
             check=False,
+            capsys=capsys,
         )
 
         assert result.returncode == 1
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_multiple_features(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_multiple_features(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Status command with multiple features."""
 
     def features():
@@ -236,7 +245,8 @@ def test_metadata_status_multiple_features(metaxy_project: TempMetaxyProject, ou
                 "audio/files",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -250,7 +260,9 @@ def test_metadata_status_multiple_features(metaxy_project: TempMetaxyProject, ou
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_invalid_feature_key(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_invalid_feature_key(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Status command with a feature missing from the graph."""
 
     def features():
@@ -288,6 +300,7 @@ def test_metadata_status_invalid_feature_key(metaxy_project: TempMetaxyProject, 
                 output_format,
             ],
             check=False,
+            capsys=capsys,
         )
 
         # Should show warning and continue
@@ -301,7 +314,9 @@ def test_metadata_status_invalid_feature_key(metaxy_project: TempMetaxyProject, 
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_verbose(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_with_verbose(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Status command with --verbose flag."""
 
     def features():
@@ -340,7 +355,8 @@ def test_metadata_status_with_verbose(metaxy_project: TempMetaxyProject, output_
                 "--format",
                 output_format,
                 "--verbose",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -356,7 +372,9 @@ def test_metadata_status_with_verbose(metaxy_project: TempMetaxyProject, output_
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_explicit_store(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_with_explicit_store(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Status command with explicit --store flag."""
 
     def features():
@@ -411,7 +429,8 @@ def test_metadata_status_with_explicit_store(metaxy_project: TempMetaxyProject, 
                 "dev",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -427,7 +446,7 @@ def test_metadata_status_with_explicit_store(metaxy_project: TempMetaxyProject, 
             assert "✓" in result.stdout
 
 
-def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProject):
+def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that status requires either feature arguments or --all-features."""
 
     def features():
@@ -446,7 +465,7 @@ def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProje
 
     with metaxy_project.with_features(features):
         # Try to check status without specifying features
-        result = metaxy_project.run_cli(["metadata", "status", "--format", "json"], check=False)
+        result = metaxy_project.run_cli(["metadata", "status", "--format", "json"], check=False, capsys=capsys)
 
         assert result.returncode == 1
         error = json.loads(result.stdout)
@@ -455,7 +474,9 @@ def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProje
         assert "<features>" in str(error["required_flags"])
 
 
-def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyProject):
+def test_metadata_status_cannot_specify_both_flags(
+    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]
+):
     """Test that cannot specify both feature arguments and --all-features."""
 
     def features():
@@ -484,6 +505,7 @@ def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyPro
                 "json",
             ],
             check=False,
+            capsys=capsys,
         )
 
         assert result.returncode == 1
@@ -492,7 +514,9 @@ def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyPro
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_all_features(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_all_features(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Test status command with --all-features flag."""
 
     def features():
@@ -534,7 +558,9 @@ def test_metadata_status_all_features(metaxy_project: TempMetaxyProject, output_
         metaxy_project.write_sample_metadata("files_root")
 
         # Check status for all features
-        result = metaxy_project.run_cli(["metadata", "status", "--all-features", "--format", output_format])
+        result = metaxy_project.run_cli(
+            ["metadata", "status", "--all-features", "--format", output_format], capsys=capsys
+        )
 
         assert result.returncode == 0
         if output_format == "json":
@@ -556,7 +582,9 @@ def test_metadata_status_all_features(metaxy_project: TempMetaxyProject, output_
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_root_feature(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_root_feature(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Test status command for a root feature (no upstream dependencies)."""
 
     def features():
@@ -585,7 +613,8 @@ def test_metadata_status_root_feature(metaxy_project: TempMetaxyProject, output_
                 "root_feature",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -608,7 +637,9 @@ def test_metadata_status_root_feature(metaxy_project: TempMetaxyProject, output_
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_root_feature_missing_metadata(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_root_feature_missing_metadata(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Test status command for a root feature with no metadata."""
 
     def features():
@@ -636,7 +667,8 @@ def test_metadata_status_root_feature_missing_metadata(metaxy_project: TempMetax
                 "root_feature",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -656,7 +688,9 @@ def test_metadata_status_root_feature_missing_metadata(metaxy_project: TempMetax
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_global_filter(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_with_global_filter(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Test status command with --global-filter flag to filter metadata by column value.
 
     --global-filter applies to all features (both upstream and target), which is needed
@@ -728,7 +762,8 @@ def test_metadata_status_with_global_filter(metaxy_project: TempMetaxyProject, o
                 "category = 'A'",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -756,7 +791,8 @@ def test_metadata_status_with_global_filter(metaxy_project: TempMetaxyProject, o
                 "category = 'B'",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -776,7 +812,7 @@ def test_metadata_status_with_global_filter(metaxy_project: TempMetaxyProject, o
             assert "2" in result.stdout  # Missing count
 
 
-def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
+def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test status command with invalid --filter syntax."""
 
     def features():
@@ -806,6 +842,7 @@ def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
                 "json",
             ],
             check=False,
+            capsys=capsys,
         )
 
         assert result.returncode == 1
@@ -814,7 +851,9 @@ def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_multiple_global_filters(metaxy_project: TempMetaxyProject, output_format: str):
+def test_metadata_status_with_multiple_global_filters(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
     """Test status command with multiple --global-filter flags (combined with AND)."""
 
     def features():
@@ -883,7 +922,8 @@ def test_metadata_status_with_multiple_global_filters(metaxy_project: TempMetaxy
                 "status = 'active'",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -902,7 +942,7 @@ def test_metadata_status_with_multiple_global_filters(metaxy_project: TempMetaxy
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_metadata_status_root_feature_with_filter_after_overwrites(
-    metaxy_project: TempMetaxyProject, output_format: str
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
     """Test status command with --filter on a root feature after writing updated rows.
 
@@ -980,7 +1020,8 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
                 "raw_video/root",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1002,7 +1043,8 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
                 "height IS NULL",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1029,7 +1071,8 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
                 "height IS NOT NULL",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1089,6 +1132,7 @@ def test_metadata_status_with_progress_flag(
     metaxy_project: TempMetaxyProject,
     output_format: str,
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test status command with --progress flag."""
     # Clear METAXY_STORE env var to ensure we use the project's config
@@ -1144,7 +1188,8 @@ def test_metadata_status_with_progress_flag(
                 "--format",
                 output_format,
                 "--progress",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1168,6 +1213,7 @@ def test_metadata_status_verbose_includes_progress(
     metaxy_project: TempMetaxyProject,
     output_format: str,
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that --verbose flag also enables progress calculation."""
     # Clear METAXY_STORE env var to ensure we use the project's config
@@ -1223,7 +1269,8 @@ def test_metadata_status_verbose_includes_progress(
                 "--format",
                 output_format,
                 "--verbose",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1242,7 +1289,9 @@ def test_metadata_status_verbose_includes_progress(
             assert "33%" in result.stdout or "33.3%" in result.stdout
 
 
-def test_metadata_status_progress_for_root_feature(metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch):
+def test_metadata_status_progress_for_root_feature(
+    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
     """Test that root features show no progress (None) since they have no upstream input."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
@@ -1274,7 +1323,8 @@ def test_metadata_status_progress_for_root_feature(metaxy_project: TempMetaxyPro
                 "--format",
                 "json",
                 "--progress",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1285,7 +1335,9 @@ def test_metadata_status_progress_for_root_feature(metaxy_project: TempMetaxyPro
         assert "progress_percentage" not in feature or feature["progress_percentage"] is None
 
 
-def test_metadata_status_progress_100_percent(metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch):
+def test_metadata_status_progress_100_percent(
+    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
     """Test that fully processed features show 100% progress."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
@@ -1339,7 +1391,8 @@ def test_metadata_status_progress_100_percent(metaxy_project: TempMetaxyProject,
                 "--format",
                 "json",
                 "--progress",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1378,9 +1431,11 @@ def test_metadata_delete_requires_yes_for_hard_delete_without_filters(
         metaxy_project.write_sample_metadata("logs")
 
         # Try hard delete without --yes and without filters
+        # Use subprocess=True because error output goes to different streams in direct mode
         result = metaxy_project.run_cli(
             ["metadata", "delete", "logs", "--soft=false"],
             check=False,
+            subprocess=True,
         )
 
         assert result.returncode == 1
@@ -1388,7 +1443,7 @@ def test_metadata_delete_requires_yes_for_hard_delete_without_filters(
         assert "MISSING_CONFIRMATION" in output or "requires --yes" in output
 
 
-def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test soft delete with a filter."""
 
     def features():
@@ -1440,7 +1495,8 @@ def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProje
                 "--filter",
                 "level = 'debug'",
                 "--soft",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1459,7 +1515,7 @@ def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProje
             assert all_data.height == 3
 
 
-def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test hard delete with a filter."""
 
     def features():
@@ -1511,7 +1567,8 @@ def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProje
                 "--filter",
                 "level = 'debug'",
                 "--soft=false",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1530,7 +1587,7 @@ def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProje
             assert all_data.height == 2
 
 
-def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test deleting metadata from multiple features."""
 
     def features():
@@ -1571,7 +1628,8 @@ def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject):
                 "--filter",
                 "sample_uid = 1",
                 "--soft",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1579,7 +1637,7 @@ def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject):
         assert "Deletion complete" in output
 
 
-def test_metadata_delete_all_features(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_all_features(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test deleting from all features."""
 
     def features():
@@ -1619,7 +1677,8 @@ def test_metadata_delete_all_features(metaxy_project: TempMetaxyProject):
                 "--filter",
                 "sample_uid = 1",
                 "--soft",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1646,6 +1705,7 @@ def test_metadata_delete_invalid_feature(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Try to delete from non-existent feature
+        # Use subprocess=True because error output goes to different streams in direct mode
         result = metaxy_project.run_cli(
             [
                 "metadata",
@@ -1656,13 +1716,14 @@ def test_metadata_delete_invalid_feature(metaxy_project: TempMetaxyProject):
                 "--soft",
             ],
             check=False,
+            subprocess=True,
         )
 
         assert result.returncode == 1
         assert "NO_FEATURES" in result.stdout or "No valid features" in result.stdout
 
 
-def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test delete with multiple filters combined with AND."""
 
     def features():
@@ -1713,7 +1774,8 @@ def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject
                 "--filter",
                 "status = 'old'",
                 "--soft",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1725,7 +1787,7 @@ def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject
             assert "s1" not in remaining["sample_uid"].to_list()
 
 
-def test_metadata_delete_with_invalid_filter(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_with_invalid_filter(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test delete with invalid filter syntax."""
 
     def features():
@@ -1754,13 +1816,14 @@ def test_metadata_delete_with_invalid_filter(metaxy_project: TempMetaxyProject):
                 "--soft",
             ],
             check=False,
+            capsys=capsys,
         )
 
         assert result.returncode == 1
         assert "Invalid filter syntax" in result.stderr
 
 
-def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test deleting all rows with --yes flag."""
 
     def features():
@@ -1794,7 +1857,8 @@ def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject):
                 "logs",
                 "--soft=false",
                 "--yes",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1812,6 +1876,7 @@ def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject):
 
 def test_metadata_delete_soft_delete_without_filter_no_yes_required(
     metaxy_project: TempMetaxyProject,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that soft delete without filters does not require --yes flag."""
 
@@ -1845,7 +1910,8 @@ def test_metadata_delete_soft_delete_without_filter_no_yes_required(
                 "delete",
                 "logs",
                 "--soft",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1865,7 +1931,7 @@ def test_metadata_delete_soft_delete_without_filter_no_yes_required(
             assert all_data.height == 3
 
 
-def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that delete requires either feature arguments or --all-features."""
 
     def features():
@@ -1887,12 +1953,13 @@ def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProje
         result = metaxy_project.run_cli(
             ["metadata", "delete", "--filter", "sample_uid = 1", "--soft"],
             check=False,
+            capsys=capsys,
         )
 
         assert result.returncode == 1
 
 
-def test_metadata_delete_dry_run(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_dry_run(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that --dry-run prints features and filters without deleting."""
 
     def features():
@@ -1940,7 +2007,8 @@ def test_metadata_delete_dry_run(metaxy_project: TempMetaxyProject):
                 "--filter",
                 "level = 'debug'",
                 "--dry-run",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1971,6 +2039,7 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
     metaxy_project: TempMetaxyProject,
     soft: bool,
     with_feature_history: bool,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that --dry-run row counts match the actual number of rows deleted."""
 
@@ -2063,7 +2132,8 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
                 delete_mode,
                 with_feature_history_flag,
                 "--dry-run",
-            ]
+            ],
+            capsys=capsys,
         )
         assert dry_run_result.returncode == 0
 
@@ -2100,7 +2170,8 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
                 delete_mode,
                 with_feature_history_flag,
                 "--yes",  # needed for hard delete
-            ]
+            ],
+            capsys=capsys,
         )
         assert delete_result.returncode == 0
 
@@ -2136,7 +2207,9 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
 # ============================================================================
 
 
-def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch):
+def test_metadata_status_progress_no_input_display(
+    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
     """Test that non-root features with no upstream input show '(no input)' in plain format."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
@@ -2181,7 +2254,8 @@ def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyPro
                 "--progress",
                 "--global-filter",
                 "sample_uid > 999",  # No samples match this filter
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -2199,7 +2273,8 @@ def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyPro
                 "--progress",
                 "--global-filter",
                 "sample_uid > 999",  # No samples match this filter
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result_json.returncode == 0
@@ -2214,6 +2289,7 @@ def test_metadata_status_progress_no_input_display(metaxy_project: TempMetaxyPro
 def test_metadata_status_with_fallback_stores(
     tmp_path: Path,
     output_format: str,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that metadata status correctly uses fallback stores for upstream metadata.
 
@@ -2306,7 +2382,7 @@ root_path = "{prod_path}"
             dev_store.write(downstream_key, increment.added.to_polars())
 
         # Run CLI status command - should use fallback stores by default
-        result = project.run_cli(["metadata", "status", "downstream", "--format", output_format])
+        result = project.run_cli(["metadata", "status", "downstream", "--format", output_format], capsys=capsys)
 
         assert result.returncode == 0
 
@@ -2337,6 +2413,7 @@ root_path = "{prod_path}"
 
 def test_metadata_status_fallback_disabled_shows_missing_row_count(
     tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that disabling fallback stores affects how current feature's metadata is counted.
 
@@ -2418,7 +2495,8 @@ root_path = "{prod_path}"
                 "--format",
                 "json",
                 # --allow-fallback-stores is True by default
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result_with_fallback.returncode == 0
@@ -2441,7 +2519,8 @@ root_path = "{prod_path}"
                 "--format",
                 "json",
                 "--no-allow-fallback-stores",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result_no_fallback.returncode == 0
@@ -2462,7 +2541,7 @@ root_path = "{prod_path}"
 # ============================================================================
 
 
-def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject):
+def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that copy requires both --from and --to flags."""
 
     def features():
@@ -2484,6 +2563,7 @@ def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli(
             ["metadata", "copy", "video/files", "--to", "dev"],
             check=False,
+            capsys=capsys,
         )
         assert result.returncode != 0
 
@@ -2491,11 +2571,12 @@ def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli(
             ["metadata", "copy", "video/files", "--from", "dev"],
             check=False,
+            capsys=capsys,
         )
         assert result.returncode != 0
 
 
-def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
+def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that copy requires either feature arguments or --all-features."""
 
     def features():
@@ -2513,9 +2594,11 @@ def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
+        # Use subprocess=True because error messages go to different streams in direct mode
         result = metaxy_project.run_cli(
             ["metadata", "copy", "--from", "dev", "--to", "dev"],
             check=False,
+            subprocess=True,
         )
 
         # FeatureSelector validation requires features or --all-features
@@ -2523,7 +2606,7 @@ def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
         assert "Must specify either --all-features or feature arguments" in result.stdout
 
 
-def test_metadata_copy_single_feature(tmp_path: Path):
+def test_metadata_copy_single_feature(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """Test copying metadata for a single feature between stores."""
     # Create config with two stores
     dev_path = (tmp_path / "dev").as_posix()
@@ -2566,7 +2649,10 @@ root_path = "{prod_path}"
         project.write_sample_metadata("video/files", store_name="dev")
 
         # Copy from dev to prod (positional args before keyword args)
-        result = project.run_cli(["metadata", "copy", "video/files", "--from", "dev", "--to", "prod"])
+        result = project.run_cli(
+            ["metadata", "copy", "video/files", "--from", "dev", "--to", "prod"],
+            capsys=capsys,
+        )
 
         assert result.returncode == 0
         assert "Copy complete" in result.stdout
@@ -2574,7 +2660,7 @@ root_path = "{prod_path}"
         assert "3 row(s)" in result.stdout
 
 
-def test_metadata_copy_multiple_features(tmp_path: Path):
+def test_metadata_copy_multiple_features(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """Test copying metadata for multiple features."""
     dev_path = (tmp_path / "dev").as_posix()
     prod_path = (tmp_path / "prod").as_posix()
@@ -2636,7 +2722,8 @@ root_path = "{prod_path}"
                 "dev",
                 "--to",
                 "prod",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -2645,7 +2732,7 @@ root_path = "{prod_path}"
         assert "6 row(s)" in result.stdout  # 3 rows per feature
 
 
-def test_metadata_copy_with_filter(tmp_path: Path):
+def test_metadata_copy_with_filter(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """Test copying metadata with filter applied."""
     dev_path = (tmp_path / "dev").as_posix()
     prod_path = (tmp_path / "prod").as_posix()
@@ -2698,7 +2785,8 @@ root_path = "{prod_path}"
                 "prod",
                 "--filter",
                 "sample_uid <= 2",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -2749,6 +2837,7 @@ root_path = "{prod_path}"
         project.write_sample_metadata("video/files", store_name="dev")
 
         # Try to copy including a non-existent feature
+        # Use subprocess=True because warning goes to different stream in direct mode
         result = project.run_cli(
             [
                 "metadata",
@@ -2759,7 +2848,8 @@ root_path = "{prod_path}"
                 "dev",
                 "--to",
                 "prod",
-            ]
+            ],
+            subprocess=True,
         )
 
         # Should succeed (copy what exists)
@@ -2771,7 +2861,7 @@ root_path = "{prod_path}"
         assert "nonexistent/feature" in result.stdout
 
 
-def test_metadata_copy_no_features_to_copy(tmp_path: Path):
+def test_metadata_copy_no_features_to_copy(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """Test that copy handles case when all specified features are missing."""
     dev_path = (tmp_path / "dev").as_posix()
     prod_path = (tmp_path / "prod").as_posix()
@@ -2819,7 +2909,8 @@ root_path = "{prod_path}"
                 "dev",
                 "--to",
                 "prod",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0

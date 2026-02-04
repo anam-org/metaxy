@@ -1,6 +1,7 @@
 import importlib
 import inspect
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -9,6 +10,8 @@ from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+import pytest
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoFrame
@@ -21,6 +24,22 @@ from metaxy.models.feature_spec import (
 )
 from metaxy.versioning.types import HashAlgorithm
 
+# Use stdlib chdir on Python 3.11+, otherwise provide our own
+if sys.version_info >= (3, 11):
+    from contextlib import chdir
+else:
+
+    @contextmanager
+    def chdir(path: Path):
+        """Context manager to temporarily change working directory."""
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(path)
+            yield
+        finally:
+            os.chdir(old_cwd)
+
+
 DEFAULT_ID_COLUMNS = ["sample_uid"]
 
 # Environment variables that should be forwarded to subprocesses for coverage collection
@@ -28,11 +47,7 @@ COVERAGE_ENV_VARS = ["COVERAGE_PROCESS_START", "COVERAGE_FILE"]
 
 
 def _get_coverage_env() -> dict[str, str]:
-    """Get coverage-related environment variables if set.
-
-    Returns a dict of coverage env vars that should be forwarded to subprocesses
-    to enable coverage collection in subprocess calls during testing.
-    """
+    """Get coverage-related environment variables if set."""
     return {k: v for k in COVERAGE_ENV_VARS if (v := os.environ.get(k))}
 
 
@@ -43,9 +58,6 @@ def env_override(overrides: dict[str, str | None]):
     Args:
         overrides: Dict mapping env var names to values. None values will unset the var.
 
-    Yields:
-        None
-
     Example:
         ```py
         with env_override({"FOO": "bar", "BAZ": None}):
@@ -54,10 +66,7 @@ def env_override(overrides: dict[str, str | None]):
         # Original values restored
         ```
     """
-    old_values = {}
-    for key in overrides:
-        old_values[key] = os.environ.get(key)
-
+    old_values = {key: os.environ.get(key) for key in overrides}
     try:
         for key, value in overrides.items():
             if value is None:
@@ -71,6 +80,17 @@ def env_override(overrides: dict[str, str | None]):
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = old_value
+
+
+@contextmanager
+def pythonpath_override(paths: list[str]):
+    """Context manager to temporarily prepend paths to sys.path."""
+    old_path = sys.path.copy()
+    try:
+        sys.path = paths + sys.path
+        yield
+    finally:
+        sys.path = old_path
 
 
 __all__ = [
@@ -230,9 +250,6 @@ class TempFeatureModule:
         if self.module_name in sys.modules:
             del sys.modules[self.module_name]
 
-        # Delete temp directory
-        import shutil
-
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
 
@@ -313,33 +330,37 @@ class MetaxyProject:
         *,
         check: bool = True,
         env: dict[str, str] | None = None,
-        **kwargs,
-    ):
-        """Run CLI command with proper environment setup.
+        subprocess: bool = False,
+        capsys: "pytest.CaptureFixture[str] | None" = None,
+    ) -> "subprocess.CompletedProcess[str]":
+        """Run CLI command.
 
         Args:
             args: CLI command arguments (e.g., ["push"])
-            check: If True (default), raises CalledProcessError on non-zero exit
+            check: If True (default), raises RuntimeError on non-zero exit
             env: Optional dict of additional environment variables
-            **kwargs: Additional arguments to pass to subprocess.run()
+            subprocess: If True, run in subprocess. If False (default), run in-process.
+            capsys: pytest capsys fixture for capturing output. Required for direct mode.
 
         Returns:
             subprocess.CompletedProcess: Result of the CLI command
-
-        Raises:
-            subprocess.CalledProcessError: If check=True and command fails
-
-        Example:
-            ```py
-            result = project.run_cli(["graph", "history", "--limit", "5"])
-            print(result.stdout)
-            ```
         """
-        # Start with current environment
+        if subprocess:
+            return self._run_cli_subprocess(args, check=check, env=env)
+        if capsys is None:
+            raise ValueError("capsys fixture is required for direct mode (subprocess=False)")
+        return self._run_cli_direct(args, check=check, env=env, capsys=capsys)
+
+    def _run_cli_subprocess(
+        self,
+        args: list[str],
+        *,
+        check: bool = True,
+        env: dict[str, str] | None = None,
+    ) -> "subprocess.CompletedProcess[str]":
+        """Run CLI via subprocess."""
         cmd_env = os.environ.copy()
 
-        # Add project directory (and src/ subdirectory if it exists) to PYTHONPATH
-        # so modules can be imported. These are prepended to take precedence.
         paths_to_add = [str(self.project_dir)]
         src_dir = self.project_dir / "src"
         if src_dir.is_dir():
@@ -350,11 +371,9 @@ class MetaxyProject:
             pythonpath = f"{pythonpath}{os.pathsep}{cmd_env['PYTHONPATH']}"
         cmd_env["PYTHONPATH"] = pythonpath
 
-        # Apply additional env overrides
         if env:
             cmd_env.update(env)
 
-        # Run CLI command
         try:
             result = subprocess.run(
                 [sys.executable, "-m", "metaxy.cli.app", *args],
@@ -363,10 +382,8 @@ class MetaxyProject:
                 text=True,
                 env=cmd_env,
                 check=check,
-                **kwargs,
             )
         except subprocess.CalledProcessError as e:
-            # Re-raise with stderr output for better debugging
             error_msg = f"CLI command failed: {' '.join(str(a) for a in args)}\n"
             error_msg += f"Exit code: {e.returncode}\n"
             if e.stdout:
@@ -374,6 +391,89 @@ class MetaxyProject:
             if e.stderr:
                 error_msg += f"STDERR:\n{e.stderr}\n"
             raise RuntimeError(error_msg) from e
+
+        return result
+
+    def _run_cli_direct(
+        self,
+        args: list[str],
+        *,
+        check: bool = True,
+        env: dict[str, str] | None = None,
+        capsys: "pytest.CaptureFixture[str]",
+    ) -> "subprocess.CompletedProcess[str]":
+        """Run CLI directly in-process.
+
+        Uses pytest's capsys fixture to capture stdout/stderr output from Rich consoles.
+        The consoles write to sys.stdout/sys.stderr which capsys captures automatically.
+        """
+        from dotenv import load_dotenv
+
+        paths_to_add = [str(self.project_dir)]
+        src_dir = self.project_dir / "src"
+        if src_dir.is_dir():
+            paths_to_add.insert(0, str(src_dir))
+
+        # Clear ALL METAXY_ENTRYPOINT_* env vars to prevent leakage between tests
+        env_overrides: dict[str, str | None] = {k: None for k in os.environ if k.startswith("METAXY_ENTRYPOINT")}
+        if env:
+            env_overrides.update(env)
+
+        returncode = 0
+
+        with chdir(self.project_dir), pythonpath_override(paths_to_add), env_override(env_overrides):
+            load_dotenv(dotenv_path=self.project_dir / ".env")
+
+            from metaxy import config as config_module
+            from metaxy.cli import app as app_module
+            from metaxy.cli import console as console_module
+            from metaxy.cli import context as context_module
+            from metaxy.models.feature import FeatureGraph
+
+            try:
+                # Reset all CLI state for clean run
+                context_module._app_context.set(None)
+                config_module._metaxy_config.set(None)
+
+                # Reset Rich consoles to use current sys.stdout/stderr
+                # This is needed because capsys replaces sys.stdout/stderr,
+                # but global Console objects capture file handles at import time
+                console_module.console.file = sys.stderr
+                console_module.data_console.file = sys.stdout
+                console_module.error_console.file = sys.stderr
+
+                # Use fresh graph - CLI will load features into this
+                with FeatureGraph().use():
+                    app_module.app.meta(args, exit_on_error=False)
+
+            except SystemExit as e:
+                returncode = e.code if isinstance(e.code, int) else 1
+            except Exception as e:
+                print(f"Error: {e}", file=sys.stderr)
+                returncode = 1
+            finally:
+                context_module._app_context.set(None)
+                config_module._metaxy_config.set(None)
+
+        # Capture output via capsys
+        captured = capsys.readouterr()
+        stdout, stderr = captured.out, captured.err
+
+        result = subprocess.CompletedProcess(
+            args=["metaxy", *args],
+            returncode=returncode,
+            stdout=stdout,
+            stderr=stderr,
+        )
+
+        if check and returncode != 0:
+            error_msg = f"CLI command failed: {' '.join(str(a) for a in args)}\n"
+            error_msg += f"Exit code: {returncode}\n"
+            if result.stdout:
+                error_msg += f"STDOUT:\n{result.stdout}\n"
+            if result.stderr:
+                error_msg += f"STDERR:\n{result.stderr}\n"
+            raise RuntimeError(error_msg)
 
         return result
 
@@ -397,7 +497,7 @@ class ExternalMetaxyProject(MetaxyProject):
     Example:
         ```py
         project = ExternalMetaxyProject(Path("examples/example-migration"))
-        result = project.run_cli(["push"], env={"STAGE": "1"})
+        result = project.run_cli(["push"], env={"STAGE": "1"}, subprocess=True)
         assert result.returncode == 0
         print(project.package_name)  # "example_migration"
         ```
@@ -436,9 +536,6 @@ class ExternalMetaxyProject(MetaxyProject):
                 result = project.run_in_venv("python", "-c", "import test_metaxy_project")
             ```
         """
-        import os
-        import subprocess
-
         # Create venv using uv
         subprocess.run(["uv", "venv", str(venv_path), "--python", str(sys.executable)], check=True)
 
@@ -516,8 +613,6 @@ class ExternalMetaxyProject(MetaxyProject):
         Args:
             venv_path: Path to the virtual environment
         """
-        import sys
-
         # Calculate site-packages path directly
         # This is more robust than subprocess call
         if sys.platform == "win32":
@@ -546,8 +641,6 @@ class ExternalMetaxyProject(MetaxyProject):
         pth_source = repo_root / ".github" / "coverage_subprocess.pth"
 
         if pth_source.exists():
-            import shutil
-
             shutil.copy(pth_source, site_packages / "coverage_subprocess.pth")
 
     def run_in_venv(self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs):
@@ -572,14 +665,8 @@ class ExternalMetaxyProject(MetaxyProject):
             result = project.run_in_venv("python", "-m", "my_module")
             ```
         """
-        import subprocess
-
         if self._venv_path is None:
             raise RuntimeError("No venv configured. Call setup_venv() first.")
-
-        # Start with current environment
-        import os
-        import sys
 
         cmd_env = os.environ.copy()
 
@@ -722,13 +809,15 @@ class ExternalMetaxyProject(MetaxyProject):
     def push_graph(self, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
         """Push the current graph snapshot.
 
+        Uses subprocess mode for external projects because they need entrypoint loading.
+
         Args:
             env: Optional dict of additional environment variables.
 
         Returns:
             subprocess.CompletedProcess: Result of the push command.
         """
-        return self.run_cli(["push"], env=env)
+        return self.run_cli(["push"], env=env, subprocess=True)
 
     @property
     def graph(self) -> FeatureGraph:
@@ -820,7 +909,7 @@ class TempMetaxyProject(MetaxyProject):
 
 
         with project.with_features(features):
-            result = project.run_cli("push")
+            result = project.run_cli(["push"], capsys=capsys)
             assert result.returncode == 0
         ```
     """
@@ -895,7 +984,7 @@ database = "{staging_db_path}"
 
             with project.with_features(my_features) as module:
                 print(module)  # "features_0"
-                result = project.run_cli(["push"])
+                result = project.run_cli(["push"], capsys=capsys)
             ```
         """
 
@@ -943,77 +1032,39 @@ database = "{staging_db_path}"
 
         return _context()
 
-    def run_cli(
+    def _run_cli_direct(
         self,
         args: list[str],
         *,
         check: bool = True,
         env: dict[str, str] | None = None,
-        **kwargs,
+        capsys: "pytest.CaptureFixture[str]",
     ) -> subprocess.CompletedProcess[str]:
-        """Run CLI command with current feature modules loaded.
+        """Override to add entrypoint env vars for feature discovery."""
+        # Clear tracked feature modules so they get re-imported into the fresh graph
+        for mod_name in self._feature_modules:
+            sys.modules.pop(mod_name, None)
 
-        Automatically sets METAXY_ENTRYPOINT_0, METAXY_ENTRYPOINT_1, etc.
-        based on active with_features() context managers.
+        entrypoint_env = {
+            f"METAXY_ENTRYPOINT_{idx}": module_name for idx, module_name in enumerate(self._feature_modules)
+        }
+        merged_env = {**entrypoint_env, **(env or {})}
+        return super()._run_cli_direct(args, check=check, env=merged_env, capsys=capsys)
 
-        Args:
-            args: CLI command arguments (e.g., ["push"])
-            check: If True (default), raises CalledProcessError on non-zero exit
-            env: Optional dict of additional environment variables
-            **kwargs: Additional arguments to pass to subprocess.run()
+    def _run_cli_subprocess(
+        self,
+        args: list[str],
+        *,
+        check: bool = True,
+        env: dict[str, str] | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        """Override to add entrypoint env vars."""
+        entrypoint_env = {
+            f"METAXY_ENTRYPOINT_{idx}": module_name for idx, module_name in enumerate(self._feature_modules)
+        }
+        merged_env = {**entrypoint_env, **(env or {})}
 
-        Returns:
-            subprocess.CompletedProcess: Result of the CLI command
-
-        Raises:
-            subprocess.CalledProcessError: If check=True and command fails
-
-        Example:
-            ```py
-            result = project.run_cli(["graph", "history", "--limit", "5"])
-            print(result.stdout)
-            ```
-        """
-        # Start with current environment
-        cmd_env = os.environ.copy()
-
-        # Add project directory to PYTHONPATH so modules can be imported
-        pythonpath = str(self.project_dir)
-        if "PYTHONPATH" in cmd_env:
-            pythonpath = f"{pythonpath}{os.pathsep}{cmd_env['PYTHONPATH']}"
-        cmd_env["PYTHONPATH"] = pythonpath
-
-        # Set entrypoints for all tracked modules
-        # Use METAXY_ENTRYPOINT_0, METAXY_ENTRYPOINT_1, etc. (single underscore for list indexing)
-        for idx, module_name in enumerate(self._feature_modules):
-            cmd_env[f"METAXY_ENTRYPOINT_{idx}"] = module_name
-
-        # Apply additional env overrides
-        if env:
-            cmd_env.update(env)
-
-        # Run CLI command
-        try:
-            result = subprocess.run(
-                [sys.executable, "-m", "metaxy.cli.app", *args],
-                cwd=str(self.project_dir),
-                capture_output=True,
-                text=True,
-                env=cmd_env,
-                check=check,
-                **kwargs,
-            )
-        except subprocess.CalledProcessError as e:
-            # Re-raise with stderr output for better debugging
-            error_msg = f"CLI command failed: {' '.join(str(a) for a in args)}\n"
-            error_msg += f"Exit code: {e.returncode}\n"
-            if e.stdout:
-                error_msg += f"STDOUT:\n{e.stdout}\n"
-            if e.stderr:
-                error_msg += f"STDERR:\n{e.stderr}\n"
-            raise RuntimeError(error_msg) from e
-
-        return result
+        return super()._run_cli_subprocess(args, check=check, env=merged_env)
 
     @property
     def entrypoints(self):
@@ -1026,9 +1077,6 @@ database = "{staging_db_path}"
         Returns:
             FeatureGraph with all features from tracked modules loaded
         """
-        import importlib
-        import sys
-
         graph = FeatureGraph()
 
         # Ensure project dir is in sys.path

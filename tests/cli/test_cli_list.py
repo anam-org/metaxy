@@ -2,10 +2,11 @@
 
 import json
 
+import pytest
 from metaxy_testing import TempMetaxyProject
 
 
-def test_list_features_basic(metaxy_project: TempMetaxyProject):
+def test_list_features_basic(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test basic list features command with plain output."""
 
     def features():
@@ -23,7 +24,7 @@ def test_list_features_basic(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features"])
+        result = metaxy_project.run_cli(["list", "features"], capsys=capsys)
 
         assert result.returncode == 0
         # Check for project grouping and table output
@@ -35,7 +36,7 @@ def test_list_features_basic(metaxy_project: TempMetaxyProject):
         assert "Total:" in result.stdout  # Summary
 
 
-def test_list_features_json_format(metaxy_project: TempMetaxyProject):
+def test_list_features_json_format(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test list features with JSON output format."""
 
     def features():
@@ -53,7 +54,7 @@ def test_list_features_json_format(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"], capsys=capsys)
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -71,7 +72,7 @@ def test_list_features_json_format(metaxy_project: TempMetaxyProject):
         assert "version" in feature  # Has version hash
 
 
-def test_list_features_multiple_features(metaxy_project: TempMetaxyProject):
+def test_list_features_multiple_features(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test listing multiple features."""
 
     def features():
@@ -110,7 +111,7 @@ def test_list_features_multiple_features(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"], capsys=capsys)
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -124,7 +125,7 @@ def test_list_features_multiple_features(metaxy_project: TempMetaxyProject):
         assert text_feature["field_count"] == 2
 
 
-def test_list_features_with_dependencies(metaxy_project: TempMetaxyProject):
+def test_list_features_with_dependencies(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test listing features with dependencies shows dependent features correctly."""
 
     def root_features():
@@ -176,7 +177,7 @@ def test_list_features_with_dependencies(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli(["list", "features", "--format", "json"])
+            result = metaxy_project.run_cli(["list", "features", "--format", "json"], capsys=capsys)
 
             assert result.returncode == 0
             data = json.loads(result.stdout)
@@ -194,7 +195,7 @@ def test_list_features_with_dependencies(metaxy_project: TempMetaxyProject):
             assert video_processing["is_root"] is False
 
 
-def test_list_features_verbose_mode(metaxy_project: TempMetaxyProject):
+def test_list_features_verbose_mode(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test verbose mode shows additional details."""
 
     def root_features():
@@ -247,7 +248,7 @@ def test_list_features_verbose_mode(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
             # Test verbose with JSON format
-            result = metaxy_project.run_cli(["list", "features", "--verbose", "--format", "json"])
+            result = metaxy_project.run_cli(["list", "features", "--verbose", "--format", "json"], capsys=capsys)
 
             assert result.returncode == 0
             data = json.loads(result.stdout)
@@ -266,7 +267,7 @@ def test_list_features_verbose_mode(metaxy_project: TempMetaxyProject):
             assert "path" in frames_field["deps"][0]["fields"]
 
 
-def test_list_features_verbose_plain_output(metaxy_project: TempMetaxyProject):
+def test_list_features_verbose_plain_output(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test verbose mode with plain output shows field tables."""
 
     def root_features():
@@ -318,7 +319,7 @@ def test_list_features_verbose_plain_output(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli(["list", "features", "--verbose"])
+            result = metaxy_project.run_cli(["list", "features", "--verbose"], capsys=capsys)
 
             assert result.returncode == 0
             # Check for main table
@@ -337,7 +338,7 @@ def test_list_features_verbose_plain_output(metaxy_project: TempMetaxyProject):
             assert "video/files.path" in result.stdout
 
 
-def test_list_features_empty_project(metaxy_project: TempMetaxyProject):
+def test_list_features_empty_project(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test listing features in empty project."""
 
     def features():
@@ -345,13 +346,13 @@ def test_list_features_empty_project(metaxy_project: TempMetaxyProject):
         pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features"])
+        result = metaxy_project.run_cli(["list", "features"], capsys=capsys)
 
         assert result.returncode == 0
         assert "No features found" in result.stdout
 
 
-def test_list_features_empty_project_json(metaxy_project: TempMetaxyProject):
+def test_list_features_empty_project_json(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test listing features in empty project with JSON format."""
 
     def features():
@@ -359,7 +360,7 @@ def test_list_features_empty_project_json(metaxy_project: TempMetaxyProject):
         pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"], capsys=capsys)
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -369,6 +370,7 @@ def test_list_features_empty_project_json(metaxy_project: TempMetaxyProject):
 
 def test_list_features_shows_root_and_dependent_icons(
     metaxy_project: TempMetaxyProject,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that plain output shows different icons for root vs dependent features."""
 
@@ -403,7 +405,7 @@ def test_list_features_shows_root_and_dependent_icons(
 
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli(["list", "features"])
+            result = metaxy_project.run_cli(["list", "features"], capsys=capsys)
 
             assert result.returncode == 0
             # Check both features are listed
@@ -414,7 +416,7 @@ def test_list_features_shows_root_and_dependent_icons(
             assert "1 dependent" in result.stdout
 
 
-def test_list_features_short_flag(metaxy_project: TempMetaxyProject):
+def test_list_features_short_flag(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test short flags work (-v for verbose, -f for format)."""
 
     def features():
@@ -433,18 +435,18 @@ def test_list_features_short_flag(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Test -f json
-        result = metaxy_project.run_cli(["list", "features", "-f", "json"])
+        result = metaxy_project.run_cli(["list", "features", "-f", "json"], capsys=capsys)
         assert result.returncode == 0
         data = json.loads(result.stdout)
         assert data["feature_count"] == 1
 
         # Test -v
-        result = metaxy_project.run_cli(["list", "features", "-v"])
+        result = metaxy_project.run_cli(["list", "features", "-v"], capsys=capsys)
         assert result.returncode == 0
         assert "Dependencies" in result.stdout  # Verbose column
 
 
-def test_list_features_json_includes_version(metaxy_project: TempMetaxyProject):
+def test_list_features_json_includes_version(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that JSON output includes full version hash."""
 
     def features():
@@ -463,7 +465,7 @@ def test_list_features_json_includes_version(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Get JSON output to see full version
-        result_json = metaxy_project.run_cli(["list", "features", "--format", "json"])
+        result_json = metaxy_project.run_cli(["list", "features", "--format", "json"], capsys=capsys)
         data = json.loads(result_json.stdout)
         full_version = data["features"][0]["version"]
 
@@ -474,7 +476,9 @@ def test_list_features_json_includes_version(metaxy_project: TempMetaxyProject):
         assert "source" in data["features"][0]
 
 
-def test_list_features_verbose_auto_field_mapping(metaxy_project: TempMetaxyProject):
+def test_list_features_verbose_auto_field_mapping(
+    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]
+):
     """Test verbose mode shows auto-mapped field dependencies (no explicit deps)."""
 
     def root_features():
@@ -524,7 +528,7 @@ def test_list_features_verbose_auto_field_mapping(metaxy_project: TempMetaxyProj
 
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli(["list", "features", "--verbose", "--format", "json"])
+            result = metaxy_project.run_cli(["list", "features", "--verbose", "--format", "json"], capsys=capsys)
 
             assert result.returncode == 0
             data = json.loads(result.stdout)
@@ -541,7 +545,7 @@ def test_list_features_verbose_auto_field_mapping(metaxy_project: TempMetaxyProj
             assert set(frames_field["deps"][0]["fields"]) == {"path", "size"}
 
 
-def test_list_features_multiple_fields(metaxy_project: TempMetaxyProject):
+def test_list_features_multiple_fields(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test listing a feature with multiple fields."""
 
     def features():
@@ -563,7 +567,7 @@ def test_list_features_multiple_fields(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"], capsys=capsys)
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -575,7 +579,7 @@ def test_list_features_multiple_fields(metaxy_project: TempMetaxyProject):
         assert field_keys == {"path", "size", "hash"}
 
 
-def test_list_features_long_names_not_truncated(metaxy_project: TempMetaxyProject):
+def test_list_features_long_names_not_truncated(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that long feature keys and import paths are not truncated."""
 
     def features():
@@ -593,7 +597,7 @@ def test_list_features_long_names_not_truncated(metaxy_project: TempMetaxyProjec
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features"])
+        result = metaxy_project.run_cli(["list", "features"], capsys=capsys)
 
         assert result.returncode == 0
         # Full feature key should be present (not truncated with ...)
@@ -604,14 +608,14 @@ def test_list_features_long_names_not_truncated(metaxy_project: TempMetaxyProjec
         assert "…" not in result.stdout
 
 
-def test_list_stores_basic(metaxy_project: TempMetaxyProject):
+def test_list_stores_basic(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test basic list stores command with plain output."""
 
     def features():
         pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "stores"])
+        result = metaxy_project.run_cli(["list", "stores"], capsys=capsys)
 
         assert result.returncode == 0
         # Check for table output
@@ -624,14 +628,14 @@ def test_list_stores_basic(metaxy_project: TempMetaxyProject):
         assert "Total:" in result.stdout
 
 
-def test_list_stores_json_format(metaxy_project: TempMetaxyProject):
+def test_list_stores_json_format(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test list stores with JSON output format."""
 
     def features():
         pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "stores", "--format", "json"])
+        result = metaxy_project.run_cli(["list", "stores", "--format", "json"], capsys=capsys)
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -654,21 +658,21 @@ def test_list_stores_json_format(metaxy_project: TempMetaxyProject):
         assert default_stores[0]["name"] == data["default_store"]
 
 
-def test_list_stores_short_flag(metaxy_project: TempMetaxyProject):
+def test_list_stores_short_flag(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test short flag works (-f for format)."""
 
     def features():
         pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "stores", "-f", "json"])
+        result = metaxy_project.run_cli(["list", "stores", "-f", "json"], capsys=capsys)
 
         assert result.returncode == 0
         data = json.loads(result.stdout)
         assert "stores" in data
 
 
-def test_list_features_shows_external_features(metaxy_project: TempMetaxyProject):
+def test_list_features_shows_external_features(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that external features are marked as such in the output."""
 
     def features():
@@ -701,7 +705,7 @@ def test_list_features_shows_external_features(metaxy_project: TempMetaxyProject
 
     with metaxy_project.with_features(features):
         # Test plain output
-        result = metaxy_project.run_cli(["list", "features"])
+        result = metaxy_project.run_cli(["list", "features"], capsys=capsys)
         assert result.returncode == 0
         assert "local/feature" in result.stdout
         assert "external/feature" in result.stdout
@@ -709,7 +713,7 @@ def test_list_features_shows_external_features(metaxy_project: TempMetaxyProject
         assert "1 external" in result.stdout
 
 
-def test_list_features_external_json_format(metaxy_project: TempMetaxyProject):
+def test_list_features_external_json_format(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that JSON output includes is_external field."""
 
     def features():
@@ -741,7 +745,7 @@ def test_list_features_external_json_format(metaxy_project: TempMetaxyProject):
         graph.add_feature_definition(external_def)
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features", "--format", "json"])
+        result = metaxy_project.run_cli(["list", "features", "--format", "json"], capsys=capsys)
         assert result.returncode == 0
         data = json.loads(result.stdout)
 
@@ -758,7 +762,7 @@ def test_list_features_external_json_format(metaxy_project: TempMetaxyProject):
         assert external_feature["source"] is not None
 
 
-def test_list_features_external_verbose(metaxy_project: TempMetaxyProject):
+def test_list_features_external_verbose(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test verbose mode with external features."""
 
     def features():
@@ -790,6 +794,6 @@ def test_list_features_external_verbose(metaxy_project: TempMetaxyProject):
         graph.add_feature_definition(external_def)
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["list", "features", "--verbose"])
+        result = metaxy_project.run_cli(["list", "features", "--verbose"], capsys=capsys)
         assert result.returncode == 0
         assert "external/feature" in result.stdout

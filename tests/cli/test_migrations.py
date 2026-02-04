@@ -1,9 +1,10 @@
 """Tests for migrations CLI commands."""
 
+import pytest
 from metaxy_testing import TempMetaxyProject
 
 
-def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
+def test_migrations_list_empty(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test migrations list with no migrations."""
 
     def features():
@@ -22,13 +23,13 @@ def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # No migrations created yet
-        result = metaxy_project.run_cli(["migrations", "list"])
+        result = metaxy_project.run_cli(["migrations", "list"], capsys=capsys)
 
         assert result.returncode == 0
         assert "No migrations found" in result.stderr
 
 
-def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
+def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test migrations list with a single migration."""
     from datetime import datetime, timezone
 
@@ -69,7 +70,7 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
             yaml.dump(migration_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli(["migrations", "list"])
+        result = metaxy_project.run_cli(["migrations", "list"], capsys=capsys)
 
         assert result.returncode == 0
         # Check for table contents
@@ -82,7 +83,7 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
         assert "Operations" in result.stderr
 
 
-def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
+def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test migrations list with multiple migrations in chain order."""
     from datetime import datetime, timezone
 
@@ -138,7 +139,7 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
             yaml.dump(migration2_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli(["migrations", "list"])
+        result = metaxy_project.run_cli(["migrations", "list"], capsys=capsys)
 
         assert result.returncode == 0
         # Check both migrations are listed
@@ -152,7 +153,7 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
         assert pos_001 < pos_002
 
 
-def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
+def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test migrations list with migration having multiple operations."""
     from datetime import datetime, timezone
 
@@ -196,7 +197,7 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
             yaml.dump(migration_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli(["migrations", "list"])
+        result = metaxy_project.run_cli(["migrations", "list"], capsys=capsys)
 
         assert result.returncode == 0
         assert "multi_op_migration" in result.stderr
@@ -206,7 +207,7 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
         assert "CustomBackfill" in result.stderr
 
 
-def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
+def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test migrations list with invalid migration chain."""
     from datetime import datetime, timezone
 
@@ -262,14 +263,14 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
             yaml.dump(migration2_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli(["migrations", "list"], check=False)
+        result = metaxy_project.run_cli(["migrations", "list"], check=False, capsys=capsys)
 
         assert result.returncode == 0  # Doesn't exit with error, just prints error
         assert "Invalid migration:" in result.stderr
         assert "Multiple migration heads" in result.stderr
 
 
-def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
+def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that migration errors are logged with full tracebacks."""
     from datetime import datetime, timezone
 
@@ -310,7 +311,8 @@ def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
             yaml.dump(migration_yaml, f)
 
         # Apply migration (will fail because snapshots don't exist)
-        result = metaxy_project.run_cli(["migrations", "apply", "--dry-run"], check=False)
+        # Use subprocess=True because traceback output differs in direct mode
+        result = metaxy_project.run_cli(["migrations", "apply", "--dry-run"], check=False, subprocess=True)
 
         # This particular error causes fatal exit before feature processing
         assert result.returncode == 1
@@ -326,7 +328,7 @@ def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
         assert ".py" in output and "line " in output
 
 
-def test_generated_migration_is_valid(metaxy_project: TempMetaxyProject):
+def test_generated_migration_is_valid(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that generated migrations can be loaded and used with status command.
 
     Regression test for bug where generated YAML used 'id' but model expected 'migration_id'.
@@ -356,18 +358,20 @@ def test_generated_migration_is_valid(metaxy_project: TempMetaxyProject):
                 "metaxy.migrations.ops.DataVersionReconciliation",
                 "--type",
                 "full",
-            ]
+            ],
+            capsys=capsys,
         )
         assert result.returncode == 0
 
         # Status command should work without validation errors
-        result = metaxy_project.run_cli(["migrations", "status"])
+        result = metaxy_project.run_cli(["migrations", "status"], capsys=capsys)
         assert result.returncode == 0
         assert "validation error" not in result.stderr.lower()
 
 
 def test_migrations_apply_rerun_displays_reprocessing_message(
     metaxy_project: TempMetaxyProject,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that --rerun flag shows 'Reprocessing all N feature(s)' message.
 
@@ -399,12 +403,13 @@ def test_migrations_apply_rerun_displays_reprocessing_message(
                 "metaxy.migrations.ops.DataVersionReconciliation",
                 "--type",
                 "full",
-            ]
+            ],
+            capsys=capsys,
         )
         assert result.returncode == 0
 
         # Apply with --rerun and --dry-run to see the message without executing
-        result = metaxy_project.run_cli(["migrations", "apply", "--rerun", "--dry-run"], check=False)
+        result = metaxy_project.run_cli(["migrations", "apply", "--rerun", "--dry-run"], check=False, capsys=capsys)
 
         # Should show RERUN MODE banner
         assert "RERUN MODE" in result.stderr
@@ -417,6 +422,7 @@ def test_migrations_apply_rerun_displays_reprocessing_message(
 
 def test_migrations_status_uses_yaml_as_source_of_truth(
     metaxy_project: TempMetaxyProject,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that migration status uses YAML features as source of truth.
 
@@ -478,7 +484,7 @@ def test_migrations_status_uses_yaml_as_source_of_truth(
             yaml.dump(migration_yaml, f)
 
         # Check initial status - should show 0/2 completed
-        result = metaxy_project.run_cli(["migrations", "status"])
+        result = metaxy_project.run_cli(["migrations", "status"], capsys=capsys)
         assert result.returncode == 0
         assert "0/2 completed" in result.stderr
 
@@ -493,7 +499,7 @@ def test_migrations_status_uses_yaml_as_source_of_truth(
             yaml.dump(migration_yaml, f)
 
         # Check status again - should show 0/1 completed (YAML is source of truth)
-        result = metaxy_project.run_cli(["migrations", "status"])
+        result = metaxy_project.run_cli(["migrations", "status"], capsys=capsys)
         assert result.returncode == 0
         assert "0/1 completed" in result.stderr
         # Should NOT show 0/2 (the old value)
