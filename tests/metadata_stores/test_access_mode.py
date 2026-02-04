@@ -1,11 +1,13 @@
 """Tests for AccessMode functionality in metadata stores."""
 
 import multiprocessing
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
 import polars as pl
+import pytest
 
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
@@ -94,6 +96,10 @@ def _read_from_store(db_path: Path, result_queue: Any) -> None:
         result_queue.put(("error", str(e)))
 
 
+@pytest.mark.skipif(
+    sys.platform != "linux",
+    reason="DuckDB concurrent read access only works on Linux (uses range locks); macOS/Windows use exclusive file locks",
+)
 def test_concurrent_read_access_duckdb(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test that multiple processes can read concurrently in READ mode."""
     db_path = tmp_path / "test.duckdb"

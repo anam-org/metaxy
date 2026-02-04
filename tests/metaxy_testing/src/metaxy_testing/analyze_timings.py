@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import platform
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -137,6 +138,8 @@ class Summary(BaseModel):
     failed: int
     skipped: int
     errored: int
+    python_version: str
+    platform_system: str
 
 
 class TestResult(BaseModel):
@@ -187,6 +190,7 @@ class TimingReport(BaseModel):
         fmt = self._format_time
 
         lines.append(f"## Test Timing Analysis ({s.total_tests} tests in {fmt(s.total_time)})")
+        lines.append(f"> Python {s.python_version} on {s.platform_system}")
         lines.append("")
 
         def add_stats_section(header: str, summary_label: str, stats: dict[str, Stats]) -> None:
@@ -221,6 +225,7 @@ class TimingReport(BaseModel):
         fmt = self._format_time
 
         lines.append(f"Test Timing Analysis ({s.total_tests} tests in {fmt(s.total_time)})")
+        lines.append(f"Python {s.python_version} on {s.platform_system}")
         lines.append("")
 
         def add_stats_section(title: str, header: str, stats: dict[str, Stats]) -> None:
@@ -365,6 +370,8 @@ def build_timing_report(results: list[TestResult]) -> TimingReport:
         failed=failed,
         skipped=skipped,
         errored=errored,
+        python_version=f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        platform_system=platform.system(),
     )
 
     slowest = sorted(results, key=lambda r: -r.time)[:50]

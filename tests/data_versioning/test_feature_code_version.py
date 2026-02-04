@@ -1,6 +1,6 @@
 """Tests for code_version field on SampleFeatureSpec."""
 
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from syrupy.assertion import SnapshotAssertion
@@ -558,3 +558,64 @@ def test_property_code_version_independent_of_parent(parent_code_version: str, c
 
     # Child's code_version should be the same (independent of parent)
     assert child_cv1 == child_cv2
+
+
+@given(
+    leading_spaces=st.integers(min_value=0, max_value=10),
+    trailing_spaces=st.integers(min_value=0, max_value=10),
+    internal_indent=st.integers(min_value=0, max_value=8),
+    trailing_newlines=st.integers(min_value=0, max_value=5),
+)
+@settings(max_examples=10)
+def test_property_description_normalization_deterministic(
+    leading_spaces: int,
+    trailing_spaces: int,
+    internal_indent: int,
+    trailing_newlines: int,
+) -> None:
+    """Property test: docstring normalization via inspect.cleandoc is deterministic.
+
+    Multiline docstrings can have varying whitespace depending on Python version/platform.
+    Using inspect.cleandoc() normalizes this, ensuring feature_spec_version is consistent.
+    This test verifies that features with equivalent (but differently formatted) docstrings
+    produce identical descriptions and hashes after normalization.
+    """
+    import inspect
+
+    from metaxy.models.feature_definition import FeatureDefinition
+
+    # Build a docstring with variable whitespace (simulating platform differences)
+    raw_docstring = (
+        " " * leading_spaces
+        + "First line.\n\n"
+        + " " * internal_indent
+        + "Second line with content."
+        + " " * trailing_spaces
+        + "\n" * trailing_newlines
+    )
+
+    # Normalized form (what cleandoc produces)
+    normalized = inspect.cleandoc(raw_docstring)
+
+    graph = FeatureGraph()
+
+    # Feature with raw docstring via __doc__
+    with graph.use():
+        # Create a class dynamically with the raw docstring.
+        # Dynamic class creation with spec kwarg uses BaseFeature's metaclass.
+        Feature: type[BaseFeature] = type(  # type: ignore[call-overload]
+            "Feature",
+            (BaseFeature,),
+            {
+                "__doc__": raw_docstring,
+                "__module__": __name__,
+            },
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["whitespace_test", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        )
+        definition = FeatureDefinition.from_feature_class(Feature)
+
+    # Description should be normalized
+    assert definition.spec.description == normalized

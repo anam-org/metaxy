@@ -67,7 +67,7 @@ class FeatureDefinition(FrozenBaseModel):
 
         # Inject class docstring as description if not already set
         if spec.description is None and feature_cls.__doc__:
-            spec = spec.model_copy(update={"description": feature_cls.__doc__.strip()})
+            spec = spec.model_copy(update={"description": inspect.cleandoc(feature_cls.__doc__)})
 
         schema = feature_cls.model_json_schema()
         class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"

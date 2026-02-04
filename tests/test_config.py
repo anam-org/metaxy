@@ -925,11 +925,13 @@ def test_lock_file_with_config_file_custom_relative_path(tmp_path: Path) -> None
     assert config.lock_file == tmp_path / "locks" / "external.lock"
 
 
-def test_lock_file_with_absolute_path() -> None:
+def test_lock_file_with_absolute_path(tmp_path: Path) -> None:
     """Test lock_file returns absolute path directly when metaxy_lock_path is absolute."""
-    config = MetaxyConfig(metaxy_lock_path="/absolute/path/to/metaxy.lock")
+    # Use an actual absolute path that works on any platform
+    absolute_lock_path = tmp_path / "metaxy.lock"
+    config = MetaxyConfig(metaxy_lock_path=str(absolute_lock_path))
 
-    assert config.lock_file == Path("/absolute/path/to/metaxy.lock")
+    assert config.lock_file == absolute_lock_path
 
 
 def test_lock_file_none_when_no_config_file_and_relative_path() -> None:

@@ -59,8 +59,8 @@
               'description': '''
                 Speaker embedding aggregated from all their audio recordings.
                 
-                    This demonstrates N:1 aggregation lineage where multiple audio recordings
-                    from the same speaker are aggregated into a single speaker embedding.
+                This demonstrates N:1 aggregation lineage where multiple audio recordings
+                from the same speaker are aggregated into a single speaker embedding.
               ''',
               'fields': list([
                 dict({
@@ -84,7 +84,7 @@
           }),
         }),
         'scenario_name': 'Initial pipeline run',
-        'snapshot_version': '53a448fa',
+        'snapshot_version': '4d7a7bc4',
         'step_name': None,
         'type': 'graph_pushed',
       }),
@@ -159,8 +159,8 @@
               'description': '''
                 Speaker embedding aggregated from all their audio recordings.
                 
-                    This demonstrates N:1 aggregation lineage where multiple audio recordings
-                    from the same speaker are aggregated into a single speaker embedding.
+                This demonstrates N:1 aggregation lineage where multiple audio recordings
+                from the same speaker are aggregated into a single speaker embedding.
               ''',
               'fields': list([
                 dict({
@@ -184,7 +184,7 @@
           }),
         }),
         'scenario_name': 'Update one audio - only affected speaker recomputed',
-        'snapshot_version': '53a448fa',
+        'snapshot_version': '4d7a7bc4',
         'step_name': None,
         'type': 'graph_pushed',
       }),
@@ -245,8 +245,8 @@
               'description': '''
                 Speaker embedding aggregated from all their audio recordings.
                 
-                    This demonstrates N:1 aggregation lineage where multiple audio recordings
-                    from the same speaker are aggregated into a single speaker embedding.
+                This demonstrates N:1 aggregation lineage where multiple audio recordings
+                from the same speaker are aggregated into a single speaker embedding.
               ''',
               'fields': list([
                 dict({
@@ -269,7 +269,7 @@
             'metaxy_feature_version': 'a485fa5b',
           }),
         }),
-        'after_snapshot': '53a448fa',
+        'after_snapshot': '4d7a7bc4',
         'before_graph': dict({
           'audio': dict({
             'feature_spec': dict({
@@ -326,8 +326,8 @@
               'description': '''
                 Speaker embedding aggregated from all their audio recordings.
                 
-                    This demonstrates N:1 aggregation lineage where multiple audio recordings
-                    from the same speaker are aggregated into a single speaker embedding.
+                This demonstrates N:1 aggregation lineage where multiple audio recordings
+                from the same speaker are aggregated into a single speaker embedding.
               ''',
               'fields': list([
                 dict({
@@ -350,7 +350,7 @@
             'metaxy_feature_version': 'a485fa5b',
           }),
         }),
-        'before_snapshot': '53a448fa',
+        'before_snapshot': '4d7a7bc4',
         'patch_path': 'patches/01_update_audio_provenance.patch',
         'scenario_name': 'Update one audio - only affected speaker recomputed',
         'step_name': None,
@@ -420,8 +420,8 @@
               'description': '''
                 Speaker embedding aggregated from all their audio recordings.
                 
-                    This demonstrates N:1 aggregation lineage where multiple audio recordings
-                    from the same speaker are aggregated into a single speaker embedding.
+                This demonstrates N:1 aggregation lineage where multiple audio recordings
+                from the same speaker are aggregated into a single speaker embedding.
               ''',
               'fields': list([
                 dict({
@@ -445,7 +445,7 @@
           }),
         }),
         'scenario_name': 'Add new audio - only affected speaker recomputed',
-        'snapshot_version': '53a448fa',
+        'snapshot_version': '4d7a7bc4',
         'step_name': None,
         'type': 'graph_pushed',
       }),
@@ -506,8 +506,8 @@
               'description': '''
                 Speaker embedding aggregated from all their audio recordings.
                 
-                    This demonstrates N:1 aggregation lineage where multiple audio recordings
-                    from the same speaker are aggregated into a single speaker embedding.
+                This demonstrates N:1 aggregation lineage where multiple audio recordings
+                from the same speaker are aggregated into a single speaker embedding.
               ''',
               'fields': list([
                 dict({
@@ -530,7 +530,7 @@
             'metaxy_feature_version': 'a485fa5b',
           }),
         }),
-        'after_snapshot': '53a448fa',
+        'after_snapshot': '4d7a7bc4',
         'before_graph': dict({
           'audio': dict({
             'feature_spec': dict({
@@ -587,8 +587,8 @@
               'description': '''
                 Speaker embedding aggregated from all their audio recordings.
                 
-                    This demonstrates N:1 aggregation lineage where multiple audio recordings
-                    from the same speaker are aggregated into a single speaker embedding.
+                This demonstrates N:1 aggregation lineage where multiple audio recordings
+                from the same speaker are aggregated into a single speaker embedding.
               ''',
               'fields': list([
                 dict({
@@ -611,7 +611,7 @@
             'metaxy_feature_version': 'a485fa5b',
           }),
         }),
-        'before_snapshot': '53a448fa',
+        'before_snapshot': '4d7a7bc4',
         'patch_path': 'patches/02_add_audio.patch',
         'scenario_name': 'Add new audio - only affected speaker recomputed',
         'step_name': None,
