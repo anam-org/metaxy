@@ -481,8 +481,6 @@
       
         
       
-        
-      
     
     
     
@@ -583,34 +581,6 @@
     
   
     Design Choices
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../metaxy/explore/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Explore
   
 
     
@@ -918,6 +888,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#instantiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instantiation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#writes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -940,10 +921,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resolving-increments" class="md-nav__link">
+  <a href="#increment-resolution" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resolving Increments
+        Increment Resolution
       
     </span>
   </a>
@@ -951,10 +932,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deletions" class="md-nav__link">
+  <a href="#deletes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deletions
+        Deletes
       
     </span>
   </a>
@@ -3174,6 +3155,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#instantiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instantiation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#writes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3196,10 +3188,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resolving-increments" class="md-nav__link">
+  <a href="#increment-resolution" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resolving Increments
+        Increment Resolution
       
     </span>
   </a>
@@ -3207,10 +3199,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deletions" class="md-nav__link">
+  <a href="#deletes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deletions
+        Deletes
       
     </span>
   </a>
@@ -3308,13 +3300,65 @@
 <h1 id="metadata-stores">Metadata Stores<a class="headerlink" href="#metadata-stores" title="Permanent link">&para;</a></h1>
 <p>Metaxy abstracts interactions with metadata stored in external systems such as databases, files, or object stores, through a unified interface: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore"><code>MetadataStore</code></a>. <code>MetadataStore</code> is implemented to satisfy <a href="../../../metaxy/design/#storage">storage design choices</a>.</p>
 <p>All operations with metadata stores may reference features as one of the supported <a href="../syntactic-sugar/#features">syntactic sugar</a> alternatives. In practice, it is typically convenient to either use feature classes or stringified feature keys.</p>
-<p>Metadata accept <a href="https://narwhals-dev.github.io/narwhals/">Narwhals-compatible</a> dataframes and return Narwhals dataframes.</p>
+<p>Metadata accept <a href="https://narwhals-dev.github.io/narwhals/">Narwhals-compatible</a> dataframes and return Narwhals dataframes. In practice, we have tested Metaxy with Pandas, Polars and Ibis dataframes.</p>
+<h2 id="instantiation">Instantiation<a class="headerlink" href="#instantiation" title="Permanent link">&para;</a></h2>
+<p>There are generally two ways to create a <code>MetadataStore</code>. We are going to demonstrate both with <a href="../../../integrations/metadata-stores/storage/delta/">DeltaLake</a> as an example.</p>
+<!-- dprint-ignore-start -->
+
+<div class="annotate">
+<ol>
+<li>
+<p>Using the Python API directly:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.metadata_store.delta</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeltaMetadataStore</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">store</span> <span class="o">=</span> <span class="n">DeltaMetadataStore</span><span class="p">(</span><span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;/path/to/directory&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+</li>
+<li>
+<p>Via Metaxy <a href="../../../reference/configuration/">configuration</a>:</p>
+<p>First, create a <code>metaxy.toml</code> file (1):</p>
+<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[stores.dev]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.delta.DeltaMetadataStore&quot;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/path/to/directory&quot;</span>
+</span></code></pre></div>
+<p>Now the metadata store can be constructed from a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;" href="../../../reference/api/config/#metaxy.MetaxyConfig"><code>MetaxyConfig</code></a> instance.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="instantiation-metaxy-already-initialized" name="__tabbed_1" type="radio" /><input id="instantiation-with-metaxy-initialization" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="instantiation-metaxy-already-initialized">Metaxy Already Initialized</label><label for="instantiation-with-metaxy-initialization">With Metaxy Initialization</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;dev&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<p><!-- skip next -->
+<div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">init_metaxy</span><span class="p">()</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;dev&quot;</span><span class="p">)</span>
+</span></code></pre></div></p>
+</div>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<!-- dprint-ignore-end -->
+
+<ol>
+<li><code>[tool.metaxy]</code> section in <code>pyproject.toml</code> is supported as well</li>
+</ol>
+<p annotate="annotate" class="">Now the <code>store</code> is ready to be used. We'll also assume there is a <code>MyFeature</code> <a href="../feature-definitions/">feature class</a> (1) prepared.</p>
+<ol>
+<li>with <code>"my/feature"</code> key</li>
+</ol>
 <h2 id="writes">Writes<a class="headerlink" href="#writes" title="Permanent link">&para;</a></h2>
 <p>In order to save metadata into a metadata store, you can use the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.write&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore.write"><code>write</code></a> method:</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">MyFeature</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">MyFeature</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
 </span></code></pre></div>
 </div>
 <p>Subsequent writes effectively overwrite the previous metadata, while actually <a href="../../../metaxy/design/#metadata-operations">appending</a> to the same table.</p>
@@ -3322,49 +3366,56 @@
 <p>Metadata can be retrieved using the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.read&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore.read"><code>read</code></a> method:</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;my/feature&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>  <span class="c1"># string keys work as well</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;my/feature&quot;</span><span class="p">)</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;my/feature&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>  <span class="c1"># string keys work as well</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;my/feature&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 </div>
-<h2 id="resolving-increments">Resolving Increments<a class="headerlink" href="#resolving-increments" title="Permanent link">&para;</a></h2>
+<h2 id="increment-resolution">Increment Resolution<a class="headerlink" href="#increment-resolution" title="Permanent link">&para;</a></h2>
 <p>Increments can be computed using the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore.resolve_update"><code>resolve_update</code></a> method:</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <p><!-- skip next -->
-<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">inc</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="s2">&quot;my/feature&quot;</span><span class="p">)</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">inc</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="s2">&quot;my/feature&quot;</span><span class="p">)</span>
 </span></code></pre></div></p>
 </div>
-<p>The returned <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.Increment&lt;/span&gt;" href="../../../reference/api/types/#metaxy.versioning.types.Increment"><code>Increment</code></a> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.LazyIncrement&lt;/span&gt;
+<p>The returned <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.Increment&lt;/span&gt;" href="../../../reference/api/types/#metaxy.versioning.types.Increment"><code>Increment</code></a> (or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.LazyIncrement&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../../../reference/api/types/#metaxy.versioning.types.LazyIncrement"><code>LazyIncrement</code></a> contains fresh samples that haven't been processed yet, stale samples which require to be processed again, and orphaned samples which are no longer present in upstream features and may be deleted.</p>
+  &lt;/span&gt;" href="../../../reference/api/types/#metaxy.versioning.types.LazyIncrement"><code>LazyIncrement</code></a>) holds fresh samples that haven't been processed yet, stale samples which require to be processed again, and orphaned samples which are no longer present in upstream features and may be deleted.</p>
+<div class="admonition tip annotate">
+<p class="admonition-title">Tip</p>
+<p>Root features (1) require the <code>samples</code> argument to be set as well, since Metaxy would not be able to load upstream metadata automatically.</p>
+</div>
+<ol>
+<li>features that do not have upstream features</li>
+</ol>
 <p>It is up to the caller to decide how to handle the processing and potential deletion of orphaned samples.</p>
 <p>Once processing is complete, the caller is expected to call <code>MetadataStore.write</code> to record metadata about the processed samples.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>Learn more about how increments are computed <a href="../../../metaxy/design/#compute">here</a>.</p>
 </div>
-<h2 id="deletions">Deletions<a class="headerlink" href="#deletions" title="Permanent link">&para;</a></h2>
+<h2 id="deletes">Deletes<a class="headerlink" href="#deletes" title="Permanent link">&para;</a></h2>
 <p>Metadata stores support deletions, which are not required during normal Metaxy operations (1).</p>
 <ol>
 <li>deletions might be necessary when working with <a href="../relationship/">expansion linear relationships</a>.</li>
 </ol>
 <p>Here is an example of how a deletion would look like:</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">narwhals</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nw</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        <span class="n">MyFeature</span><span class="p">,</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>        <span class="n">filters</span><span class="o">=</span><span class="p">[</span><span class="n">nw</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;metaxy_created_at&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)],</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="p">)</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">narwhals</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nw</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="n">MyFeature</span><span class="p">,</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>        <span class="n">filters</span><span class="o">=</span><span class="p">[</span><span class="n">nw</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;metaxy_created_at&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)],</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <p>Learn more about deletions <a href="../deletions/">here</a>.</p>
 <h2 id="metadata-store-implementations">Metadata Store Implementations<a class="headerlink" href="#metadata-store-implementations" title="Permanent link">&para;</a></h2>

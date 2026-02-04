@@ -474,8 +474,6 @@
       
         
       
-        
-      
     
     
     
@@ -573,34 +571,6 @@
     
   
     Design Choices
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../metaxy/explore/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Explore
   
 
     
@@ -3077,10 +3047,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#storage-only" class="md-nav__link">
+  <a href="#storage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Storage Only
+        Storage
       
     </span>
   </a>
@@ -3625,7 +3595,11 @@
 <h1 id="metadata-stores">Metadata Stores<a class="headerlink" href="#metadata-stores" title="Permanent link">&para;</a></h1>
 <p>Metaxy abstracts interactions with metadata behind an interface called <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="#metaxy.MetadataStore"><code>MetadataStore</code></a>.</p>
 <p>Users can extend this class to implement support for arbitrary metadata storage such as databases, lakehouse formats, or really any kind of external system.</p>
-<p>Here are some of the built-in metadata store types:</p>
+<p>Learn how to use metadata stores <a href="../../../guide/learn/metadata-stores/">here</a>.</p>
+<p class="annotate">Here are some of the built-in metadata store types (1):</p>
+<ol>
+<li>the full list can be found <a href="../../../integrations/metadata-stores/">here</a></li>
+</ol>
 <h2 id="databases">Databases<a class="headerlink" href="#databases" title="Permanent link">&para;</a></h2>
 <ul>
 <li>
@@ -3635,20 +3609,24 @@
 <p><a href="../../../integrations/metadata-stores/databases/clickhouse/">ClickHouse</a></p>
 </li>
 <li>
-<p><a href="../../../integrations/metadata-stores/databases/duckdb/">DuckDB</a></p>
+<p><a href="../../../integrations/metadata-stores/databases/duckdb/">DuckDB</a> - if used with Motherduck</p>
 </li>
 <li>
-<p><a href="../../../integrations/metadata-stores/databases/lancedb/">LanceDB</a></p>
-</li>
-<li>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.ibis.IbisMetadataStore&lt;/span&gt;" href="../../../integrations/metadata-stores/databases/ibis/#metaxy.metadata_store.ibis.IbisMetadataStore"><code>IbisMetadataStore</code></a> (a base class) - see <a href="../../../integrations/metadata-stores/databases/ibis/">Ibis integration</a></p>
+<p><a href="../../../integrations/metadata-stores/databases/lancedb/">LanceDB</a> - if used with LanceDB Cloud</p>
 </li>
 </ul>
-<h2 id="storage-only">Storage Only<a class="headerlink" href="#storage-only" title="Permanent link">&para;</a></h2>
+<h2 id="storage">Storage<a class="headerlink" href="#storage" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../../integrations/metadata-stores/storage/delta/">DeltaMetadataStore</a></li>
+<li>
+<p><a href="../../../integrations/metadata-stores/storage/delta/">DeltaMetadataStore</a></p>
+</li>
+<li>
+<p><a href="../../../integrations/metadata-stores/databases/duckdb/">DuckDB</a> - if used with a local file</p>
+</li>
+<li>
+<p><a href="../../../integrations/metadata-stores/databases/lancedb/">LanceDB</a> - if used with a local file</p>
+</li>
 </ul>
-<p>The full list can be found <a href="../../../integrations/metadata-stores/">here</a></p>
 <hr />
 <h2 id="metadata-store-interface">Metadata Store Interface<a class="headerlink" href="#metadata-store-interface" title="Permanent link">&para;</a></h2>
 

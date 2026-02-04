@@ -481,8 +481,6 @@
       
         
       
-        
-      
     
     
     
@@ -583,34 +581,6 @@
     
   
     Design Choices
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="metaxy/explore/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Explore
   
 
     
@@ -3137,7 +3107,7 @@
   <a href="#whats-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What's Next?
+        🚀 What's Next?
       
     </span>
   </a>
@@ -3240,7 +3210,7 @@
 <hr />
 <h2 id="metaxy">Metaxy<a class="headerlink" href="#metaxy" title="Permanent link">&para;</a></h2>
 <div class="annotate">
-<p>Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipelines that manages and tracks <strong>metadata</strong> across complex computational graphs, including row-level <a href="guide/learn/data-versioning/">versions</a> (1), while allowing the codebase to evolve over time without friction. Metaxy gives you quite a few superpowers:</p>
+<p>Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipelines that manages and tracks <strong>metadata</strong> across complex computational graphs, including row-level <a href="guide/learn/data-versioning/">versions</a> (1), allowing the codebase to evolve over time without friction. Metaxy gives you quite a few superpowers:</p>
 <ul>
 <li>Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second. (2)</li>
 <li>Freedom from storage lock-in. Swap <a href="integrations/metadata-stores/">storage backends</a> in development and production environments without breaking a sweat (3).</li>
@@ -3255,7 +3225,7 @@
 <li>See our official integrations <a href="integrations/">here</a></li>
 </ol>
 <div class="admonition tip annotate">
-<p class="admonition-title">Granular Data Versioning</p>
+<p class="admonition-title">Super Granular Data Versioning</p>
 <p>The feature that makes Metaxy really stand out is the ability to track <strong>partial data dependencies</strong> (1) and <strong>skip downstream updates</strong> unless the exactly required subset of upstream data has changed. At the moment of writing, Metaxy is the only available tool that tackles these problems.</p>
 </div>
 <ol>
@@ -3293,8 +3263,8 @@ As an edge case, Metaxy features may also be pure <strong>metadata</strong> with
 <li>Unless you are a <a href="https://lancedb.com/">LanceDB</a> fan, in which case <a href="integrations/metadata-stores/databases/lancedb/">we got you covered</a></li>
 </ol>
 <h2 id="reliability">Reliability<a class="headerlink" href="#reliability" title="Permanent link">&para;</a></h2>
+<p>Metaxy was <a href="metaxy/design/">designed</a> to handle large amounts of <strong>big metadata</strong> in distributed environments, makes very little assumptions about usage patterns and cannot enter an inconsistent state.</p>
 <p>Metaxy is fanatically tested across all supported metadata stores, Python versions and platforms <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. We guarantee versioning consistency across the supported metadata stores.</p>
-<p>Metaxy was built to handle large amounts of <strong>big metadata</strong> in distributed environments, makes very little assumptions about usage patterns and cannot enter an inconsistent state.</p>
 <p class="annotate">We have been dogfooding Metaxy since December 2025 at Anam. We are running it in production with <a href="integrations/metadata-stores/databases/clickhouse/">ClickHouse</a>, <a href="integrations/orchestration/dagster/">Dagster</a>, and <a href="integrations/compute/ray/">Ray</a> (1).</p>
 <ol>
 <li>and integrations with these tools are probably the most complete at the moment</li>
@@ -3355,18 +3325,19 @@ Therefore, it becomes crucially important to correctly implement incremental pro
 <ol>
 <li>for example, a <code>video</code> sample could independently version the frames and the audio track: <code>{"audio": "asddsa", "frames": "joasdb"}</code></li>
 </ol>
-<h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
+<h2 id="whats-next">🚀 What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
 <p>Here are a few more useful links:</p>
-<div class="annotate">
 <ul>
-<li>Read the <a href="metaxy/pitch/">Metaxy Pitch</a> (1)</li>
-<li>Learn about <a href="metaxy/design/">design choices</a></li>
-<li><a href="metaxy/explore/">Explore</a> other Metaxy components</li>
+<li>Read the <a href="metaxy/pitch/">Metaxy Pitch</a></li>
+<li>Learn about Metaxy <a href="metaxy/design/">design choices</a></li>
+<li>Itching to write some Metaxy code? Jump to <a href="guide/overview/quickstart/">Quickstart</a> (WIP!).</li>
+<li>Learn more about Metaxy <a href="guide/learn/">concepts</a></li>
+<li>View complete, end-to-end <a href="examples/">examples</a></li>
+<li>Explore <a href="integrations/">Metaxy integrations</a></li>
+<li>Invoke <code>mx</code> CLI <a href="reference/cli/">from your terminal</a></li>
+<li>Learn how to <a href="reference/configuration/">configure Metaxy</a></li>
+<li>Get lost in our <a href="reference/api/">API Reference</a></li>
 </ul>
-</div>
-<ol>
-<li>just one more page, I promise, just one more page</li>
-</ol>
 <div class="footnote">
 <hr />
 <ol>

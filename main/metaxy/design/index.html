@@ -16,7 +16,7 @@
         <link rel="prev" href="../pitch/">
       
       
-        <link rel="next" href="../explore/">
+        <link rel="next" href="../../guide/overview/quickstart/">
       
       
         
@@ -483,8 +483,6 @@
       
         
       
-        
-      
     
     
     
@@ -697,38 +695,21 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#whats-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 What's Next?
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../explore/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Explore
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -3240,6 +3221,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#whats-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 What's Next?
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3350,14 +3342,19 @@ As an edge case, Metaxy features may also be pure <strong>metadata</strong> with
 <p>Metaxy is designed to be compatible with storage systems which satisfy the following requirements:</p>
 <div class="annotate">
 <ul>
-<li>has an <em>append</em> operation</li>
-<li>can store <em>map-like elements</em> (e.g. dictionaries)</li>
+<li>
+<p>has an <em>append</em> operation</p>
+</li>
+<li>
+<p>can store <em>map-like elements</em> (e.g. dictionaries)</p>
+</li>
 </ul>
-<p>??? note "Supporting JSON columns instead of maps"
-  This requirement may be lifted in the future.
-  Unfortunately, the most popular storage solution - PostgreSQL - does not support storing structs or maps.
-  While PostgreSQL is not an ideal choice for a Metaxy <a href="../../guide/learn/metadata-stores/">Metadata Store</a>
-  for other reasons (mainly analytical queries performance), we recognize the need to support it and are exploring a solution in <a href="https://github.com/anam-org/metaxy/issues/223"><code>anam-org/metaxy#223</code></a>.</p>
+<p>??? note "Removing This Requirement"</p>
+<div class="language-python highlight"><pre><span></span><code>  <span class="n">This</span> <span class="n">requirement</span> <span class="n">may</span> <span class="n">be</span> <span class="n">lifted</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">future</span><span class="o">.</span>
+  <span class="n">Unfortunately</span><span class="p">,</span> <span class="n">the</span> <span class="n">most</span> <span class="n">popular</span> <span class="n">storage</span> <span class="n">solution</span> <span class="o">-</span> <span class="n">PostgreSQL</span> <span class="o">-</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">satisfy</span> <span class="n">it</span><span class="o">.</span>
+  <span class="n">While</span> <span class="n">PostgreSQL</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">an</span> <span class="n">ideal</span> <span class="n">choice</span> <span class="k">for</span> <span class="n">a</span> <span class="n">Metaxy</span> <span class="p">[</span><span class="n">Metadata</span> <span class="n">Store</span><span class="p">](</span><span class="o">../</span><span class="n">guide</span><span class="o">/</span><span class="n">learn</span><span class="o">/</span><span class="n">metadata</span><span class="o">-</span><span class="n">stores</span><span class="o">.</span><span class="n">md</span><span class="p">)</span>
+  <span class="k">for</span> <span class="n">other</span> <span class="n">reasons</span> <span class="p">(</span><span class="n">mainly</span> <span class="n">analytical</span> <span class="n">queries</span> <span class="n">performance</span><span class="p">),</span> <span class="n">we</span> <span class="n">recognize</span> <span class="n">the</span> <span class="n">need</span> <span class="n">to</span> <span class="n">support</span> <span class="n">it</span> <span class="ow">and</span> <span class="n">are</span> <span class="n">exploring</span> <span class="n">a</span> <span class="n">solution</span> <span class="ow">in</span> <span class="p">[</span><span class="err">`</span><span class="n">anam</span><span class="o">-</span><span class="n">org</span><span class="o">/</span><span class="n">metaxy</span><span class="c1">#223`](https://github.com/anam-org/metaxy/issues/223).</span>
+</code></pre></div>
 </div>
 <p>This allows Metaxy to target the following systems:</p>
 <ul>
@@ -3516,6 +3513,16 @@ Provenance columns hold <strong>static</strong> versioning information entirely 
 <p>All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.</p>
 </div>
 <p>All metadata store implementations are guaranteed to return equivalent results. They are continuously tested against the reference Polars implementation.</p>
+<h2 id="whats-next">🚀 What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Itching to write some Metaxy code? Jump to <a href="../../guide/overview/quickstart/">Quickstart</a> (WIP!).</li>
+<li>Learn more about Metaxy <a href="../../guide/learn/">concepts</a></li>
+<li>View complete, end-to-end <a href="../../examples/">examples</a></li>
+<li>Explore <a href="../../integrations/">Metaxy integrations</a></li>
+<li>Invoke <code>mx</code> CLI <a href="../../reference/cli/">from your terminal</a></li>
+<li>Learn how to <a href="../../reference/configuration/">configure Metaxy</a></li>
+<li>Get lost in our <a href="../../reference/api/">API Reference</a></li>
+</ul>
 
 
 
