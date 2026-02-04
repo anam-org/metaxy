@@ -18,6 +18,22 @@ from mkdocs_metaxy.examples.core import RunbookLoader
 from mkdocs_metaxy.examples.renderer import ExampleRenderer
 
 
+def _write_if_changed(path: Path, content: str) -> bool:
+    """Write content to file only if it differs from existing content.
+
+    This prevents unnecessary file modifications that would trigger
+    the MkDocs file watcher and cause rebuild loops.
+
+    Returns True if file was written, False if unchanged.
+    """
+    if path.exists():
+        existing = path.read_text()
+        if existing == content:
+            return False
+    path.write_text(content)
+    return True
+
+
 class MetaxyExamplesPluginConfig(Config):
     """Configuration for MetaxyExamplesPlugin."""
 
@@ -267,7 +283,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                 generated_file = self.generated_dir / versioned_name
                 snippets_path = f".generated/{versioned_name}"
 
-            generated_file.write_text(content)
+            _write_if_changed(generated_file, content)
 
         return self.renderer.render_snippet(
             path=snippets_path,
@@ -293,7 +309,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         # Preserve the full path structure for patches
         generated_file = self.generated_dir / patch_path
         generated_file.parent.mkdir(parents=True, exist_ok=True)
-        generated_file.write_text(content)
+        _write_if_changed(generated_file, content)
 
         snippets_path = f".generated/{patch_path}"
 
@@ -362,7 +378,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         content = self.loader.read_patch(example_name, patch_path)
         generated_file = self.generated_dir / patch_path
         generated_file.parent.mkdir(parents=True, exist_ok=True)
-        generated_file.write_text(content)
+        _write_if_changed(generated_file, content)
         snippets_path = f".generated/{patch_path}"
 
         # Render the patch content (without collapsible wrapper for tabs)

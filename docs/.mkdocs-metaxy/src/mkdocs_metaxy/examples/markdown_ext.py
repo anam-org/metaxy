@@ -51,6 +51,22 @@ from mkdocs_metaxy.examples.core import RunbookLoader
 from mkdocs_metaxy.examples.renderer import ExampleRenderer
 
 
+def _write_if_changed(path: Path, content: str) -> bool:
+    """Write content to file only if it differs from existing content.
+
+    This prevents unnecessary file modifications that would trigger
+    the MkDocs file watcher and cause rebuild loops.
+
+    Returns True if file was written, False if unchanged.
+    """
+    if path.exists():
+        existing = path.read_text()
+        if existing == content:
+            return False
+    path.write_text(content)
+    return True
+
+
 class MetaxyExamplesPreprocessor(Preprocessor):
     """Preprocessor for Metaxy example directives."""
 
@@ -287,7 +303,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             file_ext = Path(file_path).suffix
             filename = f"{file_base}_v{version_num}{file_ext}"
             generated_file = self.generated_dir / filename
-            generated_file.write_text(content)
+            _write_if_changed(generated_file, content)
 
             # Update snippet path to generated file
             snippets_path = f".generated/{filename}"
@@ -322,7 +338,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         # Write patch to .generated directory
         patch_filename = Path(patch_path).name
         generated_file = self.generated_dir / patch_filename
-        generated_file.write_text(content)
+        _write_if_changed(generated_file, content)
 
         # Use pymdownx.snippets for patch file
         snippets_path = f".generated/{patch_filename}"
