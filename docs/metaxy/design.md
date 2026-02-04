@@ -28,11 +28,7 @@ Metaxy is designed to be compatible with storage systems which satisfy the follo
 
 </div>
 
-This allows Metaxy to target the following systems:
-
-- modern data warehouses (e.g. ClickHouse, BigQuery, Snowflake, or the more minimalistic DuckDB)
-
-- modern storage formats like DeltaLake, Iceberg, DuckLake, or anything compatible with Apache Arrow
+This allows Metaxy to target modern data warehouses (e.g. ClickHouse, BigQuery, Snowflake, or the more minimalistic DuckDB) and storage formats such as DeltaLake, Iceberg, DuckLake, and anything compatible with Apache Arrow.
 
 The Metaxy abstraction that implements these design choices and is used to interact with storage systems is known as [Metadata Store](../guide/learn/metadata-stores.md).
 
