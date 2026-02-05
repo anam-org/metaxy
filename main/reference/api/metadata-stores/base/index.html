@@ -10,19 +10,19 @@
       
       
       
-        <link rel="canonical" href="https://docs.metaxy.io/main/reference/api/metadata-stores/">
+        <link rel="canonical" href="https://docs.metaxy.io/main/reference/api/metadata-stores/base/">
       
       
-        <link rel="prev" href="../config/">
+        <link rel="prev" href="../../definitions/filters/">
       
       
-        <link rel="next" href="exceptions/">
+        <link rel="next" href="../exceptions/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/favicon.ico">
+      <link rel="icon" href="../../../../assets/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
     
     
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.618322db.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -59,11 +59,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../css/code_select.css">
+      <link rel="stylesheet" href="../../../../css/code_select.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -73,15 +73,15 @@
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Metadata Stores API - Metaxy" />
 <meta property="og:description" content="API reference for the MetadataStore interface." />
-<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/reference/api/metadata-stores/index.png" />
+<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/reference/api/metadata-stores/base.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://docs.metaxy.io/main/reference/api/metadata-stores/" />
+<meta property="og:url" content="https://docs.metaxy.io/main/reference/api/metadata-stores/base/" />
 <meta property="twitter:card" content="summary_large_image" />
 <meta property="twitter:title" content="Metadata Stores API - Metaxy" />
 <meta property="twitter:description" content="API reference for the MetadataStore interface." />
-<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/reference/api/metadata-stores/index.png" />
+<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/reference/api/metadata-stores/base.png" />
 </head>
   
   
@@ -121,9 +121,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../../../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
-  <img src="../../../assets/metaxy.svg" alt="logo">
+  <img src="../../../../assets/metaxy.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -261,46 +261,14 @@
   
   
   
-    
-    
-      
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../.." class="md-tabs__link">
-          
-  
-  
-    
-  
-  User Guide
-
-        </a>
-      </li>
-    
-  
-
-    
-  
-
-      
-        
-  
-  
-  
-  
     <li class="md-tabs__item">
-      <a href="../../../integrations/" class="md-tabs__link">
+      <a href="../../../../guide/" class="md-tabs__link">
         
   
   
     
   
-  Integrations
+  📖 User Guide
 
       </a>
     </li>
@@ -313,13 +281,32 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../examples/" class="md-tabs__link">
+      <a href="../../../../integrations/" class="md-tabs__link">
         
   
   
     
   
-  Examples
+  🧩 Integrations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  💻 Examples
 
       </a>
     </li>
@@ -334,13 +321,13 @@
   
   
     <li class="md-tabs__item md-tabs__item--active">
-      <a href="../../" class="md-tabs__link">
+      <a href="../../../" class="md-tabs__link">
         
   
   
     
   
-  Reference
+  📚 Reference
 
       </a>
     </li>
@@ -375,9 +362,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../../../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
-  <img src="../../../assets/metaxy.svg" alt="logo">
+  <img src="../../../../assets/metaxy.svg" alt="logo">
 
     </a>
     Metaxy
@@ -414,6 +401,8 @@
       
         
       
+        
+      
     
     
     
@@ -430,14 +419,15 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../guide/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
     
   
-    User Guide
+    📖 User Guide
   
 
     
@@ -445,15 +435,21 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_1" id="__nav_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             
   
-    User Guide
+    📖 User Guide
   
 
           </label>
@@ -493,14 +489,14 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../.." class="md-nav__link ">
+            <a href="../../../.." class="md-nav__link ">
               
   
   
   <span class="md-ellipsis">
     
   
-    Metaxy
+    🎯 Overview
   
 
     
@@ -522,7 +518,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Metaxy
+    🎯 Overview
   
 
           </label>
@@ -537,7 +533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../metaxy/pitch/" class="md-nav__link">
+      <a href="../../../../metaxy/pitch/" class="md-nav__link">
         
   
   
@@ -565,7 +561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../metaxy/design/" class="md-nav__link">
+      <a href="../../../../metaxy/design/" class="md-nav__link">
         
   
   
@@ -607,8 +603,6 @@
       
         
       
-        
-      
     
     
     
@@ -632,7 +626,7 @@
   <span class="md-ellipsis">
     
   
-    Quickstart
+    🚀 Quickstart
   
 
     
@@ -648,7 +642,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Quickstart
+    🚀 Quickstart
   
 
           </label>
@@ -661,7 +655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/quickstart/hello/" class="md-nav__link">
+      <a href="../../../../guide/quickstart/hello/" class="md-nav__link">
         
   
   
@@ -689,42 +683,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/quickstart/feature-dependencies/" class="md-nav__link">
+      <a href="../../../../guide/quickstart/feature-dependencies/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Feature Dependencies
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../guide/quickstart/feature-dependencies/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Dependencies
+    More Features
   
 
     
@@ -788,14 +754,14 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../guide/concepts/" class="md-nav__link ">
+            <a href="../../../../guide/concepts/" class="md-nav__link ">
               
   
   
   <span class="md-ellipsis">
     
   
-    Concepts
+    💡 Concepts
   
 
     
@@ -817,7 +783,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Concepts
+    💡 Concepts
   
 
           </label>
@@ -890,7 +856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/metadata-stores/" class="md-nav__link">
+      <a href="../../../../guide/concepts/metadata-stores/" class="md-nav__link">
         
   
   
@@ -918,7 +884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/deletions/" class="md-nav__link">
+      <a href="../../../../guide/concepts/deletions/" class="md-nav__link">
         
   
   
@@ -1014,7 +980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/definitions/features/" class="md-nav__link">
+      <a href="../../../../guide/concepts/definitions/features/" class="md-nav__link">
         
   
   
@@ -1042,7 +1008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/definitions/optional-dependencies/" class="md-nav__link">
+      <a href="../../../../guide/concepts/definitions/optional-dependencies/" class="md-nav__link">
         
   
   
@@ -1070,7 +1036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/definitions/relationship/" class="md-nav__link">
+      <a href="../../../../guide/concepts/definitions/relationship/" class="md-nav__link">
         
   
   
@@ -1106,7 +1072,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/data-versioning/" class="md-nav__link">
+      <a href="../../../../guide/concepts/data-versioning/" class="md-nav__link">
         
   
   
@@ -1134,7 +1100,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/feature-discovery/" class="md-nav__link">
+      <a href="../../../../guide/concepts/feature-discovery/" class="md-nav__link">
         
   
   
@@ -1162,7 +1128,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/syntactic-sugar/" class="md-nav__link">
+      <a href="../../../../guide/concepts/syntactic-sugar/" class="md-nav__link">
         
   
   
@@ -1190,7 +1156,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/filters/" class="md-nav__link">
+      <a href="../../../../guide/concepts/filters/" class="md-nav__link">
         
   
   
@@ -1257,7 +1223,7 @@
   <span class="md-ellipsis">
     
   
-    Application Lifecycle
+    ⚙️ Application Lifecycle
   
 
     
@@ -1273,7 +1239,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Application Lifecycle
+    ⚙️ Application Lifecycle
   
 
           </label>
@@ -1286,7 +1252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/lifecycle/development/" class="md-nav__link">
+      <a href="../../../../guide/concepts/lifecycle/development/" class="md-nav__link">
         
   
   
@@ -1314,7 +1280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/lifecycle/testing/" class="md-nav__link">
+      <a href="../../../../guide/concepts/lifecycle/testing/" class="md-nav__link">
         
   
   
@@ -1342,7 +1308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/lifecycle/deployment/" class="md-nav__link">
+      <a href="../../../../guide/concepts/lifecycle/deployment/" class="md-nav__link">
         
   
   
@@ -1366,6 +1332,34 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guide/qa/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ❓ Q&A
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1414,14 +1408,14 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../integrations/" class="md-nav__link ">
+            <a href="../../../../integrations/" class="md-nav__link ">
               
   
   
   <span class="md-ellipsis">
     
   
-    Integrations
+    🧩 Integrations
   
 
     
@@ -1443,7 +1437,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Integrations
+    🧩 Integrations
   
 
           </label>
@@ -1477,7 +1471,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../integrations/orchestration/" class="md-nav__link ">
+            <a href="../../../../integrations/orchestration/" class="md-nav__link ">
               
   
   
@@ -1542,7 +1536,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../integrations/orchestration/dagster/" class="md-nav__link ">
+            <a href="../../../../integrations/orchestration/dagster/" class="md-nav__link ">
               
   
   
@@ -1584,7 +1578,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/orchestration/dagster/metaxify/" class="md-nav__link">
+      <a href="../../../../integrations/orchestration/dagster/metaxify/" class="md-nav__link">
         
   
   
@@ -1612,7 +1606,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/orchestration/dagster/api/" class="md-nav__link">
+      <a href="../../../../integrations/orchestration/dagster/api/" class="md-nav__link">
         
   
   
@@ -1679,7 +1673,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../integrations/metadata-stores/" class="md-nav__link ">
+            <a href="../../../../integrations/metadata-stores/" class="md-nav__link ">
               
   
   
@@ -1750,7 +1744,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../integrations/metadata-stores/databases/" class="md-nav__link ">
+            <a href="../../../../integrations/metadata-stores/databases/" class="md-nav__link ">
               
   
   
@@ -1792,7 +1786,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/metadata-stores/databases/bigquery/" class="md-nav__link">
+      <a href="../../../../integrations/metadata-stores/databases/bigquery/" class="md-nav__link">
         
   
   
@@ -1820,7 +1814,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/metadata-stores/databases/clickhouse/" class="md-nav__link">
+      <a href="../../../../integrations/metadata-stores/databases/clickhouse/" class="md-nav__link">
         
   
   
@@ -1848,7 +1842,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/metadata-stores/databases/duckdb/" class="md-nav__link">
+      <a href="../../../../integrations/metadata-stores/databases/duckdb/" class="md-nav__link">
         
   
   
@@ -1876,7 +1870,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/metadata-stores/databases/lancedb/" class="md-nav__link">
+      <a href="../../../../integrations/metadata-stores/databases/lancedb/" class="md-nav__link">
         
   
   
@@ -1904,7 +1898,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/metadata-stores/databases/ibis/" class="md-nav__link">
+      <a href="../../../../integrations/metadata-stores/databases/ibis/" class="md-nav__link">
         
   
   
@@ -1961,7 +1955,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../integrations/metadata-stores/storage/" class="md-nav__link ">
+            <a href="../../../../integrations/metadata-stores/storage/" class="md-nav__link ">
               
   
   
@@ -2003,7 +1997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/metadata-stores/storage/delta/" class="md-nav__link">
+      <a href="../../../../integrations/metadata-stores/storage/delta/" class="md-nav__link">
         
   
   
@@ -2103,7 +2097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/compute/ray/" class="md-nav__link">
+      <a href="../../../../integrations/compute/ray/" class="md-nav__link">
         
   
   
@@ -2162,7 +2156,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../integrations/plugins/" class="md-nav__link ">
+            <a href="../../../../integrations/plugins/" class="md-nav__link ">
               
   
   
@@ -2204,7 +2198,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/plugins/sqlmodel/" class="md-nav__link">
+      <a href="../../../../integrations/plugins/sqlmodel/" class="md-nav__link">
         
   
   
@@ -2232,7 +2226,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/plugins/sqlalchemy/" class="md-nav__link">
+      <a href="../../../../integrations/plugins/sqlalchemy/" class="md-nav__link">
         
   
   
@@ -2326,7 +2320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/ai/claude/" class="md-nav__link">
+      <a href="../../../../integrations/ai/claude/" class="md-nav__link">
         
   
   
@@ -2354,7 +2348,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/ai/mcp/" class="md-nav__link">
+      <a href="../../../../integrations/ai/mcp/" class="md-nav__link">
         
   
   
@@ -2422,14 +2416,14 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../examples/" class="md-nav__link ">
+            <a href="../../../../examples/" class="md-nav__link ">
               
   
   
   <span class="md-ellipsis">
     
   
-    Examples
+    💻 Examples
   
 
     
@@ -2451,7 +2445,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Examples
+    💻 Examples
   
 
           </label>
@@ -2464,7 +2458,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/basic/" class="md-nav__link">
+      <a href="../../../../examples/basic/" class="md-nav__link">
         
   
   
@@ -2492,7 +2486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/aggregation/" class="md-nav__link">
+      <a href="../../../../examples/aggregation/" class="md-nav__link">
         
   
   
@@ -2520,7 +2514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/expansion/" class="md-nav__link">
+      <a href="../../../../examples/expansion/" class="md-nav__link">
         
   
   
@@ -2587,14 +2581,14 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../../" class="md-nav__link ">
               
   
   
   <span class="md-ellipsis">
     
   
-    Reference
+    📚 Reference
   
 
     
@@ -2616,7 +2610,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Reference
+    📚 Reference
   
 
           </label>
@@ -2632,12 +2626,6 @@
   
     
     
-      
-        
-      
-        
-      
-        
       
         
       
@@ -2665,7 +2653,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -2740,7 +2728,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../definitions/" class="md-nav__link ">
+            <a href="../../definitions/" class="md-nav__link ">
               
   
   
@@ -2782,7 +2770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../definitions/feature-spec/" class="md-nav__link">
+      <a href="../../definitions/feature-spec/" class="md-nav__link">
         
   
   
@@ -2810,7 +2798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../definitions/feature/" class="md-nav__link">
+      <a href="../../definitions/feature/" class="md-nav__link">
         
   
   
@@ -2838,7 +2826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../definitions/field/" class="md-nav__link">
+      <a href="../../definitions/field/" class="md-nav__link">
         
   
   
@@ -2866,7 +2854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../definitions/fields-mapping/" class="md-nav__link">
+      <a href="../../definitions/fields-mapping/" class="md-nav__link">
         
   
   
@@ -2894,7 +2882,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../definitions/relationship/" class="md-nav__link">
+      <a href="../../definitions/relationship/" class="md-nav__link">
         
   
   
@@ -2922,7 +2910,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../definitions/graph/" class="md-nav__link">
+      <a href="../../definitions/graph/" class="md-nav__link">
         
   
   
@@ -2950,7 +2938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../definitions/filters/" class="md-nav__link">
+      <a href="../../definitions/filters/" class="md-nav__link">
         
   
   
@@ -2983,40 +2971,14 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../config/" class="md-nav__link">
+  
+    
+    
+      
         
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Config
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    
-    
       
         
       
@@ -3033,18 +2995,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" checked>
         
           
-          <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
-              
+          <label class="md-nav__link" for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
     
   
-    Metadata Stores
+    MetadataStore
   
 
     
@@ -3052,21 +3013,15 @@
   
   
 
-            </a>
-            
-              
-              <label class="md-nav__link md-nav__link--active" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_1_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_1_2">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Metadata Stores
+    MetadataStore
   
 
           </label>
@@ -3076,10 +3031,549 @@
                 
   
   
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Base
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#databases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Databases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-store-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata Store Interface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;MetadataStore
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" MetadataStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attributes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.materialization_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;materialization_id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.qualified_class_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;qualified_class_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.resolve_update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve_update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.compute_provenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;compute_provenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;read
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.write_multi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write_multi
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.config_model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;config_model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.from_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;from_config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.native_implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;native_implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.create_versioning_engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;create_versioning_engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;open
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.__enter__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__enter__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.validate_hash_algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;validate_hash_algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.drop_feature_metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;drop_feature_metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;delete
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.read_feature_schema_from_store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;read_feature_schema_from_store
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.has_feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;has_feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.display" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;display
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.__repr__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__repr__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.find_store_for_feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;find_store_for_feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.get_store_metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_store_metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.get_store_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_store_info
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.calculate_input_progress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;calculate_input_progress
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.MetadataStore.copy_metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;copy_metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metaxy.metadata_store.types.AccessMode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;AccessMode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metaxy.metadata_store.base.VersioningEngineOptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;VersioningEngineOptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#base-configuration-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base Configuration Class
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metaxy.metadata_store.base.MetadataStoreConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;MetadataStoreConfig
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fallback_stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fallback_stores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hash_algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hash_algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#versioning_engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        versioning_engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
   
   
     <li class="md-nav__item">
-      <a href="exceptions/" class="md-nav__link">
+      <a href="../exceptions/" class="md-nav__link">
         
   
   
@@ -3114,8 +3608,70 @@
   
   
   
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Miscellaneous
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../types/" class="md-nav__link">
+      <a href="../../types/" class="md-nav__link">
         
   
   
@@ -3143,7 +3699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../constants/" class="md-nav__link">
+      <a href="../../constants/" class="md-nav__link">
         
   
   
@@ -3171,7 +3727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../utils/" class="md-nav__link">
+      <a href="../../utils/" class="md-nav__link">
         
   
   
@@ -3179,6 +3735,34 @@
     
   
     Utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MetaxyConfig
   
 
     
@@ -3200,6 +3784,14 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
               
                 
   
@@ -3207,7 +3799,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../configuration/" class="md-nav__link">
+      <a href="../../../configuration/" class="md-nav__link">
         
   
   
@@ -3235,7 +3827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli/" class="md-nav__link">
+      <a href="../../../cli/" class="md-nav__link">
         
   
   
@@ -3263,7 +3855,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/system-columns/" class="md-nav__link">
+      <a href="../../../../guide/concepts/system-columns/" class="md-nav__link">
         
   
   
@@ -3817,10 +4409,10 @@
     
     
       <li class="md-path__item">
-        <a href="../definitions/feature-spec/" class="md-path__link">
+        <a href="../../definitions/feature-spec/" class="md-path__link">
           
   <span class="md-ellipsis">
-    Reference
+    📚 Reference
   </span>
 
         </a>
@@ -3846,7 +4438,7 @@
     
     
       <li class="md-path__item">
-        <a href="../definitions/feature-spec/" class="md-path__link">
+        <a href="../../definitions/feature-spec/" class="md-path__link">
           
   <span class="md-ellipsis">
     API
@@ -3857,6 +4449,24 @@
     
   
 
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    MetadataStore
+  </span>
+
+        </a>
+      </li>
     
   
 
@@ -3877,36 +4487,36 @@
 <h1 id="metadata-stores">Metadata Stores<a class="headerlink" href="#metadata-stores" title="Permanent link">&para;</a></h1>
 <p>Metaxy abstracts interactions with metadata behind an interface called <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="#metaxy.MetadataStore"><code>MetadataStore</code></a>.</p>
 <p>Users can extend this class to implement support for arbitrary metadata storage such as databases, lakehouse formats, or really any kind of external system.</p>
-<p>Learn how to use metadata stores <a href="../../../guide/concepts/metadata-stores/">here</a>.</p>
+<p>Learn how to use metadata stores <a href="../../../../guide/concepts/metadata-stores/">here</a>.</p>
 <p class="annotate">Here are some of the built-in metadata store types (1):</p>
 <ol>
-<li>the full list can be found <a href="../../../integrations/metadata-stores/">here</a></li>
+<li>the full list can be found <a href="../../../../integrations/metadata-stores/">here</a></li>
 </ol>
 <h2 id="databases">Databases<a class="headerlink" href="#databases" title="Permanent link">&para;</a></h2>
 <ul>
 <li>
-<p><a href="../../../integrations/metadata-stores/databases/bigquery/">BigQuery</a></p>
+<p><a href="../../../../integrations/metadata-stores/databases/bigquery/">BigQuery</a></p>
 </li>
 <li>
-<p><a href="../../../integrations/metadata-stores/databases/clickhouse/">ClickHouse</a></p>
+<p><a href="../../../../integrations/metadata-stores/databases/clickhouse/">ClickHouse</a></p>
 </li>
 <li>
-<p><a href="../../../integrations/metadata-stores/databases/duckdb/">DuckDB</a> - if used with Motherduck</p>
+<p><a href="../../../../integrations/metadata-stores/databases/duckdb/">DuckDB</a> - if used with Motherduck</p>
 </li>
 <li>
-<p><a href="../../../integrations/metadata-stores/databases/lancedb/">LanceDB</a> - if used with LanceDB Cloud</p>
+<p><a href="../../../../integrations/metadata-stores/databases/lancedb/">LanceDB</a> - if used with LanceDB Cloud</p>
 </li>
 </ul>
 <h2 id="storage">Storage<a class="headerlink" href="#storage" title="Permanent link">&para;</a></h2>
 <ul>
 <li>
-<p><a href="../../../integrations/metadata-stores/storage/delta/">DeltaMetadataStore</a></p>
+<p><a href="../../../../integrations/metadata-stores/storage/delta/">DeltaMetadataStore</a></p>
 </li>
 <li>
-<p><a href="../../../integrations/metadata-stores/databases/duckdb/">DuckDB</a> - if used with a local file</p>
+<p><a href="../../../../integrations/metadata-stores/databases/duckdb/">DuckDB</a> - if used with a local file</p>
 </li>
 <li>
-<p><a href="../../../integrations/metadata-stores/databases/lancedb/">LanceDB</a> - if used with a local file</p>
+<p><a href="../../../../integrations/metadata-stores/databases/lancedb/">LanceDB</a> - if used with a local file</p>
 </li>
 </ul>
 <hr />
@@ -3925,7 +4535,7 @@
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MetadataStore</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">name</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">hash_algorithm</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.HashAlgorithm&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.HashAlgorithm&lt;/code&gt;)" href="../types/#metaxy.HashAlgorithm">HashAlgorithm</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">hash_algorithm</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.HashAlgorithm&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.HashAlgorithm&lt;/code&gt;)" href="../../types/#metaxy.HashAlgorithm">HashAlgorithm</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">versioning_engine</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.base.VersioningEngineOptions&lt;/span&gt;
 
 
@@ -3963,7 +4573,7 @@ Is typically included into <code>.display()</code>.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>hash_algorithm</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.HashAlgorithm&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.HashAlgorithm&lt;/code&gt;)" href="../types/#metaxy.HashAlgorithm">HashAlgorithm</a> | None</code>, default:
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.HashAlgorithm&lt;/span&gt; (&lt;code&gt;metaxy.versioning.types.HashAlgorithm&lt;/code&gt;)" href="../../types/#metaxy.HashAlgorithm">HashAlgorithm</a> | None</code>, default:
                   <code>None</code>
 )
           –
@@ -4052,7 +4662,7 @@ Can be overridden per <a class="autorefs autorefs-internal" title="&lt;code clas
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.VersioningEngineMismatchError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.VersioningEngineMismatchError">VersioningEngineMismatchError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.VersioningEngineMismatchError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.VersioningEngineMismatchError">VersioningEngineMismatchError</a></code>
             –
           <div class="doc-md-description">
             <p>If the versioning engine is attempted to be switched
@@ -4246,7 +4856,7 @@ allowing filtering of rows written during a specific materialization run.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">samples</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.IntoFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.IntoFrame">IntoFrame</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
@@ -4254,7 +4864,7 @@ allowing filtering of rows written during a specific materialization run.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">global_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">target_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4263,14 +4873,14 @@ allowing filtering of rows written during a specific materialization run.</p>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">skip_comparison</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.Increment&lt;/span&gt;" href="../types/#metaxy.versioning.types.Increment">Increment</a></span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.Increment&lt;/span&gt;" href="../../types/#metaxy.versioning.types.Increment">Increment</a></span>
 </span></code></pre></div><div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_update</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">samples</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.IntoFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.IntoFrame">IntoFrame</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
@@ -4278,7 +4888,7 @@ allowing filtering of rows written during a specific materialization run.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">global_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">target_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4292,7 +4902,7 @@ allowing filtering of rows written during a specific materialization run.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../types/#metaxy.versioning.types.LazyIncrement">LazyIncrement</a></span>
+  &lt;/span&gt;" href="../../types/#metaxy.versioning.types.LazyIncrement">LazyIncrement</a></span>
 </span></code></pre></div>          </div>
 
 
@@ -4311,7 +4921,7 @@ allowing filtering of rows written during a specific materialization run.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature class to resolve updates for</p>
@@ -4346,7 +4956,7 @@ For example, it can be used to requires processing for specific sample IDs.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a>]] | None</code>, default:
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a>]] | None</code>, default:
                   <code>None</code>
 )
           –
@@ -4397,7 +5007,7 @@ Example: <code>[nw.col("height").is_null()]</code></p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../types/#metaxy.versioning.types.LazyIncrement">metaxy.versioning.types.LazyIncrement</a> or a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.Increment&lt;/span&gt;" href="../types/#metaxy.versioning.types.Increment">metaxy.versioning.types.Increment</a>.</p>
+  &lt;/span&gt;" href="../../types/#metaxy.versioning.types.LazyIncrement">metaxy.versioning.types.LazyIncrement</a> or a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.Increment&lt;/span&gt;" href="../../types/#metaxy.versioning.types.Increment">metaxy.versioning.types.Increment</a>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -4435,7 +5045,7 @@ be empty.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.VersioningEngineMismatchError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.VersioningEngineMismatchError">VersioningEngineMismatchError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.VersioningEngineMismatchError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.VersioningEngineMismatchError">VersioningEngineMismatchError</a></code>
             –
           <div class="doc-md-description">
             <p>If <code>versioning_engine</code> has been set to <code>"native"</code>
@@ -4793,7 +5403,7 @@ version calculations from stale external feature definitions.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.FrameT&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.FrameT">FrameT</a></span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.FrameT&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.FrameT">FrameT</a></span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.FrameT&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.FrameT">FrameT</a></span>
 </span></code></pre></div>
 
@@ -4828,7 +5438,7 @@ upstream feature with key <code>["video", "raw"]</code>, the column should be na
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>The feature to compute provenance for.</p>
@@ -4868,7 +5478,7 @@ metaxy_data_version_by_field columns from each upstream feature.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
             –
           <div class="doc-md-description">
             <p>If the store is not open.</p>
@@ -5034,7 +5644,7 @@ are missing from the DataFrame.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">feature_version</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5051,7 +5661,7 @@ are missing from the DataFrame.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">feature_version</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5083,7 +5693,7 @@ are missing from the DataFrame.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature to read metadata for</p>
@@ -5192,14 +5802,14 @@ may be a fallback store if allow_fallback=True).</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.FeatureNotFoundError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.FeatureNotFoundError">FeatureNotFoundError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.FeatureNotFoundError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.FeatureNotFoundError">FeatureNotFoundError</a></code>
             –
           <div class="doc-md-description">
             <p>If feature not found in any store</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.SystemDataNotFoundError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.SystemDataNotFoundError">SystemDataNotFoundError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.SystemDataNotFoundError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.SystemDataNotFoundError">SystemDataNotFoundError</a></code>
             –
           <div class="doc-md-description">
             <p>When attempting to read non-existent Metaxy system data</p>
@@ -5443,7 +6053,7 @@ for most use cases.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">df</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.IntoFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.IntoFrame">IntoFrame</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">materialization_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
@@ -5464,7 +6074,7 @@ for most use cases.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature to write metadata for</p>
@@ -5498,14 +6108,14 @@ Useful for tracking which orchestration run produced this metadata.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.MetadataSchemaError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.MetadataSchemaError">MetadataSchemaError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.MetadataSchemaError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.MetadataSchemaError">MetadataSchemaError</a></code>
             –
           <div class="doc-md-description">
             <p>If DataFrame schema is invalid</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
             –
           <div class="doc-md-description">
             <p>If store is not open</p>
@@ -5644,14 +6254,14 @@ Applied to all feature writes in this batch.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.MetadataSchemaError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.MetadataSchemaError">MetadataSchemaError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.MetadataSchemaError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.MetadataSchemaError">MetadataSchemaError</a></code>
             –
           <div class="doc-md-description">
             <p>If any DataFrame schema is invalid</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.StoreNotOpenError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.StoreNotOpenError">StoreNotOpenError</a></code>
             –
           <div class="doc-md-description">
             <p>If store is not open</p>
@@ -6313,7 +6923,7 @@ fallback stores (ensures compatibility for future cross-store operations)</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
@@ -6338,7 +6948,7 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature class or key to drop metadata for</p>
@@ -6401,7 +7011,7 @@ Useful for cleanup in tests or when re-computing feature metadata from scratch.<
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">soft</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -6426,7 +7036,7 @@ Subsequent [[MetadataStore.read]] calls would ignore these records by default.</
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature to delete from.</p>
@@ -6562,7 +7172,7 @@ well. Consider adding additional conditions to <code>filters</code> if you want 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Schema&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/schema/#narwhals.schema.Schema">Schema</a></span>
 </span></code></pre></div>
 
@@ -6580,7 +7190,7 @@ well. Consider adding additional conditions to <code>filters</code> if you want 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature to read schema for</p>
@@ -6604,7 +7214,7 @@ well. Consider adding additional conditions to <code>filters</code> if you want 
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.FeatureNotFoundError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.FeatureNotFoundError">FeatureNotFoundError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.FeatureNotFoundError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.FeatureNotFoundError">FeatureNotFoundError</a></code>
             –
           <div class="doc-md-description">
             <p>If feature not found in the store</p>
@@ -6655,7 +7265,7 @@ well. Consider adding additional conditions to <code>filters</code> if you want 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">check_fallback</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span>
@@ -6675,7 +7285,7 @@ well. Consider adding additional conditions to <code>filters</code> if you want 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature to check</p>
@@ -6836,7 +7446,7 @@ well. Consider adding additional conditions to <code>filters</code> if you want 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">check_fallback</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.base.MetadataStore&lt;/code&gt;)" href="#metaxy.MetadataStore">MetadataStore</a></span> <span class="o">|</span> <span class="kc">None</span>
@@ -6856,7 +7466,7 @@ well. Consider adding additional conditions to <code>filters</code> if you want 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature to find</p>
@@ -6941,7 +7551,7 @@ is not found in the current store</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">check_fallback</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
@@ -6962,7 +7572,7 @@ is not found in the current store</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature to get metadata for</p>
@@ -7064,7 +7674,7 @@ includes <code>name</code>, <code>display</code>, and store-specific fields like
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
 </span></code></pre></div>
 
@@ -7082,7 +7692,7 @@ includes <code>name</code>, <code>display</code>, and store-specific fields like
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>Feature to get metadata for</p>
@@ -7180,13 +7790,13 @@ includes <code>name</code>, <code>display</code>, and store-specific fields like
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../types/#metaxy.versioning.types.LazyIncrement">LazyIncrement</a></span><span class="p">,</span>
+  &lt;/span&gt;" href="../../types/#metaxy.versioning.types.LazyIncrement">LazyIncrement</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.CoercibleToFeatureKey&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="o">|</span> <span class="kc">None</span>
 </span></code></pre></div>
 
@@ -7210,7 +7820,7 @@ upstream changes.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../types/#metaxy.versioning.types.LazyIncrement">LazyIncrement</a></code>)
+  &lt;/span&gt;" href="../../types/#metaxy.versioning.types.LazyIncrement">LazyIncrement</a></code>)
           –
           <div class="doc-md-description">
             <p>The lazy increment containing input and added dataframes.</p>
@@ -7223,7 +7833,7 @@ upstream changes.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
             <p>The feature key to look up lineage information.</p>
@@ -7311,7 +7921,7 @@ upstream changes.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">global_filters</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.Expr&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/expr/#narwhals.Expr">Expr</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7342,7 +7952,7 @@ upstream changes.</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a>] | None</code>, default:
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a>] | None</code>, default:
                   <code>None</code>
 )
           –
@@ -7429,7 +8039,7 @@ If False (default), deduplicate within <code>id_columns</code> groups by keeping
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.FeatureNotFoundError&lt;/span&gt;" href="exceptions/#metaxy.metadata_store.exceptions.FeatureNotFoundError">FeatureNotFoundError</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.exceptions.FeatureNotFoundError&lt;/span&gt;" href="../exceptions/#metaxy.metadata_store.exceptions.FeatureNotFoundError">FeatureNotFoundError</a></code>
             –
           <div class="doc-md-description">
             <p>If a specified feature doesn't exist in source store</p>
@@ -7855,12 +8465,12 @@ Store-specific config classes should inherit from this and add their own fields.
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
-        <script src="../../../javascripts/telemetry.js"></script>
+        <script src="../../../../javascripts/telemetry.js"></script>
       
     
   </body>

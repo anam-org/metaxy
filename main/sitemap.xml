@@ -21,6 +21,14 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://docs.metaxy.io/main/guide/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/guide/qa/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
@@ -237,7 +245,7 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/reference/api/metadata-stores/</loc>
+         <loc>https://docs.metaxy.io/main/reference/api/metadata-stores/base/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
