@@ -57,7 +57,7 @@ graph LR
 
   How features relate to upstream dependencies: one-to-one, one-to-many, or many-to-one.
 
-- :material-help-circle-outline: **[Optional Dependencies](optional-dependencies.md)**
+- :material-help-circle-outline: **[Optional Dependencies](./definitions/optional-dependencies.md)**
 
   ---
 

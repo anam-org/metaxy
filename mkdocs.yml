@@ -215,6 +215,7 @@ nav:
       - Feature Dependencies: guide/overview/feature-dependencies.md
     - Definitions:
       - Features: guide/learn/definitions/features.md
+      - Optional Dependencies: guide/learn/definitions/optional-dependencies.md
       - Lineage Types: guide/learn/definitions/relationship.md
     - Concepts:
       - Overview: guide/learn/index.md
@@ -222,7 +223,6 @@ nav:
       - Versioning: guide/learn/data-versioning.md
       - Feature Discovery: guide/learn/feature-discovery.md
       - Syntactic Sugar: guide/learn/syntactic-sugar.md
-      - Optional Dependencies: guide/learn/optional-dependencies.md
       - Filters: guide/learn/filters.md
       - Deletions: guide/learn/deletions.md
       - System Columns: guide/learn/system-columns.md
