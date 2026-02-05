@@ -60,7 +60,7 @@
       link.addEventListener("click", function (e) {
         e.preventDefault();
         e.stopPropagation();
-        window.open(link.getAttribute("href"), "_blank");
+        window.open(resolveUrl(link.getAttribute("href")), "_blank");
       });
     }
 
@@ -96,6 +96,15 @@
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  function resolveUrl(url) {
+    if (!url.startsWith("/")) return url;
+    var configEl = document.getElementById("__config");
+    if (!configEl) return url;
+    var siteRoot = new URL(JSON.parse(configEl.textContent).base, location).href;
+    if (!siteRoot.endsWith("/")) siteRoot += "/";
+    return new URL(url.slice(1), siteRoot).href;
   }
 
   function init() {
