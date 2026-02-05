@@ -27,7 +27,7 @@ from metaxy.versioning.types import HashAlgorithm
 class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
     """Configuration for ClickHouseMetadataStore.
 
-    Inherits connection_string, connection_params, table_prefix, auto_create_tables from IbisMetadataStoreConfig.
+    Inherits connection_string, connection_params, table_prefix, auto_create_tables from `IbisMetadataStoreConfig`.
 
     Example:
         ```python

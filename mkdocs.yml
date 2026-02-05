@@ -225,9 +225,10 @@ nav:
       - Filters: guide/learn/filters.md
       - Deletions: guide/learn/deletions.md
       - System Columns: guide/learn/system-columns.md
-      - Testing: guide/learn/testing.md
-    - Development Lifecycle:
-      - Development Lifecycle: guide/learn/development-lifecycle.md
+    - Application Lifecycle:
+      - Local Development: guide/learn/lifecycle/development.md
+      - Testing: guide/learn/lifecycle/testing.md
+      - Deployment: guide/learn/lifecycle/deployment.md
   - Integrations:
     - integrations/index.md
     - Orchestration:
