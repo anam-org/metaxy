@@ -135,6 +135,6 @@ This ensures your pipelines are efficient data stays up to date.
 
 Learn more about:
 
-- [Features and Fields](../guide/learn/feature-definitions.md)
+- [Features and Fields](../guide/learn/definitions/features.md)
 - [Data Versioning](../guide/learn/data-versioning.md)
 - [Relationships](../guide/learn/relationship.md)

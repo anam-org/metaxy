@@ -64,7 +64,7 @@ There are generally two ways to create a `MetadataStore`. We are going to demons
 
 1. `[tool.metaxy]` section in `pyproject.toml` is supported as well
 
-Now the `store` is ready to be used. We'll also assume there is a `MyFeature` [feature class](./feature-definitions.md) (1) prepared.
+Now the `store` is ready to be used. We'll also assume there is a `MyFeature` [feature class](/guide/learn/definitions/features.md) (1) prepared.
 {. annotate }
 
 1. with `"my/feature"` key

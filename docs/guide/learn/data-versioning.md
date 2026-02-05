@@ -5,7 +5,7 @@ description: "How Metaxy calculates and tracks versions."
 
 # Versioning
 
-Metaxy calculates a few types of versions at [feature](feature-definitions.md), [field](feature-definitions.md), and [sample](#samples) levels.
+Metaxy calculates a few types of versions at [feature](./definitions/features.md), [field](./definitions/features.md), and [sample](#samples) levels.
 
 Metaxy's versioning system is declarative, static, deterministic and idempotent.
 
@@ -30,7 +30,7 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 > [!NOTE] Code Version Value
 > The value can be arbitrary, but in the future we might implement something around semantic versioning.
 
-- **Field Version** is computed from the code version of this field, the [fully qualified field path](feature-definitions.md#fully-qualified-field-key) and from the field versions of its [parent fields](feature-definitions.md#field-level-dependencies) (if any exist, for example, fields on root features do not have dependencies).
+- **Field Version** is computed from the code version of this field, the [fully qualified field path](./definitions/features.md#fully-qualified-field-key) and from the field versions of its [parent fields](./definitions/features.md#field-level-dependencies) (if any exist, for example, fields on root features do not have dependencies).
 
 #### Feature Level
 
@@ -49,7 +49,7 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 
 These versions are sample-level and require access to the metadata store in order to compute them.
 
-- **Provenance By Field** is computed from the upstream **Provenance By Field** (with respect to defined [field-level dependencies](feature-definitions.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
+- **Provenance By Field** is computed from the upstream **Provenance By Field** (with respect to defined [field-level dependencies](./definitions/features.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
 
 | id        | metaxy_provenance_by_field                    |
 | --------- | --------------------------------------------- |

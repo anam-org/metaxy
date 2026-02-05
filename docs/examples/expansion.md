@@ -171,6 +171,6 @@ Metaxy provides a convenient API for modeling expansion relationships: [LineageR
 
 Learn more about:
 
-- [Features and Fields](../guide/learn/feature-definitions.md)
+- [Features and Fields](../guide/learn/definitions/features.md)
 - [Relationships](../guide/learn/relationship.md)
 - [Fields Mapping](../guide/learn/syntactic-sugar.md#fields-mapping)

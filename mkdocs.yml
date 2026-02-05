@@ -213,10 +213,11 @@ nav:
     - Getting Started:
       - Quickstart: guide/overview/quickstart.md
       - Feature Dependencies: guide/overview/feature-dependencies.md
+    - Definitions:
+      - Features: guide/learn/definitions/features.md
     - Concepts:
       - Overview: guide/learn/index.md
       - Metadata Stores: guide/learn/metadata-stores.md
-      - Feature Definitions: guide/learn/feature-definitions.md
       - Versioning: guide/learn/data-versioning.md
       - Feature Discovery: guide/learn/feature-discovery.md
       - Syntactic Sugar: guide/learn/syntactic-sugar.md

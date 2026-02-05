@@ -109,7 +109,7 @@ Continue to [next section](feature-dependencies.md) to learn how to add more fea
 
 ## Additional info
 
-- Learn more about [feature definitions](../learn/feature-definitions.md) or [versioning](../learn/data-versioning.md)
+- Learn more about [feature definitions](../learn/definitions/features.md) or [versioning](../learn/data-versioning.md)
 
 - Explore [Metaxy integrations](../../integrations/index.md)
 

@@ -158,6 +158,6 @@ Metaxy provides a convenient API for modeling aggregation relationships: [Lineag
 
 Learn more about:
 
-- [Features and Fields](../guide/learn/feature-definitions.md)
+- [Features and Fields](../guide/learn/definitions/features.md)
 - [Relationships](../guide/learn/relationship.md)
 - [One-to-Many Expansion](./expansion.md) (the inverse relationship)

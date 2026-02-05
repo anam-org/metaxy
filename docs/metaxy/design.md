@@ -35,7 +35,7 @@ The Metaxy abstraction that implements these design choices and is used to inter
 
 ### Table Schema
 
-Metaxy uses the same storage layout for all storage systems. Each [feature](../guide/learn/feature-definitions.md) gets a separate table.
+Metaxy uses the same storage layout for all storage systems. Each [feature](../guide/learn/definitions/features.md) gets a separate table.
 
 Here is how a typical Metaxy feature table looks like:
 
@@ -97,12 +97,12 @@ This allows metadata store implementations to reuse the same code. Currently onl
 
 ## Compute
 
-Increment resolution in Metaxy involves running computations: every time the user requests an increment for a given [feature](../guide/learn/feature-definitions.md), Metaxy has to join upstream features, hash their versions, and filter out samples that have already been processed. This can be performed either **locally** (typically favored in development environments) or **remotely** (achieves better performance in production). Metaxy supports both options: [databases](../integrations/metadata-stores/databases/index.md) for remote compute and [storage-only](../integrations/metadata-stores/storage/index.md) metadata stores for embedded compute (1).
+Increment resolution in Metaxy involves running computations: every time the user requests an increment for a given [feature](../guide/learn/definitions/features.md), Metaxy has to join upstream features, hash their versions, and filter out samples that have already been processed. This can be performed either **locally** (typically favored in development environments) or **remotely** (achieves better performance in production). Metaxy supports both options: [databases](../integrations/metadata-stores/databases/index.md) for remote compute and [storage-only](../integrations/metadata-stores/storage/index.md) metadata stores for embedded compute (1).
 { .annotate }
 
 1. e.g. Polars or Duckdb
 
-When resolving incremental updates for a [feature](../guide/learn/feature-definitions.md), Metaxy attempts to perform all computations such as [sample version calculations](../guide/learn/data-versioning.md) within the metadata store.
+When resolving incremental updates for a [feature](../guide/learn/definitions/features.md), Metaxy attempts to perform all computations such as [sample version calculations](../guide/learn/data-versioning.md) within the metadata store.
 
 !!! note "When can **local** computations happen instead"
 
