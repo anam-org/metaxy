@@ -2814,6 +2814,8 @@
       
         
       
+        
+      
     
     
     
@@ -2872,6 +2874,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../reference/api/initialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Initialization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
       
@@ -2902,7 +2932,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -2924,14 +2954,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_1" id="__nav_4_1_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3171,10 +3201,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
             
   
   
@@ -3192,8 +3222,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3297,10 +3327,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_4" id="__nav_4_1_4_label" tabindex="0">
             
   
   
@@ -3318,8 +3348,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3777,8 +3807,8 @@
 <p>Metaxy calculates a few types of versions at <a href="../definitions/features/">feature</a>, <a href="../definitions/features/">field</a>, and <a href="#samples">sample</a> levels.</p>
 <p>Metaxy's versioning system is declarative, static, deterministic and idempotent.</p>
 <h2 id="versioning_1">Versioning<a class="headerlink" href="#versioning_1" title="Permanent link">&para;</a></h2>
-<p>Feature and <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/concepts/feature-definitions#fields).">field versions</abbr> are defined by the feature graph topology and the user-provided code versions of fields. Sample versions are defined by upstream sample versions and the code versions of the fields defined on the sample's feature.</p>
-<p>All versions are computed ahead of time: feature and <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/concepts/feature-definitions#fields).">field versions</abbr> can be immediately derived from code (and we keep historical graph snapshots for them), and calculating sample versions requires access to the metadata store.</p>
+<p>Feature and <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> are defined by the feature graph topology and the user-provided code versions of fields. Sample versions are defined by upstream sample versions and the code versions of the fields defined on the sample's feature.</p>
+<p>All versions are computed ahead of time: feature and <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> can be immediately derived from code (and we keep historical graph snapshots for them), and calculating sample versions requires access to the metadata store.</p>
 <p>Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash <a href="../../../reference/configuration/#hash_truncation_length">length</a> can be configured.</p>
 <p>Here is how these versions are calculated, from bottom to top.</p>
 <h3 id="definitions">Definitions<a class="headerlink" href="#definitions" title="Permanent link">&para;</a></h3>
@@ -3792,7 +3822,7 @@
 <p>The value can be arbitrary, but in the future we might implement something around semantic versioning.</p>
 </div>
 <ul>
-<li><strong>Field Version</strong> is computed from the code version of this field, the <a href="../definitions/features/#fully-qualified-field-key">fully qualified field path</a> and from the <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/concepts/feature-definitions#fields).">field versions</abbr> of its <a href="../definitions/features/#field-level-dependencies">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</li>
+<li><strong>Field Version</strong> is computed from the code version of this field, the <a href="../definitions/features/#fully-qualified-field-key">fully qualified field path</a> and from the <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> of its <a href="../definitions/features/#field-level-dependencies">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</li>
 </ul>
 <h4 id="feature-level">Feature Level<a class="headerlink" href="#feature-level" title="Permanent link">&para;</a></h4>
 <ul>
@@ -3810,7 +3840,7 @@
 <h3 id="samples">Samples<a class="headerlink" href="#samples" title="Permanent link">&para;</a></h3>
 <p>These versions are sample-level and require access to the metadata store in order to compute them.</p>
 <ul>
-<li><strong>Provenance By Field</strong> is computed from the upstream <strong>Provenance By Field</strong> (with respect to defined <a href="../definitions/features/#field-level-dependencies"><abbr title="Dependencies between specific fields of feature definitions. They directly affect how field versions are computed at both feature and sample levels. Learn more [here](/guide/concepts/feature-definitions#field-level-dependencies).">field-level dependencies</abbr></a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</li>
+<li><strong>Provenance By Field</strong> is computed from the upstream <strong>Provenance By Field</strong> (with respect to defined <a href="../definitions/features/#field-level-dependencies"><abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-dependencies">field-level dependencies</abbr></a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</li>
 </ul>
 <table>
 <thead>
@@ -3852,7 +3882,7 @@
 <summary>Simplified Metaxy Definitions</summary>
 <p>This example uses Metaxy's <a href="../syntactic-sugar/">syntactic sugar</a> for cleaner code.
 Feature classes can be passed directly to <code>deps</code> instead of wrapping in <code>FeatureDep</code>,
-and field names matching upstream fields automatically create <abbr title="Dependencies between specific fields of feature definitions. They directly affect how field versions are computed at both feature and sample levels. Learn more [here](/guide/concepts/feature-definitions#field-level-dependencies).">field-level dependencies</abbr>.</p>
+and field names matching upstream fields automatically create <abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-dependencies">field-level dependencies</abbr>.</p>
 </details>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -4010,10 +4040,10 @@ flowchart TB
 <p><code>FaceDetection</code> remained unchanged (depends only on <code>frames</code> and not on <code>audio</code>)</p>
 </li>
 <li>
-<p>Audio <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/concepts/feature-definitions#fields).">field versions</abbr> have changed throughout the graph</p>
+<p>Audio <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> have changed throughout the graph</p>
 </li>
 <li>
-<p>Frame <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/concepts/feature-definitions#fields).">field versions</abbr> have stayed the same</p>
+<p>Frame <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> have stayed the same</p>
 </li>
 </ul>
 </div>
@@ -4127,6 +4157,8 @@ It handles the following:</p>
       <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
         <script src="../../../javascripts/telemetry.js"></script>
+      
+        <script src="../../../javascripts/glossary-tooltips.js"></script>
       
     
   </body>

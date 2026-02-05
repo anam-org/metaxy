@@ -2781,6 +2781,8 @@
       
         
       
+        
+      
     
     
     
@@ -2839,6 +2841,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../../reference/api/initialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Initialization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
       
@@ -2869,7 +2899,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -2891,14 +2921,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_1" id="__nav_4_1_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3138,10 +3168,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
             
   
   
@@ -3159,8 +3189,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3264,10 +3294,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_4" id="__nav_4_1_4_label" tabindex="0">
             
   
   
@@ -3285,8 +3315,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3708,7 +3738,7 @@
 
 
 <h1 id="testing-metaxy-code">Testing Metaxy Code<a class="headerlink" href="#testing-metaxy-code" title="Permanent link">&para;</a></h1>
-<p>This guide covers patterns for testing your Metaxy code. As always, Metaxy must be explicitly initialized with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init_metaxy&lt;/span&gt;" href="../../../../reference/api/#metaxy.init_metaxy"><code>init_metaxy</code></a>:</p>
+<p>This guide covers patterns for testing your Metaxy code. As always, Metaxy must be explicitly initialized with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init_metaxy&lt;/span&gt;" href="../../../../reference/api/initialization/#metaxy.init_metaxy"><code>init_metaxy</code></a>:</p>
 <!-- skip next -->
 <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -3722,7 +3752,7 @@
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../../../../reference/api/config/#metaxy.MetaxyConfig.get"><code>MetaxyConfig.get()</code></a> singleton.
-It is often desired to provide custom <abbr title="Metaxy can be configured via `metaxy.toml`/`pyproject.toml` and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> in tests.</p>
+It is often desired to provide custom <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> in tests.</p>
 <p>This can be achieved by constructing a <code>MetaxyConfig</code> instance and activating it via a context manager. It's best if this setup is performed via <code>pytest</code> fixtures:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
@@ -3737,7 +3767,7 @@ It is often desired to provide custom <abbr title="Metaxy can be configured via 
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_my_config</span><span class="p">():</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">assert</span> <span class="n">mx</span><span class="o">.</span><span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">project</span> <span class="o">==</span> <span class="s2">&quot;my-project&quot;</span>
 </span></code></pre></div>
-<p>The config object can be explicitly passed to <code>init_metaxy</code>. This can be used to adjust how <abbr title="The process of automatically searching for feature definitions in the current environment. Learn more [here](/guide/lear/feature-discovery.md).">feature discovery</abbr> is performed.</p>
+<p>The config object can be explicitly passed to <code>init_metaxy</code>. This can be used to adjust how <abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/feature-discovery/">feature discovery</abbr> is performed.</p>
 <h3 id="configuring-metaxy-plugins">Configuring Metaxy Plugins<a class="headerlink" href="#configuring-metaxy-plugins" title="Permanent link">&para;</a></h3>
 <p>Plugins can be configured via a dictionary where keys are plugin names and values are plugin-specific configuration objects:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaxyConfig</span>
@@ -3884,6 +3914,8 @@ It may be desired to suppress these warnings in your test suite.</p>
       <script src="../../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
         <script src="../../../../javascripts/telemetry.js"></script>
+      
+        <script src="../../../../javascripts/glossary-tooltips.js"></script>
       
     
   </body>

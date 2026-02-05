@@ -2631,6 +2631,8 @@
       
         
       
+        
+      
     
     
     
@@ -2692,6 +2694,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../api/initialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Initialization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
       
@@ -2722,7 +2752,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -2744,14 +2774,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_1" id="__nav_4_1_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2991,10 +3021,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
             
   
   
@@ -3012,8 +3042,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3117,10 +3147,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_4" id="__nav_4_1_4_label" tabindex="0">
             
   
   
@@ -3138,8 +3168,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3857,7 +3887,7 @@
 <ul>
 <li><strong><code>type</code></strong>: Full import path to the store class (e.g., <code>metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore</code>)</li>
 <li><strong><code>config</code></strong>: Dictionary of store-specific configuration options</li>
-<li><code>**fallback_stores**</code> - optional list of store names to pull missing metadata from. Learn more <a href="../../guide/concepts/metadata-stores/#fallback-stores">here</a>.</li>
+<li><strong><code>fallback_stores</code></strong> - optional list of store names to pull missing metadata from. Learn more <a href="../../guide/concepts/metadata-stores/#fallback-stores">here</a>.</li>
 </ul>
 <!-- dprint-ignore-start -->
 <h3 id="store"><code>store</code><a class="headerlink" href="#store" title="Permanent link">&para;</a></h3>
@@ -3926,7 +3956,7 @@
 </div>
 <hr />
 <h3 id="entrypoints"><code>entrypoints</code><a class="headerlink" href="#entrypoints" title="Permanent link">&para;</a></h3>
-<p>List of Python module paths to load for <abbr title="The process of automatically searching for feature definitions in the current environment. Learn more [here](/guide/lear/feature-discovery.md).">feature discovery</abbr></p>
+<p>List of Python module paths to load for <abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/feature-discovery/">feature discovery</abbr></p>
 <p><strong>Type:</strong> <code>list[str]</code></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="entrypoints-metaxytoml" name="__tabbed_4" type="radio" /><input id="entrypoints-pyprojecttoml" name="__tabbed_4" type="radio" /><input id="entrypoints-environment-variable" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="entrypoints-metaxytoml">metaxy.toml</label><label for="entrypoints-pyprojecttoml">pyproject.toml</label><label for="entrypoints-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
@@ -4035,7 +4065,7 @@
 </div>
 <hr />
 <h3 id="locked"><code>locked</code><a class="headerlink" href="#locked" title="Permanent link">&para;</a></h3>
-<p>Whether to raise an error if an external feature doesn't have a matching feature version when <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../api/#metaxy.sync_external_features">syncing external features</a> from the metadata store.</p>
+<p>Whether to raise an error if an external feature doesn't have a matching feature version when <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../api/initialization/#metaxy.sync_external_features">syncing external features</a> from the metadata store.</p>
 <p><strong>Type:</strong> <code>bool | None</code></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="9:3"><input checked="checked" id="locked-metaxytoml" name="__tabbed_9" type="radio" /><input id="locked-pyprojecttoml" name="__tabbed_9" type="radio" /><input id="locked-environment-variable" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="locked-metaxytoml">metaxy.toml</label><label for="locked-pyprojecttoml">pyproject.toml</label><label for="locked-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
@@ -4058,7 +4088,7 @@
 </div>
 <hr />
 <h3 id="sync"><code>sync</code><a class="headerlink" href="#sync" title="Permanent link">&para;</a></h3>
-<p>Whether to automatically <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../api/#metaxy.sync_external_features">sync external feature definitions</a> from the metadata during some operations. It's recommended to keep this enabled as it ensures versioning correctness for external feature definitions with a negligible performance impact.</p>
+<p>Whether to automatically <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../api/initialization/#metaxy.sync_external_features">sync external feature definitions</a> from the metadata during some operations. It's recommended to keep this enabled as it ensures versioning correctness for external feature definitions with a negligible performance impact.</p>
 <p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>True</code></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="10:3"><input checked="checked" id="sync-metaxytoml" name="__tabbed_10" type="radio" /><input id="sync-pyprojecttoml" name="__tabbed_10" type="radio" /><input id="sync-environment-variable" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="sync-metaxytoml">metaxy.toml</label><label for="sync-pyprojecttoml">pyproject.toml</label><label for="sync-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
@@ -4182,6 +4212,8 @@
       <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
         <script src="../../javascripts/telemetry.js"></script>
+      
+        <script src="../../javascripts/glossary-tooltips.js"></script>
       
     
   </body>

@@ -2822,6 +2822,8 @@
       
         
       
+        
+      
     
     
     
@@ -2880,6 +2882,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../reference/api/initialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Initialization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
       
@@ -2910,7 +2940,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -2932,14 +2962,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_1" id="__nav_4_1_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3179,10 +3209,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
             
   
   
@@ -3200,8 +3230,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3305,10 +3335,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_4" id="__nav_4_1_4_label" tabindex="0">
             
   
   
@@ -3326,8 +3356,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3823,7 +3853,7 @@ flowchart TB
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
-<p>We do not specify custom versions on its fields. Metaxy will automatically assign <abbr title="Dependencies between specific fields of feature definitions. They directly affect how field versions are computed at both feature and sample levels. Learn more [here](/guide/concepts/feature-definitions#field-level-dependencies).">field-level dependencies</abbr> by <a href="../../reference/api/definitions/fields-mapping/">matching on field names</a>: <code>VideoChunk.frames</code> depends on <code>Video.frames</code> and <code>VideoChunk.audio</code> depends on <code>Video.audio</code>.</p>
+<p>We do not specify custom versions on its fields. Metaxy will automatically assign <abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-dependencies">field-level dependencies</abbr> by <a href="../../reference/api/definitions/fields-mapping/">matching on field names</a>: <code>VideoChunk.frames</code> depends on <code>Video.frames</code> and <code>VideoChunk.audio</code> depends on <code>Video.audio</code>.</p>
 <h3 id="defining-features-facerecognition">Defining features: <code>FaceRecognition</code><a class="headerlink" href="#defining-features-facerecognition" title="Permanent link">&para;</a></h3>
 <p><code>FaceRecognition</code> processes video chunks and <strong>only depends on the <code>frames</code> field</strong>. This can be expressed with a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.fields_mapping.FieldsMapping.specific&lt;/span&gt;
 
@@ -4156,6 +4186,8 @@ flowchart TB
       <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
         <script src="../../javascripts/telemetry.js"></script>
+      
+        <script src="../../javascripts/glossary-tooltips.js"></script>
       
     
   </body>

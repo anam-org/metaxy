@@ -2633,6 +2633,8 @@
       
         
       
+        
+      
     
     
     
@@ -2692,6 +2694,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../initialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Initialization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -2726,7 +2756,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" checked>
         
           
           <div class="md-nav__link md-nav__container">
@@ -2748,14 +2778,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_1" id="__nav_4_1_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_1_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_1_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3302,10 +3332,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
             
   
   
@@ -3323,8 +3353,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3428,10 +3458,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_4" id="__nav_4_1_4_label" tabindex="0">
             
   
   
@@ -3449,8 +3479,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3995,13 +4025,8 @@
   
     
     
-      
-  
-  
-    
-    
       <li class="md-path__item">
-        <a href="../feature-spec/" class="md-path__link">
+        <a href="../../initialization/" class="md-path__link">
           
   <span class="md-ellipsis">
     📚 Reference
@@ -4015,22 +4040,14 @@
     
   
 
-    
-  
-
       
         
   
   
     
     
-      
-  
-  
-    
-    
       <li class="md-path__item">
-        <a href="../feature-spec/" class="md-path__link">
+        <a href="../../initialization/" class="md-path__link">
           
   <span class="md-ellipsis">
     API
@@ -4038,9 +4055,6 @@
 
         </a>
       </li>
-    
-  
-
     
   
 
@@ -4077,7 +4091,7 @@
 
 
 <h1 id="feature-graph">Feature Graph<a class="headerlink" href="#feature-graph" title="Permanent link">&para;</a></h1>
-<p><code>FeatureGraph</code> is a global "God" object that holds all the features loaded by Metaxy via the <a href="../../../../guide/concepts/feature-discovery/"><abbr title="The process of automatically searching for feature definitions in the current environment. Learn more [here](/guide/lear/feature-discovery.md).">feature discovery</abbr></a> mechanism.</p>
+<p><code>FeatureGraph</code> is a global "God" object that holds all the features loaded by Metaxy via the <a href="../../../../guide/concepts/feature-discovery/"><abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/feature-discovery/">feature discovery</abbr></a> mechanism.</p>
 <p>Users may interact with <code>FeatureGraph</code> when writing custom migrations, otherwise they are not exposed to it.</p>
 
 
@@ -4888,7 +4902,7 @@ If False, return all features regardless of project.</p>
   &lt;/span&gt; (&lt;code&gt;metaxy.models.types.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></code>)
           –
           <div class="doc-md-description">
-            <p>Feature key to get <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/concepts/feature-definitions#fields).">field versions</abbr> for. Accepts types that can be converted into a feature key..</p>
+            <p>Feature key to get <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> for. Accepts types that can be converted into a feature key..</p>
           </div>
         </li>
     </ul>
@@ -5558,17 +5572,18 @@ uses the graph's single project (via the <code>project</code> property).</p>
 </span><span id="__span-0-605"><a id="__codelineno-0-605" name="__codelineno-0-605"></a><a href="#__codelineno-0-605"><span class="linenos" data-linenos="605 "></span></a>        <span class="n">definition_version</span> <span class="o">=</span> <span class="n">definition</span><span class="o">.</span><span class="n">feature_definition_version</span>
 </span><span id="__span-0-606"><a id="__codelineno-0-606" name="__codelineno-0-606"></a><a href="#__codelineno-0-606"><span class="linenos" data-linenos="606 "></span></a>        <span class="n">project</span> <span class="o">=</span> <span class="n">definition</span><span class="o">.</span><span class="n">project</span>
 </span><span id="__span-0-607"><a id="__codelineno-0-607" name="__codelineno-0-607"></a><a href="#__codelineno-0-607"><span class="linenos" data-linenos="607 "></span></a>        <span class="n">class_path</span> <span class="o">=</span> <span class="n">definition</span><span class="o">.</span><span class="n">feature_class_path</span>
-</span><span id="__span-0-608"><a id="__codelineno-0-608" name="__codelineno-0-608"></a><a href="#__codelineno-0-608"><span class="linenos" data-linenos="608 "></span></a>
-</span><span id="__span-0-609"><a id="__codelineno-0-609" name="__codelineno-0-609"></a><a href="#__codelineno-0-609"><span class="linenos" data-linenos="609 "></span></a>        <span class="n">snapshot</span><span class="p">[</span><span class="n">feature_key_str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>  <span class="c1"># ty: ignore[invalid-assignment]</span>
-</span><span id="__span-0-610"><a id="__codelineno-0-610" name="__codelineno-0-610"></a><a href="#__codelineno-0-610"><span class="linenos" data-linenos="610 "></span></a>            <span class="s2">&quot;feature_spec&quot;</span><span class="p">:</span> <span class="n">feature_spec_dict</span><span class="p">,</span>
-</span><span id="__span-0-611"><a id="__codelineno-0-611" name="__codelineno-0-611"></a><a href="#__codelineno-0-611"><span class="linenos" data-linenos="611 "></span></a>            <span class="s2">&quot;feature_schema&quot;</span><span class="p">:</span> <span class="n">feature_schema_dict</span><span class="p">,</span>
-</span><span id="__span-0-612"><a id="__codelineno-0-612" name="__codelineno-0-612"></a><a href="#__codelineno-0-612"><span class="linenos" data-linenos="612 "></span></a>            <span class="n">FEATURE_VERSION_COL</span><span class="p">:</span> <span class="n">feature_version</span><span class="p">,</span>
-</span><span id="__span-0-613"><a id="__codelineno-0-613" name="__codelineno-0-613"></a><a href="#__codelineno-0-613"><span class="linenos" data-linenos="613 "></span></a>            <span class="n">FEATURE_TRACKING_VERSION_COL</span><span class="p">:</span> <span class="n">definition_version</span><span class="p">,</span>
-</span><span id="__span-0-614"><a id="__codelineno-0-614" name="__codelineno-0-614"></a><a href="#__codelineno-0-614"><span class="linenos" data-linenos="614 "></span></a>            <span class="s2">&quot;feature_class_path&quot;</span><span class="p">:</span> <span class="n">class_path</span><span class="p">,</span>
-</span><span id="__span-0-615"><a id="__codelineno-0-615" name="__codelineno-0-615"></a><a href="#__codelineno-0-615"><span class="linenos" data-linenos="615 "></span></a>            <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="n">project</span><span class="p">,</span>
-</span><span id="__span-0-616"><a id="__codelineno-0-616" name="__codelineno-0-616"></a><a href="#__codelineno-0-616"><span class="linenos" data-linenos="616 "></span></a>        <span class="p">}</span>
-</span><span id="__span-0-617"><a id="__codelineno-0-617" name="__codelineno-0-617"></a><a href="#__codelineno-0-617"><span class="linenos" data-linenos="617 "></span></a>
-</span><span id="__span-0-618"><a id="__codelineno-0-618" name="__codelineno-0-618"></a><a href="#__codelineno-0-618"><span class="linenos" data-linenos="618 "></span></a>    <span class="k">return</span> <span class="n">snapshot</span>
+</span><span id="__span-0-608"><a id="__codelineno-0-608" name="__codelineno-0-608"></a><a href="#__codelineno-0-608"><span class="linenos" data-linenos="608 "></span></a>        <span class="k">assert</span> <span class="n">class_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;feature_class_path must be set for serialization&quot;</span>
+</span><span id="__span-0-609"><a id="__codelineno-0-609" name="__codelineno-0-609"></a><a href="#__codelineno-0-609"><span class="linenos" data-linenos="609 "></span></a>
+</span><span id="__span-0-610"><a id="__codelineno-0-610" name="__codelineno-0-610"></a><a href="#__codelineno-0-610"><span class="linenos" data-linenos="610 "></span></a>        <span class="n">snapshot</span><span class="p">[</span><span class="n">feature_key_str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-0-611"><a id="__codelineno-0-611" name="__codelineno-0-611"></a><a href="#__codelineno-0-611"><span class="linenos" data-linenos="611 "></span></a>            <span class="s2">&quot;feature_spec&quot;</span><span class="p">:</span> <span class="n">feature_spec_dict</span><span class="p">,</span>
+</span><span id="__span-0-612"><a id="__codelineno-0-612" name="__codelineno-0-612"></a><a href="#__codelineno-0-612"><span class="linenos" data-linenos="612 "></span></a>            <span class="s2">&quot;feature_schema&quot;</span><span class="p">:</span> <span class="n">feature_schema_dict</span><span class="p">,</span>
+</span><span id="__span-0-613"><a id="__codelineno-0-613" name="__codelineno-0-613"></a><a href="#__codelineno-0-613"><span class="linenos" data-linenos="613 "></span></a>            <span class="n">FEATURE_VERSION_COL</span><span class="p">:</span> <span class="n">feature_version</span><span class="p">,</span>
+</span><span id="__span-0-614"><a id="__codelineno-0-614" name="__codelineno-0-614"></a><a href="#__codelineno-0-614"><span class="linenos" data-linenos="614 "></span></a>            <span class="n">FEATURE_TRACKING_VERSION_COL</span><span class="p">:</span> <span class="n">definition_version</span><span class="p">,</span>
+</span><span id="__span-0-615"><a id="__codelineno-0-615" name="__codelineno-0-615"></a><a href="#__codelineno-0-615"><span class="linenos" data-linenos="615 "></span></a>            <span class="s2">&quot;feature_class_path&quot;</span><span class="p">:</span> <span class="n">class_path</span><span class="p">,</span>
+</span><span id="__span-0-616"><a id="__codelineno-0-616" name="__codelineno-0-616"></a><a href="#__codelineno-0-616"><span class="linenos" data-linenos="616 "></span></a>            <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="n">project</span><span class="p">,</span>
+</span><span id="__span-0-617"><a id="__codelineno-0-617" name="__codelineno-0-617"></a><a href="#__codelineno-0-617"><span class="linenos" data-linenos="617 "></span></a>        <span class="p">}</span>
+</span><span id="__span-0-618"><a id="__codelineno-0-618" name="__codelineno-0-618"></a><a href="#__codelineno-0-618"><span class="linenos" data-linenos="618 "></span></a>
+</span><span id="__span-0-619"><a id="__codelineno-0-619" name="__codelineno-0-619"></a><a href="#__codelineno-0-619"><span class="linenos" data-linenos="619 "></span></a>    <span class="k">return</span> <span class="n">snapshot</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -5651,60 +5666,60 @@ needed for operations like migrations and comparisons.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/feature.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-620"><a id="__codelineno-0-620" name="__codelineno-0-620"></a><a href="#__codelineno-0-620"><span class="linenos" data-linenos="620 "></span></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-621"><a id="__codelineno-0-621" name="__codelineno-0-621"></a><a href="#__codelineno-0-621"><span class="linenos" data-linenos="621 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">from_snapshot</span><span class="p">(</span>
-</span><span id="__span-0-622"><a id="__codelineno-0-622" name="__codelineno-0-622"></a><a href="#__codelineno-0-622"><span class="linenos" data-linenos="622 "></span></a>    <span class="bp">cls</span><span class="p">,</span>
-</span><span id="__span-0-623"><a id="__codelineno-0-623" name="__codelineno-0-623"></a><a href="#__codelineno-0-623"><span class="linenos" data-linenos="623 "></span></a>    <span class="n">snapshot_data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
-</span><span id="__span-0-624"><a id="__codelineno-0-624" name="__codelineno-0-624"></a><a href="#__codelineno-0-624"><span class="linenos" data-linenos="624 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FeatureGraph&quot;</span><span class="p">:</span>
-</span><span id="__span-0-625"><a id="__codelineno-0-625" name="__codelineno-0-625"></a><a href="#__codelineno-0-625"><span class="linenos" data-linenos="625 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct graph from snapshot by creating FeatureDefinition objects.</span>
-</span><span id="__span-0-626"><a id="__codelineno-0-626" name="__codelineno-0-626"></a><a href="#__codelineno-0-626"><span class="linenos" data-linenos="626 "></span></a>
-</span><span id="__span-0-627"><a id="__codelineno-0-627" name="__codelineno-0-627"></a><a href="#__codelineno-0-627"><span class="linenos" data-linenos="627 "></span></a><span class="sd">    This method creates FeatureDefinition objects directly from the snapshot data</span>
-</span><span id="__span-0-628"><a id="__codelineno-0-628" name="__codelineno-0-628"></a><a href="#__codelineno-0-628"><span class="linenos" data-linenos="628 "></span></a><span class="sd">    without any dynamic imports. The resulting graph contains all feature metadata</span>
-</span><span id="__span-0-629"><a id="__codelineno-0-629" name="__codelineno-0-629"></a><a href="#__codelineno-0-629"><span class="linenos" data-linenos="629 "></span></a><span class="sd">    needed for operations like migrations and comparisons.</span>
-</span><span id="__span-0-630"><a id="__codelineno-0-630" name="__codelineno-0-630"></a><a href="#__codelineno-0-630"><span class="linenos" data-linenos="630 "></span></a>
-</span><span id="__span-0-631"><a id="__codelineno-0-631" name="__codelineno-0-631"></a><a href="#__codelineno-0-631"><span class="linenos" data-linenos="631 "></span></a><span class="sd">    Args:</span>
-</span><span id="__span-0-632"><a id="__codelineno-0-632" name="__codelineno-0-632"></a><a href="#__codelineno-0-632"><span class="linenos" data-linenos="632 "></span></a><span class="sd">        snapshot_data: Dict of feature_key -&gt; dict containing all required fields:</span>
-</span><span id="__span-0-633"><a id="__codelineno-0-633" name="__codelineno-0-633"></a><a href="#__codelineno-0-633"><span class="linenos" data-linenos="633 "></span></a><span class="sd">            - feature_spec (dict): The feature specification</span>
-</span><span id="__span-0-634"><a id="__codelineno-0-634" name="__codelineno-0-634"></a><a href="#__codelineno-0-634"><span class="linenos" data-linenos="634 "></span></a><span class="sd">            - feature_schema (dict): The JSON schema for the feature</span>
-</span><span id="__span-0-635"><a id="__codelineno-0-635" name="__codelineno-0-635"></a><a href="#__codelineno-0-635"><span class="linenos" data-linenos="635 "></span></a><span class="sd">            - feature_class_path (str): The import path of the feature class</span>
-</span><span id="__span-0-636"><a id="__codelineno-0-636" name="__codelineno-0-636"></a><a href="#__codelineno-0-636"><span class="linenos" data-linenos="636 "></span></a><span class="sd">            - project (str): The project name</span>
-</span><span id="__span-0-637"><a id="__codelineno-0-637" name="__codelineno-0-637"></a><a href="#__codelineno-0-637"><span class="linenos" data-linenos="637 "></span></a>
-</span><span id="__span-0-638"><a id="__codelineno-0-638" name="__codelineno-0-638"></a><a href="#__codelineno-0-638"><span class="linenos" data-linenos="638 "></span></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-639"><a id="__codelineno-0-639" name="__codelineno-0-639"></a><a href="#__codelineno-0-639"><span class="linenos" data-linenos="639 "></span></a><span class="sd">        New FeatureGraph with FeatureDefinition objects</span>
-</span><span id="__span-0-640"><a id="__codelineno-0-640" name="__codelineno-0-640"></a><a href="#__codelineno-0-640"><span class="linenos" data-linenos="640 "></span></a>
-</span><span id="__span-0-641"><a id="__codelineno-0-641" name="__codelineno-0-641"></a><a href="#__codelineno-0-641"><span class="linenos" data-linenos="641 "></span></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-642"><a id="__codelineno-0-642" name="__codelineno-0-642"></a><a href="#__codelineno-0-642"><span class="linenos" data-linenos="642 "></span></a><span class="sd">        KeyError: If required fields are missing from snapshot data</span>
-</span><span id="__span-0-643"><a id="__codelineno-0-643" name="__codelineno-0-643"></a><a href="#__codelineno-0-643"><span class="linenos" data-linenos="643 "></span></a>
-</span><span id="__span-0-644"><a id="__codelineno-0-644" name="__codelineno-0-644"></a><a href="#__codelineno-0-644"><span class="linenos" data-linenos="644 "></span></a><span class="sd">    Example:</span>
-</span><span id="__span-0-645"><a id="__codelineno-0-645" name="__codelineno-0-645"></a><a href="#__codelineno-0-645"><span class="linenos" data-linenos="645 "></span></a><span class="sd">        ```py</span>
-</span><span id="__span-0-646"><a id="__codelineno-0-646" name="__codelineno-0-646"></a><a href="#__codelineno-0-646"><span class="linenos" data-linenos="646 "></span></a><span class="sd">        snapshot_data = {}  # Loaded from metadata store</span>
-</span><span id="__span-0-647"><a id="__codelineno-0-647" name="__codelineno-0-647"></a><a href="#__codelineno-0-647"><span class="linenos" data-linenos="647 "></span></a><span class="sd">        # Load snapshot from metadata store</span>
-</span><span id="__span-0-648"><a id="__codelineno-0-648" name="__codelineno-0-648"></a><a href="#__codelineno-0-648"><span class="linenos" data-linenos="648 "></span></a><span class="sd">        historical_graph = FeatureGraph.from_snapshot(snapshot_data)</span>
-</span><span id="__span-0-649"><a id="__codelineno-0-649" name="__codelineno-0-649"></a><a href="#__codelineno-0-649"><span class="linenos" data-linenos="649 "></span></a><span class="sd">        ```</span>
-</span><span id="__span-0-650"><a id="__codelineno-0-650" name="__codelineno-0-650"></a><a href="#__codelineno-0-650"><span class="linenos" data-linenos="650 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-651"><a id="__codelineno-0-651" name="__codelineno-0-651"></a><a href="#__codelineno-0-651"><span class="linenos" data-linenos="651 "></span></a>    <span class="n">graph</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
-</span><span id="__span-0-652"><a id="__codelineno-0-652" name="__codelineno-0-652"></a><a href="#__codelineno-0-652"><span class="linenos" data-linenos="652 "></span></a>
-</span><span id="__span-0-653"><a id="__codelineno-0-653" name="__codelineno-0-653"></a><a href="#__codelineno-0-653"><span class="linenos" data-linenos="653 "></span></a>    <span class="n">required_fields</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;feature_spec&quot;</span><span class="p">,</span> <span class="s2">&quot;feature_schema&quot;</span><span class="p">,</span> <span class="s2">&quot;feature_class_path&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">)</span>
-</span><span id="__span-0-654"><a id="__codelineno-0-654" name="__codelineno-0-654"></a><a href="#__codelineno-0-654"><span class="linenos" data-linenos="654 "></span></a>
-</span><span id="__span-0-655"><a id="__codelineno-0-655" name="__codelineno-0-655"></a><a href="#__codelineno-0-655"><span class="linenos" data-linenos="655 "></span></a>    <span class="k">for</span> <span class="n">feature_key_str</span><span class="p">,</span> <span class="n">feature_data</span> <span class="ow">in</span> <span class="n">snapshot_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-</span><span id="__span-0-656"><a id="__codelineno-0-656" name="__codelineno-0-656"></a><a href="#__codelineno-0-656"><span class="linenos" data-linenos="656 "></span></a>        <span class="c1"># Validate all required fields are present</span>
-</span><span id="__span-0-657"><a id="__codelineno-0-657" name="__codelineno-0-657"></a><a href="#__codelineno-0-657"><span class="linenos" data-linenos="657 "></span></a>        <span class="n">missing_fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">required_fields</span> <span class="k">if</span> <span class="n">f</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">feature_data</span><span class="p">]</span>
-</span><span id="__span-0-658"><a id="__codelineno-0-658" name="__codelineno-0-658"></a><a href="#__codelineno-0-658"><span class="linenos" data-linenos="658 "></span></a>        <span class="k">if</span> <span class="n">missing_fields</span><span class="p">:</span>
-</span><span id="__span-0-659"><a id="__codelineno-0-659" name="__codelineno-0-659"></a><a href="#__codelineno-0-659"><span class="linenos" data-linenos="659 "></span></a>            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-</span><span id="__span-0-660"><a id="__codelineno-0-660" name="__codelineno-0-660"></a><a href="#__codelineno-0-660"><span class="linenos" data-linenos="660 "></span></a>                <span class="sa">f</span><span class="s2">&quot;Feature &#39;</span><span class="si">{</span><span class="n">feature_key_str</span><span class="si">}</span><span class="s2">&#39; snapshot is missing required fields: </span><span class="si">{</span><span class="n">missing_fields</span><span class="si">}</span><span class="s2">. &quot;</span>
-</span><span id="__span-0-661"><a id="__codelineno-0-661" name="__codelineno-0-661"></a><a href="#__codelineno-0-661"><span class="linenos" data-linenos="661 "></span></a>                <span class="sa">f</span><span class="s2">&quot;All snapshots must include: </span><span class="si">{</span><span class="n">required_fields</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="__span-0-662"><a id="__codelineno-0-662" name="__codelineno-0-662"></a><a href="#__codelineno-0-662"><span class="linenos" data-linenos="662 "></span></a>            <span class="p">)</span>
-</span><span id="__span-0-663"><a id="__codelineno-0-663" name="__codelineno-0-663"></a><a href="#__codelineno-0-663"><span class="linenos" data-linenos="663 "></span></a>
-</span><span id="__span-0-664"><a id="__codelineno-0-664" name="__codelineno-0-664"></a><a href="#__codelineno-0-664"><span class="linenos" data-linenos="664 "></span></a>        <span class="n">definition</span> <span class="o">=</span> <span class="n">FeatureDefinition</span><span class="o">.</span><span class="n">from_stored_data</span><span class="p">(</span>
-</span><span id="__span-0-665"><a id="__codelineno-0-665" name="__codelineno-0-665"></a><a href="#__codelineno-0-665"><span class="linenos" data-linenos="665 "></span></a>            <span class="n">feature_spec</span><span class="o">=</span><span class="n">feature_data</span><span class="p">[</span><span class="s2">&quot;feature_spec&quot;</span><span class="p">],</span>
-</span><span id="__span-0-666"><a id="__codelineno-0-666" name="__codelineno-0-666"></a><a href="#__codelineno-0-666"><span class="linenos" data-linenos="666 "></span></a>            <span class="n">feature_schema</span><span class="o">=</span><span class="n">feature_data</span><span class="p">[</span><span class="s2">&quot;feature_schema&quot;</span><span class="p">],</span>
-</span><span id="__span-0-667"><a id="__codelineno-0-667" name="__codelineno-0-667"></a><a href="#__codelineno-0-667"><span class="linenos" data-linenos="667 "></span></a>            <span class="n">feature_class_path</span><span class="o">=</span><span class="n">feature_data</span><span class="p">[</span><span class="s2">&quot;feature_class_path&quot;</span><span class="p">],</span>
-</span><span id="__span-0-668"><a id="__codelineno-0-668" name="__codelineno-0-668"></a><a href="#__codelineno-0-668"><span class="linenos" data-linenos="668 "></span></a>            <span class="n">project</span><span class="o">=</span><span class="n">feature_data</span><span class="p">[</span><span class="s2">&quot;project&quot;</span><span class="p">],</span>
-</span><span id="__span-0-669"><a id="__codelineno-0-669" name="__codelineno-0-669"></a><a href="#__codelineno-0-669"><span class="linenos" data-linenos="669 "></span></a>            <span class="n">source</span><span class="o">=</span><span class="s2">&quot;snapshot&quot;</span><span class="p">,</span>
-</span><span id="__span-0-670"><a id="__codelineno-0-670" name="__codelineno-0-670"></a><a href="#__codelineno-0-670"><span class="linenos" data-linenos="670 "></span></a>        <span class="p">)</span>
-</span><span id="__span-0-671"><a id="__codelineno-0-671" name="__codelineno-0-671"></a><a href="#__codelineno-0-671"><span class="linenos" data-linenos="671 "></span></a>        <span class="n">graph</span><span class="o">.</span><span class="n">add_feature_definition</span><span class="p">(</span><span class="n">definition</span><span class="p">)</span>
-</span><span id="__span-0-672"><a id="__codelineno-0-672" name="__codelineno-0-672"></a><a href="#__codelineno-0-672"><span class="linenos" data-linenos="672 "></span></a>
-</span><span id="__span-0-673"><a id="__codelineno-0-673" name="__codelineno-0-673"></a><a href="#__codelineno-0-673"><span class="linenos" data-linenos="673 "></span></a>    <span class="k">return</span> <span class="n">graph</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-621"><a id="__codelineno-0-621" name="__codelineno-0-621"></a><a href="#__codelineno-0-621"><span class="linenos" data-linenos="621 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-622"><a id="__codelineno-0-622" name="__codelineno-0-622"></a><a href="#__codelineno-0-622"><span class="linenos" data-linenos="622 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">from_snapshot</span><span class="p">(</span>
+</span><span id="__span-0-623"><a id="__codelineno-0-623" name="__codelineno-0-623"></a><a href="#__codelineno-0-623"><span class="linenos" data-linenos="623 "></span></a>    <span class="bp">cls</span><span class="p">,</span>
+</span><span id="__span-0-624"><a id="__codelineno-0-624" name="__codelineno-0-624"></a><a href="#__codelineno-0-624"><span class="linenos" data-linenos="624 "></span></a>    <span class="n">snapshot_data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+</span><span id="__span-0-625"><a id="__codelineno-0-625" name="__codelineno-0-625"></a><a href="#__codelineno-0-625"><span class="linenos" data-linenos="625 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FeatureGraph&quot;</span><span class="p">:</span>
+</span><span id="__span-0-626"><a id="__codelineno-0-626" name="__codelineno-0-626"></a><a href="#__codelineno-0-626"><span class="linenos" data-linenos="626 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct graph from snapshot by creating FeatureDefinition objects.</span>
+</span><span id="__span-0-627"><a id="__codelineno-0-627" name="__codelineno-0-627"></a><a href="#__codelineno-0-627"><span class="linenos" data-linenos="627 "></span></a>
+</span><span id="__span-0-628"><a id="__codelineno-0-628" name="__codelineno-0-628"></a><a href="#__codelineno-0-628"><span class="linenos" data-linenos="628 "></span></a><span class="sd">    This method creates FeatureDefinition objects directly from the snapshot data</span>
+</span><span id="__span-0-629"><a id="__codelineno-0-629" name="__codelineno-0-629"></a><a href="#__codelineno-0-629"><span class="linenos" data-linenos="629 "></span></a><span class="sd">    without any dynamic imports. The resulting graph contains all feature metadata</span>
+</span><span id="__span-0-630"><a id="__codelineno-0-630" name="__codelineno-0-630"></a><a href="#__codelineno-0-630"><span class="linenos" data-linenos="630 "></span></a><span class="sd">    needed for operations like migrations and comparisons.</span>
+</span><span id="__span-0-631"><a id="__codelineno-0-631" name="__codelineno-0-631"></a><a href="#__codelineno-0-631"><span class="linenos" data-linenos="631 "></span></a>
+</span><span id="__span-0-632"><a id="__codelineno-0-632" name="__codelineno-0-632"></a><a href="#__codelineno-0-632"><span class="linenos" data-linenos="632 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-633"><a id="__codelineno-0-633" name="__codelineno-0-633"></a><a href="#__codelineno-0-633"><span class="linenos" data-linenos="633 "></span></a><span class="sd">        snapshot_data: Dict of feature_key -&gt; dict containing all required fields:</span>
+</span><span id="__span-0-634"><a id="__codelineno-0-634" name="__codelineno-0-634"></a><a href="#__codelineno-0-634"><span class="linenos" data-linenos="634 "></span></a><span class="sd">            - feature_spec (dict): The feature specification</span>
+</span><span id="__span-0-635"><a id="__codelineno-0-635" name="__codelineno-0-635"></a><a href="#__codelineno-0-635"><span class="linenos" data-linenos="635 "></span></a><span class="sd">            - feature_schema (dict): The JSON schema for the feature</span>
+</span><span id="__span-0-636"><a id="__codelineno-0-636" name="__codelineno-0-636"></a><a href="#__codelineno-0-636"><span class="linenos" data-linenos="636 "></span></a><span class="sd">            - feature_class_path (str): The import path of the feature class</span>
+</span><span id="__span-0-637"><a id="__codelineno-0-637" name="__codelineno-0-637"></a><a href="#__codelineno-0-637"><span class="linenos" data-linenos="637 "></span></a><span class="sd">            - project (str): The project name</span>
+</span><span id="__span-0-638"><a id="__codelineno-0-638" name="__codelineno-0-638"></a><a href="#__codelineno-0-638"><span class="linenos" data-linenos="638 "></span></a>
+</span><span id="__span-0-639"><a id="__codelineno-0-639" name="__codelineno-0-639"></a><a href="#__codelineno-0-639"><span class="linenos" data-linenos="639 "></span></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-640"><a id="__codelineno-0-640" name="__codelineno-0-640"></a><a href="#__codelineno-0-640"><span class="linenos" data-linenos="640 "></span></a><span class="sd">        New FeatureGraph with FeatureDefinition objects</span>
+</span><span id="__span-0-641"><a id="__codelineno-0-641" name="__codelineno-0-641"></a><a href="#__codelineno-0-641"><span class="linenos" data-linenos="641 "></span></a>
+</span><span id="__span-0-642"><a id="__codelineno-0-642" name="__codelineno-0-642"></a><a href="#__codelineno-0-642"><span class="linenos" data-linenos="642 "></span></a><span class="sd">    Raises:</span>
+</span><span id="__span-0-643"><a id="__codelineno-0-643" name="__codelineno-0-643"></a><a href="#__codelineno-0-643"><span class="linenos" data-linenos="643 "></span></a><span class="sd">        KeyError: If required fields are missing from snapshot data</span>
+</span><span id="__span-0-644"><a id="__codelineno-0-644" name="__codelineno-0-644"></a><a href="#__codelineno-0-644"><span class="linenos" data-linenos="644 "></span></a>
+</span><span id="__span-0-645"><a id="__codelineno-0-645" name="__codelineno-0-645"></a><a href="#__codelineno-0-645"><span class="linenos" data-linenos="645 "></span></a><span class="sd">    Example:</span>
+</span><span id="__span-0-646"><a id="__codelineno-0-646" name="__codelineno-0-646"></a><a href="#__codelineno-0-646"><span class="linenos" data-linenos="646 "></span></a><span class="sd">        ```py</span>
+</span><span id="__span-0-647"><a id="__codelineno-0-647" name="__codelineno-0-647"></a><a href="#__codelineno-0-647"><span class="linenos" data-linenos="647 "></span></a><span class="sd">        snapshot_data = {}  # Loaded from metadata store</span>
+</span><span id="__span-0-648"><a id="__codelineno-0-648" name="__codelineno-0-648"></a><a href="#__codelineno-0-648"><span class="linenos" data-linenos="648 "></span></a><span class="sd">        # Load snapshot from metadata store</span>
+</span><span id="__span-0-649"><a id="__codelineno-0-649" name="__codelineno-0-649"></a><a href="#__codelineno-0-649"><span class="linenos" data-linenos="649 "></span></a><span class="sd">        historical_graph = FeatureGraph.from_snapshot(snapshot_data)</span>
+</span><span id="__span-0-650"><a id="__codelineno-0-650" name="__codelineno-0-650"></a><a href="#__codelineno-0-650"><span class="linenos" data-linenos="650 "></span></a><span class="sd">        ```</span>
+</span><span id="__span-0-651"><a id="__codelineno-0-651" name="__codelineno-0-651"></a><a href="#__codelineno-0-651"><span class="linenos" data-linenos="651 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-652"><a id="__codelineno-0-652" name="__codelineno-0-652"></a><a href="#__codelineno-0-652"><span class="linenos" data-linenos="652 "></span></a>    <span class="n">graph</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+</span><span id="__span-0-653"><a id="__codelineno-0-653" name="__codelineno-0-653"></a><a href="#__codelineno-0-653"><span class="linenos" data-linenos="653 "></span></a>
+</span><span id="__span-0-654"><a id="__codelineno-0-654" name="__codelineno-0-654"></a><a href="#__codelineno-0-654"><span class="linenos" data-linenos="654 "></span></a>    <span class="n">required_fields</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;feature_spec&quot;</span><span class="p">,</span> <span class="s2">&quot;feature_schema&quot;</span><span class="p">,</span> <span class="s2">&quot;feature_class_path&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">)</span>
+</span><span id="__span-0-655"><a id="__codelineno-0-655" name="__codelineno-0-655"></a><a href="#__codelineno-0-655"><span class="linenos" data-linenos="655 "></span></a>
+</span><span id="__span-0-656"><a id="__codelineno-0-656" name="__codelineno-0-656"></a><a href="#__codelineno-0-656"><span class="linenos" data-linenos="656 "></span></a>    <span class="k">for</span> <span class="n">feature_key_str</span><span class="p">,</span> <span class="n">feature_data</span> <span class="ow">in</span> <span class="n">snapshot_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span id="__span-0-657"><a id="__codelineno-0-657" name="__codelineno-0-657"></a><a href="#__codelineno-0-657"><span class="linenos" data-linenos="657 "></span></a>        <span class="c1"># Validate all required fields are present</span>
+</span><span id="__span-0-658"><a id="__codelineno-0-658" name="__codelineno-0-658"></a><a href="#__codelineno-0-658"><span class="linenos" data-linenos="658 "></span></a>        <span class="n">missing_fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">required_fields</span> <span class="k">if</span> <span class="n">f</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">feature_data</span><span class="p">]</span>
+</span><span id="__span-0-659"><a id="__codelineno-0-659" name="__codelineno-0-659"></a><a href="#__codelineno-0-659"><span class="linenos" data-linenos="659 "></span></a>        <span class="k">if</span> <span class="n">missing_fields</span><span class="p">:</span>
+</span><span id="__span-0-660"><a id="__codelineno-0-660" name="__codelineno-0-660"></a><a href="#__codelineno-0-660"><span class="linenos" data-linenos="660 "></span></a>            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+</span><span id="__span-0-661"><a id="__codelineno-0-661" name="__codelineno-0-661"></a><a href="#__codelineno-0-661"><span class="linenos" data-linenos="661 "></span></a>                <span class="sa">f</span><span class="s2">&quot;Feature &#39;</span><span class="si">{</span><span class="n">feature_key_str</span><span class="si">}</span><span class="s2">&#39; snapshot is missing required fields: </span><span class="si">{</span><span class="n">missing_fields</span><span class="si">}</span><span class="s2">. &quot;</span>
+</span><span id="__span-0-662"><a id="__codelineno-0-662" name="__codelineno-0-662"></a><a href="#__codelineno-0-662"><span class="linenos" data-linenos="662 "></span></a>                <span class="sa">f</span><span class="s2">&quot;All snapshots must include: </span><span class="si">{</span><span class="n">required_fields</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-663"><a id="__codelineno-0-663" name="__codelineno-0-663"></a><a href="#__codelineno-0-663"><span class="linenos" data-linenos="663 "></span></a>            <span class="p">)</span>
+</span><span id="__span-0-664"><a id="__codelineno-0-664" name="__codelineno-0-664"></a><a href="#__codelineno-0-664"><span class="linenos" data-linenos="664 "></span></a>
+</span><span id="__span-0-665"><a id="__codelineno-0-665" name="__codelineno-0-665"></a><a href="#__codelineno-0-665"><span class="linenos" data-linenos="665 "></span></a>        <span class="n">definition</span> <span class="o">=</span> <span class="n">FeatureDefinition</span><span class="o">.</span><span class="n">from_stored_data</span><span class="p">(</span>
+</span><span id="__span-0-666"><a id="__codelineno-0-666" name="__codelineno-0-666"></a><a href="#__codelineno-0-666"><span class="linenos" data-linenos="666 "></span></a>            <span class="n">feature_spec</span><span class="o">=</span><span class="n">feature_data</span><span class="p">[</span><span class="s2">&quot;feature_spec&quot;</span><span class="p">],</span>
+</span><span id="__span-0-667"><a id="__codelineno-0-667" name="__codelineno-0-667"></a><a href="#__codelineno-0-667"><span class="linenos" data-linenos="667 "></span></a>            <span class="n">feature_schema</span><span class="o">=</span><span class="n">feature_data</span><span class="p">[</span><span class="s2">&quot;feature_schema&quot;</span><span class="p">],</span>
+</span><span id="__span-0-668"><a id="__codelineno-0-668" name="__codelineno-0-668"></a><a href="#__codelineno-0-668"><span class="linenos" data-linenos="668 "></span></a>            <span class="n">feature_class_path</span><span class="o">=</span><span class="n">feature_data</span><span class="p">[</span><span class="s2">&quot;feature_class_path&quot;</span><span class="p">],</span>
+</span><span id="__span-0-669"><a id="__codelineno-0-669" name="__codelineno-0-669"></a><a href="#__codelineno-0-669"><span class="linenos" data-linenos="669 "></span></a>            <span class="n">project</span><span class="o">=</span><span class="n">feature_data</span><span class="p">[</span><span class="s2">&quot;project&quot;</span><span class="p">],</span>
+</span><span id="__span-0-670"><a id="__codelineno-0-670" name="__codelineno-0-670"></a><a href="#__codelineno-0-670"><span class="linenos" data-linenos="670 "></span></a>            <span class="n">source</span><span class="o">=</span><span class="s2">&quot;snapshot&quot;</span><span class="p">,</span>
+</span><span id="__span-0-671"><a id="__codelineno-0-671" name="__codelineno-0-671"></a><a href="#__codelineno-0-671"><span class="linenos" data-linenos="671 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-672"><a id="__codelineno-0-672" name="__codelineno-0-672"></a><a href="#__codelineno-0-672"><span class="linenos" data-linenos="672 "></span></a>        <span class="n">graph</span><span class="o">.</span><span class="n">add_feature_definition</span><span class="p">(</span><span class="n">definition</span><span class="p">)</span>
+</span><span id="__span-0-673"><a id="__codelineno-0-673" name="__codelineno-0-673"></a><a href="#__codelineno-0-673"><span class="linenos" data-linenos="673 "></span></a>
+</span><span id="__span-0-674"><a id="__codelineno-0-674" name="__codelineno-0-674"></a><a href="#__codelineno-0-674"><span class="linenos" data-linenos="674 "></span></a>    <span class="k">return</span> <span class="n">graph</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -5753,22 +5768,22 @@ the default global graph.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/feature.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-675"><a id="__codelineno-0-675" name="__codelineno-0-675"></a><a href="#__codelineno-0-675"><span class="linenos" data-linenos="675 "></span></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-676"><a id="__codelineno-0-676" name="__codelineno-0-676"></a><a href="#__codelineno-0-676"><span class="linenos" data-linenos="676 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">get_active</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FeatureGraph&quot;</span><span class="p">:</span>
-</span><span id="__span-0-677"><a id="__codelineno-0-677" name="__codelineno-0-677"></a><a href="#__codelineno-0-677"><span class="linenos" data-linenos="677 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the currently active graph.</span>
-</span><span id="__span-0-678"><a id="__codelineno-0-678" name="__codelineno-0-678"></a><a href="#__codelineno-0-678"><span class="linenos" data-linenos="678 "></span></a>
-</span><span id="__span-0-679"><a id="__codelineno-0-679" name="__codelineno-0-679"></a><a href="#__codelineno-0-679"><span class="linenos" data-linenos="679 "></span></a><span class="sd">    Returns the graph from the context variable if set, otherwise returns</span>
-</span><span id="__span-0-680"><a id="__codelineno-0-680" name="__codelineno-0-680"></a><a href="#__codelineno-0-680"><span class="linenos" data-linenos="680 "></span></a><span class="sd">    the default global graph.</span>
-</span><span id="__span-0-681"><a id="__codelineno-0-681" name="__codelineno-0-681"></a><a href="#__codelineno-0-681"><span class="linenos" data-linenos="681 "></span></a>
-</span><span id="__span-0-682"><a id="__codelineno-0-682" name="__codelineno-0-682"></a><a href="#__codelineno-0-682"><span class="linenos" data-linenos="682 "></span></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-683"><a id="__codelineno-0-683" name="__codelineno-0-683"></a><a href="#__codelineno-0-683"><span class="linenos" data-linenos="683 "></span></a><span class="sd">        Active FeatureGraph instance</span>
-</span><span id="__span-0-684"><a id="__codelineno-0-684" name="__codelineno-0-684"></a><a href="#__codelineno-0-684"><span class="linenos" data-linenos="684 "></span></a>
-</span><span id="__span-0-685"><a id="__codelineno-0-685" name="__codelineno-0-685"></a><a href="#__codelineno-0-685"><span class="linenos" data-linenos="685 "></span></a><span class="sd">    Example:</span>
-</span><span id="__span-0-686"><a id="__codelineno-0-686" name="__codelineno-0-686"></a><a href="#__codelineno-0-686"><span class="linenos" data-linenos="686 "></span></a><span class="sd">        ```py</span>
-</span><span id="__span-0-687"><a id="__codelineno-0-687" name="__codelineno-0-687"></a><a href="#__codelineno-0-687"><span class="linenos" data-linenos="687 "></span></a><span class="sd">        graph = mx.FeatureGraph.get_active()</span>
-</span><span id="__span-0-688"><a id="__codelineno-0-688" name="__codelineno-0-688"></a><a href="#__codelineno-0-688"><span class="linenos" data-linenos="688 "></span></a><span class="sd">        ```</span>
-</span><span id="__span-0-689"><a id="__codelineno-0-689" name="__codelineno-0-689"></a><a href="#__codelineno-0-689"><span class="linenos" data-linenos="689 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-690"><a id="__codelineno-0-690" name="__codelineno-0-690"></a><a href="#__codelineno-0-690"><span class="linenos" data-linenos="690 "></span></a>    <span class="k">return</span> <span class="n">_active_graph</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="ow">or</span> <span class="n">graph</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-676"><a id="__codelineno-0-676" name="__codelineno-0-676"></a><a href="#__codelineno-0-676"><span class="linenos" data-linenos="676 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-677"><a id="__codelineno-0-677" name="__codelineno-0-677"></a><a href="#__codelineno-0-677"><span class="linenos" data-linenos="677 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">get_active</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FeatureGraph&quot;</span><span class="p">:</span>
+</span><span id="__span-0-678"><a id="__codelineno-0-678" name="__codelineno-0-678"></a><a href="#__codelineno-0-678"><span class="linenos" data-linenos="678 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the currently active graph.</span>
+</span><span id="__span-0-679"><a id="__codelineno-0-679" name="__codelineno-0-679"></a><a href="#__codelineno-0-679"><span class="linenos" data-linenos="679 "></span></a>
+</span><span id="__span-0-680"><a id="__codelineno-0-680" name="__codelineno-0-680"></a><a href="#__codelineno-0-680"><span class="linenos" data-linenos="680 "></span></a><span class="sd">    Returns the graph from the context variable if set, otherwise returns</span>
+</span><span id="__span-0-681"><a id="__codelineno-0-681" name="__codelineno-0-681"></a><a href="#__codelineno-0-681"><span class="linenos" data-linenos="681 "></span></a><span class="sd">    the default global graph.</span>
+</span><span id="__span-0-682"><a id="__codelineno-0-682" name="__codelineno-0-682"></a><a href="#__codelineno-0-682"><span class="linenos" data-linenos="682 "></span></a>
+</span><span id="__span-0-683"><a id="__codelineno-0-683" name="__codelineno-0-683"></a><a href="#__codelineno-0-683"><span class="linenos" data-linenos="683 "></span></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-684"><a id="__codelineno-0-684" name="__codelineno-0-684"></a><a href="#__codelineno-0-684"><span class="linenos" data-linenos="684 "></span></a><span class="sd">        Active FeatureGraph instance</span>
+</span><span id="__span-0-685"><a id="__codelineno-0-685" name="__codelineno-0-685"></a><a href="#__codelineno-0-685"><span class="linenos" data-linenos="685 "></span></a>
+</span><span id="__span-0-686"><a id="__codelineno-0-686" name="__codelineno-0-686"></a><a href="#__codelineno-0-686"><span class="linenos" data-linenos="686 "></span></a><span class="sd">    Example:</span>
+</span><span id="__span-0-687"><a id="__codelineno-0-687" name="__codelineno-0-687"></a><a href="#__codelineno-0-687"><span class="linenos" data-linenos="687 "></span></a><span class="sd">        ```py</span>
+</span><span id="__span-0-688"><a id="__codelineno-0-688" name="__codelineno-0-688"></a><a href="#__codelineno-0-688"><span class="linenos" data-linenos="688 "></span></a><span class="sd">        graph = mx.FeatureGraph.get_active()</span>
+</span><span id="__span-0-689"><a id="__codelineno-0-689" name="__codelineno-0-689"></a><a href="#__codelineno-0-689"><span class="linenos" data-linenos="689 "></span></a><span class="sd">        ```</span>
+</span><span id="__span-0-690"><a id="__codelineno-0-690" name="__codelineno-0-690"></a><a href="#__codelineno-0-690"><span class="linenos" data-linenos="690 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-691"><a id="__codelineno-0-691" name="__codelineno-0-691"></a><a href="#__codelineno-0-691"><span class="linenos" data-linenos="691 "></span></a>    <span class="k">return</span> <span class="n">_active_graph</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="ow">or</span> <span class="n">graph</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -5820,24 +5835,24 @@ Typically used in application setup code or test fixtures.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/feature.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-692"><a id="__codelineno-0-692" name="__codelineno-0-692"></a><a href="#__codelineno-0-692"><span class="linenos" data-linenos="692 "></span></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-693"><a id="__codelineno-0-693" name="__codelineno-0-693"></a><a href="#__codelineno-0-693"><span class="linenos" data-linenos="693 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">set_active</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">reg</span><span class="p">:</span> <span class="s2">&quot;FeatureGraph&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-694"><a id="__codelineno-0-694" name="__codelineno-0-694"></a><a href="#__codelineno-0-694"><span class="linenos" data-linenos="694 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the active graph for the current context.</span>
-</span><span id="__span-0-695"><a id="__codelineno-0-695" name="__codelineno-0-695"></a><a href="#__codelineno-0-695"><span class="linenos" data-linenos="695 "></span></a>
-</span><span id="__span-0-696"><a id="__codelineno-0-696" name="__codelineno-0-696"></a><a href="#__codelineno-0-696"><span class="linenos" data-linenos="696 "></span></a><span class="sd">    This sets the context variable that will be returned by get_active().</span>
-</span><span id="__span-0-697"><a id="__codelineno-0-697" name="__codelineno-0-697"></a><a href="#__codelineno-0-697"><span class="linenos" data-linenos="697 "></span></a><span class="sd">    Typically used in application setup code or test fixtures.</span>
-</span><span id="__span-0-698"><a id="__codelineno-0-698" name="__codelineno-0-698"></a><a href="#__codelineno-0-698"><span class="linenos" data-linenos="698 "></span></a>
-</span><span id="__span-0-699"><a id="__codelineno-0-699" name="__codelineno-0-699"></a><a href="#__codelineno-0-699"><span class="linenos" data-linenos="699 "></span></a><span class="sd">    Args:</span>
-</span><span id="__span-0-700"><a id="__codelineno-0-700" name="__codelineno-0-700"></a><a href="#__codelineno-0-700"><span class="linenos" data-linenos="700 "></span></a><span class="sd">        reg: FeatureGraph to activate</span>
-</span><span id="__span-0-701"><a id="__codelineno-0-701" name="__codelineno-0-701"></a><a href="#__codelineno-0-701"><span class="linenos" data-linenos="701 "></span></a>
-</span><span id="__span-0-702"><a id="__codelineno-0-702" name="__codelineno-0-702"></a><a href="#__codelineno-0-702"><span class="linenos" data-linenos="702 "></span></a><span class="sd">    Example:</span>
-</span><span id="__span-0-703"><a id="__codelineno-0-703" name="__codelineno-0-703"></a><a href="#__codelineno-0-703"><span class="linenos" data-linenos="703 "></span></a><span class="sd">        ```py</span>
-</span><span id="__span-0-704"><a id="__codelineno-0-704" name="__codelineno-0-704"></a><a href="#__codelineno-0-704"><span class="linenos" data-linenos="704 "></span></a><span class="sd">        my_graph = mx.FeatureGraph()</span>
-</span><span id="__span-0-705"><a id="__codelineno-0-705" name="__codelineno-0-705"></a><a href="#__codelineno-0-705"><span class="linenos" data-linenos="705 "></span></a><span class="sd">        mx.FeatureGraph.set_active(my_graph)</span>
-</span><span id="__span-0-706"><a id="__codelineno-0-706" name="__codelineno-0-706"></a><a href="#__codelineno-0-706"><span class="linenos" data-linenos="706 "></span></a><span class="sd">        mx.FeatureGraph.get_active()  # Returns my_graph</span>
-</span><span id="__span-0-707"><a id="__codelineno-0-707" name="__codelineno-0-707"></a><a href="#__codelineno-0-707"><span class="linenos" data-linenos="707 "></span></a><span class="sd">        ```</span>
-</span><span id="__span-0-708"><a id="__codelineno-0-708" name="__codelineno-0-708"></a><a href="#__codelineno-0-708"><span class="linenos" data-linenos="708 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-709"><a id="__codelineno-0-709" name="__codelineno-0-709"></a><a href="#__codelineno-0-709"><span class="linenos" data-linenos="709 "></span></a>    <span class="n">_active_graph</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-693"><a id="__codelineno-0-693" name="__codelineno-0-693"></a><a href="#__codelineno-0-693"><span class="linenos" data-linenos="693 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-694"><a id="__codelineno-0-694" name="__codelineno-0-694"></a><a href="#__codelineno-0-694"><span class="linenos" data-linenos="694 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">set_active</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">reg</span><span class="p">:</span> <span class="s2">&quot;FeatureGraph&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-695"><a id="__codelineno-0-695" name="__codelineno-0-695"></a><a href="#__codelineno-0-695"><span class="linenos" data-linenos="695 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the active graph for the current context.</span>
+</span><span id="__span-0-696"><a id="__codelineno-0-696" name="__codelineno-0-696"></a><a href="#__codelineno-0-696"><span class="linenos" data-linenos="696 "></span></a>
+</span><span id="__span-0-697"><a id="__codelineno-0-697" name="__codelineno-0-697"></a><a href="#__codelineno-0-697"><span class="linenos" data-linenos="697 "></span></a><span class="sd">    This sets the context variable that will be returned by get_active().</span>
+</span><span id="__span-0-698"><a id="__codelineno-0-698" name="__codelineno-0-698"></a><a href="#__codelineno-0-698"><span class="linenos" data-linenos="698 "></span></a><span class="sd">    Typically used in application setup code or test fixtures.</span>
+</span><span id="__span-0-699"><a id="__codelineno-0-699" name="__codelineno-0-699"></a><a href="#__codelineno-0-699"><span class="linenos" data-linenos="699 "></span></a>
+</span><span id="__span-0-700"><a id="__codelineno-0-700" name="__codelineno-0-700"></a><a href="#__codelineno-0-700"><span class="linenos" data-linenos="700 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-701"><a id="__codelineno-0-701" name="__codelineno-0-701"></a><a href="#__codelineno-0-701"><span class="linenos" data-linenos="701 "></span></a><span class="sd">        reg: FeatureGraph to activate</span>
+</span><span id="__span-0-702"><a id="__codelineno-0-702" name="__codelineno-0-702"></a><a href="#__codelineno-0-702"><span class="linenos" data-linenos="702 "></span></a>
+</span><span id="__span-0-703"><a id="__codelineno-0-703" name="__codelineno-0-703"></a><a href="#__codelineno-0-703"><span class="linenos" data-linenos="703 "></span></a><span class="sd">    Example:</span>
+</span><span id="__span-0-704"><a id="__codelineno-0-704" name="__codelineno-0-704"></a><a href="#__codelineno-0-704"><span class="linenos" data-linenos="704 "></span></a><span class="sd">        ```py</span>
+</span><span id="__span-0-705"><a id="__codelineno-0-705" name="__codelineno-0-705"></a><a href="#__codelineno-0-705"><span class="linenos" data-linenos="705 "></span></a><span class="sd">        my_graph = mx.FeatureGraph()</span>
+</span><span id="__span-0-706"><a id="__codelineno-0-706" name="__codelineno-0-706"></a><a href="#__codelineno-0-706"><span class="linenos" data-linenos="706 "></span></a><span class="sd">        mx.FeatureGraph.set_active(my_graph)</span>
+</span><span id="__span-0-707"><a id="__codelineno-0-707" name="__codelineno-0-707"></a><a href="#__codelineno-0-707"><span class="linenos" data-linenos="707 "></span></a><span class="sd">        mx.FeatureGraph.get_active()  # Returns my_graph</span>
+</span><span id="__span-0-708"><a id="__codelineno-0-708" name="__codelineno-0-708"></a><a href="#__codelineno-0-708"><span class="linenos" data-linenos="708 "></span></a><span class="sd">        ```</span>
+</span><span id="__span-0-709"><a id="__codelineno-0-709" name="__codelineno-0-709"></a><a href="#__codelineno-0-709"><span class="linenos" data-linenos="709 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-710"><a id="__codelineno-0-710" name="__codelineno-0-710"></a><a href="#__codelineno-0-710"><span class="linenos" data-linenos="710 "></span></a>    <span class="n">_active_graph</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -5885,29 +5900,29 @@ The graph is automatically restored when the context exits.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/feature.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-711"><a id="__codelineno-0-711" name="__codelineno-0-711"></a><a href="#__codelineno-0-711"><span class="linenos" data-linenos="711 "></span></a><span class="nd">@contextmanager</span>
-</span><span id="__span-0-712"><a id="__codelineno-0-712" name="__codelineno-0-712"></a><a href="#__codelineno-0-712"><span class="linenos" data-linenos="712 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">use</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Self</span><span class="p">]:</span>
-</span><span id="__span-0-713"><a id="__codelineno-0-713" name="__codelineno-0-713"></a><a href="#__codelineno-0-713"><span class="linenos" data-linenos="713 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager to temporarily use this graph as active.</span>
-</span><span id="__span-0-714"><a id="__codelineno-0-714" name="__codelineno-0-714"></a><a href="#__codelineno-0-714"><span class="linenos" data-linenos="714 "></span></a>
-</span><span id="__span-0-715"><a id="__codelineno-0-715" name="__codelineno-0-715"></a><a href="#__codelineno-0-715"><span class="linenos" data-linenos="715 "></span></a><span class="sd">    This is the recommended way to use custom registries, especially in tests.</span>
-</span><span id="__span-0-716"><a id="__codelineno-0-716" name="__codelineno-0-716"></a><a href="#__codelineno-0-716"><span class="linenos" data-linenos="716 "></span></a><span class="sd">    The graph is automatically restored when the context exits.</span>
-</span><span id="__span-0-717"><a id="__codelineno-0-717" name="__codelineno-0-717"></a><a href="#__codelineno-0-717"><span class="linenos" data-linenos="717 "></span></a>
-</span><span id="__span-0-718"><a id="__codelineno-0-718" name="__codelineno-0-718"></a><a href="#__codelineno-0-718"><span class="linenos" data-linenos="718 "></span></a><span class="sd">    Yields:</span>
-</span><span id="__span-0-719"><a id="__codelineno-0-719" name="__codelineno-0-719"></a><a href="#__codelineno-0-719"><span class="linenos" data-linenos="719 "></span></a><span class="sd">        FeatureGraph: This graph instance</span>
-</span><span id="__span-0-720"><a id="__codelineno-0-720" name="__codelineno-0-720"></a><a href="#__codelineno-0-720"><span class="linenos" data-linenos="720 "></span></a>
-</span><span id="__span-0-721"><a id="__codelineno-0-721" name="__codelineno-0-721"></a><a href="#__codelineno-0-721"><span class="linenos" data-linenos="721 "></span></a><span class="sd">    Example:</span>
-</span><span id="__span-0-722"><a id="__codelineno-0-722" name="__codelineno-0-722"></a><a href="#__codelineno-0-722"><span class="linenos" data-linenos="722 "></span></a><span class="sd">        ```py</span>
-</span><span id="__span-0-723"><a id="__codelineno-0-723" name="__codelineno-0-723"></a><a href="#__codelineno-0-723"><span class="linenos" data-linenos="723 "></span></a><span class="sd">        with graph.use():</span>
-</span><span id="__span-0-724"><a id="__codelineno-0-724" name="__codelineno-0-724"></a><a href="#__codelineno-0-724"><span class="linenos" data-linenos="724 "></span></a>
-</span><span id="__span-0-725"><a id="__codelineno-0-725" name="__codelineno-0-725"></a><a href="#__codelineno-0-725"><span class="linenos" data-linenos="725 "></span></a><span class="sd">            class TestFeature(mx.BaseFeature, spec=mx.FeatureSpec(key=&quot;test&quot;, id_columns=[&quot;id&quot;])):</span>
-</span><span id="__span-0-726"><a id="__codelineno-0-726" name="__codelineno-0-726"></a><a href="#__codelineno-0-726"><span class="linenos" data-linenos="726 "></span></a><span class="sd">                id: str</span>
-</span><span id="__span-0-727"><a id="__codelineno-0-727" name="__codelineno-0-727"></a><a href="#__codelineno-0-727"><span class="linenos" data-linenos="727 "></span></a><span class="sd">        ```</span>
-</span><span id="__span-0-728"><a id="__codelineno-0-728" name="__codelineno-0-728"></a><a href="#__codelineno-0-728"><span class="linenos" data-linenos="728 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-729"><a id="__codelineno-0-729" name="__codelineno-0-729"></a><a href="#__codelineno-0-729"><span class="linenos" data-linenos="729 "></span></a>    <span class="n">token</span> <span class="o">=</span> <span class="n">_active_graph</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-</span><span id="__span-0-730"><a id="__codelineno-0-730" name="__codelineno-0-730"></a><a href="#__codelineno-0-730"><span class="linenos" data-linenos="730 "></span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-0-731"><a id="__codelineno-0-731" name="__codelineno-0-731"></a><a href="#__codelineno-0-731"><span class="linenos" data-linenos="731 "></span></a>        <span class="k">yield</span> <span class="bp">self</span>
-</span><span id="__span-0-732"><a id="__codelineno-0-732" name="__codelineno-0-732"></a><a href="#__codelineno-0-732"><span class="linenos" data-linenos="732 "></span></a>    <span class="k">finally</span><span class="p">:</span>
-</span><span id="__span-0-733"><a id="__codelineno-0-733" name="__codelineno-0-733"></a><a href="#__codelineno-0-733"><span class="linenos" data-linenos="733 "></span></a>        <span class="n">_active_graph</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-712"><a id="__codelineno-0-712" name="__codelineno-0-712"></a><a href="#__codelineno-0-712"><span class="linenos" data-linenos="712 "></span></a><span class="nd">@contextmanager</span>
+</span><span id="__span-0-713"><a id="__codelineno-0-713" name="__codelineno-0-713"></a><a href="#__codelineno-0-713"><span class="linenos" data-linenos="713 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">use</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Self</span><span class="p">]:</span>
+</span><span id="__span-0-714"><a id="__codelineno-0-714" name="__codelineno-0-714"></a><a href="#__codelineno-0-714"><span class="linenos" data-linenos="714 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager to temporarily use this graph as active.</span>
+</span><span id="__span-0-715"><a id="__codelineno-0-715" name="__codelineno-0-715"></a><a href="#__codelineno-0-715"><span class="linenos" data-linenos="715 "></span></a>
+</span><span id="__span-0-716"><a id="__codelineno-0-716" name="__codelineno-0-716"></a><a href="#__codelineno-0-716"><span class="linenos" data-linenos="716 "></span></a><span class="sd">    This is the recommended way to use custom registries, especially in tests.</span>
+</span><span id="__span-0-717"><a id="__codelineno-0-717" name="__codelineno-0-717"></a><a href="#__codelineno-0-717"><span class="linenos" data-linenos="717 "></span></a><span class="sd">    The graph is automatically restored when the context exits.</span>
+</span><span id="__span-0-718"><a id="__codelineno-0-718" name="__codelineno-0-718"></a><a href="#__codelineno-0-718"><span class="linenos" data-linenos="718 "></span></a>
+</span><span id="__span-0-719"><a id="__codelineno-0-719" name="__codelineno-0-719"></a><a href="#__codelineno-0-719"><span class="linenos" data-linenos="719 "></span></a><span class="sd">    Yields:</span>
+</span><span id="__span-0-720"><a id="__codelineno-0-720" name="__codelineno-0-720"></a><a href="#__codelineno-0-720"><span class="linenos" data-linenos="720 "></span></a><span class="sd">        FeatureGraph: This graph instance</span>
+</span><span id="__span-0-721"><a id="__codelineno-0-721" name="__codelineno-0-721"></a><a href="#__codelineno-0-721"><span class="linenos" data-linenos="721 "></span></a>
+</span><span id="__span-0-722"><a id="__codelineno-0-722" name="__codelineno-0-722"></a><a href="#__codelineno-0-722"><span class="linenos" data-linenos="722 "></span></a><span class="sd">    Example:</span>
+</span><span id="__span-0-723"><a id="__codelineno-0-723" name="__codelineno-0-723"></a><a href="#__codelineno-0-723"><span class="linenos" data-linenos="723 "></span></a><span class="sd">        ```py</span>
+</span><span id="__span-0-724"><a id="__codelineno-0-724" name="__codelineno-0-724"></a><a href="#__codelineno-0-724"><span class="linenos" data-linenos="724 "></span></a><span class="sd">        with graph.use():</span>
+</span><span id="__span-0-725"><a id="__codelineno-0-725" name="__codelineno-0-725"></a><a href="#__codelineno-0-725"><span class="linenos" data-linenos="725 "></span></a>
+</span><span id="__span-0-726"><a id="__codelineno-0-726" name="__codelineno-0-726"></a><a href="#__codelineno-0-726"><span class="linenos" data-linenos="726 "></span></a><span class="sd">            class TestFeature(mx.BaseFeature, spec=mx.FeatureSpec(key=&quot;test&quot;, id_columns=[&quot;id&quot;])):</span>
+</span><span id="__span-0-727"><a id="__codelineno-0-727" name="__codelineno-0-727"></a><a href="#__codelineno-0-727"><span class="linenos" data-linenos="727 "></span></a><span class="sd">                id: str</span>
+</span><span id="__span-0-728"><a id="__codelineno-0-728" name="__codelineno-0-728"></a><a href="#__codelineno-0-728"><span class="linenos" data-linenos="728 "></span></a><span class="sd">        ```</span>
+</span><span id="__span-0-729"><a id="__codelineno-0-729" name="__codelineno-0-729"></a><a href="#__codelineno-0-729"><span class="linenos" data-linenos="729 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-730"><a id="__codelineno-0-730" name="__codelineno-0-730"></a><a href="#__codelineno-0-730"><span class="linenos" data-linenos="730 "></span></a>    <span class="n">token</span> <span class="o">=</span> <span class="n">_active_graph</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</span><span id="__span-0-731"><a id="__codelineno-0-731" name="__codelineno-0-731"></a><a href="#__codelineno-0-731"><span class="linenos" data-linenos="731 "></span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-0-732"><a id="__codelineno-0-732" name="__codelineno-0-732"></a><a href="#__codelineno-0-732"><span class="linenos" data-linenos="732 "></span></a>        <span class="k">yield</span> <span class="bp">self</span>
+</span><span id="__span-0-733"><a id="__codelineno-0-733" name="__codelineno-0-733"></a><a href="#__codelineno-0-733"><span class="linenos" data-linenos="733 "></span></a>    <span class="k">finally</span><span class="p">:</span>
+</span><span id="__span-0-734"><a id="__codelineno-0-734" name="__codelineno-0-734"></a><a href="#__codelineno-0-734"><span class="linenos" data-linenos="734 "></span></a>        <span class="n">_active_graph</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -6003,6 +6018,8 @@ The graph is automatically restored when the context exits.</p>
       <script src="../../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
         <script src="../../../../javascripts/telemetry.js"></script>
+      
+        <script src="../../../../javascripts/glossary-tooltips.js"></script>
       
     
   </body>

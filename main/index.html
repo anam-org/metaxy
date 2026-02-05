@@ -2645,6 +2645,8 @@
       
         
       
+        
+      
     
     
     
@@ -2703,6 +2705,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="reference/api/initialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Initialization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
       
@@ -2733,7 +2763,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -2755,14 +2785,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_1" id="__nav_4_1_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3002,10 +3032,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
             
   
   
@@ -3023,8 +3053,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3128,10 +3158,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_1_4" id="__nav_4_1_4_label" tabindex="0">
             
   
   
@@ -3149,8 +3179,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3587,7 +3617,7 @@
 <p class="admonition-title">Info</p>
 <p>Data, ML and AI workloads processing <strong>large amounts</strong> of images, videos, audios, or texts (1) can be very expensive to run.
 In contrast to traditional data engineering, re-running the whole pipeline on changes is no longer an option.
-Therefore, it becomes crucially important to correctly implement <strong>incremental processing</strong>, <strong>sample-level versioning</strong> and <strong><abbr title="An update that doesn't trigger change propagation through certain paths in the dependency graph because it modifies fields that are not dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames.">prunable updates</abbr></strong>.</p>
+Therefore, it becomes crucially important to correctly implement <strong>incremental processing</strong>, <strong>sample-level versioning</strong> and <strong><abbr title="Updates that skip change propagation through certain dependency graph paths because they modify fields that downstream features don't depend on.">prunable updates</abbr></strong>.</p>
 </div>
 <ol>
 <li>or really any kind of data</li>
@@ -3630,7 +3660,7 @@ As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables th
 <p class="admonition-title">Just Use Metaxy</p>
 <p>Metaxy gives you quite a few superpowers:</p>
 <ul>
-<li>Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second (1). Benefit from <abbr title="An update that doesn't trigger change propagation through certain paths in the dependency graph because it modifies fields that are not dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames.">prunable partial updates</abbr>.</li>
+<li>Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second (1). Benefit from <abbr title="Updates that skip change propagation through certain dependency graph paths because they modify fields that downstream features don't depend on.">prunable partial updates</abbr>.</li>
 <li>Freedom from storage lock-in. Swap <a href="integrations/metadata-stores/">storage backends</a> in development and production environments without breaking a sweat (2).</li>
 <li>Metaxy is <strong>pluggable</strong>, <strong>declarative</strong>, <strong>composable</strong> and <strong>extensible</strong> (3): use it to build custom integrations and workflows, benefit from emergent capabilities that enable tooling, visualizations and optimizations you didn't even plan for.</li>
 </ul>
@@ -3643,7 +3673,7 @@ As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables th
 <p>And now the killer feature:</p>
 <div class="admonition tip annotate">
 <p class="admonition-title">Super Granular Data Versioning</p>
-<p>The feature that makes Metaxy really stand out is the ability to identify <strong>prunable <abbr title="An update that doesn't trigger change propagation through certain paths in the dependency graph because it modifies fields that are not dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames.">partial data updates</abbr></strong> (1) and <strong>skip unnecessary downstream computations</strong>. At the moment of writing, Metaxy is the only available tool that tackles these problems.</p>
+<p>The feature that makes Metaxy really stand out is the ability to identify <strong>prunable <abbr title="Updates that skip change propagation through certain dependency graph paths because they modify fields that downstream features don't depend on.">partial data updates</abbr></strong> (1) and <strong>skip unnecessary downstream computations</strong>. At the moment of writing, Metaxy is the only available tool that tackles these problems.</p>
 </div>
 <ol>
 <li>which are <strong>very common</strong> in multi-modal pipelines</li>
@@ -3776,6 +3806,8 @@ Head to <a href="guide/quickstart/hello/">Quickstart</a> (WIP!).</p>
       <script src="assets/javascripts/bundle.e71a0d61.min.js"></script>
       
         <script src="javascripts/telemetry.js"></script>
+      
+        <script src="javascripts/glossary-tooltips.js"></script>
       
     
   </body>
