@@ -410,6 +410,8 @@
       
         
       
+        
+      
     
     
     
@@ -1096,6 +1098,98 @@
     
   
     Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Lifecycle
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/learn/development-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
   
 
     
@@ -3612,7 +3706,7 @@
 </span></code></pre></div>
 <p>Metaxy CLI.</p>
 <p>Auto-discovers configuration (<code>metaxy.toml</code> or <code>pyproject.toml</code>) in current or parent directories.
-Feature definitions are collected via <a href="https://docs.metaxy.io/main/learn/feature-discovery/">feature discovery</a>.
+Feature definitions are collected via <a href="https://docs.metaxy.io/main/learn/feature-discovery/"><abbr title="The process of automatically searching for feature definitions in the current environment. Learn more [here](/guide/lear/feature-discovery.md).">feature discovery</abbr></a>.
 Supports loading environment variables from a <code>.env</code> file in the current directory.</p>
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
 <ul>
@@ -3660,7 +3754,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 </ul>
 <p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--config-file</code>: Path to the <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 <li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
@@ -3672,7 +3766,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <p>Start interactive shell.</p>
 <p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--config-file</code>: Path to the <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 <li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
@@ -3682,7 +3776,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <p>Manage Metaxy <a href="https://docs.metaxy.io/main/reference/configuration/">configuration</a></p>
 <p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--config-file</code>: Path to the <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 <li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
@@ -3691,7 +3785,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <h3 id="metaxy-config-print">metaxy config print<a class="headerlink" href="#metaxy-config-print" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="go">metaxy config print [OPTIONS]</span>
 </span></code></pre></div>
-<p>Print the current Metaxy configuration.</p>
+<p>Print the current <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr>.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--format, -f</code>: Output format: 'toml' (with syntax highlighting) or 'json'.  <em>[choices: toml, json]</em>  <em>[default: toml]</em></li>
@@ -3700,7 +3794,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <p>Describe Metaxy entities in detail</p>
 <p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--config-file</code>: Path to the <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 <li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
@@ -3740,7 +3834,7 @@ version, description, fields with their versions and dependencies.</p>
 <p>Manage feature graphs</p>
 <p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--config-file</code>: Path to the <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 <li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
@@ -3778,7 +3872,7 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>--verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: False]</em></li>
 <li><code>--show-fields, --no-show-fields</code>: Show field-level details within features  <em>[default: True]</em></li>
 <li><code>--show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: True]</em></li>
-<li><code>--show-field-versions, --no-show-field-versions</code>: Show field version hashes (requires --show-fields)  <em>[default: True]</em></li>
+<li><code>--show-field-versions, --no-show-field-versions</code>: Show <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/learn/feature-definitions#fields).">field version</abbr> hashes (requires --show-fields)  <em>[default: True]</em></li>
 <li><code>--show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: False]</em></li>
 <li><code>--show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: True]</em></li>
 <li><code>--hash-length</code>: Number of characters to show for version hashes (0 for full)  <em>[default: 8]</em></li>
@@ -3794,7 +3888,7 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <p>List Metaxy entities</p>
 <p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--config-file</code>: Path to the <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 <li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
@@ -3821,7 +3915,7 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <p>Manage Metaxy metadata in metadata stores.</p>
 <p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--config-file</code>: Path to the <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 <li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
@@ -3892,7 +3986,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <p><a href="https://modelcontextprotocol.io/docs/getting-started/intro">MCP</a> server commands.</p>
 <p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--config-file</code>: Path to the <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 <li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
@@ -3909,7 +4003,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 </ul>
 <p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--config-file</code>: Path to the <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 <li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
@@ -3926,7 +4020,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 </ul>
 <p><strong>Global</strong>:</p>
 <ul>
-<li><code>--config-file</code>: Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--config-file</code>: Path to the <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
 <li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>

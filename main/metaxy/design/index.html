@@ -416,6 +416,8 @@
       
         
       
+        
+      
     
     
     
@@ -1235,6 +1237,101 @@
     
   
     Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Lifecycle
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/learn/development-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
   
 
     
@@ -3333,8 +3430,8 @@
 </tr>
 </tbody>
 </table>
-<p>Metaxy does not interact with <strong>data</strong>.
-As an edge case, Metaxy features may also be pure <strong>metadata</strong> without any references to external <strong>data</strong>.</p>
+<p>Metaxy does not interact with <strong>data</strong> and is not responsible for its content.
+As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables that do not reference any external <strong>data</strong>.</p>
 </details>
 <ol>
 <li>Unless you are a <a href="https://lancedb.com/">LanceDB</a> fan, in which case <a href="../../integrations/metadata-stores/databases/lancedb/">we got you covered</a></li>
@@ -3348,11 +3445,11 @@ As an edge case, Metaxy features may also be pure <strong>metadata</strong> with
 <li>
 <p>can store <em>map-like elements</em> (e.g. dictionaries)</p>
 <details class="note">
-<summary>Removing This Requirement</summary>
-<p>This requirement may be lifted in the future.
-Unfortunately, the most popular storage solution - PostgreSQL - does not satisfy it.
+<summary>Lifting This Requirement</summary>
+<p>Unfortunately, the most popular database - PostgreSQL - does not satisfy it.
 While PostgreSQL is not an ideal choice for a Metaxy <a href="../../guide/learn/metadata-stores/">Metadata Store</a>
-for other reasons (mainly analytical queries performance), we recognize the need to support it and are exploring a solution in <a href="https://github.com/anam-org/metaxy/issues/223"><code>anam-org/metaxy#223</code></a>.</p>
+for other reasons (mainly being analytical queries performance), we recognize the need to support it and are exploring a solution in <a href="https://github.com/anam-org/metaxy/issues/223"><code>anam-org/metaxy#223</code></a>.
+This requirement may not be necessary in the future.</p>
 </details>
 </li>
 </ul>
@@ -3491,20 +3588,16 @@ Provenance columns hold <strong>static</strong> versioning information entirely 
 <p>When resolving incremental updates for a <a href="../../guide/learn/feature-definitions/">feature</a>, Metaxy attempts to perform all computations such as <a href="../../guide/learn/data-versioning/">sample version calculations</a> within the metadata store.</p>
 <div class="admonition note">
 <p class="admonition-title">When can <strong>local</strong> computations happen instead</p>
-<p>Metaxy's versioning engine runs <strong>locally</strong> instead:</p>
-<div class="admonition info">
-<p class="admonition-title">Info</p>
-<p>The <strong>local</strong> versioning engine is implemented with <a href="https://github.com/ion-elgreco/polars-hash"><code>polars-hash</code></a> and benefits from parallelism, predicate pushdown, and other features of <a href="https://pola.rs/">Polars</a>.</p>
-</div>
+<p>Metaxy's versioning engine runs on the <strong>local <abbr title="The **local versioning engine** is implemented with [`polars-hash`](https://github.com/ion-elgreco/polars-hash) and benefits from incredible [Polars](https://pola.rs/) performance and optimizations such as projection pruning, predicate pushdown, common subplan elimination, and others. It is considered the reference versioning engine implementation in Metaxy, and all the metadata stores are tested against it.">Polars versioning engine</abbr></strong> if:</p>
 <ol>
 <li>
-<p>If the metadata store does not have a compute engine at all: for example, <a href="https://delta.io/">DeltaLake</a> is just a storage format.</p>
+<p>The metadata store does not have a compute engine at all: for example, <a href="https://delta.io/">DeltaLake</a> is just a storage format.</p>
 </li>
 <li>
-<p>If the user explicitly requested to keep the computations <strong>local</strong> by setting <code>versioning_engine="polars"</code> when instantiating the metadata store.</p>
+<p>The user explicitly requested to keep the computations <strong>local</strong> by setting <code>versioning_engine="polars"</code> when instantiating the metadata store.</p>
 </li>
 <li>
-<p>If a <strong>fallback store</strong> had to be used to retrieve one of the parent features missing in the current store.</p>
+<p>A <strong>fallback store</strong> had to be used to retrieve one of the parent features missing in the current store.</p>
 </li>
 </ol>
 <p>All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.</p>

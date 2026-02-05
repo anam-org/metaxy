@@ -416,6 +416,8 @@
       
         
       
+        
+      
     
     
     
@@ -1285,6 +1287,101 @@
     
   
     Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Lifecycle
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
   
 
     
@@ -3413,8 +3510,8 @@
 <p>Metaxy calculates a few types of versions at <a href="../feature-definitions/">feature</a>, <a href="../feature-definitions/">field</a>, and <a href="#samples">sample</a> levels.</p>
 <p>Metaxy's versioning system is declarative, static, deterministic and idempotent.</p>
 <h2 id="versioning_1">Versioning<a class="headerlink" href="#versioning_1" title="Permanent link">&para;</a></h2>
-<p>Feature and field versions are defined by the feature graph topology and the user-provided code versions of fields. Sample versions are defined by upstream sample versions and the code versions of the fields defined on the sample's feature.</p>
-<p>All versions are computed ahead of time: feature and field versions can be immediately derived from code (and we keep historical graph snapshots for them), and calculating sample versions requires access to the metadata store.</p>
+<p>Feature and <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/learn/feature-definitions#fields).">field versions</abbr> are defined by the feature graph topology and the user-provided code versions of fields. Sample versions are defined by upstream sample versions and the code versions of the fields defined on the sample's feature.</p>
+<p>All versions are computed ahead of time: feature and <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/learn/feature-definitions#fields).">field versions</abbr> can be immediately derived from code (and we keep historical graph snapshots for them), and calculating sample versions requires access to the metadata store.</p>
 <p>Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash <a href="../../../reference/configuration/#hash_truncation_length">length</a> can be configured.</p>
 <p>Here is how these versions are calculated, from bottom to top.</p>
 <h3 id="definitions">Definitions<a class="headerlink" href="#definitions" title="Permanent link">&para;</a></h3>
@@ -3428,7 +3525,7 @@
 <p>The value can be arbitrary, but in the future we might implement something around semantic versioning.</p>
 </div>
 <ul>
-<li><strong>Field Version</strong> is computed from the code version of this field, the <a href="../feature-definitions/#fully-qualified-field-key">fully qualified field path</a> and from the field versions of its <a href="../feature-definitions/#field-level-dependencies">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</li>
+<li><strong>Field Version</strong> is computed from the code version of this field, the <a href="../feature-definitions/#fully-qualified-field-key">fully qualified field path</a> and from the <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/learn/feature-definitions#fields).">field versions</abbr> of its <a href="../feature-definitions/#field-level-dependencies">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</li>
 </ul>
 <h4 id="feature-level">Feature Level<a class="headerlink" href="#feature-level" title="Permanent link">&para;</a></h4>
 <ul>
@@ -3446,7 +3543,7 @@
 <h3 id="samples">Samples<a class="headerlink" href="#samples" title="Permanent link">&para;</a></h3>
 <p>These versions are sample-level and require access to the metadata store in order to compute them.</p>
 <ul>
-<li><strong>Provenance By Field</strong> is computed from the upstream <strong>Provenance By Field</strong> (with respect to defined <a href="../feature-definitions/#field-level-dependencies">field-level dependencies</a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</li>
+<li><strong>Provenance By Field</strong> is computed from the upstream <strong>Provenance By Field</strong> (with respect to defined <a href="../feature-definitions/#field-level-dependencies"><abbr title="Dependencies between specific fields of feature definitions. They directly affect how field versions are computed at both feature and sample levels. Learn more [here](/guide/learn/feature-definitions#field-level-dependencies).">field-level dependencies</abbr></a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</li>
 </ul>
 <table>
 <thead>
@@ -3488,7 +3585,7 @@
 <summary>Simplified Metaxy Definitions</summary>
 <p>This example uses Metaxy's <a href="../syntactic-sugar/">syntactic sugar</a> for cleaner code.
 Feature classes can be passed directly to <code>deps</code> instead of wrapping in <code>FeatureDep</code>,
-and field names matching upstream fields automatically create field-level dependencies.</p>
+and field names matching upstream fields automatically create <abbr title="Dependencies between specific fields of feature definitions. They directly affect how field versions are computed at both feature and sample levels. Learn more [here](/guide/learn/feature-definitions#field-level-dependencies).">field-level dependencies</abbr>.</p>
 </details>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -3623,8 +3720,8 @@ title: Feature Graph Changes
 flowchart TB
     %% Snapshot version: none
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-    example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;c2ac395f&lt;/font&gt; → &lt;font color="#00FF00"&gt;2faffb98&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (794116a9)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;22742381&lt;/font&gt; → &lt;font color="#00FF00"&gt;09c8398b&lt;/font&gt;)&lt;/div&gt;"]
-    example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;34d75856&lt;/font&gt; → &lt;font color="#00FF00"&gt;fe237dc9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (2419e09d)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;4c726c4b&lt;/font&gt; → &lt;font color="#00FF00"&gt;e2b6ce39&lt;/font&gt;)&lt;/div&gt;"]
+    example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;c2ac395f&lt;/font&gt; → &lt;font color="#00FF00"&gt;2faffb98&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;22742381&lt;/font&gt; → &lt;font color="#00FF00"&gt;09c8398b&lt;/font&gt;)&lt;br/&gt;- frames (794116a9)&lt;/div&gt;"]
+    example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;34d75856&lt;/font&gt; → &lt;font color="#00FF00"&gt;fe237dc9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;4c726c4b&lt;/font&gt; → &lt;font color="#00FF00"&gt;e2b6ce39&lt;/font&gt;)&lt;br/&gt;- frames (2419e09d)&lt;/div&gt;"]
     example_face_detection["&lt;div style="text-align:left"&gt;&lt;b&gt;example/face_detection&lt;/b&gt;&lt;br/&gt;f1526ee0&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (006efeef)&lt;/div&gt;"]
     example_stt["&lt;div style="text-align:left"&gt;&lt;b&gt;example/stt&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d953dea4&lt;/font&gt; → &lt;font color="#00FF00"&gt;e57e7555&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;transcription&lt;/font&gt; (&lt;font color="#FF0000"&gt;3ec3826d&lt;/font&gt; → &lt;font color="#00FF00"&gt;9f7ea40c&lt;/font&gt;)&lt;/div&gt;"]
     example_video --&gt; example_crop
@@ -3646,10 +3743,10 @@ flowchart TB
 <p><code>FaceDetection</code> remained unchanged (depends only on <code>frames</code> and not on <code>audio</code>)</p>
 </li>
 <li>
-<p>Audio field versions have changed throughout the graph</p>
+<p>Audio <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/learn/feature-definitions#fields).">field versions</abbr> have changed throughout the graph</p>
 </li>
 <li>
-<p>Frame field versions have stayed the same</p>
+<p>Frame <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/learn/feature-definitions#fields).">field versions</abbr> have stayed the same</p>
 </li>
 </ul>
 </div>

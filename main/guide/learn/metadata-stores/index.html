@@ -416,6 +416,8 @@
       
         
       
+        
+      
     
     
     
@@ -943,6 +945,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#fallback-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fallback Stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metadata-store-implementations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1229,6 +1242,101 @@
     
   
     Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Lifecycle
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
   
 
     
@@ -3210,6 +3318,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#fallback-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fallback Stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metadata-store-implementations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3418,6 +3537,25 @@
 </span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <p>Learn more about deletions <a href="../deletions/">here</a>.</p>
+<h2 id="fallback-stores">Fallback Stores<a class="headerlink" href="#fallback-stores" title="Permanent link">&para;</a></h2>
+<p>Metaxy metadata stores can be configured to pull missing metadata from another store. This is very useful for local and testing workflows, because it allows to avoid materializing the entire data pipeline locally.
+Instead, Metaxy stores can automatically pull missing metadata from production.</p>
+<p>Example <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr>:</p>
+<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">[stores.dev]</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.delta.DeltaMetadataStore&quot;</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${HOME}/.metaxy/dev&quot;</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">]</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="k">[stores.prod]</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.delta.DeltaMetadataStore&quot;</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-prod-bucket/metaxy&quot;</span>
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Currently, the "missing metadata" detection works by checking whether the feature table exists in the store. This works in conjunction with <a href="">automatic table creation</a>, but doesn't work if empty tables are pre-created by e.g. migration tooling or some kind of CI/CD workflows. This will be improved in the future.</p>
+</div>
+<p>Metaxy doesn't mix metadata from different stores: either the entire feature is going to be pulled from the fallback store, or the primary store will be used.</p>
+<p>Fallback stores can be chained at arbitrary depth.</p>
 <h2 id="metadata-store-implementations">Metadata Store Implementations<a class="headerlink" href="#metadata-store-implementations" title="Permanent link">&para;</a></h2>
 <p>Metaxy provides ready <code>MetadataStore</code> <a href="../../../integrations/metadata-stores/">implementations</a> for popular databases and storage systems.</p>
 

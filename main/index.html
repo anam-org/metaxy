@@ -414,6 +414,8 @@
       
         
       
+        
+      
     
     
     
@@ -1114,6 +1116,101 @@
     
   
     Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Lifecycle
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guide/learn/development-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
   
 
     
@@ -3046,6 +3143,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Metaxy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-the-problem-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is the problem again?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#alright-that-sounds-pretty-bad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alright, that sounds pretty bad
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3082,32 +3207,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-is-the-problem-again" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What is the problem again?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#so-what-can-we-do-about-this" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        So what can we do about this?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#whats-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🚀 What's Next?
+        What's Next?
       
     </span>
   </a>
@@ -3209,32 +3312,22 @@
 
 <hr />
 <h2 id="metaxy">Metaxy<a class="headerlink" href="#metaxy" title="Permanent link">&para;</a></h2>
-<div class="annotate">
-<p>Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipelines that manages and tracks <strong>metadata</strong> across complex computational graphs, including row-level <a href="guide/learn/data-versioning/">versions</a> (1), allowing the codebase to evolve over time without friction. Metaxy gives you quite a few superpowers:</p>
-<ul>
-<li>Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second. (2)</li>
-<li>Freedom from storage lock-in. Swap <a href="integrations/metadata-stores/">storage backends</a> in development and production environments without breaking a sweat (3).</li>
-<li>Use the <a href="reference/cli/"><code>mx</code> CLI</a> to observe and manage metadata without leaving the comfort of your terminal.</li>
-<li>Metaxy is <strong>composable</strong> and <strong>extensible</strong> (4): use it to build custom integrations and workflows!</li>
-</ul>
+<p>Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipelines. Metaxy manages and tracks <strong>metadata</strong> across complex computational graphs, implements sample and sub-sample versioning, allowing the codebase to evolve over time without friction.</p>
+<h3 id="what-is-the-problem-again">What is the problem again?<a class="headerlink" href="#what-is-the-problem-again" title="Permanent link">&para;</a></h3>
+<div class="admonition info annotate">
+<p class="admonition-title">Info</p>
+<p>Data, ML and AI workloads processing <strong>large amounts</strong> of images, videos, audios, or texts (1) can be very expensive to run.
+In contrast to traditional data engineering, re-running the whole pipeline on changes is no longer an option.
+Therefore, it becomes crucially important to correctly implement <strong>incremental processing</strong>, <strong>sample-level versioning</strong> and <strong><abbr title="An update that doesn't trigger change propagation through certain paths in the dependency graph because it modifies fields that are not dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames.">prunable updates</abbr></strong>.</p>
 </div>
 <ol>
-<li>And even more granular <a href="http://localhost:8000/guide/learn/data-versioning/#samples">partial data versions</a></li>
-<li>Our experience at <a href="https://anam.ai/">Anam</a> with <a href="integrations/metadata-stores/databases/clickhouse/">ClickHouse</a></li>
-<li>For example, develop against <a href="integrations/metadata-stores/storage/delta/">DeltaLake</a> and scale production with <a href="integrations/metadata-stores/databases/clickhouse/">ClickHouse</a> without code changes.</li>
-<li>See our official integrations <a href="integrations/">here</a></li>
+<li>or really any kind of data</li>
 </ol>
-<div class="admonition tip annotate">
-<p class="admonition-title">Super Granular Data Versioning</p>
-<p>The feature that makes Metaxy really stand out is the ability to track <strong>partial data dependencies</strong> (1) and <strong>skip downstream updates</strong> unless the exactly required subset of upstream data has changed. At the moment of writing, Metaxy is the only available tool that tackles these problems.</p>
+<p>These workloads <strong>evolve all the time</strong>, with new data being shipped, bugfixes or algorithm changes introduced, and new features added to the pipeline. This means the pipeline has to be <strong>re-computed frequently</strong>, but at the same time it's important to avoid unnecessary recomputations for individual data samples.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Unnecessary recomputations can waste dozens or hundreds of thousands of dollars on compute, and sample-level orchestration complexity can cost even more in engineering efforts.</p>
 </div>
-<ol>
-<li>which are <strong>very common</strong> in multi-modal pipelines, for example when you only need to process video frames and not the audio tracks</li>
-</ol>
-<p class="annotate">All of this is possible thanks to (1) <a href="https://narwhals-dev.github.io/narwhals/">Narwhals</a>, <a href="https://ibis-project.org/">Ibis</a>, and a few clever tricks.</p>
-<ol>
-<li>we really do stand on the shoulders of giants</li>
-</ol>
 <details class="abstract annotate">
 <summary>Data vs Metadata Clarifications</summary>
 <p>Metaxy features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.</p>
@@ -3256,24 +3349,57 @@
 </tr>
 </tbody>
 </table>
-<p>Metaxy does not interact with <strong>data</strong>.
-As an edge case, Metaxy features may also be pure <strong>metadata</strong> without any references to external <strong>data</strong>.</p>
+<p>Metaxy does not interact with <strong>data</strong> and is not responsible for its content.
+As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables that do not reference any external <strong>data</strong>.</p>
 </details>
 <ol>
 <li>Unless you are a <a href="https://lancedb.com/">LanceDB</a> fan, in which case <a href="integrations/metadata-stores/databases/lancedb/">we got you covered</a></li>
 </ol>
+<h3 id="alright-that-sounds-pretty-bad">Alright, that sounds pretty bad<a class="headerlink" href="#alright-that-sounds-pretty-bad" title="Permanent link">&para;</a></h3>
+<p class="annotate">It does (1). Until recently, a general solution for this problem did not exist, but not anymore <img alt="🎉" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f389.svg" title=":tada:" /> !</p>
+<ol>
+<li>it is hard to overestimate the amount of pain <a href="https://github.com/danielgafni">@danielgafni</a> has endured before building Metaxy</li>
+</ol>
+<div class="admonition success annotate">
+<p class="admonition-title">Just Use Metaxy</p>
+<p>Metaxy gives you quite a few superpowers:</p>
+<ul>
+<li>Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second (1). Benefit from <abbr title="An update that doesn't trigger change propagation through certain paths in the dependency graph because it modifies fields that are not dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames.">prunable partial updates</abbr>.</li>
+<li>Freedom from storage lock-in. Swap <a href="integrations/metadata-stores/">storage backends</a> in development and production environments without breaking a sweat (2).</li>
+<li>Metaxy is <strong>pluggable</strong>, <strong>declarative</strong>, <strong>composable</strong> and <strong>extensible</strong> (3): use it to build custom integrations and workflows, benefit from emergent capabilities that enable tooling, visualizations and optimizations you didn't even plan for.</li>
+</ul>
+</div>
+<ol>
+<li>Our experience at <a href="https://anam.ai/">Anam</a> with <a href="integrations/metadata-stores/databases/clickhouse/">ClickHouse</a></li>
+<li>For example, develop against <a href="integrations/metadata-stores/storage/delta/">DeltaLake</a> and scale production with <a href="integrations/metadata-stores/databases/clickhouse/">ClickHouse</a> without code changes.</li>
+<li>See our official integrations <a href="integrations/">here</a></li>
+</ol>
+<p>And now the killer feature:</p>
+<div class="admonition tip annotate">
+<p class="admonition-title">Super Granular Data Versioning</p>
+<p>The feature that makes Metaxy really stand out is the ability to identify <strong>prunable <abbr title="An update that doesn't trigger change propagation through certain paths in the dependency graph because it modifies fields that are not dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames.">partial data updates</abbr></strong> (1) and <strong>skip unnecessary downstream computations</strong>. At the moment of writing, Metaxy is the only available tool that tackles these problems.</p>
+</div>
+<ol>
+<li>which are <strong>very common</strong> in multi-modal pipelines</li>
+</ol>
+<p>Read <a href="metaxy/pitch/">The Pitch</a> to be impressed even more.</p>
+<p class="annotate">All of this is possible thanks to (1) <a href="https://narwhals-dev.github.io/narwhals/">Narwhals</a>, <a href="https://ibis-project.org/">Ibis</a>, and a few clever tricks.</p>
+<ol>
+<li>we really do stand on the shoulders of giants</li>
+</ol>
 <h2 id="reliability">Reliability<a class="headerlink" href="#reliability" title="Permanent link">&para;</a></h2>
-<p>Metaxy was <a href="metaxy/design/">designed</a> to handle large amounts of <strong>big metadata</strong> in distributed environments, makes very little assumptions about usage patterns and cannot enter an inconsistent state.</p>
+<p>Metaxy was <a href="metaxy/design/">designed</a> to handle large amounts of <strong>big metadata</strong> in distributed environments, makes very few assumptions about usage patterns and is non-invasive to the rest of the data pipeline.</p>
 <p>Metaxy is fanatically tested across all supported metadata stores, Python versions and platforms <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. We guarantee versioning consistency across the supported metadata stores.</p>
-<p class="annotate">We have been dogfooding Metaxy since December 2025 at Anam. We are running it in production with <a href="integrations/metadata-stores/databases/clickhouse/">ClickHouse</a>, <a href="integrations/orchestration/dagster/">Dagster</a>, and <a href="integrations/compute/ray/">Ray</a> (1).</p>
+<p class="annotate">We have been dogfooding Metaxy at <a href="https://anam.ai/">Anam</a> since December 2025. We are running it in production with <a href="integrations/metadata-stores/databases/clickhouse/">ClickHouse</a>, <a href="integrations/orchestration/dagster/">Dagster</a>, and <a href="integrations/compute/ray/">Ray</a> (1), and it's powering all our pipelines that prepare training data for our video generation models.</p>
 <ol>
 <li>and integrations with these tools are probably the most complete at the moment</li>
 </ol>
+<p>That being said, Metaxy is still an early project, so while the core functionality is rock solid, some rough edges with other parts of Metaxy are expected.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Metaxy hasn't been publicly released yet, but you can try the latest dev release:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--pre<span class="w"> </span>metaxy
+<p>Metaxy hasn't been publicly released yet, but you can try the <code>main</code> branch:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/metaxy-dev/metaxy.git
 </span></code></pre></div>
 </div>
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
@@ -3282,50 +3408,7 @@ As an edge case, Metaxy features may also be pure <strong>metadata</strong> with
 <p>Urging to get your hands dirty?
 Head to <a href="guide/overview/quickstart/">Quickstart</a> (WIP!).</p>
 </div>
-<h2 id="what-is-the-problem-again">What is the problem again?<a class="headerlink" href="#what-is-the-problem-again" title="Permanent link">&para;</a></h2>
-<div class="admonition info annotate">
-<p class="admonition-title">Info</p>
-<p>Data, ML and AI workloads processing <strong>large amounts</strong> of images, videos, audios, or texts (1) can be very expensive to run.
-In contrast to traditional data engineering, re-running the whole pipeline on changes is no longer an option.
-Therefore, it becomes crucially important to correctly implement incremental processing and sample-level versioning.</p>
-</div>
-<ol>
-<li>or really any kind of data</li>
-</ol>
-<p>These workloads often <strong>aren't stale</strong>: they <strong>evolve all the time</strong>, with new data being shipped, bugfixes or algorithm changes introduced, and new features added to the pipeline. This means the pipeline has to be <strong>re-computed frequently</strong>, but at the same time it's important to avoid unnecessary recomputations for individual data samples.</p>
-<p>Here are some of the cases where re-computing would be <strong>undesirable</strong>:</p>
-<ul>
-<li>merging two consecutive steps into one (refactoring the graph topology)</li>
-<li><strong>partial data updates</strong>, e.g. changing only the audio track inside a video file</li>
-<li>backfilling metadata from another source</li>
-</ul>
-<p>Correctly identifying these scenarios while also <strong>re-computing the feature when it should be</strong> is surprisingly challenging, and tracking and propagating these changes correctly to the right subset of samples and features can become incredibly complicated and time-consuming.</p>
-<h2 id="so-what-can-we-do-about-this">So what can we do about this?<a class="headerlink" href="#so-what-can-we-do-about-this" title="Permanent link">&para;</a></h2>
-<p class="annotate">Sounds really bad, right? Yes, and it is (1). Until recently, a general solution for this problem did not exist, but not anymore <img alt="🎉" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f389.svg" title=":tada:" /> !</p>
-<ol>
-<li>I cannot overestimate the amount of hair pulling I've endured before making Metaxy</li>
-</ol>
-<div class="admonition success">
-<p class="admonition-title">Just Use Metaxy</p>
-<p>Metaxy solves this!</p>
-</div>
-<div class="annotate">
-<ol>
-<li>
-<p>Metaxy builds a <em>versioned graph</em> from declarative <a href="guide/learn/feature-definitions/">feature definitions</a> and tracks <a href="guide/learn/data-versioning/">version changes</a> across individual samples. These computations can be scaled to run on millions of samples.</p>
-</li>
-<li>
-<p>Metaxy introduces a unique <a href="guide/learn/feature-definitions/#field-level-dependencies">field-level</a> dependency system to express partial data dependencies and avoiding unnecessary downstream recomputations. Each sample holds a dictionary mapping its fields to their respective versions. (1)</p>
-</li>
-<li>
-<p>Metaxy implements a general <a href="guide/learn/metadata-stores/"><code>MetadataStore</code></a> interface that enables users to interact with storage systems -- be it an analytical database or a LakeHouse -- in the same way.</p>
-</li>
-</ol>
-</div>
-<ol>
-<li>for example, a <code>video</code> sample could independently version the frames and the audio track: <code>{"audio": "asddsa", "frames": "joasdb"}</code></li>
-</ol>
-<h2 id="whats-next">🚀 What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
+<h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
 <p>Here are a few more useful links:</p>
 <ul>
 <li>Read the <a href="metaxy/pitch/">Metaxy Pitch</a></li>

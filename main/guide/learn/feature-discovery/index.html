@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Automatic feature discovery from Python modules.">
+        <meta name="description" content="Learn how Metaxy automatically finds feature definitions for the current environment.">
       
       
       
@@ -72,7 +72,7 @@
   
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Feature Discovery - Metaxy" />
-<meta property="og:description" content="Automatic feature discovery from Python modules." />
+<meta property="og:description" content="Learn how Metaxy automatically finds feature definitions for the current environment." />
 <meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/guide/learn/feature-discovery.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
@@ -80,7 +80,7 @@
 <meta property="og:url" content="https://docs.metaxy.io/main/guide/learn/feature-discovery/" />
 <meta property="twitter:card" content="summary_large_image" />
 <meta property="twitter:title" content="Feature Discovery - Metaxy" />
-<meta property="twitter:description" content="Automatic feature discovery from Python modules." />
+<meta property="twitter:description" content="Learn how Metaxy automatically finds feature definitions for the current environment." />
 <meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/guide/learn/feature-discovery.png" />
 </head>
   
@@ -409,6 +409,8 @@
   
     
     
+      
+        
       
         
       
@@ -972,6 +974,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#trivia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trivia
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#config-based-discovery" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1185,6 +1198,101 @@
     
   
     Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Lifecycle
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
   
 
     
@@ -3111,6 +3219,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#trivia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trivia
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#config-based-discovery" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3210,12 +3329,25 @@
 
 
 <h1 id="feature-discovery">Feature Discovery<a class="headerlink" href="#feature-discovery" title="Permanent link">&para;</a></h1>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>This page is WIP</p>
-</div>
+<p>Metaxy has a mechanism to automatically discover feature definitions for the current environment, which is called <strong><abbr title="The process of automatically searching for feature definitions in the current environment. Learn more [here](/guide/lear/feature-discovery.md).">feature discovery</abbr></strong>.
+It removes the burden of pointing Metaxy to all the feature definitions via Python <code>import</code> statements from the user, and is essential for <a href="../../../reference/cli/">Metaxy CLI</a>.</p>
+<h2 id="trivia">Trivia<a class="headerlink" href="#trivia" title="Permanent link">&para;</a></h2>
+<p>Currently, there are two (user-facing) ways to define a Metaxy feature:</p>
+<ol>
+<li>
+<p>Create a Python class that inherits from <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../../reference/api/definitions/feature/#metaxy.BaseFeature"><code>BaseFeature</code></a>.</p>
+</li>
+<li>
+<p>Maintain a <code>metaxy.lock</code> file. This is an advanced feature only needed for multi-project setups.</p>
+</li>
+</ol>
 <h2 id="config-based-discovery">Config-Based Discovery<a class="headerlink" href="#config-based-discovery" title="Permanent link">&para;</a></h2>
-<p>Specify paths for modules containing Metaxy features in Metaxy configuration:</p>
+<p>Specify paths for modules containing Metaxy features in <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr>:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="config-based-discovery-metaxytoml" name="__tabbed_1" type="radio" /><input id="config-based-discovery-pyprojecttoml" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="config-based-discovery-metaxytoml">metaxy.toml</label><label for="config-based-discovery-pyprojecttoml">pyproject.toml</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -3248,11 +3380,11 @@
 <p class="admonition-title">Pydantic Schema Limitation</p>
 <p>Features loaded from the metadata store have their JSON schema preserved from when they were originally saved. However, the Pydantic model class is not available. Operations that require the actual Python class, such as model instantiation or validation, will not work for these features.</p>
 </div>
-<p>Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or field versions) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:</p>
+<p>Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/learn/feature-definitions#fields).">field versions</abbr>) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:</p>
 <ul>
 <li>passing <code>on_conflict="raise"</code> to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../reference/api/#metaxy.sync_external_features"><code>sync_external_features</code></a></li>
 <li>passing <code>--locked</code> to Metaxy CLI commands</li>
-<li>setting <code>locked</code> to <code>True</code> in the global Metaxy configuration. This can be done either in the config file or via the <code>METAXY_LOCKED</code> environment variable.</li>
+<li>setting <code>locked</code> to <code>True</code> in the global <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr>. This can be done either in the config file or via the <code>METAXY_LOCKED</code> environment variable.</li>
 </ul>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>

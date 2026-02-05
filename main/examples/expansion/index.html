@@ -412,6 +412,8 @@
       
         
       
+        
+      
     
     
     
@@ -1098,6 +1100,98 @@
     
   
     Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Lifecycle
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/learn/development-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
   
 
     
@@ -3460,7 +3554,7 @@ flowchart TB
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
-<p>We do not specify custom versions on its fields. Metaxy will automatically assign field-level dependencies by <a href="../../reference/api/definitions/fields-mapping/">matching on field names</a>: <code>VideoChunk.frames</code> depends on <code>Video.frames</code> and <code>VideoChunk.audio</code> depends on <code>Video.audio</code>.</p>
+<p>We do not specify custom versions on its fields. Metaxy will automatically assign <abbr title="Dependencies between specific fields of feature definitions. They directly affect how field versions are computed at both feature and sample levels. Learn more [here](/guide/learn/feature-definitions#field-level-dependencies).">field-level dependencies</abbr> by <a href="../../reference/api/definitions/fields-mapping/">matching on field names</a>: <code>VideoChunk.frames</code> depends on <code>Video.frames</code> and <code>VideoChunk.audio</code> depends on <code>Video.audio</code>.</p>
 <h3 id="defining-features-facerecognition">Defining features: <code>FaceRecognition</code><a class="headerlink" href="#defining-features-facerecognition" title="Permanent link">&para;</a></h3>
 <p><code>FaceRecognition</code> processes video chunks and <strong>only depends on the <code>frames</code> field</strong>. This can be expressed with a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.fields_mapping.FieldsMapping.specific&lt;/span&gt;
 
@@ -3663,8 +3757,8 @@ title: Feature Graph Changes
 flowchart TB
     %% Snapshot version: none
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-    video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d842b740&lt;/font&gt; → &lt;font color="#00FF00"&gt;6e5a4ab8&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (3f6f401c)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;7132721c&lt;/font&gt; → &lt;font color="#00FF00"&gt;f8e35296&lt;/font&gt;)&lt;/div&gt;"]
-    video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;7dc3712a&lt;/font&gt; → &lt;font color="#00FF00"&gt;504507a9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (df8943d3)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;1549b1fa&lt;/font&gt; → &lt;font color="#00FF00"&gt;7948d163&lt;/font&gt;)&lt;/div&gt;"]
+    video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d842b740&lt;/font&gt; → &lt;font color="#00FF00"&gt;6e5a4ab8&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;7132721c&lt;/font&gt; → &lt;font color="#00FF00"&gt;f8e35296&lt;/font&gt;)&lt;br/&gt;- frames (3f6f401c)&lt;/div&gt;"]
+    video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;7dc3712a&lt;/font&gt; → &lt;font color="#00FF00"&gt;504507a9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;1549b1fa&lt;/font&gt; → &lt;font color="#00FF00"&gt;7948d163&lt;/font&gt;)&lt;br/&gt;- frames (df8943d3)&lt;/div&gt;"]
     video_faces["&lt;div style="text-align:left"&gt;&lt;b&gt;video/faces&lt;/b&gt;&lt;br/&gt;52f055e3&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (0561bd8c)&lt;/div&gt;"]
     video_raw --&gt; video_chunk
     video_chunk --&gt; video_faces

@@ -416,6 +416,8 @@
       
         
       
+        
+      
     
     
     
@@ -1218,6 +1220,101 @@
     
   
     Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Lifecycle
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Lifecycle
   
 
     
@@ -3276,11 +3373,15 @@
 
 
 <h1 id="feature-system">Feature System<a class="headerlink" href="#feature-system" title="Permanent link">&para;</a></h1>
-<p>Metaxy has a declarative (defined statically at class level), expressive, flexible feature system.
+<p>Metaxy has a declarative and flexible feature system.
 It has been inspired by <a href="https://dagster.io/">Dagster</a>'s Software-Defined Assets and <a href="https://nixos.org/">Nix</a>.</p>
-<div class="admonition abstract">
-<p class="admonition-title">Abstract</p>
-<p>Features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.</p>
+<p class="annotate">Feature definitions do not describe <strong>data</strong> (1)</p>
+<ol>
+<li>except the logical <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/learn/feature-definitions#fields).">fields versions</abbr></li>
+</ol>
+<details class="abstract annotate">
+<summary>Data vs Metadata Clarifications</summary>
+<p>Metaxy features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.</p>
 <table>
 <thead>
 <tr>
@@ -3295,34 +3396,41 @@ It has been inspired by <a href="https://dagster.io/">Dagster</a>'s Software-Def
 </tr>
 <tr>
 <td><strong>Metadata</strong></td>
-<td>Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes.</td>
+<td>Information about the data, typically (1) including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes.</td>
 </tr>
 </tbody>
 </table>
-<p>As an edge case, Metaxy features may also be pure <strong>metadata</strong> without references to external <strong>data</strong>.</p>
-</div>
-<p>I will highlight <strong>data</strong> and <strong>metadata</strong> with bold so it really stands out.</p>
-<p>Metaxy is responsible for providing correct <strong>metadata</strong> to users.</p>
-<p>During incremental processing, Metaxy will automatically resolve added, changed and deleted <strong>metadata</strong> rows and calculate the right <a href="../data-versioning/">sample versions</a> for them.</p>
-<p>Metaxy does not interact with <strong>data</strong> directly, the user is responsible for writing it, typically using <strong>metadata</strong> to identify sample locations in storage.</p>
+<p>Metaxy does not interact with <strong>data</strong> and is not responsible for its content.
+As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables that do not reference any external <strong>data</strong>.</p>
+</details>
+<ol>
+<li>Unless you are a <a href="https://lancedb.com/">LanceDB</a> fan, in which case <a href="../../../integrations/metadata-stores/databases/lancedb/">we got you covered</a></li>
+</ol>
+<p>Metaxy is responsible for providing correct <strong>metadata</strong> to users. Metaxy does not interact with <strong>data</strong> directly, the user is responsible for writing it, typically using <strong>metadata</strong> to identify sample locations in storage.</p>
 <div class="admonition tip">
 <p class="admonition-title">Keeping Historical Data</p>
 <p>Include <code>metaxy_data_version</code> in your data path to avoid collisions between different versions of the same data sample.
 Doing this will ensure that newer samples are never written over older ones.</p>
 </div>
-<p>I hope we can stop using bold for <strong>data</strong> and <strong>metadata</strong> from now on, hopefully we've made our point.</p>
 <h2 id="feature-definitions">Feature Definitions<a class="headerlink" href="#feature-definitions" title="Permanent link">&para;</a></h2>
-<p>Metaxy provides a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
+<p class="annotate">To create a Metaxy feature, extend the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../../../reference/api/definitions/feature/#metaxy.BaseFeature"><code>BaseFeature</code></a> class that can be extended to create user-defined features.
-It's a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model.</p>
+  &lt;/span&gt;" href="../../../reference/api/definitions/feature/#metaxy.BaseFeature"><code>BaseFeature</code></a> class (1).</p>
+<ol>
+<li>It's a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model.</li>
+</ol>
 <div class="admonition abstract">
 <p class="admonition-title">Abstract</p>
 <p>Features must have unique (across all projects) <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt;" href="../../../reference/api/types/#metaxy.FeatureKey"><code>FeatureKey</code></a> associated with them.</p>
-<p class="annotate">Users must provide one or more ID columns (1) to <code>FeatureSpec</code>, telling Metaxy how to uniquely identify feature samples.</p>
+<p class="annotate">Users must provide one or more ID columns (1) to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureSpec&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec"><code>FeatureSpec</code></a>, telling Metaxy how to uniquely identify feature samples.</p>
 <ol>
 <li>ID columns are <em>almost</em> a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).</li>
 </ol>
@@ -3333,8 +3441,18 @@ It's a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model.</p>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;raw/video&quot;</span><span class="p">,</span> <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;video_id&quot;</span><span class="p">])):</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
 </span></code></pre></div>
-<p>Since <code>VideoFeature</code> is a <strong>root feature</strong>, it doesn't have any dependencies.</p>
+<p>Since <code>VideoFeature</code> is a <strong><abbr title="a feature that does not have any upstream (parent) features">root feature</abbr></strong>, it doesn't have any dependencies.</p>
 <p>That's it! Easy.</p>
+<div class="admonition question annotate">
+<p class="admonition-title">Why classes?</p>
+<p>Some of the tooling Metaxy is aiming to integrate with, such as <a href="../../../integrations/plugins/sqlmodel/">SQLModel</a> or <a href="../../../integrations/metadata-stores/databases/lancedb/">Lance</a> are using class-based table definitions.
+It was practical to start from this interface, since it's somewhat more complicated to implement and support.
+More feature definition and registration methods are likely to be introduced in the future, since Metaxy doesn't
+use the class information in any way (1).</p>
+</div>
+<ol>
+<li>That's a little lie. The <a href="../../../integrations/orchestration/dagster/">Dagster integration</a> uses the original class to extract the table schema for visualization purposes, but we are exploring alternative solutions in <a href="https://github.com/anam-org/metaxy/issues/855"><code>anam-org/metaxy</code></a></li>
+</ol>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>You may now use <code>VideoFeature.spec()</code> class method to access the original feature spec: it's bound to the class.</p>
@@ -3354,7 +3472,7 @@ It's a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model.</p>
 </details>
 <p>Hurray! You get the idea.</p>
 <h2 id="field-level-dependencies">Field-Level Dependencies<a class="headerlink" href="#field-level-dependencies" title="Permanent link">&para;</a></h2>
-<p class="annotate">A core (1) feature of Metaxy is the concept of <strong>field-level dependencies</strong>.
+<p class="annotate">A core (1) feature of Metaxy is the concept of <strong><abbr title="Dependencies between specific fields of feature definitions. They directly affect how field versions are computed at both feature and sample levels. Learn more [here](/guide/learn/feature-definitions#field-level-dependencies).">field-level dependencies</abbr></strong>.
 These are used to define dependencies between logical fields of features.</p>
 <ol>
 <li>really a killer <img alt="🔫" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f52b.svg" title=":gun:" /></li>
@@ -3445,11 +3563,11 @@ They can be used if the actual feature class cannot be imported, for example due
 <p class="admonition-title">Pydantic Schema Limitation</p>
 <p>Features loaded from the metadata store have their JSON schema preserved from when they were originally saved. However, the Pydantic model class is not available. Operations that require the actual Python class, such as model instantiation or validation, will not work for these features.</p>
 </div>
-<p>Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or field versions) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:</p>
+<p>Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or <abbr title="User-defined versions for logical components of a single feature sample. Learn more [here](/guide/learn/feature-definitions#fields).">field versions</abbr>) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:</p>
 <ul>
 <li>passing <code>on_conflict="raise"</code> to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../reference/api/#metaxy.sync_external_features"><code>sync_external_features</code></a></li>
 <li>passing <code>--locked</code> to Metaxy CLI commands</li>
-<li>setting <code>locked</code> to <code>True</code> in the global Metaxy configuration. This can be done either in the config file or via the <code>METAXY_LOCKED</code> environment variable.</li>
+<li>setting <code>locked</code> to <code>True</code> in the global <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr>. This can be done either in the config file or via the <code>METAXY_LOCKED</code> environment variable.</li>
 </ul>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -3464,7 +3582,7 @@ They can be used if the actual feature class cannot be imported, for example due
 <p>And some other places where it's appropriate and doesn't create an additional overhead.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>This behavior can be disabled by setting <code>sync=False</code> in the global Metaxy configuration. However, we advise to keep it enabled,
+<p>This behavior can be disabled by setting <code>sync=False</code> in the global <abbr title="Metaxy can be configured via `metaxy.toml` (or `[tool.metaxy]` section in `pyproject.toml`) and environment variables. Learn more [here](/reference/configuration.md).">Metaxy configuration</abbr>. However, we advise to keep it enabled,
 because <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../reference/api/#metaxy.sync_external_features"><code>sync_external_features</code></a> is very lightweight on the first call and a no-op on subsequent calls.
 It only does anything if the current feature graph does not contain any external features.</p>
 </div>
