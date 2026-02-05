@@ -17,7 +17,7 @@ Metaxy delegates all versioning computations and operations to external compute 
 1. :fire: Typically (1) the entire [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update] can be executed externally!
    {.annotate}
 
-   1. Except the cases enumerated in [../../guide/learn/metadata-stores.md]
+   1. Except the cases enumerated in [../../guide/concepts/metadata-stores.md]
 
 These metadata stores can be found [here](./databases/index.md).
 
@@ -58,4 +58,4 @@ For development, testing, branch deployments, and other scenarios where you want
 
 ## Reference
 
-- Learn more about [using metadata stores](../../guide/learn/metadata-stores.md)
+- Learn more about [using metadata stores](../../guide/concepts/metadata-stores.md)

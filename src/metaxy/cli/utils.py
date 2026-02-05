@@ -49,7 +49,7 @@ FilterArgs = Annotated[
     list[nw.Expr],  # Actually list[nw.Expr], but using Any to avoid import at module level
     cyclopts.Parameter(
         name=["--filter"],
-        help="SQL WHERE clause [filter](https://docs.metaxy.io/main/guide/learn/filters/) applied to the result of the status increment. Can be repeated.",
+        help="SQL WHERE clause [filter](https://docs.metaxy.io/main/guide/concepts/filters/) applied to the result of the status increment. Can be repeated.",
         converter=_convert_filters,
         accepts_keys=False,
     ),
@@ -61,7 +61,7 @@ GlobalFilterArgs = Annotated[
     list[nw.Expr],
     cyclopts.Parameter(
         name=["--global-filter"],
-        help="SQL WHERE clause [filter](https://docs.metaxy.io/main/guide/learn/filters/) applied to all features being selected (including upstream). Can be repeated.",
+        help="SQL WHERE clause [filter](https://docs.metaxy.io/main/guide/concepts/filters/) applied to all features being selected (including upstream). Can be repeated.",
         converter=_convert_filters,
         accepts_keys=False,
     ),

@@ -109,8 +109,8 @@ For comprehensive documentation: https://anam-org.github.io/metaxy/
 Key pages:
 
 - **Quickstart**: https://anam-org.github.io/metaxy/guide/overview/quickstart/
-- **Feature Definitions**: https://anam-org.github.io/metaxy/guide/learn/feature-definitions/
-- **Data Versioning**: https://anam-org.github.io/metaxy/guide/learn/data-versioning/
-- **Metadata Stores**: https://anam-org.github.io/metaxy/guide/learn/metadata-stores/
+- **Feature Definitions**: https://anam-org.github.io/metaxy/guide/concepts/feature-definitions/
+- **Data Versioning**: https://anam-org.github.io/metaxy/guide/concepts/data-versioning/
+- **Metadata Stores**: https://anam-org.github.io/metaxy/guide/concepts/metadata-stores/
 - **CLI Reference**: https://anam-org.github.io/metaxy/reference/cli/
 - **API Reference**: https://anam-org.github.io/metaxy/reference/api/

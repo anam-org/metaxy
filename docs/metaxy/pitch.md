@@ -13,7 +13,7 @@ Bring your own... really everything. Metaxy is a universal glue for metadata. Us
 
 <div class="annotate" markdown>
 
-- Your database or storage format of choice to keep metadata where you want. [DuckDB](../integrations/metadata-stores/databases/duckdb.md), [ClickHouse](../integrations/metadata-stores/databases/clickhouse.md) and **20+ databases** via [Ibis](https://ibis-project.org/) (1), **lakehouse storage** formats such as DeltaLake or DuckLake, and other solutions such as [LanceDB](../integrations/metadata-stores/databases/lancedb.md). All of this is available through a unified [interface](../guide/learn/metadata-stores.md).
+- Your database or storage format of choice to keep metadata where you want. [DuckDB](../integrations/metadata-stores/databases/duckdb.md), [ClickHouse](../integrations/metadata-stores/databases/clickhouse.md) and **20+ databases** via [Ibis](https://ibis-project.org/) (1), **lakehouse storage** formats such as DeltaLake or DuckLake, and other solutions such as [LanceDB](../integrations/metadata-stores/databases/lancedb.md). All of this is available through a unified [interface](../guide/concepts/metadata-stores.md).
 - Your favorite dataframe library: Polars, Pandas, or even run **all Metaxy computations in the DB** thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
 - Orchestrators: see the excellent [Dagster integration](../integrations/orchestration/dagster/index.md) :octopus:
 - Compute frameworks like [Ray](../integrations/compute/ray.md). We totally don't care how is **data** (2) produced or where is it stored.
@@ -27,7 +27,7 @@ Bring your own... really everything. Metaxy is a universal glue for metadata. Us
 
 ## 🪨 Reliable
 
-Metaxy is obsessively tested across all supported tabular compute engines. We guarantee to produce [versioning hashes](../guide/learn/data-versioning.md) that are **consistent across DBs and local** compute engines. We really have tested this very well! (1)
+Metaxy is obsessively tested across all supported tabular compute engines. We guarantee to produce [versioning hashes](../guide/concepts/data-versioning.md) that are **consistent across DBs and local** compute engines. We really have tested this very well! (1)
 { .annotate }
 
 1. At the moment of writing our test suite contains more than 2000 tests executed against Linux, Windows and MacOS on all supported Python versions
@@ -47,7 +47,7 @@ We also have a [Ray integration](../integrations/compute/ray.md) which simplifie
 
 ## 🧑‍💻 Developer Friendly
 
-Metaxy provides a clean, intuitive Python API [with syntactic sugar](../guide/learn/syntactic-sugar.md) that simplifies common feature definitions. The [feature discovery](../guide/learn/feature-discovery.md) system enables effortless feature dependency management.
+Metaxy provides a clean, intuitive Python API [with syntactic sugar](../guide/concepts/syntactic-sugar.md) that simplifies common feature definitions. The [feature discovery](../guide/concepts/feature-discovery.md) system enables effortless feature dependency management.
 
 The library includes comprehensive **type hints** (1), and utilizes Pydantic for feature definitions. There's first-class support for **local development** (2), **testing**, **preview environments**, and **CI/CD** workflows.
 { .annotate }

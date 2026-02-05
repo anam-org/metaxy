@@ -9,7 +9,7 @@ Metaxy abstracts interactions with metadata behind an interface called [`Metadat
 
 Users can extend this class to implement support for arbitrary metadata storage such as databases, lakehouse formats, or really any kind of external system.
 
-Learn how to use metadata stores [here](../../../guide/learn/metadata-stores.md).
+Learn how to use metadata stores [here](../../../guide/concepts/metadata-stores.md).
 
 Here are some of the built-in metadata store types (1):
 { .annotate }

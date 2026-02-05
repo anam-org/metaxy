@@ -31,7 +31,7 @@ description: "Integrate Metaxy with other tooling, databases, external services,
 
 ## Metadata Stores
 
-Learn more about metadata stores [here](../guide/learn/metadata-stores.md).
+Learn more about metadata stores [here](../guide/concepts/metadata-stores.md).
 
 <div class="annotate" markdown>
 <div class="grid cards" markdown>

@@ -13,13 +13,13 @@ class DeleteMetadataConfig(dg.Config):
     Attributes:
         feature_key: Feature key validated using ValidatedFeatureKey semantics.
         filters: List of SQL WHERE clause filter expressions (e.g., ["status = 'inactive'", "age > 18"]).
-            See https://docs.metaxy.org/guide/learn/filters/ for syntax.
+            See https://docs.metaxy.org/guide/concepts/filters/ for syntax.
         soft: Whether to use soft deletes or hard deletes.
     """
 
     feature_key: ValidatedFeatureKeyList
     filters: list[str] = Field(
-        description="List of SQL WHERE clause filter expressions. See https://docs.metaxy.org/guide/learn/filters/ for syntax."
+        description="List of SQL WHERE clause filter expressions. See https://docs.metaxy.org/guide/concepts/filters/ for syntax."
     )
     soft: bool = Field(
         default=True,

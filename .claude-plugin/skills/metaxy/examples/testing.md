@@ -1,6 +1,6 @@
 # Testing Metaxy Code
 
-See full documentation: https://anam-org.github.io/metaxy/guide/learn/testing/
+See full documentation: https://anam-org.github.io/metaxy/guide/concepts/testing/
 
 ## Graph Isolation
 

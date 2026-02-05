@@ -11,7 +11,7 @@ description: "SQLModel integration for ORM-based features."
 
 [SQLModel](https://sqlmodel.tiangolo.com/) combines SQLAlchemy and Pydantic into a single ORM. If you want your Metaxy feature definitions to double as ORM models, enable the SQLModel integration. This exposes user-defined feature tables directly to SQLAlchemy.
 
-It is the primary way to use Metaxy with database-backed [metadata stores](../../guide/learn/metadata-stores.md).
+It is the primary way to use Metaxy with database-backed [metadata stores](../../guide/concepts/metadata-stores.md).
 
 !!! tip "Database Migrations"
 

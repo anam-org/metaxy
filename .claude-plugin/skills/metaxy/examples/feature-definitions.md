@@ -1,6 +1,6 @@
 # Feature Definitions
 
-See full documentation: https://anam-org.github.io/metaxy/guide/learn/feature-definitions/
+See full documentation: https://anam-org.github.io/metaxy/guide/concepts/feature-definitions/
 
 !!! critical
 

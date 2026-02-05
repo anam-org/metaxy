@@ -120,7 +120,7 @@ def init_metaxy(
 ) -> MetaxyConfig:
     """Main user-facing initialization function for Metaxy. It loads feature definitions and Metaxy configuration.
 
-    Features are [discovered](../../guide/learn/feature-discovery.md) from installed Python packages metadata.
+    Features are [discovered](../../guide/concepts/feature-discovery.md) from installed Python packages metadata.
     External features are loaded from `metaxy.lock` if present.
 
     Args:

@@ -7,7 +7,7 @@ description: "Get started with Metaxy."
 
 ## Installation
 
-Install Metaxy with `deltalake` - an easy way to setup a [`MetadataStore`](../learn/metadata-stores.md) locally:
+Install Metaxy with `deltalake` - an easy way to setup a [`MetadataStore`](/guide/concepts/metadata-stores.md) locally:
 
 ```shell
 pip install 'metaxy[delta]'
@@ -109,7 +109,7 @@ Continue to [next section](feature-dependencies.md) to learn how to add more fea
 
 ## Additional info
 
-- Learn more about [feature definitions](../learn/definitions/features.md) or [versioning](../learn/data-versioning.md)
+- Learn more about [feature definitions](/guide/concepts/definitions/features.md) or [versioning](/guide/concepts/data-versioning.md)
 
 - Explore [Metaxy integrations](../../integrations/index.md)
 

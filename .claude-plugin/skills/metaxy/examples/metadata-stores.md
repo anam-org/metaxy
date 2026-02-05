@@ -1,6 +1,6 @@
 # Metadata Stores
 
-See full documentation: https://anam-org.github.io/metaxy/main/guide/learn/metadata-stores/
+See full documentation: https://anam-org.github.io/metaxy/main/guide/concepts/metadata-stores/
 
 ## Store Operations
 

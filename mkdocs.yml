@@ -215,22 +215,22 @@ nav:
       - Quickstart: guide/overview/quickstart.md
       - Feature Dependencies: guide/overview/feature-dependencies.md
     - Concepts:
-      - Overview: guide/learn/index.md
+      - Overview: guide/concepts/index.md
       - Metadata Stores:
-        - Metadata Stores: guide/learn/metadata-stores.md
-        - Deletions: guide/learn/deletions.md
+        - Metadata Stores: guide/concepts/metadata-stores.md
+        - Deletions: guide/concepts/deletions.md
       - Definitions:
-        - Features: guide/learn/definitions/features.md
-        - Optional Dependencies: guide/learn/definitions/optional-dependencies.md
-        - Lineage Types: guide/learn/definitions/relationship.md
-      - Versioning: guide/learn/data-versioning.md
-      - Feature Discovery: guide/learn/feature-discovery.md
-      - Syntactic Sugar: guide/learn/syntactic-sugar.md
-      - Filters: guide/learn/filters.md
+        - Features: guide/concepts/definitions/features.md
+        - Optional Dependencies: guide/concepts/definitions/optional-dependencies.md
+        - Lineage Types: guide/concepts/definitions/relationship.md
+      - Versioning: guide/concepts/data-versioning.md
+      - Feature Discovery: guide/concepts/feature-discovery.md
+      - Syntactic Sugar: guide/concepts/syntactic-sugar.md
+      - Filters: guide/concepts/filters.md
     - Application Lifecycle:
-      - Local Development: guide/learn/lifecycle/development.md
-      - Testing: guide/learn/lifecycle/testing.md
-      - Deployment: guide/learn/lifecycle/deployment.md
+      - Local Development: guide/concepts/lifecycle/development.md
+      - Testing: guide/concepts/lifecycle/testing.md
+      - Deployment: guide/concepts/lifecycle/deployment.md
   - Integrations:
     - integrations/index.md
     - Orchestration:
@@ -287,7 +287,7 @@ nav:
       - Utils: reference/api/utils.md
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md
-    - Storage Layout: guide/learn/system-columns.md
+    - Storage Layout: guide/concepts/system-columns.md
 
 extra:
   social:

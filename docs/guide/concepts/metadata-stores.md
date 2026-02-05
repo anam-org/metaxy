@@ -62,7 +62,7 @@ There are generally two ways to create a `MetadataStore`. We are going to demons
 
 <!-- dprint-ignore-end -->
 
-Now the `store` is ready to be used. We'll also assume there is a `MyFeature` [feature class](/guide/learn/definitions/features.md) (1) prepared.
+Now the `store` is ready to be used. We'll also assume there is a `MyFeature` [feature class](/guide/concepts/definitions/features.md) (1) prepared.
 { .annotate }
 
 1. with `"my/feature"` key
