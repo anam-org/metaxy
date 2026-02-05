@@ -33,14 +33,6 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/guide/learn/development-lifecycle/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/guide/learn/feature-definitions/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://docs.metaxy.io/main/guide/learn/feature-discovery/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
@@ -53,14 +45,6 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/guide/learn/optional-dependencies/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.metaxy.io/main/guide/learn/relationship/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://docs.metaxy.io/main/guide/learn/syntactic-sugar/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
@@ -69,7 +53,27 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/guide/learn/testing/</loc>
+         <loc>https://docs.metaxy.io/main/guide/learn/definitions/features/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/guide/learn/definitions/optional-dependencies/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/guide/learn/definitions/relationship/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/guide/learn/lifecycle/deployment/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/guide/learn/lifecycle/development/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/guide/learn/lifecycle/testing/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
