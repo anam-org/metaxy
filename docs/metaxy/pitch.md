@@ -62,7 +62,8 @@ The included [CLI](../reference/cli.md) tool allows easy interaction, inspection
 
 Hopefully this was impressive enough and has sparked some interest in Metaxy!
 
-## 🚀 What's Next?
+## What's Next?
 
 - Learn about Metaxy [design choices](./design.md)
+- Itching to write some Metaxy code? Jump to [Quickstart](/guide/quickstart/hello.md).
 --8<-- "whats-next.md"

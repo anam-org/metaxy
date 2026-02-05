@@ -1,4 +1,3 @@
-- Itching to write some Metaxy code? Jump to [Quickstart](/guide/overview/quickstart.md) (WIP!).
 - Learn more about Metaxy [concepts](/guide/concepts/index.md)
 - View complete, end-to-end [examples](/examples/index.md)
 - Explore [Metaxy integrations](/integrations/index.md)

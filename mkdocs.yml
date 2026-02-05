@@ -211,9 +211,10 @@ nav:
       - Introduction: index.md
       - Pitch: metaxy/pitch.md
       - Design Choices: metaxy/design.md
-    - Getting Started:
-      - Quickstart: guide/overview/quickstart.md
-      - Feature Dependencies: guide/overview/feature-dependencies.md
+    - Quickstart:
+      - Hello, Metaxy!: guide/quickstart/hello.md
+      - Feature Dependencies: guide/quickstart/feature-dependencies.md
+      - Resolving An Increment: guide/quickstart/feature-dependencies.md
     - Concepts:
       - Overview: guide/concepts/index.md
       - Metadata Stores:

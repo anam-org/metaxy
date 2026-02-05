@@ -108,7 +108,7 @@ For comprehensive documentation: https://anam-org.github.io/metaxy/
 
 Key pages:
 
-- **Quickstart**: https://anam-org.github.io/metaxy/guide/overview/quickstart/
+- **Quickstart**: https://anam-org.github.io/metaxy/guide/quickstart/quickstart/
 - **Feature Definitions**: https://anam-org.github.io/metaxy/guide/concepts/feature-definitions/
 - **Data Versioning**: https://anam-org.github.io/metaxy/guide/concepts/data-versioning/
 - **Metadata Stores**: https://anam-org.github.io/metaxy/guide/concepts/metadata-stores/

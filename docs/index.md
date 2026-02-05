@@ -107,7 +107,7 @@ That being said, Metaxy is still an early project, so while the core functionali
 !!! tip
 
     Urging to get your hands dirty?
-    Head to [Quickstart](./guide/overview/quickstart.md) (WIP!).
+    Head to [Quickstart](./guide/quickstart/hello.md) (WIP!).
 
 ## What's Next?
 
