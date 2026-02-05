@@ -213,19 +213,19 @@ nav:
     - Getting Started:
       - Quickstart: guide/overview/quickstart.md
       - Feature Dependencies: guide/overview/feature-dependencies.md
-    - Definitions:
-      - Features: guide/learn/definitions/features.md
-      - Optional Dependencies: guide/learn/definitions/optional-dependencies.md
-      - Lineage Types: guide/learn/definitions/relationship.md
     - Concepts:
       - Overview: guide/learn/index.md
-      - Metadata Stores: guide/learn/metadata-stores.md
+      - Metadata Stores:
+        - Metadata Stores: guide/learn/metadata-stores.md
+        - Deletions: guide/learn/deletions.md
+      - Definitions:
+        - Features: guide/learn/definitions/features.md
+        - Optional Dependencies: guide/learn/definitions/optional-dependencies.md
+        - Lineage Types: guide/learn/definitions/relationship.md
       - Versioning: guide/learn/data-versioning.md
       - Feature Discovery: guide/learn/feature-discovery.md
       - Syntactic Sugar: guide/learn/syntactic-sugar.md
       - Filters: guide/learn/filters.md
-      - Deletions: guide/learn/deletions.md
-      - System Columns: guide/learn/system-columns.md
     - Application Lifecycle:
       - Local Development: guide/learn/lifecycle/development.md
       - Testing: guide/learn/lifecycle/testing.md
@@ -286,6 +286,7 @@ nav:
       - Utils: reference/api/utils.md
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md
+    - Storage Layout: guide/learn/system-columns.md
 
 extra:
   social:

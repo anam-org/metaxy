@@ -54,7 +54,7 @@ For development, testing, branch deployments, and other scenarios where you want
 !!! warning
 
     Not all metadata stores support parallel writes.
-    For example, DuckDB requires [application level work-arounds](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
+    For example, using DuckDB with files requires [application level work-arounds](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
 
 ## Reference
 

@@ -31,7 +31,7 @@ class EnrichedVideo(
         id_columns=["video_id"],
         deps=[
             mx.FeatureDep(feature=RawVideo),
-            mx.FeatureDep(feature=AudioTranscript, optional=True),  # Optional
+            mx.FeatureDep(feature=AudioTranscript, optional=True),
         ],
     ),
 ):

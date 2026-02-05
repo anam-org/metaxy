@@ -29,7 +29,7 @@ There are generally two ways to create a `MetadataStore`. We are going to demons
 
 2. Via Metaxy [configuration](../../reference/configuration.md):
 
-    First, create a `metaxy.toml` file (1):
+    First, create a `metaxy.toml` file:
 
     ```toml title="metaxy.toml"
     [stores.dev]
@@ -62,10 +62,8 @@ There are generally two ways to create a `MetadataStore`. We are going to demons
 
 <!-- dprint-ignore-end -->
 
-1. `[tool.metaxy]` section in `pyproject.toml` is supported as well
-
 Now the `store` is ready to be used. We'll also assume there is a `MyFeature` [feature class](/guide/learn/definitions/features.md) (1) prepared.
-{. annotate }
+{ .annotate }
 
 1. with `"my/feature"` key
 
