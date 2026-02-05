@@ -1,13 +1,20 @@
 ---
 title: "Feature Discovery"
-description: "Automatic feature discovery from Python modules."
+description: "Learn how Metaxy automatically finds feature definitions for the current environment."
 ---
 
 # Feature Discovery
 
-!!! warning
+Metaxy has a mechanism to automatically discover feature definitions for the current environment, which is called **feature discovery**.
+It removes the burden of pointing Metaxy to all the feature definitions via Python `import` statements from the user, and is essential for [Metaxy CLI](/reference/cli.md).
 
-    This page is WIP
+## Trivia
+
+Currently, there are two (user-facing) ways to define a Metaxy feature:
+
+1. Create a Python class that inherits from [`BaseFeature`][metaxy.BaseFeature].
+
+2. Maintain a `metaxy.lock` file. This is an advanced feature only needed for multi-project setups.
 
 ## Config-Based Discovery
 

@@ -146,6 +146,32 @@ with store.open("w"):
 
 Learn more about deletions [here](./deletions.md).
 
+## Fallback Stores
+
+Metaxy metadata stores can be configured to pull missing metadata from another store. This is very useful for local and testing workflows, because it allows to avoid materializing the entire data pipeline locally.
+Instead, Metaxy stores can automatically pull missing metadata from production.
+
+Example Metaxy configuration:
+
+```toml title="metaxy.toml"
+[stores.dev]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+root_path = "${HOME}/.metaxy/dev"
+fallback_stores = ["prod"]
+
+[stores.prod]
+type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+root_path = "s3://my-prod-bucket/metaxy"
+```
+
+!!! warning
+
+    Currently, the "missing metadata" detection works by checking whether the feature table exists in the store. This works in conjunction with [automatic table creation](), but doesn't work if empty tables are pre-created by e.g. migration tooling or some kind of CI/CD workflows. This will be improved in the future.
+
+Metaxy doesn't mix metadata from different stores: either the entire feature is going to be pulled from the fallback store, or the primary store will be used.
+
+Fallback stores can be chained at arbitrary depth.
+
 ## Metadata Store Implementations
 
 Metaxy provides ready `MetadataStore` [implementations](../../integrations/metadata-stores/index.md) for popular databases and storage systems.

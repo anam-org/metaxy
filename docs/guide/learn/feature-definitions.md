@@ -5,45 +5,36 @@ description: "Declarative feature definitions with Pydantic models."
 
 # Feature System
 
-Metaxy has a declarative (defined statically at class level), expressive, flexible feature system.
+Metaxy has a declarative and flexible feature system.
 It has been inspired by [Dagster](https://dagster.io/)'s Software-Defined Assets and [Nix](https://nixos.org/).
 
-!!! abstract
+Feature definitions do not describe **data** (1)
+{ .annotate }
 
-    Features represent tabular **metadata**, typically containing references to external multi-modal **data** such as files, images, or videos.
+1. except the logical fields versions
 
-    | **Subject** | **Description** |
-    |---------|-------------|
-    | **Data** | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform. |
-    | **Metadata** | Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes. |
+--8<-- "data-vs-metadata.md"
 
-    As an edge case, Metaxy features may also be pure **metadata** without references to external **data**.
-
-I will highlight **data** and **metadata** with bold so it really stands out.
-
-Metaxy is responsible for providing correct **metadata** to users.
-
-During incremental processing, Metaxy will automatically resolve added, changed and deleted **metadata** rows and calculate the right [sample versions](data-versioning.md) for them.
-
-Metaxy does not interact with **data** directly, the user is responsible for writing it, typically using **metadata** to identify sample locations in storage.
+Metaxy is responsible for providing correct **metadata** to users. Metaxy does not interact with **data** directly, the user is responsible for writing it, typically using **metadata** to identify sample locations in storage.
 
 !!! tip "Keeping Historical Data"
 
     Include `metaxy_data_version` in your data path to avoid collisions between different versions of the same data sample.
     Doing this will ensure that newer samples are never written over older ones.
 
-I hope we can stop using bold for **data** and **metadata** from now on, hopefully we've made our point.
-
 ## Feature Definitions
 
-Metaxy provides a [`BaseFeature`][metaxy.BaseFeature] class that can be extended to create user-defined features.
-It's a [Pydantic](https://docs.pydantic.dev/latest/) model.
+To create a Metaxy feature, extend the [`BaseFeature`][metaxy.BaseFeature] class (1).
+{ .annotate }
+
+1. It's a [Pydantic](https://docs.pydantic.dev/latest/) model.
+
 
 !!! abstract
 
     Features must have unique (across all projects) [`FeatureKey`][metaxy.FeatureKey] associated with them.
 
-    Users must provide one or more ID columns (1) to `FeatureSpec`, telling Metaxy how to uniquely identify feature samples.
+    Users must provide one or more ID columns (1) to [`FeatureSpec`][metaxy.FeatureSpec], telling Metaxy how to uniquely identify feature samples.
     { .annotate }
 
     1. ID columns are *almost* a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).
@@ -59,6 +50,14 @@ class VideoFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="raw/video", id_colum
 Since `VideoFeature` is a **root feature**, it doesn't have any dependencies.
 
 That's it! Easy.
+
+!!! question annotate "Why classes?"
+    Some of the tooling Metaxy is aiming to integrate with, such as [SQLModel](/integrations/plugins/sqlmodel.md) or [Lance](/integrations/metadata-stores/databases/lancedb.md) are using class-based table definitions.
+    It was practical to start from this interface, since it's somewhat more complicated to implement and support.
+    More feature definition and registration methods are likely to be introduced in the future, since Metaxy doesn't
+    use the class information in any way (1).
+
+1. That's a little lie. The [Dagster integration](/integrations/orchestration/dagster/index.md) uses the original class to extract the table schema for visualization purposes, but we are exploring alternative solutions in [`anam-org/metaxy`](https://github.com/anam-org/metaxy/issues/855)
 
 !!! tip
 

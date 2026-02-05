@@ -182,7 +182,9 @@ markdown_extensions:
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.snippets:
-      base_path: ['examples', 'docs/snippets']
+      base_path: ['examples', 'docs/snippets', 'docs']
+      auto_append:
+        - .glossary.md
   # Metaxy custom extensions (must be before superfences to inject fenced code blocks)
   - metaxy_config
   - metaxy_examples
@@ -224,6 +226,8 @@ nav:
       - Deletions: guide/learn/deletions.md
       - System Columns: guide/learn/system-columns.md
       - Testing: guide/learn/testing.md
+    - Development Lifecycle:
+      - Development Lifecycle: guide/learn/development-lifecycle.md
   - Integrations:
     - integrations/index.md
     - Orchestration:

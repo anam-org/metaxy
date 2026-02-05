@@ -19,14 +19,15 @@ Metaxy is designed to be compatible with storage systems which satisfy the follo
 
 - can store _map-like elements_ (e.g. dictionaries)
 
-    ??? note "Removing This Requirement"
+    ??? note "Lifting This Requirement"
 
-        This requirement may be lifted in the future.
-        Unfortunately, the most popular storage solution - PostgreSQL - does not satisfy it.
+        Unfortunately, the most popular database - PostgreSQL - does not satisfy it.
         While PostgreSQL is not an ideal choice for a Metaxy [Metadata Store](../guide/learn/metadata-stores.md)
-        for other reasons (mainly analytical queries performance), we recognize the need to support it and are exploring a solution in [`anam-org/metaxy#223`](https://github.com/anam-org/metaxy/issues/223).
+        for other reasons (mainly being analytical queries performance), we recognize the need to support it and are exploring a solution in [`anam-org/metaxy#223`](https://github.com/anam-org/metaxy/issues/223).
+        This requirement may not be necessary in the future.
 
 </div>
+
 
 This allows Metaxy to target modern data warehouses (e.g. ClickHouse, BigQuery, Snowflake, or the more minimalistic DuckDB) and storage formats such as DeltaLake, Iceberg, DuckLake, and anything compatible with Apache Arrow.
 
@@ -105,17 +106,13 @@ When resolving incremental updates for a [feature](../guide/learn/feature-defini
 
 !!! note "When can **local** computations happen instead"
 
-    Metaxy's versioning engine runs **locally** instead:
+    Metaxy's versioning engine runs on the **local Polars versioning engine** if:
 
-    !!! info
+    1. The metadata store does not have a compute engine at all: for example, [DeltaLake](https://delta.io/) is just a storage format.
 
-        The **local** versioning engine is implemented with [`polars-hash`](https://github.com/ion-elgreco/polars-hash) and benefits from parallelism, predicate pushdown, and other features of [Polars](https://pola.rs/).
+    2. The user explicitly requested to keep the computations **local** by setting `versioning_engine="polars"` when instantiating the metadata store.
 
-    1. If the metadata store does not have a compute engine at all: for example, [DeltaLake](https://delta.io/) is just a storage format.
-
-    2. If the user explicitly requested to keep the computations **local** by setting `versioning_engine="polars"` when instantiating the metadata store.
-
-    3. If a **fallback store** had to be used to retrieve one of the parent features missing in the current store.
+    3. A **fallback store** had to be used to retrieve one of the parent features missing in the current store.
 
     All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.
 

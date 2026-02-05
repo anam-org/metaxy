@@ -23,57 +23,83 @@ description: "A high level introduction to Metaxy."
 
 ## Metaxy
 
-<div class="annotate" markdown>
+Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipelines. Metaxy manages and tracks **metadata** across complex computational graphs, implements sample and sub-sample versioning, allowing the codebase to evolve over time without friction.
 
-Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipelines that manages and tracks **metadata** across complex computational graphs, including row-level [versions](guide/learn/data-versioning.md) (1), allowing the codebase to evolve over time without friction. Metaxy gives you quite a few superpowers:
+### What is the problem again?
 
-- Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second. (2)
-- Freedom from storage lock-in. Swap [storage backends](./integrations/metadata-stores/index.md) in development and production environments without breaking a sweat (3).
-- Use the [`mx` CLI](./reference/cli.md) to observe and manage metadata without leaving the comfort of your terminal.
-- Metaxy is **composable** and **extensible** (4): use it to build custom integrations and workflows!
+!!! info annotate
 
-</div>
+    Data, ML and AI workloads processing **large amounts** of images, videos, audios, or texts (1) can be very expensive to run.
+    In contrast to traditional data engineering, re-running the whole pipeline on changes is no longer an option.
+    Therefore, it becomes crucially important to correctly implement **incremental processing**, **sample-level versioning** and **prunable updates**.
 
-1. And even more granular [partial data versions](http://localhost:8000/guide/learn/data-versioning/#samples)
-2. Our experience at [Anam](https://anam.ai/) with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md)
-3. For example, develop against [DeltaLake](./integrations/metadata-stores/storage/delta.md) and scale production with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md) without code changes.
-4. See our official integrations [here](./integrations/index.md)
+1. or really any kind of data
 
+These workloads **evolve all the time**, with new data being shipped, bugfixes or algorithm changes introduced, and new features added to the pipeline. This means the pipeline has to be **re-computed frequently**, but at the same time it's important to avoid unnecessary recomputations for individual data samples.
+
+!!! info
+
+    Unnecessary recomputations can waste dozens or hundreds of thousands of dollars on compute, and sample-level orchestration complexity can cost even more in engineering efforts.
+
+--8<-- "data-vs-metadata.md"
+
+### Alright, that sounds pretty bad
+
+It does (1). Until recently, a general solution for this problem did not exist, but not anymore :tada: !
+{ .annotate }
+
+1. it is hard to overestimate the amount of pain [@danielgafni](https://github.com/danielgafni) has endured before building Metaxy
+
+!!! success annotate  "Just Use Metaxy"
+
+    Metaxy gives you quite a few superpowers:
+
+    - Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second (1). Benefit from prunable partial updates.
+    - Freedom from storage lock-in. Swap [storage backends](./integrations/metadata-stores/index.md) in development and production environments without breaking a sweat (2).
+    - Metaxy is **pluggable**, **declarative**, **composable** and **extensible** (3): use it to build custom integrations and workflows, benefit from emergent capabilities that enable tooling, visualizations and optimizations you didn't even plan for.
+
+
+1. Our experience at [Anam](https://anam.ai/) with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md)
+2. For example, develop against [DeltaLake](./integrations/metadata-stores/storage/delta.md) and scale production with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md) without code changes.
+3. See our official integrations [here](./integrations/index.md)
+
+And now the killer feature:
 
 !!! tip annotate "Super Granular Data Versioning"
 
-    The feature that makes Metaxy really stand out is the ability to track **partial data dependencies** (1) and **skip downstream updates** unless the exactly required subset of upstream data has changed. At the moment of writing, Metaxy is the only available tool that tackles these problems.
+    The feature that makes Metaxy really stand out is the ability to identify **prunable partial data updates** (1) and **skip unnecessary downstream computations**. At the moment of writing, Metaxy is the only available tool that tackles these problems.
 
-1.  which are **very common** in multi-modal pipelines, for example when you only need to process video frames and not the audio tracks
+1.  which are **very common** in multi-modal pipelines
 
+Read [The Pitch](./metaxy/pitch.md) to be impressed even more.
 
 All of this is possible thanks to (1) [Narwhals](https://narwhals-dev.github.io/narwhals/), [Ibis](https://ibis-project.org/), and a few clever tricks.
 { .annotate }
 
 1. we really do stand on the shoulders of giants
 
-
---8<-- "data-vs-metadata.md"
-
-
 ## Reliability
 
-Metaxy was [designed](./metaxy/design.md) to handle large amounts of **big metadata** in distributed environments, makes very little assumptions about usage patterns and cannot enter an inconsistent state.
+Metaxy was [designed](./metaxy/design.md) to handle large amounts of **big metadata** in distributed environments, makes very few assumptions about usage patterns and is non-invasive to the rest of the data pipeline.
 
 Metaxy is fanatically tested across all supported metadata stores, Python versions and platforms [^1]. We guarantee versioning consistency across the supported metadata stores.
 
-We have been dogfooding Metaxy since December 2025 at Anam. We are running it in production with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md), [Dagster](./integrations/orchestration/dagster/index.md), and [Ray](./integrations/compute/ray.md) (1).
+We have been dogfooding Metaxy at [Anam](https://anam.ai/) since December 2025. We are running it in production with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md), [Dagster](./integrations/orchestration/dagster/index.md), and [Ray](./integrations/compute/ray.md) (1), and it's powering all our pipelines that prepare training data for our video generation models.
 { .annotate }
 
 1. and integrations with these tools are probably the most complete at the moment
 
+That being said, Metaxy is still an early project, so while the core functionality is rock solid, some rough edges with other parts of Metaxy are expected.
+
+
+
 ## Installation
 
 !!! warning
-    Metaxy hasn't been publicly released yet, but you can try the latest dev release:
+    Metaxy hasn't been publicly released yet, but you can try the `main` branch:
 
     ```shell
-    pip install --pre metaxy
+    pip install git+https://github.com/metaxy-dev/metaxy.git
     ```
 
 ## Quickstart
@@ -83,50 +109,7 @@ We have been dogfooding Metaxy since December 2025 at Anam. We are running it in
     Urging to get your hands dirty?
     Head to [Quickstart](./guide/overview/quickstart.md) (WIP!).
 
-## What is the problem again?
-
-!!! info annotate
-
-    Data, ML and AI workloads processing **large amounts** of images, videos, audios, or texts (1) can be very expensive to run.
-    In contrast to traditional data engineering, re-running the whole pipeline on changes is no longer an option.
-    Therefore, it becomes crucially important to correctly implement incremental processing and sample-level versioning.
-
-1. or really any kind of data
-
-These workloads often **aren't stale**: they **evolve all the time**, with new data being shipped, bugfixes or algorithm changes introduced, and new features added to the pipeline. This means the pipeline has to be **re-computed frequently**, but at the same time it's important to avoid unnecessary recomputations for individual data samples.
-
-Here are some of the cases where re-computing would be **undesirable**:
-
-- merging two consecutive steps into one (refactoring the graph topology)
-- **partial data updates**, e.g. changing only the audio track inside a video file
-- backfilling metadata from another source
-
-Correctly identifying these scenarios while also **re-computing the feature when it should be** is surprisingly challenging, and tracking and propagating these changes correctly to the right subset of samples and features can become incredibly complicated and time-consuming.
-
-## So what can we do about this?
-
-Sounds really bad, right? Yes, and it is (1). Until recently, a general solution for this problem did not exist, but not anymore :tada: !
-{ .annotate }
-
-1. I cannot overestimate the amount of hair pulling I've endured before making Metaxy
-
-!!! success  "Just Use Metaxy"
-
-    Metaxy solves this!
-
-<div class="annotate" markdown>
-
-1. Metaxy builds a *versioned graph* from declarative [feature definitions](./guide/learn/feature-definitions.md) and tracks [version changes](./guide/learn/data-versioning.md) across individual samples. These computations can be scaled to run on millions of samples.
-
-2. Metaxy introduces a unique [field-level](./guide/learn/feature-definitions.md#field-level-dependencies) dependency system to express partial data dependencies and avoiding unnecessary downstream recomputations. Each sample holds a dictionary mapping its fields to their respective versions. (1)
-
-3. Metaxy implements a general [`MetadataStore`](./guide/learn/metadata-stores.md) interface that enables users to interact with storage systems -- be it an analytical database or a LakeHouse -- in the same way.
-
-</div>
-
-1. for example, a `video` sample could independently version the frames and the audio track: `{"audio": "asddsa", "frames": "joasdb"}`
-
-## 🚀 What's Next?
+## What's Next?
 
 Here are a few more useful links:
 
