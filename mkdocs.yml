@@ -140,6 +140,7 @@ plugins:
             - https://docs.pola.rs/api/python/stable/objects.inv
             - https://docs.dagster.io/objects.inv
             - https://docs.ray.io/en/latest/objects.inv
+            - https://delta-io.github.io/delta-rs/objects.inv
 
 markdown_extensions:
   # Core extensions

@@ -28,7 +28,7 @@ from metaxy import (
     FieldSpec,
 )
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
 @pytest.fixture

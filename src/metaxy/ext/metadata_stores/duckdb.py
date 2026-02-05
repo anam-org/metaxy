@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 from metaxy._decorators import public
-from metaxy.metadata_store._ducklake_support import (
+from metaxy.ext.metadata_stores._ducklake_support import (
     DuckDBPyConnection,
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
@@ -154,7 +154,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
             config: Optional DuckDB configuration settings (e.g., {'threads': '4', 'memory_limit': '4GB'})
             extensions: List of DuckDB extensions to install and load on open.
                 Supports strings (community repo), mapping-like objects with
-                ``name``/``repository`` keys, or [metaxy.metadata_store.duckdb.ExtensionSpec][] instances.
+                ``name``/``repository`` keys, or [metaxy.ext.metadata_stores.duckdb.ExtensionSpec][] instances.
 
         ducklake: Optional DuckLake attachment configuration. Provide either a
             mapping with 'metadata_backend' and 'storage_backend' entries or a

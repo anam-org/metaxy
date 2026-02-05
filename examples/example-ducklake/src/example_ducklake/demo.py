@@ -6,7 +6,7 @@ we preview the SQL statements that would be executed when attaching DuckLake.
 """
 
 import metaxy as mx
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 
 
 def preview_attachment_sql(store: DuckDBMetadataStore) -> list[str]:

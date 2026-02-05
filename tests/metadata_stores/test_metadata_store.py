@@ -17,12 +17,12 @@ from metaxy import (
     FieldSpec,
 )
 from metaxy._utils import collect_to_polars
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store import (
     FeatureNotFoundError,
     MetadataSchemaError,
     StoreNotOpenError,
 )
-from metaxy.metadata_store.delta import DeltaMetadataStore
 
 
 @pytest.fixture

@@ -10,7 +10,7 @@ from metaxy_testing import RAY_FEATURES_MODULE
 
 import metaxy as mx
 from metaxy.config import StoreConfig
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 if TYPE_CHECKING:
     import ray
@@ -79,7 +79,7 @@ def ray_config(tmp_path: Path, delta_store: DeltaMetadataStore) -> mx.MetaxyConf
         entrypoints=[RAY_FEATURES_MODULE],
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(delta_store._root_uri)},
             )
         },

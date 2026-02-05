@@ -6,7 +6,7 @@ import narwhals as nw
 from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec, sync_external_features
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureDefinition, FeatureGraph
 

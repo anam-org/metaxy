@@ -9,7 +9,7 @@ description: "LanceDB as a metadata store backend."
 
     This functionality is experimental.
 
-[LanceDB](https://lancedb.github.io/lancedb/) is an vector database built on the Lance columnar format. To use Metaxy with LanceDB, configure [`LanceDBMetadataStore`][metaxy.metadata_store.lancedb.LanceDBMetadataStore]. It uses the in-memory Polars engine for versioning computations. LanceDB handles schema evolution, transactions, and compaction automatically.
+[LanceDB](https://lancedb.github.io/lancedb/) is an vector database built on the Lance columnar format. To use Metaxy with LanceDB, configure [`LanceDBMetadataStore`][metaxy.ext.metadata_stores.lancedb.LanceDBMetadataStore]. It uses the in-memory Polars engine for versioning computations. LanceDB handles schema evolution, transactions, and compaction automatically.
 
 It runs embedded (local directory) or against external storage (object stores, HTTP endpoints, LanceDB Cloud), so you can use the same store type for local development and cloud workloads.
 
@@ -33,13 +33,13 @@ Each feature gets its own Lance table.
 ---
 
 <!-- dprint-ignore-start -->
-::: metaxy.metadata_store.lancedb
+::: metaxy.ext.metadata_stores.lancedb
     options:
       members: false
       show_root_heading: true
       heading_level: 2
 
-::: metaxy.metadata_store.lancedb.LanceDBMetadataStore
+::: metaxy.ext.metadata_stores.lancedb.LanceDBMetadataStore
     options:
       members: false
       heading_level: 3
@@ -49,7 +49,7 @@ Each feature gets its own Lance table.
 
 <!-- dprint-ignore-start -->
 ::: metaxy-config
-    class: metaxy.metadata_store.lancedb.LanceDBMetadataStoreConfig
+    class: metaxy.ext.metadata_stores.lancedb.LanceDBMetadataStoreConfig
     path_prefix: stores.dev.config
     header_level: 3
 <!-- dprint-ignore-end -->

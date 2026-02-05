@@ -28,12 +28,12 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
 )
-from metaxy.metadata_store.delta import DeltaMetadataStore
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.warnings import PolarsMaterializationWarning
 from metaxy.models.feature import FeatureGraph
 from metaxy.versioning.types import HashAlgorithm
@@ -611,7 +611,7 @@ def test_fallback_stores_opened_on_demand_when_reading(tmp_path, graph: FeatureG
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,
@@ -662,7 +662,7 @@ def test_get_store_metadata_respects_fallback_stores(tmp_path, graph: FeatureGra
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,
@@ -735,7 +735,7 @@ def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph)
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,
@@ -795,7 +795,7 @@ def test_read_with_store_info(tmp_path, graph: FeatureGraph) -> None:
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,

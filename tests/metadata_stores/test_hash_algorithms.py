@@ -25,7 +25,7 @@ from metaxy_testing.parametric import (
 from pytest_cases import parametrize_with_cases
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:

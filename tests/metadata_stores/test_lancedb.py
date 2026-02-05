@@ -20,8 +20,8 @@ import pytest
 from metaxy import FeatureKey
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
+from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
 from metaxy.metadata_store import StoreNotOpenError
-from metaxy.metadata_store.lancedb import LanceDBMetadataStore
 
 
 @pytest.fixture(autouse=True)

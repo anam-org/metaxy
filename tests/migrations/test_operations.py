@@ -18,7 +18,7 @@ from metaxy import (
     FieldSpec,
 )
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.models import FullGraphMigration
 from metaxy.migrations.ops import BaseOperation, DataVersionReconciliation

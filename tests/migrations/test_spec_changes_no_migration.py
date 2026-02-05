@@ -26,7 +26,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations import detect_diff_migration
 

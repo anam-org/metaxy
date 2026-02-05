@@ -13,8 +13,8 @@ from metaxy_testing.models import SampleFeatureSpec
 from pytest_cases import parametrize_with_cases
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store import MetadataStore
-from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,

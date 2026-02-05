@@ -9,7 +9,7 @@ import polars as pl
 import pytest
 
 import metaxy as mx
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 if TYPE_CHECKING:
     import ray
@@ -151,7 +151,7 @@ auto_create_tables = true
 entrypoints = ["{RAY_FEATURES_MODULE}"]
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{delta_root}"

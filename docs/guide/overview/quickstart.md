@@ -20,7 +20,7 @@ project = "quickstart"
 entrypoints = ["features.py"]
 
 [stores.dev]
-type = "metaxy.metadata_store.deltalake.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 config = { root_path = "${HOME}/.metaxy/deltalake" }
 ```
 

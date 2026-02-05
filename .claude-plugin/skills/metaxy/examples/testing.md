@@ -32,7 +32,7 @@ def test_my_feature(isolated_graph):
 
 ```python
 import metaxy as mx
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
 def test_with_custom_config(tmp_path):
@@ -47,7 +47,7 @@ def test_with_custom_config(tmp_path):
 ```python
 import pytest
 import metaxy as mx
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
 @pytest.fixture

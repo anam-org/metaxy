@@ -3,7 +3,7 @@ entrypoints = ["example_dagster.definitions"]
 auto_create_tables = true # Enable for development/examples
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "/tmp/example_dagster"

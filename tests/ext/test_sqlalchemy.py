@@ -43,7 +43,7 @@ def config_project_a(_clear_sqlmodel_metadata):
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
             }
         },
@@ -94,7 +94,7 @@ def config_project_b(_clear_sqlmodel_metadata):
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
             }
         },
@@ -128,7 +128,7 @@ def config_no_filter(_clear_sqlmodel_metadata):
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
             }
         },
@@ -180,7 +180,7 @@ def test_get_metaxy_system_metadata():
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
             }
         },
@@ -210,7 +210,7 @@ def test_feature_versions_table_columns_match_polars_schema():
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
             }
         },
@@ -287,7 +287,7 @@ def test_get_store_sqlalchemy_url_default_store():
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": "test.db"},
             }
         },
@@ -305,11 +305,11 @@ def test_get_store_sqlalchemy_url_named_store():
         project="test",
         stores={  # ty: ignore[invalid-argument-type]
             "store1": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": "store1.db"},
             },
             "store2": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": "store2.db"},
             },
         },
@@ -331,7 +331,7 @@ def test_get_store_sqlalchemy_url_error_no_property():
         project="test",
         stores={  # ty: ignore[invalid-argument-type]
             "delta_store": {
-                "type": "metaxy.metadata_store.delta.DeltaMetadataStore",
+                "type": "metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 "config": {},
             }
         },
@@ -361,7 +361,7 @@ class TestProtocolParameter:
             store="test_store",
             stores={  # ty: ignore[invalid-argument-type]
                 "test_store": {
-                    "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                     "config": {"database": "test.db"},
                 }
             },
@@ -385,7 +385,7 @@ class TestProtocolParameter:
             store="test_store",
             stores={  # ty: ignore[invalid-argument-type]
                 "test_store": {
-                    "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                     "config": {"database": "mydb.db"},
                 }
             },

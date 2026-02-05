@@ -208,7 +208,7 @@ class StoreConfig(BaseSettings):
     # Annotated as str | type to allow passing class objects directly
     type_path: str | type[Any] = PydanticField(
         alias="type",
-        description="Full import path to metadata store class (e.g., 'metaxy.metadata_store.duckdb.DuckDBMetadataStore')",
+        description="Full import path to metadata store class (e.g., 'metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore')",
     )
 
     config: dict[str, Any] = PydanticField(

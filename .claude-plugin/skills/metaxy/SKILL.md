@@ -81,7 +81,7 @@ To test features in isolation, use context managers to avoid polluting the globa
 ```python
 import pytest
 import metaxy as mx
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
 @pytest.fixture

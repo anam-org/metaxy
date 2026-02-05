@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.feature_spec import FeatureSpec
 
@@ -100,11 +100,11 @@ class DocsStoreFixtures:
             store="dev",
             stores={
                 "dev": StoreConfig(
-                    type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                    type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                     config={"root_path": str(temp_path / "store")},
                 ),
                 "prod": StoreConfig(
-                    type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                    type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                     config={"root_path": str(temp_path / "store_with_data")},
                 ),
             },

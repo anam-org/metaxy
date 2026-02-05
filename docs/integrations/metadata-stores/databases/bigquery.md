@@ -9,7 +9,7 @@ description: "BigQuery as a metadata store backend."
 
     This functionality is experimental.
 
-[BigQuery](https://cloud.google.com/bigquery) is a serverless data warehouse managed by Google Cloud. To use Metaxy with BigQuery, configure [`BigQueryMetadataStore`][metaxy.metadata_store.bigquery.BigQueryMetadataStore]. Versioning computations run natively in BigQuery.
+[BigQuery](https://cloud.google.com/bigquery) is a serverless data warehouse managed by Google Cloud. To use Metaxy with BigQuery, configure [`BigQueryMetadataStore`][metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore]. Versioning computations run natively in BigQuery.
 
 ## Installation
 
@@ -20,13 +20,13 @@ pip install 'metaxy[bigquery]'
 ---
 
 <!-- dprint-ignore-start -->
-::: metaxy.metadata_store.bigquery
+::: metaxy.ext.metadata_stores.bigquery
     options:
       members: false
       show_root_heading: true
       heading_level: 2
 
-::: metaxy.metadata_store.bigquery.BigQueryMetadataStore
+::: metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore
     options:
       members: false
       heading_level: 3
@@ -36,7 +36,7 @@ pip install 'metaxy[bigquery]'
 
 <!-- dprint-ignore-start -->
 ::: metaxy-config
-    class: metaxy.metadata_store.bigquery.BigQueryMetadataStoreConfig
+    class: metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStoreConfig
     path_prefix: stores.dev.config
     header_level: 3
 <!-- dprint-ignore-end -->

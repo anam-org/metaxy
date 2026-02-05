@@ -11,7 +11,7 @@ from metaxy_testing.models import SampleFeatureSpec
 
 import metaxy.ext.dagster as mxd
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
 

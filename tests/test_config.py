@@ -10,7 +10,7 @@ from metaxy.config import (
     StoreConfig,
     _collect_dict_keys,
 )
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
 class TestCollectDictKeys:
@@ -61,10 +61,10 @@ class TestCollectDictKeys:
 
 
 def test_store_config_basic(tmp_path: Path) -> None:
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     config = StoreConfig(
-        type="metaxy.metadata_store.delta.DeltaMetadataStore",
+        type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
         config={"root_path": str(tmp_path / "delta_store")},
     )
 
@@ -73,10 +73,10 @@ def test_store_config_basic(tmp_path: Path) -> None:
 
 
 def test_store_config_with_options(tmp_path: Path) -> None:
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     config = StoreConfig(
-        type="metaxy.metadata_store.delta.DeltaMetadataStore",
+        type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
         config={
             "root_path": str(tmp_path / "delta_store"),
             "fallback_stores": ["prod"],
@@ -99,18 +99,18 @@ def test_metaxy_config_from_dict(tmp_path: Path) -> None:
         store="staging",
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_dev")},
             ),
             "staging": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_staging"),
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_prod")},
             ),
         },
@@ -124,7 +124,7 @@ def test_metaxy_config_from_dict(tmp_path: Path) -> None:
 
 
 def test_load_from_metaxy_toml(tmp_path: Path) -> None:
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
     dev_path = (tmp_path / "delta_dev").as_posix()
@@ -136,13 +136,13 @@ def test_load_from_metaxy_toml(tmp_path: Path) -> None:
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -172,14 +172,14 @@ name = "test"
 store = "staging"
 
 [tool.metaxy.stores.staging]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [tool.metaxy.stores.staging.config]
 root_path = "{staging_path}"
 fallback_stores = ["prod"]
 
 [tool.metaxy.stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [tool.metaxy.stores.prod.config]
 root_path = "{prod_path}"
@@ -194,7 +194,7 @@ root_path = "{prod_path}"
 
 def test_load_from_metaxy_config_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that METAXY_CONFIG env var is respected for config file location."""
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
     custom_path = (tmp_path / "delta_custom").as_posix()
@@ -208,7 +208,7 @@ project = "env_var_project"
 store = "custom"
 
 [stores.custom]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.custom.config]
 root_path = "{custom_path}"
@@ -240,7 +240,7 @@ project = "init_test_project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -266,7 +266,7 @@ def test_init_metaxy_with_prebuilt_config(tmp_path: Path) -> None:
         store="dev",
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_dev")},
             )
         },
@@ -285,7 +285,7 @@ def test_get_store_instantiates_correctly(tmp_path: Path) -> None:
         store="dev",
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_dev")},
             )
         },
@@ -301,21 +301,21 @@ def test_get_store_with_fallback_chain(tmp_path: Path) -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_dev"),
                     "fallback_stores": ["staging"],
                 },
             ),
             "staging": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_staging"),
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_prod")},
             ),
         },
@@ -340,11 +340,11 @@ def test_get_store_uses_default(tmp_path: Path) -> None:
         store="staging",
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_dev")},
             ),
             "staging": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_staging")},
             ),
         },
@@ -362,7 +362,7 @@ def test_get_store_nonexistent_raises(tmp_path: Path) -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_dev")},
             )
         }
@@ -373,7 +373,7 @@ def test_get_store_nonexistent_raises(tmp_path: Path) -> None:
 
 
 def test_config_with_env_vars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
     dev_path = (tmp_path / "delta_dev").as_posix()
@@ -385,7 +385,7 @@ def test_config_with_env_vars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -395,7 +395,7 @@ root_path = "{dev_path}"
     monkeypatch.setenv("METAXY_STORE", "prod")
 
     # Also add prod store via env var (pydantic-settings supports this!)
-    monkeypatch.setenv("METAXY_STORES__PROD__TYPE", "metaxy.metadata_store.delta.DeltaMetadataStore")
+    monkeypatch.setenv("METAXY_STORES__PROD__TYPE", "metaxy.ext.metadata_stores.delta.DeltaMetadataStore")
     monkeypatch.setenv("METAXY_STORES__PROD__CONFIG__ROOT_PATH", str(prod_path))
 
     config = MetaxyConfig.load(config_file)
@@ -426,7 +426,7 @@ def test_partial_env_var_store_config_filtered_out_with_warning(
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -443,7 +443,7 @@ root_path = "{dev_path}"
         config = MetaxyConfig.load(config_file)
 
     # dev store should work
-    assert config.stores["dev"].type_path == "metaxy.metadata_store.delta.DeltaMetadataStore"
+    assert config.stores["dev"].type_path == "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
     # prod store should be filtered out (not present) since it lacks 'type'
     assert "prod" not in config.stores
@@ -459,7 +459,7 @@ def test_incomplete_store_warning_shows_all_fields(tmp_path: Path, monkeypatch: 
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -491,7 +491,7 @@ def test_hash_algorithm_must_match_in_fallback_chain(tmp_path: Path) -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_dev"),
                     "hash_algorithm": "sha256",
@@ -499,7 +499,7 @@ def test_hash_algorithm_must_match_in_fallback_chain(tmp_path: Path) -> None:
                 },
             ),
             "staging": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_staging"),
                     "hash_algorithm": "sha256",
@@ -507,7 +507,7 @@ def test_hash_algorithm_must_match_in_fallback_chain(tmp_path: Path) -> None:
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_prod"),
                     "hash_algorithm": "sha256",
@@ -534,14 +534,14 @@ def test_hash_algorithm_defaults_to_xxhash32(tmp_path: Path) -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_dev"),
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_prod")},
             ),
         },
@@ -561,7 +561,7 @@ def test_hash_algorithm_conflict_raises_error(tmp_path: Path) -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_dev"),
                     "hash_algorithm": "sha256",
@@ -569,7 +569,7 @@ def test_hash_algorithm_conflict_raises_error(tmp_path: Path) -> None:
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_prod"),
                     "hash_algorithm": "md5",
@@ -594,7 +594,7 @@ def test_store_respects_configured_hash_algorithm(tmp_path: Path) -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_dev"),
                     "hash_algorithm": "md5",
@@ -624,7 +624,7 @@ store = "dev"
 project = "${{MY_PROJECT_NAME}}"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -653,7 +653,7 @@ store = "dev"
 project = "${{UNSET_VAR:-default-project}}"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -681,7 +681,7 @@ store = "dev"
 migrations_dir = "prefix-${{UNSET_VAR}}-suffix"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -706,7 +706,7 @@ store = "dev"
 entrypoints = ["${{STORE_PATH}}/features", "another/path"]
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -727,7 +727,7 @@ def test_get_store_with_fallback_chain_delta(tmp_path: Path) -> None:
     This tests the specific issue where get_store() was not correctly resolving
     fallback store names to store instances for stores that use from_config().
     """
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     dev_path = tmp_path / "dev"
     staging_path = tmp_path / "staging"
@@ -736,21 +736,21 @@ def test_get_store_with_fallback_chain_delta(tmp_path: Path) -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(dev_path),
                     "fallback_stores": ["staging"],
                 },
             ),
             "staging": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(staging_path),
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(prod_path),
                 },
@@ -781,7 +781,7 @@ def test_get_store_with_fallback_chain_delta_from_toml(tmp_path: Path) -> None:
     This tests the specific issue where get_store() was not correctly resolving
     fallback store names to store instances when loading from a TOML config file.
     """
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     dev_path = (tmp_path / "dev").as_posix()
     branch_path = (tmp_path / "branch").as_posix()
@@ -791,13 +791,13 @@ def test_get_store_with_fallback_chain_delta_from_toml(tmp_path: Path) -> None:
 project = "test-project"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 [stores.dev.config]
 root_path = "{dev_path}"
 fallback_stores = ["branch"]
 
 [stores.branch]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 [stores.branch.config]
 root_path = "{branch_path}"
 """)
@@ -827,7 +827,7 @@ project = "test-project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -853,7 +853,7 @@ project = "discovered-project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -952,7 +952,7 @@ project = "test-project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -997,7 +997,7 @@ def test_get_store_error_without_config_file_no_path_in_message(tmp_path: Path) 
         project="direct-config",
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_dev")},
             )
         },
@@ -1023,7 +1023,7 @@ project = "test-project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "s3://nonexistent-bucket-that-does-not-exist/path"
@@ -1055,7 +1055,7 @@ project = "test-project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
 # Missing required db_path, but add an invalid field
@@ -1084,14 +1084,14 @@ project = "test-project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "s3://valid-bucket/path"
 fallback_stores = ["branch"]
 
 [stores.branch]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.branch.config]
 # DuckDB requires database field, this will fail validation
@@ -1169,7 +1169,7 @@ def test_store_config_type_is_lazy() -> None:
 
 def test_store_config_accepts_class_directly(tmp_path: Path) -> None:
     """Test that StoreConfig.type accepts a class object directly."""
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     # Passing a class directly should work
     config = StoreConfig(
@@ -1178,7 +1178,7 @@ def test_store_config_accepts_class_directly(tmp_path: Path) -> None:
     )
 
     # The type_path should be the import string
-    assert config.type_path == "metaxy.metadata_store.delta.DeltaMetadataStore"
+    assert config.type_path == "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
     # Accessing .type should return the same class
     assert config.type is DeltaMetadataStore
@@ -1203,7 +1203,7 @@ project = "plugin_import_test_project"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
@@ -1223,7 +1223,7 @@ assert not MetaxyConfig.is_set(), "Config should not be set before plugin call"
 
 # Import and call sqlalchemy plugin function that uses MetaxyConfig.get(load=True)
 from metaxy.ext.sqlalchemy.plugin import _get_features_metadata
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from sqlalchemy import MetaData
 
 store = DeltaMetadataStore(root_path="/tmp/test_delta_store")
@@ -1259,7 +1259,7 @@ class TestToToml:
         import tomli
 
         config = StoreConfig(
-            type="metaxy.metadata_store.delta.DeltaMetadataStore",
+            type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
             config={"root_path": str(tmp_path / "delta_store")},
         )
 
@@ -1268,7 +1268,7 @@ class TestToToml:
         # Parse the TOML back
         parsed = tomli.loads(toml_str)
 
-        assert parsed["type"] == "metaxy.metadata_store.delta.DeltaMetadataStore"
+        assert parsed["type"] == "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
         assert parsed["config"]["root_path"] == str(tmp_path / "delta_store")
 
     def test_store_config_to_toml_with_fallback_stores(self, tmp_path: Path) -> None:
@@ -1276,7 +1276,7 @@ class TestToToml:
         import tomli
 
         config = StoreConfig(
-            type="metaxy.metadata_store.delta.DeltaMetadataStore",
+            type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
             config={
                 "root_path": str(tmp_path / "delta_store"),
                 "fallback_stores": ["prod", "staging"],
@@ -1297,7 +1297,7 @@ class TestToToml:
             project="test_project",
             stores={
                 "dev": StoreConfig(
-                    type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                    type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                     config={"root_path": str(tmp_path / "delta_dev")},
                 ),
             },
@@ -1308,7 +1308,7 @@ class TestToToml:
 
         assert parsed["store"] == "dev"
         assert parsed["project"] == "test_project"
-        assert parsed["stores"]["dev"]["type"] == "metaxy.metadata_store.delta.DeltaMetadataStore"
+        assert parsed["stores"]["dev"]["type"] == "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
     def test_metaxy_config_to_toml_removes_none_values(self) -> None:
         """Test MetaxyConfig.to_toml() removes None values (TOML doesn't support them)."""
@@ -1331,11 +1331,11 @@ class TestToToml:
             entrypoints=["my_features"],
             stores={
                 "staging": StoreConfig(
-                    type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                    type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                     config={"root_path": str(tmp_path / "staging")},
                 ),
                 "prod": StoreConfig(
-                    type="metaxy.metadata_store.delta.DeltaMetadataStore",
+                    type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                     config={"root_path": str(tmp_path / "prod")},
                 ),
             },

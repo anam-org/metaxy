@@ -14,14 +14,14 @@ from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import HashAlgorithm
 from metaxy.config import MetaxyConfig
+from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
 )
-from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
-from metaxy.metadata_store.delta import DeltaMetadataStore
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.lancedb import LanceDBMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 # Note: clickhouse_server and clickhouse_db fixtures are defined in tests/conftest.py

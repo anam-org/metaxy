@@ -10,14 +10,14 @@ from polars.testing import assert_frame_equal
 from polars.testing.parametric import column, dataframes
 
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store._ducklake_support import (
+from metaxy.ext.metadata_stores._ducklake_support import (
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
     _PreviewConnection,
     _PreviewCursor,
     format_attach_options,
 )
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 
 
 # Hypothesis strategies for generating metadata dataframes using Polars parametric testing

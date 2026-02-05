@@ -24,8 +24,8 @@ from metaxy import (
     FieldSpec,
 )
 from metaxy._utils import collect_to_polars
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import MetadataStore
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.warnings import MetaxyColumnMissingWarning
 from metaxy.models.constants import (
     METAXY_PROVENANCE,

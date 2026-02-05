@@ -5,7 +5,7 @@ description: "DuckDB as a metadata store backend."
 
 # DuckDB
 
-[DuckDB](https://duckdb.org/) is an embedded analytical database. To use Metaxy with DuckDB, configure [`DuckDBMetadataStore`][metaxy.metadata_store.duckdb.DuckDBMetadataStore]. This runs versioning computations natively in DuckDB.
+[DuckDB](https://duckdb.org/) is an embedded analytical database. To use Metaxy with DuckDB, configure [`DuckDBMetadataStore`][metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore]. This runs versioning computations natively in DuckDB.
 
 !!! warning
 
@@ -26,7 +26,7 @@ pip install 'metaxy[duckdb]'
 DuckDB extensions can be loaded automatically:
 
 ```py
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 
 store = DuckDBMetadataStore(":memory:", extensions=["hashfuncs"])
 ```
@@ -36,28 +36,28 @@ store = DuckDBMetadataStore(":memory:", extensions=["hashfuncs"])
 ---
 
 <!-- dprint-ignore-start -->
-::: metaxy.metadata_store.duckdb
+::: metaxy.ext.metadata_stores.duckdb
     options:
       members: false
       show_root_heading: true
       heading_level: 2
 
-::: metaxy.metadata_store.duckdb.DuckDBMetadataStore
+::: metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore
     options:
       members: false
       heading_level: 3
 
-::: metaxy.metadata_store.duckdb.ExtensionSpec
+::: metaxy.ext.metadata_stores.duckdb.ExtensionSpec
     options:
       members: false
       heading_level: 3
 
-::: metaxy.metadata_store.duckdb.DuckLakeConfigInput
+::: metaxy.ext.metadata_stores.duckdb.DuckLakeConfigInput
     options:
       members: false
       heading_level: 3
 
-::: metaxy.metadata_store._ducklake_support.DuckLakeAttachmentConfig
+::: metaxy.ext.metadata_stores._ducklake_support.DuckLakeAttachmentConfig
     options:
       members: false
       heading_level: 3
@@ -67,7 +67,7 @@ store = DuckDBMetadataStore(":memory:", extensions=["hashfuncs"])
 
 <!-- dprint-ignore-start -->
 ::: metaxy-config
-    class: metaxy.metadata_store.duckdb.DuckDBMetadataStoreConfig
+    class: metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStoreConfig
     path_prefix: stores.dev.config
     header_level: 2
 <!-- dprint-ignore-end -->

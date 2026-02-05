@@ -29,7 +29,7 @@ def test_filter_feature_sqlmodel_metadata_applies_table_prefix():
         project="test_project",
         stores={
             "prefixed_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "table_prefix": "myprefix_",
@@ -75,7 +75,7 @@ def test_filter_feature_sqlmodel_metadata_no_prefix():
         project="test_project",
         stores={
             "no_prefix_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                 },
@@ -117,14 +117,14 @@ def test_filter_feature_sqlmodel_metadata_different_prefixes():
         project="test_project",
         stores={
             "store_a": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "table_prefix": "a_",
                 },
             ),
             "store_b": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "table_prefix": "b_",
@@ -178,7 +178,7 @@ def test_filter_feature_sqlmodel_metadata_with_project_filtering_and_prefix():
         project="test_project",
         stores={
             "prefixed_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "table_prefix": "env_",
@@ -243,7 +243,7 @@ def test_custom_tablename_raises_error():
         project="test_project",
         stores={
             "default_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={"database": ":memory:"},
             )
         },
@@ -279,7 +279,7 @@ class TestProtocolParameter:
             project="test_project",
             stores={
                 "test_store": StoreConfig(
-                    type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                     config={"database": "test.db"},
                 )
             },
@@ -322,7 +322,7 @@ class TestProtocolParameter:
             project="test_project",
             stores={
                 "test_store": StoreConfig(
-                    type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                     config={"database": "mydb.db"},
                 )
             },
@@ -354,7 +354,7 @@ class TestProtocolParameter:
             project="test_project",
             stores={
                 "prefixed_store": StoreConfig(
-                    type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                     config={
                         "database": "test.db",
                         "table_prefix": "myprefix_",

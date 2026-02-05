@@ -38,7 +38,7 @@ Metaxy supports templating environment variables in configuration files using th
 
 The `stores` field configures metadata store backends. Each store is defined by:
 
-- **`type`**: Full import path to the store class (e.g., `metaxy.metadata_store.duckdb.DuckDBMetadataStore`)
+- **`type`**: Full import path to the store class (e.g., `metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore`)
 - **`config`**: Dictionary of store-specific configuration options
 - `**fallback_stores**` - optional list of store names to pull missing metadata from. Learn more [here](/guide/learn/metadata-stores.md/#fallback-stores).
 

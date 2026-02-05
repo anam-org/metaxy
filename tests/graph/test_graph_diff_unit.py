@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.graph.diff.diff_models import (
     AddedNode,
     FieldChange,
@@ -13,7 +14,6 @@ from metaxy.graph.diff.diff_models import (
     RemovedNode,
 )
 from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
-from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import (
     Event,
     EventType,

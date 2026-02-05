@@ -24,7 +24,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -55,7 +55,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -118,7 +118,7 @@ store = "dev"
 auto_create_tables = true
 
 [stores.dev]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
 database = "{store_path}"
@@ -148,7 +148,7 @@ store = "dev"
 auto_create_tables = true
 
 [stores.dev]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
 database = "{store_path}"
@@ -189,7 +189,7 @@ store = "dev"
 auto_create_tables = true
 
 [stores.dev]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
 database = "{store_path}"
@@ -233,7 +233,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -273,7 +273,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -322,7 +322,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -376,7 +376,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -423,7 +423,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -453,7 +453,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -489,7 +489,7 @@ def test_generate_lock_file_errors_on_missing_transitive_dependency(tmp_path: Pa
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey, FieldKey, FieldSpec
-    from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+    from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
     from metaxy.metadata_store.exceptions import FeatureNotFoundError
     from metaxy.metadata_store.system.storage import SystemTableStorage
     from metaxy.utils.lock_file import generate_lock_file

@@ -77,7 +77,7 @@ class MetadataStoreConfig(BaseSettings):
     Example:
         <!-- skip next -->
         ```python
-        from metaxy.metadata_store.duckdb import DuckDBMetadataStoreConfig
+        from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStoreConfig
 
         config = DuckDBMetadataStoreConfig(
             database="metadata.db",
@@ -1060,7 +1060,7 @@ class MetadataStore(ABC):
         Example:
             <!-- skip next -->
             ```python
-            from metaxy.metadata_store.duckdb import (
+            from metaxy.ext.metadata_stores.duckdb import (
                 DuckDBMetadataStore,
                 DuckDBMetadataStoreConfig,
             )

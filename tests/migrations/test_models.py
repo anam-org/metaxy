@@ -126,7 +126,7 @@ def test_full_graph_migration(tmp_path):
 
     assert migration.migration_type == "metaxy.migrations.models.FullGraphMigration"
     # FullGraphMigration.get_affected_features() returns sorted list from ops
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         assert migration.get_affected_features(store, "default") == []
@@ -167,7 +167,7 @@ def test_custom_migration(tmp_path):
     # Migration type should be automatically set from class path
     assert "TestCustomMigration" in migration.migration_type
     # get_affected_features() requires store parameter
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         assert migration.get_affected_features(store, "default") == []  # Default implementation
@@ -375,7 +375,7 @@ def test_full_graph_migration_get_affected_features(tmp_path):
         ],
     )
 
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         affected = migration.get_affected_features(store, "default")
@@ -402,7 +402,7 @@ def test_full_graph_migration_deduplicates_features(tmp_path):
         ],
     )
 
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         affected = migration.get_affected_features(store, "default")

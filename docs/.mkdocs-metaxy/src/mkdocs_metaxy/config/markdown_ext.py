@@ -25,8 +25,8 @@ from mkdocs_metaxy.config_generator import (
     generate_individual_field_doc,
 )
 
-# Use MkDocs logging pattern for proper integration with --strict mode
-log = logging.getLogger("mkdocs.plugins.metaxy_config")
+# Use MkDocs logger directly for --strict mode to catch warnings
+log = logging.getLogger("mkdocs")
 
 
 class MetaxyConfigPreprocessor(Preprocessor):

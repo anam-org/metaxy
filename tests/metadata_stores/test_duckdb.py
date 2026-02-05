@@ -11,7 +11,7 @@ import pytest
 pytest.importorskip("pyarrow")
 
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
@@ -194,7 +194,7 @@ def test_duckdb_config_instantiation() -> None:
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "config": {
@@ -222,7 +222,7 @@ def test_duckdb_config_with_extensions() -> None:
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "extensions": ["hashfuncs", "json"],
@@ -235,7 +235,7 @@ def test_duckdb_config_with_extensions() -> None:
     assert isinstance(store, DuckDBMetadataStore)
 
     # hashfuncs is auto-added, so we should have at least hashfuncs
-    from metaxy.metadata_store.duckdb import ExtensionSpec
+    from metaxy.ext.metadata_stores.duckdb import ExtensionSpec
 
     extension_names = []
     for ext in store.extensions:
@@ -257,7 +257,7 @@ def test_duckdb_config_with_hash_algorithm() -> None:
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "hash_algorithm": "md5",
@@ -281,14 +281,14 @@ def test_duckdb_config_with_fallback_stores() -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                 },

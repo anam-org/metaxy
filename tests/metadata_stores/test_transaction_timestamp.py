@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 
 
 @pytest.fixture

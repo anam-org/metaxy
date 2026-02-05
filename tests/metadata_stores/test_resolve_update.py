@@ -1419,7 +1419,7 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
     import polars as pl
 
     from metaxy import FieldKey, FieldSpec
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     class Upstream(
         SampleFeature,
@@ -1544,7 +1544,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
     import polars as pl
 
     from metaxy import FieldKey, FieldSpec
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     class Upstream(
         SampleFeature,

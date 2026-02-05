@@ -944,13 +944,13 @@ store = "dev"
 auto_create_tables = true
 
 [stores.dev]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
 database = "{dev_db_path}"
 
 [stores.staging]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.staging.config]
 database = "{staging_db_path}"

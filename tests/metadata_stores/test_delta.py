@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import polars as pl
 
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
 def test_delta_local_absolute_path(tmp_path, test_features) -> None:

@@ -68,7 +68,7 @@ class LanceDBMetadataStore(MetadataStore):
     Example: Local Directory
         ```py
         from pathlib import Path
-        from metaxy.metadata_store.lancedb import LanceDBMetadataStore
+        from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
 
         # Local filesystem
         store = LanceDBMetadataStore(Path("/path/to/featuregraph"))

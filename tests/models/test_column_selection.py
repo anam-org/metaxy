@@ -1031,7 +1031,7 @@ class TestColumnSelection:
         """Test that columns and rename fields are properly serialized when pushing graph snapshot."""
         import json
 
-        from metaxy.metadata_store.delta import DeltaMetadataStore
+        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
         from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
         # Create features with columns and rename specified

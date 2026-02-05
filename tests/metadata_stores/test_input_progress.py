@@ -19,7 +19,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.models.lineage import LineageRelationship
 
 

@@ -11,7 +11,7 @@ pytest.importorskip("ibis")
 # We don't need the full ibis.backends.bigquery to run tests since we mock everything
 # Just need to be able to import our BigQueryMetadataStore class
 try:
-    from metaxy.metadata_store.bigquery import BigQueryMetadataStore
+    from metaxy.ext.metadata_stores.bigquery import BigQueryMetadataStore
 except ImportError:
     pytest.skip("BigQueryMetadataStore not available", allow_module_level=True)
 
@@ -148,7 +148,7 @@ def test_bigquery_config_instantiation():
     config = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -172,7 +172,7 @@ def test_bigquery_config_with_hash_algorithm():
     config_default = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -188,7 +188,7 @@ def test_bigquery_config_with_hash_algorithm():
     config_farmhash = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -206,7 +206,7 @@ def test_bigquery_config_with_hash_algorithm():
     config_md5 = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -228,7 +228,7 @@ def test_bigquery_config_with_fallback_stores():
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "dev-project",
                     "dataset_id": "dev_dataset",
@@ -236,7 +236,7 @@ def test_bigquery_config_with_fallback_stores():
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "prod-project",
                     "dataset_id": "prod_dataset",

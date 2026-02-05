@@ -12,7 +12,7 @@ from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureDefinition, FeatureGraph
 

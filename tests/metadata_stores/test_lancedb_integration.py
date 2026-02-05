@@ -5,7 +5,7 @@ from __future__ import annotations
 import polars as pl
 
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store.lancedb import LanceDBMetadataStore
+from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
 
 
 def test_lancedb_s3_roundtrip_with_moto(s3_bucket_and_storage_options, test_features) -> None:

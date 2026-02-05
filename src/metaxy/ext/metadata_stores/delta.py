@@ -55,7 +55,7 @@ class DeltaMetadataStoreConfig(MetadataStoreConfig):
     )
     delta_write_options: dict[str, Any] | None = Field(
         default=None,
-        description="Options passed to deltalake.write_deltalake().",
+        description="Options passed to [`deltalake.write_deltalake`][deltalake.write_deltalake].",
     )
 
 
@@ -74,7 +74,7 @@ class DeltaMetadataStore(MetadataStore):
     Example:
 
         ```py
-        from metaxy.metadata_store.delta import DeltaMetadataStore
+        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
         store = DeltaMetadataStore(
             root_path="s3://my-bucket/metaxy",
@@ -112,7 +112,7 @@ class DeltaMetadataStore(MetadataStore):
 
                 - `"flat"`: Feature tables stored as `{part1}__{part2}.delta`
 
-            delta_write_options: Additional options passed to deltalake.write_deltalake() - see https://delta-io.github.io/delta-rs/upgrade-guides/guide-1.0.0/#write_deltalake-api.
+            delta_write_options: Additional options passed to [`deltalake.write_deltalake`][deltalake.write_deltalake].
                 Overrides default {"schema_mode": "merge"}. Example: {"max_workers": 4}
             **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][metaxy.metadata_store.base.MetadataStore].
         """

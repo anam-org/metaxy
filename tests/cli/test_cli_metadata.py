@@ -2312,14 +2312,14 @@ def test_metadata_status_with_fallback_stores(
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 fallback_stores = ["prod"]
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2434,14 +2434,14 @@ def test_metadata_status_fallback_disabled_shows_missing_row_count(
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 fallback_stores = ["prod"]
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2616,13 +2616,13 @@ def test_metadata_copy_single_feature(tmp_path: Path, capsys: pytest.CaptureFixt
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2669,13 +2669,13 @@ def test_metadata_copy_multiple_features(tmp_path: Path, capsys: pytest.CaptureF
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2741,13 +2741,13 @@ def test_metadata_copy_with_filter(tmp_path: Path, capsys: pytest.CaptureFixture
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2804,13 +2804,13 @@ def test_metadata_copy_missing_feature_warning(tmp_path: Path):
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2870,13 +2870,13 @@ def test_metadata_copy_no_features_to_copy(tmp_path: Path, capsys: pytest.Captur
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"

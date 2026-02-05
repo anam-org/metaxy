@@ -8,7 +8,7 @@ from metaxy_testing import add_metaxy_provenance_column
 from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import BaseFeature
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.lineage import LineageRelationship

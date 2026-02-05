@@ -7,10 +7,10 @@ from pytest_cases import parametrize_with_cases
 
 from metaxy import HashAlgorithm
 from metaxy.config import MetaxyConfig, StoreConfig
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
 from metaxy.metadata_store import MetadataStore
-from metaxy.metadata_store.delta import DeltaMetadataStore
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.lancedb import LanceDBMetadataStore
 
 from .conftest import AllStoresCases
 
@@ -94,7 +94,7 @@ def test_store_from_config_gets_name(tmp_path: Path):
     config = MetaxyConfig(
         stores={
             "my_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={"database": str(tmp_path / "test.duckdb")},
             )
         }

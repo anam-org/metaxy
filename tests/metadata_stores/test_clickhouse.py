@@ -13,7 +13,7 @@ except ImportError:
 
 from metaxy import FeatureDefinition
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
+from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
 
 
 def test_clickhouse_table_naming(clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]) -> None:
@@ -164,7 +164,7 @@ def test_clickhouse_config_instantiation(
     config = MetaxyConfig(
         stores={
             "clickhouse_store": StoreConfig(
-                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                 },
@@ -187,7 +187,7 @@ def test_clickhouse_config_with_connection_params(test_graph, test_features: dic
     config = MetaxyConfig(
         stores={
             "clickhouse_store": StoreConfig(
-                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_params": {
                         "host": "localhost",
@@ -215,7 +215,7 @@ def test_clickhouse_config_with_hash_algorithm(
     config = MetaxyConfig(
         stores={
             "clickhouse_store": StoreConfig(
-                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                     "hash_algorithm": "md5",
@@ -241,14 +241,14 @@ def test_clickhouse_config_with_fallback_stores(
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                 },

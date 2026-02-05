@@ -156,7 +156,7 @@ class TestConfigProjectLoading:
 project = "my_metaxy_project"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{delta_path}"
@@ -180,7 +180,7 @@ name = "test"
 project = "pyproject_metaxy"
 
 [tool.metaxy.stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [tool.metaxy.stores.dev.config]
 root_path = "{delta_path}"
@@ -200,7 +200,7 @@ root_path = "{delta_path}"
 project = "file_project"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{delta_path}"
