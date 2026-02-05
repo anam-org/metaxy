@@ -16,7 +16,7 @@
         <link rel="prev" href="../pitch/">
       
       
-        <link rel="next" href="../../guide/overview/quickstart/">
+        <link rel="next" href="../../guide/quickstart/hello/">
       
       
         
@@ -738,6 +738,8 @@
       
         
       
+        
+      
     
     
     
@@ -764,7 +766,7 @@
   <span class="md-ellipsis">
     
   
-    Getting Started
+    Quickstart
   
 
     
@@ -780,7 +782,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Getting Started
+    Quickstart
   
 
           </label>
@@ -793,14 +795,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/overview/quickstart/" class="md-nav__link">
+      <a href="../../guide/quickstart/hello/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Quickstart
+    Hello, Metaxy!
   
 
     
@@ -821,7 +823,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/overview/feature-dependencies/" class="md-nav__link">
+      <a href="../../guide/quickstart/feature-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/quickstart/feature-dependencies/" class="md-nav__link">
         
   
   
@@ -895,7 +925,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../guide/learn/" class="md-nav__link ">
+            <a href="../../guide/concepts/" class="md-nav__link ">
               
   
   
@@ -997,7 +1027,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/metadata-stores/" class="md-nav__link">
+      <a href="../../guide/concepts/metadata-stores/" class="md-nav__link">
         
   
   
@@ -1025,7 +1055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/deletions/" class="md-nav__link">
+      <a href="../../guide/concepts/deletions/" class="md-nav__link">
         
   
   
@@ -1121,7 +1151,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/definitions/features/" class="md-nav__link">
+      <a href="../../guide/concepts/definitions/features/" class="md-nav__link">
         
   
   
@@ -1149,7 +1179,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/definitions/optional-dependencies/" class="md-nav__link">
+      <a href="../../guide/concepts/definitions/optional-dependencies/" class="md-nav__link">
         
   
   
@@ -1177,7 +1207,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/definitions/relationship/" class="md-nav__link">
+      <a href="../../guide/concepts/definitions/relationship/" class="md-nav__link">
         
   
   
@@ -1213,7 +1243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/data-versioning/" class="md-nav__link">
+      <a href="../../guide/concepts/data-versioning/" class="md-nav__link">
         
   
   
@@ -1241,7 +1271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/feature-discovery/" class="md-nav__link">
+      <a href="../../guide/concepts/feature-discovery/" class="md-nav__link">
         
   
   
@@ -1269,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/syntactic-sugar/" class="md-nav__link">
+      <a href="../../guide/concepts/syntactic-sugar/" class="md-nav__link">
         
   
   
@@ -1297,7 +1327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/filters/" class="md-nav__link">
+      <a href="../../guide/concepts/filters/" class="md-nav__link">
         
   
   
@@ -1396,7 +1426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/lifecycle/development/" class="md-nav__link">
+      <a href="../../guide/concepts/lifecycle/development/" class="md-nav__link">
         
   
   
@@ -1424,7 +1454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/lifecycle/testing/" class="md-nav__link">
+      <a href="../../guide/concepts/lifecycle/testing/" class="md-nav__link">
         
   
   
@@ -1452,7 +1482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/lifecycle/deployment/" class="md-nav__link">
+      <a href="../../guide/concepts/lifecycle/deployment/" class="md-nav__link">
         
   
   
@@ -3361,7 +3391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/learn/system-columns/" class="md-nav__link">
+      <a href="../../guide/concepts/system-columns/" class="md-nav__link">
         
   
   
@@ -3605,7 +3635,7 @@ As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables th
 <details class="note">
 <summary>Lifting This Requirement</summary>
 <p>Unfortunately, the most popular database - PostgreSQL - does not satisfy it.
-While PostgreSQL is not an ideal choice for a Metaxy <a href="../../guide/learn/metadata-stores/">Metadata Store</a>
+While PostgreSQL is not an ideal choice for a Metaxy <a href="../../guide/concepts/metadata-stores/">Metadata Store</a>
 for other reasons (mainly being analytical queries performance), we recognize the need to support it and are exploring a solution in <a href="https://github.com/anam-org/metaxy/issues/223"><code>anam-org/metaxy#223</code></a>.
 This requirement may not be necessary in the future.</p>
 </details>
@@ -3613,9 +3643,9 @@ This requirement may not be necessary in the future.</p>
 </ul>
 </div>
 <p>This allows Metaxy to target modern data warehouses (e.g. ClickHouse, BigQuery, Snowflake, or the more minimalistic DuckDB) and storage formats such as DeltaLake, Iceberg, DuckLake, and anything compatible with Apache Arrow.</p>
-<p>The Metaxy abstraction that implements these design choices and is used to interact with storage systems is known as <a href="../../guide/learn/metadata-stores/">Metadata Store</a>.</p>
+<p>The Metaxy abstraction that implements these design choices and is used to interact with storage systems is known as <a href="../../guide/concepts/metadata-stores/">Metadata Store</a>.</p>
 <h3 id="table-schema">Table Schema<a class="headerlink" href="#table-schema" title="Permanent link">&para;</a></h3>
-<p>Metaxy uses the same storage layout for all storage systems. Each <a href="../../guide/learn/definitions/features/">feature</a> gets a separate table.</p>
+<p>Metaxy uses the same storage layout for all storage systems. Each <a href="../../guide/concepts/definitions/features/">feature</a> gets a separate table.</p>
 <p>Here is how a typical Metaxy feature table looks like:</p>
 <table>
 <thead>
@@ -3685,9 +3715,9 @@ This requirement may not be necessary in the future.</p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
 <p><code>metaxy_data_version</code>/<code>metaxy_data_version_by_field</code> and <code>metaxy_provenance</code>/<code>metaxy_provenance_by_field</code> serve a slightly different purpose.
-Provenance columns hold <strong>static</strong> versioning information entirely defined by the Metaxy framework. Data version defaults to the same value as provenance, but can be customized by the user <strong>at runtime</strong>, for example derived from the <strong>contents</strong> of the computed sample. Learn more <a href="../../guide/learn/data-versioning/">here</a>.</p>
+Provenance columns hold <strong>static</strong> versioning information entirely defined by the Metaxy framework. Data version defaults to the same value as provenance, but can be customized by the user <strong>at runtime</strong>, for example derived from the <strong>contents</strong> of the computed sample. Learn more <a href="../../guide/concepts/data-versioning/">here</a>.</p>
 </div>
-<p>All historical records for a given feature are stored in the same table. They can be separated by the following <a href="../../guide/learn/system-columns/">system columns</a>:</p>
+<p>All historical records for a given feature are stored in the same table. They can be separated by the following <a href="../../guide/concepts/system-columns/">system columns</a>:</p>
 <ul>
 <li>
 <p><code>metaxy_feature_version</code> is shared among multiple rows and is changed on any of the feature or upstream feature <code>code_version</code> changes</p>
@@ -3702,9 +3732,9 @@ Provenance columns hold <strong>static</strong> versioning information entirely 
 <h3 id="metadata-operations">Metadata Operations<a class="headerlink" href="#metadata-operations" title="Permanent link">&para;</a></h3>
 <p class="annotate">Metaxy tables are <strong>immutable</strong>. Once written, a row is never modified or deleted (1).</p>
 <ol>
-<li>but users can <a href="../../guide/learn/deletions/#hard-deletes">delete rows</a> manually if needed</li>
+<li>but users can <a href="../../guide/concepts/deletions/#hard-deletes">delete rows</a> manually if needed</li>
 </ol>
-<p class="annotate">As discussed earlier, writing metadata in Metaxy is done by <strong>appending</strong> to a feature table. Subsequent writes with the same feature version effectively act as overwrites. This is achieved by filtering out older rows using the <code>metaxy_updated_at</code> columns (1). <a href="../../guide/learn/deletions/#soft-deletes">Soft-deletes</a> are implemented as appends as well.</p>
+<p class="annotate">As discussed earlier, writing metadata in Metaxy is done by <strong>appending</strong> to a feature table. Subsequent writes with the same feature version effectively act as overwrites. This is achieved by filtering out older rows using the <code>metaxy_updated_at</code> columns (1). <a href="../../guide/concepts/deletions/#soft-deletes">Soft-deletes</a> are implemented as appends as well.</p>
 <ol>
 <li>also known as merge-on-read</li>
 </ol>
@@ -3719,7 +3749,7 @@ Provenance columns hold <strong>static</strong> versioning information entirely 
 </ul>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>Users can implement <a href="../../guide/learn/deletions/#hard-deletes">storage cleanup</a> based on their specific needs and constraints.</p>
+<p>Users can implement <a href="../../guide/concepts/deletions/#hard-deletes">storage cleanup</a> based on their specific needs and constraints.</p>
 </div>
 <ul>
 <li>
@@ -3739,11 +3769,11 @@ Provenance columns hold <strong>static</strong> versioning information entirely 
 <p class="annotate">This allows metadata store implementations to reuse the same code. Currently only a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../reference/api/metadata-stores/#metaxy.MetadataStore">thin subset</a> requires storage-specific implementations (1).</p>
 <p>(1) such as providing database-specific hashing syntax and some other operations</p>
 <h2 id="compute">Compute<a class="headerlink" href="#compute" title="Permanent link">&para;</a></h2>
-<p class="annotate">Increment resolution in Metaxy involves running computations: every time the user requests an increment for a given <a href="../../guide/learn/definitions/features/">feature</a>, Metaxy has to join upstream features, hash their versions, and filter out samples that have already been processed. This can be performed either <strong>locally</strong> (typically favored in development environments) or <strong>remotely</strong> (achieves better performance in production). Metaxy supports both options: <a href="../../integrations/metadata-stores/databases/">databases</a> for remote compute and <a href="../../integrations/metadata-stores/storage/">storage-only</a> metadata stores for embedded compute (1).</p>
+<p class="annotate">Increment resolution in Metaxy involves running computations: every time the user requests an increment for a given <a href="../../guide/concepts/definitions/features/">feature</a>, Metaxy has to join upstream features, hash their versions, and filter out samples that have already been processed. This can be performed either <strong>locally</strong> (typically favored in development environments) or <strong>remotely</strong> (achieves better performance in production). Metaxy supports both options: <a href="../../integrations/metadata-stores/databases/">databases</a> for remote compute and <a href="../../integrations/metadata-stores/storage/">storage-only</a> metadata stores for embedded compute (1).</p>
 <ol>
 <li>e.g. Polars or Duckdb</li>
 </ol>
-<p>When resolving incremental updates for a <a href="../../guide/learn/definitions/features/">feature</a>, Metaxy attempts to perform all computations such as <a href="../../guide/learn/data-versioning/">sample version calculations</a> within the metadata store.</p>
+<p>When resolving incremental updates for a <a href="../../guide/concepts/definitions/features/">feature</a>, Metaxy attempts to perform all computations such as <a href="../../guide/concepts/data-versioning/">sample version calculations</a> within the metadata store.</p>
 <div class="admonition note">
 <p class="admonition-title">When can <strong>local</strong> computations happen instead</p>
 <p>Metaxy's versioning engine runs on the <strong>local <abbr title="The **local versioning engine** is implemented with [`polars-hash`](https://github.com/ion-elgreco/polars-hash) and benefits from incredible [Polars](https://pola.rs/) performance and optimizations such as projection pruning, predicate pushdown, common subplan elimination, and others. It is considered the reference versioning engine implementation in Metaxy, and all the metadata stores are tested against it.">Polars versioning engine</abbr></strong> if:</p>
@@ -3763,8 +3793,8 @@ Provenance columns hold <strong>static</strong> versioning information entirely 
 <p>All metadata store implementations are guaranteed to return equivalent results. They are continuously tested against the reference Polars implementation.</p>
 <h2 id="whats-next">🚀 What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Itching to write some Metaxy code? Jump to <a href="../../guide/overview/quickstart/">Quickstart</a> (WIP!).</li>
-<li>Learn more about Metaxy <a href="../../guide/learn/">concepts</a></li>
+<li>Itching to write some Metaxy code? Jump to <a href="../../guide/quickstart/hello/">Quickstart</a>.</li>
+<li>Learn more about Metaxy <a href="../../guide/concepts/">concepts</a></li>
 <li>View complete, end-to-end <a href="../../examples/">examples</a></li>
 <li>Explore <a href="../../integrations/">Metaxy integrations</a></li>
 <li>Invoke <code>mx</code> CLI <a href="../../reference/cli/">from your terminal</a></li>
