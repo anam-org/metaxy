@@ -21,29 +21,29 @@ graph LR
 
 <div class="grid cards" markdown>
 
-- :material-database-outline: **[Metadata Stores](metadata-stores.md)**
+-   :material-database-outline: **[Metadata Stores](metadata-stores.md)**
 
-  ---
+    ---
 
-  Unified interface for storing and retrieving metadata across different backends.
+    Unified interface for storing and retrieving metadata across different storage backends.
 
-- :material-file-tree-outline: **[Feature Definitions](./definitions/features.md)**
+-   :material-file-tree-outline: **[Feature Definitions](./definitions/features.md)**
 
-  ---
+    ---
 
-  Declarative specifications that define your data schema, (partial) dependencies, and how versions are calculated.
+    Declarative specifications that define your data schema, dependencies, and versioning.
 
-- :material-tag-multiple-outline: **[Versioning](data-versioning.md)**
+-   :material-tag-multiple-outline: **[Versioning](data-versioning.md)**
 
-  ---
+    ---
 
-  Sample-level version tracking that detects changes and determines what needs recomputation.
+    Sample-level version tracking that detects changes and determines what needs recomputation.
 
-- :material-magnify: **[Feature Discovery](feature-discovery.md)**
+-   :material-magnify: **[Feature Discovery](feature-discovery.md)**
 
-  ---
+    ---
 
-  Automatic registration and graph building from feature definitions in your codebase.
+    Automatic registration and graph building from feature definitions in your codebase.
 
 </div>
 
@@ -51,23 +51,23 @@ graph LR
 
 <div class="grid cards" markdown>
 
-- :material-source-branch: **[Lineage Relationship](./definitions/relationship.md)**
+-   :material-source-branch: **[Lineage Relationship](./definitions/relationship.md)**
 
-  ---
+    ---
 
-  How features relate to upstream dependencies: one-to-one, one-to-many, or many-to-one.
+    How features relate to upstream dependencies: one-to-one, one-to-many, or many-to-one.
 
-- :material-help-circle-outline: **[Optional Dependencies](./definitions/optional-dependencies.md)**
+-   :material-help-circle-outline: **[Optional Dependencies](./definitions/optional-dependencies.md)**
 
-  ---
+    ---
 
-  Handle missing upstream data gracefully without blocking downstream processing.
+    Handle missing upstream data gracefully without blocking downstream processing.
 
-- :material-filter-outline: **[Filters](filters.md)**
+-   :material-filter-outline: **[Filters](filters.md)**
 
-  ---
+    ---
 
-  Select subsets of samples for processing based on metadata conditions.
+    Select subsets of samples for processing based on metadata column conditions.
 
 </div>
 
@@ -75,22 +75,22 @@ graph LR
 
 <div class="grid cards" markdown>
 
-- :material-delete-outline: **[Deletions](deletions.md)**
+-   :material-delete-outline: **[Deletions](deletions.md)**
 
-  ---
+    ---
 
-  Propagate sample deletions through the feature graph correctly.
+    Propagating sample deletions through the feature graph correctly.
 
-- :material-table-column: **[System Columns](system-columns.md)**
+-   :material-table-column: **[System Columns](system-columns.md)**
 
-  ---
+    ---
 
-  Reserved columns used internally by Metaxy for versioning and deduplication.
+    Reserved columns used internally for versioning and deduplication.
 
-- :material-test-tube: **[Testing](./lifecycle/testing.md)**
+-   :material-test-tube: **[Testing](./lifecycle/testing.md)**
 
-  ---
+    ---
 
-  Patterns and utilities for testing Metaxy features.
+    Patterns and utilities for testing features in isolation.
 
 </div>

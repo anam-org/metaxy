@@ -154,7 +154,7 @@ def cleanup_job():
     mxd.delete()
 ```
 
-`filters` is a list of SQL WHERE clause strings (e.g., `["status = 'inactive'", "age > 18"]`) that are parsed into Narwhals expressions. Multiple filters are combined with AND logic. See the [filter expressions guide](../../../guide/concepts/filters.md) for supported syntax.
+`filters` is a list of SQL WHERE clause strings (e.g., `["status = 'inactive'", "age > 18"]`) that are parsed into Narwhals expressions. Multiple filters are combined with AND logic. See the [filter expressions guide](/guide/concepts/filters.md) for supported syntax.
 Set `soft=False` to physically remove rows.
 
 ## Reference

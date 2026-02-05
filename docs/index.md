@@ -39,7 +39,7 @@ These workloads **evolve all the time**, with new data being shipped, bugfixes o
 
 !!! info
 
-    Unnecessary recomputations can waste dozens or hundreds of thousands of dollars on compute, and sample-level orchestration complexity can cost even more in engineering efforts.
+    Unnecessary recomputations can waste dozens of thousands of dollars on compute, and battling sample-level orchestration complexity can cost even more in engineering efforts.
 
 --8<-- "data-vs-metadata.md"
 

@@ -206,16 +206,16 @@ markdown_extensions:
   - pymdownx.tilde
 
 nav:
-  - User Guide:
-    - Metaxy:
+  - 📖 User Guide:
+    - guide/index.md
+    - 🎯 Overview:
       - Introduction: index.md
       - Pitch: metaxy/pitch.md
       - Design Choices: metaxy/design.md
-    - Quickstart:
+    - 🚀 Quickstart:
       - Hello, Metaxy!: guide/quickstart/hello.md
-      - Feature Dependencies: guide/quickstart/feature-dependencies.md
-      - Resolving An Increment: guide/quickstart/feature-dependencies.md
-    - Concepts:
+      - More Features: guide/quickstart/feature-dependencies.md
+    - 💡 Concepts:
       - Overview: guide/concepts/index.md
       - Metadata Stores:
         - Metadata Stores: guide/concepts/metadata-stores.md
@@ -228,11 +228,12 @@ nav:
       - Feature Discovery: guide/concepts/feature-discovery.md
       - Syntactic Sugar: guide/concepts/syntactic-sugar.md
       - Filters: guide/concepts/filters.md
-    - Application Lifecycle:
+    - ⚙️ Application Lifecycle:
       - Local Development: guide/concepts/lifecycle/development.md
       - Testing: guide/concepts/lifecycle/testing.md
       - Deployment: guide/concepts/lifecycle/deployment.md
-  - Integrations:
+    - ❓ Q&A: guide/qa.md
+  - 🧩 Integrations:
     - integrations/index.md
     - Orchestration:
       - integrations/orchestration/index.md
@@ -261,12 +262,12 @@ nav:
     - AI:
       - Claude Code: integrations/ai/claude.md
       - MCP Server: integrations/ai/mcp.md
-  - Examples:
+  - 💻 Examples:
     - examples/index.md
     - Basic: examples/basic.md
     - Aggregation: examples/aggregation.md
     - Expansion: examples/expansion.md
-  - Reference:
+  - 📚 Reference:
     - reference/index.md
     - API:
       - reference/api/index.md
@@ -279,13 +280,14 @@ nav:
         - Lineage Relationship: reference/api/definitions/relationship.md
         - Graph: reference/api/definitions/graph.md
         - Filters: reference/api/definitions/filters.md
-      - Config: reference/api/config.md
-      - Metadata Stores:
-        - reference/api/metadata-stores/index.md
+      - MetadataStore:
+        - Base: reference/api/metadata-stores/base.md
         - Exceptions: reference/api/metadata-stores/exceptions.md
-      - Types: reference/api/types.md
-      - Constants: reference/api/constants.md
-      - Utils: reference/api/utils.md
+      - Miscellaneous:
+        - Types: reference/api/types.md
+        - Constants: reference/api/constants.md
+        - Utils: reference/api/utils.md
+        - MetaxyConfig: reference/api/config.md
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md
     - Storage Layout: guide/concepts/system-columns.md
