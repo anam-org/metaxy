@@ -304,17 +304,17 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
         # DuckDB MD5 implementation
         @ibis.udf.scalar.builtin
-        def MD5(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def MD5(x: str) -> str:  # ty: ignore[empty-body]
             """DuckDB MD5() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def HEX(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def HEX(x: str) -> str:  # ty: ignore[empty-body]
             """DuckDB HEX() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def LOWER(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def LOWER(x: str) -> str:  # ty: ignore[empty-body]
             """DuckDB LOWER() function."""
             ...
 
@@ -340,12 +340,12 @@ class DuckDBMetadataStore(IbisMetadataStore):
             # The decorator tells Ibis to call them directly in SQL
             # NOTE: xxh32/xxh64 return integers in DuckDB, not strings
             @ibis.udf.scalar.builtin
-            def xxh32(x: str) -> int:  # ty: ignore[invalid-return-type]
+            def xxh32(x: str) -> int:  # ty: ignore[empty-body]
                 """DuckDB xxh32() hash function from hashfuncs extension."""
                 ...
 
             @ibis.udf.scalar.builtin
-            def xxh64(x: str) -> int:  # ty: ignore[invalid-return-type]
+            def xxh64(x: str) -> int:  # ty: ignore[empty-body]
                 """DuckDB xxh64() hash function from hashfuncs extension."""
                 ...
 
@@ -420,7 +420,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         if self._conn is None:
             raise RuntimeError("DuckDB connection is not open.")
 
-        candidate = self._conn.con  # ty: ignore[possibly-missing-attribute]
+        candidate = self._conn.con  # ty: ignore[unresolved-attribute]
 
         if not isinstance(candidate, DuckDBPyConnection):
             raise TypeError(f"Expected DuckDB backend 'con' to be DuckDBPyConnection, got {type(candidate).__name__}")

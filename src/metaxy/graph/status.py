@@ -211,25 +211,25 @@ def format_sample_previews(
         missing_preview_df = lazy_increment.added.head(limit).collect().to_polars()
         if missing_preview_df.height > 0:
             lines.append("[bold yellow]Missing samples:[/bold yellow]")
-            glimpse_str = missing_preview_df.glimpse(return_type="string")
-            if glimpse_str:
-                lines.append(glimpse_str)
+            glimpse_result = missing_preview_df.glimpse(return_type="string")
+            if isinstance(glimpse_result, str):
+                lines.append(glimpse_result)
 
     if stale_count > 0:
         stale_preview_df = lazy_increment.changed.head(limit).collect().to_polars()
         if stale_preview_df.height > 0:
             lines.append("[bold cyan]Stale samples:[/bold cyan]")
-            glimpse_str = stale_preview_df.glimpse(return_type="string")
-            if glimpse_str:
-                lines.append(glimpse_str)
+            glimpse_result = stale_preview_df.glimpse(return_type="string")
+            if isinstance(glimpse_result, str):
+                lines.append(glimpse_result)
 
     if orphaned_count > 0:
         orphaned_preview_df = lazy_increment.removed.head(limit).collect().to_polars()
         if orphaned_preview_df.height > 0:
             lines.append("[bold red]Orphaned samples:[/bold red]")
-            glimpse_str = orphaned_preview_df.glimpse(return_type="string")
-            if glimpse_str:
-                lines.append(glimpse_str)
+            glimpse_result = orphaned_preview_df.glimpse(return_type="string")
+            if isinstance(glimpse_result, str):
+                lines.append(glimpse_result)
 
     return lines
 

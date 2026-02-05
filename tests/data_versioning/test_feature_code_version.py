@@ -603,7 +603,7 @@ def test_property_description_normalization_deterministic(
     with graph.use():
         # Create a class dynamically with the raw docstring.
         # Dynamic class creation with spec kwarg uses BaseFeature's metaclass.
-        Feature: type[BaseFeature] = type(  # type: ignore[call-overload]
+        Feature: type[BaseFeature] = type(
             "Feature",
             (BaseFeature,),
             {

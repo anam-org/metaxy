@@ -97,7 +97,7 @@ class IncrementResolver(Generic[FrameT]):
         # Find removed samples (in current but not expected)
         removed = cast(
             FrameT,
-            current.join(  # ty: ignore[invalid-argument-type]
+            current.join(
                 cast(FrameT, expected.select(join_columns)),  # ty: ignore[invalid-argument-type]
                 on=join_columns,
                 how="anti",

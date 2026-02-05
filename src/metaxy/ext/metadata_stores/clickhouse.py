@@ -156,17 +156,17 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         # ClickHouse MD5 implementation
         @ibis.udf.scalar.builtin
-        def MD5(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def MD5(x: str) -> str:  # ty: ignore[empty-body]
             """ClickHouse MD5() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def HEX(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def HEX(x: str) -> str:  # ty: ignore[empty-body]
             """ClickHouse HEX() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def lower(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def lower(x: str) -> str:  # ty: ignore[empty-body]
             """ClickHouse lower() function."""
             ...
 
@@ -179,17 +179,17 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         # ClickHouse xxHash functions
         @ibis.udf.scalar.builtin
-        def xxHash32(x: str) -> int:  # ty: ignore[invalid-return-type]
+        def xxHash32(x: str) -> int:  # ty: ignore[empty-body]
             """ClickHouse xxHash32() function - returns UInt32."""
             ...
 
         @ibis.udf.scalar.builtin
-        def xxHash64(x: str) -> int:  # ty: ignore[invalid-return-type]
+        def xxHash64(x: str) -> int:  # ty: ignore[empty-body]
             """ClickHouse xxHash64() function - returns UInt64."""
             ...
 
         @ibis.udf.scalar.builtin
-        def toString(x: int) -> str:  # ty: ignore[invalid-return-type]
+        def toString(x: int) -> str:  # ty: ignore[empty-body]
             """ClickHouse toString() function - converts integer to string."""
             ...
 

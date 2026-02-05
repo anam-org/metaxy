@@ -605,8 +605,9 @@ class FeatureGraph:
             definition_version = definition.feature_definition_version
             project = definition.project
             class_path = definition.feature_class_path
+            assert class_path is not None, "feature_class_path must be set for serialization"
 
-            snapshot[feature_key_str] = {  # ty: ignore[invalid-assignment]
+            snapshot[feature_key_str] = {
                 "feature_spec": feature_spec_dict,
                 "feature_schema": feature_schema_dict,
                 FEATURE_VERSION_COL: feature_version,
@@ -768,21 +769,21 @@ class MetaxyMeta(ModelMetaclass):
         if spec:
             # Get graph from context at class definition time
             active_graph = FeatureGraph.get_active()
-            new_cls.graph = active_graph
-            new_cls._spec = spec
+            new_cls.graph = active_graph  # ty: ignore[unresolved-attribute]
+            new_cls._spec = spec  # ty: ignore[unresolved-attribute]
 
             # Determine project for this feature
             # Use explicit class attribute if defined, otherwise auto-detect from package
             if "__metaxy_project__" in namespace:
-                new_cls.__metaxy_project__ = namespace["__metaxy_project__"]
+                new_cls.__metaxy_project__ = namespace["__metaxy_project__"]  # ty: ignore[unresolved-attribute]
             else:
-                new_cls.__metaxy_project__ = cls._detect_project(new_cls)
+                new_cls.__metaxy_project__ = cls._detect_project(new_cls)  # ty: ignore[unresolved-attribute]
 
             active_graph.add_feature(new_cls)
         else:
             pass  # TODO: set spec to a property that would raise an exception on access
 
-        return new_cls
+        return new_cls  # ty: ignore[invalid-return-type]
 
     @staticmethod
     def _detect_project(feature_cls: type) -> str:

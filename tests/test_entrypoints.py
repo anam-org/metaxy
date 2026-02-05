@@ -40,7 +40,7 @@ def clean_imports():
 # Test fixtures - Define features dynamically in tests
 def create_test_feature(name: str, key: list[str]) -> type[BaseFeature]:
     """Helper to create test feature classes."""
-    return type(  # ty: ignore[no-matching-overload]
+    return type(
         name,
         (BaseFeature,),
         {},

@@ -291,27 +291,27 @@ class BigQueryMetadataStore(IbisMetadataStore):
 
         # Use Ibis's builtin UDF decorator to wrap BigQuery's hash functions
         @ibis.udf.scalar.builtin
-        def MD5(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def MD5(x: str) -> str:  # ty: ignore[empty-body]
             """BigQuery MD5() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def FARM_FINGERPRINT(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def FARM_FINGERPRINT(x: str) -> str:  # ty: ignore[empty-body]
             """BigQuery FARM_FINGERPRINT() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def SHA256(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def SHA256(x: str) -> str:  # ty: ignore[empty-body]
             """BigQuery SHA256() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def TO_HEX(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def TO_HEX(x: str) -> str:  # ty: ignore[empty-body]
             """BigQuery TO_HEX() function."""
             ...
 
         @ibis.udf.scalar.builtin
-        def LOWER(x: str) -> str:  # ty: ignore[invalid-return-type]
+        def LOWER(x: str) -> str:  # ty: ignore[empty-body]
             """BigQuery LOWER() function."""
             ...
 

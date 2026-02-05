@@ -523,7 +523,7 @@ def build_runtime_feature_metadata(
             "metaxy/feature": feature_key.to_string(),
             "metaxy/info": build_feature_info_metadata(feature_key),
             "metaxy/store": {
-                "name": store.name,  # ty: ignore[possibly-missing-attribute]
+                "name": store.name,
                 "type": store.qualified_class_name,  # ty: ignore[possibly-missing-attribute]
                 "display": store.display(),  # ty: ignore[possibly-missing-attribute]
                 "versioning_engine": store._versioning_engine,  # ty: ignore[possibly-missing-attribute]

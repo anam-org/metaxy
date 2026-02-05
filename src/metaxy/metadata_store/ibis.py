@@ -284,7 +284,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         if self._conn is None:
             raise StoreNotOpenError("Ibis connection is not open. Store must be used as a context manager.")
         else:
-            return self._conn  # ty: ignore[invalid-return-type]
+            return self._conn
 
     @contextmanager
     def open(self, mode: AccessMode = "r") -> Iterator[Self]:
@@ -311,7 +311,7 @@ class IbisMetadataStore(MetadataStore, ABC):
                 # Setup: Connect to database
                 if self.connection_string:
                     # Use connection string
-                    self._conn = ibis.connect(self.connection_string)
+                    self._conn = ibis.connect(self.connection_string)  # ty: ignore[invalid-assignment]
                 else:
                     # Use backend + params
                     # Get backend-specific connect function
@@ -467,7 +467,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         if not filter_list:
             if table_name not in self.conn.list_tables():
                 raise TableNotFoundError(f"Table '{table_name}' does not exist for feature {feature_key.to_string()}.")
-            self.conn.truncate_table(table_name)  # ty: ignore[unresolved-attribute]
+            self.conn.truncate_table(table_name)
             return
 
         # Read and filter using store's lazy path to build WHERE clause

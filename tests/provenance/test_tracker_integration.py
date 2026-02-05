@@ -6,8 +6,6 @@ Metaxy system including FeatureGraph, FeatureDep renames, and filters.
 
 from __future__ import annotations
 
-from typing import cast
-
 import narwhals as nw
 import polars as pl
 import pytest
@@ -442,7 +440,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
         filters=filters,
     )
 
-    prepared_df = cast(pl.LazyFrame, prepared.to_native()).collect()
+    prepared_df = prepared.collect().to_polars()
 
     # After filtering: upstream_a has [3, 4, 5], upstream_b has [1, 2, 3, 4]
     # After join: should have [3, 4] (intersection)

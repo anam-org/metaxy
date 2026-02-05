@@ -58,7 +58,6 @@ which is typically not required for non-root features.
 <!-- skip: next -->
 
 ```py {title="script.py"}
-import metaxy as mx
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 from .features import Video
@@ -99,7 +98,8 @@ These dataframes have pre-computed provenance columns which **should not be modi
     for row in to_process.iter_rows(named=True):
         path = Path(row["raw_video_path"]) / row["id"] / row["metaxy_provenance"] / "video.mp4"
         process_video(row["raw_video_path"], path)
-        result.append(path)
+        row["path"] = path
+        result.append(row)
     ```
 
 ### 4. Record metadata for processed samples
@@ -109,11 +109,13 @@ Once done, write the metadata for the processed samples:
 <!-- skip: next -->
 
 ```py {title="script.py"}
+import polars as pl
+
 with store.open("w"):
-    store.write(VoiceDetection, result)
+    store.write(VoiceDetection, pl.DataFrame(result))
 ```
 
-Recorded samples will no longer be returned by `MetadataStore.resolve_update` during future pipeline runs, unless their `metaxy_provenance_by_field` values are updated.
+Recorded samples will no longer be returned by `MetadataStore.resolve_update` during future pipeline runs, unless the incoming `metaxy_provenance_by_field` values are updated.
 
 ## Next Steps
 

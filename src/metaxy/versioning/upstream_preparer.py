@@ -82,7 +82,7 @@ class UpstreamPreparer(Generic[FrameT]):
             self._validate_no_collisions(dfs)
 
         # Step 5: Join all dependencies
-        return self.engine.join(dfs)  # ty: ignore[invalid-argument-type]
+        return self.engine.join(dfs)
 
     def _transform_all(
         self,
@@ -114,7 +114,7 @@ class UpstreamPreparer(Generic[FrameT]):
                     renamed_df.df,  # ty: ignore[invalid-argument-type]
                     hash_algorithm,
                 )
-                result[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
+                result[feature_key] = RenamedDataFrame(
                     df=transformed_df,
                     id_column_tracker=renamed_df.id_column_tracker,
                 )
@@ -137,7 +137,7 @@ class UpstreamPreparer(Generic[FrameT]):
             cols = renamed_df.df.collect_schema().names()  # ty: ignore[invalid-argument-type]
             cols_to_drop = [col for col in columns_to_drop if col in cols]
             if cols_to_drop:
-                result[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
+                result[feature_key] = RenamedDataFrame(
                     df=renamed_df.df.drop(*cols_to_drop),  # ty: ignore[invalid-argument-type]
                     id_column_tracker=renamed_df.id_column_tracker,
                 )

@@ -271,6 +271,7 @@ nav:
     - reference/index.md
     - API:
       - reference/api/index.md
+      - Initialization: reference/api/initialization.md
       - Definitions:
         - reference/api/definitions/index.md
         - Feature Spec: reference/api/definitions/feature-spec.md
@@ -307,6 +308,7 @@ validation:
 
 extra_javascript:
 - javascripts/telemetry.js
+- javascripts/glossary-tooltips.js
 
 extra_css:
 - css/code_select.css

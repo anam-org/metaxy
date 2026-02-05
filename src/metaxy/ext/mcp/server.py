@@ -290,7 +290,7 @@ def _register_tools(server: FastMCP) -> None:
             if sort_by:
                 lazy_frame = lazy_frame.sort(by=sort_by, descending=descending)
 
-            df: pl.DataFrame = lazy_frame.head(limit).collect().to_polars()  # type: ignore[assignment]
+            df: pl.DataFrame = lazy_frame.head(limit).collect().to_polars()
 
             return {
                 "columns": list(df.columns),

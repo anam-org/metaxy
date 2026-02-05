@@ -175,8 +175,9 @@ def truncate_struct_column(df: pl.DataFrame | pl.LazyFrame, struct_column: str) 
         raise TypeError(f"truncate_struct_column only supports Polars DataFrame/LazyFrame, got {type(df)}")
 
     # For LazyFrame, we need to collect once to get field names
+    temp_df: pl.DataFrame
     if isinstance(df, pl.LazyFrame):
-        temp_df = df.limit(1).collect()
+        temp_df = df.limit(1).collect()  # ty: ignore[invalid-assignment]
     else:
         temp_df = df
 

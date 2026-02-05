@@ -65,6 +65,8 @@ def select_metaxy_assets(
         ```
     """
     resolved_project = project if project is not None else mx.MetaxyConfig.get().project
+    if resolved_project is None:
+        raise ValueError("project must be specified or configured in MetaxyConfig")
 
     selection = dg.AssetSelection.tag(DAGSTER_METAXY_PROJECT_TAG_KEY, resolved_project)
 

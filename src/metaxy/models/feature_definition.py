@@ -242,13 +242,13 @@ class FeatureDefinition(FrozenBaseModel):
             if hasattr(module, class_name):
                 cls = getattr(module, class_name)
                 if isinstance(cls, type):
-                    return cls  # type: ignore[return-value]
+                    return cls
 
         # Fall back to importing
         try:
             module = __import__(module_path, fromlist=[class_name])
             cls = getattr(module, class_name)
-            return cls  # type: ignore[return-value]
+            return cls
         except (ImportError, AttributeError, ValueError) as e:
             raise ImportError(
                 f"Cannot import feature class '{self.feature_class_path}': {e}. "

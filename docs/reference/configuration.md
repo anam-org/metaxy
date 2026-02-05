@@ -40,7 +40,7 @@ The `stores` field configures metadata store backends. Each store is defined by:
 
 - **`type`**: Full import path to the store class (e.g., `metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore`)
 - **`config`**: Dictionary of store-specific configuration options
-- `**fallback_stores**` - optional list of store names to pull missing metadata from. Learn more [here](/guide/concepts/metadata-stores.md/#fallback-stores).
+- **`fallback_stores`** - optional list of store names to pull missing metadata from. Learn more [here](/guide/concepts/metadata-stores.md/#fallback-stores).
 
 <!-- dprint-ignore-start -->
 ::: metaxy-config

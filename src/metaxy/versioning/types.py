@@ -69,7 +69,7 @@ class PolarsLazyIncrement:
             PolarsIncrement: The collected increment.
         """
         added, changed, removed = pl.collect_all([self.added, self.changed, self.removed], **kwargs)
-        return PolarsIncrement(added, changed, removed)
+        return PolarsIncrement(added, changed, removed)  # ty: ignore[invalid-argument-type]
 
 
 @public

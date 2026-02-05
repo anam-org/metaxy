@@ -310,8 +310,8 @@ class DuckLakeAttachmentManager:
                 cursor.execute(f"INSTALL {plugin};")
                 cursor.execute(f"LOAD {plugin};")
 
-            metadata_secret_sql, metadata_params_sql = self._config.metadata_sql_parts
-            storage_secret_sql, storage_params_sql = self._config.storage_sql_parts
+            metadata_secret_sql, metadata_params_sql = self._config.metadata_sql_parts  # ty: ignore[not-iterable]
+            storage_secret_sql, storage_params_sql = self._config.storage_sql_parts  # ty: ignore[not-iterable]
 
             if metadata_secret_sql:
                 cursor.execute(metadata_secret_sql)

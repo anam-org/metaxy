@@ -73,7 +73,7 @@ def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:
     if columns_to_add:
         df_nw = df_nw.with_columns(columns_to_add)  # ty: ignore[possibly-missing-attribute]
 
-    return df_nw.to_native()  # ty: ignore[possibly-missing-attribute]
+    return df_nw.to_native()
 
 
 def add_metaxy_provenance_column(
