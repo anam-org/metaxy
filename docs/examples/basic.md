@@ -137,4 +137,4 @@ Learn more about:
 
 - [Features and Fields](../guide/learn/definitions/features.md)
 - [Data Versioning](../guide/learn/data-versioning.md)
-- [Relationships](../guide/learn/relationship.md)
+- [Relationships](/guide/learn/definitions/relationship.md)

@@ -20,5 +20,5 @@ Metaxy supports a few common mappings from parent to child samples out of the bo
 
 ## Examples
 
-- [1:N expansion](../../examples/expansion.md)
-- [N:1 aggregation](../../examples/aggregation.md)
+- [1:N expansion](/examples/expansion.md)
+- [N:1 aggregation](/examples/aggregation.md)

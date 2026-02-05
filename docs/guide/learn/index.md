@@ -51,7 +51,7 @@ graph LR
 
 <div class="grid cards" markdown>
 
-- :material-source-branch: **[Lineage Relationship](relationship.md)**
+- :material-source-branch: **[Lineage Relationship](./definitions/relationship.md)**
 
   ---
 
