@@ -3806,6 +3806,7 @@
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;my/feature&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 </div>
+<p>By default, Metaxy drops historical records with the same feature version, which makes the <code>write</code>-<code>read</code> sequence idempotent for an outside observer.</p>
 <h2 id="increment-resolution">Increment Resolution<a class="headerlink" href="#increment-resolution" title="Permanent link">&para;</a></h2>
 <p>Increments can be computed using the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>resolve_update</code></a> method:</p>
 <div class="admonition example">
@@ -3831,8 +3832,12 @@
 <p>It is up to the caller to decide how to handle the processing and potential deletion of orphaned samples.</p>
 <p>Once processing is complete, the caller is expected to call <code>MetadataStore.write</code> to record metadata about the processed samples.</p>
 <div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>Learn more about how increments are computed <a href="../../../metaxy/design/#compute">here</a>.</p>
+<p class="admonition-title">Where are increments computed?</p>
+</div>
+<p>Learn more <a href="../../../metaxy/design/#compute">here</a>.</p>
+<div class="admonition tip">
+<p class="admonition-title">How are increments computed?</p>
+<p>Learn more <a href="../data-versioning/">here</a>.</p>
 </div>
 <h2 id="deletes">Deletes<a class="headerlink" href="#deletes" title="Permanent link">&para;</a></h2>
 <p>Metadata stores support deletions, which are not required during normal Metaxy operations (1).</p>
