@@ -3737,17 +3737,17 @@ which is typically not required for non-root features.</p>
 <p>The <code>increment</code> object is an instance of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.versioning.types.Increment&lt;/span&gt;" href="../../../reference/api/types/#metaxy.versioning.types.Increment"><code>Increment</code></a> and contains three dataframes:</p>
 <ul>
 <li>
-<p><code>increment.added</code>: new samples which were not previously recorded</p>
+<p><code>increment.new</code>: new samples which were not previously recorded</p>
 </li>
 <li>
-<p><code>increment.changed</code>: samples which were previously recorded but have now changed</p>
+<p><code>increment.stale</code>: samples which were previously recorded but have now changed</p>
 </li>
 <li>
-<p><code>increment.removed</code>: samples which were previously recorded but are no longer present in the input <code>samples</code> DataFrame</p>
+<p><code>increment.orphaned</code>: samples which were previously recorded but are no longer present in the input <code>samples</code> DataFrame</p>
 </li>
 </ul>
 <p>It's up to you how to handle these dataframes.
-Usually there will be a processing step iterating over all the rows in <code>increment.added</code> and <code>increment.changed</code> (possibly in parallel, using something like <a href="../../../integrations/compute/ray/">Ray</a>), while <code>increment.removed</code> may be used to cleanup the no longer needed data and <a href="../../concepts/deletions/">metadata</a>.</p>
+Usually there will be a processing step iterating over all the rows in <code>increment.new</code> and <code>increment.stale</code> (possibly in parallel, using something like <a href="../../../integrations/compute/ray/">Ray</a>), while <code>increment.orphaned</code> may be used to cleanup the no longer needed data and <a href="../../concepts/deletions/">metadata</a>.</p>
 <p>These dataframes have pre-computed provenance columns which <strong>should not be modified</strong> and eventually written to the metadata store.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -3755,7 +3755,7 @@ Usually there will be a processing step iterating over all the rows in <code>inc
 <!-- skip: next -->
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">to_process</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">increment</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">to_polars</span><span class="p">(),</span> <span class="n">increment</span><span class="o">.</span><span class="n">changed</span><span class="o">.</span><span class="n">to_polars</span><span class="p">()])</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">to_process</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">increment</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">to_polars</span><span class="p">(),</span> <span class="n">increment</span><span class="o">.</span><span class="n">stale</span><span class="o">.</span><span class="n">to_polars</span><span class="p">()])</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">to_process</span><span class="o">.</span><span class="n">iter_rows</span><span class="p">(</span><span class="n">named</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
