@@ -74,14 +74,14 @@ with store:
 
 The `increment` object is an instance of [`Increment`][metaxy.Increment] and contains three dataframes:
 
-- `increment.added`: new samples which were not previously recorded
+- `increment.new`: new samples which were not previously recorded
 
-- `increment.changed`: samples which were previously recorded but have now changed
+- `increment.stale`: samples which were previously recorded but have now changed
 
-- `increment.removed`: samples which were previously recorded but are no longer present in the input `samples` DataFrame
+- `increment.orphaned`: samples which were previously recorded but are no longer present in the input `samples` DataFrame
 
 It's up to you how to handle these dataframes.
-Usually there will be a processing step iterating over all the rows in `increment.added` and `increment.changed` (possibly in parallel, using something like [Ray](/integrations/compute/ray.md)), while `increment.removed` may be used to cleanup the no longer needed data and [metadata](/guide/concepts/deletions.md).
+Usually there will be a processing step iterating over all the rows in `increment.new` and `increment.stale` (possibly in parallel, using something like [Ray](/integrations/compute/ray.md)), while `increment.orphaned` may be used to cleanup the no longer needed data and [metadata](/guide/concepts/deletions.md).
 
 These dataframes have pre-computed provenance columns which **should not be modified** and eventually written to the metadata store.
 
@@ -92,7 +92,7 @@ These dataframes have pre-computed provenance columns which **should not be modi
     ```python
     from pathlib import Path
 
-    to_process = pl.concat([increment.added.to_polars(), increment.changed.to_polars()])
+    to_process = pl.concat([increment.new.to_polars(), increment.stale.to_polars()])
 
     result = []
     for row in to_process.iter_rows(named=True):

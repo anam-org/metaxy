@@ -291,12 +291,12 @@ class DataVersionReconciliation(BaseOperation):
         # Use 'changed' for reconciliation (field_provenance changed due to upstream)
         # Use 'added' for new feature materialization
         # Convert results to Polars for consistent joining
-        if len(diff_result.changed) > 0:
-            changed_pl = nw.from_native(diff_result.changed.to_native()).to_polars()
+        if len(diff_result.stale) > 0:
+            changed_pl = nw.from_native(diff_result.stale.to_native()).to_polars()
             new_provenance = changed_pl.select(["sample_uid", "metaxy_provenance_by_field"])
             df_to_write = sample_metadata_pl.join(new_provenance, on="sample_uid", how="inner")
-        elif len(diff_result.added) > 0:
-            df_to_write = nw.from_native(diff_result.added.to_native()).to_polars()
+        elif len(diff_result.new) > 0:
+            df_to_write = nw.from_native(diff_result.new.to_native()).to_polars()
         else:
             return 0
 
@@ -373,13 +373,13 @@ class MetadataBackfill(BaseOperation, ABC):
                 # Get field provenance from Metaxy
                 feature_key_obj = FeatureKey(feature_key.split("/"))
 
-                diff = store.resolve_update(
+                increment = store.resolve_update(
                     feature_key_obj,
                     samples=external_df.select(["sample_uid"])
                 )
 
                 # Join external metadata with calculated field_provenance
-                to_write = external_df.join(diff.added, on="sample_uid", how="inner")
+                to_write = external_df.join(increment.new, on="sample_uid", how="inner")
 
                 # Write
                 store.write(feature_key_obj, to_write)

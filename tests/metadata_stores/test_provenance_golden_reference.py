@@ -611,18 +611,18 @@ def assert_increment_matches_golden(
         )
 
     # Compare added
-    actual_added = actual.added.lazy().collect().to_polars()
-    golden_added = golden.added.lazy().collect().to_polars()
+    actual_added = actual.new.lazy().collect().to_polars()
+    golden_added = golden.new.lazy().collect().to_polars()
     compare_frames(actual_added, golden_added, "added")
 
     # Compare changed
-    actual_changed = actual.changed.lazy().collect().to_polars()
-    golden_changed = golden.changed.lazy().collect().to_polars()
+    actual_changed = actual.stale.lazy().collect().to_polars()
+    golden_changed = golden.stale.lazy().collect().to_polars()
     compare_frames(actual_changed, golden_changed, "changed")
 
     # Compare removed
-    actual_removed = actual.removed.lazy().collect().to_polars()
-    golden_removed = golden.removed.lazy().collect().to_polars()
+    actual_removed = actual.orphaned.lazy().collect().to_polars()
+    golden_removed = golden.orphaned.lazy().collect().to_polars()
     compare_frames(actual_removed, golden_removed, "removed")
 
 
@@ -688,7 +688,7 @@ def assert_resolve_update_matches_golden(
             METAXY_PROVENANCE_BY_FIELD,
         ]
 
-        added_df = golden_increment.added.lazy().collect().to_polars()
+        added_df = golden_increment.new.lazy().collect().to_polars()
 
         # Select ID columns and provenance columns that exist
         available_cols = [c for c in id_columns + provenance_cols if c in added_df.columns]
@@ -760,9 +760,9 @@ def compute_golden_increment(
         removed_collected = added_collected.head(0)
 
     return Increment(
-        added=added_collected,
-        changed=changed_collected,
-        removed=removed_collected,
+        new=added_collected,
+        stale=changed_collected,
+        orphaned=removed_collected,
     )
 
 
@@ -824,9 +824,9 @@ def test_store_resolve_update_matches_golden_provenance(
 
                 # Update current downstream for this feature version
                 # Use the golden added/changed to build current state
-                added_df = golden_increment.added.lazy().collect().to_polars()
-                if golden_increment.changed is not None:
-                    changed_df = golden_increment.changed.lazy().collect().to_polars()
+                added_df = golden_increment.new.lazy().collect().to_polars()
+                if golden_increment.stale is not None:
+                    changed_df = golden_increment.stale.lazy().collect().to_polars()
                     new_downstream = pl.concat([added_df, changed_df])
                 else:
                     new_downstream = added_df
@@ -916,7 +916,7 @@ def test_golden_reference_with_duplicate_timestamps(
         except HashAlgorithmNotSupportedError:
             pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
-        added_df = increment.added.lazy().collect().to_polars()
+        added_df = increment.new.lazy().collect().to_polars()
 
         # Exclude metaxy_created_at since it's a timestamp
         common_columns = [
@@ -1025,7 +1025,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
             )
 
             # Verify we got results (deterministic even with same timestamps)
-            added_df = increment.added.lazy().collect().to_polars()
+            added_df = increment.new.lazy().collect().to_polars()
             assert len(added_df) > 0, "Expected at least some samples after deduplication"
 
             # With duplicates at same timestamp, we should still get the original count
@@ -1098,7 +1098,7 @@ def test_golden_reference_partial_duplicates(
                 snapshot_version=graph.snapshot_version,
             )
 
-            added_df = increment.added.lazy().collect().to_polars()
+            added_df = increment.new.lazy().collect().to_polars()
 
             # Exclude timestamp
             common_columns = [
@@ -1404,7 +1404,7 @@ def test_expansion_changed_rows_not_duplicated(
                 target_version=VideoFrames.feature_version(),
                 snapshot_version=graph.snapshot_version,
             )
-            added_df = increment.added.lazy().collect().to_polars()
+            added_df = increment.new.lazy().collect().to_polars()
             assert len(added_df) == 2, f"Expected 2 parent rows, got {len(added_df)}"
 
             # Expand each video to 3 frames
@@ -1450,7 +1450,7 @@ def test_expansion_changed_rows_not_duplicated(
                 snapshot_version=graph.snapshot_version,
             )
 
-            changed_df = increment_after_change.changed
+            changed_df = increment_after_change.stale
             assert changed_df is not None, "Expected changed to not be None"
             changed_df = changed_df.lazy().collect().to_polars()
 
@@ -1467,7 +1467,7 @@ def test_expansion_changed_rows_not_duplicated(
             )
 
             # Verify added is empty (no new videos)
-            added_after_change = increment_after_change.added.lazy().collect().to_polars()
+            added_after_change = increment_after_change.new.lazy().collect().to_polars()
             assert len(added_after_change) == 0, f"Expected 0 added rows, got {len(added_after_change)}"
 
     except HashAlgorithmNotSupportedError:

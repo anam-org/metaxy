@@ -208,7 +208,7 @@ def format_sample_previews(
     lines: list[str] = []
 
     if missing_count > 0:
-        missing_preview_df = lazy_increment.added.head(limit).collect().to_polars()
+        missing_preview_df = lazy_increment.new.head(limit).collect().to_polars()
         if missing_preview_df.height > 0:
             lines.append("[bold yellow]Missing samples:[/bold yellow]")
             glimpse_result = missing_preview_df.glimpse(return_type="string")
@@ -216,7 +216,7 @@ def format_sample_previews(
                 lines.append(glimpse_result)
 
     if stale_count > 0:
-        stale_preview_df = lazy_increment.changed.head(limit).collect().to_polars()
+        stale_preview_df = lazy_increment.stale.head(limit).collect().to_polars()
         if stale_preview_df.height > 0:
             lines.append("[bold cyan]Stale samples:[/bold cyan]")
             glimpse_result = stale_preview_df.glimpse(return_type="string")
@@ -224,7 +224,7 @@ def format_sample_previews(
                 lines.append(glimpse_result)
 
     if orphaned_count > 0:
-        orphaned_preview_df = lazy_increment.removed.head(limit).collect().to_polars()
+        orphaned_preview_df = lazy_increment.orphaned.head(limit).collect().to_polars()
         if orphaned_preview_df.height > 0:
             lines.append("[bold red]Orphaned samples:[/bold red]")
             glimpse_result = orphaned_preview_df.glimpse(return_type="string")
@@ -346,9 +346,9 @@ def get_feature_metadata_status(
     )
 
     # Count changes
-    missing_count = count_lazy_rows(lazy_increment.added)
-    stale_count = count_lazy_rows(lazy_increment.changed)
-    orphaned_count = count_lazy_rows(lazy_increment.removed)
+    missing_count = count_lazy_rows(lazy_increment.new)
+    stale_count = count_lazy_rows(lazy_increment.stale)
+    orphaned_count = count_lazy_rows(lazy_increment.orphaned)
 
     # Calculate progress if requested
     progress_percentage: float | None = None

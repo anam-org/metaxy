@@ -732,8 +732,8 @@ def test_resolve_update_loads_external_feature_definitions(tmp_path: Path):
             assert new_graph.get_feature_version(["resolve_test", "upstream"]) == expected_upstream_version
 
             # The increment should have computed correctly with the real upstream definition
-            assert increment.added is not None
-            assert len(increment.added) == 2  # Both upstream samples
+            assert increment.new is not None
+            assert len(increment.new) == 2  # Both upstream samples
 
 
 def test_sync_external_features_warns_on_version_mismatch(tmp_path: Path):

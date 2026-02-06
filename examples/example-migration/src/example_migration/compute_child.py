@@ -25,17 +25,17 @@ with config.get_store() as store:
     diff_result = store.resolve_update(child_key)
 
     print(
-        f"Identified: {len(diff_result.added)} new samples, {len(diff_result.changed)} samples with new provenance_by_field"
+        f"Identified: {len(diff_result.new)} new samples, {len(diff_result.stale)} samples with new provenance_by_field"
     )
 
-    if len(diff_result.added) > 0:
-        store.write(child_key, diff_result.added)
-        print(f"[OK] Materialized {len(diff_result.added)} new samples")
+    if len(diff_result.new) > 0:
+        store.write(child_key, diff_result.new)
+        print(f"[OK] Materialized {len(diff_result.new)} new samples")
 
-    if len(diff_result.changed) > 0:
+    if len(diff_result.stale) > 0:
         # This should NOT happen after migration!
-        store.write(child_key, diff_result.changed)
-        print(f"[WARN] Recomputed {len(diff_result.changed)} changed samples")
+        store.write(child_key, diff_result.stale)
+        print(f"[WARN] Recomputed {len(diff_result.stale)} changed samples")
 
     # Show current data
     import narwhals as nw

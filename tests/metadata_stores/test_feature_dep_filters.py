@@ -189,7 +189,7 @@ def test_feature_dep_filters_integration(any_store: MetadataStore) -> None:
                 pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
             # Get the result
-            result_df = increment.added.lazy().collect().to_polars()
+            result_df = increment.new.lazy().collect().to_polars()
 
             # Verify only samples with age >= 25 are present
             # (s2 with age=25 and s3 with age=30)

@@ -151,8 +151,8 @@ class MetaxyDatasource(Datasource):
             target_filters=self.filters,
         )
         # Add status column and concatenate added + changed
-        added_with_status = increment.added.with_columns(nw.lit("new").alias("metaxy_status"))
-        changed_with_status = increment.changed.with_columns(nw.lit("stale").alias("metaxy_status"))
+        added_with_status = increment.new.with_columns(nw.lit("new").alias("metaxy_status"))
+        changed_with_status = increment.stale.with_columns(nw.lit("stale").alias("metaxy_status"))
         return nw.concat([added_with_status, changed_with_status])
 
     def _get_row_count(self) -> int:

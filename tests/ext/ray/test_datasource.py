@@ -438,7 +438,7 @@ def test_datasource_incremental_up_to_date(
     # Compute and write derived data with correct provenance
     with delta_store.open("w"):
         increment = delta_store.resolve_update(DERIVED_FEATURE_KEY)
-        derived_data = increment.added.with_columns(nw.lit(100).alias("derived_value"))
+        derived_data = increment.new.with_columns(nw.lit(100).alias("derived_value"))
         delta_store.write(DERIVED_FEATURE_KEY, derived_data.to_arrow())
 
     # Read incrementally - should return empty since data is up-to-date

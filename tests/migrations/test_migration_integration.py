@@ -274,9 +274,9 @@ def test_upstream_downstream_migration(
 
         # Write downstream (derived feature)
         # Don't provide samples - let system auto-load upstream and calculate provenance_by_field
-        diff = store_v1.resolve_update(DownstreamV1)
-        if len(diff.added) > 0:
-            store_v1.write(DownstreamV1, diff.added)
+        increment = store_v1.resolve_update(DownstreamV1)
+        if len(increment.new) > 0:
+            store_v1.write(DownstreamV1, increment.new)
 
         # Record v1 snapshot
         SystemTableStorage(store_v1).push_graph_snapshot()
@@ -365,9 +365,9 @@ def test_migration_idempotency(
         store_v1.write(UpstreamV1, upstream_data)
 
         # Write downstream - let system auto-load upstream and calculate provenance_by_field
-        diff = store_v1.resolve_update(DownstreamV1)
-        if len(diff.added) > 0:
-            store_v1.write(DownstreamV1, diff.added)
+        increment = store_v1.resolve_update(DownstreamV1)
+        if len(increment.new) > 0:
+            store_v1.write(DownstreamV1, increment.new)
 
         SystemTableStorage(store_v1).push_graph_snapshot()
 
@@ -446,9 +446,9 @@ def test_migration_dry_run(
         store_v1.write(UpstreamV1, upstream_data)
 
         # Write downstream - let system auto-load upstream and calculate provenance_by_field
-        diff = store_v1.resolve_update(DownstreamV1)
-        if len(diff.added) > 0:
-            store_v1.write(DownstreamV1, diff.added)
+        increment = store_v1.resolve_update(DownstreamV1)
+        if len(increment.new) > 0:
+            store_v1.write(DownstreamV1, increment.new)
 
         SystemTableStorage(store_v1).push_graph_snapshot()
 
@@ -591,9 +591,9 @@ def test_field_dependency_change(tmp_path):
 
         # Write downstream
         # Write downstream - let system auto-load upstream and calculate provenance_by_field
-        diff = store_v1.resolve_update(DownstreamV1)
-        if len(diff.added) > 0:
-            store_v1.write(DownstreamV1, diff.added)
+        increment = store_v1.resolve_update(DownstreamV1)
+        if len(increment.new) > 0:
+            store_v1.write(DownstreamV1, increment.new)
 
         SystemTableStorage(store_v1).push_graph_snapshot()
 
@@ -711,9 +711,9 @@ def test_feature_dependency_swap(tmp_path):
 
         # Write downstream (depends on A in v1)
         # Let system auto-load upstream and calculate provenance_by_field
-        diff = store_v1.resolve_update(downstream_key)
-        if len(diff.added) > 0:
-            store_v1.write(downstream_key, diff.added)
+        increment = store_v1.resolve_update(downstream_key)
+        if len(increment.new) > 0:
+            store_v1.write(downstream_key, increment.new)
 
         SystemTableStorage(store_v1).push_graph_snapshot()
 
@@ -879,9 +879,9 @@ def test_full_graph_migration_integration(tmp_path):
         store.write(Upstream, upstream_data)
 
         # Write downstream
-        diff = store.resolve_update(Downstream)
-        if len(diff.added) > 0:
-            store.write(Downstream, diff.added)
+        increment = store.resolve_update(Downstream)
+        if len(increment.new) > 0:
+            store.write(Downstream, increment.new)
 
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version

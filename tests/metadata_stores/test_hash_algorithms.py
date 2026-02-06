@@ -101,8 +101,8 @@ def test_hash_algorithm_produces_consistent_hashes(
         )
 
         # Convert to Polars for comparison
-        result1 = increment1.added.lazy().collect().to_polars()
-        result2 = increment2.added.lazy().collect().to_polars()
+        result1 = increment1.new.lazy().collect().to_polars()
+        result2 = increment2.new.lazy().collect().to_polars()
 
         # Sort by ID columns
         id_columns = list(child_plan.feature.id_columns)
@@ -195,7 +195,7 @@ def test_hash_truncation(
             snapshot_version=graph.snapshot_version,
         )
 
-        result = increment.added.lazy().collect().to_polars()
+        result = increment.new.lazy().collect().to_polars()
 
         # Check hash lengths
         hash_col = result["metaxy_provenance"]
@@ -270,7 +270,7 @@ def test_field_level_provenance_structure(
             snapshot_version=graph.snapshot_version,
         )
 
-        result = increment.added.lazy().collect().to_polars()
+        result = increment.new.lazy().collect().to_polars()
 
         # Check provenance_by_field structure
         provenance_by_field = result["metaxy_provenance_by_field"]
@@ -350,7 +350,7 @@ def test_hash_truncation_any_store(config_with_truncation, any_store: MetadataSt
             snapshot_version=graph.snapshot_version,
         )
 
-        result = increment.added.lazy().collect().to_polars()
+        result = increment.new.lazy().collect().to_polars()
 
         # Verify all hashes are exactly 16 characters
         hash_col = result["metaxy_provenance"]

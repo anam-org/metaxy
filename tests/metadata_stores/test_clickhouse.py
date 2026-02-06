@@ -562,9 +562,9 @@ def test_clickhouse_map_column_resolve_update_write(
         # resolve_update should work (materializes to Polars for comparison)
         increment = store.resolve_update(feature_cls, samples=samples)
         assert increment is not None
-        assert len(increment.added) == 3
-        assert len(increment.changed) == 0
-        assert len(increment.removed) == 0
+        assert len(increment.new) == 3
+        assert len(increment.stale) == 0
+        assert len(increment.orphaned) == 0
 
         # write should work (Struct -> JSON string for Map columns)
         # This is where the original error occurred: KeyError: Object

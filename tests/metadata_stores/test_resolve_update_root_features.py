@@ -108,10 +108,10 @@ class TestResolveUpdateRootFeatures:
             result = store.resolve_update(video_feature, samples=nw.from_native(user_samples))
 
             # All samples should be added
-            assert len(result.added) == 3
-            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
-            assert len(result.changed) == 0
-            assert len(result.removed) == 0
+            assert len(result.new) == 3
+            assert sorted(result.new["sample_uid"].to_list()) == [1, 2, 3]
+            assert len(result.stale) == 0
+            assert len(result.orphaned) == 0
 
     @pytest.mark.skip(
         reason="Requires groupby id_columns+feature_version and taking latest sample by created_at. "
@@ -165,14 +165,14 @@ class TestResolveUpdateRootFeatures:
             result = store.resolve_update(video_feature, samples=nw.from_native(user_samples))
 
             # Should detect changes correctly
-            assert len(result.added) == 1
-            assert result.added["sample_uid"].to_list() == [4]
+            assert len(result.new) == 1
+            assert result.new["sample_uid"].to_list() == [4]
 
-            assert len(result.changed) == 1
-            assert result.changed["sample_uid"].to_list() == [2]
+            assert len(result.stale) == 1
+            assert result.stale["sample_uid"].to_list() == [2]
 
-            assert len(result.removed) == 1
-            assert result.removed["sample_uid"].to_list() == [3]
+            assert len(result.orphaned) == 1
+            assert result.orphaned["sample_uid"].to_list() == [3]
 
     @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_root_feature_adds_data_version_columns(
@@ -216,11 +216,11 @@ class TestResolveUpdateRootFeatures:
             result = store.resolve_update(video_feature, samples=nw.from_native(user_samples))
 
             # Verify data_version columns are present in added samples
-            assert METAXY_DATA_VERSION in result.added.columns
-            assert METAXY_DATA_VERSION_BY_FIELD in result.added.columns
+            assert METAXY_DATA_VERSION in result.new.columns
+            assert METAXY_DATA_VERSION_BY_FIELD in result.new.columns
 
             # Verify data_version values equal provenance values
-            added_df = result.added.to_polars()
+            added_df = result.new.to_polars()
             for row in added_df.iter_rows(named=True):
                 assert row[METAXY_DATA_VERSION] == row[METAXY_PROVENANCE]
                 assert row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
@@ -272,11 +272,11 @@ class TestResolveUpdateRootFeatures:
             result = store.resolve_update(video_feature, samples=nw.from_native(user_samples))
 
             # Verify custom data_version columns are preserved
-            assert METAXY_DATA_VERSION in result.added.columns
-            assert METAXY_DATA_VERSION_BY_FIELD in result.added.columns
+            assert METAXY_DATA_VERSION in result.new.columns
+            assert METAXY_DATA_VERSION_BY_FIELD in result.new.columns
 
             # Verify custom data_version values are preserved (different from provenance)
-            added_df = result.added.to_polars()
+            added_df = result.new.to_polars()
             for row in added_df.iter_rows(named=True):
                 # Data version should be the custom value, not provenance
                 assert row[METAXY_DATA_VERSION] == "custom_v1"
@@ -326,14 +326,14 @@ class TestResolveUpdateRootFeatures:
             )
 
             # All samples should be in added (skip_comparison returns all as added)
-            assert len(result.added) == 2
+            assert len(result.new) == 2
 
             # Verify data_version columns are present
-            assert METAXY_DATA_VERSION in result.added.columns
-            assert METAXY_DATA_VERSION_BY_FIELD in result.added.columns
+            assert METAXY_DATA_VERSION in result.new.columns
+            assert METAXY_DATA_VERSION_BY_FIELD in result.new.columns
 
             # Verify data_version values equal provenance values
-            added_df = result.added.to_polars()
+            added_df = result.new.to_polars()
             for row in added_df.iter_rows(named=True):
                 assert row[METAXY_DATA_VERSION] == row[METAXY_PROVENANCE]
                 assert row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
@@ -371,7 +371,7 @@ class TestResolveUpdateRootFeatures:
             result = store.resolve_update(video_feature, samples=user_samples)
 
             # All samples should be added
-            assert len(result.added) == 3
-            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
-            assert len(result.changed) == 0
-            assert len(result.removed) == 0
+            assert len(result.new) == 3
+            assert sorted(result.new["sample_uid"].to_list()) == [1, 2, 3]
+            assert len(result.stale) == 0
+            assert len(result.orphaned) == 0

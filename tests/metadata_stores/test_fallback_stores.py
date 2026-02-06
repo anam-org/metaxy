@@ -223,15 +223,15 @@ def test_fallback_store_warning_issued(
                     result = primary_store.resolve_update(DownstreamFeature)
 
             # Collect field provenances for comparison
-            added_sorted = (result.added.to_polars() if isinstance(result.added, nw.DataFrame) else result.added).sort(
+            added_sorted = (result.new.to_polars() if isinstance(result.new, nw.DataFrame) else result.added).sort(
                 "sample_uid"
             )
             versions = added_sorted["metaxy_provenance_by_field"].to_list()
 
             results[(primary_store_type, fallback_store_type, versioning_engine)] = {
-                "added": len(result.added),
-                "changed": len(result.changed),
-                "removed": len(result.removed),
+                "added": len(result.new),
+                "changed": len(result.stale),
+                "removed": len(result.orphaned),
                 "versions": versions,
             }
 
@@ -297,9 +297,9 @@ def test_no_fallback_warning_when_all_local(
             result = store.resolve_update(DownstreamFeature)
 
         # Verify results are still correct
-        assert len(result.added) == 3
-        assert len(result.changed) == 0
-        assert len(result.removed) == 0
+        assert len(result.new) == 3
+        assert len(result.stale) == 0
+        assert len(result.orphaned) == 0
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -357,15 +357,13 @@ def test_fallback_store_switches_to_polars_components(
             result_local = store_all_local.resolve_update(DownstreamFeature)
 
         # Collect field provenances from result
-        added_local = (
-            result_local.added.to_polars() if isinstance(result_local.added, nw.DataFrame) else result_local.added
-        )
+        added_local = result_local.new.to_polars() if isinstance(result_local.new, nw.DataFrame) else result_local.added
         versions_local = added_local.sort("sample_uid")["metaxy_provenance_by_field"].to_list()
 
         results[(primary_store_type, fallback_store_type, "all_local")] = {
-            "added": len(result_local.added),
-            "changed": len(result_local.changed),
-            "removed": len(result_local.removed),
+            "added": len(result_local.new),
+            "changed": len(result_local.stale),
+            "removed": len(result_local.orphaned),
             "versions": versions_local,
         }
 
@@ -400,16 +398,14 @@ def test_fallback_store_switches_to_polars_components(
 
         # Collect field provenances from result
         added_fallback = (
-            result_fallback.added.to_polars()
-            if isinstance(result_fallback.added, nw.DataFrame)
-            else result_fallback.added
+            result_fallback.new.to_polars() if isinstance(result_fallback.new, nw.DataFrame) else result_fallback.added
         )
         versions_fallback = added_fallback.sort("sample_uid")["metaxy_provenance_by_field"].to_list()
 
         results[(primary_store_type, fallback_store_type, "with_fallback")] = {
-            "added": len(result_fallback.added),
-            "changed": len(result_fallback.changed),
-            "removed": len(result_fallback.removed),
+            "added": len(result_fallback.new),
+            "changed": len(result_fallback.stale),
+            "removed": len(result_fallback.orphaned),
             "versions": versions_fallback,
         }
 
@@ -474,7 +470,7 @@ def test_versioning_engine_polars_no_warning_even_without_fallback(
             result = store.resolve_update(DownstreamFeature)
 
         # Verify results are correct
-        assert len(result.added) == 3
+        assert len(result.new) == 3
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -531,7 +527,7 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
             result = primary_store.resolve_update(DownstreamFeature)
 
         # Verify results are correct
-        assert len(result.added) == 3
+        assert len(result.new) == 3
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -590,7 +586,7 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
             result = primary_store.resolve_update(DownstreamFeature)
 
         # Should NOT raise VersioningEngineMismatchError
-        assert len(result.added) == 3
+        assert len(result.new) == 3
 
 
 # NOTE: There is no test for samples with wrong implementation because:

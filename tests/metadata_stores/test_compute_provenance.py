@@ -331,9 +331,9 @@ class TestComputeProvenance:
             )
 
         # Both samples should be added (no existing data)
-        assert increment.added.to_polars().height == 2
-        assert increment.changed.to_polars().height == 0
-        assert increment.removed.to_polars().height == 0
+        assert increment.new.to_polars().height == 2
+        assert increment.stale.to_polars().height == 0
+        assert increment.orphaned.to_polars().height == 0
 
     def test_compute_provenance_root_feature(self, graph: FeatureGraph, tmp_path):
         """Test compute_provenance with a root feature (no upstream dependencies)."""

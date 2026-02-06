@@ -101,7 +101,7 @@ class TestCalculateInputProgress:
 
             # Write downstream metadata for all samples
             increment = store.resolve_update(Downstream, lazy=False)
-            store.write(Downstream, increment.added)
+            store.write(Downstream, increment.new)
 
             # Now check progress - should be 100%
             lazy_increment = store.resolve_update(Downstream, lazy=True)
@@ -146,7 +146,7 @@ class TestCalculateInputProgress:
 
             # Write downstream metadata for only 3 samples
             increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.added.to_polars().head(3)
+            partial_data = increment.new.to_polars().head(3)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 30% (3/10)
@@ -238,7 +238,7 @@ class TestCalculateInputProgress:
 
             # Write downstream for 2 out of 3 samples
             increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.added.to_polars().head(2)
+            partial_data = increment.new.to_polars().head(2)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 66.67% (2/3)
@@ -307,7 +307,7 @@ class TestCalculateInputProgress:
 
             # Write downstream for only 1 hour (1 out of 2 groups)
             increment = store.resolve_update(HourlyStats, lazy=False)
-            partial_data = increment.added.to_polars().head(1)
+            partial_data = increment.new.to_polars().head(1)
             store.write(HourlyStats, partial_data)
 
             # Progress should count by aggregation groups, not individual readings
@@ -433,7 +433,7 @@ class TestCalculateInputProgress:
 
             # Write downstream for 2 out of 4 samples
             increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.added.to_polars().head(2)
+            partial_data = increment.new.to_polars().head(2)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 50% (2/4)
@@ -500,7 +500,7 @@ class TestCalculateInputProgress:
 
             # Write downstream for 1 out of 3 samples
             increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.added.to_polars().head(1)
+            partial_data = increment.new.to_polars().head(1)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 33.33% (1/3)

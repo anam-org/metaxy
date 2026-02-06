@@ -467,17 +467,17 @@ def test_resolve_update_accepts_feature_key(
     with populated_store.open("w"):
         # Test with feature class (existing behavior)
         increment_from_class = populated_store.resolve_update(DownstreamFeature)
-        assert increment_from_class.added is not None
+        assert increment_from_class.new is not None
 
         # Test with FeatureKey (new behavior)
         feature_key = FeatureKey(["downstream"])
         increment_from_key = populated_store.resolve_update(feature_key)
-        assert increment_from_key.added is not None
+        assert increment_from_key.new is not None
 
         # Both should return equivalent results
-        assert len(increment_from_class.added) == len(increment_from_key.added)
+        assert len(increment_from_class.new) == len(increment_from_key.new)
 
         # Test with string path (also a CoercibleToFeatureKey)
         increment_from_string = populated_store.resolve_update("downstream")
-        assert increment_from_string.added is not None
-        assert len(increment_from_string.added) == len(increment_from_class.added)
+        assert increment_from_string.new is not None
+        assert len(increment_from_string.new) == len(increment_from_class.new)

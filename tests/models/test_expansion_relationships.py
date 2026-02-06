@@ -94,11 +94,11 @@ class TestExpansionRelationships:
             store.write(VideoFrames, nw.from_native(frames_data))
 
             # Resolve update
-            diff = store.resolve_update(VideoFrames)
+            increment = store.resolve_update(VideoFrames)
 
             # Should detect changes (parent provenance vs child provenance)
-            assert diff.changed is not None
-            changed_df = diff.changed.to_polars()
+            assert increment.stale is not None
+            changed_df = increment.stale.to_polars()
             # Should group by parent ID, so 2 parent changes detected
             assert changed_df.shape[0] == 2
 
@@ -169,8 +169,8 @@ class TestExpansionRelationships:
             diff = store.resolve_update(ArticleParagraphs)
 
             # Should detect changes based on parent provenance
-            assert diff.changed is not None
-            changed_df = diff.changed.to_polars()
+            assert diff.stale is not None
+            changed_df = diff.stale.to_polars()
 
             # Should have 2 groups (one per parent)
             assert changed_df.shape[0] == 2

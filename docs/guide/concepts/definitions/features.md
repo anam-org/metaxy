@@ -29,6 +29,13 @@ To create a Metaxy feature, extend the [`BaseFeature`][metaxy.BaseFeature] class
 
 1. It's a [Pydantic](https://docs.pydantic.dev/latest/) model.
 
+```py
+import metaxy as mx
+
+
+class VideoFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="raw/video", id_columns=["video_id"])):
+    path: str
+```
 
 !!! abstract
 
@@ -38,14 +45,6 @@ To create a Metaxy feature, extend the [`BaseFeature`][metaxy.BaseFeature] class
     { .annotate }
 
     1. ID columns are *almost* a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).
-
-```py
-import metaxy as mx
-
-
-class VideoFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="raw/video", id_columns=["video_id"])):
-    path: str
-```
 
 Since `VideoFeature` is a **root feature**, it doesn't have any dependencies.
 

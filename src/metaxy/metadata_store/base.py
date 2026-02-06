@@ -315,7 +315,7 @@ class MetadataStore(ABC):
             lazy: Whether to return a [metaxy.versioning.types.LazyIncrement][] or a [metaxy.versioning.types.Increment][].
             versioning_engine: Override the store's versioning engine for this operation.
             skip_comparison: If True, skip the increment comparison logic and return all
-                upstream samples in `Increment.added`. The `changed` and `removed` frames will
+                upstream samples in `increment.new`. The `changed` and `removed` frames will
                 be empty.
 
         Raises:
@@ -555,16 +555,16 @@ class MetadataStore(ABC):
 
         if lazy:
             return LazyIncrement(
-                added=added if isinstance(added, nw.LazyFrame) else nw.from_native(added),
-                changed=changed if isinstance(changed, nw.LazyFrame) else nw.from_native(changed),
-                removed=removed if isinstance(removed, nw.LazyFrame) else nw.from_native(removed),
+                new=added if isinstance(added, nw.LazyFrame) else nw.from_native(added),
+                stale=changed if isinstance(changed, nw.LazyFrame) else nw.from_native(changed),
+                orphaned=removed if isinstance(removed, nw.LazyFrame) else nw.from_native(removed),
                 input=input_df if input_df is None or isinstance(input_df, nw.LazyFrame) else nw.from_native(input_df),
             )
         else:
             return Increment(
-                added=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                changed=changed.collect() if isinstance(changed, nw.LazyFrame) else changed,
-                removed=removed.collect() if isinstance(removed, nw.LazyFrame) else removed,
+                new=added.collect() if isinstance(added, nw.LazyFrame) else added,
+                stale=changed.collect() if isinstance(changed, nw.LazyFrame) else changed,
+                orphaned=removed.collect() if isinstance(removed, nw.LazyFrame) else removed,
             )
 
     def compute_provenance(
@@ -1938,7 +1938,7 @@ class MetadataStore(ABC):
         if total_units == 0:
             return None  # No input available from upstream
 
-        missing_units: int = lazy_increment.added.select(input_id_columns).unique().select(nw.len()).collect().item()
+        missing_units: int = lazy_increment.new.select(input_id_columns).unique().select(nw.len()).collect().item()
 
         processed_units = total_units - missing_units
         return (processed_units / total_units) * 100
