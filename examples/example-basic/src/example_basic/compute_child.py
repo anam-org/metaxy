@@ -13,7 +13,7 @@ import metaxy as mx
 from metaxy.metadata_store.system import SystemTableStorage
 
 # Initialize metaxy (loads config and discovers features)
-config = mx.init_metaxy()
+config = mx.init()
 
 # feature showcase: get feature definitions by key. Of course, feature classes can be just imported instead.
 child_key = mx.FeatureKey(["examples", "child"])

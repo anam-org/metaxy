@@ -13,7 +13,7 @@ def main():
     # Set random seed from environment if provided (for deterministic testing)
     if seed_str := os.environ.get("RANDOM_SEED"):
         random.seed(int(seed_str))
-    cfg = mx.init_metaxy()
+    cfg = mx.init()
     store = cfg.get_store("dev")
 
     # let's pretend somebody has already created the videos for us

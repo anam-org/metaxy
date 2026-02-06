@@ -26,21 +26,21 @@ The two helper functions: [`filter_feature_sqla_metadata`][metaxy.ext.sqlalchemy
 
 `filter_feature_sqla_metadata` returns table metadata for the user-defined tables, while `get_system_slqa_metadata` returns metadata for Metaxy's system tables.
 
-!!! important "Call `init_metaxy` first"
+!!! important "Call `init` first"
 
-    You **must** call [`init_metaxy`][metaxy.init_metaxy] before using `filter_feature_sqla_metadata` to ensure all features are loaded into the feature graph.
+    You **must** call [`init`][metaxy.init] before using `filter_feature_sqla_metadata` to ensure all features are loaded into the feature graph.
 
 Here is an example Alembic `env.py` that uses the Metaxy SQLAlchemy integration:
 
 ```python title="env.py"
 from alembic import context
-from metaxy import init_metaxy
+from metaxy import init
 from metaxy.ext.sqlalchemy import filter_feature_sqla_metadata
 
 # Alembic Config object
 config = context.config
 
-metaxy_cfg = init_metaxy()
+metaxy_cfg = init()
 store = metaxy_cfg.get_store("my_store")
 
 # import your SQLAlchemy metadata from somewhere
@@ -128,8 +128,8 @@ The two environments now can be managed independently:
 === "dev"
 
     ```python title="alembic/dev/env.py" hl_lines="3"
-    from metaxy import init_metaxy
-    config = init_metaxy()
+    from metaxy import init
+    config = init()
     store = config.get_store("dev")
     url, target_metadata = filter_feature_sqla_metadata(my_metadata, store)
     ```
@@ -143,8 +143,8 @@ The two environments now can be managed independently:
 === "prod"
 
     ```python title="alembic/prod/env.py"  hl_lines="3"
-    from metaxy import init_metaxy
-    config = init_metaxy()
+    from metaxy import init
+    config = init()
     store = config.get_store("prod")
     url, target_metadata = filter_feature_sqla_metadata(my_metadata, store)
     ```

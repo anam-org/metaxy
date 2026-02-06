@@ -27,7 +27,7 @@ class MetaxyDatasource(Datasource):
         import metaxy as mx
         import ray
 
-        cfg = mx.init_metaxy()
+        cfg = mx.init()
 
         ds = ray.data.read_datasource(
             MetaxyDatasource(
@@ -109,7 +109,7 @@ class MetaxyDatasource(Datasource):
         with_sample_history: bool = False,
         include_soft_deleted: bool = False,
     ):
-        self.config = mx.init_metaxy(config)
+        self.config = mx.init(config)
         self.store = store
         self.incremental = incremental
         self.feature_version = feature_version
@@ -178,7 +178,7 @@ class MetaxyDatasource(Datasource):
         row_limit = per_task_row_limit
 
         def read_fn() -> list[pa.Table]:
-            mx.init_metaxy(datasource.config)
+            mx.init(datasource.config)
 
             with datasource.store:
                 lf = datasource._read_lazy()

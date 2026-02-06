@@ -118,7 +118,7 @@ metaxy_io_manager = mxd.MetaxyIOManager(store=store)
 
 @dg.definitions
 def definitions():
-    mx.init_metaxy()  # (1)!
+    mx.init()  # (1)!
 
     return dg.Definitions(
         assets=[  # ty: ignore[invalid-argument-type]

@@ -32,7 +32,7 @@ def test_datasource_reads_metadata(
     """Test that MetaxyDatasource reads metadata from the store."""
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # First, write some data to the store
     with delta_store.open("w"):
@@ -71,7 +71,7 @@ def test_datasource_feature_key_formats(
     """Test that MetaxyDatasource accepts different feature key formats."""
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Write data to the store
     with delta_store.open("w"):
@@ -98,7 +98,7 @@ def test_datasource_single_row(
     """Test that MetaxyDatasource handles single row datasets correctly."""
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     single_row_data = make_test_data(sample_uids=["single"], values=[42])
 
@@ -127,7 +127,7 @@ def test_datasource_feature_key_coercion(
     """Test that the datasource correctly coerces feature keys during initialization."""
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Test with string path
     datasource_str = MetaxyDatasource(
@@ -161,7 +161,7 @@ def test_datasource_stores_config(
     """Test that datasource stores the provided configuration and store."""
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     datasource = MetaxyDatasource(
         feature=FEATURE_KEY,
@@ -182,7 +182,7 @@ def test_datasource_with_filters(
     """Test that MetaxyDatasource applies filters correctly."""
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Write data to the store
     with delta_store.open("w"):
@@ -214,7 +214,7 @@ def test_datasource_with_columns(
     """Test that MetaxyDatasource selects columns correctly."""
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Write data to the store
     with delta_store.open("w"):
@@ -247,7 +247,7 @@ def test_datasource_with_filters_and_columns(
     """Test that MetaxyDatasource applies both filters and column selection."""
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Write data to the store
     with delta_store.open("w"):
@@ -301,7 +301,7 @@ root_path = "{delta_root}"
 
     # Load config manually for the test process
     config = mx.MetaxyConfig.load(config_path)
-    mx.init_metaxy(config)
+    mx.init(config)
 
     # Write data first
     with delta_store.open("w"):
@@ -329,7 +329,7 @@ def test_datasource_and_datasink_end_to_end(
     from metaxy.ext.ray.datasink import MetaxyDatasink
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Create two separate stores for source and destination
     source_store = DeltaMetadataStore(root_path=tmp_path / "source")
@@ -398,7 +398,7 @@ def test_datasource_incremental_all_new(
     """Test incremental mode returns all samples as 'new' when derived feature has no data."""
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Write upstream data (root feature)
     with delta_store.open("w"):
@@ -429,7 +429,7 @@ def test_datasource_incremental_up_to_date(
     """Test incremental mode returns empty when derived data is up-to-date."""
     from metaxy.ext.ray.datasource import MetaxyDatasource
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Write upstream data (root feature)
     with delta_store.open("w"):

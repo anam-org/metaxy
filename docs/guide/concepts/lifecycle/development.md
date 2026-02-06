@@ -28,7 +28,7 @@ Metaxy APIs and CLI commands will automatically use the default store unless spe
 ```py
 import metaxy as mx
 
-store = mx.init_metaxy().get_store()
+store = mx.init().get_store()
 ```
 
 ### Using the Metaxy CLI

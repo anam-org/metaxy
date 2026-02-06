@@ -5,7 +5,7 @@ from typing import Annotated
 
 import cyclopts
 
-from metaxy import init_metaxy
+from metaxy import init
 from metaxy._version import __version__
 from metaxy.cli.console import console, error_console
 
@@ -84,7 +84,7 @@ def launcher(
 
     # Load Metaxy configuration with parent directory search
     # This handles TOML discovery, env vars, and entrypoint loading
-    config = init_metaxy(config_file)
+    config = init(config_file)
 
     # Store config in context for commands to access
     # Commands will instantiate and open store as needed

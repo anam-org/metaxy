@@ -18,7 +18,7 @@ else:
     ray = pytest.importorskip("ray")
 
 # NOTE: Do NOT import RayTestFeature at module level!
-# It must be imported AFTER init_metaxy() to pick up the correct project.
+# It must be imported AFTER init() to pick up the correct project.
 
 FEATURE_KEY = ["test", "ray_feature"]
 DERIVED_FEATURE_KEY = ["test", "ray_derived"]
@@ -31,7 +31,7 @@ def reset_ray_features():
     When pytest resets the feature graph between tests, the feature class
     is NOT re-registered because Python's import system caches the module.
     This fixture clears the cache so the feature class is properly registered
-    into the new graph when init_metaxy loads entrypoints.
+    into the new graph when init loads entrypoints.
     """
 
     # Remove the features module from cache before the test

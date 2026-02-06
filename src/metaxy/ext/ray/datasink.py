@@ -43,7 +43,7 @@ class MetaxyDatasink(Datasink[_WriteTaskResult]):
         import metaxy as mx
         import ray
 
-        cfg = mx.init_metaxy()
+        cfg = mx.init()
         dataset = ...  # a ray.data.Dataset
 
         datasink = MetaxyDatasink(
@@ -77,7 +77,7 @@ class MetaxyDatasink(Datasink[_WriteTaskResult]):
         store: mx.MetadataStore,
         config: mx.MetaxyConfig | None = None,
     ):
-        self.config = mx.init_metaxy(config)
+        self.config = mx.init(config)
 
         self.store = store
         self.config = config
@@ -94,7 +94,7 @@ class MetaxyDatasink(Datasink[_WriteTaskResult]):
     ) -> _WriteTaskResult:
         """Write blocks of metadata to the store."""
         # Initialize metaxy on the worker - config and features are needed for write
-        config = mx.init_metaxy(self.config)
+        config = mx.init(self.config)
         if config.sync:
             mx.sync_external_features(self.store)
 

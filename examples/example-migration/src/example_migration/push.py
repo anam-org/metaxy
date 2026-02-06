@@ -3,7 +3,7 @@
 import metaxy as mx
 from metaxy.metadata_store.system import SystemTableStorage
 
-config = mx.init_metaxy()
+config = mx.init()
 with config.get_store() as store:
     result = SystemTableStorage(store).push_graph_snapshot()
     snapshot_version = result.snapshot_version

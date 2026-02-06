@@ -31,7 +31,7 @@ def test_datasink_writes_metadata(
     """Test that MetaxyDatasink writes metadata to the store."""
     from metaxy.ext.ray.datasink import MetaxyDatasink
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     ds = ray.data.from_arrow(test_data.to_arrow())
 
@@ -61,7 +61,7 @@ def test_datasink_with_multiple_blocks(
     """Test that MetaxyDatasink handles multiple data blocks."""
     from metaxy.ext.ray.datasink import MetaxyDatasink
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Create multiple small datasets and concatenate to get multiple blocks
     data1 = make_test_data(sample_uids=["a", "b"], values=[1, 2])
@@ -112,7 +112,7 @@ def test_datasink_feature_key_formats(
     """Test that MetaxyDatasink accepts different feature key formats."""
     from metaxy.ext.ray.datasink import MetaxyDatasink
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     ds = ray.data.from_arrow(test_data.to_arrow())
 
@@ -160,7 +160,7 @@ root_path = "{delta_root}"
 
     # Load config manually for the test process
     config = mx.MetaxyConfig.load(config_path)
-    mx.init_metaxy(config)
+    mx.init(config)
 
     ds = ray.data.from_arrow(test_data.to_arrow())
 
@@ -188,7 +188,7 @@ def test_datasink_single_row(
     """Test that MetaxyDatasink handles single row datasets correctly."""
     from metaxy.ext.ray.datasink import MetaxyDatasink
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Create a single-row dataset
     single_row_data = make_test_data(sample_uids=["single"], values=[42])
@@ -220,7 +220,7 @@ def test_datasink_feature_key_coercion(
     """Test that the datasink correctly coerces feature keys during initialization."""
     from metaxy.ext.ray.datasink import MetaxyDatasink
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Test with string path
     datasink_str = MetaxyDatasink(
@@ -254,7 +254,7 @@ def test_datasink_stores_config(
     """Test that datasink stores the provided configuration and store."""
     from metaxy.ext.ray.datasink import MetaxyDatasink
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     datasink = MetaxyDatasink(
         feature=FEATURE_KEY,
@@ -275,7 +275,7 @@ def test_datasink_result_tracks_written_rows(
     """Test that datasink.result tracks the number of written rows."""
     from metaxy.ext.ray.datasink import MetaxyDatasink
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     ds = ray.data.from_arrow(test_data.to_arrow())
 
@@ -299,7 +299,7 @@ def test_datasink_result_aggregates_across_multiple_write_tasks(
     """Test that datasink.result correctly aggregates stats from multiple parallel write tasks."""
     from metaxy.ext.ray.datasink import MetaxyDatasink
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     # Create multiple blocks - each will be processed by a separate write task
     data1 = make_test_data(sample_uids=["a", "b"], values=[1, 2])
@@ -342,7 +342,7 @@ def test_datasink_result_not_available_before_write(
     """Test that accessing result before write completes raises an error."""
     from metaxy.ext.ray.datasink import MetaxyDatasink
 
-    mx.init_metaxy(ray_config)
+    mx.init(ray_config)
 
     datasink = MetaxyDatasink(
         feature=FEATURE_KEY,

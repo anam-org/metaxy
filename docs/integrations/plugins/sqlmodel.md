@@ -95,9 +95,9 @@ When using SQLModel features with Alembic or other migration tools, use [`filter
 from sqlmodel import SQLModel
 from metaxy.ext.sqlmodel import filter_feature_sqlmodel_metadata
 from metaxy.config import MetaxyConfig
-from metaxy import init_metaxy
+from metaxy import init
 
-config = init_metaxy()
+config = init()
 store = config.get_store()
 
 # Transform SQLModel metadata with table_prefix

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from fastmcp import FastMCP
 
-from metaxy import FeatureGraph, MetaxyConfig, coerce_to_feature_key, init_metaxy
+from metaxy import FeatureGraph, MetaxyConfig, coerce_to_feature_key, init
 
 if TYPE_CHECKING:
     import narwhals as nw
@@ -60,7 +60,7 @@ def _get_metaxy_context() -> MetaxyContext:
     if MetaxyConfig.is_set():
         config = MetaxyConfig.get()
     else:
-        config = init_metaxy()
+        config = init()
 
     graph = FeatureGraph.get_active()
 

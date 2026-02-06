@@ -234,7 +234,7 @@ def load_features(
     """Discover and load feature entrypoints from packages and environment.
 
     Note:
-        For most use cases, prefer `init_metaxy()` which loads config and
+        For most use cases, prefer `init()` which loads config and
         discovers features in one call. This function is primarily for
         advanced use cases or internal use.
 

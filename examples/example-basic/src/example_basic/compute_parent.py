@@ -14,7 +14,7 @@ import polars as pl
 from metaxy.metadata_store.system import SystemTableStorage
 
 # Initialize metaxy (loads config and discovers features)
-config = mx.init_metaxy()
+config = mx.init()
 
 # feature showcase: get feature definitions by key
 parent_key = mx.FeatureKey(["examples", "parent"])

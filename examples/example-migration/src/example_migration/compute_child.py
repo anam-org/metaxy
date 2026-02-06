@@ -7,7 +7,7 @@ import metaxy as mx
 import polars as pl
 
 # Initialize metaxy (loads config and discovers features)
-config = mx.init_metaxy()
+config = mx.init()
 
 # Get feature key
 child_key = mx.FeatureKey(["examples", "child"])

@@ -53,7 +53,7 @@ There are generally two ways to create a `MetadataStore`. We are going to demons
         ```py
         import metaxy as mx
 
-        config = mx.init_metaxy()
+        config = mx.init()
         store = config.get_store("dev")
         ```
 

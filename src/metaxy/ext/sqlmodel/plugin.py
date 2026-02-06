@@ -396,7 +396,7 @@ def filter_feature_sqlmodel_metadata(
     by adding the store's `table_prefix`. The returned metadata will have prefixed table
     names that match the actual database tables.
 
-    This function must be called after init_metaxy() to ensure features are loaded.
+    This function must be called after init() to ensure features are loaded.
 
     Args:
         store: IbisMetadataStore instance (provides table_prefix and sqlalchemy_url)
@@ -432,7 +432,7 @@ def filter_feature_sqlmodel_metadata(
         from alembic import context
 
         # Load features first
-        mx.init_metaxy()
+        mx.init()
 
         # Get store instance
         config = mx.MetaxyConfig.get()

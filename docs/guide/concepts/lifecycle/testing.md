@@ -5,13 +5,13 @@ description: "Testing Metaxy code: examples and best practices."
 
 # Testing Metaxy Code
 
-This guide covers patterns for testing your Metaxy code. As always, Metaxy must be explicitly initialized with [`init_metaxy`][metaxy.init_metaxy]:
+This guide covers patterns for testing your Metaxy code. As always, Metaxy must be explicitly initialized with [`init`][metaxy.init]:
 
 <!-- skip next -->
 ```py
 import metaxy as mx
 
-mx.init_metaxy()
+mx.init()
 ```
 
 This is typically done in a `pytest` fixture.
@@ -38,7 +38,7 @@ def test_my_config():
     assert mx.MetaxyConfig.get().project == "my-project"
 ```
 
-The config object can be explicitly passed to `init_metaxy`. This can be used to adjust how feature discovery is performed.
+The config object can be explicitly passed to `init`. This can be used to adjust how feature discovery is performed.
 
 ### Configuring Metaxy Plugins
 

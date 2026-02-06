@@ -39,7 +39,7 @@ AUDIO_SAMPLES = pl.DataFrame(
 
 
 def main():
-    cfg = mx.init_metaxy()
+    cfg = mx.init()
     store = cfg.get_store("dev")
 
     # Step 1: Write audio metadata

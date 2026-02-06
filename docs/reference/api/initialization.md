@@ -5,6 +5,6 @@ description: "Initialization API reference for Metaxy."
 
 ## Initialization
 
-::: metaxy.init_metaxy
+::: metaxy.init
 
 ::: metaxy.sync_external_features

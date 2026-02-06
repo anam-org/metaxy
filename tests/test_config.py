@@ -226,9 +226,9 @@ root_path = "{custom_path}"
     assert config.config_file == config_file.resolve()
 
 
-def test_init_metaxy_respects_metaxy_config_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that init_metaxy respects METAXY_CONFIG env var."""
-    from metaxy import init_metaxy
+def test_init_respects_metaxy_config_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that init respects METAXY_CONFIG env var."""
+    from metaxy import init
 
     # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
     dev_path = (tmp_path / "delta_dev").as_posix()
@@ -249,16 +249,16 @@ root_path = "{dev_path}"
     # Set the env var
     monkeypatch.setenv("METAXY_CONFIG", str(config_file))
 
-    # Call init_metaxy without specifying config file
-    config = init_metaxy()
+    # Call init without specifying config file
+    config = init()
 
     assert config.project == "init_test_project"
     assert config.config_file == config_file.resolve()
 
 
-def test_init_metaxy_with_prebuilt_config(tmp_path: Path) -> None:
-    """Test that init_metaxy accepts a pre-built MetaxyConfig."""
-    from metaxy import init_metaxy
+def test_init_with_prebuilt_config(tmp_path: Path) -> None:
+    """Test that init accepts a pre-built MetaxyConfig."""
+    from metaxy import init
 
     # Create a pre-built config
     prebuilt_config = MetaxyConfig(
@@ -272,8 +272,8 @@ def test_init_metaxy_with_prebuilt_config(tmp_path: Path) -> None:
         },
     )
 
-    # Call init_metaxy with the pre-built config
-    result = init_metaxy(prebuilt_config)
+    # Call init with the pre-built config
+    result = init(prebuilt_config)
 
     # Should return the same config object
     assert result is prebuilt_config

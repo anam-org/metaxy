@@ -54,7 +54,7 @@ root_path = "s3://my-bucket/${BRANCH_NAME}/metadata"
 ```python
 import metaxy as mx
 
-config = mx.init_metaxy()  # Load from metaxy.toml or pyproject.toml
+config = mx.init()  # Load from metaxy.toml or pyproject.toml
 store = config.get_store("dev")
 ```
 

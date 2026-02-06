@@ -192,7 +192,7 @@ def _get_features_metadata(
 ) -> MetaData:
     """Filter user-defined feature tables from source metadata by project.
 
-    This function must be called after init_metaxy() to ensure features are loaded.
+    This function must be called after init() to ensure features are loaded.
 
     Args:
         source_metadata: Source SQLAlchemy MetaData to filter (e.g., SQLModel.metadata)
@@ -304,7 +304,7 @@ def filter_feature_sqla_metadata(
     This function filters the source metadata to include only feature tables
     belonging to the specified project, and returns the connection URL for the store.
 
-    This function must be called after init_metaxy() to ensure features are loaded.
+    This function must be called after init() to ensure features are loaded.
 
     Args:
         store: IbisMetadataStore instance
@@ -339,7 +339,7 @@ def filter_feature_sqla_metadata(
         from sqlalchemy import MetaData
 
         # Load features first
-        mx.init_metaxy()
+        mx.init()
 
         # Get store instance
         config = mx.MetaxyConfig.get()

@@ -6,8 +6,8 @@
     ```py
     import metaxy as mx
 
-    mx.init_metaxy()
+    mx.init()
     ```
 
     This triggers feature discovery and config discovery.
-    `init_metaxy` is expected to be called at the beginning of the program, in the "entry point" of the application.
+    `init` is expected to be called at the beginning of the program, in the "entry point" of the application.

@@ -114,7 +114,7 @@ def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
 
 
 @public
-def init_metaxy(
+def init(
     config: MetaxyConfig | Path | str | None = None,
     search_parents: bool = True,
 ) -> MetaxyConfig:
@@ -193,7 +193,7 @@ __all__ = [
     "detect_diff_migration",
     "MetaxyConfig",
     "StoreConfig",
-    "init_metaxy",
+    "init",
     "sync_external_features",
     "UnresolvedExternalFeatureWarning",
     "ExternalFeatureVersionMismatchWarning",
