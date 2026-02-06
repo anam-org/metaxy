@@ -64,10 +64,8 @@ class StoreCases:
         }
         return (DuckDBMetadataStore, config)
 
-    def case_clickhouse(
-        self, clickhouse_db: str, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        return (ClickHouseMetadataStore, {"connection_string": clickhouse_db})
+    def case_clickhouse(self, request, test_graph: FeatureGraph) -> tuple[type[MetadataStore], dict[str, Any]]:
+        return (ClickHouseMetadataStore, {"connection_string": request.getfixturevalue("clickhouse_db")})
 
 
 class BasicStoreCases:
@@ -161,9 +159,9 @@ class AllStoresCases:
     @pytest.mark.ibis
     @pytest.mark.native
     @pytest.mark.clickhouse
-    def case_clickhouse(self, clickhouse_db: str) -> MetadataStore:
+    def case_clickhouse(self, request) -> MetadataStore:
         return ClickHouseMetadataStore(
-            connection_string=clickhouse_db,
+            connection_string=request.getfixturevalue("clickhouse_db"),
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 

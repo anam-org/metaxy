@@ -46,3 +46,4 @@ jobs:
     with:
       environment: github-pages
       docs-version: ${{ github.ref_name }}
+      docs-alias: 'main'
