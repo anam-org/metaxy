@@ -3738,11 +3738,11 @@
 
 
 <h1 id="testing-metaxy-code">Testing Metaxy Code<a class="headerlink" href="#testing-metaxy-code" title="Permanent link">&para;</a></h1>
-<p>This guide covers patterns for testing your Metaxy code. As always, Metaxy must be explicitly initialized with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init_metaxy&lt;/span&gt;" href="../../../../reference/api/initialization/#metaxy.init_metaxy"><code>init_metaxy</code></a>:</p>
+<p>This guide covers patterns for testing your Metaxy code. As always, Metaxy must be explicitly initialized with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init&lt;/span&gt;" href="../../../../reference/api/initialization/#metaxy.init"><code>init</code></a>:</p>
 <!-- skip next -->
 <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">mx</span><span class="o">.</span><span class="n">init_metaxy</span><span class="p">()</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">mx</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
 </span></code></pre></div>
 <p>This is typically done in a <code>pytest</code> fixture.</p>
 <h2 id="ephemeral-configuration">Ephemeral Configuration<a class="headerlink" href="#ephemeral-configuration" title="Permanent link">&para;</a></h2>
@@ -3767,7 +3767,7 @@ It is often desired to provide custom <abbr title="Settings via metaxy.toml, pyp
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_my_config</span><span class="p">():</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">assert</span> <span class="n">mx</span><span class="o">.</span><span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">project</span> <span class="o">==</span> <span class="s2">&quot;my-project&quot;</span>
 </span></code></pre></div>
-<p>The config object can be explicitly passed to <code>init_metaxy</code>. This can be used to adjust how <abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/feature-discovery/">feature discovery</abbr> is performed.</p>
+<p>The config object can be explicitly passed to <code>init</code>. This can be used to adjust how <abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/feature-discovery/">feature discovery</abbr> is performed.</p>
 <h3 id="configuring-metaxy-plugins">Configuring Metaxy Plugins<a class="headerlink" href="#configuring-metaxy-plugins" title="Permanent link">&para;</a></h3>
 <p>Plugins can be configured via a dictionary where keys are plugin names and values are plugin-specific configuration objects:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaxyConfig</span>

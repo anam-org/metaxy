@@ -2764,10 +2764,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy.init_metaxy" class="md-nav__link">
+  <a href="#metaxy.init" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;init_metaxy
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;init
       
     </span>
   </a>
@@ -3512,10 +3512,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy.init_metaxy" class="md-nav__link">
+  <a href="#metaxy.init" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;init_metaxy
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;init
       
     </span>
   </a>
@@ -3618,12 +3618,12 @@
 <div class="doc doc-object doc-function">
 
 
-<h2 id="metaxy.init_metaxy" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">metaxy.init_metaxy</span>
+<h2 id="metaxy.init" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">metaxy.init</span>
 
 
-<a href="#metaxy.init_metaxy" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">init_metaxy</span><span class="p">(</span>
+<a href="#metaxy.init" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">init</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt; (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="../config/#metaxy.MetaxyConfig">MetaxyConfig</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">search_parents</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt; (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="../config/#metaxy.MetaxyConfig">MetaxyConfig</a></span>
@@ -3680,7 +3680,7 @@ External features are loaded from <code>metaxy.lock</code> if present.</p>
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/__init__.py</code></summary>
               <div class="language-python highlight"><pre><span></span><code><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a><a href="#__codelineno-0-116"><span class="linenos" data-linenos="116 "></span></a><span class="nd">@public</span>
-</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a><a href="#__codelineno-0-117"><span class="linenos" data-linenos="117 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">init_metaxy</span><span class="p">(</span>
+</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a><a href="#__codelineno-0-117"><span class="linenos" data-linenos="117 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">init</span><span class="p">(</span>
 </span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a><a href="#__codelineno-0-118"><span class="linenos" data-linenos="118 "></span></a>    <span class="n">config</span><span class="p">:</span> <span class="n">MetaxyConfig</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a><a href="#__codelineno-0-119"><span class="linenos" data-linenos="119 "></span></a>    <span class="n">search_parents</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><a href="#__codelineno-0-120"><span class="linenos" data-linenos="120 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetaxyConfig</span><span class="p">:</span>

@@ -3882,9 +3882,9 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLModel</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">filter_feature_sqlmodel_metadata</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaxyConfig</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">config</span> <span class="o">=</span> <span class="n">init_metaxy</span><span class="p">()</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">config</span> <span class="o">=</span> <span class="n">init</span><span class="p">()</span>
 </span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
 </span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
 </span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Transform SQLModel metadata with table_prefix</span>
@@ -4256,7 +4256,7 @@ ensuring that table names in the metadata match what's expected in the database.
 <p>You can pass <code>SQLModel.metadata</code> directly - this function will transform table names
 by adding the store's <code>table_prefix</code>. The returned metadata will have prefixed table
 names that match the actual database tables.</p>
-<p>This function must be called after init_metaxy() to ensure features are loaded.</p>
+<p>This function must be called after init() to ensure features are loaded.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4381,7 +4381,7 @@ protocol with port 9000, so you typically don't need to override these.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">alembic</span><span class="w"> </span><span class="kn">import</span> <span class="n">context</span>
 
 <span class="c1"># Load features first</span>
-<span class="n">mx</span><span class="o">.</span><span class="n">init_metaxy</span><span class="p">()</span>
+<span class="n">mx</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
 
 <span class="c1"># Get store instance</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
@@ -4419,7 +4419,7 @@ protocol with port 9000, so you typically don't need to override these.</p>
 </span><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a><a href="#__codelineno-0-396"><span class="linenos" data-linenos="396 "></span></a><span class="sd">    by adding the store&#39;s `table_prefix`. The returned metadata will have prefixed table</span>
 </span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a><a href="#__codelineno-0-397"><span class="linenos" data-linenos="397 "></span></a><span class="sd">    names that match the actual database tables.</span>
 </span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a><a href="#__codelineno-0-398"><span class="linenos" data-linenos="398 "></span></a>
-</span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a><a href="#__codelineno-0-399"><span class="linenos" data-linenos="399 "></span></a><span class="sd">    This function must be called after init_metaxy() to ensure features are loaded.</span>
+</span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a><a href="#__codelineno-0-399"><span class="linenos" data-linenos="399 "></span></a><span class="sd">    This function must be called after init() to ensure features are loaded.</span>
 </span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a><a href="#__codelineno-0-400"><span class="linenos" data-linenos="400 "></span></a>
 </span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a><a href="#__codelineno-0-401"><span class="linenos" data-linenos="401 "></span></a><span class="sd">    Args:</span>
 </span><span id="__span-0-402"><a id="__codelineno-0-402" name="__codelineno-0-402"></a><a href="#__codelineno-0-402"><span class="linenos" data-linenos="402 "></span></a><span class="sd">        store: IbisMetadataStore instance (provides table_prefix and sqlalchemy_url)</span>
@@ -4455,7 +4455,7 @@ protocol with port 9000, so you typically don't need to override these.</p>
 </span><span id="__span-0-432"><a id="__codelineno-0-432" name="__codelineno-0-432"></a><a href="#__codelineno-0-432"><span class="linenos" data-linenos="432 "></span></a><span class="sd">        from alembic import context</span>
 </span><span id="__span-0-433"><a id="__codelineno-0-433" name="__codelineno-0-433"></a><a href="#__codelineno-0-433"><span class="linenos" data-linenos="433 "></span></a>
 </span><span id="__span-0-434"><a id="__codelineno-0-434" name="__codelineno-0-434"></a><a href="#__codelineno-0-434"><span class="linenos" data-linenos="434 "></span></a><span class="sd">        # Load features first</span>
-</span><span id="__span-0-435"><a id="__codelineno-0-435" name="__codelineno-0-435"></a><a href="#__codelineno-0-435"><span class="linenos" data-linenos="435 "></span></a><span class="sd">        mx.init_metaxy()</span>
+</span><span id="__span-0-435"><a id="__codelineno-0-435" name="__codelineno-0-435"></a><a href="#__codelineno-0-435"><span class="linenos" data-linenos="435 "></span></a><span class="sd">        mx.init()</span>
 </span><span id="__span-0-436"><a id="__codelineno-0-436" name="__codelineno-0-436"></a><a href="#__codelineno-0-436"><span class="linenos" data-linenos="436 "></span></a>
 </span><span id="__span-0-437"><a id="__codelineno-0-437" name="__codelineno-0-437"></a><a href="#__codelineno-0-437"><span class="linenos" data-linenos="437 "></span></a><span class="sd">        # Get store instance</span>
 </span><span id="__span-0-438"><a id="__codelineno-0-438" name="__codelineno-0-438"></a><a href="#__codelineno-0-438"><span class="linenos" data-linenos="438 "></span></a><span class="sd">        config = mx.MetaxyConfig.get()</span>

@@ -3819,18 +3819,18 @@ These helpers allow to construct <code>sqlalchemy.MetaData</code> objects for us
 <p>The two helper functions: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.ext.sqlalchemy.filter_feature_sqla_metadata&lt;/span&gt;" href="#metaxy.ext.sqlalchemy.filter_feature_sqla_metadata"><code>filter_feature_sqla_metadata</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.ext.sqlalchemy.get_system_slqa_metadata&lt;/span&gt;" href="#metaxy.ext.sqlalchemy.get_system_slqa_metadata"><code>get_system_slqa_metadata</code></a> can be used to retrieve an SQLAlchemy URL and <code>MetaData</code> object for a given <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.ibis.IbisMetadataStore&lt;/span&gt;" href="../../metadata-stores/databases/ibis/#metaxy.metadata_store.ibis.IbisMetadataStore"><code>IbisMetadataStore</code></a>.</p>
 <p><code>filter_feature_sqla_metadata</code> returns table metadata for the user-defined tables, while <code>get_system_slqa_metadata</code> returns metadata for Metaxy's system tables.</p>
 <div class="admonition important">
-<p class="admonition-title">Call <code>init_metaxy</code> first</p>
-<p>You <strong>must</strong> call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init_metaxy&lt;/span&gt;" href="../../../reference/api/initialization/#metaxy.init_metaxy"><code>init_metaxy</code></a> before using <code>filter_feature_sqla_metadata</code> to ensure all features are loaded into the feature graph.</p>
+<p class="admonition-title">Call <code>init</code> first</p>
+<p>You <strong>must</strong> call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init&lt;/span&gt;" href="../../../reference/api/initialization/#metaxy.init"><code>init</code></a> before using <code>filter_feature_sqla_metadata</code> to ensure all features are loaded into the feature graph.</p>
 </div>
 <p>Here is an example Alembic <code>env.py</code> that uses the Metaxy SQLAlchemy integration:</p>
 <div class="language-python highlight"><span class="filename">env.py</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">alembic</span><span class="w"> </span><span class="kn">import</span> <span class="n">context</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">filter_feature_sqla_metadata</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Alembic Config object</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">config</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">metaxy_cfg</span> <span class="o">=</span> <span class="n">init_metaxy</span><span class="p">()</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">metaxy_cfg</span> <span class="o">=</span> <span class="n">init</span><span class="p">()</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">store</span> <span class="o">=</span> <span class="n">metaxy_cfg</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;my_store&quot;</span><span class="p">)</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># import your SQLAlchemy metadata from somewhere</span>
@@ -3899,8 +3899,8 @@ These helpers allow to construct <code>sqlalchemy.MetaData</code> objects for us
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="multi-store-setup-dev" name="__tabbed_1" type="radio" /><input id="multi-store-setup-prod" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="multi-store-setup-dev">dev</label><label for="multi-store-setup-prod">prod</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-python highlight"><span class="filename">alembic/dev/env.py</span><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">init_metaxy</span><span class="p">()</span>
+<div class="language-python highlight"><span class="filename">alembic/dev/env.py</span><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">init</span><span class="p">()</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="hll"><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;dev&quot;</span><span class="p">)</span>
 </span></span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span> <span class="o">=</span> <span class="n">filter_feature_sqla_metadata</span><span class="p">(</span><span class="n">my_metadata</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
 </span></code></pre></div>
@@ -3909,8 +3909,8 @@ These helpers allow to construct <code>sqlalchemy.MetaData</code> objects for us
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-python highlight"><span class="filename">alembic/prod/env.py</span><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">init_metaxy</span><span class="p">()</span>
+<div class="language-python highlight"><span class="filename">alembic/prod/env.py</span><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">init</span><span class="p">()</span>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="hll"><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;prod&quot;</span><span class="p">)</span>
 </span></span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span> <span class="o">=</span> <span class="n">filter_feature_sqla_metadata</span><span class="p">(</span><span class="n">my_metadata</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
 </span></code></pre></div>
@@ -4005,7 +4005,7 @@ integration with migration tools:</p>
 <p>Get SQLAlchemy URL and feature table metadata for a metadata store.</p>
 <p>This function filters the source metadata to include only feature tables
 belonging to the specified project, and returns the connection URL for the store.</p>
-<p>This function must be called after init_metaxy() to ensure features are loaded.</p>
+<p>This function must be called after init() to ensure features are loaded.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4135,7 +4135,7 @@ Useful when the SQLAlchemy driver uses a different port than Ibis.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaData</span>
 
 <span class="c1"># Load features first</span>
-<span class="n">mx</span><span class="o">.</span><span class="n">init_metaxy</span><span class="p">()</span>
+<span class="n">mx</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
 
 <span class="c1"># Get store instance</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
@@ -4177,7 +4177,7 @@ Useful when the SQLAlchemy driver uses a different port than Ibis.</p>
 </span><span id="__span-0-304"><a id="__codelineno-0-304" name="__codelineno-0-304"></a><a href="#__codelineno-0-304"><span class="linenos" data-linenos="304 "></span></a><span class="sd">    This function filters the source metadata to include only feature tables</span>
 </span><span id="__span-0-305"><a id="__codelineno-0-305" name="__codelineno-0-305"></a><a href="#__codelineno-0-305"><span class="linenos" data-linenos="305 "></span></a><span class="sd">    belonging to the specified project, and returns the connection URL for the store.</span>
 </span><span id="__span-0-306"><a id="__codelineno-0-306" name="__codelineno-0-306"></a><a href="#__codelineno-0-306"><span class="linenos" data-linenos="306 "></span></a>
-</span><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a><a href="#__codelineno-0-307"><span class="linenos" data-linenos="307 "></span></a><span class="sd">    This function must be called after init_metaxy() to ensure features are loaded.</span>
+</span><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a><a href="#__codelineno-0-307"><span class="linenos" data-linenos="307 "></span></a><span class="sd">    This function must be called after init() to ensure features are loaded.</span>
 </span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a><a href="#__codelineno-0-308"><span class="linenos" data-linenos="308 "></span></a>
 </span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a><a href="#__codelineno-0-309"><span class="linenos" data-linenos="309 "></span></a><span class="sd">    Args:</span>
 </span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a><a href="#__codelineno-0-310"><span class="linenos" data-linenos="310 "></span></a><span class="sd">        store: IbisMetadataStore instance</span>
@@ -4212,7 +4212,7 @@ Useful when the SQLAlchemy driver uses a different port than Ibis.</p>
 </span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a><a href="#__codelineno-0-339"><span class="linenos" data-linenos="339 "></span></a><span class="sd">        from sqlalchemy import MetaData</span>
 </span><span id="__span-0-340"><a id="__codelineno-0-340" name="__codelineno-0-340"></a><a href="#__codelineno-0-340"><span class="linenos" data-linenos="340 "></span></a>
 </span><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a><a href="#__codelineno-0-341"><span class="linenos" data-linenos="341 "></span></a><span class="sd">        # Load features first</span>
-</span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a><a href="#__codelineno-0-342"><span class="linenos" data-linenos="342 "></span></a><span class="sd">        mx.init_metaxy()</span>
+</span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a><a href="#__codelineno-0-342"><span class="linenos" data-linenos="342 "></span></a><span class="sd">        mx.init()</span>
 </span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a><a href="#__codelineno-0-343"><span class="linenos" data-linenos="343 "></span></a>
 </span><span id="__span-0-344"><a id="__codelineno-0-344" name="__codelineno-0-344"></a><a href="#__codelineno-0-344"><span class="linenos" data-linenos="344 "></span></a><span class="sd">        # Get store instance</span>
 </span><span id="__span-0-345"><a id="__codelineno-0-345" name="__codelineno-0-345"></a><a href="#__codelineno-0-345"><span class="linenos" data-linenos="345 "></span></a><span class="sd">        config = mx.MetaxyConfig.get()</span>
