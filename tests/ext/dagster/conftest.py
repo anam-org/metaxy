@@ -10,6 +10,7 @@ from pytest_cases import fixture, parametrize_with_cases
 
 import metaxy as mx
 import metaxy.ext.dagster as mxd
+from tests.conftest import require_fixture
 
 
 class DagsterStoreConfigCases:
@@ -28,7 +29,7 @@ class DagsterStoreConfigCases:
         """ClickHouseMetadataStore configuration."""
         return mx.StoreConfig(
             type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
-            config={"connection_string": request.getfixturevalue("clickhouse_db")},
+            config={"connection_string": require_fixture(request, "clickhouse_db")},
         )
 
 

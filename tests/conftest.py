@@ -25,6 +25,32 @@ from metaxy.models.feature import FeatureGraph
 assert HashAlgorithmCases is not None  # ensure the import is not removed
 
 
+def require_fixture(request: pytest.FixtureRequest, name: str) -> Any:
+    """Resolve a pytest fixture by name at runtime, bypassing static dependency analysis.
+
+    Use this in pytest-cases case functions to avoid fixture dependency merging.
+    When @fixture + @parametrize_with_cases collects case functions, it merges ALL
+    fixture parameters from ALL cases into every parametrized variant. This means
+    a case that depends on `clickhouse_db` would force non-clickhouse variants to
+    also resolve `clickhouse_db`, causing unwanted skips.
+
+    By resolving fixtures through `request.getfixturevalue` instead of declaring
+    them as function parameters, we break the static dependency chain so each case
+    only resolves its own dependencies.
+
+    Example::
+
+        class StoreCases:
+            def case_duckdb(self, tmp_path: Path) -> MetadataStore:
+                return DuckDBMetadataStore(database=tmp_path / "test.duckdb")
+
+            def case_clickhouse(self, request) -> MetadataStore:
+                conn = require_fixture(request, "clickhouse_db")
+                return ClickHouseMetadataStore(connection_string=conn)
+    """
+    return request.getfixturevalue(name)
+
+
 def pytest_configure(config):
     """Set up test configuration early, before test collection.
 

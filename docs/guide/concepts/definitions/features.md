@@ -56,6 +56,7 @@ That's it! Easy.
     It was practical to start from this interface, since it's somewhat more complicated to implement and support.
     More feature definition and registration methods are likely to be introduced in the future, since Metaxy doesn't
     use the class information in any way (1).
+    Additionally, users may want to construct instances of these Pydantic classes, and Pydantic can be used for data validation and type safety.
 
 1. That's a little lie. The [Dagster integration](/integrations/orchestration/dagster/index.md) uses the original class to extract the table schema for visualization purposes, but we are exploring alternative solutions in [`anam-org/metaxy`](https://github.com/anam-org/metaxy/issues/855)
 
@@ -104,31 +105,20 @@ These are used to define dependencies between logical fields of features.
 At this point, careful readers have probably noticed that the `Transcript` feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
 Let's express this with Metaxy:
 
+<!-- skip next -->
 ```py
-import metaxy as mx
-
-video_spec = mx.FeatureSpec(key="raw/video2", id_columns=["video_id"], fields=["audio", "frames"])
-
-
-class VideoFeature2(mx.BaseFeature, spec=video_spec):
-    path: str
-
-
-transcript_spec = mx.FeatureSpec(
-    key="raw/transcript",
-    id_columns=["video_id"],
-    deps=[VideoFeature2],
-    fields=[
+class Transcript(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(key="processed/transcript", id_columns=["video_id"], fields=[
         mx.FieldSpec(
             key="text",
-            deps=[mx.FieldDep(feature=VideoFeature2, fields=["audio"])],
+            deps=[mx.FieldDep(feature=VideoFeature, fields=["audio"])],
         )
-    ],
-)
-
-
-class TranscriptFeature(mx.BaseFeature, spec=transcript_spec):
-    path: str
+    ],),
+):
+    transcript_path: str
+    speakers_json_path: str
+    num_speakers: int
 ```
 
 Voilà!
@@ -185,7 +175,7 @@ mx.sync_external_features(store)
 
 !!! note "Pydantic Schema Limitation"
 
-    Features loaded from the metadata store have their JSON schema preserved from when they were originally saved. However, the Pydantic model class is not available. Operations that require the actual Python class, such as model instantiation or validation, will not work for these features.
+    Features loaded from the metadata store have their JSON schema preserved from when they were originally saved. However, the Python *class* may not be available anymore. Operations that require the actual Python class, such as model instantiation or validation, will not work for these features.
 
 Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or field versions) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:
 

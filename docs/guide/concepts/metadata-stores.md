@@ -94,6 +94,8 @@ Metadata can be retrieved using the [`read`][metaxy.MetadataStore.read] method:
         df = store.read("my/feature")
     ```
 
+By default, Metaxy drops historical records with the same feature version, which makes the `write`-`read` sequence idempotent for an outside observer.
+
 ## Increment Resolution
 
 Increments can be computed using the [`resolve_update`][metaxy.MetadataStore.resolve_update] method:
@@ -118,9 +120,13 @@ It is up to the caller to decide how to handle the processing and potential dele
 
 Once processing is complete, the caller is expected to call `MetadataStore.write` to record metadata about the processed samples.
 
-!!! tip
+!!! tip "Where are increments computed?"
 
-    Learn more about how increments are computed [here](../../metaxy/design.md#compute).
+  Learn more [here](../../metaxy/design.md#compute).
+
+!!! tip "How are increments computed?"
+
+    Learn more [here](./data-versioning.md).
 
 ## Deletes
 

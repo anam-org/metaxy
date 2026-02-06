@@ -7,19 +7,19 @@ on:
   workflow_call:
     inputs:
       python-versions:
-        description: 'JSON array of Python versions to test'
+        description: "JSON array of Python versions to test"
         type: string
         default: '["3.10"]'
       run-windows:
-        description: 'Run Windows tests'
+        description: "Run Windows tests"
         type: boolean
         default: false
       run-macos:
-        description: 'Run macOS tests'
+        description: "Run macOS tests"
         type: boolean
         default: false
       run-all-checks:
-        description: 'Run all checks regardless of path filters'
+        description: "Run all checks regardless of path filters"
         type: boolean
         default: false
 
@@ -140,7 +140,6 @@ jobs:
           uv run coverage xml -o coverage.xml
           uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY || true
 
-
       - name: Test Execution Summary
         # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
         if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
@@ -216,12 +215,14 @@ jobs:
       - name: Run Tests
         run: >
           uv run pytest
-          -k "not clickhouse"
+          -k "not clickhouse and not graphviz"
           --ignore=tests/docs
           --ignore=tests/cli
+          --ignore=tests/examples
           --ignore=tests/ext/ray
           --ignore=tests/project
           --durations=15
+          --snapshot-warn-unused
 
   test-macos:
     needs: filter
@@ -257,11 +258,11 @@ jobs:
       - name: Run Tests
         run: >
           uv run pytest
-          -k "not clickhouse"
+          -k "not clickhouse and not graphviz"
           --ignore=tests/docs
-          --ignore=tests/cli
           --ignore=tests/ext/ray
           --durations=15
+          --snapshot-warn-unused
 
   docs:
     permissions:

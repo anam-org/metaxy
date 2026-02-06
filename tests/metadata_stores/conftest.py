@@ -23,9 +23,7 @@ from metaxy.metadata_store import (
     MetadataStore,
 )
 from metaxy.models.feature import FeatureGraph
-
-# Note: clickhouse_server and clickhouse_db fixtures are defined in tests/conftest.py
-# to be available across all test directories.
+from tests.conftest import require_fixture
 
 
 def find_free_port() -> int:
@@ -65,7 +63,7 @@ class StoreCases:
         return (DuckDBMetadataStore, config)
 
     def case_clickhouse(self, request, test_graph: FeatureGraph) -> tuple[type[MetadataStore], dict[str, Any]]:
-        return (ClickHouseMetadataStore, {"connection_string": request.getfixturevalue("clickhouse_db")})
+        return (ClickHouseMetadataStore, {"connection_string": require_fixture(request, "clickhouse_db")})
 
 
 class BasicStoreCases:
@@ -161,7 +159,7 @@ class AllStoresCases:
     @pytest.mark.clickhouse
     def case_clickhouse(self, request) -> MetadataStore:
         return ClickHouseMetadataStore(
-            connection_string=request.getfixturevalue("clickhouse_db"),
+            connection_string=require_fixture(request, "clickhouse_db"),
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 

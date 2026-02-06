@@ -30,9 +30,9 @@ Bring your own... really everything. Metaxy is a universal glue for metadata. Us
 Metaxy is obsessively tested across all supported tabular compute engines. We guarantee to produce [versioning hashes](../guide/concepts/data-versioning.md) that are **consistent across DBs and local** compute engines. We really have tested this very well! (1)
 { .annotate }
 
-1. At the moment of writing our test suite contains more than 2000 tests executed against Linux, Windows and MacOS on all supported Python versions
+1. We have a rich test suite that's run against Linux, Windows and MacOS on all supported Python versions
 
-Metadata is organized in **append-only tables**. Metaxy never attempts to modify historical metadata, (1) ensuring that data integrity is maintained and historical metadata can be easily retrieved and analyzed.
+Metadata is organized in **append-only tables**. Metaxy never attempts to modify historical metadata, (1) ensuring that data integrity is maintained and historical metadata can be easily retrieved.
 { .annotate }
 
 1. But provides the ability to perform hard and soft deletions
@@ -58,7 +58,7 @@ The library includes comprehensive **type hints** (1), and utilizes Pydantic for
 The included [CLI](../reference/cli.md) tool allows easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats. You can even drop your database in one command! (1)
 { .annotate }
 
-1. that's a joke, it can only be truncated from CLI
+1. that's _almost_ a joke
 
 Hopefully this was impressive enough and has sparked some interest in Metaxy!
 
