@@ -3,9 +3,7 @@ name: Release
 on:
   push:
     tags:
-      # Semver tags: v1.0.0, v1.0.0-alpha.1, v1.0.0-rc.1, etc.
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
 
 concurrency:
@@ -36,26 +34,50 @@ jobs:
 
   testpypi:
     needs: qa
-    uses: ./.github/workflows/_publish.yml
+    runs-on: depot-ubuntu-latest
+    environment: testpypi
     permissions:
       contents: read
       id-token: write
-    with:
-      environment: testpypi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/publish
+        with:
+          environment: testpypi
 
   pypi:
     needs: testpypi
-    uses: ./.github/workflows/_publish.yml
+    runs-on: depot-ubuntu-latest
+    environment: pypi
     permissions:
       contents: read
       id-token: write
-    with:
-      environment: pypi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/publish
+        with:
+          environment: pypi
+
+  check-stable-release:
+    needs: pypi
+    runs-on: depot-ubuntu-latest
+    outputs:
+      is-stable: ${{ steps.check.outputs.stable }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq '.isPrerelease' | grep -q 'false'; then
+            echo "stable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "stable=false" >> "$GITHUB_OUTPUT"
+          fi
 
   docs:
-    needs: pypi
-    # Only deploy docs for stable releases (vX.Y.Z without pre-release suffix)
-    if: ${{ github.ref_type == 'tag' && !contains(github.ref_name, '-') }}
+    needs: check-stable-release
+    if: needs.check-stable-release.outputs.is-stable == 'true'
     uses: ./.github/workflows/_docs.yml
     permissions:
       contents: write

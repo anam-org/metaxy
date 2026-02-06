@@ -255,16 +255,9 @@ def clickhouse_server(tmp_path_factory):
     Yields connection params (host, port) if ClickHouse is available, otherwise skips tests.
     """
 
-    # Check if clickhouse binary is available
     clickhouse_bin = shutil.which("clickhouse") or shutil.which("clickhouse-server")
     if not clickhouse_bin:
         pytest.skip("ClickHouse binary not found in PATH")
-
-    # Check if ibis-clickhouse is installed
-    try:
-        import ibis.backends.clickhouse  # noqa: F401
-    except ImportError:
-        pytest.skip("ibis-clickhouse not installed")
 
     port = find_free_port()
     http_port = find_free_port()

@@ -24,11 +24,11 @@ class DagsterStoreConfigCases:
         )
 
     @pytest.mark.clickhouse
-    def case_clickhouse(self, clickhouse_db: str) -> mx.StoreConfig:
+    def case_clickhouse(self, request) -> mx.StoreConfig:
         """ClickHouseMetadataStore configuration."""
         return mx.StoreConfig(
             type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
-            config={"connection_string": clickhouse_db},
+            config={"connection_string": request.getfixturevalue("clickhouse_db")},
         )
 
 
