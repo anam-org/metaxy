@@ -7,6 +7,10 @@
 (function () {
   let tooltip = null;
   let hideTimeout = null;
+  // Cached once on first init() when __config is guaranteed fresh.
+  // Material's instant navigation doesn't update the DOM's __config script,
+  // so reading it after SPA navigation gives a stale base value.
+  let siteRoot = null;
 
   function createTooltip() {
     tooltip = document.createElement("div");
@@ -100,17 +104,28 @@
 
   function resolveUrl(url) {
     if (!url.startsWith("/")) return url;
-    var configEl = document.getElementById("__config");
-    if (!configEl) return url;
-    var siteRoot = new URL(JSON.parse(configEl.textContent).base, location).href;
-    if (!siteRoot.endsWith("/")) siteRoot += "/";
+    if (!siteRoot) return url;
     return new URL(url.slice(1), siteRoot).href;
   }
 
   function init() {
-    // Only create tooltip once
     if (!tooltip) {
       createTooltip();
+    }
+
+    if (siteRoot === null) {
+      var configEl = document.getElementById("__config");
+      if (configEl) {
+        try {
+          var root = new URL(
+            JSON.parse(configEl.textContent).base,
+            location,
+          ).href;
+          siteRoot = root.endsWith("/") ? root : root + "/";
+        } catch (e) {
+          siteRoot = "";
+        }
+      }
     }
 
     // Process all abbreviations and disable Material's tooltip
