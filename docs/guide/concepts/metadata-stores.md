@@ -96,19 +96,19 @@ Metadata can be retrieved using the [`read`][metaxy.MetadataStore.read] method:
 
 By default, Metaxy drops historical records with the same feature version, which makes the `write`-`read` sequence idempotent for an outside observer.
 
-## Increment Resolution
+## Change Resolution
 
-Increments can be computed using the [`resolve_update`][metaxy.MetadataStore.resolve_update] method:
+Changes can be computed using the [`resolve_update`][metaxy.MetadataStore.resolve_update] method:
 
 !!! example
 
     <!-- skip next -->
     ```py
     with store.open("w"):
-        inc = store.resolve_update("my/feature")
+        changes = store.resolve_update("my/feature")
     ```
 
-The returned [`Increment`][metaxy.Increment] (or [`LazyIncrement`][metaxy.LazyIncrement]) holds fresh samples that haven't been processed yet, stale samples which require to be processed again, and orphaned samples which are no longer present in upstream features and may be deleted.
+The returned [`Changes`][metaxy.Changes] (or [`LazyChanges`][metaxy.LazyChanges]) holds fresh samples that haven't been processed yet, stale samples which require to be processed again, and orphaned samples which are no longer present in upstream features and may be deleted.
 
 !!! tip annotate
 

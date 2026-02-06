@@ -17,7 +17,7 @@ A [feature](./feature.md) in Metaxy is used to model user-defined metadata. It m
 
 ## FieldSpec
 
-A [field] in Metaxy is a logical slices of the **data** represented by feature metadata. Users are free to define their own fields as is suitable for them.
+A [field](./field.md) in Metaxy is a logical slices of the **data** represented by feature metadata. Users are free to define their own fields as is suitable for them.
 
 Dependencies between fields are modeled with [FieldDep][metaxy.models.field.FieldDep] and can be automatic (via field mappings) or explicitly set by users.
 

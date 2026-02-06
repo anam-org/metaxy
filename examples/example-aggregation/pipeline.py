@@ -44,22 +44,22 @@ def main():
 
     # Step 1: Write audio metadata
     with store:
-        increment = store.resolve_update(Audio, samples=AUDIO_SAMPLES)
-        if len(increment.new) > 0:
-            print(f"Found {len(increment.new)} new audio recordings")
-            store.write(Audio, increment.new)
-        elif len(increment.stale) > 0:
-            print(f"Found {len(increment.stale)} changed audio recordings")
-            store.write(Audio, increment.stale)
+        changes = store.resolve_update(Audio, samples=AUDIO_SAMPLES)
+        if len(changes.new) > 0:
+            print(f"Found {len(changes.new)} new audio recordings")
+            store.write(Audio, changes.new)
+        elif len(changes.stale) > 0:
+            print(f"Found {len(changes.stale)} changed audio recordings")
+            store.write(Audio, changes.stale)
         else:
             print("No new or changed audio recordings")
 
     # Step 2: Compute speaker embeddings
     with store:
-        increment = store.resolve_update(SpeakerEmbedding)
+        changes = store.resolve_update(SpeakerEmbedding)
 
-        added_df = increment.new.to_polars()
-        changed_df = increment.stale.to_polars()
+        added_df = changes.new.to_polars()
+        changed_df = changes.stale.to_polars()
 
         speakers_to_process = (
             pl.concat([added_df, changed_df])

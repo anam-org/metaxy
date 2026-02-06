@@ -69,7 +69,7 @@ from metaxy.models.types import (
 from metaxy.utils import BatchedMetadataWriter
 from metaxy.utils.exceptions import MetaxyMissingFeatureDependency
 from metaxy.utils.external_features import sync_external_features
-from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement, PolarsIncrement, PolarsLazyIncrement
+from metaxy.versioning.types import Changes, HashAlgorithm, LazyChanges, PolarsChanges, PolarsLazyChanges
 
 
 @public
@@ -208,9 +208,9 @@ __all__ = [
     "ValidatedFieldKeyAdapter",
     "ValidatedFeatureKeySequenceAdapter",
     "ValidatedFieldKeySequenceAdapter",
-    "LazyIncrement",
-    "PolarsLazyIncrement",
-    "PolarsIncrement",
-    "Increment",
+    "LazyChanges",
+    "PolarsLazyChanges",
+    "PolarsChanges",
+    "Changes",
     "__version__",
 ]

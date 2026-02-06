@@ -74,7 +74,7 @@ class metaxify:
         )
         def my_asset(store: mx.MetadataStore):
             with store:
-                increment = store.resolve_update("my/feature/key")
+                changes = store.resolve_update("my/feature/key")
             ...
         ```
 

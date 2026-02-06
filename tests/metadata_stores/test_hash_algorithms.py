@@ -189,13 +189,13 @@ def test_hash_truncation(
         store.write(ParentFeature, parent_df)
 
         # Compute child metadata
-        increment = store.resolve_update(
+        changes = store.resolve_update(
             ChildFeature,
             target_version=ChildFeature.feature_version(),
             snapshot_version=graph.snapshot_version,
         )
 
-        result = increment.new.lazy().collect().to_polars()
+        result = changes.new.lazy().collect().to_polars()
 
         # Check hash lengths
         hash_col = result["metaxy_provenance"]
@@ -264,13 +264,13 @@ def test_field_level_provenance_structure(
 
         # Write parent and compute child
         store.write(ParentFeature, parent_df)
-        increment = store.resolve_update(
+        changes = store.resolve_update(
             ChildFeature,
             target_version=ChildFeature.feature_version(),
             snapshot_version=graph.snapshot_version,
         )
 
-        result = increment.new.lazy().collect().to_polars()
+        result = changes.new.lazy().collect().to_polars()
 
         # Check provenance_by_field structure
         provenance_by_field = result["metaxy_provenance_by_field"]
@@ -344,13 +344,13 @@ def test_hash_truncation_any_store(config_with_truncation, any_store: MetadataSt
         any_store.write(ParentFeature, parent_df)
 
         # Compute child metadata
-        increment = any_store.resolve_update(
+        changes = any_store.resolve_update(
             ChildFeature,
             target_version=ChildFeature.feature_version(),
             snapshot_version=graph.snapshot_version,
         )
 
-        result = increment.new.lazy().collect().to_polars()
+        result = changes.new.lazy().collect().to_polars()
 
         # Verify all hashes are exactly 16 characters
         hash_col = result["metaxy_provenance"]

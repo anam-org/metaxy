@@ -34,21 +34,21 @@ with config.get_store() as store:
     ids_lazy = store.read(parent_key, columns=["sample_uid"])
     ids = ids_lazy.collect().to_polars()
 
-    increment = store.resolve_update(child_key)
+    changes = store.resolve_update(child_key)
 
     print(
-        f"Identified: {len(increment.new)} new samples, {len(increment.stale)} samples with new provenance_by_field"
+        f"Identified: {len(changes.new)} new samples, {len(changes.stale)} samples with new provenance_by_field"
     )
 
-    if len(increment.new) > 0:
-        # increment.new is a Narwhals DataFrame - can pass directly to write
-        store.write(child_key, increment.new)
-        print(f"✓ Materialized {len(increment.new)} new samples")
+    if len(changes.new) > 0:
+        # changes.new is a Narwhals DataFrame - can pass directly to write
+        store.write(child_key, changes.new)
+        print(f"✓ Materialized {len(changes.new)} new samples")
 
-    if len(increment.stale) > 0:
-        # increment.stale is a Narwhals DataFrame
-        store.write(child_key, increment.stale)
-        print(f"✓ Recomputed {len(increment.stale)} changed samples")
+    if len(changes.stale) > 0:
+        # changes.stale is a Narwhals DataFrame
+        store.write(child_key, changes.stale)
+        print(f"✓ Recomputed {len(changes.stale)} changed samples")
 
     # Show child provenance_by_field
     child_result = store.read(child_key, with_feature_history=False)

@@ -22,11 +22,11 @@ from metaxy.versioning.engine import (
 )
 from metaxy.versioning.feature_dep_transformer import IdColumnTracker
 from metaxy.versioning.types import (
+    Changes,
     HashAlgorithm,
-    Increment,
-    LazyIncrement,
-    PolarsIncrement,
-    PolarsLazyIncrement,
+    LazyChanges,
+    PolarsChanges,
+    PolarsLazyChanges,
 )
 
 __all__ = [
@@ -34,8 +34,8 @@ __all__ = [
     "RenamedDataFrame",
     "IdColumnTracker",
     "HashAlgorithm",
-    "Increment",
-    "LazyIncrement",
-    "PolarsIncrement",
-    "PolarsLazyIncrement",
+    "Changes",
+    "LazyChanges",
+    "PolarsChanges",
+    "PolarsLazyChanges",
 ]

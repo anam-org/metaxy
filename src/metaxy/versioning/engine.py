@@ -25,7 +25,7 @@ from metaxy.versioning.types import HashAlgorithm
 
 # Lazy imports to avoid circular dependencies
 if TYPE_CHECKING:
-    from metaxy.versioning.increment_resolver import IncrementResolver
+    from metaxy.versioning.increment_resolver import ChangesResolver
     from metaxy.versioning.upstream_preparer import UpstreamPreparer
 
 
@@ -679,9 +679,9 @@ class VersioningEngine(ABC):
         # Step 4: Determine join columns and resolve increment
         join_columns = self.plan.input_id_columns or list(self.plan.feature.id_columns)
 
-        from metaxy.versioning.increment_resolver import IncrementResolver
+        from metaxy.versioning.increment_resolver import ChangesResolver
 
-        resolver: IncrementResolver[FrameT] = IncrementResolver(self.plan, self)
+        resolver: ChangesResolver[FrameT] = ChangesResolver(self.plan, self)
         added, changed, removed = resolver.resolve(expected, current, join_columns)
 
         return added, changed, removed, input_df

@@ -27,7 +27,7 @@ class TestCalculateInputProgress:
     """Tests for MetadataStore.calculate_input_progress method."""
 
     def test_returns_none_when_input_is_none(self, graph: FeatureGraph, tmp_path):
-        """Returns None when LazyIncrement.input is None (root features)."""
+        """Returns None when LazyChanges.input is None (root features)."""
 
         class RootFeature(
             BaseFeature,
@@ -52,11 +52,11 @@ class TestCalculateInputProgress:
                     ],
                 }
             )
-            lazy_increment = store.resolve_update(RootFeature, samples=nw.from_native(samples), lazy=True)
+            lazy_changes = store.resolve_update(RootFeature, samples=nw.from_native(samples), lazy=True)
 
             # Root features have no input
-            assert lazy_increment.input is None
-            progress = store.calculate_input_progress(lazy_increment, RootFeature)
+            assert lazy_changes.input is None
+            progress = store.calculate_input_progress(lazy_changes, RootFeature)
             assert progress is None
 
     def test_returns_100_when_all_input_processed(self, graph: FeatureGraph, tmp_path):
@@ -100,12 +100,12 @@ class TestCalculateInputProgress:
             store.write(Upstream, nw.from_native(upstream_data))
 
             # Write downstream metadata for all samples
-            increment = store.resolve_update(Downstream, lazy=False)
-            store.write(Downstream, increment.new)
+            changes = store.resolve_update(Downstream, lazy=False)
+            store.write(Downstream, changes.new)
 
             # Now check progress - should be 100%
-            lazy_increment = store.resolve_update(Downstream, lazy=True)
-            progress = store.calculate_input_progress(lazy_increment, Downstream)
+            lazy_changes = store.resolve_update(Downstream, lazy=True)
+            progress = store.calculate_input_progress(lazy_changes, Downstream)
             assert progress == 100.0
 
     def test_returns_correct_percentage_when_partially_processed(self, graph: FeatureGraph, tmp_path):
@@ -145,13 +145,13 @@ class TestCalculateInputProgress:
             store.write(Upstream, nw.from_native(upstream_data))
 
             # Write downstream metadata for only 3 samples
-            increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.new.to_polars().head(3)
+            changes = store.resolve_update(Downstream, lazy=False)
+            partial_data = changes.new.to_polars().head(3)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 30% (3/10)
-            lazy_increment = store.resolve_update(Downstream, lazy=True)
-            progress = store.calculate_input_progress(lazy_increment, Downstream)
+            lazy_changes = store.resolve_update(Downstream, lazy=True)
+            progress = store.calculate_input_progress(lazy_changes, Downstream)
             assert progress == 30.0
 
     def test_returns_none_when_no_input(self, graph: FeatureGraph, tmp_path):
@@ -191,8 +191,8 @@ class TestCalculateInputProgress:
             store.write(Upstream, nw.from_native(upstream_data))
 
             # Resolve update - should have no input to process
-            lazy_increment = store.resolve_update(Downstream, lazy=True)
-            progress = store.calculate_input_progress(lazy_increment, Downstream)
+            lazy_changes = store.resolve_update(Downstream, lazy=True)
+            progress = store.calculate_input_progress(lazy_changes, Downstream)
             assert progress is None  # No input available
 
     def test_identity_lineage_uses_upstream_id_columns(self, graph: FeatureGraph, tmp_path):
@@ -237,13 +237,13 @@ class TestCalculateInputProgress:
             store.write(Upstream, nw.from_native(upstream_data))
 
             # Write downstream for 2 out of 3 samples
-            increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.new.to_polars().head(2)
+            changes = store.resolve_update(Downstream, lazy=False)
+            partial_data = changes.new.to_polars().head(2)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 66.67% (2/3)
-            lazy_increment = store.resolve_update(Downstream, lazy=True)
-            progress = store.calculate_input_progress(lazy_increment, Downstream)
+            lazy_changes = store.resolve_update(Downstream, lazy=True)
+            progress = store.calculate_input_progress(lazy_changes, Downstream)
             assert progress is not None
             assert abs(progress - 66.67) < 0.1
 
@@ -306,14 +306,14 @@ class TestCalculateInputProgress:
             store.write(SensorReadings, nw.from_native(upstream_data))
 
             # Write downstream for only 1 hour (1 out of 2 groups)
-            increment = store.resolve_update(HourlyStats, lazy=False)
-            partial_data = increment.new.to_polars().head(1)
+            changes = store.resolve_update(HourlyStats, lazy=False)
+            partial_data = changes.new.to_polars().head(1)
             store.write(HourlyStats, partial_data)
 
             # Progress should count by aggregation groups, not individual readings
             # 1 hour processed out of 2 hours = 50%
-            lazy_increment = store.resolve_update(HourlyStats, lazy=True)
-            progress = store.calculate_input_progress(lazy_increment, HourlyStats)
+            lazy_changes = store.resolve_update(HourlyStats, lazy=True)
+            progress = store.calculate_input_progress(lazy_changes, HourlyStats)
             assert progress == 50.0
 
     def test_expansion_lineage_uses_parent_columns(self, graph: FeatureGraph, tmp_path):
@@ -385,8 +385,8 @@ class TestCalculateInputProgress:
 
             # Progress should count by parent videos, not individual frames
             # 2 videos processed out of 3 = 66.67%
-            lazy_increment = store.resolve_update(VideoFrames, lazy=True)
-            progress = store.calculate_input_progress(lazy_increment, VideoFrames)
+            lazy_changes = store.resolve_update(VideoFrames, lazy=True)
+            progress = store.calculate_input_progress(lazy_changes, VideoFrames)
             assert progress is not None
             assert abs(progress - 66.67) < 0.1
 
@@ -432,13 +432,13 @@ class TestCalculateInputProgress:
             store.write(Upstream, nw.from_native(upstream_data))
 
             # Write downstream for 2 out of 4 samples
-            increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.new.to_polars().head(2)
+            changes = store.resolve_update(Downstream, lazy=False)
+            partial_data = changes.new.to_polars().head(2)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 50% (2/4)
-            lazy_increment = store.resolve_update(Downstream, lazy=True)
-            progress = store.calculate_input_progress(lazy_increment, Downstream)
+            lazy_changes = store.resolve_update(Downstream, lazy=True)
+            progress = store.calculate_input_progress(lazy_changes, Downstream)
             assert progress == 50.0
 
     def test_multiple_upstreams(self, graph: FeatureGraph, tmp_path):
@@ -499,12 +499,12 @@ class TestCalculateInputProgress:
             store.write(UpstreamB, nw.from_native(upstream_b_data))
 
             # Write downstream for 1 out of 3 samples
-            increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.new.to_polars().head(1)
+            changes = store.resolve_update(Downstream, lazy=False)
+            partial_data = changes.new.to_polars().head(1)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 33.33% (1/3)
-            lazy_increment = store.resolve_update(Downstream, lazy=True)
-            progress = store.calculate_input_progress(lazy_increment, Downstream)
+            lazy_changes = store.resolve_update(Downstream, lazy=True)
+            progress = store.calculate_input_progress(lazy_changes, Downstream)
             assert progress is not None
             assert abs(progress - 33.33) < 0.1

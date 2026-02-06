@@ -30,10 +30,10 @@ And call the faimiliar `resolve_update` API:
 <!-- skip: next -->
 
 ```py {title="script.py"}
-increment = store.resolve_update(Audio)
+changes = store.resolve_update(Audio)
 ```
 
-That's all! The increment can be handled similarly to the `Video` feature.
+That's all! The changes can be handled similarly to the `Video` feature.
 
 ## Advanced Feature Definitions
 

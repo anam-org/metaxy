@@ -46,7 +46,7 @@ from metaxy.metadata_store import (
 from metaxy.models.field import SpecialFieldDep
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FieldKey
-from metaxy.versioning.types import HashAlgorithm, Increment
+from metaxy.versioning.types import Changes, HashAlgorithm
 
 if TYPE_CHECKING:
     pass
@@ -573,14 +573,14 @@ def setup_store_with_data(
 
 
 def assert_increment_matches_golden(
-    actual: Increment,
-    golden: Increment,
+    actual: Changes,
+    golden: Changes,
     id_columns: list[str],
 ) -> None:
     """Assert that actual increment matches golden increment.
 
     Compares all parts of the increment: added, changed, and removed.
-    All Increment fields are required (not Optional), so we compare them directly.
+    All Changes fields are required (not Optional), so we compare them directly.
     """
     from metaxy.models.constants import METAXY_CREATED_AT
 
@@ -629,7 +629,7 @@ def assert_increment_matches_golden(
 def assert_resolve_update_matches_golden(
     store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
-    golden_increment: Increment,
+    golden_increment: Changes,
     snapshot: SnapshotAssertion | None = None,
     snapshot_suffix: str = "",
 ) -> None:
@@ -658,25 +658,25 @@ def assert_resolve_update_matches_golden(
     # Call resolve_update to compute provenance (uses default/native engine)
     # Use graph.use() to make it the current graph (needed for resolve_update)
     with graph.use():
-        actual_increment = store.resolve_update(
+        actual_changes = store.resolve_update(
             child_key,
             target_version=child_version,
             snapshot_version=graph.snapshot_version,
         )
 
     id_columns = list(child_feature_plan.feature.id_columns)
-    assert_increment_matches_golden(actual_increment, golden_increment, id_columns)
+    assert_increment_matches_golden(actual_changes, golden_increment, id_columns)
 
     # Additional safeguard: also verify with polars engine explicitly
     # This ensures both native and polars engines produce the same result
     with graph.use():
-        polars_increment = store.resolve_update(
+        polars_changes = store.resolve_update(
             child_key,
             target_version=child_version,
             snapshot_version=graph.snapshot_version,
             versioning_engine="polars",
         )
-    assert_increment_matches_golden(polars_increment, golden_increment, id_columns)
+    assert_increment_matches_golden(polars_changes, golden_increment, id_columns)
 
     # Record snapshot of provenance values for regression testing
     if snapshot is not None:
@@ -709,7 +709,7 @@ def compute_golden_increment(
     upstream_data: dict[str, pl.DataFrame],
     current_downstream: pl.DataFrame | None,
     hash_algorithm: HashAlgorithm,
-) -> Increment:
+) -> Changes:
     """Compute golden increment using PolarsVersioningEngine.
 
     This is the reference implementation - all store implementations should
@@ -722,7 +722,7 @@ def compute_golden_increment(
         hash_algorithm: Hash algorithm to use
 
     Returns:
-        Golden Increment computed by PolarsVersioningEngine
+        Golden Changes computed by PolarsVersioningEngine
     """
     import narwhals as nw
 
@@ -745,7 +745,7 @@ def compute_golden_increment(
         sample=None,
     )
 
-    # Collect lazy frames and convert to Increment
+    # Collect lazy frames and convert to Changes
     # When changed/removed are None (first increment), create empty DataFrames with same schema
     added_collected = added.collect()
     if changed is not None:
@@ -759,7 +759,7 @@ def compute_golden_increment(
         # Create empty DataFrame with same schema as added
         removed_collected = added_collected.head(0)
 
-    return Increment(
+    return Changes(
         new=added_collected,
         stale=changed_collected,
         orphaned=removed_collected,
@@ -907,7 +907,7 @@ def test_golden_reference_with_duplicate_timestamps(
                 # - Duplicate (older, modified) - should be ignored
 
             # Call resolve_update - should use only latest versions
-            increment = store.resolve_update(
+            changes = store.resolve_update(
                 child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
@@ -916,7 +916,7 @@ def test_golden_reference_with_duplicate_timestamps(
         except HashAlgorithmNotSupportedError:
             pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
-        added_df = increment.new.lazy().collect().to_polars()
+        added_df = changes.new.lazy().collect().to_polars()
 
         # Exclude metaxy_created_at since it's a timestamp
         common_columns = [
@@ -1018,14 +1018,14 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
 
             # Now every sample has 2 versions with same timestamp
             # Call resolve_update - should pick one deterministically
-            increment = empty_store.resolve_update(
+            changes = empty_store.resolve_update(
                 child_key,
                 target_version=ChildFeature.feature_version(),
                 snapshot_version=graph.snapshot_version,
             )
 
             # Verify we got results (deterministic even with same timestamps)
-            added_df = increment.new.lazy().collect().to_polars()
+            added_df = changes.new.lazy().collect().to_polars()
             assert len(added_df) > 0, "Expected at least some samples after deduplication"
 
             # With duplicates at same timestamp, we should still get the original count
@@ -1092,13 +1092,13 @@ def test_golden_reference_partial_duplicates(
                 # - Second half of samples: 1 version each (original only)
 
             # Call resolve_update
-            increment = store.resolve_update(
+            changes = store.resolve_update(
                 child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )
 
-            added_df = increment.new.lazy().collect().to_polars()
+            added_df = changes.new.lazy().collect().to_polars()
 
             # Exclude timestamp
             common_columns = [
@@ -1399,12 +1399,12 @@ def test_expansion_changed_rows_not_duplicated(
             any_store.write(Video, video_df)
 
             # First resolve_update - get parent-level rows
-            increment = any_store.resolve_update(
+            changes = any_store.resolve_update(
                 VideoFrames,
                 target_version=VideoFrames.feature_version(),
                 snapshot_version=graph.snapshot_version,
             )
-            added_df = increment.new.lazy().collect().to_polars()
+            added_df = changes.new.lazy().collect().to_polars()
             assert len(added_df) == 2, f"Expected 2 parent rows, got {len(added_df)}"
 
             # Expand each video to 3 frames
@@ -1444,13 +1444,13 @@ def test_expansion_changed_rows_not_duplicated(
             any_store.write(Video, updated_video_df)
 
             # Resolve update after upstream change
-            increment_after_change = any_store.resolve_update(
+            changes_after_change = any_store.resolve_update(
                 VideoFrames,
                 target_version=VideoFrames.feature_version(),
                 snapshot_version=graph.snapshot_version,
             )
 
-            changed_df = increment_after_change.stale
+            changed_df = changes_after_change.stale
             assert changed_df is not None, "Expected changed to not be None"
             changed_df = changed_df.lazy().collect().to_polars()
 
@@ -1467,7 +1467,7 @@ def test_expansion_changed_rows_not_duplicated(
             )
 
             # Verify added is empty (no new videos)
-            added_after_change = increment_after_change.new.lazy().collect().to_polars()
+            added_after_change = changes_after_change.new.lazy().collect().to_polars()
             assert len(added_after_change) == 0, f"Expected 0 added rows, got {len(added_after_change)}"
 
     except HashAlgorithmNotSupportedError:
