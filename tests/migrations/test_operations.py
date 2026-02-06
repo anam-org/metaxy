@@ -187,9 +187,9 @@ def test_full_graph_migration_single_operation_single_feature(tmp_path: Path):
         store.write(Upstream, upstream_data)
 
         # Write downstream
-        increment = store.resolve_update(Downstream)
-        if len(increment.new) > 0:
-            store.write(Downstream, increment.new)
+        changes = store.resolve_update(Downstream)
+        if len(changes.new) > 0:
+            store.write(Downstream, changes.new)
 
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
@@ -550,9 +550,9 @@ def test_full_graph_migration_resume_after_partial_failure(tmp_path: Path):
         upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
         store.write(Upstream, upstream_data)
 
-        increment = store.resolve_update(Downstream)
-        if len(increment.new) > 0:
-            store.write(Downstream, increment.new)
+        changes = store.resolve_update(Downstream)
+        if len(changes.new) > 0:
+            store.write(Downstream, changes.new)
 
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version

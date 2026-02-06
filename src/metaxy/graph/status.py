@@ -20,7 +20,7 @@ from metaxy.models.types import (
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.versioning.types import LazyIncrement
+    from metaxy.versioning.types import LazyChanges
 
 
 class FullFeatureMetadataRepresentation(BaseModel):
@@ -69,7 +69,7 @@ class FeatureMetadataStatus(BaseModel):
     including whether it exists, needs updates, and sample counts.
 
     This is a pure Pydantic model without arbitrary types. For working with
-    LazyIncrement objects, use FeatureMetadataStatusWithIncrement.
+    LazyChanges objects, use FeatureMetadataStatusWithChanges.
     """
 
     feature_key: FeatureKey = Field(description="The feature key being inspected")
@@ -122,15 +122,15 @@ class FeatureMetadataStatus(BaseModel):
         )
 
 
-class FeatureMetadataStatusWithIncrement(NamedTuple):
-    """Feature metadata status paired with its LazyIncrement data.
+class FeatureMetadataStatusWithChanges(NamedTuple):
+    """Feature metadata status paired with its LazyChanges data.
 
-    This combines a pure Pydantic status model with the LazyIncrement object
+    This combines a pure Pydantic status model with the LazyChanges object
     needed for sample-level operations like generating previews.
     """
 
     status: FeatureMetadataStatus
-    lazy_increment: LazyIncrement | None
+    lazy_changes: LazyChanges | None
 
     @property
     def status_category(self) -> StatusCategory:
@@ -143,13 +143,13 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
         limit: int = 5,
     ) -> list[str]:
         """Return formatted sample preview lines for verbose output."""
-        if self.lazy_increment is None:
+        if self.lazy_changes is None:
             return []
 
         return [
             line.strip()
             for line in format_sample_previews(
-                self.lazy_increment,
+                self.lazy_changes,
                 self.status.missing_count,
                 self.status.stale_count,
                 self.status.orphaned_count,
@@ -163,7 +163,7 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
         verbose: bool,
     ) -> FullFeatureMetadataRepresentation:
         """Convert status to the full JSON representation used by the CLI."""
-        sample_details = self.sample_details() if verbose and self.lazy_increment else None
+        sample_details = self.sample_details() if verbose and self.lazy_changes else None
         # For root features, missing/stale/orphaned are not meaningful
         missing = None if self.status.is_root_feature else self.status.missing_count
         stale = None if self.status.is_root_feature else self.status.stale_count
@@ -187,7 +187,7 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
 
 
 def format_sample_previews(
-    lazy_increment: LazyIncrement,
+    lazy_changes: LazyChanges,
     missing_count: int,
     stale_count: int,
     orphaned_count: int,
@@ -196,7 +196,7 @@ def format_sample_previews(
     """Format sample previews for missing, stale, and orphaned samples.
 
     Args:
-        lazy_increment: The LazyIncrement containing sample data
+        lazy_changes: The LazyChanges containing sample data
         missing_count: Number of missing samples (new from upstream)
         stale_count: Number of stale samples (outdated provenance)
         orphaned_count: Number of orphaned samples (removed from upstream)
@@ -208,7 +208,7 @@ def format_sample_previews(
     lines: list[str] = []
 
     if missing_count > 0:
-        missing_preview_df = lazy_increment.new.head(limit).collect().to_polars()
+        missing_preview_df = lazy_changes.new.head(limit).collect().to_polars()
         if missing_preview_df.height > 0:
             lines.append("[bold yellow]Missing samples:[/bold yellow]")
             glimpse_result = missing_preview_df.glimpse(return_type="string")
@@ -216,7 +216,7 @@ def format_sample_previews(
                 lines.append(glimpse_result)
 
     if stale_count > 0:
-        stale_preview_df = lazy_increment.stale.head(limit).collect().to_polars()
+        stale_preview_df = lazy_changes.stale.head(limit).collect().to_polars()
         if stale_preview_df.height > 0:
             lines.append("[bold cyan]Stale samples:[/bold cyan]")
             glimpse_result = stale_preview_df.glimpse(return_type="string")
@@ -224,7 +224,7 @@ def format_sample_previews(
                 lines.append(glimpse_result)
 
     if orphaned_count > 0:
-        orphaned_preview_df = lazy_increment.orphaned.head(limit).collect().to_polars()
+        orphaned_preview_df = lazy_changes.orphaned.head(limit).collect().to_polars()
         if orphaned_preview_df.height > 0:
             lines.append("[bold red]Orphaned samples:[/bold red]")
             glimpse_result = orphaned_preview_df.glimpse(return_type="string")
@@ -254,7 +254,7 @@ def get_feature_metadata_status(
     global_filters: Sequence[nw.Expr] | None = None,
     target_filters: Sequence[nw.Expr] | None = None,
     compute_progress: bool = False,
-) -> FeatureMetadataStatusWithIncrement:
+) -> FeatureMetadataStatusWithChanges:
     """Get metadata status for a single feature.
 
     Args:
@@ -273,7 +273,7 @@ def get_feature_metadata_status(
             Default is False.
 
     Returns:
-        FeatureMetadataStatusWithIncrement containing status and lazy increment
+        FeatureMetadataStatusWithChanges containing status and lazy increment
     """
     from metaxy.metadata_store.exceptions import FeatureNotFoundError
     from metaxy.models.feature import FeatureGraph
@@ -335,10 +335,10 @@ def get_feature_metadata_status(
             is_root_feature=True,
             store_metadata=store_metadata,
         )
-        return FeatureMetadataStatusWithIncrement(status=status, lazy_increment=None)
+        return FeatureMetadataStatusWithChanges(status=status, lazy_changes=None)
 
     # For non-root features, resolve the update to get missing/stale/orphaned counts
-    lazy_increment = metadata_store.resolve_update(
+    lazy_changes = metadata_store.resolve_update(
         key,
         lazy=True,
         global_filters=list(global_filters) if global_filters else None,
@@ -346,14 +346,14 @@ def get_feature_metadata_status(
     )
 
     # Count changes
-    missing_count = count_lazy_rows(lazy_increment.new)
-    stale_count = count_lazy_rows(lazy_increment.stale)
-    orphaned_count = count_lazy_rows(lazy_increment.orphaned)
+    missing_count = count_lazy_rows(lazy_changes.new)
+    stale_count = count_lazy_rows(lazy_changes.stale)
+    orphaned_count = count_lazy_rows(lazy_changes.orphaned)
 
     # Calculate progress if requested
     progress_percentage: float | None = None
     if compute_progress:
-        progress_percentage = metadata_store.calculate_input_progress(lazy_increment, key)
+        progress_percentage = metadata_store.calculate_input_progress(lazy_changes, key)
 
     status = FeatureMetadataStatus(
         feature_key=key,
@@ -367,4 +367,4 @@ def get_feature_metadata_status(
         store_metadata=store_metadata,
         progress_percentage=progress_percentage,
     )
-    return FeatureMetadataStatusWithIncrement(status=status, lazy_increment=lazy_increment)
+    return FeatureMetadataStatusWithChanges(status=status, lazy_changes=lazy_changes)

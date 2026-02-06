@@ -30,8 +30,8 @@ class HashAlgorithm(Enum):
 
 
 @public
-class PolarsIncrement(NamedTuple):
-    """Like [`Increment`][metaxy.versioning.types.Increment], but converted to Polars frames.
+class PolarsChanges(NamedTuple):
+    """Like [`Changes`][metaxy.versioning.types.Changes], but converted to Polars frames.
 
     Attributes:
         new: New samples from upstream not present in current metadata
@@ -46,8 +46,8 @@ class PolarsIncrement(NamedTuple):
 
 @public
 @dataclass(kw_only=True)
-class PolarsLazyIncrement:
-    """Like [`LazyIncrement`][metaxy.versioning.types.LazyIncrement], but converted to Polars lazy frames.
+class PolarsLazyChanges:
+    """Like [`LazyChanges`][metaxy.versioning.types.LazyChanges], but converted to Polars lazy frames.
 
     Attributes:
         new: New samples from upstream not present in current metadata
@@ -61,8 +61,8 @@ class PolarsLazyIncrement:
     orphaned: pl.LazyFrame
     input: pl.LazyFrame | None = None
 
-    def collect(self, **kwargs: Any) -> PolarsIncrement:
-        """Collect into a [`PolarsIncrement`][metaxy.versioning.types.PolarsIncrement].
+    def collect(self, **kwargs: Any) -> PolarsChanges:
+        """Collect into a [`PolarsChanges`][metaxy.versioning.types.PolarsChanges].
 
         !!! tip
             Leverages [`polars.collect_all`](https://docs.pola.rs/api/python/stable/reference/api/polars.collect_all.html)
@@ -72,14 +72,14 @@ class PolarsLazyIncrement:
             **kwargs: backend-specific keyword arguments to pass to the collect method of the lazy frames.
 
         Returns:
-            PolarsIncrement: The collected increment.
+            PolarsChanges: The collected increment.
         """
         added, changed, removed = pl.collect_all([self.new, self.stale, self.orphaned], **kwargs)
-        return PolarsIncrement(added, changed, removed)  # ty: ignore[invalid-argument-type]
+        return PolarsChanges(added, changed, removed)  # ty: ignore[invalid-argument-type]
 
 
 @public
-class Increment(NamedTuple):
+class Changes(NamedTuple):
     """Result of an incremental update containing eager dataframes.
 
     Attributes:
@@ -92,13 +92,13 @@ class Increment(NamedTuple):
     stale: nw.DataFrame[Any]
     orphaned: nw.DataFrame[Any]
 
-    def collect(self) -> "Increment":
+    def collect(self) -> "Changes":
         """Convenience method that's a no-op."""
         return self
 
-    def to_polars(self) -> PolarsIncrement:
+    def to_polars(self) -> PolarsChanges:
         """Convert to Polars."""
-        return PolarsIncrement(
+        return PolarsChanges(
             new=self.new.to_polars(),
             stale=self.stale.to_polars(),
             orphaned=self.orphaned.to_polars(),
@@ -107,7 +107,7 @@ class Increment(NamedTuple):
 
 @public
 @dataclass(kw_only=True)
-class LazyIncrement:
+class LazyChanges:
     """Result of an incremental update containing lazy dataframes.
 
     Attributes:
@@ -122,7 +122,7 @@ class LazyIncrement:
     orphaned: nw.LazyFrame[Any]
     input: nw.LazyFrame[Any] | None = None
 
-    def collect(self, **kwargs: Any) -> Increment:
+    def collect(self, **kwargs: Any) -> Changes:
         """Collect all lazy frames to eager DataFrames.
 
         !!! tip
@@ -134,7 +134,7 @@ class LazyIncrement:
             **kwargs: backend-specific keyword arguments to pass to the collect method of the lazy frames.
 
         Returns:
-            Increment: The collected increment.
+            Changes: The collected increment.
         """
         if (
             self.new.implementation
@@ -142,24 +142,24 @@ class LazyIncrement:
             == self.orphaned.implementation
             == nw.Implementation.POLARS
         ):
-            polars_eager_increment = PolarsLazyIncrement(
+            polars_eager_increment = PolarsLazyChanges(
                 new=self.new.to_native(),
                 stale=self.stale.to_native(),
                 orphaned=self.orphaned.to_native(),
             ).collect(**kwargs)
-            return Increment(
+            return Changes(
                 new=nw.from_native(polars_eager_increment.new),
                 stale=nw.from_native(polars_eager_increment.stale),
                 orphaned=nw.from_native(polars_eager_increment.orphaned),
             )
         else:
-            return Increment(
+            return Changes(
                 new=self.new.collect(**kwargs),
                 stale=self.stale.collect(**kwargs),
                 orphaned=self.orphaned.collect(**kwargs),
             )
 
-    def to_polars(self) -> PolarsLazyIncrement:
+    def to_polars(self) -> PolarsLazyChanges:
         """Convert to Polars.
 
         !!! tip
@@ -169,7 +169,7 @@ class LazyIncrement:
             If the Narwhals lazy frames are **not** backed by Polars, this will
             trigger a full materialization for them.
         """
-        return PolarsLazyIncrement(
+        return PolarsLazyChanges(
             new=lazy_frame_to_polars(self.new),
             stale=lazy_frame_to_polars(self.stale),
             orphaned=lazy_frame_to_polars(self.orphaned),

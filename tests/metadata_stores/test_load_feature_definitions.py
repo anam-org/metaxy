@@ -724,16 +724,16 @@ def test_resolve_update_loads_external_feature_definitions(tmp_path: Path):
             storage.push_graph_snapshot()
 
             # resolve_update should load feature definitions, replacing the external placeholder
-            increment = store.resolve_update(DownstreamFeature)
+            changes = store.resolve_update(DownstreamFeature)
 
             # Verify the external placeholder was replaced with the real definition
             upstream_def = new_graph.get_feature_definition(["resolve_test", "upstream"])
             assert upstream_def.is_external is False
             assert new_graph.get_feature_version(["resolve_test", "upstream"]) == expected_upstream_version
 
-            # The increment should have computed correctly with the real upstream definition
-            assert increment.new is not None
-            assert len(increment.new) == 2  # Both upstream samples
+            # The changes should have computed correctly with the real upstream definition
+            assert changes.new is not None
+            assert len(changes.new) == 2  # Both upstream samples
 
 
 def test_sync_external_features_warns_on_version_mismatch(tmp_path: Path):

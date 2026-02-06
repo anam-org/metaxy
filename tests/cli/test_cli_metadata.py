@@ -53,10 +53,10 @@ def test_metadata_status_up_to_date(
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
-            increment = store.resolve_update(feature_key, lazy=False)
+            changes = store.resolve_update(feature_key, lazy=False)
 
             # Write the computed metadata to the store
-            store.write(feature_key, increment.new.to_polars())
+            store.write(feature_key, changes.new.to_polars())
 
         # Check status for the non-root feature
         result = metaxy_project.run_cli(
@@ -414,10 +414,10 @@ def test_metadata_status_with_explicit_store(
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
-            increment = store.resolve_update(feature_key, lazy=False)
+            changes = store.resolve_update(feature_key, lazy=False)
 
             # Write the computed metadata to the store
-            store.write(feature_key, increment.new.to_polars())
+            store.write(feature_key, changes.new.to_polars())
 
         # Check status with explicit store
         result = metaxy_project.run_cli(
@@ -746,10 +746,10 @@ def test_metadata_status_with_global_filter(
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
-            # Resolve the full increment first
-            increment = store.resolve_update(feature_key, lazy=False)
+            # Resolve the full changes first
+            changes = store.resolve_update(feature_key, lazy=False)
             # Filter to only category A samples and write
-            added_df = increment.new.to_polars().filter(pl.col("category") == "A")
+            added_df = changes.new.to_polars().filter(pl.col("category") == "A")
             store.write(feature_key, added_df)
 
         # Check status with global-filter for category A - should be up-to-date
@@ -906,8 +906,8 @@ def test_metadata_status_with_multiple_global_filters(
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
-            increment = store.resolve_update(feature_key, lazy=False)
-            store.write(feature_key, increment.new.to_polars())
+            changes = store.resolve_update(feature_key, lazy=False)
+            store.write(feature_key, changes.new.to_polars())
 
         # Check status with multiple global-filters: category A AND status active
         # Should match sample_uids 1 and 5
@@ -1175,8 +1175,8 @@ def test_metadata_status_with_progress_flag(
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
-            increment = store.resolve_update(feature_key, lazy=False)
-            partial_data = increment.new.to_polars().head(2)
+            changes = store.resolve_update(feature_key, lazy=False)
+            partial_data = changes.new.to_polars().head(2)
             store.write(feature_key, partial_data)
 
         # Check status with --progress flag
@@ -1256,8 +1256,8 @@ def test_metadata_status_verbose_includes_progress(
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
-            increment = store.resolve_update(feature_key, lazy=False)
-            partial_data = increment.new.to_polars().head(1)
+            changes = store.resolve_update(feature_key, lazy=False)
+            partial_data = changes.new.to_polars().head(1)
             store.write(feature_key, partial_data)
 
         # Check status with --verbose (should also include progress)
@@ -1379,8 +1379,8 @@ def test_metadata_status_progress_100_percent(
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
-            increment = store.resolve_update(feature_key, lazy=False)
-            store.write(feature_key, increment.new.to_polars())
+            changes = store.resolve_update(feature_key, lazy=False)
+            store.write(feature_key, changes.new.to_polars())
 
         # Check status with --progress flag
         result = metaxy_project.run_cli(
@@ -2377,9 +2377,9 @@ root_path = "{prod_path}"
 
         with graph.use(), dev_store:
             # resolve_update should read upstream from fallback (prod) store
-            increment = dev_store.resolve_update(downstream_key, lazy=False)
+            changes = dev_store.resolve_update(downstream_key, lazy=False)
             # Write downstream to dev store
-            dev_store.write(downstream_key, increment.new.to_polars())
+            dev_store.write(downstream_key, changes.new.to_polars())
 
         # Run CLI status command - should use fallback stores by default
         result = project.run_cli(["metadata", "status", "downstream", "--format", output_format], capsys=capsys)

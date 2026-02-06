@@ -325,15 +325,15 @@ class TestComputeProvenance:
             with_provenance = store.compute_provenance(DownstreamFeature, nw.from_native(joined_df))
 
             # Use with resolve_update
-            increment = store.resolve_update(
+            changes = store.resolve_update(
                 DownstreamFeature,
                 samples=with_provenance,
             )
 
         # Both samples should be added (no existing data)
-        assert increment.new.to_polars().height == 2
-        assert increment.stale.to_polars().height == 0
-        assert increment.orphaned.to_polars().height == 0
+        assert changes.new.to_polars().height == 2
+        assert changes.stale.to_polars().height == 0
+        assert changes.orphaned.to_polars().height == 0
 
     def test_compute_provenance_root_feature(self, graph: FeatureGraph, tmp_path):
         """Test compute_provenance with a root feature (no upstream dependencies)."""

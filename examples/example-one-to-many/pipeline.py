@@ -31,22 +31,22 @@ def main():
 
     with store:
         # showcase: resolve incremental update for a root feature
-        increment = store.resolve_update(Video, samples=nw.from_native(samples))
-        if len(increment.new) > 0:
-            print(f"Found {len(increment.new)} new videos")
-            store.write(Video, increment.new)
+        changes = store.resolve_update(Video, samples=nw.from_native(samples))
+        if len(changes.new) > 0:
+            print(f"Found {len(changes.new)} new videos")
+            store.write(Video, changes.new)
 
     # Resolve videos that need to be split into chunks
     with store:
-        increment = store.resolve_update(VideoChunk)
+        changes = store.resolve_update(VideoChunk)
         # the DataFrame dimensions matches Video (with ID column renamed)
 
         print(
-            f"Found {len(increment.new)} videos and {len(increment.stale)} videos that need chunking"
+            f"Found {len(changes.new)} videos and {len(changes.stale)} videos that need chunking"
         )
 
         for row_dict in pl.concat(
-            [increment.new.to_polars(), increment.stale.to_polars()]
+            [changes.new.to_polars(), changes.stale.to_polars()]
         ).iter_rows(named=True):
             print(f"Processing video: {row_dict}")
             # let's split each video to 3-5 chunks randomly
@@ -80,16 +80,16 @@ def main():
 
     # Process face recognition on video chunks
     with store:
-        increment = store.resolve_update(FaceRecognition)
+        changes = store.resolve_update(FaceRecognition)
         print(
-            f"Found {len(increment.new)} video chunks and {len(increment.stale)} video chunks that need face recognition"
+            f"Found {len(changes.new)} video chunks and {len(changes.stale)} video chunks that need face recognition"
         )
 
-        if len(increment.new) > 0:
+        if len(changes.new) > 0:
             # simulate face detection on each chunk
             face_data = []
             for row_dict in pl.concat(
-                [increment.new.to_polars(), increment.stale.to_polars()]
+                [changes.new.to_polars(), changes.stale.to_polars()]
             ).iter_rows(named=True):
                 video_chunk_id = row_dict["video_chunk_id"]
                 provenance_by_field = row_dict["metaxy_provenance_by_field"]

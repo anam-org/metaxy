@@ -7,16 +7,16 @@ description: "Type definitions used in Metaxy."
 
 ## Versioning Engine
 
-::: metaxy.versioning.types.LazyIncrement
+::: metaxy.versioning.types.LazyChanges
 
-::: metaxy.versioning.types.Increment
+::: metaxy.versioning.types.Changes
 
-::: metaxy.versioning.types.PolarsIncrement
+::: metaxy.versioning.types.PolarsChanges
     options:
       members: true
       show_if_no_docstring: true
 
-::: metaxy.versioning.types.PolarsLazyIncrement
+::: metaxy.versioning.types.PolarsLazyChanges
     options:
       members: true
       show_if_no_docstring: true
