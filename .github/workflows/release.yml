@@ -3,9 +3,7 @@ name: Release
 on:
   push:
     tags:
-      # Semver tags: v1.0.0, v1.0.0-alpha.1, v1.0.0-rc.1, etc.
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
 
 concurrency:
@@ -52,10 +50,26 @@ jobs:
     with:
       environment: pypi
 
-  docs:
+  check-stable-release:
     needs: pypi
-    # Only deploy docs for stable releases (vX.Y.Z without pre-release suffix)
-    if: ${{ github.ref_type == 'tag' && !contains(github.ref_name, '-') }}
+    runs-on: depot-ubuntu-latest
+    outputs:
+      is-stable: ${{ steps.check.outputs.stable }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq '.isPrerelease' | grep -q 'false'; then
+            echo "stable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "stable=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  docs:
+    needs: check-stable-release
+    if: needs.check-stable-release.outputs.is-stable == 'true'
     uses: ./.github/workflows/_docs.yml
     permissions:
       contents: write

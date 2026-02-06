@@ -20,6 +20,10 @@ on:
         description: 'Documentation alias (e.g., latest)'
         type: string
         default: ''
+      docs-default:
+        description: 'Set this as the default version redirect (e.g., latest)'
+        type: string
+        default: ''
 
 jobs:
   docs:
@@ -62,3 +66,9 @@ jobs:
           else
             uv run mike deploy --push --ignore-remote-status "$DOCS_VERSION"
           fi
+
+      - name: Set default version
+        if: ${{ inputs.docs-default != '' }}
+        env:
+          DOCS_DEFAULT: ${{ inputs.docs-default }}
+        run: uv run mike set-default --push "$DOCS_DEFAULT"
