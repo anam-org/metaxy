@@ -97,7 +97,7 @@ This allows metadata store implementations to reuse the same code. Currently onl
 
 ## Compute
 
-Increment resolution in Metaxy involves running computations: every time the user requests an increment for a given [feature](../guide/concepts/definitions/features.md), Metaxy has to join upstream features, hash their versions, and filter out samples that have already been processed. This can be performed either **locally** (typically favored in development environments) or **remotely** (achieves better performance in production). Metaxy supports both options: [databases](../integrations/metadata-stores/databases/index.md) for remote compute and [storage-only](../integrations/metadata-stores/storage/index.md) metadata stores for embedded compute (1).
+Change resolution in Metaxy involves running computations: every time the user requests an increment for a given [feature](../guide/concepts/definitions/features.md), Metaxy has to join upstream features, hash their versions, and filter out samples that have already been processed. This can be performed either **locally** (typically favored in development environments) or **remotely** (achieves better performance in production). Metaxy supports both options: [databases](../integrations/metadata-stores/databases/index.md) for remote compute and [storage-only](../integrations/metadata-stores/storage/index.md) metadata stores for embedded compute (1).
 { .annotate }
 
 1. e.g. Polars or Duckdb

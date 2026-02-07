@@ -145,14 +145,14 @@ class MetaxyDatasource(Datasource):
         - "new": samples that don't exist in the target store
         - "stale": samples that exist but have outdated provenance
         """
-        increment = self.store.resolve_update(
+        changes = self.store.resolve_update(
             self._feature_key,
             lazy=True,
             target_filters=self.filters,
         )
         # Add status column and concatenate added + changed
-        added_with_status = increment.new.with_columns(nw.lit("new").alias("metaxy_status"))
-        changed_with_status = increment.stale.with_columns(nw.lit("stale").alias("metaxy_status"))
+        added_with_status = changes.new.with_columns(nw.lit("new").alias("metaxy_status"))
+        changed_with_status = changes.stale.with_columns(nw.lit("stale").alias("metaxy_status"))
         return nw.concat([added_with_status, changed_with_status])
 
     def _get_row_count(self) -> int:

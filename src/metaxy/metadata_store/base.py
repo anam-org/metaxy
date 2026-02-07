@@ -57,7 +57,7 @@ from metaxy.models.types import (
 )
 from metaxy.versioning import VersioningEngine
 from metaxy.versioning.polars import PolarsVersioningEngine
-from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
+from metaxy.versioning.types import Changes, HashAlgorithm, LazyChanges
 
 if TYPE_CHECKING:
     pass
@@ -249,7 +249,7 @@ class MetadataStore(ABC):
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
         **kwargs: Any,
-    ) -> Increment: ...
+    ) -> Changes: ...
 
     @overload
     def resolve_update(
@@ -264,7 +264,7 @@ class MetadataStore(ABC):
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
         **kwargs: Any,
-    ) -> LazyIncrement: ...
+    ) -> LazyChanges: ...
 
     def resolve_update(
         self,
@@ -278,7 +278,7 @@ class MetadataStore(ABC):
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
         **kwargs: Any,
-    ) -> Increment | LazyIncrement:
+    ) -> Changes | LazyChanges:
         """Calculate an incremental update for a feature.
 
         This is the main workhorse in Metaxy.
@@ -312,7 +312,7 @@ class MetadataStore(ABC):
                 feature (not to upstream features). Use this when filtering by columns that
                 only exist in the target feature.
                 Example: `[nw.col("height").is_null()]`
-            lazy: Whether to return a [metaxy.versioning.types.LazyIncrement][] or a [metaxy.versioning.types.Increment][].
+            lazy: Whether to return a [metaxy.versioning.types.LazyChanges][] or a [metaxy.versioning.types.Changes][].
             versioning_engine: Override the store's versioning engine for this operation.
             skip_comparison: If True, skip the increment comparison logic and return all
                 upstream samples in `increment.new`. The `changed` and `removed` frames will
@@ -554,14 +554,14 @@ class MetadataStore(ABC):
             removed = empty_frame_like(added)
 
         if lazy:
-            return LazyIncrement(
+            return LazyChanges(
                 new=added if isinstance(added, nw.LazyFrame) else nw.from_native(added),
                 stale=changed if isinstance(changed, nw.LazyFrame) else nw.from_native(changed),
                 orphaned=removed if isinstance(removed, nw.LazyFrame) else nw.from_native(removed),
                 input=input_df if input_df is None or isinstance(input_df, nw.LazyFrame) else nw.from_native(input_df),
             )
         else:
-            return Increment(
+            return Changes(
                 new=added.collect() if isinstance(added, nw.LazyFrame) else added,
                 stale=changed.collect() if isinstance(changed, nw.LazyFrame) else changed,
                 orphaned=removed.collect() if isinstance(removed, nw.LazyFrame) else removed,
@@ -627,7 +627,7 @@ class MetadataStore(ABC):
                 with_provenance = store.compute_provenance(MyFeature, joined)
 
                 # Pass to resolve_update
-                increment = store.resolve_update(MyFeature, samples=with_provenance)
+                changes = store.resolve_update(MyFeature, samples=with_provenance)
             ```
         """
         self._check_open()
@@ -1900,12 +1900,12 @@ class MetadataStore(ABC):
 
     def calculate_input_progress(
         self,
-        lazy_increment: LazyIncrement,
+        lazy_changes: LazyChanges,
         feature_key: CoercibleToFeatureKey,
     ) -> float | None:
-        """Calculate progress percentage from lazy increment.
+        """Calculate progress percentage from lazy changes.
 
-        Uses the `input` field from LazyIncrement to count total input units
+        Uses the `input` field from LazyChanges to count total input units
         and compares with `added` to determine how many are missing.
 
         Progress represents the percentage of input units that have been processed
@@ -1914,13 +1914,13 @@ class MetadataStore(ABC):
         upstream changes.
 
         Args:
-            lazy_increment: The lazy increment containing input and added dataframes.
+            lazy_changes: The lazy changes containing input and added dataframes.
             feature_key: The feature key to look up lineage information.
 
         Returns:
             Progress percentage (0-100), or None if input is not available.
         """
-        if lazy_increment.input is None:
+        if lazy_changes.input is None:
             return None
 
         key = self._resolve_feature_key(feature_key)
@@ -1933,12 +1933,12 @@ class MetadataStore(ABC):
         # Count distinct input units using two separate queries
         # We can't use concat because input and added may have different schemas
         # (e.g., nullable vs non-nullable columns)
-        total_units: int = lazy_increment.input.select(input_id_columns).unique().select(nw.len()).collect().item()
+        total_units: int = lazy_changes.input.select(input_id_columns).unique().select(nw.len()).collect().item()
 
         if total_units == 0:
             return None  # No input available from upstream
 
-        missing_units: int = lazy_increment.new.select(input_id_columns).unique().select(nw.len()).collect().item()
+        missing_units: int = lazy_changes.new.select(input_id_columns).unique().select(nw.len()).collect().item()
 
         processed_units = total_units - missing_units
         return (processed_units / total_units) * 100

@@ -42,7 +42,7 @@ from metaxy.metadata_store import (
     MetadataStore,
 )
 from metaxy.models.plan import FeaturePlan
-from metaxy.versioning.types import Increment
+from metaxy.versioning.types import Changes
 
 if TYPE_CHECKING:
     pass
@@ -281,17 +281,17 @@ def test_resolve_update_root_feature_with_samples(
     # Call resolve_update with samples - pass native Polars LazyFrame, not Narwhals-wrapped
     with store, graph.use():
         try:
-            increment = store.resolve_update(root_feature, samples=samples_df.lazy(), lazy=True).collect()
+            changes = store.resolve_update(root_feature, samples=samples_df.lazy(), lazy=True).collect()
         except HashAlgorithmNotSupportedError:
             pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
         # Verify all samples are added (first write)
-        assert len(increment.new) == len(samples_df)
-        assert len(increment.stale) == 0
-        assert len(increment.orphaned) == 0
+        assert len(changes.new) == len(samples_df)
+        assert len(changes.stale) == 0
+        assert len(changes.orphaned) == 0
 
         # Verify provenance_by_field structure matches input
-        added_df = increment.new.lazy().collect().to_polars().sort(id_columns)
+        added_df = changes.new.lazy().collect().to_polars().sort(id_columns)
         samples_sorted = samples_df.sort(id_columns)
 
         pl_testing.assert_series_equal(
@@ -343,7 +343,7 @@ def test_resolve_update_downstream_feature(
                 store.write(feat_key, upstream_df)
 
             # Call resolve_update to compute child metadata
-            increment = store.resolve_update(
+            changes = store.resolve_update(
                 child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
@@ -352,7 +352,7 @@ def test_resolve_update_downstream_feature(
             pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
         # Get computed metadata
-        added_df = increment.new.lazy().collect().to_polars()
+        added_df = changes.new.lazy().collect().to_polars()
 
         # Sort both for comparison
         id_columns = list(child_plan.feature.id_columns)
@@ -438,7 +438,7 @@ def test_resolve_update_detects_changes(
                 store.write(feat_key, upstream_df)
 
             # Call resolve_update - should detect all changes
-            increment = store.resolve_update(
+            changes = store.resolve_update(
                 child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
@@ -453,7 +453,7 @@ def test_resolve_update_detects_changes(
         # - Some samples removed (old ones not in new data)
         # - Possibly some changed (if IDs overlap but provenance differs)
 
-        total_changes = len(increment.new) + len(increment.stale) + len(increment.orphaned)
+        total_changes = len(changes.new) + len(changes.stale) + len(changes.orphaned)
         assert total_changes > 0, "Expected resolve_update to detect some changes when upstream data changes"
 
 
@@ -529,25 +529,25 @@ def test_resolve_update_lazy_execution(
                 store.write(feat_class, upstream_df)
 
             # Call resolve_update with lazy=True
-            lazy_increment = store.resolve_update(
+            lazy_changes = store.resolve_update(
                 Child,
                 target_version=Child.feature_version(),
                 snapshot_version=graph.snapshot_version,
                 lazy=True,
             )
 
-            # Verify we got a LazyIncrement
-            from metaxy.versioning.types import LazyIncrement
+            # Verify we got a LazyChanges
+            from metaxy.versioning.types import LazyChanges
 
-            assert isinstance(lazy_increment, LazyIncrement), (
-                f"Expected LazyIncrement with lazy=True, got {type(lazy_increment)}"
+            assert isinstance(lazy_changes, LazyChanges), (
+                f"Expected LazyChanges with lazy=True, got {type(lazy_changes)}"
             )
 
             # Verify lazy frames have correct implementation
             expected_impl = store.native_implementation()
 
             for frame_name in ["new", "stale", "orphaned"]:
-                lazy_frame = getattr(lazy_increment, frame_name)
+                lazy_frame = getattr(lazy_changes, frame_name)
                 actual_impl = lazy_frame.implementation
 
                 assert actual_impl == expected_impl, (
@@ -556,10 +556,10 @@ def test_resolve_update_lazy_execution(
                 )
 
             # Collect lazy result
-            eager_increment = lazy_increment.collect()
+            eager_changes = lazy_changes.collect()
 
             # Also get eager result for comparison
-            eager_increment_direct = store.resolve_update(
+            eager_changes_direct = store.resolve_update(
                 Child,
                 target_version=Child.feature_version(),
                 snapshot_version=graph.snapshot_version,
@@ -570,8 +570,8 @@ def test_resolve_update_lazy_execution(
             id_columns = list(child_plan.feature.id_columns)
 
             # Compare added frames
-            lazy_added = eager_increment.new.lazy().collect().to_polars().sort(id_columns)
-            eager_added = eager_increment_direct.new.lazy().collect().to_polars().sort(id_columns)
+            lazy_added = eager_changes.new.lazy().collect().to_polars().sort(id_columns)
+            eager_added = eager_changes_direct.new.lazy().collect().to_polars().sort(id_columns)
 
             pl_testing.assert_frame_equal(lazy_added, eager_added)
 
@@ -619,20 +619,20 @@ def test_resolve_update_idempotency(
                 store.write(feat_key, upstream_df)
 
             # First resolve_update
-            increment1 = store.resolve_update(
+            changes1 = store.resolve_update(
                 child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )
 
-            assert len(increment1.new) > 0, "Expected resolve_update to detect added samples"
+            assert len(changes1.new) > 0, "Expected resolve_update to detect added samples"
 
-            # Write the increment
-            added_df = increment1.new.lazy().collect().to_polars()
+            # Write the changes
+            added_df = changes1.new.lazy().collect().to_polars()
             store.write(child_key, added_df)
 
             # Second resolve_update - should be empty
-            increment2 = store.resolve_update(
+            changes2 = store.resolve_update(
                 child_key,
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
@@ -642,9 +642,9 @@ def test_resolve_update_idempotency(
             pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
         # Verify second call is idempotent
-        assert len(increment2.new) == 0, "Second resolve_update should have no added samples"
-        assert len(increment2.stale) == 0, "Second resolve_update should have no changed samples"
-        assert len(increment2.orphaned) == 0, "Second resolve_update should have no removed samples"
+        assert len(changes2.new) == 0, "Second resolve_update should have no added samples"
+        assert len(changes2.stale) == 0, "Second resolve_update should have no changed samples"
+        assert len(changes2.orphaned) == 0, "Second resolve_update should have no removed samples"
 
 
 # ============= TEST: FILTER KEY TYPES =============
@@ -696,14 +696,14 @@ def test_resolve_update_filters_with_feature_class_key(
         store.write(UpstreamFeature, upstream_df)
 
         # Use feature class as filter key - should filter upstream to only value > 15
-        increment = store.resolve_update(
+        changes = store.resolve_update(
             DownstreamFeature,
             filters={UpstreamFeature: [nw.col("value") > 15]},
         )
 
         # Should only get 2 samples (s2 and s3 where value > 15)
-        assert len(increment.new) == 2
-        added_df = increment.new.lazy().collect().to_polars()
+        assert len(changes.new) == 2
+        added_df = changes.new.lazy().collect().to_polars()
         assert set(added_df["sample_uid"].to_list()) == {"s2", "s3"}
 
 
@@ -755,14 +755,14 @@ def test_resolve_update_filters_with_feature_key_object(
 
         # Use FeatureKey as filter key
         upstream_key = FeatureKey(["upstream_fk"])
-        increment = store.resolve_update(
+        changes = store.resolve_update(
             DownstreamFeature,
             filters={upstream_key: [nw.col("value") >= 15, nw.col("value") < 30]},
         )
 
         # Should get 2 samples (s2 and s3 where 15 <= value < 30)
-        assert len(increment.new) == 2
-        added_df = increment.new.lazy().collect().to_polars()
+        assert len(changes.new) == 2
+        added_df = changes.new.lazy().collect().to_polars()
         assert set(added_df["sample_uid"].to_list()) == {"s2", "s3"}
 
 
@@ -813,14 +813,14 @@ def test_resolve_update_global_filters(
         store.write(UpstreamFeature, upstream_df)
 
         # Use global_filters to filter by sample_uid across all features
-        increment = store.resolve_update(
+        changes = store.resolve_update(
             DownstreamFeature,
             global_filters=[nw.col("sample_uid").is_in(["s2", "s3"])],
         )
 
         # Should only get 2 samples (s2 and s3)
-        assert len(increment.new) == 2
-        added_df = increment.new.lazy().collect().to_polars()
+        assert len(changes.new) == 2
+        added_df = changes.new.lazy().collect().to_polars()
         assert set(added_df["sample_uid"].to_list()) == {"s2", "s3"}
 
 
@@ -875,7 +875,7 @@ def test_resolve_update_global_filters_combined_with_filters(
         # global_filters: sample_uid in [s2, s3, s4, s5]
         # feature filter: value < 40
         # Combined result should be s2, s3 (in both sets AND value < 40)
-        increment = store.resolve_update(
+        changes = store.resolve_update(
             DownstreamFeature,
             filters={UpstreamFeature: [nw.col("value") < 40]},
             global_filters=[nw.col("sample_uid").is_in(["s2", "s3", "s4", "s5"])],
@@ -884,8 +884,8 @@ def test_resolve_update_global_filters_combined_with_filters(
         # Should get 2 samples: s2 (value=20) and s3 (value=30)
         # s4 has value=40 which fails "value < 40"
         # s5 has value=50 which fails "value < 40"
-        assert len(increment.new) == 2
-        added_df = increment.new.lazy().collect().to_polars()
+        assert len(changes.new) == 2
+        added_df = changes.new.lazy().collect().to_polars()
         assert set(added_df["sample_uid"].to_list()) == {"s2", "s3"}
 
 
@@ -1013,13 +1013,13 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
         # - 0 added (no new videos, but we'll see "added" for frames to process)
         # - Changed frames might exist if provenance differs
         # - 0 orphaned at the VIDEO level (both v1 and v2 still exist upstream)
-        increment = store.resolve_update(VideoFrames, lazy=False)
+        changes = store.resolve_update(VideoFrames, lazy=False)
 
         # With expansion lineage:
         # - The comparison happens at the parent (video_id) level
         # - Both v1 and v2 exist in upstream
         # - So orphaned (removed) should be 0 at the parent level
-        removed_count = len(increment.orphaned)
+        removed_count = len(changes.orphaned)
 
         # If this fails with a large removed_count, it means expansion lineage
         # is not properly grouping current metadata before comparison
@@ -1142,9 +1142,9 @@ def test_expansion_lineage_orphaned_when_upstream_removed(
         # Check status - current has frames for 5 videos, upstream only has 2
         # Expected: 3 orphaned PARENTS (v3, v4, v5)
         # Bug: might show 30 orphaned (all 30 frames for v3, v4, v5)
-        increment = store.resolve_update(VideoFrames, lazy=False)
+        changes = store.resolve_update(VideoFrames, lazy=False)
 
-        removed_count = len(increment.orphaned)
+        removed_count = len(changes.orphaned)
 
         # With expansion lineage, orphaned should be at PARENT level
         # 3 videos were removed from upstream (v3, v4, v5)
@@ -1266,13 +1266,13 @@ def test_expansion_lineage_orphaned_with_duplicate_writes(
 
         # Now check resolve_update - it uses _read_feature (no dedup)
         # So it might see more rows than expected
-        increment = store.resolve_update(VideoFrames, lazy=False)
+        changes = store.resolve_update(VideoFrames, lazy=False)
 
         # With expansion lineage and proper grouping:
         # - current is grouped by video_id, so we should only see 2 "groups" (v1, v2)
         # - expected also has 2 videos (v1, v2)
         # - orphaned should be 0 (both videos exist in both)
-        removed_count = len(increment.orphaned)
+        removed_count = len(changes.orphaned)
 
         # BUG HYPOTHESIS: If resolve_update doesn't deduplicate, the grouping
         # might still work (first distinct per video_id), but let's verify
@@ -1380,13 +1380,13 @@ def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
         assert len(current_all) == 50, f"Expected 50 total rows (with duplicates), got {len(current_all)}"
 
         # Now check resolve_update
-        increment = store.resolve_update(Downstream, lazy=False)
+        changes = store.resolve_update(Downstream, lazy=False)
 
         # With identity lineage:
         # - Each chunk should match 1:1 with upstream
         # - All 10 chunks exist in both current and upstream
         # - orphaned should be 0
-        removed_count = len(increment.orphaned)
+        removed_count = len(changes.orphaned)
 
         # BUG: If resolve_update sees 50 rows (not deduplicated) and compares
         # with 10 expected rows, it might show 40 orphaned (50-10=40)
@@ -1510,9 +1510,9 @@ def test_resolve_update_deduplicates_current_metadata_delta_store(
 
         # THE KEY TEST: resolve_update should see only 10 rows (deduplicated)
         # and report 0 orphaned (all chunks exist in upstream)
-        increment = store.resolve_update(Downstream, lazy=False)
+        changes = store.resolve_update(Downstream, lazy=False)
 
-        removed_count = len(increment.orphaned)
+        removed_count = len(changes.orphaned)
         assert removed_count == 0, (
             f"REGRESSION: Expected 0 orphaned (all chunks exist in upstream), "
             f"but got {removed_count}. This indicates resolve_update is NOT "
@@ -1642,10 +1642,10 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
             # - Downstream has 100 chunks
             # - Local upstream only has 20 chunks
             # - So 80 chunks in downstream have no upstream -> orphaned = 80
-            increment = local_only_store.resolve_update(Downstream, lazy=False)
+            changes = local_only_store.resolve_update(Downstream, lazy=False)
 
-            removed_count = len(increment.orphaned)
-            added_count = len(increment.new)
+            removed_count = len(changes.orphaned)
+            added_count = len(changes.new)
 
             # Expected: 80 orphaned (chunks 20-99 have no upstream)
             assert removed_count == 80, f"Expected 80 orphaned (100 downstream - 20 upstream), but got {removed_count}."
@@ -1712,7 +1712,7 @@ def _compute_golden_increment_for_optional_deps(
     child_plan: FeaturePlan,
     upstream_data: Mapping[str, pl.DataFrame],
     hash_algorithm,
-) -> Increment:
+) -> Changes:
     """Compute golden increment using PolarsVersioningEngine for optional dependency tests.
 
     This is the reference implementation - store implementations should produce
@@ -1736,12 +1736,12 @@ def _compute_golden_increment_for_optional_deps(
         sample=None,
     )
 
-    # Collect lazy frames and convert to Increment
+    # Collect lazy frames and convert to Changes
     added_collected = added.collect()
     changed_collected = changed.collect() if changed is not None else added_collected.head(0)
     removed_collected = removed.collect() if removed is not None else added_collected.head(0)
 
-    return Increment(
+    return Changes(
         new=added_collected,
         stale=changed_collected,
         orphaned=removed_collected,
@@ -1789,7 +1789,7 @@ def test_resolve_update_optional_dependencies(
                 store.write(feat_key, upstream_df)
 
             # Get store's result
-            increment = store.resolve_update(child_key, lazy=False)
+            changes = store.resolve_update(child_key, lazy=False)
 
             # Compute golden increment using PolarsVersioningEngine
             golden_increment = _compute_golden_increment_for_optional_deps(
@@ -1797,7 +1797,7 @@ def test_resolve_update_optional_dependencies(
             )
 
             # Compare added frames (excluding timestamp which varies)
-            actual_added = increment.new.lazy().collect().to_polars()
+            actual_added = changes.new.lazy().collect().to_polars()
             golden_added = golden_increment.new.lazy().collect().to_polars()
 
             # Get common columns for comparison
@@ -1936,8 +1936,8 @@ def test_optional_dependency_null_handling_and_provenance_stability(
             any_store.write(OptionalParent, optional_df)
 
             # Initial resolve
-            increment_v1 = any_store.resolve_update(ChildFeature)
-            initial_downstream = increment_v1.new.lazy().collect().to_polars()
+            changes_v1 = any_store.resolve_update(ChildFeature)
+            initial_downstream = changes_v1.new.lazy().collect().to_polars()
 
             # === VERIFY NULL HANDLING ===
             # Should have all 3 samples (left join keeps s2 even though optional parent is missing)
@@ -1976,10 +1976,10 @@ def test_optional_dependency_null_handling_and_provenance_stability(
             any_store.write(OptionalParent, optional_df_v2)
 
             # Resolve after optional parent change
-            increment_v2 = any_store.resolve_update(ChildFeature)
+            changes_v2 = any_store.resolve_update(ChildFeature)
 
             # === VERIFY PROVENANCE STABILITY FOR MISSING OPTIONAL DEP ===
-            changed_df = increment_v2.stale
+            changed_df = changes_v2.stale
             assert changed_df is not None, "Expected changed to not be None"
             changed_downstream = changed_df.lazy().collect().to_polars()
 
@@ -2014,7 +2014,7 @@ def test_optional_dependency_null_handling_and_provenance_stability(
             )
 
             # Added should be empty (no new samples)
-            added_df = increment_v2.new.lazy().collect().to_polars()
+            added_df = changes_v2.new.lazy().collect().to_polars()
             assert len(added_df) == 0, f"Expected 0 added rows, got {len(added_df)}"
 
     except HashAlgorithmNotSupportedError:
@@ -2116,8 +2116,8 @@ def test_all_optional_deps_outer_join_behavior(
             any_store.write(OptionalB, optional_b_df)
 
             # Resolve
-            increment = any_store.resolve_update(ChildFeature)
-            downstream = increment.new.lazy().collect().to_polars()
+            changes = any_store.resolve_update(ChildFeature)
+            downstream = changes.new.lazy().collect().to_polars()
 
             # === VERIFY FULL OUTER JOIN BEHAVIOR ===
             # Should have all 3 samples from the union of both parents
@@ -2234,8 +2234,8 @@ def test_aggregation_lineage_field_level_provenance_isolation(
             any_store.write(SensorReadings, upstream_v1)
 
             # Initial resolve - creates downstream
-            increment_v1 = any_store.resolve_update(HourlyStats)
-            initial_downstream = increment_v1.new.lazy().collect().to_polars()
+            changes_v1 = any_store.resolve_update(HourlyStats)
+            initial_downstream = changes_v1.new.lazy().collect().to_polars()
             any_store.write(HourlyStats, initial_downstream)
 
             # Get initial provenance
@@ -2262,13 +2262,13 @@ def test_aggregation_lineage_field_level_provenance_isolation(
             any_store.write(SensorReadings, upstream_v2)
 
             # Resolve after upstream change
-            increment_v2 = any_store.resolve_update(HourlyStats)
+            changes_v2 = any_store.resolve_update(HourlyStats)
 
             # Should have changed (not added, since sensor_id exists)
             # With aggregation lineage using window functions, we get N rows per
             # aggregation group (one per upstream reading), all with identical provenance.
             # Here sensor s1 has 2 readings (r1, r2), so we expect 2 changed rows.
-            changed_df = increment_v2.stale
+            changed_df = changes_v2.stale
             assert changed_df is not None, "Expected changed to not be None"
             changed_downstream = changed_df.lazy().collect().to_polars()
             assert len(changed_downstream) == 2, "Expected 2 changed rows (one per reading in aggregation group)"
@@ -2397,9 +2397,9 @@ def test_aggregation_lineage_field_level_provenance_definition_change(
             with any_store:  # Store ops inside FeatureGraph context!
                 any_store.write(SensorReadingsV1, upstream_v1)
 
-                increment_v1 = any_store.resolve_update(HourlyStatsV1)
+                changes_v1 = any_store.resolve_update(HourlyStatsV1)
 
-                result_v1 = increment_v1.new.lazy().collect().to_polars()
+                result_v1 = changes_v1.new.lazy().collect().to_polars()
                 v1_prov_by_field = result_v1["metaxy_provenance_by_field"][0]
                 v1_avg_temp = v1_prov_by_field["avg_temp"]
                 v1_avg_humidity = v1_prov_by_field["avg_humidity"]
@@ -2487,9 +2487,9 @@ def test_aggregation_lineage_field_level_provenance_definition_change(
             with any_store:  # Store ops inside FeatureGraph context!
                 any_store.write(SensorReadingsV2, upstream_v2)
 
-                increment_v2 = any_store.resolve_update(HourlyStatsV2)
+                changes_v2 = any_store.resolve_update(HourlyStatsV2)
 
-                result_v2 = increment_v2.new.lazy().collect().to_polars()
+                result_v2 = changes_v2.new.lazy().collect().to_polars()
                 v2_prov_by_field = result_v2["metaxy_provenance_by_field"][0]
                 v2_avg_temp = v2_prov_by_field["avg_temp"]
                 v2_avg_humidity = v2_prov_by_field["avg_humidity"]
@@ -2600,11 +2600,11 @@ def test_aggregation_lineage_preserves_user_columns(
         store.write(DirectorNotesTexts, upstream_df)
 
         # Call resolve_update - should work and include 'dataset' column
-        increment = store.resolve_update(DirectorNotesAggregated, lazy=False)
+        changes = store.resolve_update(DirectorNotesAggregated, lazy=False)
 
-        assert len(increment.new) > 0, "Expected added rows from resolve_update"
+        assert len(changes.new) > 0, "Expected added rows from resolve_update"
 
-        added_df = increment.new.lazy().collect().to_polars()
+        added_df = changes.new.lazy().collect().to_polars()
 
         # CRITICAL: 'dataset' should be present in the result
         assert "dataset" in added_df.columns, (
@@ -2695,15 +2695,15 @@ def test_aggregation_lineage_preserves_columns_with_global_filter(
         store.write(UpstreamWithDataset, upstream_df)
 
         # Call resolve_update with global_filters filtering by dataset
-        increment = store.resolve_update(
+        changes = store.resolve_update(
             AggregatedByGroup,
             global_filters=[nw.col("dataset") == "ds_a"],
             lazy=False,
         )
 
-        assert len(increment.new) > 0, "Expected added rows from resolve_update"
+        assert len(changes.new) > 0, "Expected added rows from resolve_update"
 
-        added_df = increment.new.lazy().collect().to_polars()
+        added_df = changes.new.lazy().collect().to_polars()
 
         # CRITICAL: 'dataset' should be in the result
         assert "dataset" in added_df.columns, (

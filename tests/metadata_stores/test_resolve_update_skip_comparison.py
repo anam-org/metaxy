@@ -367,7 +367,7 @@ class TestResolveUpdateSkipComparisonLazy:
         self,
         store_config: tuple[type[MetadataStore], dict[str, Any]],
     ):
-        """Test skip_comparison=True with lazy=True returns LazyIncrement.
+        """Test skip_comparison=True with lazy=True returns LazyChanges.
 
         Verify the lazy result can be collected and has the correct structure.
         """
@@ -411,10 +411,10 @@ class TestResolveUpdateSkipComparisonLazy:
                 lazy=True,
             )
 
-            # Verify we got a LazyIncrement
-            from metaxy.versioning.types import LazyIncrement
+            # Verify we got a LazyChanges
+            from metaxy.versioning.types import LazyChanges
 
-            assert isinstance(lazy_result, LazyIncrement)
+            assert isinstance(lazy_result, LazyChanges)
 
             # Verify lazy frames have correct implementation
             # Note: When passing Polars samples to DuckDB, the engine switches to Polars

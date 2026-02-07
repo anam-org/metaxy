@@ -1,4 +1,4 @@
-"""Increment resolution for versioning."""
+"""Change resolution for versioning."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from metaxy.versioning.engine import VersioningEngine
 
 
-class IncrementResolver(Generic[FrameT]):
+class ChangesResolver(Generic[FrameT]):
     """Compares expected provenance with current metadata to identify changes.
 
     Used during incremental updates to determine which samples need to be

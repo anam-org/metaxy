@@ -14,7 +14,7 @@ from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, Outp
 
 if TYPE_CHECKING:
     from metaxy import FeatureDefinition
-    from metaxy.graph.status import FeatureMetadataStatusWithIncrement
+    from metaxy.graph.status import FeatureMetadataStatusWithChanges
     from metaxy.metadata_store.base import MetadataStore
     from metaxy.models.types import FeatureKey
 
@@ -128,9 +128,9 @@ def status(
         # Collect status for all features
         needs_update = False
         feature_reps: dict[str, Any] = {}
-        # Each item is (definition, status_with_increment, error_msg)
+        # Each item is (definition, status_with_changes, error_msg)
         # error_msg is None for success, or a string for errors
-        collected_statuses: list[tuple[FeatureDefinition, FeatureMetadataStatusWithIncrement | None, str | None]] = []
+        collected_statuses: list[tuple[FeatureDefinition, FeatureMetadataStatusWithChanges | None, str | None]] = []
 
         errors: list[tuple[str, str, Exception]] = []
 
@@ -140,7 +140,7 @@ def status(
         for feature_key in selector:
             definition = graph.get_feature_definition(feature_key)
             try:
-                status_with_increment = get_feature_metadata_status(
+                status_with_changes = get_feature_metadata_status(
                     definition,
                     metadata_store,
                     use_fallback=allow_fallback_stores,
@@ -149,13 +149,13 @@ def status(
                     compute_progress=compute_progress,
                 )
 
-                if status_with_increment.status.needs_update:
+                if status_with_changes.status.needs_update:
                     needs_update = True
 
                 if format == "json":
-                    feature_reps[feature_key.to_string()] = status_with_increment.to_representation(verbose=verbose)
+                    feature_reps[feature_key.to_string()] = status_with_changes.to_representation(verbose=verbose)
                 else:
-                    collected_statuses.append((definition, status_with_increment, None))
+                    collected_statuses.append((definition, status_with_changes, None))
             except Exception as e:
                 # Log the error and continue with other features
                 error_msg = str(e)
@@ -204,7 +204,7 @@ def status(
 
             verbose_details: list[tuple[str, list[str]]] = []
 
-            for definition, status_with_increment, error_msg in collected_statuses:
+            for definition, status_with_changes, error_msg in collected_statuses:
                 # Handle error case
                 if error_msg is not None:
                     icon = _STATUS_ICONS["error"]
@@ -222,9 +222,9 @@ def status(
                     )
                     continue
 
-                # status_with_increment is not None at this point
-                assert status_with_increment is not None
-                status = status_with_increment.status
+                # status_with_changes is not None at this point
+                assert status_with_changes is not None
+                status = status_with_changes.status
                 icon = _STATUS_ICONS[status.status_category]
                 feature_key_str = status.feature_key.to_string()
 
@@ -269,7 +269,7 @@ def status(
 
                 # Collect verbose details for later
                 if verbose:
-                    sample_details = status_with_increment.sample_details()
+                    sample_details = status_with_changes.sample_details()
                     if sample_details:
                         verbose_details.append((feature_key_str, sample_details))
 

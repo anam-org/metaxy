@@ -373,13 +373,13 @@ class MetadataBackfill(BaseOperation, ABC):
                 # Get field provenance from Metaxy
                 feature_key_obj = FeatureKey(feature_key.split("/"))
 
-                increment = store.resolve_update(
+                changes = store.resolve_update(
                     feature_key_obj,
                     samples=external_df.select(["sample_uid"])
                 )
 
                 # Join external metadata with calculated field_provenance
-                to_write = external_df.join(increment.new, on="sample_uid", how="inner")
+                to_write = external_df.join(changes.new, on="sample_uid", how="inner")
 
                 # Write
                 store.write(feature_key_obj, to_write)

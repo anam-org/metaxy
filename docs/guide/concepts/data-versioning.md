@@ -212,16 +212,16 @@ It handles the following:
 
 Typically, steps 1-3 can be run directly in the database. Analytical databases such as ClickHouse or Snowflake can efficiently handle these operations.
 
-The Python pipeline then only handles the increment.
+The Python pipeline then only handles the changes.
 
 <!-- skip: next -->
 
 ```python
 with store:  # MetadataStore
     # Metaxy computes provenance_by_field and identifies changes
-    increment = store.resolve_update(DownstreamFeature)
+    changes = store.resolve_update(DownstreamFeature)
 
     # Process only changed samples
 ```
 
-The `increment` object has attributes for new upstream samples, samples with new versions, and samples that have been removed from upstream metadata.
+The `changes` object has attributes for new upstream samples, samples with new versions, and samples that have been removed from upstream metadata.

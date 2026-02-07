@@ -57,10 +57,10 @@ def audio_embeddings(
         }
     )
 
-    # resolve the increment with Metaxy
+    # resolve the changes with Metaxy
 
     with store:
-        increment = store.resolve_update("audio/embeddings", samples=samples)  # noqa: F841
+        changes = store.resolve_update("audio/embeddings", samples=samples)  # noqa: F841
 
     # Compute embeddings...
 

@@ -9,9 +9,9 @@ import metaxy as mx
 
 with store:
     # Resolve what needs to be computed
-    increment = store.resolve_update(MyFeature)
-    # increment.new - new samples
-    # increment.stale - samples with changed provenance
+    changes = store.resolve_update(MyFeature)
+    # changes.new - new samples
+    # changes.stale - samples with changed provenance
 
 with store:
     # Read metadata
