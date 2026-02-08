@@ -22,6 +22,10 @@ on:
         description: "Run all checks regardless of path filters"
         type: boolean
         default: false
+      dependency-matrix:
+        description: "Run dependency version compatibility tests"
+        type: boolean
+        default: false
 
 jobs:
   filter:
@@ -181,6 +185,41 @@ jobs:
           header: test-timing-report
           message: ${{ steps.timing.outputs.report }}
 
+  generate-nox-matrix:
+    needs: filter
+    if: ${{ inputs.dependency-matrix && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
+    runs-on: depot-ubuntu-latest
+    outputs:
+      sessions: ${{ steps.sessions.outputs.sessions }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Generate nox session matrix
+        id: sessions
+        run: echo "sessions=$(uvx --with nox_uv nox -l --json | jq -c '[.[].session]')" >> "$GITHUB_OUTPUT"
+
+  text-nox:
+    needs: [filter, generate-nox-matrix]
+    if: ${{ inputs.dependency-matrix && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
+    runs-on: depot-ubuntu-latest
+    env:
+      DEVENV_PYTHON_VERSION: "3.10"
+    strategy:
+      fail-fast: false
+      matrix:
+        session: ${{ fromJSON(needs.generate-nox-matrix.outputs.sessions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
+      - name: Run ${{ matrix.session }}
+        run: uv run nox -s "${{ matrix.session }}"
+
   test-windows:
     needs: filter
     if: ${{ inputs.run-windows && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
@@ -210,7 +249,7 @@ jobs:
       - name: Install Dependencies
         run: |
           uv python pin ${{ matrix.python-version }}
-          uv sync --group dev --all-extras --no-extra clickhouse --no-extra graphviz
+          uv sync --group dev --all-extras --no-extra clickhouse
 
       - name: Run Tests
         run: >
@@ -253,7 +292,7 @@ jobs:
       - name: Install Dependencies
         run: |
           uv python pin ${{ matrix.python-version }}
-          uv sync --group dev --all-extras --no-extra clickhouse --no-extra graphviz
+          uv sync --group dev --all-extras --no-extra clickhouse
 
       - name: Run Tests
         run: >
@@ -290,6 +329,8 @@ jobs:
     runs-on: depot-ubuntu-latest
     needs:
       - test-linux
+      - generate-nox-matrix
+      - text-nox
       - test-windows
       - test-macos
       - lint
@@ -303,4 +344,4 @@ jobs:
         uses: re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: test-linux, test-windows, test-macos, typecheck, docs
+          allowed-skips: test-linux, generate-nox-matrix, text-nox, test-windows, test-macos, typecheck, docs

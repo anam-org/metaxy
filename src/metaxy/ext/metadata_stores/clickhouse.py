@@ -407,8 +407,10 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             if not isinstance(col_dtype, dt.Struct):
                 continue
 
+            assert isinstance(col_dtype, dt.Struct)
+
             # Get field names from the struct type
-            field_names = list(col_dtype.names)
+            field_names = list(col_dtype.names)  # ty: ignore[invalid-argument-type]
 
             # Get target Map value type from ClickHouse schema
             # We already verified this is a Map type in the caller

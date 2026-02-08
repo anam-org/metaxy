@@ -31,6 +31,7 @@ jobs:
       run-windows: true
       run-macos: true
       run-all-checks: true
+      dependency-matrix: true
 
   testpypi:
     needs: qa
