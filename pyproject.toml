@@ -20,13 +20,16 @@ classifiers = [
 dependencies = [
   "cyclopts>=4.4.0",
   "narwhals>=2.14.0",
-  "platformdirs>=4.5.0",
+  "typing-extensions>=4.0.0",
+  "pydantic-core>=2.0.0",
   "polars>=1.35.0",
   "polars-hash>=0.5.1",
   "pydantic>=2.11.9",
   "pydantic-settings>=2.11.0",
   "python-dotenv>=1.0.0",
   "pyyaml>=6.0.0",
+  "sybil>=9.3.0",
+  "pytest-cases>=3.9.1",
   "sqlglot>=28.1.0",
   "tomli>=2.3.0",
   "rich>=13.0.0",
@@ -43,17 +46,20 @@ ibis = [
 mermaid = [
   "mermaid-py>=0.8.0",
 ]
-graphviz = [
-  "pygraphviz>=1.14",
+sqlalchemy = [
+  "sqlalchemy>=2.0",
 ]
 sqlmodel = [
   "sqlmodel>=0.0.27",
+  "sqlalchemy>=2.0",
 ]
 bigquery = [
   "ibis-framework[bigquery]>=11.0.0",
+  "google-auth>=2.0.0",
 ]
 clickhouse = [
   "ibis-framework[clickhouse]>=11.0.0",
+  "sqlalchemy>=2.0",
 ]
 duckdb = [
   "ibis-framework[duckdb]>=11.0.0",
@@ -65,6 +71,7 @@ delta = [
 ]
 dagster = [
   "dagster>=1.12.3",
+  "dagster-shared>=1.12.0",
 ]
 
 lancedb = [
@@ -123,6 +130,7 @@ dev = [
   "ray>2.36.0; sys_platform != 'win32' or python_version < '3.13'",
   "numpy>=2.2.6",
   "sybil>=9.3.0",
+  "deptry>=0.24.0",
 ]
 
 examples = [
@@ -280,6 +288,15 @@ markers = [
   "polars: Stores using Polars for compute",
   "delta: Delta Lake store tests",
 ]
+
+[tool.deptry.package_module_name_map]
+mermaid-py = ["mermaid"]
+metaxy-testing = ["metaxy_testing"]
+dagster-shared = ["dagster_shared"]
+google-auth = ["google"]
+
+[tool.deptry.per_rule_ignores]
+DEP004 = ["metaxy_testing"]
 
 [[tool.uv.index]]
 name = "testpypi"

@@ -28,6 +28,11 @@ repos:
       entry: uv run dprint fmt
       language: system
       pass_filenames: false
+    - id: deptry
+      name: Deptry
+      entry: uv run deptry src
+      language: system
+      pass_filenames: false
     - id: typecheck
       name: Typecheck
       entry: uv run ty check
