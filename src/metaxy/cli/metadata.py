@@ -41,11 +41,11 @@ def status(
     ] = None,
     filters: FilterArgs | None = None,
     global_filters: GlobalFilterArgs | None = None,
-    snapshot_version: Annotated[
+    project_version: Annotated[
         str | None,
         cyclopts.Parameter(
             name=["--snapshot-id"],
-            help="Check metadata against a specific snapshot version.",
+            help="Check metadata against a specific project version.",
         ),
     ] = None,
     assert_in_sync: Annotated[
@@ -105,7 +105,7 @@ def status(
 
     with metadata_store:
         # Load graph (from snapshot or current)
-        graph = load_graph_for_command(context, snapshot_version, metadata_store, format)
+        graph = load_graph_for_command(context, project_version, metadata_store, format)
 
         # Resolve feature keys
         selector.resolve(format, graph=graph, error_missing=assert_in_sync)
@@ -113,17 +113,17 @@ def status(
 
         # Handle empty result for --all-features
         if selector.all_features and not selector:
-            _output_no_features_warning(format, snapshot_version)
+            _output_no_features_warning(format, project_version)
             return
 
         # If no valid features remain
         if not selector:
-            _output_no_features_warning(format, snapshot_version)
+            _output_no_features_warning(format, project_version)
             return
 
         # Print header for plain format only when using a snapshot
-        if format == "plain" and snapshot_version:
-            data_console.print(f"\n[bold]Metadata status (snapshot {snapshot_version})[/bold]")
+        if format == "plain" and project_version:
+            data_console.print(f"\n[bold]Metadata status (snapshot {project_version})[/bold]")
 
         # Collect status for all features
         needs_update = False
@@ -300,7 +300,7 @@ def status(
 
             adapter = TypeAdapter(dict[str, FullFeatureMetadataRepresentation])
             output: dict[str, Any] = {
-                "snapshot_version": snapshot_version,
+                "project_version": project_version,
                 "features": json.loads(adapter.dump_json(feature_reps, exclude_none=True)),
                 "needs_update": needs_update,
             }
@@ -429,7 +429,7 @@ def delete(
             raise SystemExit(1)
 
 
-def _output_no_features_warning(format: OutputFormat, snapshot_version: str | None) -> None:
+def _output_no_features_warning(format: OutputFormat, project_version: str | None) -> None:
     """Output warning when no features are found to check."""
     if format == "json":
         print(
@@ -437,7 +437,7 @@ def _output_no_features_warning(format: OutputFormat, snapshot_version: str | No
                 {
                     "warning": "No valid features to check",
                     "features": {},
-                    "snapshot_version": snapshot_version,
+                    "project_version": project_version,
                     "needs_update": False,
                 },
                 indent=2,

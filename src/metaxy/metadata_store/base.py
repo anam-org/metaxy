@@ -43,9 +43,9 @@ from metaxy.models.constants import (
     METAXY_DELETED_AT,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
+    METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_SNAPSHOT_VERSION,
     METAXY_UPDATED_AT,
 )
 from metaxy.models.feature import current_graph
@@ -114,7 +114,7 @@ VersioningEngineOptions: TypeAlias = Literal["auto", "native", "polars"]
 _SYSTEM_COLUMN_DTYPES = {
     METAXY_PROVENANCE: nw.String,
     METAXY_FEATURE_VERSION: nw.String,
-    METAXY_SNAPSHOT_VERSION: nw.String,
+    METAXY_PROJECT_VERSION: nw.String,
     METAXY_DATA_VERSION: nw.String,
     METAXY_CREATED_AT: nw.Datetime(time_zone="UTC"),
     METAXY_UPDATED_AT: nw.Datetime(time_zone="UTC"),
@@ -1430,10 +1430,10 @@ class MetadataStore(ABC):
 
         # Check if version columns already exist in DataFrame
         has_feature_version = METAXY_FEATURE_VERSION in columns
-        has_snapshot_version = METAXY_SNAPSHOT_VERSION in columns
+        has_project_version = METAXY_PROJECT_VERSION in columns
 
         # In suppression mode (migrations), use existing values as-is
-        if _suppress_feature_version_warning.get() and has_feature_version and has_snapshot_version:
+        if _suppress_feature_version_warning.get() and has_feature_version and has_project_version:
             pass  # Use existing values for migrations
         else:
             # Drop any existing version columns (e.g., from SQLModel with null values)
@@ -1441,23 +1441,23 @@ class MetadataStore(ABC):
             columns_to_drop = []
             if has_feature_version:
                 columns_to_drop.append(METAXY_FEATURE_VERSION)
-            if has_snapshot_version:
-                columns_to_drop.append(METAXY_SNAPSHOT_VERSION)
+            if has_project_version:
+                columns_to_drop.append(METAXY_PROJECT_VERSION)
             if columns_to_drop:
                 df = df.drop(*columns_to_drop)
 
-            # Get current feature version and snapshot_version from graph
+            # Get current feature version and project_version from graph
             from metaxy.models.feature import FeatureGraph
 
             graph = FeatureGraph.get_active()
 
             current_feature_version = graph.get_feature_version(feature_key)
-            current_snapshot_version = graph.snapshot_version
+            current_project_version = graph.project_version
 
             df = df.with_columns(
                 [
                     nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),
-                    nw.lit(current_snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+                    nw.lit(current_project_version).alias(METAXY_PROJECT_VERSION),
                 ]
             )
 
@@ -1572,9 +1572,9 @@ class MetadataStore(ABC):
         if METAXY_FEATURE_VERSION not in schema.names():
             raise MetadataSchemaError(f"DataFrame must have '{METAXY_FEATURE_VERSION}' column")
 
-        # Check for snapshot_version column
-        if METAXY_SNAPSHOT_VERSION not in schema.names():
-            raise MetadataSchemaError(f"DataFrame must have '{METAXY_SNAPSHOT_VERSION}' column")
+        # Check for project_version column
+        if METAXY_PROJECT_VERSION not in schema.names():
+            raise MetadataSchemaError(f"DataFrame must have '{METAXY_PROJECT_VERSION}' column")
 
     def _validate_schema_system_table(self, df: Frame) -> None:
         """Validate schema for system tables (minimal validation).
@@ -2108,7 +2108,7 @@ class MetadataStore(ABC):
                         logger.warning(f"No rows found for {feature_key.to_string()}, skipping")
                         continue
 
-                    # Write to destination (preserving snapshot_version and feature_version)
+                    # Write to destination (preserving project_version and feature_version)
                     self.write(feature_key, source_df)
 
                     features_copied += 1

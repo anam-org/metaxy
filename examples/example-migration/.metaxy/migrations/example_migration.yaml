@@ -2,8 +2,8 @@ migration_type: metaxy.migrations.models.DiffMigration
 migration_id: 20250101_000000_example_migration
 created_at: '2025-01-01T00:00:00+00:00'
 parent: initial
-from_snapshot_version: 141fb8e4
-to_snapshot_version: 8f956345
+from_project_version: 26bafaa3
+to_project_version: ff70ea6e
 ops:
 - type: metaxy.migrations.ops.DataVersionReconciliation
   features: ["examples/child"]

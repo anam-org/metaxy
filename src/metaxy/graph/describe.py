@@ -31,7 +31,7 @@ def describe_graph(
     Returns:
         Dictionary containing graph metrics and analysis:
         {
-            "metaxy_snapshot_version": str,
+            "metaxy_project_version": str,
             "total_features": int,
             "filtered_features": int,  # If project filter applied
             "graph_depth": int,
@@ -106,7 +106,7 @@ def describe_graph(
 
     # Build result
     result: dict[str, Any] = {
-        "metaxy_snapshot_version": graph.snapshot_version,
+        "metaxy_project_version": graph.project_version,
         "total_features": len(graph.feature_definitions_by_key),
         "graph_depth": max_depth,
         "root_features": sorted(root_features),

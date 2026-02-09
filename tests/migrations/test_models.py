@@ -18,8 +18,8 @@ def test_migration_type_property():
         migration_id="test_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
         parent="initial",
-        from_snapshot_version="snap1",
-        to_snapshot_version="snap2",
+        from_project_version="snap1",
+        to_project_version="snap2",
         ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
     )
 
@@ -31,8 +31,8 @@ def test_migration_to_storage_dict():
         migration_id="test_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
         parent="initial",
-        from_snapshot_version="snap1",
-        to_snapshot_version="snap2",
+        from_project_version="snap1",
+        to_project_version="snap2",
         ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
     )
 
@@ -41,8 +41,8 @@ def test_migration_to_storage_dict():
     assert storage_dict["migration_id"] == "test_001"
     assert storage_dict["migration_type"] == "metaxy.migrations.models.DiffMigration"
     assert storage_dict["parent"] == "initial"
-    assert storage_dict["from_snapshot_version"] == "snap1"
-    assert storage_dict["to_snapshot_version"] == "snap2"
+    assert storage_dict["from_project_version"] == "snap1"
+    assert storage_dict["to_project_version"] == "snap2"
     assert storage_dict["ops"] == [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}]
 
 
@@ -54,8 +54,8 @@ def test_migration_from_storage_dict():
         "migration_id": "test_001",
         "created_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
         "parent": "initial",
-        "from_snapshot_version": "snap1",
-        "to_snapshot_version": "snap2",
+        "from_project_version": "snap1",
+        "to_project_version": "snap2",
         "ops": [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
     }
 
@@ -63,8 +63,8 @@ def test_migration_from_storage_dict():
 
     assert isinstance(migration, DiffMigration)
     assert migration.migration_id == "test_001"
-    assert migration.from_snapshot_version == "snap1"
-    assert migration.to_snapshot_version == "snap2"
+    assert migration.from_project_version == "snap1"
+    assert migration.to_project_version == "snap2"
 
 
 def test_migration_from_storage_dict_invalid_type():
@@ -104,15 +104,15 @@ def test_diff_migration_get_affected_features():
         migration_id="test_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
         parent="initial",
-        from_snapshot_version="snap1",
-        to_snapshot_version="snap2",
+        from_project_version="snap1",
+        to_project_version="snap2",
         ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
     )
 
     # We can't call get_affected_features() without a store since it computes on-demand
     # Just verify the migration was created successfully
-    assert migration.from_snapshot_version == "snap1"
-    assert migration.to_snapshot_version == "snap2"
+    assert migration.from_project_version == "snap1"
+    assert migration.to_project_version == "snap2"
 
 
 def test_full_graph_migration(tmp_path):
@@ -120,7 +120,7 @@ def test_full_graph_migration(tmp_path):
         migration_id="test_002",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[],  # Required field
     )
 
@@ -245,8 +245,8 @@ def test_diff_migration_roundtrip():
         migration_id="diff_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
         parent="initial",
-        from_snapshot_version="snap1",
-        to_snapshot_version="snap2",
+        from_project_version="snap1",
+        to_project_version="snap2",
         ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
     )
 
@@ -256,8 +256,8 @@ def test_diff_migration_roundtrip():
     assert isinstance(restored, DiffMigration)
     assert restored.migration_id == original.migration_id
     assert restored.parent == original.parent
-    assert restored.from_snapshot_version == original.from_snapshot_version
-    assert restored.to_snapshot_version == original.to_snapshot_version
+    assert restored.from_project_version == original.from_project_version
+    assert restored.to_project_version == original.to_project_version
     assert restored.ops == original.ops
 
 
@@ -323,8 +323,8 @@ def test_operation_with_basesettings_env_vars():
             store,
             feature_key,
             *,
-            snapshot_version,
-            from_snapshot_version=None,
+            project_version,
+            from_project_version=None,
             dry_run=False,
         ):
             return 0
@@ -362,7 +362,7 @@ def test_full_graph_migration_get_affected_features(tmp_path):
         migration_id="test_full_001",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[
             {
                 "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -389,7 +389,7 @@ def test_full_graph_migration_deduplicates_features(tmp_path):
         migration_id="test_full_002",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[
             {
                 "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -416,8 +416,8 @@ def test_full_graph_migration_with_from_snapshot():
         migration_id="test_full_003",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap2",
-        from_snapshot_version="snap1",  # Cross-snapshot migration
+        project_version="snap2",
+        from_project_version="snap1",  # Cross-snapshot migration
         ops=[
             {
                 "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -426,8 +426,8 @@ def test_full_graph_migration_with_from_snapshot():
         ],
     )
 
-    assert migration.snapshot_version == "snap2"
-    assert migration.from_snapshot_version == "snap1"
+    assert migration.project_version == "snap2"
+    assert migration.from_project_version == "snap1"
 
 
 def test_get_failed_features_with_retry(store):
@@ -580,7 +580,7 @@ def test_full_graph_migration_get_status_info(store):
             migration_id="test_status_info",
             parent="initial",
             created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-            snapshot_version="snap1",
+            project_version="snap1",
             ops=[
                 {
                     "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -644,7 +644,7 @@ def test_operations_property_lazy_import():
         migration_id="test_lazy_001",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[
             {
                 "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -665,7 +665,7 @@ def test_operations_property_invalid_import():
         migration_id="test_invalid_001",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[
             {
                 "type": "nonexistent.module.FakeOperation",
@@ -685,7 +685,7 @@ def test_operations_property_invalid_class_name():
         migration_id="test_invalid_002",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[
             {
                 "type": "metaxy.migrations.ops.NonExistentClass",

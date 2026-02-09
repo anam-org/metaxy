@@ -30,7 +30,7 @@ def graph(
         str | None,
         cyclopts.Parameter(
             name=["--snapshot"],
-            help="Snapshot version to describe (defaults to current graph from code)",
+            help="Project version to describe (defaults to current graph from code)",
         ),
     ] = None,
     store: Annotated[
@@ -93,7 +93,7 @@ def graph(
             storage = SystemTableStorage(metadata_store)
             features_df = storage.read_features(
                 current=False,
-                snapshot_version=snapshot,
+                project_version=snapshot,
                 project=context.project,
             )
 
@@ -112,7 +112,7 @@ def graph(
 
     # Display summary table
     console.print()
-    table_title = f"Graph Snapshot: {info['metaxy_snapshot_version']}"
+    table_title = f"Graph Snapshot: {info['metaxy_project_version']}"
     if context.project:
         table_title += f" (Project: {context.project})"
 

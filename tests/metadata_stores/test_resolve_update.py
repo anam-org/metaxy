@@ -262,14 +262,14 @@ def test_resolve_update_root_feature_with_samples(
     # Generate sample data using the parametric strategy
     feature_spec = root_feature.spec()
     feature_version = root_feature.feature_version()
-    snapshot_version = graph.snapshot_version
+    project_version = graph.project_version
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
         samples_df = feature_metadata_strategy(
             feature_spec=feature_spec,
             feature_version=feature_version,
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             min_rows=5,
             max_rows=10,
         ).example()
@@ -328,7 +328,7 @@ def test_resolve_update_downstream_feature(
         upstream_data, golden_downstream = downstream_metadata_strategy(
             child_plan,
             feature_versions=feature_versions,
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
             hash_algorithm=store.hash_algorithm,
             min_rows=5,
             max_rows=15,
@@ -346,7 +346,7 @@ def test_resolve_update_downstream_feature(
             increment = store.resolve_update(
                 child_key,
                 target_version=child_version,
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
             )
         except HashAlgorithmNotSupportedError:
             pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
@@ -403,7 +403,7 @@ def test_resolve_update_detects_changes(
         initial_upstream, initial_downstream = downstream_metadata_strategy(
             child_plan,
             feature_versions=feature_versions,
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
             hash_algorithm=store.hash_algorithm,
             min_rows=10,
             max_rows=10,
@@ -426,7 +426,7 @@ def test_resolve_update_detects_changes(
             modified_upstream, modified_downstream = downstream_metadata_strategy(
                 child_plan,
                 feature_versions=feature_versions,
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
                 hash_algorithm=store.hash_algorithm,
                 min_rows=8,  # Different number of rows
                 max_rows=8,
@@ -441,7 +441,7 @@ def test_resolve_update_detects_changes(
             increment = store.resolve_update(
                 child_key,
                 target_version=child_version,
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
             )
 
         except HashAlgorithmNotSupportedError:
@@ -514,7 +514,7 @@ def test_resolve_update_lazy_execution(
         upstream_data, golden_downstream = downstream_metadata_strategy(
             child_plan,
             feature_versions=feature_versions,
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
             hash_algorithm=store.hash_algorithm,
             min_rows=10,
             max_rows=10,
@@ -532,7 +532,7 @@ def test_resolve_update_lazy_execution(
             lazy_increment = store.resolve_update(
                 Child,
                 target_version=Child.feature_version(),
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
                 lazy=True,
             )
 
@@ -562,7 +562,7 @@ def test_resolve_update_lazy_execution(
             eager_increment_direct = store.resolve_update(
                 Child,
                 target_version=Child.feature_version(),
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
                 lazy=False,
             )
 
@@ -605,7 +605,7 @@ def test_resolve_update_idempotency(
         upstream_data, golden_downstream = downstream_metadata_strategy(
             child_plan,
             feature_versions=feature_versions,
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
             hash_algorithm=store.hash_algorithm,
             min_rows=5,
             max_rows=10,
@@ -622,7 +622,7 @@ def test_resolve_update_idempotency(
             increment1 = store.resolve_update(
                 child_key,
                 target_version=child_version,
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
             )
 
             assert len(increment1.new) > 0, "Expected resolve_update to detect added samples"
@@ -635,7 +635,7 @@ def test_resolve_update_idempotency(
             increment2 = store.resolve_update(
                 child_key,
                 target_version=child_version,
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
             )
 
         except HashAlgorithmNotSupportedError:
@@ -1775,7 +1775,7 @@ def test_resolve_update_optional_dependencies(
         upstream_data, _ = downstream_metadata_strategy(
             child_plan,
             feature_versions=feature_versions,
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
             hash_algorithm=store.hash_algorithm,
             min_rows=4,
             max_rows=8,

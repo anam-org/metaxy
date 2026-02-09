@@ -181,7 +181,7 @@ def test_feature_dep_filters_integration(any_store: MetadataStore) -> None:
                 increment = store.resolve_update(
                     DownstreamFeature,
                     target_version=DownstreamFeature.feature_version(),
-                    snapshot_version=graph.snapshot_version,
+                    project_version=graph.project_version,
                 )
             except HashAlgorithmNotSupportedError:
                 import pytest

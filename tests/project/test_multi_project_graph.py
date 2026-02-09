@@ -100,10 +100,10 @@ def test_graph_snapshot_includes_all_projects(
     MetaxyConfig.reset()
 
 
-def test_graph_snapshot_version_uses_configured_project(
+def test_graph_project_version_uses_configured_project(
     graph: FeatureGraph,
 ) -> None:
-    """Test that graph.snapshot_version only includes features from the configured project."""
+    """Test that graph.project_version only includes features from the configured project."""
 
     # Add features from multiple projects with __metaxy_project__ defined in class body
     class FeatureA(
@@ -124,32 +124,32 @@ def test_graph_snapshot_version_uses_configured_project(
     ):
         __metaxy_project__ = "project_b"
 
-    # With project_a configured, snapshot_version should only include project_a features
+    # With project_a configured, project_version should only include project_a features
     config_a = MetaxyConfig(project="project_a")
     with config_a.use():
-        snapshot_a = graph.snapshot_version
+        snapshot_a = graph.project_version
         assert len(snapshot_a) == 8  # SHA256 hex truncated
 
     # With project_b configured, snapshot should be different
     config_b = MetaxyConfig(project="project_b")
     with config_b.use():
-        snapshot_b = graph.snapshot_version
+        snapshot_b = graph.project_version
         assert len(snapshot_b) == 8
 
     # Different projects should produce different snapshots
     assert snapshot_a != snapshot_b
 
     # Verify snapshot matches project-specific version
-    assert snapshot_a == graph.get_project_snapshot_version("project_a")
-    assert snapshot_b == graph.get_project_snapshot_version("project_b")
+    assert snapshot_a == graph.get_project_version("project_a")
+    assert snapshot_b == graph.get_project_version("project_b")
 
     MetaxyConfig.reset()
 
 
-def test_graph_snapshot_version_raises_with_multiple_projects_and_no_config(
+def test_graph_project_version_raises_with_multiple_projects_and_no_config(
     graph: FeatureGraph,
 ) -> None:
-    """Test that graph.snapshot_version raises when features span multiple projects and no project is configured."""
+    """Test that graph.project_version raises when features span multiple projects and no project is configured."""
     import pytest
 
     class FeatureA(
@@ -170,19 +170,19 @@ def test_graph_snapshot_version_raises_with_multiple_projects_and_no_config(
     ):
         __metaxy_project__ = "project_b"
 
-    # Without a project configured and multiple projects in graph, snapshot_version should raise
+    # Without a project configured and multiple projects in graph, project_version should raise
     config = MetaxyConfig()
     with config.use():
         with pytest.raises(RuntimeError, match="multiple projects"):
-            _ = graph.snapshot_version
+            _ = graph.project_version
 
     MetaxyConfig.reset()
 
 
-def test_graph_snapshot_version_works_with_single_project_no_config(
+def test_graph_project_version_works_with_single_project_no_config(
     graph: FeatureGraph,
 ) -> None:
-    """Test that graph.snapshot_version works when all features belong to a single project."""
+    """Test that graph.project_version works when all features belong to a single project."""
 
     class FeatureA(
         BaseFeature,
@@ -202,18 +202,18 @@ def test_graph_snapshot_version_works_with_single_project_no_config(
     ):
         __metaxy_project__ = "project_a"
 
-    # With single project in graph, snapshot_version should work without config
+    # With single project in graph, project_version should work without config
     config = MetaxyConfig()
     with config.use():
-        snapshot = graph.snapshot_version
+        snapshot = graph.project_version
         assert len(snapshot) == 8
-        assert snapshot == graph.get_project_snapshot_version("project_a")
+        assert snapshot == graph.get_project_version("project_a")
 
     MetaxyConfig.reset()
 
 
-def test_snapshot_version_deterministic_regardless_of_insertion_order() -> None:
-    """Test that snapshot_version is deterministic regardless of feature insertion order."""
+def test_project_version_deterministic_regardless_of_insertion_order() -> None:
+    """Test that project_version is deterministic regardless of feature insertion order."""
     # Create features once in a temporary graph
     temp_graph = FeatureGraph()
     with temp_graph.use():
@@ -263,7 +263,7 @@ def test_snapshot_version_deterministic_regardless_of_insertion_order() -> None:
     graph2.add_feature_definition(def_a)
 
     # Snapshot versions should be identical regardless of insertion order
-    assert graph1.get_project_snapshot_version("test_project") == graph2.get_project_snapshot_version("test_project")
+    assert graph1.get_project_version("test_project") == graph2.get_project_version("test_project")
 
 
 def test_graph_from_snapshot_preserves_projects(

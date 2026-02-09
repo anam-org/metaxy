@@ -13,7 +13,7 @@ from metaxy.metadata_store.system.keys import EVENTS_KEY
 from metaxy.models.constants import (
     METAXY_DEFINITION_VERSION,
     METAXY_FEATURE_VERSION,
-    METAXY_SNAPSHOT_VERSION,
+    METAXY_PROJECT_VERSION,
 )
 
 # Common Polars schemas for system tables
@@ -27,7 +27,7 @@ FEATURE_VERSIONS_SCHEMA = {
     "feature_spec": pl.String,  # Full serialized FeatureSpec
     "feature_schema": pl.String,  # Full Pydantic model schema as JSON
     "feature_class_path": pl.String,
-    METAXY_SNAPSHOT_VERSION: pl.String,
+    METAXY_PROJECT_VERSION: pl.String,
     "tags": pl.String,
     "deleted_at": pl.Datetime("us"),  # Timestamp when feature was removed from the project (nullable)
 }
@@ -57,7 +57,7 @@ class FeatureVersionsModel(BaseModel):
     feature_spec: str = Field(..., description="Full serialized FeatureSpec as JSON string")
     feature_schema: str = Field(..., description="Full Pydantic model schema as JSON string")
     feature_class_path: str = Field(..., description="Python import path to Feature class")
-    metaxy_snapshot_version: str = Field(..., description="Deterministic hash of entire Metaxy project")
+    metaxy_project_version: str = Field(..., description="Deterministic hash of entire Metaxy project")
     tags: dict[str, str] | str = Field(
         default="{}",
         description="Snapshot tags as JSON string (key-value pairs). The metaxy tag is reserved for internal use.",

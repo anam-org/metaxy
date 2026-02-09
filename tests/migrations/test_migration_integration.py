@@ -199,8 +199,8 @@ def test_basic_migration_flow(
         )
 
         assert migration is not None
-        assert migration.from_snapshot_version == simple_graph_v1.get_project_snapshot_version("default")
-        assert migration.to_snapshot_version == simple_graph_v2.get_project_snapshot_version("default")
+        assert migration.from_project_version == simple_graph_v1.get_project_version("default")
+        assert migration.to_project_version == simple_graph_v2.get_project_version("default")
 
         # Snapshot migration structure
         affected_features = migration.get_affected_features(store_v2, "default")
@@ -884,14 +884,14 @@ def test_full_graph_migration_integration(tmp_path):
             store.write(Downstream, increment.new)
 
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Create FullGraphMigration using the test operation from test_operations
         migration = FullGraphMigration(
             migration_id="integration_001",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._TestBackfillOperation",
@@ -952,14 +952,14 @@ def test_migration_rerun_flag(tmp_path):
         store.write(Feature, feature_data)
 
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Create migration with test operation
         migration = FullGraphMigration(
             migration_id="rerun_test_001",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._TestBackfillOperation",
@@ -1007,7 +1007,7 @@ def test_full_graph_migration_empty_operations(tmp_path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         from metaxy.migrations.models import FullGraphMigration
 
@@ -1015,7 +1015,7 @@ def test_full_graph_migration_empty_operations(tmp_path):
             migration_id="integration_005",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[],  # No operations
         )
 

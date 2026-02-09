@@ -104,7 +104,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
 
             # Verify system columns are present in added
             # Note: resolve_update returns provenance and data_version columns,
-            # but feature_version and snapshot_version are added by write
+            # but feature_version and project_version are added by write
             assert METAXY_PROVENANCE in result.new.columns
             assert METAXY_PROVENANCE_BY_FIELD in result.new.columns
             assert METAXY_DATA_VERSION in result.new.columns

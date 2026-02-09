@@ -489,7 +489,7 @@ def generate_plan_data(
             example_data = downstream_metadata_strategy(
                 child_feature_plan,
                 feature_versions=feature_versions,
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
                 hash_algorithm=store.hash_algorithm,
                 min_rows=5,
                 max_rows=20,
@@ -533,7 +533,7 @@ def generate_plan_data(
         # Add downstream feature version and snapshot version
         downstream_df = downstream_nw.with_columns(
             nw.lit(child_version).alias(METAXY_FEATURE_VERSION),
-            nw.lit(graph.snapshot_version).alias("metaxy_snapshot_version"),
+            nw.lit(graph.project_version).alias("metaxy_project_version"),
             nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
         )
 
@@ -661,7 +661,7 @@ def assert_resolve_update_matches_golden(
         actual_increment = store.resolve_update(
             child_key,
             target_version=child_version,
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
         )
 
     id_columns = list(child_feature_plan.feature.id_columns)
@@ -673,7 +673,7 @@ def assert_resolve_update_matches_golden(
         polars_increment = store.resolve_update(
             child_key,
             target_version=child_version,
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
             versioning_engine="polars",
         )
     assert_increment_matches_golden(polars_increment, golden_increment, id_columns)
@@ -910,7 +910,7 @@ def test_golden_reference_with_duplicate_timestamps(
             increment = store.resolve_update(
                 child_key,
                 target_version=child_version,
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
             )
 
         except HashAlgorithmNotSupportedError:
@@ -982,7 +982,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
         upstream_data, golden_downstream = downstream_metadata_strategy(
             child_plan,
             feature_versions=feature_versions,
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
             hash_algorithm=empty_store.hash_algorithm,
             min_rows=5,
             max_rows=10,
@@ -1021,7 +1021,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
             increment = empty_store.resolve_update(
                 child_key,
                 target_version=ChildFeature.feature_version(),
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
             )
 
             # Verify we got results (deterministic even with same timestamps)
@@ -1095,7 +1095,7 @@ def test_golden_reference_partial_duplicates(
             increment = store.resolve_update(
                 child_key,
                 target_version=child_version,
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
             )
 
             added_df = increment.new.lazy().collect().to_polars()
@@ -1402,7 +1402,7 @@ def test_expansion_changed_rows_not_duplicated(
             increment = any_store.resolve_update(
                 VideoFrames,
                 target_version=VideoFrames.feature_version(),
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
             )
             added_df = increment.new.lazy().collect().to_polars()
             assert len(added_df) == 2, f"Expected 2 parent rows, got {len(added_df)}"
@@ -1447,7 +1447,7 @@ def test_expansion_changed_rows_not_duplicated(
             increment_after_change = any_store.resolve_update(
                 VideoFrames,
                 target_version=VideoFrames.feature_version(),
-                snapshot_version=graph.snapshot_version,
+                project_version=graph.project_version,
             )
 
             changed_df = increment_after_change.stale
@@ -1503,9 +1503,9 @@ def test_provenance_snapshot(
         METAXY_DATA_VERSION,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_FEATURE_VERSION,
+        METAXY_PROJECT_VERSION,
         METAXY_PROVENANCE,
         METAXY_PROVENANCE_BY_FIELD,
-        METAXY_SNAPSHOT_VERSION,
     )
     from metaxy.versioning.polars import PolarsVersioningEngine
     from metaxy.versioning.types import HashAlgorithm
@@ -1567,7 +1567,7 @@ def test_provenance_snapshot(
                         {"value": "prov_p3"},
                     ],
                     METAXY_FEATURE_VERSION: ["v1", "v1", "v1"],
-                    METAXY_SNAPSHOT_VERSION: ["snap1", "snap1", "snap1"],
+                    METAXY_PROJECT_VERSION: ["snap1", "snap1", "snap1"],
                     METAXY_CREATED_AT: [fixed_timestamp] * 3,
                 }
             )
@@ -1638,7 +1638,7 @@ def test_provenance_snapshot(
                         {"temperature": "prov_r5"},
                     ],
                     METAXY_FEATURE_VERSION: ["v1"] * 5,
-                    METAXY_SNAPSHOT_VERSION: ["snap1"] * 5,
+                    METAXY_PROJECT_VERSION: ["snap1"] * 5,
                     METAXY_CREATED_AT: [fixed_timestamp] * 5,
                 }
             )
@@ -1695,7 +1695,7 @@ def test_provenance_snapshot(
                         {"content": "prov_v2"},
                     ],
                     METAXY_FEATURE_VERSION: ["v1", "v1"],
-                    METAXY_SNAPSHOT_VERSION: ["snap1", "snap1"],
+                    METAXY_PROJECT_VERSION: ["snap1", "snap1"],
                     METAXY_CREATED_AT: [fixed_timestamp] * 2,
                 }
             )

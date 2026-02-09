@@ -38,9 +38,9 @@ class RenderConfig:
         metadata={"help": "Show feature and field code versions"},
     )
 
-    show_snapshot_version: bool = field(
+    show_project_version: bool = field(
         default=True,
-        metadata={"help": "Show graph snapshot version in output"},
+        metadata={"help": "Show graph project version in output"},
     )
 
     # Display options
@@ -110,7 +110,7 @@ class RenderConfig:
             show_feature_versions=False,
             show_field_versions=False,
             show_code_versions=False,
-            show_snapshot_version=False,
+            show_project_version=False,
             show_projects=show_projects,
         )
 
@@ -122,7 +122,7 @@ class RenderConfig:
             show_feature_versions=True,
             show_field_versions=True,
             show_code_versions=False,
-            show_snapshot_version=True,
+            show_project_version=True,
             hash_length=8,
         )
 
@@ -134,7 +134,7 @@ class RenderConfig:
             show_feature_versions=True,
             show_field_versions=True,
             show_code_versions=True,
-            show_snapshot_version=True,
+            show_project_version=True,
             hash_length=0,  # Full hashes
             show_projects=show_projects,
         )
@@ -290,8 +290,8 @@ class BaseRenderer:
             graph_data = GraphData(
                 nodes=filtered_nodes,
                 edges=filtered_edges,
-                snapshot_version=graph_data.snapshot_version,
-                old_snapshot_version=graph_data.old_snapshot_version,
+                project_version=graph_data.project_version,
+                old_project_version=graph_data.old_project_version,
             )
 
         # Apply feature focus filter if specified

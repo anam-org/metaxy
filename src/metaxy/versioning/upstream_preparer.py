@@ -15,9 +15,9 @@ from metaxy.models.constants import (
     METAXY_DELETED_AT,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
+    METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.renamed_df import RenamedDataFrame
@@ -128,7 +128,7 @@ class UpstreamPreparer(Generic[FrameT]):
         """Drop system columns not needed for provenance calculation."""
         columns_to_drop = [
             METAXY_FEATURE_VERSION,
-            METAXY_SNAPSHOT_VERSION,
+            METAXY_PROJECT_VERSION,
         ]
 
         result = dict(dfs)

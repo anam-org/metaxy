@@ -29,9 +29,9 @@ class TerminalRenderer(BaseRenderer):
         filtered_graph = self._get_filtered_graph_data()
 
         # Create root node
-        if self.config.show_snapshot_version:
-            snapshot_version = self._format_hash(filtered_graph.snapshot_version)
-            root = Tree(f"📊 [bold]Graph[/bold] [dim](snapshot: {snapshot_version})[/dim]")
+        if self.config.show_project_version:
+            project_version = self._format_hash(filtered_graph.project_version)
+            root = Tree(f"📊 [bold]Graph[/bold] [dim](snapshot: {project_version})[/dim]")
         else:
             root = Tree("📊 [bold]Graph[/bold]")
 

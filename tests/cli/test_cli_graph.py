@@ -111,7 +111,7 @@ def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject, capsys:
 
         assert result.returncode == 0
         assert "Graph Snapshot History" in result.stderr
-        assert "Snapshot version" in result.stderr
+        assert "Project version" in result.stderr
         assert "Recorded At" in result.stderr
         assert "Feature Count" in result.stderr
         assert "1" in result.stderr  # 1 feature
@@ -261,16 +261,16 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject, c
         push_result = metaxy_project.run_cli(["push"], capsys=capsys)
 
         # Extract snapshot version from stdout (just the raw hash)
-        snapshot_version = push_result.stdout.strip()
-        assert snapshot_version, f"Could not find snapshot version in push output. Output: {push_result.stdout}"
+        project_version = push_result.stdout.strip()
+        assert project_version, f"Could not find snapshot version in push output. Output: {push_result.stdout}"
 
         # Describe specific snapshot
-        result = metaxy_project.run_cli(["describe", "graph", "--snapshot", snapshot_version], capsys=capsys)
+        result = metaxy_project.run_cli(["describe", "graph", "--snapshot", project_version], capsys=capsys)
 
         assert result.returncode == 0
-        # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
+        # Check that output contains "Describing snapshot" and the project_version (may have newlines between them)
         assert "Describing feature graph snapshot" in result.stderr
-        assert snapshot_version in result.stderr
+        assert project_version in result.stderr
         assert "Graph Snapshot:" in result.stderr
         assert "Total Features" in result.stderr
 
@@ -332,12 +332,12 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject, capsys: p
         assert "Recorded feature graph" in push_result.stderr
 
         # Extract snapshot version from stdout (just the raw hash)
-        snapshot_version = push_result.stdout.strip()
-        assert snapshot_version
+        project_version = push_result.stdout.strip()
+        assert project_version
 
         # Step 2: History should show the snapshot (table output goes to stderr)
         history_result = metaxy_project.run_cli(["graph", "history"], capsys=capsys)
-        assert snapshot_version[:13] in history_result.stderr
+        assert project_version[:13] in history_result.stderr
         assert "2" in history_result.stderr  # 2 features
 
         # Step 3: Describe should show current graph
@@ -347,11 +347,11 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject, capsys: p
 
         # Step 4: Describe historical snapshot
         describe_historical = metaxy_project.run_cli(
-            ["describe", "graph", "--snapshot", snapshot_version], capsys=capsys
+            ["describe", "graph", "--snapshot", project_version], capsys=capsys
         )
-        # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
+        # Check that output contains "Describing snapshot" and the project_version (may have newlines between them)
         assert "Describing feature graph snapshot" in describe_historical.stderr
-        assert snapshot_version in describe_historical.stderr
+        assert project_version in describe_historical.stderr
 
 
 def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
@@ -731,7 +731,7 @@ def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject, capsys: py
     with metaxy_project.with_features(features):
         # Test with no fields shown
         result = metaxy_project.run_cli(
-            ["graph", "render", "--no-show-fields", "--no-show-snapshot-version"], capsys=capsys
+            ["graph", "render", "--no-show-fields", "--no-show-project-version"], capsys=capsys
         )
 
         assert result.returncode == 0

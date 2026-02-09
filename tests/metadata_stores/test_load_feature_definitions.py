@@ -114,7 +114,7 @@ def test_load_feature_definitions_raw_by_project(tmp_path: Path):
             result = storage.push_graph_snapshot()
 
             # Get the project name from stored features
-            features_df = storage.read_features(current=False, snapshot_version=result.snapshot_version)
+            features_df = storage.read_features(current=False, project_version=result.project_version)
             project = features_df["project"][0]
 
     # Load filtering by project
@@ -635,7 +635,7 @@ def test_external_features_never_pushed_to_metadata_store(tmp_path: Path):
             result = storage.push_graph_snapshot()
 
             # Verify only original_feature was pushed
-            features_df = storage.read_features(current=False, snapshot_version=result.snapshot_version)
+            features_df = storage.read_features(current=False, project_version=result.project_version)
             feature_keys = features_df["feature_key"].to_list()
             assert "original_feature" in feature_keys
             assert "external_only" not in feature_keys

@@ -17,7 +17,7 @@ from metaxy.metadata_store.system import EVENTS_KEY, FEATURE_VERSIONS_KEY
 from metaxy.models.constants import (
     METAXY_DEFINITION_VERSION,
     METAXY_FEATURE_VERSION,
-    METAXY_SNAPSHOT_VERSION,
+    METAXY_PROJECT_VERSION,
 )
 from metaxy.models.feature_spec import FeatureSpec
 
@@ -55,7 +55,7 @@ def create_system_tables(
         Column(METAXY_DEFINITION_VERSION, String, primary_key=True),
         # Versioning columns
         Column(METAXY_FEATURE_VERSION, String, index=True),
-        Column(METAXY_SNAPSHOT_VERSION, String, index=True),
+        Column(METAXY_PROJECT_VERSION, String, index=True),
         # Metadata columns
         Column("recorded_at", DateTime, index=True),
         Column("feature_spec", String),

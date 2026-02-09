@@ -227,8 +227,8 @@ class MigrationExecutor:
                     rows_affected = op.execute_for_feature(
                         store,
                         feature_key_str,
-                        snapshot_version=migration.to_snapshot_version,
-                        from_snapshot_version=migration.from_snapshot_version,
+                        project_version=migration.to_project_version,
+                        from_project_version=migration.from_project_version,
                         dry_run=dry_run,
                     )
 
@@ -414,8 +414,8 @@ class MigrationExecutor:
                     rows_affected = operation.execute_for_feature(
                         store,
                         feature_key_str,
-                        snapshot_version=migration.snapshot_version,
-                        from_snapshot_version=migration.from_snapshot_version,
+                        project_version=migration.project_version,
+                        from_project_version=migration.from_project_version,
                         dry_run=dry_run,
                     )
 

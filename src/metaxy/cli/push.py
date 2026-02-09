@@ -87,6 +87,6 @@ def push(
         else:
             console.print("[green]✓[/green] [green]Snapshot already recorded[/green] [dim](no changes)[/dim]")
 
-        # Always output the snapshot version to stdout (for scripting)
-        # Note: snapshot_version is "empty" when graph has no features
-        data_console.print(result.snapshot_version)
+        # Always output the project version to stdout (for scripting)
+        # Note: project_version is "empty" when graph has no features
+        data_console.print(result.project_version)

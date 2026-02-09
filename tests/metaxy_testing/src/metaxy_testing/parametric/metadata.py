@@ -24,9 +24,9 @@ from metaxy.models.constants import (
     METAXY_DELETED_AT,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
+    METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_SNAPSHOT_VERSION,
     METAXY_UPDATED_AT,
 )
 from metaxy.models.types import FeatureKey
@@ -174,7 +174,7 @@ def feature_metadata_strategy(
     draw: st.DrawFn,
     feature_spec: FeatureSpec,
     feature_version: str,
-    snapshot_version: str,
+    project_version: str,
     num_rows: int | None = None,
     min_rows: int = 1,
     max_rows: int = 100,
@@ -192,7 +192,7 @@ def feature_metadata_strategy(
         draw: Hypothesis draw function (provided by @composite decorator)
         feature_spec: FeatureSpec to generate metadata for
         feature_version: The feature version hash to use (from FeatureGraph)
-        snapshot_version: The snapshot version hash to use (from FeatureGraph)
+        project_version: The snapshot version hash to use (from FeatureGraph)
         num_rows: Exact number of rows to generate. If None, will draw from min_rows to max_rows
         min_rows: Minimum number of rows (only used if num_rows is None, default: 1)
         max_rows: Maximum number of rows (only used if num_rows is None, default: 100)
@@ -292,7 +292,7 @@ def feature_metadata_strategy(
     # Add constant version columns
     df = df.with_columns(  # ty: ignore[unresolved-attribute]
         pl.lit(feature_version).alias(METAXY_FEATURE_VERSION),
-        pl.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+        pl.lit(project_version).alias(METAXY_PROJECT_VERSION),
     )
 
     # Add METAXY_PROVENANCE column - hash of all field hashes concatenated
@@ -355,7 +355,7 @@ def upstream_metadata_strategy(
     draw: st.DrawFn,
     feature_plan: FeaturePlan,
     feature_versions: dict[str, str],
-    snapshot_version: str,
+    project_version: str,
     min_rows: int = 1,
     max_rows: int = 100,
     aggregation_multiplier_min: int = 2,
@@ -365,7 +365,7 @@ def upstream_metadata_strategy(
 
     Creates a dictionary mapping upstream feature keys to Polars DataFrames that
     contain valid Metaxy metadata. The DataFrames include all system columns
-    (metaxy_provenance_by_field, metaxy_feature_version, metaxy_snapshot_version)
+    (metaxy_provenance_by_field, metaxy_feature_version, metaxy_project_version)
     and ID columns as defined in each upstream feature spec.
 
     Uses Polars' native parametric testing for efficient generation.
@@ -384,13 +384,13 @@ def upstream_metadata_strategy(
     - ID columns (as defined per feature spec) with generated values
     - metaxy_provenance_by_field: Struct column with field keys mapped to hash strings
     - metaxy_feature_version: Feature version hash string (from FeatureGraph)
-    - metaxy_snapshot_version: Snapshot version hash string (from FeatureGraph)
+    - metaxy_project_version: Snapshot version hash string (from FeatureGraph)
 
     Args:
         draw: Hypothesis draw function (provided by @composite decorator)
         feature_plan: FeaturePlan containing the feature and its upstream dependencies
         feature_versions: Dict mapping feature key strings to their feature_version hashes
-        snapshot_version: The snapshot version hash to use for all features
+        project_version: The snapshot version hash to use for all features
         min_rows: Minimum number of rows for base (downstream) level (default: 1)
         max_rows: Maximum number of rows for base (downstream) level (default: 100)
         aggregation_multiplier_min: Minimum rows per group for aggregation upstreams (default: 2)
@@ -584,7 +584,7 @@ def upstream_metadata_strategy(
             feature_metadata_strategy(
                 upstream_spec,
                 feature_version=feature_version,
-                snapshot_version=snapshot_version,
+                project_version=project_version,
                 id_columns_df=upstream_id_df,
             )
         )
@@ -600,7 +600,7 @@ def downstream_metadata_strategy(
     draw: st.DrawFn,
     feature_plan: FeaturePlan,
     feature_versions: dict[str, str],
-    snapshot_version: str,
+    project_version: str,
     hash_algorithm: HashAlgorithm = HashAlgorithm.XXHASH64,
     min_rows: int = 1,
     max_rows: int = 100,
@@ -622,7 +622,7 @@ def downstream_metadata_strategy(
         feature_plan: FeaturePlan containing the feature and its upstream dependencies
         feature_versions: Dict mapping feature key strings to their feature_version hashes
             (must include the downstream feature itself)
-        snapshot_version: The snapshot version hash to use for all features
+        project_version: The snapshot version hash to use for all features
         hash_algorithm: Hash algorithm to use for provenance calculation (default: XXHASH64)
         min_rows: Minimum number of rows to generate per upstream feature (default: 1)
         max_rows: Maximum number of rows to generate per upstream feature (default: 100)
@@ -649,14 +649,14 @@ def downstream_metadata_strategy(
             "parent": graph.get_feature_version(FeatureKey(["parent"])),
             "child": graph.get_feature_version(FeatureKey(["child"])),
         }
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
 
         @given(
             downstream_metadata_strategy(
                 plan,
                 feature_versions=feature_versions,
-                snapshot_version=snapshot_version,
+                project_version=project_version,
                 hash_algorithm=HashAlgorithm.SHA256,
             )
         )
@@ -676,7 +676,7 @@ def downstream_metadata_strategy(
         upstream_metadata_strategy(
             feature_plan,
             feature_versions={k: v for k, v in feature_versions.items() if k != feature_plan.feature.key.to_string()},
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             min_rows=min_rows,
             max_rows=max_rows,
         )
@@ -714,7 +714,7 @@ def downstream_metadata_strategy(
             feature_metadata_strategy(
                 feature_plan.feature,
                 feature_version=feature_versions[downstream_feature_key],
-                snapshot_version=snapshot_version,
+                project_version=project_version,
                 min_rows=min_rows,
                 max_rows=max_rows,
             )
@@ -756,7 +756,7 @@ def downstream_metadata_strategy(
     ts = datetime.now(timezone.utc)
     downstream_df = downstream_df.with_columns(
         nw.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
-        nw.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+        nw.lit(project_version).alias(METAXY_PROJECT_VERSION),
         # Add data_version columns (default to provenance)
         nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
         nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),

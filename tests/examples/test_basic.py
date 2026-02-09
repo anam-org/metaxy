@@ -38,10 +38,10 @@ def test_basic_runbook(tmp_path):
 
         # Verify snapshot versions are non-empty
         for event in graph_pushed_events:
-            assert event.snapshot_version, "Snapshot version should not be empty"
+            assert event.project_version, "Snapshot version should not be empty"
 
         # The latest snapshot in events should match what's actually in the store
-        store_snapshot = runner.get_latest_snapshot_version()
+        store_snapshot = runner.get_latest_project_version()
         assert store_snapshot is not None, "Store should have a snapshot"
         assert execution_state.latest_snapshot == store_snapshot
 

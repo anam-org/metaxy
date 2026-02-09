@@ -1140,7 +1140,7 @@ database = "{staging_db_path}"
 
         # Get versions from graph
         feature_version = graph.get_feature_version(feature_key)
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Prepare id_columns_df if specific ID values were provided
         id_columns_df = None
@@ -1153,7 +1153,7 @@ database = "{staging_db_path}"
         sample_data = feature_metadata_strategy(
             definition.spec,
             feature_version=feature_version,
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             num_rows=num_rows,
             id_columns_df=id_columns_df,
         ).example()
@@ -1164,7 +1164,7 @@ database = "{staging_db_path}"
         with graph.use():
             with store.open("w"):
                 store.write(feature_key, sample_data)
-                # Record the feature graph snapshot so copy_metadata can determine snapshot_version
+                # Record the feature graph snapshot so copy_metadata can determine project_version
                 SystemTableStorage(store).push_graph_snapshot()
 
     def write_custom_metadata(

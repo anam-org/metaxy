@@ -228,7 +228,7 @@ class TestColumnSelection:
         joined_df = joined.collect().to_polars()
 
         # Verify only essential system columns are present
-        # Note: feature_version and snapshot_version are NOT considered essential for joining
+        # Note: feature_version and project_version are NOT considered essential for joining
         # to avoid conflicts when joining multiple upstream features
         assert "sample_uid" in joined_df.columns
         assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
@@ -560,7 +560,7 @@ class TestColumnSelection:
                     {"default": "h3"},
                 ],
                 "metaxy_feature_version": ["v1", "v1", "v1"],
-                "metaxy_snapshot_version": ["s1", "s1", "s1"],
+                "metaxy_project_version": ["s1", "s1", "s1"],
                 "custom_col": ["a", "b", "c"],
                 "other_col": [10, 20, 30],
             }
@@ -575,9 +575,9 @@ class TestColumnSelection:
         # Verify essential system columns are preserved
         assert "sample_uid" in joined_df.columns
         assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
-        # Note: feature_version and snapshot_version are NOT preserved to avoid conflicts
+        # Note: feature_version and project_version are NOT preserved to avoid conflicts
         assert "metaxy_feature_version" not in joined_df.columns
-        assert "metaxy_snapshot_version" not in joined_df.columns
+        assert "metaxy_project_version" not in joined_df.columns
         # Verify selected column
         assert "custom_col" in joined_df.columns
         # Verify non-selected column is not present

@@ -72,7 +72,7 @@ def test_hash_algorithm_produces_consistent_hashes(
     upstream_data, golden_downstream = downstream_metadata_strategy(
         child_plan,
         feature_versions=feature_versions,
-        snapshot_version=graph.snapshot_version,
+        project_version=graph.project_version,
         hash_algorithm=hash_algorithm,
         min_rows=10,
         max_rows=10,
@@ -91,13 +91,13 @@ def test_hash_algorithm_produces_consistent_hashes(
         increment1 = store.resolve_update(
             ChildFeature,
             target_version=ChildFeature.feature_version(),
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
         )
 
         increment2 = store.resolve_update(
             ChildFeature,
             target_version=ChildFeature.feature_version(),
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
         )
 
         # Convert to Polars for comparison
@@ -174,7 +174,7 @@ def test_hash_truncation(
     upstream_data, _ = downstream_metadata_strategy(
         child_plan,
         feature_versions=feature_versions,
-        snapshot_version=graph.snapshot_version,
+        project_version=graph.project_version,
         hash_algorithm=hash_algorithm,
         min_rows=20,
         max_rows=20,
@@ -192,7 +192,7 @@ def test_hash_truncation(
         increment = store.resolve_update(
             ChildFeature,
             target_version=ChildFeature.feature_version(),
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
         )
 
         result = increment.new.lazy().collect().to_polars()
@@ -254,7 +254,7 @@ def test_field_level_provenance_structure(
         upstream_data, _ = downstream_metadata_strategy(
             child_plan,
             feature_versions=feature_versions,
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
             hash_algorithm=hash_algorithm,
             min_rows=5,
             max_rows=5,
@@ -267,7 +267,7 @@ def test_field_level_provenance_structure(
         increment = store.resolve_update(
             ChildFeature,
             target_version=ChildFeature.feature_version(),
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
         )
 
         result = increment.new.lazy().collect().to_polars()
@@ -331,7 +331,7 @@ def test_hash_truncation_any_store(config_with_truncation, any_store: MetadataSt
     upstream_data, _ = downstream_metadata_strategy(
         child_plan,
         feature_versions=feature_versions,
-        snapshot_version=graph.snapshot_version,
+        project_version=graph.project_version,
         hash_algorithm=any_store.hash_algorithm,
         min_rows=5,
         max_rows=10,
@@ -347,7 +347,7 @@ def test_hash_truncation_any_store(config_with_truncation, any_store: MetadataSt
         increment = any_store.resolve_update(
             ChildFeature,
             target_version=ChildFeature.feature_version(),
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
         )
 
         result = increment.new.lazy().collect().to_polars()

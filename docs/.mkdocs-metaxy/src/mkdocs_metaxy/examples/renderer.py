@@ -342,5 +342,5 @@ class ExampleRenderer:
         Returns:
             Markdown string describing the push.
         """
-        snapshot_short = event.snapshot_version[:8]
+        snapshot_short = event.project_version[:8]
         return f"**Graph snapshot recorded:** `{snapshot_short}...`\n\n"

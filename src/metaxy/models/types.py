@@ -36,16 +36,16 @@ FIELD_KEY_SEPARATOR = KEY_SEPARATOR
 
 
 @public
-class SnapshotPushResult(NamedTuple):
+class PushResult(NamedTuple):
     """Result of recording a feature graph snapshot.
 
     Attributes:
-        snapshot_version: The deterministic hash of the graph snapshot
-        already_pushed: True if this snapshot_version was already pushed previously
+        project_version: The deterministic hash of the graph's project version
+        already_pushed: True if this project_version was already pushed previously
         updated_features: List of feature keys with updated information (changed definition_version)
     """
 
-    snapshot_version: str
+    project_version: str
     already_pushed: bool
     updated_features: list[str]
 

@@ -360,7 +360,7 @@ class FeatureSelector:
 
 def load_graph_for_command(
     context: AppContext,
-    snapshot_version: str | None,
+    project_version: str | None,
     metadata_store: MetadataStore,
     output_format: OutputFormat,
 ) -> FeatureGraph:
@@ -368,14 +368,14 @@ def load_graph_for_command(
 
     Args:
         context: CLI application context
-        snapshot_version: Optional snapshot version to load from
+        project_version: Optional project version to load from
         metadata_store: Store to load snapshot from
         output_format: Output format for error messages
 
     Returns:
         FeatureGraph from snapshot or current context
     """
-    if snapshot_version is None:
+    if project_version is None:
         return context.graph
 
     from metaxy.metadata_store.system.storage import SystemTableStorage
@@ -383,7 +383,7 @@ def load_graph_for_command(
     storage = SystemTableStorage(metadata_store)
     try:
         return storage.load_graph_from_snapshot(
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             project=context.project,
         )
     except ValueError as e:

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 def detect_diff_migration(
     store: "MetadataStore",
     project: str | None = None,
-    from_snapshot_version: str | None = None,
+    from_project_version: str | None = None,
     ops: list[dict[str, Any]] | None = None,
     migrations_dir: Path | None = None,
     name: str | None = None,
@@ -24,13 +24,13 @@ def detect_diff_migration(
 ) -> "DiffMigration | None":
     """Detect migration needed between snapshots and write YAML file.
 
-    Compares the latest snapshot in the store (or specified from_snapshot_version)
+    Compares the latest snapshot in the store (or specified from_project_version)
     with the current active graph to detect changes and generate a migration YAML file.
 
     Args:
         store: Metadata store containing snapshot metadata
         project: Project name for filtering snapshots
-        from_snapshot_version: Source snapshot version (defaults to latest in store for project)
+        from_project_version: Source snapshot version (defaults to latest in store for project)
         ops: List of operation dicts with "type" field (defaults to [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}])
         migrations_dir: Directory to write migration YAML (defaults to .metaxy/migrations/)
         name: Migration name (creates {timestamp}_{name} ID and filename)
@@ -63,8 +63,8 @@ def detect_diff_migration(
     """
     differ = GraphDiffer()
 
-    # Get from_snapshot_version (use latest if not specified)
-    if from_snapshot_version is None:
+    # Get from_project_version (use latest if not specified)
+    if from_project_version is None:
         from metaxy.metadata_store.system.storage import SystemTableStorage
 
         with store:
@@ -72,12 +72,12 @@ def detect_diff_migration(
         if snapshots.height == 0:
             # No snapshots in store for this project - nothing to migrate from
             return None
-        from_snapshot_version = snapshots["metaxy_snapshot_version"][0]
+        from_project_version = snapshots["metaxy_project_version"][0]
 
-    # At this point, from_snapshot_version is guaranteed to be a str
-    assert from_snapshot_version is not None  # Type narrowing for type checker
+    # At this point, from_project_version is guaranteed to be a str
+    assert from_project_version is not None  # Type narrowing for type checker
 
-    # Get to_snapshot_version from current active graph
+    # Get to_project_version from current active graph
     active_graph = FeatureGraph.get_active()
     if len(active_graph.feature_definitions_by_key) == 0:
         # No features in active graph - nothing to migrate to
@@ -99,7 +99,7 @@ def detect_diff_migration(
                     f"Set 'project' in metaxy.toml or pass project argument."
                 )
 
-    to_snapshot_version = active_graph.get_project_snapshot_version(project)
+    to_project_version = active_graph.get_project_version(project)
 
     # Check hash truncation compatibility
     # If truncation is in use, the snapshot versions should be compatible
@@ -107,17 +107,17 @@ def detect_diff_migration(
     truncation_length = get_hash_truncation_length()
     if truncation_length is not None:
         # When using truncation, we need to check compatibility rather than exact equality
-        if ensure_hash_compatibility(from_snapshot_version, to_snapshot_version):
+        if ensure_hash_compatibility(from_project_version, to_project_version):
             # Hashes are compatible (same or truncated versions) - no changes
             return None
     else:
         # No truncation - use exact comparison
-        if from_snapshot_version == to_snapshot_version:
+        if from_project_version == to_project_version:
             return None
 
     # Load snapshot data using GraphDiffer
     try:
-        from_snapshot_data = differ.load_snapshot_data(store, from_snapshot_version)
+        from_snapshot_data = differ.load_snapshot_data(store, from_project_version)
     except ValueError:
         # Snapshot not found - nothing to migrate from
         return None
@@ -129,8 +129,8 @@ def detect_diff_migration(
     graph_diff = differ.diff(
         from_snapshot_data,
         to_snapshot_data,
-        from_snapshot_version,
-        to_snapshot_version,
+        from_project_version,
+        to_project_version,
     )
 
     # Check if there are any changes
@@ -169,8 +169,8 @@ def detect_diff_migration(
         migration_id=migration_id,
         created_at=timestamp,
         parent=parent,
-        from_snapshot_version=from_snapshot_version,
-        to_snapshot_version=to_snapshot_version,
+        from_project_version=from_project_version,
+        to_project_version=to_project_version,
         ops=ops,
     )
 
@@ -182,8 +182,8 @@ def detect_diff_migration(
         "id": migration.migration_id,
         "created_at": migration.created_at.isoformat(),
         "parent": migration.parent,
-        "from_snapshot_version": migration.from_snapshot_version,
-        "to_snapshot_version": migration.to_snapshot_version,
+        "from_project_version": migration.from_project_version,
+        "to_project_version": migration.to_project_version,
         "ops": migration.ops,
     }
 
@@ -281,7 +281,7 @@ def generate_full_graph_migration(
         migration_id=migration_id,
         created_at=timestamp,
         parent=parent,
-        snapshot_version=snapshot_result.snapshot_version,
+        project_version=snapshot_result.project_version,
         ops=ops_with_features,
     )
 
@@ -293,7 +293,7 @@ def generate_full_graph_migration(
         "id": migration.migration_id,
         "created_at": migration.created_at.isoformat(),
         "parent": migration.parent,
-        "snapshot_version": migration.snapshot_version,
+        "project_version": migration.project_version,
         "ops": migration.ops,
     }
 

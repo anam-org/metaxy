@@ -163,11 +163,11 @@ def render(
     project = context.get_required_project()  # This command needs a specific project
 
     with metadata_store:
-        # Resolve snapshot versions
+        # Resolve project versions
         resolver = SnapshotResolver()
         try:
-            from_snapshot_version = resolver.resolve_snapshot(from_snapshot, metadata_store, graph, project)
-            to_snapshot_version = resolver.resolve_snapshot(to_snapshot, metadata_store, graph, project)
+            from_project_version = resolver.resolve_snapshot(from_snapshot, metadata_store, graph, project)
+            to_project_version = resolver.resolve_snapshot(to_snapshot, metadata_store, graph, project)
         except ValueError as e:
             console.print(f"[red]Error:[/red] {e}")
             raise SystemExit(1)
@@ -180,12 +180,12 @@ def render(
         try:
             from_snapshot_data = differ.load_snapshot_data(
                 metadata_store,
-                from_snapshot_version,
+                from_project_version,
                 project,
             )
             to_snapshot_data = differ.load_snapshot_data(
                 metadata_store,
-                to_snapshot_version,
+                to_project_version,
                 project,
             )
         except ValueError as e:

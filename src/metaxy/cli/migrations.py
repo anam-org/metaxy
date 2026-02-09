@@ -31,7 +31,7 @@ def generate(
     ] = None,
     from_snapshot: Annotated[
         str | None,
-        cyclopts.Parameter(help="Compare from this historical snapshot version (defaults to latest)"),
+        cyclopts.Parameter(help="Compare from this historical project version (defaults to latest)"),
     ] = None,
     op: Annotated[
         list[str],
@@ -116,7 +116,7 @@ def generate(
             migration = detect_diff_migration(
                 metadata_store,
                 project=project,
-                from_snapshot_version=from_snapshot,
+                from_project_version=from_snapshot,
                 ops=ops,
                 migrations_dir=migrations_dir,
                 name=name,
@@ -133,8 +133,8 @@ def generate(
             app.console.print("\n[green]✓[/green] DiffMigration generated")
             app.console.print(f"  Migration ID: {migration.migration_id}")
             app.console.print(f"  YAML file: {yaml_path}")
-            app.console.print(f"  From snapshot: {migration.from_snapshot_version}")
-            app.console.print(f"  To snapshot: {migration.to_snapshot_version}")
+            app.console.print(f"  From snapshot: {migration.from_project_version}")
+            app.console.print(f"  To snapshot: {migration.to_project_version}")
 
         else:  # type == "full"
             if from_snapshot is not None:
@@ -154,7 +154,7 @@ def generate(
             app.console.print("\n[green]✓[/green] FullGraphMigration generated")
             app.console.print(f"  Migration ID: {migration.migration_id}")
             app.console.print(f"  YAML file: {yaml_path}")
-            app.console.print(f"  Snapshot: {migration.snapshot_version}")
+            app.console.print(f"  Snapshot: {migration.project_version}")
 
         # Output migration ID to stdout for scripting
         data_console.print(migration.migration_id)
@@ -438,8 +438,8 @@ def status():
 
             if isinstance(migration, DiffMigration):
                 app.console.print("  Snapshots:")
-                app.console.print(f"    From: {migration.from_snapshot_version}")
-                app.console.print(f"    To:   {migration.to_snapshot_version}")
+                app.console.print(f"    From: {migration.from_project_version}")
+                app.console.print(f"    To:   {migration.to_project_version}")
 
             # Show operation-level progress for FullGraphMigration
             from metaxy.migrations.models import FullGraphMigration, OperationConfig
@@ -621,8 +621,8 @@ def explain(
 
         # Print header
         app.console.print(f"\n[bold]Migration: {migration_id}[/bold]")
-        app.console.print(f"From: {migration.from_snapshot_version}")
-        app.console.print(f"To:   {migration.to_snapshot_version}")
+        app.console.print(f"From: {migration.from_project_version}")
+        app.console.print(f"To:   {migration.to_project_version}")
         app.console.print()
 
         # Compute diff on-demand
@@ -814,8 +814,8 @@ def describe(
 
             if isinstance(migration_obj, DiffMigration):
                 app.console.print("[bold]Snapshots:[/bold]")
-                app.console.print(f"  From: {migration_obj.from_snapshot_version}")
-                app.console.print(f"  To:   {migration_obj.to_snapshot_version}")
+                app.console.print(f"  From: {migration_obj.from_project_version}")
+                app.console.print(f"  To:   {migration_obj.to_project_version}")
                 app.console.print()
 
             # Operations (for FullGraphMigration)

@@ -41,9 +41,9 @@ class CardsRenderer(BaseRenderer):
 
         # Build edges representation
         edges_text = Text()
-        if self.config.show_snapshot_version:
-            snapshot_version = self._format_hash(filtered_graph.snapshot_version)
-            edges_text.append(f"📊 Graph (snapshot: {snapshot_version})\n\n", style="bold")
+        if self.config.show_project_version:
+            project_version = self._format_hash(filtered_graph.project_version)
+            edges_text.append(f"📊 Graph (snapshot: {project_version})\n\n", style="bold")
         else:
             edges_text.append("📊 Graph\n\n", style="bold")
 

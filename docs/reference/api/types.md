@@ -69,6 +69,6 @@ These can perform type coercsion into [canonical types](#canonical-keys) in non-
 
 ## Other Types
 
-::: metaxy.models.types.SnapshotPushResult
+::: metaxy.models.types.PushResult
 
 ::: metaxy.IDColumns

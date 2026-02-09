@@ -108,8 +108,8 @@ class GraphDiff(FrozenBaseModel):
     Stores changes between two graph states for migration generation.
     """
 
-    from_snapshot_version: str
-    to_snapshot_version: str
+    from_project_version: str
+    to_project_version: str
     added_nodes: list[AddedNode] = Field(default_factory=list)
     removed_nodes: list[RemovedNode] = Field(default_factory=list)
     changed_nodes: list[NodeChange] = Field(default_factory=list)
@@ -241,15 +241,15 @@ class GraphDiff(FrozenBaseModel):
     def from_struct(
         cls,
         struct_data: dict[str, Any],
-        from_snapshot_version: str,
-        to_snapshot_version: str,
+        from_project_version: str,
+        to_project_version: str,
     ) -> "GraphDiff":
         """Deserialize from struct.
 
         Args:
             struct_data: Dict with structure from to_struct()
-            from_snapshot_version: Source snapshot version
-            to_snapshot_version: Target snapshot version
+            from_project_version: Source snapshot version
+            to_project_version: Target snapshot version
 
         Returns:
             GraphDiff instance
@@ -373,8 +373,8 @@ class GraphDiff(FrozenBaseModel):
             )
 
         return cls(
-            from_snapshot_version=from_snapshot_version,
-            to_snapshot_version=to_snapshot_version,
+            from_project_version=from_project_version,
+            to_project_version=to_project_version,
             added_nodes=added_nodes,
             removed_nodes=removed_nodes,
             changed_nodes=changed_nodes,

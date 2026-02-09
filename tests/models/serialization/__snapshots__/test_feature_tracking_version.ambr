@@ -1,11 +1,11 @@
 # serializer version: 1
 # name: test_definition_version_deterministic
-  '64242c1d'
+  '042a2c29'
 # ---
 # name: test_definition_version_excludes_project
   dict({
-    'definition_version_a': 'a0d1182f',
-    'definition_version_b': 'a0d1182f',
+    'definition_version_a': '08961080',
+    'definition_version_b': '08961080',
     'definition_versions_same': True,
     'feature_version_a': 'd26937b1',
     'feature_version_b': 'd26937b1',
@@ -17,9 +17,9 @@
 # ---
 # name: test_feature_with_deps_same_definition_version
   dict({
-    'downstream_definition_version': '344a1dea',
+    'downstream_definition_version': '333ccc84',
     'downstream_feature_version': 'df87030d',
-    'upstream_definition_version': '702a9cec',
+    'upstream_definition_version': '6efa14f2',
     'upstream_feature_version': '492c1fb9',
   })
 # ---

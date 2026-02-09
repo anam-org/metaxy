@@ -17,9 +17,9 @@ from metaxy.models.constants import (
     METAXY_DELETED_AT,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
+    METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_SNAPSHOT_VERSION,
     METAXY_UPDATED_AT,
 )
 
@@ -110,7 +110,7 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
     # Get snapshot version from the graph after first write
     from metaxy.models.feature import FeatureGraph
 
-    snapshot_version = FeatureGraph.get_active().snapshot_version
+    project_version = FeatureGraph.get_active().project_version
 
     # Now create 100 rows with controlled timestamps
     rows = []
@@ -130,7 +130,7 @@ def test_read_returns_latest_timestamp_among_many_rows(store: MetadataStore):
                 METAXY_DATA_VERSION_BY_FIELD: {"default": f"hash_{i}"},
                 METAXY_DATA_VERSION: f"data_version_{i}",
                 METAXY_FEATURE_VERSION: feature_version,
-                METAXY_SNAPSHOT_VERSION: snapshot_version,
+                METAXY_PROJECT_VERSION: project_version,
                 METAXY_CREATED_AT: ts,
                 METAXY_UPDATED_AT: ts,
                 METAXY_DELETED_AT: None,

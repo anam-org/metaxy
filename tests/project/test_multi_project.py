@@ -335,10 +335,10 @@ class TestSystemTableRecording:
                 result = storage.push_graph_snapshot()
 
                 assert not result.already_pushed  # First time recording
-                snapshot_version = result.snapshot_version
+                project_version = result.project_version
 
                 # Read the recorded features
-                features_df = storage.read_features(current=False, snapshot_version=snapshot_version)
+                features_df = storage.read_features(current=False, project_version=project_version)
 
                 # Verify tracking version is recorded
                 assert "metaxy_definition_version" in features_df.columns

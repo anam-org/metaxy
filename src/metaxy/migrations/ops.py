@@ -26,7 +26,7 @@ class BaseOperation(BaseSettings, ABC):
             postgresql_url: str  # Reads from POSTGRESQL_URL env var or config dict
             batch_size: int = 1000  # Optional with default
 
-            def execute_for_feature(self, store, feature_key, *, snapshot_version, from_snapshot_version=None, dry_run=False):
+            def execute_for_feature(self, store, feature_key, *, project_version, from_project_version=None, dry_run=False):
                 # Implementation here
                 return 0
     """
@@ -77,8 +77,8 @@ class BaseOperation(BaseSettings, ABC):
         store: "MetadataStore",
         feature_key: str,
         *,
-        snapshot_version: str,
-        from_snapshot_version: str | None = None,
+        project_version: str,
+        from_project_version: str | None = None,
         dry_run: bool = False,
     ) -> int:
         """Execute operation for a single feature.
@@ -86,8 +86,8 @@ class BaseOperation(BaseSettings, ABC):
         Args:
             store: Metadata store to operate on
             feature_key: Feature key string (e.g., "video/scene")
-            snapshot_version: Target snapshot version
-            from_snapshot_version: Source snapshot version (optional, for cross-snapshot migrations)
+            project_version: Target snapshot version
+            from_project_version: Source snapshot version (optional, for cross-snapshot migrations)
             dry_run: If True, only validate and return count without executing
 
         Returns:
@@ -135,8 +135,8 @@ class DataVersionReconciliation(BaseOperation):
         store: "MetadataStore",
         feature_key: str,
         *,
-        snapshot_version: str,
-        from_snapshot_version: str | None = None,
+        project_version: str,
+        from_project_version: str | None = None,
         dry_run: bool = False,
     ) -> int:
         """Execute field provenance reconciliation for a single feature.
@@ -151,25 +151,25 @@ class DataVersionReconciliation(BaseOperation):
         3. Load existing metadata with old feature_version
         4. Use resolve_update() to calculate expected field_provenance based on current upstream
         5. Join existing user metadata with new field_provenance
-        6. Write with new feature_version and snapshot_version
+        6. Write with new feature_version and project_version
 
         Args:
             store: Metadata store
             feature_key: Feature key string (e.g., "examples/child")
-            snapshot_version: Target snapshot version (new state)
-            from_snapshot_version: Source snapshot version (old state, required for this operation)
+            project_version: Target snapshot version (new state)
+            from_project_version: Source snapshot version (old state, required for this operation)
             dry_run: If True, return row count without executing
 
         Returns:
             Number of rows affected
 
         Raises:
-            ValueError: If feature has no upstream dependencies (root feature) or from_snapshot_version not provided
+            ValueError: If feature has no upstream dependencies (root feature) or from_project_version not provided
         """
-        if from_snapshot_version is None:
-            raise ValueError(f"DataVersionReconciliation requires from_snapshot_version for feature {feature_key}")
+        if from_project_version is None:
+            raise ValueError(f"DataVersionReconciliation requires from_project_version for feature {feature_key}")
 
-        to_snapshot_version = snapshot_version
+        to_project_version = project_version
         import narwhals as nw
 
         from metaxy.metadata_store.base import allow_feature_version_override
@@ -200,7 +200,7 @@ class DataVersionReconciliation(BaseOperation):
                 with_feature_history=True,
                 allow_fallback=False,
                 filters=[
-                    (nw.col("metaxy_snapshot_version") == from_snapshot_version)
+                    (nw.col("metaxy_project_version") == from_project_version)
                     & (nw.col("feature_key") == feature_key_str)
                 ],
             )
@@ -213,7 +213,7 @@ class DataVersionReconciliation(BaseOperation):
                 with_feature_history=True,
                 allow_fallback=False,
                 filters=[
-                    (nw.col("metaxy_snapshot_version") == to_snapshot_version)
+                    (nw.col("metaxy_project_version") == to_project_version)
                     & (nw.col("feature_key") == feature_key_str)
                 ],
             )
@@ -221,7 +221,7 @@ class DataVersionReconciliation(BaseOperation):
             to_version_data = None
 
         # Extract feature versions from lazy frames
-        # Since we filter by snapshot_version and feature_key, there should be exactly one row
+        # Since we filter by project_version and feature_key, there should be exactly one row
         from_feature_version: str | None = None
         to_feature_version: str | None = None
 
@@ -240,9 +240,9 @@ class DataVersionReconciliation(BaseOperation):
                 to_version_data = None
 
         if from_version_data is None:
-            raise ValueError(f"Feature {feature_key_str} not found in from_snapshot {from_snapshot_version}")
+            raise ValueError(f"Feature {feature_key_str} not found in from_snapshot {from_project_version}")
         if to_version_data is None:
-            raise ValueError(f"Feature {feature_key_str} not found in to_snapshot {to_snapshot_version}")
+            raise ValueError(f"Feature {feature_key_str} not found in to_snapshot {to_project_version}")
 
         assert from_feature_version is not None
         assert to_feature_version is not None
@@ -276,7 +276,7 @@ class DataVersionReconciliation(BaseOperation):
             not in [
                 "metaxy_provenance_by_field",
                 "metaxy_feature_version",
-                "metaxy_snapshot_version",
+                "metaxy_project_version",
             ]
         ]
         sample_metadata = existing_metadata_df.select(user_columns)
@@ -300,12 +300,12 @@ class DataVersionReconciliation(BaseOperation):
         else:
             return 0
 
-        # 6. Write with new feature_version and snapshot_version
+        # 6. Write with new feature_version and project_version
         # Wrap in Narwhals for write
         df_to_write_nw = nw.from_native(df_to_write)
         df_to_write_nw = df_to_write_nw.with_columns(
             nw.lit(to_feature_version).alias("metaxy_feature_version"),
-            nw.lit(to_snapshot_version).alias("metaxy_snapshot_version"),
+            nw.lit(to_project_version).alias("metaxy_project_version"),
         )
 
         with allow_feature_version_override():
@@ -338,8 +338,8 @@ class MetadataBackfill(BaseOperation, ABC):
                 store,
                 feature_key,
                 *,
-                snapshot_version,
-                from_snapshot_version=None,
+                project_version,
+                from_project_version=None,
                 dry_run=False
             ):
                 import boto3
@@ -402,8 +402,8 @@ class MetadataBackfill(BaseOperation, ABC):
         store: "MetadataStore",
         feature_key: str,
         *,
-        snapshot_version: str,
-        from_snapshot_version: str | None = None,
+        project_version: str,
+        from_project_version: str | None = None,
         dry_run: bool = False,
     ) -> int:
         """User implements backfill logic for a single feature.
@@ -417,8 +417,8 @@ class MetadataBackfill(BaseOperation, ABC):
         Args:
             store: Metadata store to write to
             feature_key: Feature key string (e.g., "video/files")
-            snapshot_version: Target snapshot version
-            from_snapshot_version: Source snapshot version (optional, for cross-snapshot backfills)
+            project_version: Target snapshot version
+            from_project_version: Source snapshot version (optional, for cross-snapshot backfills)
             dry_run: If True, validate and return count without writing
 
         Returns:

@@ -61,7 +61,7 @@ def test_project_can_push_with_unresolved_external_dependency(tmp_path: Path) ->
             result = storage.push_graph_snapshot(project="project_a")
 
             # Push should succeed
-            assert result.snapshot_version is not None
+            assert result.project_version is not None
             assert not result.already_pushed
 
 
@@ -126,15 +126,15 @@ def test_entangled_projects_can_both_push_to_same_store(tmp_path: Path) -> None:
     # Both projects should now be in the store
     with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         storage = SystemTableStorage(store)
-        features = storage.read_features(current=False, snapshot_version=result_a.snapshot_version)
+        features = storage.read_features(current=False, project_version=result_a.project_version)
         assert "project_a/feature" in features["feature_key"].to_list()
 
-        features = storage.read_features(current=False, snapshot_version=result_b.snapshot_version)
+        features = storage.read_features(current=False, project_version=result_b.project_version)
         assert "project_b/feature" in features["feature_key"].to_list()
 
 
-def test_project_snapshot_versions_are_independent(tmp_path: Path) -> None:
-    """Test that a project's snapshot version doesn't change when external features change.
+def test_project_versions_are_independent(tmp_path: Path) -> None:
+    """Test that a project's version doesn't change when external features change.
 
     This test uses FeatureDefinition directly (not BaseFeature classes) to avoid
     differences in Pydantic schema generation from different class names.
@@ -170,7 +170,7 @@ def test_project_snapshot_versions_are_independent(tmp_path: Path) -> None:
     )
     graph1.add_feature_definition(feature_a_def_v1)
 
-    snapshot_v1 = graph1.get_project_snapshot_version("project_a")
+    snapshot_v1 = graph1.get_project_version("project_a")
 
     # Graph 2: external B has code_version="2" (different!)
     graph2 = FeatureGraph()
@@ -193,15 +193,15 @@ def test_project_snapshot_versions_are_independent(tmp_path: Path) -> None:
     )
     graph2.add_feature_definition(feature_a_def_v2)
 
-    snapshot_v2 = graph2.get_project_snapshot_version("project_a")
+    snapshot_v2 = graph2.get_project_version("project_a")
 
     assert snapshot_v1 == snapshot_v2, (
         f"Project snapshot version should not change when external features change. v1={snapshot_v1}, v2={snapshot_v2}"
     )
 
 
-def test_project_snapshot_version_changes_when_own_feature_changes(tmp_path: Path) -> None:
-    """Test that a project's snapshot version changes when its own features change."""
+def test_project_version_changes_when_own_feature_changes(tmp_path: Path) -> None:
+    """Test that a project's version changes when its own features change."""
     # Create project A v1
     graph1 = FeatureGraph()
     with graph1.use():
@@ -215,7 +215,7 @@ def test_project_snapshot_version_changes_when_own_feature_changes(tmp_path: Pat
         ):
             __metaxy_project__ = "project_a"
 
-        snapshot_v1 = graph1.get_project_snapshot_version("project_a")
+        snapshot_v1 = graph1.get_project_version("project_a")
 
     # Create project A v2 with different code_version
     graph2 = FeatureGraph()
@@ -230,15 +230,15 @@ def test_project_snapshot_version_changes_when_own_feature_changes(tmp_path: Pat
         ):
             __metaxy_project__ = "project_a"
 
-        snapshot_v2 = graph2.get_project_snapshot_version("project_a")
+        snapshot_v2 = graph2.get_project_version("project_a")
 
     assert snapshot_v1 != snapshot_v2, (
         f"Project snapshot version should change when own features change. v1={snapshot_v1}, v2={snapshot_v2}"
     )
 
 
-def test_snapshot_version_uses_configured_project(tmp_path: Path) -> None:
-    """Test that snapshot_version returns the project-specific version for the configured project."""
+def test_project_version_uses_configured_project(tmp_path: Path) -> None:
+    """Test that project_version returns the project-specific version for the configured project."""
     graph = FeatureGraph()
     with graph.use():
 
@@ -260,18 +260,18 @@ def test_snapshot_version_uses_configured_project(tmp_path: Path) -> None:
         ):
             __metaxy_project__ = "project_b"
 
-        project_a_snapshot = graph.get_project_snapshot_version("project_a")
-        project_b_snapshot = graph.get_project_snapshot_version("project_b")
+        project_a_snapshot = graph.get_project_version("project_a")
+        project_b_snapshot = graph.get_project_version("project_b")
 
-        # When project_a is configured, snapshot_version should match project_a's version
+        # When project_a is configured, project_version should match project_a's version
         config_a = MetaxyConfig(project="project_a")
         with config_a.use():
-            assert graph.snapshot_version == project_a_snapshot
+            assert graph.project_version == project_a_snapshot
 
-        # When project_b is configured, snapshot_version should match project_b's version
+        # When project_b is configured, project_version should match project_b's version
         config_b = MetaxyConfig(project="project_b")
         with config_b.use():
-            assert graph.snapshot_version == project_b_snapshot
+            assert graph.project_version == project_b_snapshot
 
         # Project-specific versions should be different from each other
         assert project_a_snapshot != project_b_snapshot
@@ -302,10 +302,10 @@ def test_external_features_excluded_from_project_snapshot(tmp_path: Path) -> Non
             __metaxy_project__ = "project_a"
 
         # Project B's snapshot should be empty (only has external features)
-        assert graph.get_project_snapshot_version("project_b") == "empty"
+        assert graph.get_project_version("project_b") == "empty"
 
         # Project A's snapshot should only include its own feature
-        assert graph.get_project_snapshot_version("project_a") != "empty"
+        assert graph.get_project_version("project_a") != "empty"
 
 
 def test_push_idempotent_for_project_snapshot(tmp_path: Path) -> None:
@@ -332,4 +332,4 @@ def test_push_idempotent_for_project_snapshot(tmp_path: Path) -> None:
             # Second push - same snapshot
             result2 = storage.push_graph_snapshot(project="project_a")
             assert result2.already_pushed
-            assert result1.snapshot_version == result2.snapshot_version
+            assert result1.project_version == result2.project_version

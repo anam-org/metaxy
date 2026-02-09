@@ -2014,9 +2014,9 @@ class TestMetaxifySystemColumns:
             METAXY_DATA_VERSION_BY_FIELD,
             METAXY_FEATURE_VERSION,
             METAXY_MATERIALIZATION_ID,
+            METAXY_PROJECT_VERSION,
             METAXY_PROVENANCE,
             METAXY_PROVENANCE_BY_FIELD,
-            METAXY_SNAPSHOT_VERSION,
         )
 
         spec = mx.FeatureSpec(
@@ -2056,8 +2056,8 @@ class TestMetaxifySystemColumns:
         assert METAXY_FEATURE_VERSION in columns_by_name
         assert columns_by_name[METAXY_FEATURE_VERSION].type == "str"
 
-        assert METAXY_SNAPSHOT_VERSION in columns_by_name
-        assert columns_by_name[METAXY_SNAPSHOT_VERSION].type == "str"
+        assert METAXY_PROJECT_VERSION in columns_by_name
+        assert columns_by_name[METAXY_PROJECT_VERSION].type == "str"
 
         assert METAXY_DATA_VERSION_BY_FIELD in columns_by_name
         assert columns_by_name[METAXY_DATA_VERSION_BY_FIELD].type == "dict[str, str]"

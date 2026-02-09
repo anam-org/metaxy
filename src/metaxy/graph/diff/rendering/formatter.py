@@ -103,7 +103,7 @@ class DiffFormatter:
 
         # Header
         lines.append(
-            f"Graph Diff: {utils.format_hash(diff.from_snapshot_version)}... → {utils.format_hash(diff.to_snapshot_version)}..."
+            f"Graph Diff: {utils.format_hash(diff.from_project_version)}... → {utils.format_hash(diff.to_project_version)}..."
         )
         lines.append("")
 
@@ -170,7 +170,7 @@ class DiffFormatter:
         """Format message when there are no changes."""
         return (
             f"[green]No changes between snapshots[/green]\n"
-            f"  {utils.format_hash(diff.from_snapshot_version)}... → {utils.format_hash(diff.to_snapshot_version)}..."
+            f"  {utils.format_hash(diff.from_project_version)}... → {utils.format_hash(diff.to_project_version)}..."
         )
 
     def print(self, diff: GraphDiff, verbose: bool = False) -> None:
@@ -193,8 +193,8 @@ class DiffFormatter:
             JSON string representation of the diff
         """
         data = {
-            "from_snapshot_version": diff.from_snapshot_version,
-            "to_snapshot_version": diff.to_snapshot_version,
+            "from_project_version": diff.from_project_version,
+            "to_project_version": diff.to_project_version,
             "added_nodes": [utils.format_feature_key(node.feature_key) for node in diff.added_nodes],
             "removed_nodes": [utils.format_feature_key(node.feature_key) for node in diff.removed_nodes],
             "changed_nodes": [
@@ -231,8 +231,8 @@ class DiffFormatter:
         import yaml
 
         data = {
-            "from_snapshot_version": diff.from_snapshot_version,
-            "to_snapshot_version": diff.to_snapshot_version,
+            "from_project_version": diff.from_project_version,
+            "to_project_version": diff.to_project_version,
             "added_nodes": [node.feature_key.to_string() for node in diff.added_nodes],
             "removed_nodes": [node.feature_key.to_string() for node in diff.removed_nodes],
             "changed_nodes": [

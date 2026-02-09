@@ -32,8 +32,8 @@ class GraphvizRenderer(BaseRenderer):
         lines.append(f"    rankdir={rankdir};")
 
         # Graph attributes
-        if self.config.show_snapshot_version:
-            label = f"Graph (snapshot: {self._format_hash(filtered_graph.snapshot_version)})"
+        if self.config.show_project_version:
+            label = f"Graph (snapshot: {self._format_hash(filtered_graph.project_version)})"
         else:
             label = "Graph"
         lines.append(f'    label="{label}";')

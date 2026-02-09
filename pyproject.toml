@@ -233,6 +233,8 @@ omit = [
   # very experimental
   "src/metaxy/migrations/**",
   "src/metaxy/cli/migrations.py",
+  "src/metaxy/cli/graph.py",
+  "src/metaxy/cli/graph_diff.py",
 
   # mostly used in experimental CLI
   "src/metaxy/graph/**",

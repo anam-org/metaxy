@@ -140,8 +140,8 @@ def test_graphdata_roundtrip():
 def test_graphdiff_to_struct():
     """Test GraphDiff serialization to struct."""
     graph_diff = GraphDiff(
-        from_snapshot_version="snap1",
-        to_snapshot_version="snap2",
+        from_project_version="snap1",
+        to_project_version="snap2",
         added_nodes=[
             AddedNode(
                 feature_key=FeatureKey(["feature", "a"]),
@@ -249,8 +249,8 @@ def test_graphdiff_from_struct():
 
     graph_diff = GraphDiff.from_struct(struct, "snap1", "snap2")
 
-    assert graph_diff.from_snapshot_version == "snap1"
-    assert graph_diff.to_snapshot_version == "snap2"
+    assert graph_diff.from_project_version == "snap1"
+    assert graph_diff.to_project_version == "snap2"
     assert len(graph_diff.added_nodes) == 1
     assert len(graph_diff.removed_nodes) == 1
     assert len(graph_diff.changed_nodes) == 1
@@ -275,8 +275,8 @@ def test_graphdiff_from_struct():
 def test_graphdiff_roundtrip():
     """Test GraphDiff round-trip serialization."""
     original = GraphDiff(
-        from_snapshot_version="snap1",
-        to_snapshot_version="snap2",
+        from_project_version="snap1",
+        to_project_version="snap2",
         added_nodes=[
             AddedNode(
                 feature_key=FeatureKey(["feature", "a"]),
@@ -335,8 +335,8 @@ def test_graphdiff_roundtrip():
     struct = original.to_struct()
     restored = GraphDiff.from_struct(struct, "snap1", "snap2")
 
-    assert restored.from_snapshot_version == original.from_snapshot_version
-    assert restored.to_snapshot_version == original.to_snapshot_version
+    assert restored.from_project_version == original.from_project_version
+    assert restored.to_project_version == original.to_project_version
     assert len(restored.added_nodes) == len(original.added_nodes)
     assert len(restored.removed_nodes) == len(original.removed_nodes)
     assert len(restored.changed_nodes) == len(original.changed_nodes)

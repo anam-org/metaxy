@@ -39,9 +39,9 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 
 #### Graph Level
 
-- **Snapshot Version**: is computed from the **Feature Versions** of all features defined on the graph.
+- **Project Version**: is computed from the **Feature Versions** of all features defined on the graph.
 
-??? "How is snapshot version used?"
+??? "How is project version used?"
 
     This value is used to uniquely encode versioned feature graph topology. `metaxy push` CLI can be used to keep track of previous versions of the feature graph, enabling features such as data version reconciliation migrations.
 

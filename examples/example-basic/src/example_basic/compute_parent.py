@@ -22,9 +22,9 @@ parent_key = mx.FeatureKey(["examples", "parent"])
 with config.get_store() as store:
     result = SystemTableStorage(store).push_graph_snapshot()
 
-    snapshot_version = result.snapshot_version
+    project_version = result.project_version
 
-    print(f"Graph snapshot_version: {snapshot_version}")
+    print(f"Graph project_version: {project_version}")
 
     # Check if metadata already exists for current feature_version (avoid duplicates)
     try:

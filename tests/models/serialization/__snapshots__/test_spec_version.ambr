@@ -2,9 +2,9 @@
 # name: test_feature_definition_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'metaxy_definition_version': 'db21445f',
+    'metaxy_definition_version': '2770c11d',
     'metaxy_feature_version': '3599b5f9',
-    'metaxy_snapshot_version': 'd63c89ea',
+    'metaxy_project_version': 'd99f5c77',
   })
 # ---
 # name: test_feature_spec_version_deterministic
@@ -88,6 +88,19 @@
           'description': 'External orchestration run ID (e.g., Dagster Run ID)',
           'title': 'Metaxy Materialization Id',
         }),
+        'metaxy_project_version': dict({
+          'anyOf': list([
+            dict({
+              'type': 'string',
+            }),
+            dict({
+              'type': 'null',
+            }),
+          ]),
+          'default': None,
+          'description': 'Hash of the entire feature graph project version',
+          'title': 'Metaxy Project Version',
+        }),
         'metaxy_provenance': dict({
           'anyOf': list([
             dict({
@@ -108,19 +121,6 @@
           'description': 'Field-level provenance hashes (maps field names to hashes)',
           'title': 'Metaxy Provenance By Field',
           'type': 'object',
-        }),
-        'metaxy_snapshot_version': dict({
-          'anyOf': list([
-            dict({
-              'type': 'string',
-            }),
-            dict({
-              'type': 'null',
-            }),
-          ]),
-          'default': None,
-          'description': 'Hash of the entire feature graph snapshot',
-          'title': 'Metaxy Snapshot Version',
         }),
       }),
       'title': 'SnapshotFeature',
@@ -145,7 +145,7 @@
       'metadata': dict({
       }),
     }),
-    'metaxy_definition_version': '3714d0e0',
+    'metaxy_definition_version': 'c4763fb4',
     'metaxy_feature_version': 'd22026d5',
     'project': 'test_spec_version',
   })

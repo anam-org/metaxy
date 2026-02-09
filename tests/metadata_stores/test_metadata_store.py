@@ -428,7 +428,7 @@ def test_write_casts_null_typed_system_columns(empty_store: DeltaMetadataStore, 
             # Explicitly create Null-typed columns for all castable system columns
             "metaxy_provenance": pl.Series([None, None], dtype=pl.Null),
             "metaxy_feature_version": pl.Series([None, None], dtype=pl.Null),
-            "metaxy_snapshot_version": pl.Series([None, None], dtype=pl.Null),
+            "metaxy_project_version": pl.Series([None, None], dtype=pl.Null),
             "metaxy_data_version": pl.Series([None, None], dtype=pl.Null),
             "metaxy_created_at": pl.Series([None, None], dtype=pl.Null),
             "metaxy_materialization_id": pl.Series([None, None], dtype=pl.Null),
@@ -438,7 +438,7 @@ def test_write_casts_null_typed_system_columns(empty_store: DeltaMetadataStore, 
     # Verify columns are Null typed before write
     assert df.schema["metaxy_provenance"] == pl.Null
     assert df.schema["metaxy_feature_version"] == pl.Null
-    assert df.schema["metaxy_snapshot_version"] == pl.Null
+    assert df.schema["metaxy_project_version"] == pl.Null
     assert df.schema["metaxy_data_version"] == pl.Null
     assert df.schema["metaxy_created_at"] == pl.Null
     assert df.schema["metaxy_materialization_id"] == pl.Null
@@ -451,7 +451,7 @@ def test_write_casts_null_typed_system_columns(empty_store: DeltaMetadataStore, 
 
         assert result.schema["metaxy_provenance"] == pl.String
         assert result.schema["metaxy_feature_version"] == pl.String
-        assert result.schema["metaxy_snapshot_version"] == pl.String
+        assert result.schema["metaxy_project_version"] == pl.String
         assert result.schema["metaxy_data_version"] == pl.String
         assert result.schema["metaxy_created_at"] == pl.Datetime("us", time_zone="UTC")
         assert result.schema["metaxy_materialization_id"] == pl.String

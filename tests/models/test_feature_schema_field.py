@@ -201,7 +201,7 @@ def test_feature_versions_model_has_feature_schema():
         feature_spec='{"key": "value"}',
         feature_schema='{"type": "object", "properties": {}}',
         feature_class_path="test.module.TestClass",
-        metaxy_snapshot_version="snapshot123",
+        metaxy_project_version="snapshot123",
         tags="{}",
     )
 

@@ -291,7 +291,7 @@ def test_record_feature_graph_snapshot_uses_write_mode(tmp_path: Path, test_grap
 
     with store.open("w"):
         result = SystemTableStorage(store).push_graph_snapshot()
-        assert result.snapshot_version is not None
+        assert result.project_version is not None
 
 
 def test_drop_feature_metadata_in_write_mode(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:

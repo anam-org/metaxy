@@ -560,7 +560,7 @@ class VersioningEngine(ABC):
         )
 
         # Drop version columns if present (they come from upstream and shouldn't be in the result)
-        version_columns = ["metaxy_feature_version", "metaxy_snapshot_version"]
+        version_columns = ["metaxy_feature_version", "metaxy_project_version"]
         current_columns = df.collect_schema().names()
         columns_to_drop = [col for col in version_columns if col in current_columns]
 

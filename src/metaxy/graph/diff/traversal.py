@@ -157,8 +157,8 @@ class GraphWalker:
         return GraphData(
             nodes=filtered_nodes,
             edges=filtered_edges,
-            snapshot_version=self.graph_data.snapshot_version,
-            old_snapshot_version=self.graph_data.old_snapshot_version,
+            project_version=self.graph_data.project_version,
+            old_project_version=self.graph_data.old_project_version,
         )
 
     def _get_upstream(self, start_key_str: str, max_levels: int | None = None) -> set[str]:

@@ -37,14 +37,14 @@ def history(
     """Show history of recorded graph snapshots.
 
     Displays all recorded graph snapshots from the metadata store,
-    showing snapshot versions, when they were recorded, and feature counts.
+    showing project versions, when they were recorded, and feature counts.
 
     Example:
         $ metaxy graph history
 
         Graph Snapshot History
         ┌──────────────┬─────────────────────┬───────────────┐
-        │ Snapshot version  │ Recorded At         │ Feature Count │
+        │ Project version   │ Recorded At         │ Feature Count │
         ├──────────────┼─────────────────────┼───────────────┤
         │ abc123...    │ 2025-01-15 10:30:00 │ 42            │
         │ def456...    │ 2025-01-14 09:15:00 │ 40            │
@@ -72,17 +72,17 @@ def history(
 
         # Create table
         table = Table(title="Graph Snapshot History")
-        table.add_column("Snapshot version", style="cyan", no_wrap=False, overflow="fold")
+        table.add_column("Project version", style="cyan", no_wrap=False, overflow="fold")
         table.add_column("Recorded At", style="green", no_wrap=False)
         table.add_column("Feature Count", style="yellow", justify="right", no_wrap=False)
 
         # Add rows
         for row in snapshots_df.iter_rows(named=True):
-            snapshot_version = row["metaxy_snapshot_version"]
+            project_version = row["metaxy_project_version"]
             recorded_at = row["recorded_at"].strftime("%Y-%m-%d %H:%M:%S")
             feature_count = str(row["feature_count"])
 
-            table.add_row(snapshot_version, recorded_at, feature_count)
+            table.add_row(project_version, recorded_at, feature_count)
 
         console.print(table)
         console.print(f"\nTotal snapshots: {snapshots_df.height}")
@@ -116,7 +116,7 @@ def render(
         str | None,
         cyclopts.Parameter(
             name=["--snapshot"],
-            help="Snapshot version to render (default: current graph from code)",
+            help="Project version to render (default: current graph from code)",
         ),
     ] = None,
     store: Annotated[
@@ -288,7 +288,7 @@ def render(
         with metadata_store:
             storage = SystemTableStorage(metadata_store)
             try:
-                graph = storage.load_graph_from_snapshot(snapshot_version=snapshot)
+                graph = storage.load_graph_from_snapshot(project_version=snapshot)
             except ValueError as e:
                 from metaxy.cli.utils import print_error
 

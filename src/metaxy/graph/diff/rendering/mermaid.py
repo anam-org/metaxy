@@ -86,8 +86,8 @@ class MermaidRenderer(BaseRenderer):
                 insertions = []
 
                 # Add snapshot version comment if needed
-                if self.config.show_snapshot_version:
-                    snapshot_hash = self._format_hash(filtered_graph.snapshot_version)
+                if self.config.show_project_version:
+                    snapshot_hash = self._format_hash(filtered_graph.project_version)
                     insertions.append(f"    %% Snapshot version: {snapshot_hash}")
 
                 # Add styling

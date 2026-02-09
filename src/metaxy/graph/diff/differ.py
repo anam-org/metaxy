@@ -64,7 +64,7 @@ class SnapshotResolver:
             )
 
         # read_graph_snapshots() returns sorted by recorded_at descending
-        return snapshots_df["metaxy_snapshot_version"][0]
+        return snapshots_df["metaxy_project_version"][0]
 
     def _resolve_current(self, graph: FeatureGraph | None, project: str | None = None) -> str:
         """Resolve 'current' to active graph's snapshot version."""
@@ -80,15 +80,15 @@ class SnapshotResolver:
 
         # Use project-scoped version if project is specified
         if project is not None:
-            return graph.get_project_snapshot_version(project)
+            return graph.get_project_version(project)
 
         # Otherwise infer from graph if single project
         snapshot_dict = graph.to_snapshot()
         projects_in_graph = {v["project"] for v in snapshot_dict.values()} if snapshot_dict else set()
         if len(projects_in_graph) == 1:
-            return graph.get_project_snapshot_version(projects_in_graph.pop())
+            return graph.get_project_version(projects_in_graph.pop())
 
-        return graph.snapshot_version
+        return graph.project_version
 
 
 class GraphDiffer:
@@ -98,16 +98,16 @@ class GraphDiffer:
         self,
         snapshot1_data: Mapping[str, Mapping[str, Any]],
         snapshot2_data: Mapping[str, Mapping[str, Any]],
-        from_snapshot_version: str = "unknown",
-        to_snapshot_version: str = "unknown",
+        from_project_version: str = "unknown",
+        to_project_version: str = "unknown",
     ) -> GraphDiff:
         """Compute diff between two snapshots.
 
         Args:
             snapshot1_data: First snapshot (feature_key -> {feature_version, feature_spec, fields})
             snapshot2_data: Second snapshot (feature_key -> {feature_version, feature_spec, fields})
-            from_snapshot_version: Source snapshot version
-            to_snapshot_version: Target snapshot version
+            from_project_version: Source snapshot version
+            to_project_version: Target snapshot version
 
         Returns:
             GraphDiff with added, removed, and changed features
@@ -238,8 +238,8 @@ class GraphDiffer:
                 )
 
         return GraphDiff(
-            from_snapshot_version=from_snapshot_version,
-            to_snapshot_version=to_snapshot_version,
+            from_project_version=from_project_version,
+            to_project_version=to_project_version,
             added_nodes=added_nodes,
             removed_nodes=removed_nodes,
             changed_nodes=changed_nodes,
@@ -588,14 +588,14 @@ class GraphDiffer:
     def load_snapshot_data(
         self,
         store: MetadataStore,
-        snapshot_version: str,
+        project_version: str,
         project: str | None = None,
     ) -> Mapping[str, Mapping[str, Any]]:
         """Load snapshot data from store.
 
         Args:
             store: Metadata store to query
-            snapshot_version: Snapshot version to load
+            project_version: Project version to load
             project: Optional project name to filter by (None means all projects)
 
         Returns:
@@ -610,13 +610,13 @@ class GraphDiffer:
         # Auto-open store if not already open
         if not store._is_open:
             with store:
-                return self.load_snapshot_data(store, snapshot_version, project)
+                return self.load_snapshot_data(store, project_version, project)
 
         storage = SystemTableStorage(store)
 
         # Reconstruct the graph from the snapshot using FeatureDefinition objects
         graph = storage.load_graph_from_snapshot(
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             project=project,
         )
 

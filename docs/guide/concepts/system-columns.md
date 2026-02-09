@@ -18,7 +18,7 @@ the [metadata store][metaxy.MetadataStore]. Learn more about the storage layout 
 | `metaxy_data_version_by_field` | Defaults to `metaxy_provenance_by_field`, can be user-defined       | sample  | struct |
 | `metaxy_data_version`          | Hash of `metaxy_data_version_by_field`                              | sample  | string |
 | `metaxy_feature_version`       | Derived from versions of relevant upstream fields                   | feature | string |
-| `metaxy_snapshot_version`      | Derived from all Metaxy features which belong to the same Project   | project | string |
+| `metaxy_project_version`       | Derived from all Metaxy features which belong to the same Project   | project | string |
 | `metaxy_definition_version`    | Hash of the feature spec and Pydantic model schema                  | feature | string |
 | `metaxy_created_at`            | Timestamp when the metadata row was created                         | sample  | string |
 | `metaxy_updated_at`            | Timestamp when the metadata row was last written to the store       | sample  | string |

@@ -210,8 +210,8 @@ class DiffMigration(Migration):
     Migrations form a chain via parent IDs (like git commits):
     - migration_id: Unique identifier for this migration
     - parent: ID of parent migration ("initial" for first migration)
-    - from_snapshot_version: Source snapshot version
-    - to_snapshot_version: Target snapshot version
+    - from_project_version: Source snapshot version
+    - to_project_version: Target snapshot version
     - ops: List of operation dicts with "type" field
 
     The parent chain ensures migrations are applied in correct order.
@@ -229,8 +229,8 @@ class DiffMigration(Migration):
             DiffMigration(
                 migration_id="20250113_120000",
                 parent="initial",
-                from_snapshot_version="abc123...",
-                to_snapshot_version="def456...",
+                from_project_version="abc123...",
+                to_project_version="def456...",
                 created_at=datetime.now(timezone.utc),
             )
 
@@ -238,8 +238,8 @@ class DiffMigration(Migration):
             DiffMigration(
                 migration_id="20250113_130000",
                 parent="20250113_120000",
-                from_snapshot_version="def456...",
-                to_snapshot_version="ghi789...",
+                from_project_version="def456...",
+                to_project_version="ghi789...",
                 created_at=datetime.now(timezone.utc),
             )
     """
@@ -248,8 +248,8 @@ class DiffMigration(Migration):
     migration_type: Literal["metaxy.migrations.models.DiffMigration"] = "metaxy.migrations.models.DiffMigration"
 
     # Stored fields - persisted to YAML in git
-    from_snapshot_version: str
-    to_snapshot_version: str
+    from_project_version: str
+    to_project_version: str
     ops: list[dict[str, Any]]  # Required - must explicitly specify operations
 
     # Private attribute for caching computed graph diff
@@ -312,7 +312,7 @@ class DiffMigration(Migration):
             project: Project name for filtering snapshots
 
         Returns:
-            GraphDiff between from_snapshot_version and to_snapshot_version
+            GraphDiff between from_project_version and to_project_version
 
         Raises:
             ValueError: If snapshots cannot be loaded
@@ -323,22 +323,22 @@ class DiffMigration(Migration):
         differ = GraphDiffer()
 
         # Load from_snapshot data from store
-        from_snapshot_data = differ.load_snapshot_data(store, self.from_snapshot_version)
+        from_snapshot_data = differ.load_snapshot_data(store, self.from_project_version)
 
         # Try to load to_snapshot from store, if it doesn't exist use active graph
         try:
-            to_snapshot_data = differ.load_snapshot_data(store, self.to_snapshot_version)
+            to_snapshot_data = differ.load_snapshot_data(store, self.to_project_version)
         except ValueError:
             # Snapshot not recorded yet, use active graph
             active_graph = FeatureGraph.get_active()
             # Use project-scoped snapshot version for comparison (matches migration detection)
-            active_snapshot_version = (
-                active_graph.get_project_snapshot_version(project) if project else active_graph.snapshot_version
+            active_project_version = (
+                active_graph.get_project_version(project) if project else active_graph.project_version
             )
-            if active_snapshot_version != self.to_snapshot_version:
+            if active_project_version != self.to_project_version:
                 raise ValueError(
-                    f"to_snapshot {self.to_snapshot_version} not found in store "
-                    f"and doesn't match active graph ({active_snapshot_version})"
+                    f"to_snapshot {self.to_project_version} not found in store "
+                    f"and doesn't match active graph ({active_project_version})"
                 )
             to_snapshot_data = active_graph.to_snapshot()
 
@@ -346,8 +346,8 @@ class DiffMigration(Migration):
         return differ.diff(
             from_snapshot_data,
             to_snapshot_data,
-            self.from_snapshot_version,
-            self.to_snapshot_version,
+            self.from_project_version,
+            self.to_project_version,
         )
 
     def execute(
@@ -392,8 +392,8 @@ class FullGraphMigration(Migration):
         "metaxy.migrations.models.FullGraphMigration"
     )
 
-    snapshot_version: str
-    from_snapshot_version: str | None = None  # Optional for cross-snapshot operations
+    project_version: str
+    from_project_version: str | None = None  # Optional for cross-snapshot operations
     ops: list[dict[str, Any]]  # List of OperationConfig dicts
 
     def get_affected_features(self, store: "MetadataStore", project: str | None) -> list[str]:

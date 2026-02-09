@@ -222,7 +222,7 @@ def test_feature_versions_model_has_tags():
         feature_spec='{"key": "value"}',
         feature_schema='{"type": "object", "properties": {}}',
         feature_class_path="test.module.TestFeature",
-        metaxy_snapshot_version="jkl012",
+        metaxy_project_version="jkl012",
         tags={"custom_tag": "custom_value"},
     )
 
@@ -253,7 +253,7 @@ def test_feature_versions_model_has_tags():
         feature_spec='{"key": "value"}',
         feature_schema='{"type": "object", "properties": {}}',
         feature_class_path="test.module.TestFeature",
-        metaxy_snapshot_version="jkl012",
+        metaxy_project_version="jkl012",
         tags={},  # Explicit empty dict triggers validator
     )
 

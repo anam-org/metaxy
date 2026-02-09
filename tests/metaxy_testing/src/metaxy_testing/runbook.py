@@ -34,7 +34,7 @@ class GraphPushed(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     type: Literal["graph_pushed"] = "graph_pushed"
-    snapshot_version: str
+    project_version: str
     graph: dict[str, Any]  # Serialized graph data for rendering
     timestamp: datetime
     scenario_name: str | None = None
@@ -101,7 +101,7 @@ class RunbookExecutionState(BaseModel):
         """Get the most recent snapshot version."""
         for event in reversed(self.events):
             if isinstance(event, GraphPushed):
-                return event.snapshot_version
+                return event.project_version
         return None
 
 
@@ -296,7 +296,7 @@ class RunbookRunner:
 
         self.project = ExternalMetaxyProject(example_dir, require_config=True)
 
-    def get_latest_snapshot_version(self) -> str | None:
+    def get_latest_project_version(self) -> str | None:
         """Get the latest snapshot version from the metadata store."""
         import os
 
@@ -323,7 +323,7 @@ class RunbookRunner:
             if snapshots_df.height == 0:
                 return None
 
-            return snapshots_df["metaxy_snapshot_version"][0]
+            return snapshots_df["metaxy_project_version"][0]
 
     def push_graph_snapshot(self) -> str | None:
         """Push the current graph snapshot using metaxy push."""
@@ -335,19 +335,19 @@ class RunbookRunner:
         if result.returncode != 0:
             raise RuntimeError(f"Failed to push graph snapshot:\nstdout: {result.stdout}\nstderr: {result.stderr}")
 
-        snapshot_version = result.stdout.strip()
+        project_version = result.stdout.strip()
 
-        if snapshot_version:
+        if project_version:
             self._events.append(
                 GraphPushed(
                     timestamp=datetime.now(),
                     scenario_name=self._current_scenario,
                     step_name=self._current_step_name,
-                    snapshot_version=snapshot_version,
+                    project_version=project_version,
                     graph=self._get_current_graph(),
                 )
             )
-            return snapshot_version
+            return project_version
 
         return None
 

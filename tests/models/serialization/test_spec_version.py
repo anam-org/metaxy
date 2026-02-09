@@ -337,7 +337,7 @@ def test_feature_definition_version_recorded_in_metadata_store(snapshot: Snapsho
             assert not is_existing
 
             # Read the feature_versions system table using the snapshot version from push
-            features_df = storage.read_features(current=False, snapshot_version=result.snapshot_version)
+            features_df = storage.read_features(current=False, project_version=result.project_version)
 
             # Should have one feature
             assert len(features_df) == 1
@@ -355,7 +355,7 @@ def test_feature_definition_version_recorded_in_metadata_store(snapshot: Snapsho
                 "feature_key": feature_row["feature_key"],
                 "metaxy_feature_version": feature_row["metaxy_feature_version"],
                 "metaxy_definition_version": feature_row["metaxy_definition_version"],
-                "metaxy_snapshot_version": feature_row["metaxy_snapshot_version"],
+                "metaxy_project_version": feature_row["metaxy_project_version"],
             } == snapshot
 
 
@@ -385,24 +385,24 @@ def test_feature_definition_version_idempotent_snapshot_recording(tmp_path: Path
             storage = SystemTableStorage(store)
             result = storage.push_graph_snapshot()
 
-            snapshot_v1 = result.snapshot_version
+            snapshot_v1 = result.project_version
 
             is_existing_1 = result.already_pushed
             assert not is_existing_1
 
-            features_df_1 = storage.read_features(current=False, snapshot_version=snapshot_v1)
+            features_df_1 = storage.read_features(current=False, project_version=snapshot_v1)
             definition_version_1 = features_df_1.to_dicts()[0]["metaxy_definition_version"]
 
             # Second push (identical graph)
             result = storage.push_graph_snapshot()
 
-            snapshot_v2 = result.snapshot_version
+            snapshot_v2 = result.project_version
 
             is_existing_2 = result.already_pushed
             assert is_existing_2  # Should detect existing snapshot
             assert snapshot_v1 == snapshot_v2  # Same snapshot version
 
-            features_df_2 = storage.read_features(current=False, snapshot_version=snapshot_v2)
+            features_df_2 = storage.read_features(current=False, project_version=snapshot_v2)
             definition_version_2 = features_df_2.to_dicts()[0]["metaxy_definition_version"]
 
             # definition_version should be identical

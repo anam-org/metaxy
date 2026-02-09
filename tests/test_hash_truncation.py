@@ -293,7 +293,7 @@ class TestFeatureVersionTruncation:
             assert len(version_24) == 24
             assert version_full.startswith(version_24)
 
-    def test_snapshot_version_truncation(self, graph):
+    def test_project_version_truncation(self, graph):
         """Test that snapshot versions are truncated."""
 
         class TestFeature(
@@ -306,13 +306,13 @@ class TestFeatureVersionTruncation:
             pass
 
         # Get snapshot without truncation
-        snapshot_full = graph.snapshot_version
+        snapshot_full = graph.project_version
         assert len(snapshot_full) == 8
 
         # Enable truncation
         config = MetaxyConfig(project="test", hash_truncation_length=12)
         with config.use():
-            snapshot_truncated = graph.snapshot_version
+            snapshot_truncated = graph.project_version
             assert len(snapshot_truncated) == 12
             # Note: The truncated version is computed fresh with truncated dependencies,
             # not just a truncation of the full version, so they may differ
@@ -483,7 +483,7 @@ class TestMigrationCompatibility:
             with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
                 result = SystemTableStorage(store).push_graph_snapshot()
 
-                snapshot_v1 = result.snapshot_version
+                snapshot_v1 = result.project_version
 
                 assert len(snapshot_v1) == 12  # Truncated
 
@@ -506,8 +506,8 @@ class TestMigrationCompatibility:
                     ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
                 )
                 assert migration is not None
-                assert len(migration.from_snapshot_version) == 12
-                assert len(migration.to_snapshot_version) == 12
+                assert len(migration.from_project_version) == 12
+                assert len(migration.to_project_version) == 12
 
     def test_hash_compatibility_in_migration(self):
         """Test hash compatibility checking in migrations."""
@@ -559,16 +559,16 @@ class TestEndToEnd:
             # Verify truncation
             assert len(ParentFeature.feature_version()) == 16
             assert len(ChildFeature.feature_version()) == 16
-            assert len(graph.snapshot_version) == 16
+            assert len(graph.project_version) == 16
 
             # Store metadata
             with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
                 # Record snapshot
                 result = SystemTableStorage(store).push_graph_snapshot()
 
-                snapshot_version = result.snapshot_version
+                project_version = result.project_version
 
-                assert len(snapshot_version) == 16
+                assert len(project_version) == 16
 
                 # Write parent metadata
                 parent_data = pl.DataFrame(
@@ -589,5 +589,5 @@ class TestEndToEnd:
 
                 for row in result_pl.iter_rows(named=True):
                     assert len(row["metaxy_feature_version"]) == 16
-                    assert len(row["metaxy_snapshot_version"]) == 16
+                    assert len(row["metaxy_project_version"]) == 16
                     assert len(row["metaxy_provenance_by_field"]["value"]) == 16

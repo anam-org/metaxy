@@ -485,11 +485,11 @@ class FeatureGraph:
             return list(reversed(result))
         return result
 
-    def _compute_snapshot_version(
+    def _compute_project_version(
         self,
         features: list[tuple[FeatureKey, FeatureDefinition]],
     ) -> str:
-        """Compute a snapshot version hash for a list of features.
+        """Compute a project version hash for a list of features.
 
         Args:
             features: List of (key, definition) tuples, should be sorted by key.
@@ -504,14 +504,14 @@ class FeatureGraph:
 
         return truncate_hash(hasher.hexdigest())
 
-    def get_project_snapshot_version(self, project: str) -> str:
-        """Generate a snapshot version for features belonging to a specific project.
+    def get_project_version(self, project: str) -> str:
+        """Generate a project version for features belonging to a specific project.
 
         Uses feature_definition_version (spec + schema only), excluding external features.
-        This makes the project snapshot independent of external feature changes.
+        This makes the project version independent of external feature changes.
 
         Args:
-            project: The project name to compute snapshot version for.
+            project: The project name to compute version for.
 
         Returns:
             A hash representing the project's feature definitions.
@@ -524,11 +524,11 @@ class FeatureGraph:
             ),
             key=lambda x: x[0],
         )
-        return self._compute_snapshot_version(project_features)
+        return self._compute_project_version(project_features)
 
     @property
-    def snapshot_version(self) -> str:
-        """Generate a snapshot version for the current project's features.
+    def project_version(self) -> str:
+        """Generate a project version for the current project's features.
 
         Uses feature_definition_version (spec + schema only), excluding external features.
         The project is determined from MetaxyConfig.project if set, otherwise from the graph's
@@ -539,7 +539,7 @@ class FeatureGraph:
         """
         from metaxy.config import MetaxyConfig
 
-        return self.get_project_snapshot_version(MetaxyConfig.get().project or self.project)
+        return self.get_project_version(MetaxyConfig.get().project or self.project)
 
     @property
     def has_external_features(self) -> bool:
@@ -562,7 +562,7 @@ class FeatureGraph:
             return projects.pop()
         raise RuntimeError(
             f"FeatureGraph contains features from multiple projects ({', '.join(sorted(projects))}). "
-            "Use get_project_snapshot_version(project) to get the snapshot for a specific project."
+            "Use get_project_version(project) to get the version for a specific project."
         )
 
     def to_snapshot(self, *, project: str | None = None) -> dict[str, SerializedFeature]:
@@ -839,9 +839,9 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
         default=None,
         description="Hash of the feature definition (dependencies + fields + code_versions)",
     )
-    metaxy_snapshot_version: str | None = Field(
+    metaxy_project_version: str | None = Field(
         default=None,
-        description="Hash of the entire feature graph snapshot",
+        description="Hash of the entire feature graph project version",
     )
     metaxy_data_version_by_field: dict[str, str] | None = Field(
         default=None,

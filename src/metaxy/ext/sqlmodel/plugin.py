@@ -23,9 +23,9 @@ from metaxy.models.constants import (
     METAXY_DELETED_AT,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
+    METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_SNAPSHOT_VERSION,
     METAXY_UPDATED_AT,
     SYSTEM_COLUMN_PREFIX,
 )
@@ -305,11 +305,11 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
         nullable=False,
     )
 
-    metaxy_snapshot_version: str | None = Field(
+    metaxy_project_version: str | None = Field(
         default=None,
         description="Hash of the entire feature graph snapshot",
         sa_column_kwargs={
-            "name": METAXY_SNAPSHOT_VERSION,
+            "name": METAXY_PROJECT_VERSION,
         },
         nullable=False,
     )
