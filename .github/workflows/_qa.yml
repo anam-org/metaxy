@@ -173,10 +173,11 @@ jobs:
       #     uv run mxtest-analyze-timings ./junit.xml -f markdown >> $GITHUB_OUTPUT
       #     echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Upload test results to Codecov
+      - name: Upload Test Results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         with:
+          report_type: test_results
           slug: anam-org/metaxy
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: Python${{ matrix.python-version }}

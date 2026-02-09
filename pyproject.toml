@@ -229,6 +229,14 @@ omit = [
   # https://github.com/ray-project/ray/issues/9059
   # probably should be done later
   "src/metaxy/ext/ray/**",
+
+  # very experimental
+  "src/metaxy/migrations/**",
+  "src/metaxy/cli/migrations.py",
+
+  # mostly used in experimental CLI
+  "src/metaxy/graph/**",
+
   "tests/*",
   "examples/*",
 ]
