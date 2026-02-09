@@ -16,7 +16,7 @@
         <link rel="prev" href="../../../metaxy/design/">
       
       
-        <link rel="next" href="../feature-dependencies/">
+        <link rel="next" href="../../concepts/">
       
       
         
@@ -606,69 +606,6 @@
   
   
   
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_2" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    🚀 Quickstart
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_1_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    🚀 Quickstart
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-    
-  
-  
-  
     <li class="md-nav__item md-nav__item--active">
       
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
@@ -684,7 +621,7 @@
   <span class="md-ellipsis">
     
   
-    Hello, Metaxy!
+    🚀 Quickstart
   
 
     
@@ -702,7 +639,7 @@
   <span class="md-ellipsis">
     
   
-    Hello, Metaxy!
+    🚀 Quickstart
   
 
     
@@ -777,56 +714,9 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../feature-dependencies/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    More Features
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
       
     </li>
   
@@ -3623,17 +3513,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3649,57 +3528,6 @@
 
 
 
-
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-      
-        
-  
-  
-    
-    
-      
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="../../.." class="md-path__link">
-          
-  <span class="md-ellipsis">
-    📖 User Guide
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-    
-  
-
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="./" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    🚀 Quickstart
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
 
               
               <article class="md-content__inner md-typeset">
@@ -3805,8 +3633,46 @@ Usually there will be a processing step iterating over all the rows in <code>inc
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">VoiceDetection</span><span class="p">,</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
 </span></code></pre></div>
 <p>Recorded samples will no longer be returned by <code>MetadataStore.resolve_update</code> during future pipeline runs, unless the incoming <code>metaxy_provenance_by_field</code> values are updated.</p>
-<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<p>Continue to <a href="../feature-dependencies/">next section</a> to learn how to add more features and define feature dependencies.</p>
+<h1 id="feature-dependencies">Feature Dependencies<a class="headerlink" href="#feature-dependencies" title="Permanent link">&para;</a></h1>
+<p>Now let's add a downstream feature. We can use <code>deps</code> field on <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureSpec&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec"><code>FeatureSpec</code></a> in order to do that. We will make a simple feature that extracts the audio track from a video.</p>
+<div class="language-py highlight"><span class="filename">features.py</span><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">Audio</span><span class="p">(</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">mx</span><span class="o">.</span><span class="n">BaseFeature</span><span class="p">,</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">spec</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>        <span class="n">key</span><span class="o">=</span><span class="s2">&quot;audio&quot;</span><span class="p">,</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="p">),</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="p">):</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="c1"># define DB columns</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Unique identifier for the audio&quot;</span><span class="p">)</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to the audio file&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<p>And call the faimiliar <code>resolve_update</code> API:</p>
+<!-- skip: next -->
+
+<div class="language-py highlight"><span class="filename">script.py</span><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">increment</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="n">Audio</span><span class="p">)</span>
+</span></code></pre></div>
+<p>That's all! The increment can be handled similarly to the <code>Video</code> feature.</p>
+<h2 id="advanced-feature-definitions">Advanced Feature Definitions<a class="headerlink" href="#advanced-feature-definitions" title="Permanent link">&para;</a></h2>
+<p>Learn how to mark dependencies as optional, specify field-level versions and dependencies, lineage types, and other advanced Metaxy features in <a href="../../concepts/definitions/features/">definitions docs</a>.</p>
+<h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
+<p>Here are a few more useful links:</p>
+<ul>
+<li>Learn more about Metaxy <a href="../../concepts/">concepts</a></li>
+<li>View complete, end-to-end <a href="../../../examples/">examples</a></li>
+<li>Explore <a href="../../../integrations/">Metaxy integrations</a></li>
+<li>Invoke <code>mx</code> CLI <a href="../../../reference/cli/">from your terminal</a></li>
+<li>Learn how to <a href="../../../reference/configuration/">configure Metaxy</a></li>
+<li>Get lost in our <a href="../../../reference/api/">API Reference</a></li>
+</ul>
 
 
 

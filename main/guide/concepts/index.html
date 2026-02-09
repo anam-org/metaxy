@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://docs.metaxy.io/main/guide/concepts/">
       
       
-        <link rel="prev" href="../quickstart/feature-dependencies/">
+        <link rel="prev" href="../quickstart/hello/">
       
       
         <link rel="next" href="metadata-stores/">
@@ -604,67 +604,6 @@
   
   
   
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    🚀 Quickstart
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_1_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    🚀 Quickstart
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../quickstart/hello/" class="md-nav__link">
         
@@ -673,7 +612,7 @@
   <span class="md-ellipsis">
     
   
-    Hello, Metaxy!
+    🚀 Quickstart
   
 
     
@@ -682,42 +621,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../quickstart/feature-dependencies/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    More Features
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -3576,7 +3479,7 @@
 
 
 <h1 id="concepts">Concepts<a class="headerlink" href="#concepts" title="Permanent link">&para;</a></h1>
-<p>Metaxy is built around a few core ideas that work together to solve the problem of incremental processing in multi-modal pipelines.</p>
+<p>Metaxy is built around a few core ideas that work together to solve the problem of incremental processing in multimodal pipelines.</p>
 <p><strong>Feature definitions</strong> declare what data you have and how it depends on other data. Metaxy builds a <strong>feature graph</strong> from these definitions and uses it to track <strong>versions</strong> at the sample level. When upstream data changes, Metaxy identifies exactly which downstream samples need recomputation and resolves an <strong>incremental update</strong>. Feature versions are persisted in a <strong>metadata store</strong>. Feature definitions may define custom <strong>metadata columns</strong> (such as file path, size, etc.) which are stored alongside the versioning information.</p>
 <h2 id="core-concepts">Core Concepts<a class="headerlink" href="#core-concepts" title="Permanent link">&para;</a></h2>
 <div class="grid cards">

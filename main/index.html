@@ -606,67 +606,6 @@
   
   
   
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    🚀 Quickstart
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_1_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    🚀 Quickstart
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="guide/quickstart/hello/" class="md-nav__link">
         
@@ -675,7 +614,7 @@
   <span class="md-ellipsis">
     
   
-    Hello, Metaxy!
+    🚀 Quickstart
   
 
     
@@ -684,42 +623,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="guide/quickstart/feature-dependencies/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    More Features
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -3642,7 +3545,7 @@
 
 <hr />
 <h2 id="metaxy">Metaxy<a class="headerlink" href="#metaxy" title="Permanent link">&para;</a></h2>
-<p>Metaxy is a pluggable metadata layer for building multi-modal Data and ML pipelines. Metaxy manages and tracks <strong>metadata</strong> across complex computational graphs, implements sample and sub-sample versioning, allowing the codebase to evolve over time without friction.</p>
+<p>Metaxy is a pluggable metadata layer for building multimodal Data and ML pipelines. Metaxy manages and tracks <strong>metadata</strong> across complex computational graphs, implements sample and sub-sample versioning, allowing the codebase to evolve over time without friction.</p>
 <h3 id="what-is-the-problem-again">What is the problem again?<a class="headerlink" href="#what-is-the-problem-again" title="Permanent link">&para;</a></h3>
 <div class="admonition info annotate">
 <p class="admonition-title">Info</p>
@@ -3660,7 +3563,7 @@ Therefore, it becomes crucially important to correctly implement <strong>increme
 </div>
 <details class="abstract annotate">
 <summary>Data vs Metadata Clarifications</summary>
-<p>Metaxy features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.</p>
+<p>Metaxy features represent tabular <strong>metadata</strong>, typically containing references to external multimodal <strong>data</strong> such as files, images, or videos.</p>
 <table>
 <thead>
 <tr>
@@ -3671,7 +3574,7 @@ Therefore, it becomes crucially important to correctly implement <strong>increme
 <tbody>
 <tr>
 <td><strong>Data</strong></td>
-<td>The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform.</td>
+<td>The actual multimodal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform.</td>
 </tr>
 <tr>
 <td><strong>Metadata</strong></td>
@@ -3707,7 +3610,7 @@ As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables th
 <p>The feature that makes Metaxy really stand out is the ability to identify <strong>prunable <abbr title="Updates that skip change propagation through certain dependency graph paths because they modify fields that downstream features don't depend on.">partial data updates</abbr></strong> (1) and <strong>skip unnecessary downstream computations</strong>. At the moment of writing, Metaxy is the only available tool that tackles these problems.</p>
 </div>
 <ol>
-<li>which are <strong>very common</strong> in multi-modal pipelines</li>
+<li>which are <strong>very common</strong> in multimodal pipelines</li>
 </ol>
 <p>Read <a href="metaxy/pitch/">The Pitch</a> to be impressed even more.</p>
 <p class="annotate">All of this is possible thanks to (1) <a href="https://narwhals-dev.github.io/narwhals/">Narwhals</a>, <a href="https://ibis-project.org/">Ibis</a>, and a few clever tricks.</p>

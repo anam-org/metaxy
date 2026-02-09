@@ -596,64 +596,6 @@
   
   
   
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    🚀 Quickstart
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_1_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    🚀 Quickstart
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../../guide/quickstart/hello/" class="md-nav__link">
         
@@ -662,7 +604,7 @@
   <span class="md-ellipsis">
     
   
-    Hello, Metaxy!
+    🚀 Quickstart
   
 
     
@@ -671,42 +613,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/quickstart/feature-dependencies/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    More Features
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -4086,8 +3992,8 @@ title: Feature Graph Changes
 flowchart TB
     %% Snapshot version: none
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-    video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d842b740&lt;/font&gt; → &lt;font color="#00FF00"&gt;6e5a4ab8&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;7132721c&lt;/font&gt; → &lt;font color="#00FF00"&gt;f8e35296&lt;/font&gt;)&lt;br/&gt;- frames (3f6f401c)&lt;/div&gt;"]
-    video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;7dc3712a&lt;/font&gt; → &lt;font color="#00FF00"&gt;504507a9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;1549b1fa&lt;/font&gt; → &lt;font color="#00FF00"&gt;7948d163&lt;/font&gt;)&lt;br/&gt;- frames (df8943d3)&lt;/div&gt;"]
+    video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d842b740&lt;/font&gt; → &lt;font color="#00FF00"&gt;6e5a4ab8&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (3f6f401c)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;7132721c&lt;/font&gt; → &lt;font color="#00FF00"&gt;f8e35296&lt;/font&gt;)&lt;/div&gt;"]
+    video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;7dc3712a&lt;/font&gt; → &lt;font color="#00FF00"&gt;504507a9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (df8943d3)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;1549b1fa&lt;/font&gt; → &lt;font color="#00FF00"&gt;7948d163&lt;/font&gt;)&lt;/div&gt;"]
     video_faces["&lt;div style="text-align:left"&gt;&lt;b&gt;video/faces&lt;/b&gt;&lt;br/&gt;52f055e3&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (0561bd8c)&lt;/div&gt;"]
     video_raw --&gt; video_chunk
     video_chunk --&gt; video_faces
