@@ -750,6 +750,8 @@
       
         
       
+        
+      
     
     
     
@@ -1232,6 +1234,34 @@
     
   
     Syntactic Sugar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../projects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projects
   
 
     
@@ -3640,7 +3670,7 @@ It removes the burden of pointing Metaxy to all the feature definitions via Pyth
   &lt;/span&gt;" href="../../../reference/api/definitions/feature/#metaxy.BaseFeature"><code>BaseFeature</code></a>.</p>
 </li>
 <li>
-<p>Maintain a <code>metaxy.lock</code> file. This is an advanced feature only needed for multi-project setups.</p>
+<p>Maintain a <code>metaxy.lock</code> file. This is an advanced feature only needed for <a href="../projects/#multiple-python-environments"><abbr title="Metaxy codebases which have more than one distinct Python environment. | /guide/concepts/projects/#multi-environment-setups">multi-environment setups</abbr></a>.</p>
 </li>
 </ol>
 <h2 id="config-based-discovery">Config-Based Discovery<a class="headerlink" href="#config-based-discovery" title="Permanent link">&para;</a></h2>
@@ -3677,7 +3707,7 @@ It removes the burden of pointing Metaxy to all the feature definitions via Pyth
 <p class="admonition-title">Pydantic Schema Limitation</p>
 <p>Features loaded from the metadata store have their JSON schema preserved from when they were originally saved. However, the Pydantic model class is not available. Operations that require the actual Python class, such as model instantiation or validation, will not work for these features.</p>
 </div>
-<p>Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr>) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:</p>
+<p>Metaxy has a few safe guards in order to combat incorrect versioning information on <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr>. By default, Metaxy emits warnings when an <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> appears to have a different version (or <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr>) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:</p>
 <ul>
 <li>passing <code>on_conflict="raise"</code> to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../reference/api/initialization/#metaxy.sync_external_features"><code>sync_external_features</code></a></li>
 <li>passing <code>--locked</code> to Metaxy CLI commands</li>

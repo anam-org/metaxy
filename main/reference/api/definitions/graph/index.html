@@ -737,6 +737,8 @@
       
         
       
+        
+      
     
     
     
@@ -1136,6 +1138,34 @@
     
   
     Syntactic Sugar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guide/concepts/projects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projects
   
 
     
@@ -3219,10 +3249,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#metaxy.FeatureGraph.get_active" class="md-nav__link">
+  <a href="#metaxy.FeatureGraph.get" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_active
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get
       
     </span>
   </a>
@@ -3953,10 +3983,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#metaxy.FeatureGraph.get_active" class="md-nav__link">
+  <a href="#metaxy.FeatureGraph.get" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_active
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get
       
     </span>
   </a>
@@ -4155,7 +4185,7 @@
     <div class="doc doc-contents ">
 
         <p>Generate a snapshot version for the current project's features.</p>
-<p>Uses feature_definition_version (spec + schema only), excluding external features.
+<p>Uses feature_definition_version (spec + schema only), excluding <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr>.
 The project is determined from MetaxyConfig.project if set, otherwise from the graph's
 single project (via the <code>project</code> property).</p>
 
@@ -4193,7 +4223,7 @@ single project (via the <code>project</code> property).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Check if any feature in the graph is an external feature.</p>
+        <p>Check if any feature in the graph is an <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr>.</p>
 
     </div>
 
@@ -4217,8 +4247,8 @@ single project (via the <code>project</code> property).</p>
 
     <div class="doc doc-contents ">
 
-        <p>The single project for all non-external features in this graph.</p>
-<p>Returns the project name if all non-external features belong to a single project.</p>
+        <p>The single project for all non-<abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr> in this graph.</p>
+<p>Returns the project name if all non-<abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr> belong to a single project.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -4338,7 +4368,7 @@ single project (via the <code>project</code> property).</p>
         <p>Add a feature to the graph.</p>
 <div class="admonition note">
 <p class="admonition-title">Interactions with External Features</p>
-<p>Normal features take priority over external features with the same key.</p>
+<p>Normal features take priority over <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr> with the same key.</p>
 </div>
 
 
@@ -4376,7 +4406,7 @@ single project (via the <code>project</code> property).</p>
               <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
             –
           <div class="doc-md-description">
-            <p>If a non-external feature with a different import path but
+            <p>If a non-<abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> with a different import path but
 the same key is already registered and <code>on_conflict</code> is <code>"raise"</code></p>
           </div>
         </li>
@@ -5410,8 +5440,8 @@ For a chain A -&gt; B -&gt; C, returns [C, B, A].</p>
     <div class="doc doc-contents ">
 
         <p>Generate a snapshot version for features belonging to a specific project.</p>
-<p>Uses feature_definition_version (spec + schema only), excluding external features.
-This makes the project snapshot independent of external feature changes.</p>
+<p>Uses feature_definition_version (spec + schema only), excluding <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr>.
+This makes the project snapshot independent of <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> changes.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5729,16 +5759,16 @@ needed for operations like migrations and comparisons.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="metaxy.FeatureGraph.get_active" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.FeatureGraph.get_active</span>
+<h4 id="metaxy.FeatureGraph.get" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.FeatureGraph.get</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
   </span>
 
-<a href="#metaxy.FeatureGraph.get_active" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_active</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureGraph&lt;/span&gt; (&lt;code&gt;metaxy.models.feature.FeatureGraph&lt;/code&gt;)" href="#metaxy.FeatureGraph">FeatureGraph</a></span>
+<a href="#metaxy.FeatureGraph.get" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureGraph&lt;/span&gt; (&lt;code&gt;metaxy.models.feature.FeatureGraph&lt;/code&gt;)" href="#metaxy.FeatureGraph">FeatureGraph</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5769,7 +5799,7 @@ the default global graph.</p>
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/feature.py</code></summary>
               <div class="language-python highlight"><pre><span></span><code><span id="__span-0-676"><a id="__codelineno-0-676" name="__codelineno-0-676"></a><a href="#__codelineno-0-676"><span class="linenos" data-linenos="676 "></span></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-677"><a id="__codelineno-0-677" name="__codelineno-0-677"></a><a href="#__codelineno-0-677"><span class="linenos" data-linenos="677 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">get_active</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FeatureGraph&quot;</span><span class="p">:</span>
+</span><span id="__span-0-677"><a id="__codelineno-0-677" name="__codelineno-0-677"></a><a href="#__codelineno-0-677"><span class="linenos" data-linenos="677 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FeatureGraph&quot;</span><span class="p">:</span>
 </span><span id="__span-0-678"><a id="__codelineno-0-678" name="__codelineno-0-678"></a><a href="#__codelineno-0-678"><span class="linenos" data-linenos="678 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the currently active graph.</span>
 </span><span id="__span-0-679"><a id="__codelineno-0-679" name="__codelineno-0-679"></a><a href="#__codelineno-0-679"><span class="linenos" data-linenos="679 "></span></a>
 </span><span id="__span-0-680"><a id="__codelineno-0-680" name="__codelineno-0-680"></a><a href="#__codelineno-0-680"><span class="linenos" data-linenos="680 "></span></a><span class="sd">    Returns the graph from the context variable if set, otherwise returns</span>
@@ -5835,24 +5865,24 @@ Typically used in application setup code or test fixtures.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/feature.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-693"><a id="__codelineno-0-693" name="__codelineno-0-693"></a><a href="#__codelineno-0-693"><span class="linenos" data-linenos="693 "></span></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-694"><a id="__codelineno-0-694" name="__codelineno-0-694"></a><a href="#__codelineno-0-694"><span class="linenos" data-linenos="694 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">set_active</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">reg</span><span class="p">:</span> <span class="s2">&quot;FeatureGraph&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-695"><a id="__codelineno-0-695" name="__codelineno-0-695"></a><a href="#__codelineno-0-695"><span class="linenos" data-linenos="695 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the active graph for the current context.</span>
-</span><span id="__span-0-696"><a id="__codelineno-0-696" name="__codelineno-0-696"></a><a href="#__codelineno-0-696"><span class="linenos" data-linenos="696 "></span></a>
-</span><span id="__span-0-697"><a id="__codelineno-0-697" name="__codelineno-0-697"></a><a href="#__codelineno-0-697"><span class="linenos" data-linenos="697 "></span></a><span class="sd">    This sets the context variable that will be returned by get_active().</span>
-</span><span id="__span-0-698"><a id="__codelineno-0-698" name="__codelineno-0-698"></a><a href="#__codelineno-0-698"><span class="linenos" data-linenos="698 "></span></a><span class="sd">    Typically used in application setup code or test fixtures.</span>
-</span><span id="__span-0-699"><a id="__codelineno-0-699" name="__codelineno-0-699"></a><a href="#__codelineno-0-699"><span class="linenos" data-linenos="699 "></span></a>
-</span><span id="__span-0-700"><a id="__codelineno-0-700" name="__codelineno-0-700"></a><a href="#__codelineno-0-700"><span class="linenos" data-linenos="700 "></span></a><span class="sd">    Args:</span>
-</span><span id="__span-0-701"><a id="__codelineno-0-701" name="__codelineno-0-701"></a><a href="#__codelineno-0-701"><span class="linenos" data-linenos="701 "></span></a><span class="sd">        reg: FeatureGraph to activate</span>
-</span><span id="__span-0-702"><a id="__codelineno-0-702" name="__codelineno-0-702"></a><a href="#__codelineno-0-702"><span class="linenos" data-linenos="702 "></span></a>
-</span><span id="__span-0-703"><a id="__codelineno-0-703" name="__codelineno-0-703"></a><a href="#__codelineno-0-703"><span class="linenos" data-linenos="703 "></span></a><span class="sd">    Example:</span>
-</span><span id="__span-0-704"><a id="__codelineno-0-704" name="__codelineno-0-704"></a><a href="#__codelineno-0-704"><span class="linenos" data-linenos="704 "></span></a><span class="sd">        ```py</span>
-</span><span id="__span-0-705"><a id="__codelineno-0-705" name="__codelineno-0-705"></a><a href="#__codelineno-0-705"><span class="linenos" data-linenos="705 "></span></a><span class="sd">        my_graph = mx.FeatureGraph()</span>
-</span><span id="__span-0-706"><a id="__codelineno-0-706" name="__codelineno-0-706"></a><a href="#__codelineno-0-706"><span class="linenos" data-linenos="706 "></span></a><span class="sd">        mx.FeatureGraph.set_active(my_graph)</span>
-</span><span id="__span-0-707"><a id="__codelineno-0-707" name="__codelineno-0-707"></a><a href="#__codelineno-0-707"><span class="linenos" data-linenos="707 "></span></a><span class="sd">        mx.FeatureGraph.get_active()  # Returns my_graph</span>
-</span><span id="__span-0-708"><a id="__codelineno-0-708" name="__codelineno-0-708"></a><a href="#__codelineno-0-708"><span class="linenos" data-linenos="708 "></span></a><span class="sd">        ```</span>
-</span><span id="__span-0-709"><a id="__codelineno-0-709" name="__codelineno-0-709"></a><a href="#__codelineno-0-709"><span class="linenos" data-linenos="709 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-710"><a id="__codelineno-0-710" name="__codelineno-0-710"></a><a href="#__codelineno-0-710"><span class="linenos" data-linenos="710 "></span></a>    <span class="n">_active_graph</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-698"><a id="__codelineno-0-698" name="__codelineno-0-698"></a><a href="#__codelineno-0-698"><span class="linenos" data-linenos="698 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-699"><a id="__codelineno-0-699" name="__codelineno-0-699"></a><a href="#__codelineno-0-699"><span class="linenos" data-linenos="699 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">set_active</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">reg</span><span class="p">:</span> <span class="s2">&quot;FeatureGraph&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-700"><a id="__codelineno-0-700" name="__codelineno-0-700"></a><a href="#__codelineno-0-700"><span class="linenos" data-linenos="700 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the active graph for the current context.</span>
+</span><span id="__span-0-701"><a id="__codelineno-0-701" name="__codelineno-0-701"></a><a href="#__codelineno-0-701"><span class="linenos" data-linenos="701 "></span></a>
+</span><span id="__span-0-702"><a id="__codelineno-0-702" name="__codelineno-0-702"></a><a href="#__codelineno-0-702"><span class="linenos" data-linenos="702 "></span></a><span class="sd">    This sets the context variable that will be returned by get_active().</span>
+</span><span id="__span-0-703"><a id="__codelineno-0-703" name="__codelineno-0-703"></a><a href="#__codelineno-0-703"><span class="linenos" data-linenos="703 "></span></a><span class="sd">    Typically used in application setup code or test fixtures.</span>
+</span><span id="__span-0-704"><a id="__codelineno-0-704" name="__codelineno-0-704"></a><a href="#__codelineno-0-704"><span class="linenos" data-linenos="704 "></span></a>
+</span><span id="__span-0-705"><a id="__codelineno-0-705" name="__codelineno-0-705"></a><a href="#__codelineno-0-705"><span class="linenos" data-linenos="705 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-706"><a id="__codelineno-0-706" name="__codelineno-0-706"></a><a href="#__codelineno-0-706"><span class="linenos" data-linenos="706 "></span></a><span class="sd">        reg: FeatureGraph to activate</span>
+</span><span id="__span-0-707"><a id="__codelineno-0-707" name="__codelineno-0-707"></a><a href="#__codelineno-0-707"><span class="linenos" data-linenos="707 "></span></a>
+</span><span id="__span-0-708"><a id="__codelineno-0-708" name="__codelineno-0-708"></a><a href="#__codelineno-0-708"><span class="linenos" data-linenos="708 "></span></a><span class="sd">    Example:</span>
+</span><span id="__span-0-709"><a id="__codelineno-0-709" name="__codelineno-0-709"></a><a href="#__codelineno-0-709"><span class="linenos" data-linenos="709 "></span></a><span class="sd">        ```py</span>
+</span><span id="__span-0-710"><a id="__codelineno-0-710" name="__codelineno-0-710"></a><a href="#__codelineno-0-710"><span class="linenos" data-linenos="710 "></span></a><span class="sd">        my_graph = mx.FeatureGraph()</span>
+</span><span id="__span-0-711"><a id="__codelineno-0-711" name="__codelineno-0-711"></a><a href="#__codelineno-0-711"><span class="linenos" data-linenos="711 "></span></a><span class="sd">        mx.FeatureGraph.set_active(my_graph)</span>
+</span><span id="__span-0-712"><a id="__codelineno-0-712" name="__codelineno-0-712"></a><a href="#__codelineno-0-712"><span class="linenos" data-linenos="712 "></span></a><span class="sd">        mx.FeatureGraph.get_active()  # Returns my_graph</span>
+</span><span id="__span-0-713"><a id="__codelineno-0-713" name="__codelineno-0-713"></a><a href="#__codelineno-0-713"><span class="linenos" data-linenos="713 "></span></a><span class="sd">        ```</span>
+</span><span id="__span-0-714"><a id="__codelineno-0-714" name="__codelineno-0-714"></a><a href="#__codelineno-0-714"><span class="linenos" data-linenos="714 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-715"><a id="__codelineno-0-715" name="__codelineno-0-715"></a><a href="#__codelineno-0-715"><span class="linenos" data-linenos="715 "></span></a>    <span class="n">_active_graph</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -5900,29 +5930,29 @@ The graph is automatically restored when the context exits.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/feature.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-712"><a id="__codelineno-0-712" name="__codelineno-0-712"></a><a href="#__codelineno-0-712"><span class="linenos" data-linenos="712 "></span></a><span class="nd">@contextmanager</span>
-</span><span id="__span-0-713"><a id="__codelineno-0-713" name="__codelineno-0-713"></a><a href="#__codelineno-0-713"><span class="linenos" data-linenos="713 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">use</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Self</span><span class="p">]:</span>
-</span><span id="__span-0-714"><a id="__codelineno-0-714" name="__codelineno-0-714"></a><a href="#__codelineno-0-714"><span class="linenos" data-linenos="714 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager to temporarily use this graph as active.</span>
-</span><span id="__span-0-715"><a id="__codelineno-0-715" name="__codelineno-0-715"></a><a href="#__codelineno-0-715"><span class="linenos" data-linenos="715 "></span></a>
-</span><span id="__span-0-716"><a id="__codelineno-0-716" name="__codelineno-0-716"></a><a href="#__codelineno-0-716"><span class="linenos" data-linenos="716 "></span></a><span class="sd">    This is the recommended way to use custom registries, especially in tests.</span>
-</span><span id="__span-0-717"><a id="__codelineno-0-717" name="__codelineno-0-717"></a><a href="#__codelineno-0-717"><span class="linenos" data-linenos="717 "></span></a><span class="sd">    The graph is automatically restored when the context exits.</span>
-</span><span id="__span-0-718"><a id="__codelineno-0-718" name="__codelineno-0-718"></a><a href="#__codelineno-0-718"><span class="linenos" data-linenos="718 "></span></a>
-</span><span id="__span-0-719"><a id="__codelineno-0-719" name="__codelineno-0-719"></a><a href="#__codelineno-0-719"><span class="linenos" data-linenos="719 "></span></a><span class="sd">    Yields:</span>
-</span><span id="__span-0-720"><a id="__codelineno-0-720" name="__codelineno-0-720"></a><a href="#__codelineno-0-720"><span class="linenos" data-linenos="720 "></span></a><span class="sd">        FeatureGraph: This graph instance</span>
-</span><span id="__span-0-721"><a id="__codelineno-0-721" name="__codelineno-0-721"></a><a href="#__codelineno-0-721"><span class="linenos" data-linenos="721 "></span></a>
-</span><span id="__span-0-722"><a id="__codelineno-0-722" name="__codelineno-0-722"></a><a href="#__codelineno-0-722"><span class="linenos" data-linenos="722 "></span></a><span class="sd">    Example:</span>
-</span><span id="__span-0-723"><a id="__codelineno-0-723" name="__codelineno-0-723"></a><a href="#__codelineno-0-723"><span class="linenos" data-linenos="723 "></span></a><span class="sd">        ```py</span>
-</span><span id="__span-0-724"><a id="__codelineno-0-724" name="__codelineno-0-724"></a><a href="#__codelineno-0-724"><span class="linenos" data-linenos="724 "></span></a><span class="sd">        with graph.use():</span>
-</span><span id="__span-0-725"><a id="__codelineno-0-725" name="__codelineno-0-725"></a><a href="#__codelineno-0-725"><span class="linenos" data-linenos="725 "></span></a>
-</span><span id="__span-0-726"><a id="__codelineno-0-726" name="__codelineno-0-726"></a><a href="#__codelineno-0-726"><span class="linenos" data-linenos="726 "></span></a><span class="sd">            class TestFeature(mx.BaseFeature, spec=mx.FeatureSpec(key=&quot;test&quot;, id_columns=[&quot;id&quot;])):</span>
-</span><span id="__span-0-727"><a id="__codelineno-0-727" name="__codelineno-0-727"></a><a href="#__codelineno-0-727"><span class="linenos" data-linenos="727 "></span></a><span class="sd">                id: str</span>
-</span><span id="__span-0-728"><a id="__codelineno-0-728" name="__codelineno-0-728"></a><a href="#__codelineno-0-728"><span class="linenos" data-linenos="728 "></span></a><span class="sd">        ```</span>
-</span><span id="__span-0-729"><a id="__codelineno-0-729" name="__codelineno-0-729"></a><a href="#__codelineno-0-729"><span class="linenos" data-linenos="729 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-730"><a id="__codelineno-0-730" name="__codelineno-0-730"></a><a href="#__codelineno-0-730"><span class="linenos" data-linenos="730 "></span></a>    <span class="n">token</span> <span class="o">=</span> <span class="n">_active_graph</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-</span><span id="__span-0-731"><a id="__codelineno-0-731" name="__codelineno-0-731"></a><a href="#__codelineno-0-731"><span class="linenos" data-linenos="731 "></span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-0-732"><a id="__codelineno-0-732" name="__codelineno-0-732"></a><a href="#__codelineno-0-732"><span class="linenos" data-linenos="732 "></span></a>        <span class="k">yield</span> <span class="bp">self</span>
-</span><span id="__span-0-733"><a id="__codelineno-0-733" name="__codelineno-0-733"></a><a href="#__codelineno-0-733"><span class="linenos" data-linenos="733 "></span></a>    <span class="k">finally</span><span class="p">:</span>
-</span><span id="__span-0-734"><a id="__codelineno-0-734" name="__codelineno-0-734"></a><a href="#__codelineno-0-734"><span class="linenos" data-linenos="734 "></span></a>        <span class="n">_active_graph</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-717"><a id="__codelineno-0-717" name="__codelineno-0-717"></a><a href="#__codelineno-0-717"><span class="linenos" data-linenos="717 "></span></a><span class="nd">@contextmanager</span>
+</span><span id="__span-0-718"><a id="__codelineno-0-718" name="__codelineno-0-718"></a><a href="#__codelineno-0-718"><span class="linenos" data-linenos="718 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">use</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Self</span><span class="p">]:</span>
+</span><span id="__span-0-719"><a id="__codelineno-0-719" name="__codelineno-0-719"></a><a href="#__codelineno-0-719"><span class="linenos" data-linenos="719 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager to temporarily use this graph as active.</span>
+</span><span id="__span-0-720"><a id="__codelineno-0-720" name="__codelineno-0-720"></a><a href="#__codelineno-0-720"><span class="linenos" data-linenos="720 "></span></a>
+</span><span id="__span-0-721"><a id="__codelineno-0-721" name="__codelineno-0-721"></a><a href="#__codelineno-0-721"><span class="linenos" data-linenos="721 "></span></a><span class="sd">    This is the recommended way to use custom registries, especially in tests.</span>
+</span><span id="__span-0-722"><a id="__codelineno-0-722" name="__codelineno-0-722"></a><a href="#__codelineno-0-722"><span class="linenos" data-linenos="722 "></span></a><span class="sd">    The graph is automatically restored when the context exits.</span>
+</span><span id="__span-0-723"><a id="__codelineno-0-723" name="__codelineno-0-723"></a><a href="#__codelineno-0-723"><span class="linenos" data-linenos="723 "></span></a>
+</span><span id="__span-0-724"><a id="__codelineno-0-724" name="__codelineno-0-724"></a><a href="#__codelineno-0-724"><span class="linenos" data-linenos="724 "></span></a><span class="sd">    Yields:</span>
+</span><span id="__span-0-725"><a id="__codelineno-0-725" name="__codelineno-0-725"></a><a href="#__codelineno-0-725"><span class="linenos" data-linenos="725 "></span></a><span class="sd">        FeatureGraph: This graph instance</span>
+</span><span id="__span-0-726"><a id="__codelineno-0-726" name="__codelineno-0-726"></a><a href="#__codelineno-0-726"><span class="linenos" data-linenos="726 "></span></a>
+</span><span id="__span-0-727"><a id="__codelineno-0-727" name="__codelineno-0-727"></a><a href="#__codelineno-0-727"><span class="linenos" data-linenos="727 "></span></a><span class="sd">    Example:</span>
+</span><span id="__span-0-728"><a id="__codelineno-0-728" name="__codelineno-0-728"></a><a href="#__codelineno-0-728"><span class="linenos" data-linenos="728 "></span></a><span class="sd">        ```py</span>
+</span><span id="__span-0-729"><a id="__codelineno-0-729" name="__codelineno-0-729"></a><a href="#__codelineno-0-729"><span class="linenos" data-linenos="729 "></span></a><span class="sd">        with graph.use():</span>
+</span><span id="__span-0-730"><a id="__codelineno-0-730" name="__codelineno-0-730"></a><a href="#__codelineno-0-730"><span class="linenos" data-linenos="730 "></span></a>
+</span><span id="__span-0-731"><a id="__codelineno-0-731" name="__codelineno-0-731"></a><a href="#__codelineno-0-731"><span class="linenos" data-linenos="731 "></span></a><span class="sd">            class TestFeature(mx.BaseFeature, spec=mx.FeatureSpec(key=&quot;test&quot;, id_columns=[&quot;id&quot;])):</span>
+</span><span id="__span-0-732"><a id="__codelineno-0-732" name="__codelineno-0-732"></a><a href="#__codelineno-0-732"><span class="linenos" data-linenos="732 "></span></a><span class="sd">                id: str</span>
+</span><span id="__span-0-733"><a id="__codelineno-0-733" name="__codelineno-0-733"></a><a href="#__codelineno-0-733"><span class="linenos" data-linenos="733 "></span></a><span class="sd">        ```</span>
+</span><span id="__span-0-734"><a id="__codelineno-0-734" name="__codelineno-0-734"></a><a href="#__codelineno-0-734"><span class="linenos" data-linenos="734 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-735"><a id="__codelineno-0-735" name="__codelineno-0-735"></a><a href="#__codelineno-0-735"><span class="linenos" data-linenos="735 "></span></a>    <span class="n">token</span> <span class="o">=</span> <span class="n">_active_graph</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</span><span id="__span-0-736"><a id="__codelineno-0-736" name="__codelineno-0-736"></a><a href="#__codelineno-0-736"><span class="linenos" data-linenos="736 "></span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-0-737"><a id="__codelineno-0-737" name="__codelineno-0-737"></a><a href="#__codelineno-0-737"><span class="linenos" data-linenos="737 "></span></a>        <span class="k">yield</span> <span class="bp">self</span>
+</span><span id="__span-0-738"><a id="__codelineno-0-738" name="__codelineno-0-738"></a><a href="#__codelineno-0-738"><span class="linenos" data-linenos="738 "></span></a>    <span class="k">finally</span><span class="p">:</span>
+</span><span id="__span-0-739"><a id="__codelineno-0-739" name="__codelineno-0-739"></a><a href="#__codelineno-0-739"><span class="linenos" data-linenos="739 "></span></a>        <span class="n">_active_graph</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>

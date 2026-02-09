@@ -750,6 +750,8 @@
       
         
       
+        
+      
     
     
     
@@ -1110,6 +1112,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="External Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#outdated-external-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outdated External Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1256,6 +1275,34 @@
     
   
     Syntactic Sugar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../projects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projects
   
 
     
@@ -3592,6 +3639,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="External Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#outdated-external-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outdated External Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -3849,14 +3913,23 @@ This metadata does not influence graph topology or the versioning system.</p>
 <h2 id="external-features">External Features<a class="headerlink" href="#external-features" title="Permanent link">&para;</a></h2>
 <p>External features are stubs pointing at features actually defined in other projects and not available in Python at runtime.
 They can be used if the actual feature class cannot be imported, for example due to dependency conflicts or for other reasons.</p>
-<p>Externals features can be defined with:</p>
+<p>Typically, <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> are loaded from a <code>metaxy.lock</code> file. Learn more in <a href="../../projects/#multiple-python-environments"><abbr title="Metaxy codebases which have more than one distinct Python environment. | /guide/concepts/projects/#multi-environment-setups">multi-environment setups</abbr></a> docs.</p>
+<div class="admonition info annotate">
+<p class="admonition-title">Manual External Feature Interface</p>
+<p>Users who need more control or cannot use the <code>metaxy.lock</code> file for some reasons (1) can create them manually:</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">external_feature</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">FeatureDefinition</span><span class="o">.</span><span class="n">external</span><span class="p">(</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">spec</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;a/b/c&quot;</span><span class="p">,</span> <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]),</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">project</span><span class="o">=</span><span class="s2">&quot;external-project&quot;</span><span class="p">,</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">)</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">mx</span><span class="o">.</span><span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">add_feature_definition</span><span class="p">(</span><span class="n">external_feature</span><span class="p">)</span>
 </span></code></pre></div>
+</div>
+<ol>
+<li>Please let us know why via a <a href="https://github.com/anam-org/metaxy/issues/new">GitHub Issue</a></li>
+</ol>
 <p>External features only exist until the actual feature definitions are loaded from the metadata store and replace them. This can be done with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../../reference/api/initialization/#metaxy.sync_external_features"><code>metaxy.sync_external_features</code></a>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
@@ -3867,7 +3940,8 @@ They can be used if the actual feature class cannot be imported, for example due
 <p class="admonition-title">Pydantic Schema Limitation</p>
 <p>Features loaded from the metadata store have their JSON schema preserved from when they were originally saved. However, the Python <em>class</em> may not be available anymore. Operations that require the actual Python class, such as model instantiation or validation, will not work for these features.</p>
 </div>
-<p>Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr>) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:</p>
+<h3 id="outdated-external-features">Outdated External Features<a class="headerlink" href="#outdated-external-features" title="Permanent link">&para;</a></h3>
+<p>Metaxy has a few safe guards in order to combat incorrect versioning information on <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr>. By default, Metaxy emits warnings when an <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> appears to have a different version (or <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr>) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:</p>
 <ul>
 <li>passing <code>on_conflict="raise"</code> to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../../reference/api/initialization/#metaxy.sync_external_features"><code>sync_external_features</code></a></li>
 <li>passing <code>--locked</code> to Metaxy CLI commands</li>
@@ -3877,7 +3951,7 @@ They can be used if the actual feature class cannot be imported, for example due
 <p class="admonition-title">Tip</p>
 <p>We recommend setting <code>METAXY_LOCKED=1</code> in production</p>
 </div>
-<p>Additionally, the following actions always trigger a sync for external feature definitions:</p>
+<p>Additionally, the following actions always trigger a sync for <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr>:</p>
 <ul>
 <li>pushing feature definitions to the metadata store (e.g. <code>metaxy push</code> CLI)</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>MetadataStore.read</code></a></li>
@@ -3888,7 +3962,7 @@ They can be used if the actual feature class cannot be imported, for example due
 <p class="admonition-title">Tip</p>
 <p>This behavior can be disabled by setting <code>sync=False</code> in the global <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr>. However, we advise to keep it enabled,
 because <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../../reference/api/initialization/#metaxy.sync_external_features"><code>sync_external_features</code></a> is very lightweight on the first call and a no-op on subsequent calls.
-It only does anything if the current feature graph does not contain any external features.</p>
+It only does anything if the current feature graph does not contain any <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr>.</p>
 </div>
 
 

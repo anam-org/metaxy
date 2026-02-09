@@ -737,6 +737,8 @@
       
         
       
+        
+      
     
     
     
@@ -1136,6 +1138,34 @@
     
   
     Syntactic Sugar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guide/concepts/projects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projects
   
 
     
@@ -5070,9 +5100,9 @@ and a dataframe of a different implementation has been encountered during <code>
         <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This method automatically loads feature definitions from the metadata store
-before computing the update. This ensures that any external feature dependencies
+before computing the update. This ensures that any <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> dependencies
 are resolved with their actual definitions from the store, preventing incorrect
-version calculations from stale external feature definitions.</p>
+version calculations from stale <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr>.</p>
 </div>
 <div class="admonition example">
 <p class="admonition-title">With a <abbr title="A feature without any upstream (parent) features.">root feature</abbr></p>

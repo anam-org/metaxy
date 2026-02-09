@@ -737,6 +737,8 @@
       
         
       
+        
+      
     
     
     
@@ -1136,6 +1138,34 @@
     
   
     Syntactic Sugar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/concepts/projects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projects
   
 
     
@@ -4047,7 +4077,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><a href="#metaxy-describe"><code>describe</code></a>: Describe Metaxy entities in detail</li>
 <li><a href="#metaxy-graph"><code>graph</code></a>: Manage feature graphs</li>
 <li><a href="#metaxy-list"><code>list</code></a>: List Metaxy entities</li>
-<li><a href="#metaxy-lock"><code>lock</code></a>: Generate <code>metaxy.lock</code> file with external feature definitions fetched from the metadata store.</li>
+<li><a href="#metaxy-lock"><code>lock</code></a>: Generate <code>metaxy.lock</code> file with <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> fetched from the metadata store.</li>
 <li><a href="#metaxy-mcp"><code>mcp</code></a>: <a href="https://modelcontextprotocol.io/docs/getting-started/intro">MCP</a> server commands.</li>
 <li><a href="#metaxy-metadata"><code>metadata</code></a>: Manage Metaxy metadata in metadata stores.</li>
 <li><a href="#metaxy-push"><code>push</code></a>: Push feature definitions to the metadata store</li>
@@ -4058,8 +4088,8 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-shell">metaxy shell<a class="headerlink" href="#metaxy-shell" title="Permanent link">&para;</a></h2>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="go">metaxy shell</span>
@@ -4070,8 +4100,8 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-config">metaxy config<a class="headerlink" href="#metaxy-config" title="Permanent link">&para;</a></h2>
 <p>Manage Metaxy <a href="https://docs.metaxy.io/main/reference/configuration/">configuration</a></p>
@@ -4080,8 +4110,8 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-config-print">metaxy config print<a class="headerlink" href="#metaxy-config-print" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="go">metaxy config print [OPTIONS]</span>
@@ -4098,8 +4128,8 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-describe-graph">metaxy describe graph<a class="headerlink" href="#metaxy-describe-graph" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">metaxy describe graph [ARGS]</span>
@@ -4138,8 +4168,8 @@ version, description, fields with their versions and dependencies.</p>
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-graph-history">metaxy graph history<a class="headerlink" href="#metaxy-graph-history" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">metaxy graph history [ARGS]</span>
@@ -4192,8 +4222,8 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-list-features">metaxy list features<a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">metaxy list features [OPTIONS]</span>
@@ -4219,8 +4249,8 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-metadata-status">metaxy metadata status<a class="headerlink" href="#metaxy-metadata-status" title="Permanent link">&para;</a></h3>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="go">metaxy metadata status [OPTIONS] [ARGS]</span>
@@ -4290,8 +4320,8 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-push">metaxy push<a class="headerlink" href="#metaxy-push" title="Permanent link">&para;</a></h2>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy push [OPTIONS] [ARGS]</span>
@@ -4307,25 +4337,25 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-lock">metaxy lock<a class="headerlink" href="#metaxy-lock" title="Permanent link">&para;</a></h2>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy lock [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
-<p>Generate <code>metaxy.lock</code> file with external feature definitions fetched from the metadata store.</p>
+<p>Generate <code>metaxy.lock</code> file with <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> fetched from the metadata store.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)  <em>[env: METAXY_STORE]</em></li>
-<li><code>--output, -o</code>: Output file path (defaults to metaxy.lock in config directory)  <em>[env: METAXY_OUTPUT]</em>  <em>[default: ""]</em></li>
+<li><code>--output, -o</code>: Output file path (defaults to <abbr title="A file generated by Metaxy to track external feature definitions. | /guide/concepts/projects/#multiple-python-environments">metaxy.lock</abbr> in config directory)  <em>[env: METAXY_OUTPUT]</em>  <em>[default: ""]</em></li>
 </ul>
 <p><strong>Global</strong>:</p>
 <ul>
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
 <li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
 <li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
-<li><code>--sync, --no-sync</code>: Load external feature definitions from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
-<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 
 

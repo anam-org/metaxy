@@ -750,6 +750,8 @@
       
         
       
+        
+      
     
     
     
@@ -1152,6 +1154,34 @@
     
   
     Syntactic Sugar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="projects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projects
   
 
     
@@ -3436,17 +3466,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-big-picture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Big Picture
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#core-concepts" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3558,11 +3577,7 @@
 
 <h1 id="concepts">Concepts<a class="headerlink" href="#concepts" title="Permanent link">&para;</a></h1>
 <p>Metaxy is built around a few core ideas that work together to solve the problem of incremental processing in multi-modal pipelines.</p>
-<h2 id="the-big-picture">The Big Picture<a class="headerlink" href="#the-big-picture" title="Permanent link">&para;</a></h2>
-<pre class="mermaid"><code>graph LR
-    A[Feature Definitions] --&gt; B[Incremental Updates]
-    B --&gt; C[Metadata Store]</code></pre>
-<p><strong>Feature definitions</strong> declare what data you have and how it depends on other data. Metaxy builds a <strong>feature graph</strong> from these definitions and uses it to track <strong>versions</strong> at the sample level. When upstream data changes, Metaxy identifies exactly which downstream samples need recomputation and resolves <strong>incremental updates</strong>. All of this is persisted in a <strong>metadata store</strong>. Feature definitions may optionally define custom <strong>metadata columns</strong> (such as file path, size, etc.) which are stored alongside the versioning information.</p>
+<p><strong>Feature definitions</strong> declare what data you have and how it depends on other data. Metaxy builds a <strong>feature graph</strong> from these definitions and uses it to track <strong>versions</strong> at the sample level. When upstream data changes, Metaxy identifies exactly which downstream samples need recomputation and resolves an <strong>incremental update</strong>. Feature versions are persisted in a <strong>metadata store</strong>. Feature definitions may define custom <strong>metadata columns</strong> (such as file path, size, etc.) which are stored alongside the versioning information.</p>
 <h2 id="core-concepts">Core Concepts<a class="headerlink" href="#core-concepts" title="Permanent link">&para;</a></h2>
 <div class="grid cards">
 <ul>
