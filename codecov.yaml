@@ -1,0 +1,16 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto    # use the coverage of the base commit
+        threshold: 1%   # allow 1% drop before failing
+    patch:
+      default:
+        target: 80%
+
+comment:
+  layout: "condensed_header, condensed_files, condensed_footer"
+  require_changes: true
