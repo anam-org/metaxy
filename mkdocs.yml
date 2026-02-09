@@ -184,6 +184,7 @@ markdown_extensions:
   - pymdownx.smartsymbols
   - pymdownx.snippets:
       base_path: ['examples', 'docs/snippets', 'docs']
+      dedent_subsections: true
       auto_append:
         - .glossary.md
   # Metaxy custom extensions (must be before superfences to inject fenced code blocks)
@@ -212,7 +213,7 @@ nav:
       - Introduction: index.md
       - Pitch: metaxy/pitch.md
       - Design Choices: metaxy/design.md
-    - 🚀 Quickstart: guide/quickstart/hello.md
+    - 🚀 Quickstart: guide/quickstart/quickstart.md
     - 💡 Concepts:
       - Overview: guide/concepts/index.md
       - Metadata Stores:

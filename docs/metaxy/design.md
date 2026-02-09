@@ -120,5 +120,5 @@ All metadata store implementations are guaranteed to return equivalent results. 
 
 ## 🚀 What's Next?
 
-- Itching to write some Metaxy code? Jump to [Quickstart](/guide/quickstart/hello.md).
+- Itching to write some Metaxy code? Jump to [Quickstart](/guide/quickstart/quickstart.md).
 --8<-- "whats-next.md"

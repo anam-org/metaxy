@@ -2433,3 +2433,101 @@
     ]),
   })
 # ---
+# name: test_example_snapshot[example-quickstart]
+  dict({
+    'events': list([
+      dict({
+        'graph': dict({
+          'audio': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'columns': None,
+                  'feature': 'video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': None,
+              'fields': list([
+                dict({
+                  'code_version': '__metaxy_initial__',
+                  'deps': list([
+                  ]),
+                  'key': 'default',
+                }),
+              ]),
+              'id_columns': list([
+                'id',
+              ]),
+              'key': 'audio',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'default': '91af2f82',
+            }),
+            'metaxy_feature_version': '9680125a',
+          }),
+          'video': dict({
+            'feature_spec': dict({
+              'deps': list([
+              ]),
+              'description': None,
+              'fields': list([
+                dict({
+                  'code_version': '__metaxy_initial__',
+                  'deps': list([
+                  ]),
+                  'key': 'default',
+                }),
+              ]),
+              'id_columns': list([
+                'id',
+              ]),
+              'key': 'video',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'default': 'c675833f',
+            }),
+            'metaxy_feature_version': '4c78e5e2',
+          }),
+        }),
+        'project_version': 'cef556e4',
+        'scenario_name': 'Initial pipeline run',
+        'step_name': None,
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'command': 'python -m example_quickstart.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Initial pipeline run',
+        'step_name': 'initial_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python -m example_quickstart.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Idempotent rerun',
+        'step_name': 'idempotent_run',
+        'type': 'command_executed',
+      }),
+    ]),
+  })
+# ---

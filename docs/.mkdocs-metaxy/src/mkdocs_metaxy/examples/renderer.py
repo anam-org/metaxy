@@ -186,7 +186,7 @@ class ExampleRenderer:
         Args:
             example_name: Name of the example.
             button_style: Whether to render as a button (True) or inline link (False).
-            text: Custom text for the link. Defaults to "View Example Source on GitHub".
+            text: Custom text for the link. Defaults to "View Source on GitHub".
 
         Returns:
             Markdown string with GitHub link.
@@ -195,7 +195,7 @@ class ExampleRenderer:
         github_url = f"https://github.com/anam-org/metaxy/tree/main/examples/{example_dir}"
 
         if text is None:
-            text = "View Example Source on GitHub"
+            text = "View Source on GitHub"
 
         if button_style:
             return f"[:octicons-mark-github-16: {text}]({github_url}){{.md-button target=_blank}}\n\n"

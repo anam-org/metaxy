@@ -15,7 +15,7 @@ Welcome to the Metaxy User Guide. Start with the introduction to understand what
 
     Learn what Metaxy is and why it exists.
 
--   :material-rocket-launch: **[Quickstart](quickstart/hello.md)**
+-   :material-rocket-launch: **[Quickstart](quickstart/quickstart.md)**
 
     ---
 

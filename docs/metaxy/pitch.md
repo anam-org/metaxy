@@ -65,5 +65,5 @@ Hopefully this was impressive enough and has sparked some interest in Metaxy!
 ## What's Next?
 
 - Learn about Metaxy [design choices](./design.md)
-- Itching to write some Metaxy code? Jump to [Quickstart](/guide/quickstart/hello.md).
+- Itching to write some Metaxy code? Jump to [Quickstart](/guide/quickstart/quickstart.md).
 --8<-- "whats-next.md"

@@ -197,7 +197,7 @@
             }
           }
         },
-        "timestamp": "2026-02-09T19:28:30.576687",
+        "timestamp": "2026-02-09T23:34:10.760244",
         "scenario_name": "Initial feature graph",
         "step_name": null
       },
@@ -206,8 +206,8 @@
         "command": "metaxy push",
         "returncode": 0,
         "stdout": "d22f011f\n",
-        "stderr": "Recorded at: {'name': 'dev', 'display': \n'DeltaMetadataStore(path=/tmp/pytest-of-dan/pytest-1225/test_example_snapshot_ex\nample_3/example-overview)', 'resolved_from': {'name': 'dev', 'type': \n'metaxy.ext.metadata_stores.delta.DeltaMetadataStore', 'display': \n'DeltaMetadataStore(path=/tmp/pytest-of-dan/pytest-1225/test_example_snapshot_ex\nample_3/example-overview)', 'uri': \n'/tmp/pytest-of-dan/pytest-1225/test_example_snapshot_example_3/example-overview\n/metaxy-system/feature_versions.delta'}}\n✓ Snapshot already recorded (no changes)\n",
-        "timestamp": "2026-02-09T19:28:31.245402",
+        "stderr": "Recorded at: {'name': 'dev', 'display': \n'DeltaMetadataStore(path=/tmp/pytest-of-dan/pytest-1230/test_example_snapshot_ex\nample_3/example-overview)', 'resolved_from': {'name': 'dev', 'type': \n'metaxy.ext.metadata_stores.delta.DeltaMetadataStore', 'display': \n'DeltaMetadataStore(path=/tmp/pytest-of-dan/pytest-1230/test_example_snapshot_ex\nample_3/example-overview)', 'uri': \n'/tmp/pytest-of-dan/pytest-1230/test_example_snapshot_example_3/example-overview\n/metaxy-system/feature_versions.delta'}}\n✓ Snapshot already recorded (no changes)\n",
+        "timestamp": "2026-02-09T23:34:11.388827",
         "scenario_name": "Initial feature graph",
         "step_name": "push_graph"
       },
@@ -217,7 +217,7 @@
         "returncode": 0,
         "stdout": "---\ntitle: Feature Graph\n---\nflowchart TB\n    %% Snapshot version: d22f011f\n    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%\n        example_video[\"<div style=\"text-align:left\"><b>example/video</b><br/><small><font color=\"#666\">Project: example_overview</font></small><br/>c2ac395f<br/><font color=\"#999\">---</font><br/>- \naudio (22742381)<br/>- frames (794116a9)</div>\"]\n        example_crop[\"<div style=\"text-align:left\"><b>example/crop</b><br/><small><font color=\"#666\">Project: example_overview</font></small><br/>34d75856<br/><font color=\"#999\">---</font><br/>- audio\n(4c726c4b)<br/>- frames (2419e09d)</div>\"]\n        example_face_detection[\"<div style=\"text-align:left\"><b>example/face_detection</b><br/><small><font color=\"#666\">Project: example_overview</font></small><br/>f1526ee0<br/><font \ncolor=\"#999\">---</font><br/>- faces (006efeef)</div>\"]\n        example_stt[\"<div style=\"text-align:left\"><b>example/stt</b><br/><small><font color=\"#666\">Project: example_overview</font></small><br/>d953dea4<br/><font color=\"#999\">---</font><br/>- \ntranscription (3ec3826d)</div>\"]\n        example_video --> example_crop\n        example_crop --> example_face_detection\n        example_video --> example_stt\n\n",
         "stderr": "",
-        "timestamp": "2026-02-09T19:28:32.146781",
+        "timestamp": "2026-02-09T23:34:12.278967",
         "scenario_name": "Initial feature graph",
         "step_name": "render_graph"
       },
@@ -414,7 +414,7 @@
             }
           }
         },
-        "timestamp": "2026-02-09T19:28:32.819783",
+        "timestamp": "2026-02-09T23:34:12.931836",
         "scenario_name": "Code change - audio field",
         "step_name": "update_audio_version"
       },
@@ -803,7 +803,7 @@
             }
           }
         },
-        "timestamp": "2026-02-09T19:28:32.832996",
+        "timestamp": "2026-02-09T23:34:12.944598",
         "scenario_name": "Code change - audio field",
         "step_name": "update_audio_version"
       },
@@ -813,7 +813,7 @@
         "returncode": 0,
         "stdout": "---\ntitle: Feature Graph Changes\n---\nflowchart TB\n    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%\n\n    example_crop[\"<div style=\"text-align:left\"><b>example/crop</b><br/>fe237d<br/><font color=\"#999\">---</font><br/>- audio (e2b6ce)<br/>- frames (2419e0)</div>\"]\n    example_face_detection[\"<div style=\"text-align:left\"><b>example/face_detection</b><br/>f1526e<br/><font color=\"#999\">---</font><br/>- faces (006efe)</div>\"]\n    example_stt[\"<div style=\"text-align:left\"><b>example/stt</b><br/>e57e75<br/><font color=\"#999\">---</font><br/>- transcription (9f7ea4)</div>\"]\n    example_video[\"<div style=\"text-align:left\"><b>example/video</b><br/>2faffb<br/><font color=\"#999\">---</font><br/>- audio (09c839)<br/>- frames (794116)</div>\"]\n\n    example_video --> example_crop\n    example_crop --> example_face_detection\n    example_video --> example_stt\n\n",
         "stderr": "",
-        "timestamp": "2026-02-09T19:28:33.531641",
+        "timestamp": "2026-02-09T23:34:13.598143",
         "scenario_name": "Code change - audio field",
         "step_name": "render_diff"
       }

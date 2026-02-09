@@ -49,7 +49,7 @@ Parameters:
 
 - `example` (required): Example name
 - `button` (optional): Display as button (default: true) or inline link (false)
-- `text` (optional): Custom link text (default: "View Example Source on GitHub")
+- `text` (optional): Custom link text (default: "View Source on GitHub")
 
 Examples:
 
