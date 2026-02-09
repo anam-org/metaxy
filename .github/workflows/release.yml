@@ -32,6 +32,8 @@ jobs:
       run-macos: true
       run-all-checks: true
       dependency-matrix: true
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   testpypi:
     needs: qa

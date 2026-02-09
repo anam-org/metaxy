@@ -26,6 +26,9 @@ on:
         description: "Run dependency version compatibility tests"
         type: boolean
         default: false
+    secrets:
+      CODECOV_TOKEN:
+        required: false
 
 jobs:
   filter:

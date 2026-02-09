@@ -40,3 +40,5 @@ jobs:
       run-windows: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-windows) || contains(github.event.pull_request.labels.*.name, 'tests:full') }}
       run-macos: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-macos) || contains(github.event.pull_request.labels.*.name, 'tests:full') }}
       dependency-matrix: ${{ (github.event_name == 'workflow_dispatch' && inputs.dependency-matrix) || contains(github.event.pull_request.labels.*.name, 'tests:full') }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

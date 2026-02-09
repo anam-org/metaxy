@@ -36,6 +36,8 @@ jobs:
       run-windows: ${{ github.event.inputs.full-matrix == 'true' }}
       run-macos: ${{ github.event.inputs.full-matrix == 'true' }}
       dependency-matrix: ${{ github.event.inputs.full-matrix == 'true' }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   docs:
     needs: qa
