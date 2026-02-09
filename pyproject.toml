@@ -131,6 +131,8 @@ dev = [
   "numpy>=2.2.6",
   "sybil>=9.3.0",
   "deptry>=0.24.0",
+  "nox>=2025.2.9",
+  "nox-uv>=0.7.1",
 ]
 
 examples = [

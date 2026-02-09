@@ -35,6 +35,7 @@ jobs:
       python-versions: ${{ github.event.inputs.full-matrix == 'true' && '["3.10", "3.11", "3.12", "3.13"]' || '["3.10"]' }}
       run-windows: ${{ github.event.inputs.full-matrix == 'true' }}
       run-macos: ${{ github.event.inputs.full-matrix == 'true' }}
+      dependency-matrix: ${{ github.event.inputs.full-matrix == 'true' }}
 
   docs:
     needs: qa

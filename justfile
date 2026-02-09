@@ -8,6 +8,9 @@ ruff:
 typecheck:
     uv run ty check
 
+nox *args:
+    uv run nox {{args}}
+
 sync:
     uv sync --all-extras --all-groups
 
