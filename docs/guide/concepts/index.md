@@ -7,15 +7,7 @@ description: "Core concepts and abstractions in Metaxy."
 
 Metaxy is built around a few core ideas that work together to solve the problem of incremental processing in multi-modal pipelines.
 
-## The Big Picture
-
-```mermaid
-graph LR
-    A[Feature Definitions] --> B[Incremental Updates]
-    B --> C[Metadata Store]
-```
-
-**Feature definitions** declare what data you have and how it depends on other data. Metaxy builds a **feature graph** from these definitions and uses it to track **versions** at the sample level. When upstream data changes, Metaxy identifies exactly which downstream samples need recomputation and resolves **incremental updates**. All of this is persisted in a **metadata store**. Feature definitions may optionally define custom **metadata columns** (such as file path, size, etc.) which are stored alongside the versioning information.
+**Feature definitions** declare what data you have and how it depends on other data. Metaxy builds a **feature graph** from these definitions and uses it to track **versions** at the sample level. When upstream data changes, Metaxy identifies exactly which downstream samples need recomputation and resolves an **incremental update**. Feature versions are persisted in a **metadata store**. Feature definitions may define custom **metadata columns** (such as file path, size, etc.) which are stored alongside the versioning information.
 
 ## Core Concepts
 

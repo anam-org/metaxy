@@ -48,4 +48,4 @@ Of course, the Branch Deployment CD needs to do:
 mx push --store branch
 ```
 
-And set `METAXY_STORE` to `"branch"`.
+And make sure to set `METAXY_STORE` to `"branch"` in the branch deployment environment.

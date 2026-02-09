@@ -152,18 +152,27 @@ It consists of the **feature key** and the **field key**, separated by a colon.
 External features are stubs pointing at features actually defined in other projects and not available in Python at runtime.
 They can be used if the actual feature class cannot be imported, for example due to dependency conflicts or for other reasons.
 
-Externals features can be defined with:
+Typically, external feature definitions are loaded from a `metaxy.lock` file. Learn more in [multi-environment setups](../projects.md#multiple-python-environments) docs.
 
-```py
-import metaxy as mx
+!!! info annotate "Manual External Feature Interface"
 
-external_feature = mx.FeatureDefinition.external(
-    spec=mx.FeatureSpec(key="a/b/c", id_columns=["id"]),
-    project="external-project",
-)
-```
+      Users who need more control or cannot use the `metaxy.lock` file for some reasons (1) can create them manually:
+
+      ```py
+      import metaxy as mx
+
+      external_feature = mx.FeatureDefinition.external(
+          spec=mx.FeatureSpec(key="a/b/c", id_columns=["id"]),
+          project="external-project",
+      )
+
+      mx.FeatureGraph.get().add_feature_definition(external_feature)
+      ```
+
+1. Please let us know why via a [GitHub Issue](https://github.com/anam-org/metaxy/issues/new)
 
 External features only exist until the actual feature definitions are loaded from the metadata store and replace them. This can be done with [`metaxy.sync_external_features`][metaxy.sync_external_features].
+
 
 ```python
 import metaxy as mx
@@ -175,6 +184,9 @@ mx.sync_external_features(store)
 !!! note "Pydantic Schema Limitation"
 
     Features loaded from the metadata store have their JSON schema preserved from when they were originally saved. However, the Python *class* may not be available anymore. Operations that require the actual Python class, such as model instantiation or validation, will not work for these features.
+
+
+### Outdated External Features
 
 Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or field versions) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:
 

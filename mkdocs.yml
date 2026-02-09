@@ -227,6 +227,7 @@ nav:
       - Versioning: guide/concepts/data-versioning.md
       - Feature Discovery: guide/concepts/feature-discovery.md
       - Syntactic Sugar: guide/concepts/syntactic-sugar.md
+      - Projects: guide/concepts/projects.md
       - Filters: guide/concepts/filters.md
     - ⚙️ Application Lifecycle:
       - Local Development: guide/concepts/lifecycle/development.md

@@ -674,7 +674,7 @@ class FeatureGraph:
         return graph
 
     @classmethod
-    def get_active(cls) -> "FeatureGraph":
+    def get(cls) -> "FeatureGraph":
         """Get the currently active graph.
 
         Returns the graph from the context variable if set, otherwise returns
@@ -689,6 +689,11 @@ class FeatureGraph:
             ```
         """
         return _active_graph.get() or graph
+
+    @classmethod
+    def get_active(cls) -> "FeatureGraph":
+        # backcompat, todo: delete
+        return cls.get()
 
     @classmethod
     def set_active(cls, reg: "FeatureGraph") -> None:

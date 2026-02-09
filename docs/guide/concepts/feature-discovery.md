@@ -14,7 +14,7 @@ Currently, there are two (user-facing) ways to define a Metaxy feature:
 
 1. Create a Python class that inherits from [`BaseFeature`][metaxy.BaseFeature].
 
-2. Maintain a `metaxy.lock` file. This is an advanced feature only needed for multi-project setups.
+2. Maintain a `metaxy.lock` file. This is an advanced feature only needed for [multi-environment setups](./projects.md#multiple-python-environments).
 
 ## Config-Based Discovery
 
