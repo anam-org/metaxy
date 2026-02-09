@@ -3944,7 +3944,12 @@
 
   <h1>Ray</h1>
 
-<p>Metaxy can integrate with <a href="https://ray.io/">Ray</a> for distributed computing workloads.</p>
+<p>Metaxy has basic integration with <a href="https://ray.io/">Ray</a> to assist with setting up Ray Data jobs.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>It's a very good idea to configure <code>worker_process_setup_hook</code> parameter of <a href="https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_env.RuntimeEnv.html#ray-runtime-env-runtimeenv">RuntimeEnv</a>
+to execute <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init&lt;/span&gt;" href="../../../reference/api/initialization/#metaxy.init"><code>metaxy.init</code></a> so that it runs before any other code in the Ray process.</p>
+</div>
 
 
 <div class="doc doc-object doc-module">
