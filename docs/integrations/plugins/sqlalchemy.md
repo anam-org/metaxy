@@ -55,6 +55,10 @@ config.set_main_option("sqlalchemy.url", url)
 # continue with the standard Alembic workflow
 ```
 
+!!! tip "Naming Conventions"
+
+    For consistent, deterministic and readable constraint names in your migrations, configure [naming conventions](https://alembic.sqlalchemy.org/en/latest/naming.html).
+
 ## Multi-Store Setup
 
 You can configure separate metadata stores for different environments:
@@ -157,7 +161,7 @@ The two environments now can be managed independently:
 
 ### Alembic + SQLModel
 
-To add `SQLModel` into the mix, make sure to use the [SQLModel integration](sqlmodel.md) and pass `sqlmodel.SQLModel.metadata` into `filter_feature_sqla_metadata`.
+To throw `SQLModel` into the mix, make sure to use the [SQLModel integration](sqlmodel.md) and pass `sqlmodel.SQLModel.metadata` into `filter_feature_sqla_metadata`.
 
 ---
 
