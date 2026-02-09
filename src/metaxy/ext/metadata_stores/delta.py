@@ -366,7 +366,7 @@ class DeltaMetadataStore(MetadataStore):
         predicate = narwhals_expr_to_sql_predicate(
             filters,
             schema,
-            dialect="postgres",
+            dialect="datafusion",
         )
 
         # Use Delta's native DELETE operation

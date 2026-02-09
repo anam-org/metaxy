@@ -120,7 +120,7 @@ dev = [
   "hypothesis>=6.142.4",
   "dprint-py>=0.50.2.0",
   "moto[s3,server]>=5.1.16",
-  "deltalake>=1.3.0", # 1.3.0 fixed table creation retries for parallel writers
+  "deltalake>=1.4.2", # 1.4.2 fixed Ibis-generated datafusion dialect
   "mistune>=3.1.4",
   "dagster>=1.12.3",
   "ty==0.0.15",
