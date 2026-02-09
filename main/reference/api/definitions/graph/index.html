@@ -3056,10 +3056,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#metaxy.FeatureGraph.snapshot_version" class="md-nav__link">
+  <a href="#metaxy.FeatureGraph.project_version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;snapshot_version
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;project_version
       
     </span>
   </a>
@@ -3216,10 +3216,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#metaxy.FeatureGraph.get_project_snapshot_version" class="md-nav__link">
+  <a href="#metaxy.FeatureGraph.get_project_version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_project_snapshot_version
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_project_version
       
     </span>
   </a>
@@ -3790,10 +3790,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#metaxy.FeatureGraph.snapshot_version" class="md-nav__link">
+  <a href="#metaxy.FeatureGraph.project_version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;snapshot_version
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;project_version
       
     </span>
   </a>
@@ -3950,10 +3950,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#metaxy.FeatureGraph.get_project_snapshot_version" class="md-nav__link">
+  <a href="#metaxy.FeatureGraph.get_project_version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_project_snapshot_version
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_project_version
       
     </span>
   </a>
@@ -4170,21 +4170,21 @@
 
 
 
-<h4 id="metaxy.FeatureGraph.snapshot_version" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.FeatureGraph.snapshot_version</span>
+<h4 id="metaxy.FeatureGraph.project_version" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.FeatureGraph.project_version</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#metaxy.FeatureGraph.snapshot_version" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">snapshot_version</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
+<a href="#metaxy.FeatureGraph.project_version" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">project_version</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Generate a snapshot version for the current project's features.</p>
+        <p>Generate a project version for the current project's features.</p>
 <p>Uses feature_definition_version (spec + schema only), excluding <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr>.
 The project is determined from MetaxyConfig.project if set, otherwise from the graph's
 single project (via the <code>project</code> property).</p>
@@ -5429,19 +5429,19 @@ For a chain A -&gt; B -&gt; C, returns [C, B, A].</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="metaxy.FeatureGraph.get_project_snapshot_version" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.FeatureGraph.get_project_snapshot_version</span>
+<h4 id="metaxy.FeatureGraph.get_project_version" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">metaxy.FeatureGraph.get_project_version</span>
 
 
-<a href="#metaxy.FeatureGraph.get_project_snapshot_version" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_project_snapshot_version</span><span class="p">(</span><span class="n">project</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
+<a href="#metaxy.FeatureGraph.get_project_version" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_project_version</span><span class="p">(</span><span class="n">project</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Generate a snapshot version for features belonging to a specific project.</p>
+        <p>Generate a project version for features belonging to a specific project.</p>
 <p>Uses feature_definition_version (spec + schema only), excluding <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr>.
-This makes the project snapshot independent of <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> changes.</p>
+This makes the project version independent of <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> changes.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5451,7 +5451,7 @@ This makes the project snapshot independent of <abbr title="Feature definition r
               (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
           –
           <div class="doc-md-description">
-            <p>The project name to compute snapshot version for.</p>
+            <p>The project name to compute version for.</p>
           </div>
         </li>
     </ul>
@@ -5471,14 +5471,14 @@ This makes the project snapshot independent of <abbr title="Feature definition r
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/feature.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a><a href="#__codelineno-0-507"><span class="linenos" data-linenos="507 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">get_project_snapshot_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a><a href="#__codelineno-0-508"><span class="linenos" data-linenos="508 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a snapshot version for features belonging to a specific project.</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a><a href="#__codelineno-0-507"><span class="linenos" data-linenos="507 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">get_project_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a><a href="#__codelineno-0-508"><span class="linenos" data-linenos="508 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a project version for features belonging to a specific project.</span>
 </span><span id="__span-0-509"><a id="__codelineno-0-509" name="__codelineno-0-509"></a><a href="#__codelineno-0-509"><span class="linenos" data-linenos="509 "></span></a>
 </span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a><a href="#__codelineno-0-510"><span class="linenos" data-linenos="510 "></span></a><span class="sd">    Uses feature_definition_version (spec + schema only), excluding external features.</span>
-</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a><a href="#__codelineno-0-511"><span class="linenos" data-linenos="511 "></span></a><span class="sd">    This makes the project snapshot independent of external feature changes.</span>
+</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a><a href="#__codelineno-0-511"><span class="linenos" data-linenos="511 "></span></a><span class="sd">    This makes the project version independent of external feature changes.</span>
 </span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a><a href="#__codelineno-0-512"><span class="linenos" data-linenos="512 "></span></a>
 </span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><a href="#__codelineno-0-513"><span class="linenos" data-linenos="513 "></span></a><span class="sd">    Args:</span>
-</span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a><a href="#__codelineno-0-514"><span class="linenos" data-linenos="514 "></span></a><span class="sd">        project: The project name to compute snapshot version for.</span>
+</span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a><a href="#__codelineno-0-514"><span class="linenos" data-linenos="514 "></span></a><span class="sd">        project: The project name to compute version for.</span>
 </span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a><a href="#__codelineno-0-515"><span class="linenos" data-linenos="515 "></span></a>
 </span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a><a href="#__codelineno-0-516"><span class="linenos" data-linenos="516 "></span></a><span class="sd">    Returns:</span>
 </span><span id="__span-0-517"><a id="__codelineno-0-517" name="__codelineno-0-517"></a><a href="#__codelineno-0-517"><span class="linenos" data-linenos="517 "></span></a><span class="sd">        A hash representing the project&#39;s feature definitions.</span>
@@ -5491,7 +5491,7 @@ This makes the project snapshot independent of <abbr title="Feature definition r
 </span><span id="__span-0-524"><a id="__codelineno-0-524" name="__codelineno-0-524"></a><a href="#__codelineno-0-524"><span class="linenos" data-linenos="524 "></span></a>        <span class="p">),</span>
 </span><span id="__span-0-525"><a id="__codelineno-0-525" name="__codelineno-0-525"></a><a href="#__codelineno-0-525"><span class="linenos" data-linenos="525 "></span></a>        <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
 </span><span id="__span-0-526"><a id="__codelineno-0-526" name="__codelineno-0-526"></a><a href="#__codelineno-0-526"><span class="linenos" data-linenos="526 "></span></a>    <span class="p">)</span>
-</span><span id="__span-0-527"><a id="__codelineno-0-527" name="__codelineno-0-527"></a><a href="#__codelineno-0-527"><span class="linenos" data-linenos="527 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_snapshot_version</span><span class="p">(</span><span class="n">project_features</span><span class="p">)</span>
+</span><span id="__span-0-527"><a id="__codelineno-0-527" name="__codelineno-0-527"></a><a href="#__codelineno-0-527"><span class="linenos" data-linenos="527 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_project_version</span><span class="p">(</span><span class="n">project_features</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>

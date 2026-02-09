@@ -4143,7 +4143,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 - Project breakdown (if there some features are defined in different projects)</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>SNAPSHOT, --snapshot</code>: Snapshot version to describe (defaults to current graph from code)</li>
+<li><code>SNAPSHOT, --snapshot</code>: Project version to describe (defaults to current graph from code)</li>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
 </ul>
 <h3 id="metaxy-describe-features">metaxy describe features<a class="headerlink" href="#metaxy-describe-features" title="Permanent link">&para;</a></h3>
@@ -4176,7 +4176,7 @@ version, description, fields with their versions and dependencies.</p>
 </span></code></pre></div>
 <p>Show history of recorded graph snapshots.</p>
 <p>Displays all recorded graph snapshots from the metadata store,
-showing snapshot versions, when they were recorded, and feature counts.</p>
+showing project versions, when they were recorded, and feature counts.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
@@ -4197,7 +4197,7 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>--format, -f</code>: Output format: terminal, mermaid, or graphviz  <em>[default: terminal]</em></li>
 <li><code>--type, -t</code>: Terminal rendering type: graph or cards (only for --format terminal)  <em>[choices: graph, cards]</em>  <em>[default: graph]</em></li>
 <li><code>--output, -o</code>: Output file path (default: stdout)</li>
-<li><code>--snapshot</code>: Snapshot version to render (default: current graph from code)</li>
+<li><code>--snapshot</code>: Project version to render (default: current graph from code)</li>
 <li><code>--store</code>: Metadata store to use (for loading historical snapshots)</li>
 <li><code>--minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: False]</em></li>
 <li><code>--verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: False]</em></li>
@@ -4205,7 +4205,7 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>--show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: True]</em></li>
 <li><code>--show-field-versions, --no-show-field-versions</code>: Show <abbr title="User-defined version for a logical component of a single feature sample. | /guide/concepts/definitions/features/#fields">field version</abbr> hashes (requires --show-fields)  <em>[default: True]</em></li>
 <li><code>--show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: False]</em></li>
-<li><code>--show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: True]</em></li>
+<li><code>--show-project-version, --no-show-project-version</code>: Show graph project version in output  <em>[default: True]</em></li>
 <li><code>--hash-length</code>: Number of characters to show for version hashes (0 for full)  <em>[default: 8]</em></li>
 <li><code>--direction</code>: Graph layout direction: TB (top-bottom) or LR (left-right)  <em>[default: TB]</em></li>
 <li><code>--feature</code>: Focus on a specific feature (e.g., 'video/files' or 'video__files')</li>
@@ -4261,7 +4261,7 @@ showing snapshot versions, when they were recorded, and feature counts.</p>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
 <li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--global-filter, --empty-global-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/concepts/filters/">filter</a> applied to all features being selected (including upstream). Can be repeated.</li>
-<li><code>--snapshot-id</code>: Check metadata against a specific snapshot version.</li>
+<li><code>--snapshot-id</code>: Check metadata against a specific project version.</li>
 <li><code>--assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: False]</em></li>
 <li><code>--verbose, --no-verbose</code>: Whether to display sample slices of dataframes.  <em>[default: False]</em></li>
 <li><code>--progress, --no-progress</code>: Display progress percentage showing how many input units have been processed at least once. Stale samples are counted as processed.  <em>[default: False]</em></li>
