@@ -3646,6 +3646,7 @@
 
 
 <h1 id="metadata-deletion">Metadata Deletion<a class="headerlink" href="#metadata-deletion" title="Permanent link">&para;</a></h1>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>MetadataStore.resolve_update</code></a> can be used to identify orphaned samples that no longer exist upstream. Users may want to delete these samples for the current feature from the metadata store.</p>
 <p>Metaxy supports two deletion modes: <strong>soft deletes</strong> that preserve history and <strong>hard deletes</strong> that permanently remove records. Soft deletes are the default behavior and preferred for most use cases since they maintain audit trails while allowing records to be filtered out from normal queries.</p>
 <h2 id="soft-deletes">Soft deletes<a class="headerlink" href="#soft-deletes" title="Permanent link">&para;</a></h2>
 <p>Soft deletes mark records as deleted without physically removing them. When you call <code>delete</code>, Metaxy appends a new row with the <code>metaxy_deleted_at</code> <a href="../system-columns/">system column</a> set to the deletion timestamp. This preserves your full history—nothing is lost, and you can always query for soft-deleted records if needed.</p>
