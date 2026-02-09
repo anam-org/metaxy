@@ -212,9 +212,7 @@ nav:
       - Introduction: index.md
       - Pitch: metaxy/pitch.md
       - Design Choices: metaxy/design.md
-    - 🚀 Quickstart:
-      - Hello, Metaxy!: guide/quickstart/hello.md
-      - More Features: guide/quickstart/feature-dependencies.md
+    - 🚀 Quickstart: guide/quickstart/hello.md
     - 💡 Concepts:
       - Overview: guide/concepts/index.md
       - Metadata Stores:
