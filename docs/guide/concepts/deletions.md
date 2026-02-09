@@ -5,6 +5,8 @@ description: "Learn how to perform soft and hard deletions on feature metadata."
 
 # Metadata Deletion
 
+[`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update] can be used to identify orphaned samples that no longer exist upstream. Users may want to delete these samples for the current feature from the metadata store.
+
 Metaxy supports two deletion modes: **soft deletes** that preserve history and **hard deletes** that permanently remove records. Soft deletes are the default behavior and preferred for most use cases since they maintain audit trails while allowing records to be filtered out from normal queries.
 
 ## Soft deletes
