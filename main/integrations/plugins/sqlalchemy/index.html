@@ -3874,6 +3874,10 @@ These helpers allow to construct <code>sqlalchemy.MetaData</code> objects for us
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="c1"># continue with the standard Alembic workflow</span>
 </span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Naming Conventions</p>
+<p>For consistent, deterministic and readable constraint names in your migrations, configure <a href="https://alembic.sqlalchemy.org/en/latest/naming.html">naming conventions</a>.</p>
+</div>
 <h2 id="multi-store-setup">Multi-Store Setup<a class="headerlink" href="#multi-store-setup" title="Permanent link">&para;</a></h2>
 <p>You can configure separate metadata stores for different environments:</p>
 <div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[stores.dev]</span>
@@ -3951,7 +3955,7 @@ These helpers allow to construct <code>sqlalchemy.MetaData</code> objects for us
 </div>
 </div>
 <h3 id="alembic-sqlmodel">Alembic + SQLModel<a class="headerlink" href="#alembic-sqlmodel" title="Permanent link">&para;</a></h3>
-<p>To add <code>SQLModel</code> into the mix, make sure to use the <a href="../sqlmodel/">SQLModel integration</a> and pass <code>sqlmodel.SQLModel.metadata</code> into <code>filter_feature_sqla_metadata</code>.</p>
+<p>To throw <code>SQLModel</code> into the mix, make sure to use the <a href="../sqlmodel/">SQLModel integration</a> and pass <code>sqlmodel.SQLModel.metadata</code> into <code>filter_feature_sqla_metadata</code>.</p>
 <hr />
 <!-- dprint-ignore-start -->
 
