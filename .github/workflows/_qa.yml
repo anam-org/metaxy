@@ -138,47 +138,55 @@ jobs:
           cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
 
           # Run tests
-          uv run pytest --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml
+          uv run pytest --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
 
       - name: Combine Coverage Data
         if: always()
         run: |
           uv run coverage combine --keep || true
           uv run coverage xml -o coverage.xml
-          uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY || true
+          # uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY || true
 
-      - name: Test Execution Summary
-        # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
-        if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        with:
-          files: ./junit.xml
-          check_name: Test Results (Python ${{ matrix.python-version }})
-          comment_title: Test Results (Python ${{ matrix.python-version }})
-          fail_on: nothing
+      # - name: Test Execution Summary
+      #   # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
+      #   if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
+      #   uses: EnricoMi/publish-unit-test-result-action@v2
+      #   with:
+      #     files: ./junit.xml
+      #     check_name: Test Results (Python ${{ matrix.python-version }})
+      #     comment_title: Test Results (Python ${{ matrix.python-version }})
+      #     fail_on: nothing
 
       - name: Upload Coverage to Codecov
-        if: always()
+        if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v5
         with:
-          files: ./coverage.xml
-          flags: python${{ matrix.python-version }}
+          slug: anam-org/metaxy
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: Python${{ matrix.python-version }}
 
-      - name: Generate Test Timing Report
-        if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
-        id: timing
-        run: |
-          echo "report<<EOF" >> $GITHUB_OUTPUT
-          uv run mxtest-analyze-timings ./junit.xml -f markdown >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+      # - name: Generate Test Timing Report
+      #   if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
+      #   id: timing
+      #   run: |
+      #     echo "report<<EOF" >> $GITHUB_OUTPUT
+      #     uv run mxtest-analyze-timings ./junit.xml -f markdown >> $GITHUB_OUTPUT
+      #     echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Post Test Timing Comment
-        if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
-        uses: marocchino/sticky-pull-request-comment@v2
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
         with:
-          header: test-timing-report
-          message: ${{ steps.timing.outputs.report }}
+          slug: anam-org/metaxy
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: Python${{ matrix.python-version }}
+
+      # - name: Post Test Timing Comment
+      #   if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
+      #   uses: marocchino/sticky-pull-request-comment@v2
+      #   with:
+      #     header: test-timing-report
+      #     message: ${{ steps.timing.outputs.report }}
 
   generate-nox-matrix:
     needs: filter
