@@ -1,6 +1,6 @@
 ---
 title: "User Guide"
-description: "Learn how to use Metaxy for incremental processing in multi-modal pipelines."
+description: "Learn how to use Metaxy for incremental processing in multimodal pipelines."
 ---
 
 # User Guide

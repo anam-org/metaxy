@@ -5,7 +5,7 @@ description: This skill should be used when the user asks to "define a feature",
 
 # Metaxy
 
-Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks feature versions, dependencies, and data lineage across complex computational graphs.
+Metaxy is a metadata layer for multimodal Data and ML pipelines that manages and tracks feature versions, dependencies, and data lineage across complex computational graphs.
 
 ## Core Concepts
 

@@ -15,7 +15,7 @@
   <a href="https://prek.j178.dev"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/docs/assets/badge-v0.json" alt="prek"></a>
 </p>
 
-Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks lineage and versioning across complex computational graphs for multi-modal datasets. Metaxy can cache every single sample and scale to handle millions of them.
+Metaxy is a metadata layer for **multimodal Data and ML pipelines**. Metaxy tracks lineage and versioning across complex computational graphs for multimodal datasets. Metaxy can cache every single sample and scale to handle millions of them.
 
 Metaxy manages **metadata** while **data** typically lives elsewhere:
 
@@ -30,9 +30,9 @@ Metaxy manages **metadata** while **data** typically lives elsewhere:
 └──────┴──────────┴──────┴────────┘          └─────────────────────────┘
 ```
 
-The feature that makes Metaxy stand out is the ability to track **field-level dependencies** and detect **prunable updates** — updates that don't trigger change propagation through certain paths in the dependency graph because they modify fields that aren't dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames. This problem is specific to multi-modal pipelines and doesn't typically emerge in traditional data engineering.
+The feature that makes Metaxy stand out is the ability to track **field-level dependencies** and detect **prunable updates** — updates that don't trigger change propagation through certain paths in the dependency graph because they modify fields that aren't dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames. This problem is specific to multimodal pipelines and doesn't typically emerge in traditional data engineering.
 
-Metaxy's goal is to provide a standard instrument for any kind of multi-modal (or just purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations over metadata. Or, in short, to be a universal glue for incremental data pipelines.
+Metaxy's goal is to provide a standard instrument for any kind of multimodal (or just purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations over metadata. Or, in short, to be a universal glue for incremental data pipelines.
 
 Metaxy is very reliable and is fanatically tested across all supported Python versions and platforms [^1].
 

@@ -105,7 +105,7 @@ Learn more about metadata stores [here](../guide/concepts/metadata-stores.md).
 
     :material-tag-outline: Database • :material-tag-outline: Storage
 
-    Use the multi-modal [LanceDB](https://lancedb.com/) database or [Lance](https://lancedb.com/docs/overview/lance/) storage format. (2)
+    Use the multimodal [LanceDB](https://lancedb.com/) database or [Lance](https://lancedb.com/docs/overview/lance/) storage format. (2)
 
     [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb.md)
 
