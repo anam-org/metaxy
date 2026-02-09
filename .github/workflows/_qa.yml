@@ -135,7 +135,7 @@ jobs:
           cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
 
           # Run tests
-          uv run pytest --cov=src/metaxy --durations=10 --junit-xml=./junit.xml
+          uv run pytest --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml
 
       - name: Combine Coverage Data
         if: always()
@@ -154,21 +154,13 @@ jobs:
           comment_title: Test Results (Python ${{ matrix.python-version }})
           fail_on: nothing
 
-      - name: Coverage Report
-        # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
-        # Only run on pull requests since this action creates comments
-        if: ${{ always() && github.event_name == 'pull_request' }}
-        continue-on-error: true
-        uses: MishaKav/pytest-coverage-comment@main
+      - name: Upload Coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
         with:
-          pytest-xml-coverage-path: ./coverage.xml
-          title: Coverage Report (Python ${{ matrix.python-version }})
-          badge-title: Coverage
-          github-token: ${{ github.token }}
-          junitxml-path: ./junit.xml
-          xml-skip-covered: true
-          report-only-changed-files: true
-          unique-id-for-comment: ${{ matrix.python-version }}
+          files: ./coverage.xml
+          flags: python${{ matrix.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Generate Test Timing Report
         if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
