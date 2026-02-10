@@ -170,7 +170,7 @@ class MetadataStore(ABC):
         name: str | None = None,
         hash_algorithm: HashAlgorithm | None = None,
         versioning_engine: VersioningEngineOptions = "auto",
-        fallback_stores: list[MetadataStore] | None = None,
+        fallback_stores: Sequence[MetadataStore | str] | None = None,
         auto_create_tables: bool | None = None,
         materialization_id: str | None = None,
     ):
@@ -210,17 +210,15 @@ class MetadataStore(ABC):
             VersioningEngineMismatchError: If the versioning engine is attempted to be switched
                 to Polars and `versioning_engine` is set to `native`.
         """
-        # Initialize state early so properties can check it
         self._name = name
         self._is_open = False
         self._context_depth = 0
         self._versioning_engine = versioning_engine
         self._materialization_id = materialization_id
-        self._open_cm: AbstractContextManager[Self] | None = None  # Track the open() context manager
-        self._transaction_timestamp: datetime | None = None  # Shared timestamp for write operations
-        self._soft_delete_in_progress: bool = False  # Track if we're inside a soft delete operation
+        self._open_cm: AbstractContextManager[Self] | None = None
+        self._transaction_timestamp: datetime | None = None
+        self._soft_delete_in_progress: bool = False
 
-        # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
             from metaxy.config import MetaxyConfig
 
@@ -228,13 +226,17 @@ class MetadataStore(ABC):
         else:
             self.auto_create_tables = auto_create_tables
 
-        # Use store's default algorithm if not specified
         if hash_algorithm is None:
             hash_algorithm = self._get_default_hash_algorithm()
-
         self.hash_algorithm = hash_algorithm
 
-        self.fallback_stores = fallback_stores or []
+        from metaxy.metadata_store.fallback import FallbackStoreList
+
+        self.fallback_stores: FallbackStoreList = (
+            fallback_stores
+            if isinstance(fallback_stores, FallbackStoreList)
+            else FallbackStoreList(fallback_stores or [])
+        )
 
     @overload
     def resolve_update(
@@ -1073,15 +1075,18 @@ class MetadataStore(ABC):
             store = DuckDBMetadataStore.from_config(config)
             ```
         """
-        # Convert config to dict, excluding unset values
+        from metaxy.metadata_store.fallback import FallbackStoreList
+
         config_dict = config.model_dump(exclude_unset=True)
-
-        # Pop and resolve fallback store names to actual store instances
         fallback_store_names = config_dict.pop("fallback_stores", [])
-        fallback_stores = [MetaxyConfig.get().get_store(name) for name in fallback_store_names]
-
-        # Create store with resolved fallback stores, config, and extra kwargs
-        return cls(fallback_stores=fallback_stores, **config_dict, **kwargs)
+        store = cls(**config_dict, **kwargs)
+        if fallback_store_names:
+            store.fallback_stores = FallbackStoreList(
+                fallback_store_names,
+                config=MetaxyConfig.get(),
+                parent_hash_algorithm=store.hash_algorithm,
+            )
+        return store
 
     @property
     def hash_truncation_length(self) -> int:
@@ -1246,22 +1251,22 @@ class MetadataStore(ABC):
         return self
 
     def _validate_after_open(self) -> None:
-        """Validate configuration after store is opened.
+        """Validate hash algorithm compatibility after store is opened.
 
-        Called automatically by __enter__ after open().
-        Validates hash algorithm compatibility and fallback store consistency.
+        When fallback stores are lazy (not yet resolved), hash algorithm checks
+        are deferred to FallbackStoreList._resolve() at resolution time.
         """
-        # Validate hash algorithm compatibility with components
-        self.validate_hash_algorithm(check_fallback_stores=True)
+        stores_resolved = self.fallback_stores.all_resolved
+        self.validate_hash_algorithm(check_fallback_stores=stores_resolved)
 
-        # Validate fallback stores use the same hash algorithm
-        for i, fallback_store in enumerate(self.fallback_stores):
-            if fallback_store.hash_algorithm != self.hash_algorithm:
-                raise ValueError(
-                    f"Fallback store {i} uses hash_algorithm='{fallback_store.hash_algorithm.value}' "
-                    f"but this store uses '{self.hash_algorithm.value}'. "
-                    f"All stores in a fallback chain must use the same hash algorithm."
-                )
+        if stores_resolved:
+            for i, fallback_store in enumerate(self.fallback_stores):
+                if fallback_store.hash_algorithm != self.hash_algorithm:
+                    raise ValueError(
+                        f"Fallback store {i} uses hash_algorithm='{fallback_store.hash_algorithm.value}' "
+                        f"but this store uses '{self.hash_algorithm.value}'. "
+                        f"All stores in a fallback chain must use the same hash algorithm."
+                    )
 
     def __exit__(
         self,

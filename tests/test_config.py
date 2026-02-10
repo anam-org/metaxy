@@ -517,8 +517,6 @@ def test_hash_algorithm_must_match_in_fallback_chain(tmp_path: Path) -> None:
     )
 
     dev_store = config.get_store("dev")
-
-    # All stores should use the same algorithm
     assert dev_store.hash_algorithm == HashAlgorithm.SHA256
 
     staging_store = dev_store.fallback_stores[0]
@@ -548,11 +546,8 @@ def test_hash_algorithm_defaults_to_xxhash32(tmp_path: Path) -> None:
     )
 
     dev_store = config.get_store("dev")
-
-    # Should default to XXHASH32
     assert dev_store.hash_algorithm == HashAlgorithm.XXHASH32
 
-    # Fallback should also use XXHASH32
     prod_store = dev_store.fallback_stores[0]
     assert prod_store.hash_algorithm == HashAlgorithm.XXHASH32
 
@@ -578,14 +573,12 @@ def test_hash_algorithm_conflict_raises_error(tmp_path: Path) -> None:
         },
     )
 
-    # Hash algorithm conflict is checked when store is opened
+    dev_store = config.get_store("dev")
     with pytest.raises(
         ValueError,
-        match="Fallback store 0 uses hash_algorithm='md5' but this store uses 'sha256'",
+        match="Fallback store 'prod' uses hash_algorithm='md5' but parent store uses 'sha256'",
     ):
-        dev_store = config.get_store("dev")
-        with dev_store:
-            pass  # Error raised on __enter__
+        _ = dev_store.fallback_stores[0]
 
 
 def test_store_respects_configured_hash_algorithm(tmp_path: Path) -> None:
@@ -722,49 +715,37 @@ fallback_stores = ["${{FALLBACK_STORE}}"]
 
 
 def test_get_store_with_fallback_chain_delta(tmp_path: Path) -> None:
-    """Test that fallback stores are correctly attached for Delta stores via config.
-
-    This tests the specific issue where get_store() was not correctly resolving
-    fallback store names to store instances for stores that use from_config().
-    """
+    """Fallback stores are correctly attached for Delta stores via config."""
     from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
-
-    dev_path = tmp_path / "dev"
-    staging_path = tmp_path / "staging"
-    prod_path = tmp_path / "prod"
 
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
                 type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
-                    "root_path": str(dev_path),
+                    "root_path": str(tmp_path / "dev"),
                     "fallback_stores": ["staging"],
                 },
             ),
             "staging": StoreConfig(
                 type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
-                    "root_path": str(staging_path),
+                    "root_path": str(tmp_path / "staging"),
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
                 type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 config={
-                    "root_path": str(prod_path),
+                    "root_path": str(tmp_path / "prod"),
                 },
             ),
         },
     )
 
     dev_store = config.get_store("dev")
-
     assert isinstance(dev_store, DeltaMetadataStore)
-    assert len(dev_store.fallback_stores) == 1, (
-        f"Expected 1 fallback store, got {len(dev_store.fallback_stores)}. "
-        f"Fallback stores are not being correctly resolved via config.get_store()."
-    )
+    assert len(dev_store.fallback_stores) == 1
 
     staging_store = dev_store.fallback_stores[0]
     assert isinstance(staging_store, DeltaMetadataStore)
@@ -776,11 +757,7 @@ def test_get_store_with_fallback_chain_delta(tmp_path: Path) -> None:
 
 
 def test_get_store_with_fallback_chain_delta_from_toml(tmp_path: Path) -> None:
-    """Test that fallback stores are correctly attached when loading Delta stores from TOML.
-
-    This tests the specific issue where get_store() was not correctly resolving
-    fallback store names to store instances when loading from a TOML config file.
-    """
+    """Fallback stores are correctly attached when loading Delta stores from TOML."""
     from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     dev_path = (tmp_path / "dev").as_posix()
@@ -806,10 +783,7 @@ root_path = "{branch_path}"
     dev_store = config.get_store("dev")
 
     assert isinstance(dev_store, DeltaMetadataStore)
-    assert len(dev_store.fallback_stores) == 1, (
-        f"Expected 1 fallback store, got {len(dev_store.fallback_stores)}. "
-        f"Fallback stores are not being correctly resolved via config.get_store() from TOML."
-    )
+    assert len(dev_store.fallback_stores) == 1
 
     branch_store = dev_store.fallback_stores[0]
     assert isinstance(branch_store, DeltaMetadataStore)
@@ -1031,13 +1005,12 @@ fallback_stores = ["nonexistent_store"]
 """)
 
     config = MetaxyConfig.load(config_file)
+    store = config.get_store("dev")
 
-    # This should fail when trying to instantiate the store (fallback store doesn't exist)
     with pytest.raises(InvalidConfigError) as exc_info:
-        config.get_store("dev")
+        _ = store.fallback_stores[0]
 
     error_message = str(exc_info.value)
-    # The error comes from the nested get_store call for the fallback store
     assert "nonexistent_store" in error_message
     assert "not found in config" in error_message
     assert str(config_file.resolve()) in error_message
@@ -1076,7 +1049,7 @@ invalid_field_that_does_not_exist = "should fail validation"
 
 
 def test_get_store_error_fallback_store_instantiation_fails(tmp_path: Path) -> None:
-    """Test error when a fallback store exists but fails to instantiate."""
+    """Test error when a fallback store fails to instantiate on lazy access."""
     config_file = tmp_path / "metaxy.toml"
     # Use a Delta store with a fallback store that has invalid config
     config_file.write_text("""
@@ -1099,20 +1072,48 @@ invalid_field = "should_fail"
 """)
 
     config = MetaxyConfig.load(config_file)
+    store = config.get_store("dev")
+    assert len(store.fallback_stores) == 1
 
-    # This should fail when trying to instantiate the fallback store
     with pytest.raises(InvalidConfigError) as exc_info:
-        config.get_store("dev")
+        _ = store.fallback_stores[0]
 
     error_message = str(exc_info.value)
-    # Error should mention the failing store
     assert "branch" in error_message or "Failed to validate" in error_message
     assert str(config_file.resolve()) in error_message
     assert "Config file:" in error_message
     assert "METAXY_" in error_message
-    # Should NOT have duplicated error messages (no nested InvalidConfigError wrapping)
-    # Count occurrences of "Config file:" - should be exactly 1
     assert error_message.count("Config file:") == 1
+
+
+def test_lazy_fallback_does_not_instantiate_unused_stores(tmp_path: Path) -> None:
+    """get_store and open succeed even when fallback store config is invalid."""
+    config_file = tmp_path / "metaxy.toml"
+    db_path = tmp_path / "dev.duckdb"
+    config_file.write_text(f"""
+project = "test-project"
+store = "dev"
+
+[stores.dev]
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+
+[stores.dev.config]
+database = "{db_path}"
+fallback_stores = ["prod"]
+
+[stores.prod]
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+
+[stores.prod.config]
+# Invalid config — missing required 'database' field
+invalid_field = "should_fail"
+""")
+
+    config = MetaxyConfig.load(config_file)
+    store = config.get_store("dev")
+
+    with store.open("w"):
+        pass
 
 
 def test_invalid_config_error_attributes() -> None:
