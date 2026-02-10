@@ -469,7 +469,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
                     # Get target value type from ClickHouse schema
                     # We already verified this is a Map type in the caller
                     ch_map_dtype = ch_schema[col_name]
-                    target_pl_type = self._ibis_type_to_polars(
+                    target_pl_type = self.ibis_type_to_polars(
                         ch_map_dtype.value_type  # ty: ignore[unresolved-attribute]
                     )
                     cols_to_transform.append((col_name, field_names, target_pl_type))
@@ -511,44 +511,22 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         return nw.from_native(pl_df)
 
-    @staticmethod
-    def _ibis_type_to_polars(ibis_type: Any) -> Any:
-        """Convert Ibis data type to Polars data type.
+    def ibis_type_to_polars(self, ibis_type: Any) -> Any:
+        """Convert Ibis data type to Polars data type, with ClickHouse Map support.
 
-        Args:
-            ibis_type: Ibis data type (e.g., dt.String(), dt.Int64())
-
-        Returns:
-            Corresponding Polars data type
+        Handles ``Map(K, V)`` → ``pl.List(pl.Struct({"key": K_pl, "value": V_pl}))``
+        which is Arrow's canonical map representation. Delegates all other types
+        to the base implementation.
         """
         import ibis.expr.datatypes as dt
         import polars as pl
 
-        # Map common Ibis types to Polars types
-        type_map: dict[type, Any] = {
-            dt.String: pl.Utf8,
-            dt.Int8: pl.Int8,
-            dt.Int16: pl.Int16,
-            dt.Int32: pl.Int32,
-            dt.Int64: pl.Int64,
-            dt.UInt8: pl.UInt8,
-            dt.UInt16: pl.UInt16,
-            dt.UInt32: pl.UInt32,
-            dt.UInt64: pl.UInt64,
-            dt.Float32: pl.Float32,
-            dt.Float64: pl.Float64,
-            dt.Boolean: pl.Boolean,
-            dt.Date: pl.Date,
-            dt.Time: pl.Time,
-            dt.Timestamp: pl.Datetime,
-        }
+        if isinstance(ibis_type, dt.Map):
+            key_pl = self.ibis_type_to_polars(ibis_type.key_type)
+            value_pl = self.ibis_type_to_polars(ibis_type.value_type)
+            return pl.List(pl.Struct({"key": key_pl, "value": value_pl}))
 
-        for ibis_cls, pl_type in type_map.items():
-            if isinstance(ibis_type, ibis_cls):
-                return pl_type
-
-        # Default to String for unknown types
-        return pl.Utf8
+        return super().ibis_type_to_polars(ibis_type)
 
     @property
     def sqlalchemy_url(self) -> str:

@@ -552,6 +552,52 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
         return nw_lazy
 
+    def ibis_type_to_polars(self, ibis_type: Any) -> Any:
+        """Convert an Ibis data type to the corresponding Polars data type.
+
+        Delegates to Ibis's built-in ``DataType.to_polars()`` for most types.
+        Provides fallbacks for types that Ibis cannot convert natively:
+
+        - ``Float16`` → ``pl.Float32``
+        - ``UUID`` → ``pl.String``
+        - ``JSON`` → ``pl.String``
+        - ``MACADDR`` → ``pl.String``
+        - ``INET`` → ``pl.String``
+        - ``GeoSpatial`` → ``pl.Binary``
+
+        Subclasses can override this method to handle store-specific types.
+
+        Args:
+            ibis_type: Ibis data type instance
+
+        Returns:
+            Corresponding Polars data type
+
+        Raises:
+            NotImplementedError: For types with no reasonable Polars mapping
+        """
+        import ibis.expr.datatypes as dt
+        import polars as pl
+
+        try:
+            return ibis_type.to_polars()
+        except NotImplementedError:
+            # Handle types that Ibis's to_polars() doesn't support
+            if isinstance(ibis_type, dt.Float16):
+                return pl.Float32
+            elif isinstance(ibis_type, dt.UUID):
+                return pl.String
+            elif isinstance(ibis_type, dt.JSON):
+                return pl.String
+            elif isinstance(ibis_type, dt.MACADDR):
+                return pl.String
+            elif isinstance(ibis_type, dt.INET):
+                return pl.String
+            elif isinstance(ibis_type, dt.GeoSpatial):
+                return pl.Binary
+            else:
+                raise
+
     def transform_after_read(self, table: "ibis.Table", feature_key: "FeatureKey") -> "ibis.Table":
         """Transform Ibis table before wrapping with Narwhals.
 

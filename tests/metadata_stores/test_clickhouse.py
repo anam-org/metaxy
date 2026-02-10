@@ -1,5 +1,6 @@
 """ClickHouse-specific tests that don't apply to other stores."""
 
+import ibis.expr.datatypes as dt
 import polars as pl
 import pytest
 
@@ -1282,3 +1283,31 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
 
         # Clean up
         conn.drop_table(table_name)
+
+
+# -- ibis_type_to_polars override (no live ClickHouse needed) --
+
+
+@pytest.fixture
+def ch_store() -> ClickHouseMetadataStore:
+    """ClickHouseMetadataStore for type conversion tests (no connection needed)."""
+    return ClickHouseMetadataStore(connection_string="clickhouse://localhost:8443/default")
+
+
+def test_clickhouse_ibis_type_to_polars_map(ch_store: ClickHouseMetadataStore) -> None:
+    result = ch_store.ibis_type_to_polars(dt.Map(key_type=dt.String(), value_type=dt.Int64()))
+    assert result == pl.List(pl.Struct({"key": pl.String, "value": pl.Int64}))
+
+
+def test_clickhouse_ibis_type_to_polars_nested_map(ch_store: ClickHouseMetadataStore) -> None:
+    nested = dt.Map(
+        key_type=dt.String(),
+        value_type=dt.Map(key_type=dt.String(), value_type=dt.Float64()),
+    )
+    inner = pl.List(pl.Struct({"key": pl.String, "value": pl.Float64}))
+    assert ch_store.ibis_type_to_polars(nested) == pl.List(pl.Struct({"key": pl.String, "value": inner}))
+
+
+def test_clickhouse_ibis_type_to_polars_delegates_non_map(ch_store: ClickHouseMetadataStore) -> None:
+    assert ch_store.ibis_type_to_polars(dt.String()) == pl.String
+    assert ch_store.ibis_type_to_polars(dt.UUID()) == pl.String
