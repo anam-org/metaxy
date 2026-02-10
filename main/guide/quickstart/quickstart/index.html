@@ -3729,14 +3729,15 @@ which is typically not required for non-root features.</p>
 </span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>            <span class="s2">&quot;/data/raw/vid_003.mp4&quot;</span><span class="p">,</span>
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="p">],</span>
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="s2">&quot;metaxy_provenance_by_field&quot;</span><span class="p">:</span> <span class="p">[</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>            <span class="p">{</span><span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;v1&quot;</span><span class="p">},</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>            <span class="p">{</span><span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;v1&quot;</span><span class="p">},</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>            <span class="p">{</span><span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;v1&quot;</span><span class="p">},</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>            <span class="p">{</span><span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;a1n892ja&quot;</span><span class="p">},</span>  <span class="c1"># can be a hash sum</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>            <span class="p">{</span><span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;2024-01-15T10:30:00Z&quot;</span><span class="p">},</span>  <span class="c1"># or a modified_on timestamp</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>            <span class="p">{</span><span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;v1.2.3&quot;</span><span class="p">},</span>  <span class="c1"># or just any string</span>
 </span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="p">],</span>
 </span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="p">}</span>
 </span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="p">)</span>
 </span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="n">increment</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="n">Video</span><span class="p">,</span> <span class="n">samples</span><span class="o">=</span><span class="n">samples</span><span class="p">)</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="n">increment</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="n">Video</span><span class="p">,</span> <span class="n">samples</span><span class="o">=</span><span class="n">samples</span><span class="p">)</span>
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
@@ -3772,7 +3773,8 @@ Usually there will be a processing step iterating over all the rows in <code>inc
 <p>Once done, write the metadata for the processed samples:</p>
 <!-- dprint-ignore-start -->
 <div class="language-py highlight"><span class="filename">pipeline.py</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">if</span> <span class="n">result</span><span class="p">:</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">Video</span><span class="p">,</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">Video</span><span class="p">,</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
@@ -3800,7 +3802,8 @@ Usually there will be a processing step iterating over all the rows in <code>inc
 
 <p>And call the familiar <code>resolve_update</code> API:</p>
 <!-- dprint-ignore-start -->
-<div class="language-py highlight"><span class="filename">pipeline.py</span><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">audio_increment</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="n">Audio</span><span class="p">)</span>
+<div class="language-py highlight"><span class="filename">pipeline.py</span><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">audio_increment</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="n">Audio</span><span class="p">)</span>
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
