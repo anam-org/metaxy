@@ -1,3 +1,3 @@
-# One To Many
+# One-to-Many Expansion
 
-View the docs for this example [here](https://docs.metaxy.io/main/examples/one-to-many/).
+View this example in [Metaxy docs](https://docs.metaxy.io/examples/expansion/).

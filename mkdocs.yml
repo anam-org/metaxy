@@ -292,6 +292,7 @@ nav:
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md
     - Storage Layout: guide/concepts/system-columns.md
+  - 📝 Changelog: changelog.md
 
 extra:
   social:
