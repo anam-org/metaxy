@@ -8,12 +8,6 @@ The VersioningEngine is the core abstraction that:
 2. Calculates field-level provenance hashes
 3. Assembles sample-level provenance
 4. Compares with existing metadata to find incremental updates
-
-Backend-specific implementations:
-- PolarsVersioningEngine: Uses polars_hash plugin, may materialize lazy frames
-- IbisVersioningEngine: Base class for SQL backends, stays completely lazy
-- DuckDBVersioningEngine: DuckDB-specific hash functions (xxHash via hashfuncs extension)
-- ClickHouseVersioningEngine: ClickHouse-specific hash functions (native support)
 """
 
 from metaxy.versioning.engine import (
