@@ -3850,11 +3850,23 @@
 
   <h1>Ray</h1>
 
-<p>Metaxy has basic integration with <a href="https://ray.io/">Ray</a> to assist with setting up Ray Data jobs.</p>
+<p>Metaxy has basic integration with <a href="https://ray.io/">Ray</a> to assist with setting up <a href="https://docs.ray.io/en/latest/data/data.html">Ray Data</a> jobs.</p>
 <div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>It's a very good idea to configure <code>worker_process_setup_hook</code> parameter of <a href="https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_env.RuntimeEnv.html#ray-runtime-env-runtimeenv">RuntimeEnv</a>
-to execute <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init&lt;/span&gt;" href="../../../reference/api/initialization/#metaxy.init"><code>metaxy.init</code></a> so that it runs before any other code in the Ray process.</p>
+<p class="admonition-title">Ray Environment Setup</p>
+<p>It's critically important for Metaxy to resolve correct configuration and feature graph on the Ray worker.</p>
+<ul>
+<li>
+<p>ensure <code>METAXY_CONFIG</code> points to the correct Metaxy config file</p>
+</li>
+<li>
+<p>configure <code>worker_process_setup_hook</code> parameter of <a href="https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_env.RuntimeEnv.html#ray-runtime-env-runtimeenv">RuntimeEnv</a>
+to run <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init&lt;/span&gt;" href="../../../reference/api/initialization/#metaxy.init"><code>metaxy.init</code></a> before anything else on the Ray worker</p>
+</li>
+</ul>
+<details class="tip">
+<summary>Per-task setup</summary>
+<p>Additionally, <code>RAY_USER_SETUP_FUNCTION</code> can be configured to execute a Python function on every Ray <strong>task</strong> startup</p>
+</details>
 </div>
 
 
