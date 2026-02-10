@@ -1,6 +1,5 @@
 """CLI application context for sharing state across commands."""
 
-from contextvars import ContextVar
 from dataclasses import dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -11,8 +10,8 @@ if TYPE_CHECKING:
     from metaxy.models.feature import FeatureGraph
 
 
-# Context variable for storing the app context
-_app_context: ContextVar["AppContext | None"] = ContextVar("_app_context", default=None)
+# Global app context visible to all threads.
+_global_app_context: "AppContext | None" = None
 
 
 @dataclass
@@ -48,7 +47,8 @@ class AppContext:
             sync: Whether to load external feature definitions from the metadata store
             locked: Whether to raise an error if external feature versions don't match with what's in the metadata store during
         """
-        if _app_context.get() is not None:
+        global _global_app_context
+        if _global_app_context is not None:
             raise RuntimeError("AppContext already initialized. It is not allowed to call AppContext.set() again.")
         else:
             from metaxy import load_features, sync_external_features
@@ -66,7 +66,7 @@ class AppContext:
                     on_version_mismatch="error" if locked else None,
                 )
 
-            _app_context.set(AppContext(config, cli_project, all_projects))
+            _global_app_context = AppContext(config, cli_project, all_projects)
 
     @classmethod
     def get(cls) -> "AppContext":
@@ -78,11 +78,9 @@ class AppContext:
         Raises:
             RuntimeError: If context not initialized
         """
-        ctx = _app_context.get()
-        if ctx is None:
+        if _global_app_context is None:
             raise RuntimeError("CLI context not initialized. AppContext.set(config) should be called at CLI startup.")
-        else:
-            return ctx
+        return _global_app_context
 
     def reset(self) -> None:
         """Reset the app context.
@@ -90,11 +88,10 @@ class AppContext:
         Raises:
             RuntimeError: If context not initialized
         """
-        ctx = _app_context.get()
-        if ctx is None:
+        global _global_app_context
+        if _global_app_context is None:
             raise RuntimeError("CLI context not initialized. AppContext.set(config) should be called at CLI startup.")
-        else:
-            _app_context.set(None)
+        _global_app_context = None
 
     def get_store(self, name: str | None = None) -> "MetadataStore":
         """Get and open a metadata store from config.

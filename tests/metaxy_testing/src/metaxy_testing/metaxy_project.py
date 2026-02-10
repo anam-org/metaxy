@@ -432,8 +432,8 @@ class MetaxyProject:
 
             try:
                 # Reset all CLI state for clean run
-                context_module._app_context.set(None)
-                config_module._metaxy_config.set(None)
+                context_module._global_app_context = None
+                config_module._global_config = None
 
                 # Reset Rich consoles to use current sys.stdout/stderr
                 # This is needed because capsys replaces sys.stdout/stderr,
@@ -452,8 +452,8 @@ class MetaxyProject:
                 print(f"Error: {e}", file=sys.stderr)
                 returncode = 1
             finally:
-                context_module._app_context.set(None)
-                config_module._metaxy_config.set(None)
+                context_module._global_app_context = None
+                config_module._global_config = None
 
         # Capture output via capsys
         captured = capsys.readouterr()

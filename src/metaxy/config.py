@@ -283,8 +283,11 @@ class PluginConfig(BaseSettings):
 
 PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
 
-# Context variable for storing the app context
-_metaxy_config: ContextVar["MetaxyConfig | None"] = ContextVar("_metaxy_config", default=None)
+# Global config visible to all threads, set via MetaxyConfig.set() / .load().
+# ContextVar overlay for per-context overrides via MetaxyConfig.use().
+# get() checks the ContextVar first, falling back to the global.
+_global_config: "MetaxyConfig | None" = None
+_config_override: ContextVar["MetaxyConfig | None"] = ContextVar("_config_override", default=None)
 
 
 BUILTIN_PLUGINS = {
@@ -558,7 +561,7 @@ class MetaxyConfig(BaseSettings):
                 config without warning if global config is not set. Used by methods
                 like `get_plugin` that may be called at import time.
         """
-        cfg = _metaxy_config.get()
+        cfg = _config_override.get() or _global_config
         if cfg is None:
             if load:
                 return cls.load()
@@ -575,18 +578,20 @@ class MetaxyConfig(BaseSettings):
 
     @classmethod
     def set(cls, config: Self | None) -> None:
-        """Set the current Metaxy configuration."""
-        _metaxy_config.set(config)
+        """Set the current Metaxy configuration (visible to all threads)."""
+        global _global_config
+        _global_config = config
 
     @classmethod
     def is_set(cls) -> bool:
         """Check if the current Metaxy configuration is set."""
-        return _metaxy_config.get() is not None
+        return _config_override.get() is not None or _global_config is not None
 
     @classmethod
     def reset(cls) -> None:
         """Reset the current Metaxy configuration to None."""
-        _metaxy_config.set(None)
+        global _global_config
+        _global_config = None
 
     @contextmanager
     def use(self) -> Iterator[Self]:
@@ -601,12 +606,11 @@ class MetaxyConfig(BaseSettings):
             # Previous config restored
             ```
         """
-        previous = _metaxy_config.get()
-        _metaxy_config.set(self)
+        token = _config_override.set(self)
         try:
             yield self
         finally:
-            _metaxy_config.set(previous)
+            _config_override.reset(token)
 
     @classmethod
     def load(
