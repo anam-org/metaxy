@@ -18,6 +18,8 @@ Metaxy is responsible for providing correct **metadata** to users. Metaxy does n
 
 ## Feature Definitions
 
+!!! tip "These examples make use of Metaxy's syntactic sugar."
+
 To create a Metaxy feature, extend the [`BaseFeature`][metaxy.BaseFeature] class (1).
 { .annotate }
 
@@ -31,14 +33,13 @@ class VideoFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="raw/video", id_colum
     path: str
 ```
 
-!!! abstract
+!!! abstract annotate
 
     Features must have unique (across all projects) [`FeatureKey`][metaxy.FeatureKey] associated with them.
 
     Users must provide one or more ID columns (1) to [`FeatureSpec`][metaxy.FeatureSpec], telling Metaxy how to uniquely identify feature samples.
-    { .annotate }
 
-    1. ID columns are *almost* a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).
+1. ID columns are *almost* a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).
 
 Since `VideoFeature` is a **root feature**, it doesn't have any dependencies.
 
@@ -116,9 +117,6 @@ class Transcript(
 
 Voilà!
 
-> [!TIP] Use boilerplate-free API
-> Metaxy allows passing simplified types to some of the models like `FeatureSpec` or `FeatureKey`.
-> See [syntactic sugar](../syntactic-sugar.md) for more details.
 
 The [Data Versioning](../data-versioning.md) docs explain more about how Metaxy calculates versions for different components of a feature graph.
 

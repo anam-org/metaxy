@@ -72,13 +72,9 @@ This customization only affects how downstream increments are calculated, as the
 
 ## Example: Partial Data Updates
 
+!!! tip "This example makes use of Metaxy's syntactic sugar."
+
 Consider a video processing pipeline with these features:
-
-??? tip "Simplified Metaxy Definitions"
-
-    This example uses Metaxy's [syntactic sugar](syntactic-sugar.md) for cleaner code.
-    Feature classes can be passed directly to `deps` instead of wrapping in `FeatureDep`,
-    and field names matching upstream fields automatically create field-level dependencies.
 
 ```python
 import metaxy as mx
@@ -200,7 +196,6 @@ step: "update_audio_version"
 ## Incremental Computations
 
 The single most important piece of code in Metaxy is the [`resolve_update`][metaxy.MetadataStore.resolve_update] method. For a given feature, it takes the inputs (1), computes the expected provenances for the given feature, and compares it with the current state in the metadata store. Learn more about this process [here](./metadata-stores.md#increment-resolution).
-
 { .annotate }
 
 1. metadata from the upstream features
