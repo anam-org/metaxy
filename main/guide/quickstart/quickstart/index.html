@@ -3779,12 +3779,12 @@ Usually there will be a processing step iterating over all the rows in <code>inc
 <!-- dprint-ignore-end -->
 
 <p>Recorded samples will no longer be returned by <code>MetadataStore.resolve_update</code> during future pipeline runs, unless the incoming <code>metaxy_provenance_by_field</code> values are updated.</p>
-<div class="admonition tip">
-<p class="admonition-title">Flushing Metadata</p>
+<details class="tip">
+<summary>Flushing Metadata In The Background</summary>
 <p>Usually it's desired to write metadata to the metadata store as soon as it becomes available.
 This ensures the pipeline can resume processing after a failure and no data is lost.
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.utils.BufferedMetadataWriter&lt;/span&gt;" href="../../../reference/api/utils/#metaxy.utils.BufferedMetadataWriter"><code>BufferedMetadataWriter</code></a> to achieve this: it writes metadata in real-time from a background thread.</p>
-</div>
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.utils.BufferedMetadataWriter&lt;/span&gt;" href="../../../reference/api/utils/#metaxy.utils.BufferedMetadataWriter"><code>BufferedMetadataWriter</code></a> can be used to achieve this: it writes metadata in real-time from a background thread.</p>
+</details>
 <h2 id="feature-dependencies">Feature Dependencies<a class="headerlink" href="#feature-dependencies" title="Permanent link">&para;</a></h2>
 <p>Now let's add a downstream feature. We can use <code>deps</code> field on <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureSpec&lt;/span&gt;
 

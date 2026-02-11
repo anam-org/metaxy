@@ -3714,7 +3714,7 @@
 
 <h1 id="metadata-stores">Metadata Stores<a class="headerlink" href="#metadata-stores" title="Permanent link">&para;</a></h1>
 <p>Metaxy abstracts interactions with metadata stored in external systems such as databases, files, or object stores, through a unified interface: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore"><code>MetadataStore</code></a>. <code>MetadataStore</code> is implemented to satisfy <a href="../../../metaxy/design/#storage">storage design choices</a>.</p>
-<p>All operations with metadata stores may reference features as one of the supported <a href="../syntactic-sugar/#features"><abbr title="Simplified syntax for common Metaxy constructs. | guide/concepts/syntactic-sugar">syntactic sugar</abbr></a> alternatives. In practice, it is typically convenient to either use feature classes or stringified feature keys.</p>
+<p>All operations with metadata stores may reference features as one of the supported <a href="../syntactic-sugar/#features"><abbr title="Simplified syntax for common Metaxy constructs. | /guide/concepts/syntactic-sugar">syntactic sugar</abbr></a> alternatives. In practice, it is typically convenient to either use feature classes or stringified feature keys.</p>
 <p>Metadata accept <a href="https://narwhals-dev.github.io/narwhals/">Narwhals-compatible</a> dataframes and return Narwhals dataframes. In practice, we have tested Metaxy with Pandas, Polars and Ibis dataframes.</p>
 <h2 id="instantiation">Instantiation<a class="headerlink" href="#instantiation" title="Permanent link">&para;</a></h2>
 <p>There are generally two ways to create a <code>MetadataStore</code>. We are going to demonstrate both with <a href="../../../integrations/metadata-stores/storage/delta/">DeltaLake</a> as an example.</p>
@@ -3774,12 +3774,12 @@
 </span></code></pre></div>
 </div>
 <p>Subsequent writes effectively overwrite the previous metadata, while actually <a href="../../../metaxy/design/#metadata-operations">appending</a> to the same table.</p>
-<div class="admonition tip">
-<p class="admonition-title">Flushing Metadata</p>
+<details class="tip">
+<summary>Flushing Metadata In The Background</summary>
 <p>Usually it's desired to write metadata to the metadata store as soon as it becomes available.
 This ensures the pipeline can resume processing after a failure and no data is lost.
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.utils.BufferedMetadataWriter&lt;/span&gt;" href="../../../reference/api/utils/#metaxy.utils.BufferedMetadataWriter"><code>BufferedMetadataWriter</code></a> to achieve this: it writes metadata in real-time from a background thread.</p>
-</div>
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.utils.BufferedMetadataWriter&lt;/span&gt;" href="../../../reference/api/utils/#metaxy.utils.BufferedMetadataWriter"><code>BufferedMetadataWriter</code></a> can be used to achieve this: it writes metadata in real-time from a background thread.</p>
+</details>
 <h2 id="reads">Reads<a class="headerlink" href="#reads" title="Permanent link">&para;</a></h2>
 <p>Metadata can be retrieved using the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.read&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.read"><code>read</code></a> method:</p>
 <div class="admonition example">

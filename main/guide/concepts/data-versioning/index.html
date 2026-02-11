@@ -3868,13 +3868,10 @@
 <p>For example, the data version can be calculated with <code>sha256</code>, or a <a href="https://en.wikipedia.org/wiki/Perceptual_hashing">perceptual hashing</a> method for images and videos.</p>
 <p>This customization only affects how downstream increments are calculated, as the data version cannot be known until the feature is computed.</p>
 <h2 id="example-partial-data-updates">Example: Partial Data Updates<a class="headerlink" href="#example-partial-data-updates" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">This example makes use of Metaxy's <abbr title="Simplified syntax for common Metaxy constructs. | /guide/concepts/syntactic-sugar">syntactic sugar</abbr>.</p>
+</div>
 <p>Consider a video processing pipeline with these features:</p>
-<details class="tip">
-<summary>Simplified Metaxy Definitions</summary>
-<p>This example uses Metaxy's <a href="../syntactic-sugar/"><abbr title="Simplified syntax for common Metaxy constructs. | guide/concepts/syntactic-sugar">syntactic sugar</abbr></a> for cleaner code.
-Feature classes can be passed directly to <code>deps</code> instead of wrapping in <code>FeatureDep</code>,
-and field names matching upstream fields automatically create <abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-dependencies">field-level dependencies</abbr>.</p>
-</details>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -4039,8 +4036,7 @@ flowchart TB
 </ul>
 </div>
 <h2 id="incremental-computations">Incremental Computations<a class="headerlink" href="#incremental-computations" title="Permanent link">&para;</a></h2>
-<p>The single most important piece of code in Metaxy is the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>resolve_update</code></a> method. For a given feature, it takes the inputs (1), computes the expected provenances for the given feature, and compares it with the current state in the metadata store. Learn more about this process <a href="../metadata-stores/#increment-resolution">here</a>.</p>
-<p>{ .annotate }</p>
+<p class="annotate">The single most important piece of code in Metaxy is the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>resolve_update</code></a> method. For a given feature, it takes the inputs (1), computes the expected provenances for the given feature, and compares it with the current state in the metadata store. Learn more about this process <a href="../metadata-stores/#increment-resolution">here</a>.</p>
 <ol>
 <li>metadata from the upstream features</li>
 </ol>

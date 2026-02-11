@@ -3669,6 +3669,9 @@ As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables th
 Doing this will ensure that newer samples are never written over older ones.</p>
 </div>
 <h2 id="feature-definitions">Feature Definitions<a class="headerlink" href="#feature-definitions" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">These examples make use of Metaxy's <abbr title="Simplified syntax for common Metaxy constructs. | /guide/concepts/syntactic-sugar">syntactic sugar</abbr>.</p>
+</div>
 <p class="annotate">To create a Metaxy feature, extend the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
 
 
@@ -3684,19 +3687,19 @@ Doing this will ensure that newer samples are never written over older ones.</p>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;raw/video&quot;</span><span class="p">,</span> <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;video_id&quot;</span><span class="p">])):</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
 </span></code></pre></div>
-<div class="admonition abstract">
+<div class="admonition abstract annotate">
 <p class="admonition-title">Abstract</p>
 <p>Features must have unique (across all projects) <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt;" href="../../../../reference/api/types/#metaxy.FeatureKey"><code>FeatureKey</code></a> associated with them.</p>
-<p class="annotate">Users must provide one or more ID columns (1) to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureSpec&lt;/span&gt;
+<p>Users must provide one or more ID columns (1) to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureSpec&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../../../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec"><code>FeatureSpec</code></a>, telling Metaxy how to uniquely identify feature samples.</p>
+</div>
 <ol>
 <li>ID columns are <em>almost</em> a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).</li>
 </ol>
-</div>
 <p>Since <code>VideoFeature</code> is a <strong><abbr title="A feature without any upstream (parent) features.">root feature</abbr></strong>, it doesn't have any dependencies.</p>
 <p>That's it! Easy.</p>
 <div class="admonition question annotate">
@@ -3762,11 +3765,6 @@ Let's express this with Metaxy:</p>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">num_speakers</span><span class="p">:</span> <span class="nb">int</span>
 </span></code></pre></div>
 <p>Voilà!</p>
-<div class="admonition tip">
-<p class="admonition-title">Use boilerplate-free API</p>
-<p>Metaxy allows passing simplified types to some of the models like <code>FeatureSpec</code> or <code>FeatureKey</code>.
-See <a href="../../syntactic-sugar/"><abbr title="Simplified syntax for common Metaxy constructs. | guide/concepts/syntactic-sugar">syntactic sugar</abbr></a> for more details.</p>
-</div>
 <p>The <a href="../../data-versioning/">Data Versioning</a> docs explain more about how Metaxy calculates versions for different components of a feature graph.</p>
 <h3 id="attaching-custom-metadata">Attaching custom metadata<a class="headerlink" href="#attaching-custom-metadata" title="Permanent link">&para;</a></h3>
 <p>Users can <a href="../../../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec.metadata">attach</a> arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
