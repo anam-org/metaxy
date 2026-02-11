@@ -70,7 +70,6 @@ Metaxy provides a CLI (`metaxy` or `mx` alias) for managing features, metadata, 
 mx list features --verbose     # List features with dependencies
 mx graph render                # Visualize feature graph
 mx metadata status --all-features  # Check metadata freshness (expensive!)
-mx migrations apply            # Apply pending migrations
 mx mcp                         # Start MCP server for AI assistants
 ```
 

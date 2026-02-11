@@ -42,7 +42,7 @@ This is the Metaxy project - a feature metadata management system. Key testing p
 - **Use metadata store context managers**:
   ```python
   with DeltaMetadataStore() as store:
-      store.write_metadata(MyFeature, df)
+      store.write(MyFeature, df)
   ```
 
 ### Testing Utilities (src/metaxy/_testing.py)

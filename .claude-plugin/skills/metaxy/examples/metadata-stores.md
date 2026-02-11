@@ -20,5 +20,5 @@ with store:
 
 with store.open("w"):
     # Write metadata
-    store.write_metadata(MyFeature, df)
+    store.write(MyFeature, df)
 ```
