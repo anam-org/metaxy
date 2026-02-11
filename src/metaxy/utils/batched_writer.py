@@ -33,6 +33,15 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+class _FlushSignal:
+    """Sentinel placed in the queue to trigger an explicit flush."""
+
+    def __init__(self) -> None:
+        self.done = threading.Event()
+        self.error: BaseException | None = None
+
+
 # Type for queue items: dict mapping feature keys to frames
 QueueItem = dict[FeatureKey, "Frame"]
 
@@ -55,7 +64,7 @@ class BatchedMetadataWriter:
 
         with mx.BatchedMetadataWriter(store) as writer:
             batch = {
-                MyFeature: pl.DataFrame(
+                "my/feature": pl.DataFrame(
                     {
                         "id": ["x"],
                         "metaxy_provenance_by_field": [{"part_1": "h1", "part_2": "h2"}],
@@ -90,6 +99,9 @@ class BatchedMetadataWriter:
                 Setting this triggers row counting which materializes lazy frames.
 
         flush_interval: Maximum seconds between flushes. The timer resets after the end of each flush.
+        max_queue_size: Maximum number of pending items in the queue.
+            When the queue is full, `put()` blocks until the background thread
+            consumes an item. Defaults to an unlimited queue (the right choice in most cases).
 
     Raises:
         RuntimeError: If the background thread encounters an error during flush.
@@ -100,12 +112,13 @@ class BatchedMetadataWriter:
         store: MetadataStore,
         flush_batch_size: int | None = None,
         flush_interval: float = 2.0,
+        max_queue_size: int = 0,
     ) -> None:
         self._store = store
         self._flush_batch_size = flush_batch_size
         self._flush_interval = flush_interval
 
-        self._queue: queue.Queue[QueueItem] = queue.Queue()
+        self._queue: queue.Queue[QueueItem | _FlushSignal] = queue.Queue(maxsize=max_queue_size)
         self._should_stop = threading.Event()
         self._stopped = threading.Event()
         self._num_written: dict[FeatureKey, int] = {}
@@ -161,6 +174,28 @@ class BatchedMetadataWriter:
 
         self._queue.put(converted)
 
+    def flush(self, timeout: float = 30.0) -> None:
+        """Flush all pending data to the store.
+
+        Blocks until the background thread has flushed all currently
+        accumulated data, or until the timeout is reached.
+
+        Args:
+            timeout: Maximum seconds to wait for the flush to complete.
+
+        Raises:
+            RuntimeError: If the writer is not started, has stopped, has errored,
+                the flush does not complete within the timeout, or the flush itself
+                encounters an error.
+        """
+        self._check_can_put()
+        signal = _FlushSignal()
+        self._queue.put(signal)
+        if not signal.done.wait(timeout):
+            raise RuntimeError(f"Flush did not complete within {timeout:.1f}s")
+        if signal.error is not None:
+            raise RuntimeError("Flush failed") from signal.error
+
     def _check_can_put(self) -> None:
         """Check if we can accept new data."""
         if not self._started:
@@ -189,6 +224,8 @@ class BatchedMetadataWriter:
                 pending_rows = 0
                 last_flush = time.time()
 
+                flush_signal: _FlushSignal | None = None
+
                 while True:
                     # Calculate timeout: min of time until next flush and a short poll interval
                     # Short poll interval ensures we respond quickly to stop signals
@@ -199,40 +236,50 @@ class BatchedMetadataWriter:
                     # Block efficiently waiting for data or timeout
                     try:
                         item = self._queue.get(timeout=timeout)
-                        for feature_key, batch in item.items():
-                            # Collect lazy frames if we need to count rows
-                            if self._flush_batch_size is not None and isinstance(batch, nw.LazyFrame):
-                                batch = batch.collect()
-                            pending[feature_key].append(batch)
-                            if self._flush_batch_size is not None:
-                                pending_rows += len(batch)  # ty: ignore[invalid-argument-type]
+                        if isinstance(item, _FlushSignal):
+                            flush_signal = item
+                        else:
+                            for feature_key, batch in item.items():
+                                # Collect lazy frames if we need to count rows
+                                if self._flush_batch_size is not None and isinstance(batch, nw.LazyFrame):
+                                    batch = batch.collect()
+                                pending[feature_key].append(batch)
+                                if self._flush_batch_size is not None:
+                                    pending_rows += len(batch)  # ty: ignore[invalid-argument-type]
                     except queue.Empty:
                         pass  # Timeout - check if we should flush
 
                     should_stop = self._should_stop.is_set()
 
                     # Exit if stopped and nothing left to process
-                    if should_stop and self._queue.empty() and not pending:
+                    if should_stop and self._queue.empty() and not pending and flush_signal is None:
                         break
 
                     # Check if we should flush
-                    if self._should_flush(pending, pending_rows, last_flush, should_stop):
+                    if flush_signal is not None or self._should_flush(pending, pending_rows, last_flush, should_stop):
                         try:
                             rows_per_feature = self._flush(pending)
                             with self._lock:
                                 for fk, count in rows_per_feature.items():
                                     self._num_written[fk] = self._num_written.get(fk, 0) + count
-                            # Only clear pending data on successful flush
                             pending = defaultdict(list)
                             pending_rows = 0
+                            last_flush = time.time()
                         except Exception as e:
-                            # Set error so callers know data was lost
-                            self._error = e
-                            logger.exception("Error flushing batch")
-                            # Don't clear pending - keep for potential recovery or inspection
-                            # Break out of the loop since we're in an error state
-                            break
-                        last_flush = time.time()
+                            if flush_signal is not None:
+                                flush_signal.error = e
+                            else:
+                                self._error = e
+                                logger.exception(
+                                    "Error flushing batch — pending data for %d feature(s) will not be retried: %s",
+                                    len(pending),
+                                    list(pending.keys()),
+                                )
+                                break
+                        finally:
+                            if flush_signal is not None:
+                                flush_signal.done.set()
+                                flush_signal = None
         except BaseException as e:
             self._error = e
             logger.exception("Fatal error in background writer thread")
@@ -315,7 +362,8 @@ class BatchedMetadataWriter:
             Dict mapping feature keys to number of rows written.
 
         Raises:
-            RuntimeError: If the background thread encountered an error during flush.
+            RuntimeError: If the background thread encountered an error during flush,
+                or did not stop within the timeout.
         """
         if not self._started or self._thread is None:
             return {}
@@ -324,7 +372,7 @@ class BatchedMetadataWriter:
         self._thread.join(timeout=timeout)
 
         if self._thread.is_alive():
-            logger.warning("BatchedMetadataWriter did not stop within %.1fs", timeout)
+            raise RuntimeError(f"BatchedMetadataWriter background thread did not stop within {timeout:.1f}s")
 
         if self._error is not None:
             raise RuntimeError(f"Writer encountered an error: {self._error}") from self._error
@@ -366,4 +414,11 @@ class BatchedMetadataWriter:
         exc_tb: TracebackType | None,
     ) -> None:
         """Exit context manager, stopping the writer."""
-        self.stop()
+        try:
+            self.stop()
+        except RuntimeError:
+            if exc_type is None:
+                raise
+            logger.exception(
+                "Error during BatchedMetadataWriter shutdown (suppressed to avoid masking original exception)"
+            )

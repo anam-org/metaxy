@@ -598,26 +598,111 @@ def test_batched_writer_flush_error_prevents_further_puts(
             writer.stop()
 
 
-def test_batched_writer_stop_timeout_logs_warning(
-    store: MetadataStore, writer_feature: type[BaseFeature], caplog: pytest.LogCaptureFixture
-):
-    """Test that stop logs a warning when thread doesn't finish in time."""
-    import logging
+def test_batched_writer_stop_timeout_raises(store: MetadataStore, writer_feature: type[BaseFeature]):
+    """Test that stop raises RuntimeError when thread doesn't finish in time."""
     from unittest.mock import patch
 
     with store.open("w"):
         writer = BatchedMetadataWriter(store, flush_interval=0.5)
         writer.start()
 
-        # Get the thread before stop
         original_thread = writer._thread
         assert original_thread is not None
 
-        # We need to patch is_alive to return True after join times out
-        # but we also need to let the thread actually stop
-        with caplog.at_level(logging.WARNING):
-            # Patch is_alive to return True to simulate thread not finishing
-            with patch.object(original_thread, "is_alive", return_value=True):
+        with patch.object(original_thread, "is_alive", return_value=True):
+            with pytest.raises(RuntimeError, match="did not stop within"):
                 writer.stop(timeout=0.01)
 
-        assert "did not stop within" in caplog.text
+
+def test_batched_writer_flush(store: MetadataStore, writer_feature: type[BaseFeature]):
+    """Test explicit flush writes pending data immediately."""
+    with store.open("w"):
+        with BatchedMetadataWriter(store, flush_interval=10.0) as writer:
+            batch = pl.DataFrame(
+                {
+                    "id": ["flush_a", "flush_b"],
+                    "value": [1, 2],
+                    "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
+                }
+            )
+            writer.put({writer_feature: batch})
+
+            # Without explicit flush, data would not be written yet (long interval)
+            assert writer.num_written == {}
+
+            writer.flush()
+
+            assert writer.num_written[writer_feature.spec().key] == 2
+
+        # Verify data was persisted
+        result = store.read(writer_feature).collect().to_polars()
+        assert len(result) == 2
+
+
+def test_batched_writer_flush_error_propagates(
+    store: MetadataStore, writer_feature: type[BaseFeature], monkeypatch: pytest.MonkeyPatch
+):
+    """Test that flush() propagates errors from the background thread."""
+    from unittest.mock import MagicMock
+
+    with store.open("w"):
+        writer = BatchedMetadataWriter(store, flush_interval=10.0)
+        writer.start()
+
+        original_flush = writer._flush
+
+        # Mock _flush to fail
+        mock_flush = MagicMock(side_effect=ValueError("Simulated flush error"))
+        monkeypatch.setattr(writer, "_flush", mock_flush)
+
+        batch = pl.DataFrame(
+            {
+                "id": ["err"],
+                "value": [1],
+                "metaxy_provenance_by_field": [{"default": "h"}],
+            }
+        )
+        writer.put({writer_feature: batch})
+
+        with pytest.raises(RuntimeError, match="Flush failed"):
+            writer.flush()
+
+        # Writer should still be running (explicit flush errors don't kill the thread)
+        assert not writer.has_error
+
+        # Restore real _flush so stop() can flush remaining data
+        monkeypatch.setattr(writer, "_flush", original_flush)
+        writer.stop()
+
+
+def test_batched_writer_exit_does_not_mask_exception(
+    store: MetadataStore, writer_feature: type[BaseFeature], monkeypatch: pytest.MonkeyPatch
+):
+    """Test that __exit__ does not mask the original exception when stop() also fails."""
+    from unittest.mock import MagicMock
+
+    with store.open("w"):
+        # The original exception should propagate, not the stop() error
+        with pytest.raises(ValueError, match="original"):
+            with BatchedMetadataWriter(store, flush_interval=0.05) as writer:
+                # Make _flush fail so stop() will raise
+                mock_flush = MagicMock(side_effect=RuntimeError("flush boom"))
+                monkeypatch.setattr(writer, "_flush", mock_flush)
+
+                batch = pl.DataFrame(
+                    {
+                        "id": ["x"],
+                        "value": [1],
+                        "metaxy_provenance_by_field": [{"default": "h"}],
+                    }
+                )
+                writer.put({writer_feature: batch})
+
+                # Wait for the background flush error
+                deadline = time.time() + 5.0
+                while time.time() < deadline:
+                    if writer.has_error:
+                        break
+                    time.sleep(0.05)
+
+                raise ValueError("original")

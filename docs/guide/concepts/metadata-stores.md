@@ -80,6 +80,8 @@ In order to save metadata into a metadata store, you can use the [`write`][metax
 
 Subsequent writes effectively overwrite the previous metadata, while actually [appending](../../metaxy/design.md#metadata-operations) to the same table.
 
+--8<-- "flushing-metadata.md"
+
 ## Reads
 
 Metadata can be retrieved using the [`read`][metaxy.MetadataStore.read] method:

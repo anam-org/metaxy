@@ -92,6 +92,8 @@ Once done, write the metadata for the processed samples:
 
 Recorded samples will no longer be returned by `MetadataStore.resolve_update` during future pipeline runs, unless the incoming `metaxy_provenance_by_field` values are updated.
 
+--8<-- "flushing-metadata.md"
+
 ## Feature Dependencies
 
 Now let's add a downstream feature. We can use `deps` field on [`FeatureSpec`][metaxy.FeatureSpec] in order to do that. We will make a simple feature that extracts the audio track from a video.
