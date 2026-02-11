@@ -672,8 +672,6 @@
       
         
       
-        
-      
     
     
     
@@ -994,6 +992,8 @@
       
         
       
+        
+      
     
     
     
@@ -1017,7 +1017,7 @@
   <span class="md-ellipsis">
     
   
-    Definitions
+    Defining Features
   
 
     
@@ -1033,7 +1033,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Definitions
+    Defining Features
   
 
           </label>
@@ -1123,6 +1123,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../definitions/external-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1166,62 +1194,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../feature-discovery/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Discovery
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../syntactic-sugar/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Syntactic Sugar
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../projects/" class="md-nav__link">
         
   
@@ -1229,7 +1201,7 @@
   <span class="md-ellipsis">
     
   
-    Projects
+    Metaxy Projects
   
 
     
@@ -1258,6 +1230,34 @@
     
   
     Filters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../syntactic-sugar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Syntactic Sugar
   
 
     
@@ -3714,7 +3714,7 @@
 
 <h1 id="metadata-stores">Metadata Stores<a class="headerlink" href="#metadata-stores" title="Permanent link">&para;</a></h1>
 <p>Metaxy abstracts interactions with metadata stored in external systems such as databases, files, or object stores, through a unified interface: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore"><code>MetadataStore</code></a>. <code>MetadataStore</code> is implemented to satisfy <a href="../../../metaxy/design/#storage">storage design choices</a>.</p>
-<p>All operations with metadata stores may reference features as one of the supported <a href="../syntactic-sugar/#features">syntactic sugar</a> alternatives. In practice, it is typically convenient to either use feature classes or stringified feature keys.</p>
+<p>All operations with metadata stores may reference features as one of the supported <a href="../syntactic-sugar/#features"><abbr title="Simplified syntax for common Metaxy constructs. | guide/concepts/syntactic-sugar">syntactic sugar</abbr></a> alternatives. In practice, it is typically convenient to either use feature classes or stringified feature keys.</p>
 <p>Metadata accept <a href="https://narwhals-dev.github.io/narwhals/">Narwhals-compatible</a> dataframes and return Narwhals dataframes. In practice, we have tested Metaxy with Pandas, Polars and Ibis dataframes.</p>
 <h2 id="instantiation">Instantiation<a class="headerlink" href="#instantiation" title="Permanent link">&para;</a></h2>
 <p>There are generally two ways to create a <code>MetadataStore</code>. We are going to demonstrate both with <a href="../../../integrations/metadata-stores/storage/delta/">DeltaLake</a> as an example.</p>

@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://docs.metaxy.io/main/guide/concepts/syntactic-sugar/">
       
       
-        <link rel="prev" href="../feature-discovery/">
+        <link rel="prev" href="../filters/">
       
       
-        <link rel="next" href="../projects/">
+        <link rel="next" href="../lifecycle/development/">
       
       
         
@@ -672,8 +672,6 @@
       
         
       
-        
-      
     
     
     
@@ -868,6 +866,8 @@
       
         
       
+        
+      
     
     
     
@@ -891,7 +891,7 @@
   <span class="md-ellipsis">
     
   
-    Definitions
+    Defining Features
   
 
     
@@ -907,7 +907,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Definitions
+    Defining Features
   
 
           </label>
@@ -997,6 +997,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../definitions/external-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1040,14 +1068,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../feature-discovery/" class="md-nav__link">
+      <a href="../projects/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Feature Discovery
+    Metaxy Projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filters
   
 
     
@@ -1186,62 +1242,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../projects/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Projects
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../filters/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Filters
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -3651,7 +3651,7 @@
 <h1 id="syntactic-sugar">Syntactic Sugar<a class="headerlink" href="#syntactic-sugar" title="Permanent link">&para;</a></h1>
 <h2 id="type-coercion-for-input-types">Type Coercion For Input Types<a class="headerlink" href="#type-coercion-for-input-types" title="Permanent link">&para;</a></h2>
 <p>Internally, Metaxy uses strongly typed Pydantic models to represent features, feature keys, their fields, and dependencies between them. But specifying all of these models can be very verbose and cumbersome.</p>
-<p>Because Metaxy loves its users, we provide syntactic sugar for simplified construction of these models, and various Metaxy APIs typically accept unions of equivalent types.
+<p>Because Metaxy loves its users, we provide <abbr title="Simplified syntax for common Metaxy constructs. | guide/concepts/syntactic-sugar">syntactic sugar</abbr> for simplified construction of these models, and various Metaxy APIs typically accept unions of equivalent types.
 Metaxy coerces them into canonical internal models.</p>
 <p>This is fully typed and only affects constructor arguments. Attributes on Metaxy objects will always return only the canonical type.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>

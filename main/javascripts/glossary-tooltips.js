@@ -48,8 +48,8 @@
     if (url) {
       html +=
         '<a href="' +
-        escapeHtml(url) +
-        '" class="glossary-link" style="display: block; margin-top: 0.4em; color: var(--md-accent-fg-color, #526cfe); text-decoration: none; font-weight: 500;">Learn more →</a>';
+        escapeHtml(resolveUrl(url)) +
+        '" target="_blank" class="glossary-link" style="display: block; margin-top: 0.4em; color: var(--md-accent-fg-color, #526cfe); text-decoration: none; font-weight: 500;">Learn more →</a>';
     }
     tooltip.innerHTML = html;
 
@@ -60,11 +60,6 @@
       });
       link.addEventListener("mouseleave", function () {
         link.style.textDecoration = "none";
-      });
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        window.open(resolveUrl(link.getAttribute("href")), "_blank");
       });
     }
 

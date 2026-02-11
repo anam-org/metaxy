@@ -662,8 +662,6 @@
       
         
       
-        
-      
     
     
     
@@ -855,6 +853,8 @@
       
         
       
+        
+      
     
     
     
@@ -878,7 +878,7 @@
   <span class="md-ellipsis">
     
   
-    Definitions
+    Defining Features
   
 
     
@@ -894,7 +894,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Definitions
+    Defining Features
   
 
           </label>
@@ -984,6 +984,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guide/concepts/definitions/external-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1027,62 +1055,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/concepts/feature-discovery/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Discovery
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../guide/concepts/syntactic-sugar/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Syntactic Sugar
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../guide/concepts/projects/" class="md-nav__link">
         
   
@@ -1090,7 +1062,7 @@
   <span class="md-ellipsis">
     
   
-    Projects
+    Metaxy Projects
   
 
     
@@ -1119,6 +1091,34 @@
     
   
     Filters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guide/concepts/syntactic-sugar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Syntactic Sugar
   
 
     
@@ -3613,9 +3613,9 @@
 
     <div class="doc doc-contents first">
 
-        <p>Main user-facing initialization function for Metaxy. It loads feature definitions and <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr>.</p>
-<p>Features are <a href="../../../guide/concepts/feature-discovery/">discovered</a> from installed Python packages metadata.
-External features are loaded from <code>metaxy.lock</code> if present.</p>
+        <p>Main user-facing initialization function for Metaxy. It loads feature definitions and the Metaxy <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;" href="../config/#metaxy.MetaxyConfig">configuration</a>.</p>
+<p>The feature graphs is populated with feature definitions <a href="../../../guide/concepts/projects/#feature-discovery">discovered</a> in the Metaxy project.
+<a href="../../../guide/concepts/definitions/external-features/">External features</a> are loaded from a <code>metaxy.lock</code> if it is found.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3641,7 +3641,7 @@ External features are loaded from <code>metaxy.lock</code> if present.</p>
 )
           –
           <div class="doc-md-description">
-            <p>Whether to search parent directories for configuration files during config auto-discovery.</p>
+            <p>Whether to search parent directories for configuration files during <abbr title="Automatic searching for Metaxy configuration files. | /reference/configuration/#config-discovery">config discovery</abbr>.</p>
           </div>
         </li>
     </ul>
@@ -3666,10 +3666,10 @@ External features are loaded from <code>metaxy.lock</code> if present.</p>
 </span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a><a href="#__codelineno-0-118"><span class="linenos" data-linenos="118 "></span></a>    <span class="n">config</span><span class="p">:</span> <span class="n">MetaxyConfig</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a><a href="#__codelineno-0-119"><span class="linenos" data-linenos="119 "></span></a>    <span class="n">search_parents</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><a href="#__codelineno-0-120"><span class="linenos" data-linenos="120 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetaxyConfig</span><span class="p">:</span>
-</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a><a href="#__codelineno-0-121"><span class="linenos" data-linenos="121 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Main user-facing initialization function for Metaxy. It loads feature definitions and Metaxy configuration.</span>
+</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a><a href="#__codelineno-0-121"><span class="linenos" data-linenos="121 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Main user-facing initialization function for Metaxy. It loads feature definitions and the Metaxy [configuration][metaxy.MetaxyConfig].</span>
 </span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><a href="#__codelineno-0-122"><span class="linenos" data-linenos="122 "></span></a>
-</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a><a href="#__codelineno-0-123"><span class="linenos" data-linenos="123 "></span></a><span class="sd">    Features are [discovered](../../guide/concepts/feature-discovery.md) from installed Python packages metadata.</span>
-</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><a href="#__codelineno-0-124"><span class="linenos" data-linenos="124 "></span></a><span class="sd">    External features are loaded from `metaxy.lock` if present.</span>
+</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a><a href="#__codelineno-0-123"><span class="linenos" data-linenos="123 "></span></a><span class="sd">    The feature graphs is populated with feature definitions [discovered](/guide/concepts/projects.md#feature-discovery) in the Metaxy project.</span>
+</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><a href="#__codelineno-0-124"><span class="linenos" data-linenos="124 "></span></a><span class="sd">    [External features](/guide/concepts/definitions/external-features.md) are loaded from a `metaxy.lock` if it is found.</span>
 </span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><a href="#__codelineno-0-125"><span class="linenos" data-linenos="125 "></span></a>
 </span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a><a href="#__codelineno-0-126"><span class="linenos" data-linenos="126 "></span></a><span class="sd">    Args:</span>
 </span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a><a href="#__codelineno-0-127"><span class="linenos" data-linenos="127 "></span></a><span class="sd">        config: Metaxy configuration to use for initialization. Will be auto-discovered if not provided.</span>
@@ -3677,7 +3677,7 @@ External features are loaded from <code>metaxy.lock</code> if present.</p>
 </span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a><a href="#__codelineno-0-129"><span class="linenos" data-linenos="129 "></span></a><span class="sd">            !!! tip</span>
 </span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130"></a><a href="#__codelineno-0-130"><span class="linenos" data-linenos="130 "></span></a><span class="sd">                `METAXY_CONFIG` environment variable can be used to set the config file path.</span>
 </span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a><a href="#__codelineno-0-131"><span class="linenos" data-linenos="131 "></span></a>
-</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><a href="#__codelineno-0-132"><span class="linenos" data-linenos="132 "></span></a><span class="sd">        search_parents: Whether to search parent directories for configuration files during config auto-discovery.</span>
+</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><a href="#__codelineno-0-132"><span class="linenos" data-linenos="132 "></span></a><span class="sd">        search_parents: Whether to search parent directories for configuration files during config discovery.</span>
 </span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a><a href="#__codelineno-0-133"><span class="linenos" data-linenos="133 "></span></a>
 </span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a><a href="#__codelineno-0-134"><span class="linenos" data-linenos="134 "></span></a><span class="sd">    Returns:</span>
 </span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a><a href="#__codelineno-0-135"><span class="linenos" data-linenos="135 "></span></a><span class="sd">        The activated Metaxy configuration.</span>

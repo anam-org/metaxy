@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://docs.metaxy.io/main/guide/concepts/data-versioning/">
       
       
-        <link rel="prev" href="../definitions/relationship/">
+        <link rel="prev" href="../definitions/external-features/">
       
       
-        <link rel="next" href="../feature-discovery/">
+        <link rel="next" href="../projects/">
       
       
         
@@ -672,8 +672,6 @@
       
         
       
-        
-      
     
     
     
@@ -868,6 +866,8 @@
       
         
       
+        
+      
     
     
     
@@ -891,7 +891,7 @@
   <span class="md-ellipsis">
     
   
-    Definitions
+    Defining Features
   
 
     
@@ -907,7 +907,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Definitions
+    Defining Features
   
 
           </label>
@@ -984,6 +984,34 @@
     
   
     Lineage Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../definitions/external-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External Features
   
 
     
@@ -1161,17 +1189,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#practical-example" class="md-nav__link">
+  <a href="#example-partial-data-updates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Practical Example
+        Example: Partial Data Updates
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
+    <nav class="md-nav" aria-label="Example: Partial Data Updates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#tracking-definitions-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1181,12 +1210,17 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#incremental-computation" class="md-nav__link">
+  <a href="#incremental-computations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Incremental Computation
+        Incremental Computations
       
     </span>
   </a>
@@ -1209,62 +1243,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../feature-discovery/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Discovery
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../syntactic-sugar/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Syntactic Sugar
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../projects/" class="md-nav__link">
         
   
@@ -1272,7 +1250,7 @@
   <span class="md-ellipsis">
     
   
-    Projects
+    Metaxy Projects
   
 
     
@@ -1301,6 +1279,34 @@
     
   
     Filters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../syntactic-sugar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Syntactic Sugar
   
 
     
@@ -3673,17 +3679,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#practical-example" class="md-nav__link">
+  <a href="#example-partial-data-updates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Practical Example
+        Example: Partial Data Updates
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
+    <nav class="md-nav" aria-label="Example: Partial Data Updates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#tracking-definitions-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3693,12 +3700,17 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#incremental-computation" class="md-nav__link">
+  <a href="#incremental-computations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Incremental Computation
+        Incremental Computations
       
     </span>
   </a>
@@ -3801,7 +3813,7 @@
 <p>The value can be arbitrary, but in the future we might implement something around semantic versioning.</p>
 </div>
 <ul>
-<li><strong>Field Version</strong> is computed from the code version of this field, the <a href="../definitions/features/#fully-qualified-field-key">fully qualified field path</a> and from the <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> of its <a href="../definitions/features/#field-level-dependencies">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</li>
+<li><strong>Field Version</strong> is computed from the code version of this field, the <abbr title="A unique identifier for a field within a feature definition, consisting of the feature name and the field name. Example: `/raw/video:frames`.">fully qualified field path</abbr> and from the <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> of its <a href="../definitions/features/#field-level-dependencies">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</li>
 </ul>
 <h4 id="feature-level">Feature Level<a class="headerlink" href="#feature-level" title="Permanent link">&para;</a></h4>
 <ul>
@@ -3855,11 +3867,11 @@
 <p>Users can override the computed sample-level versions by setting <code>metaxy_data_version_by_field</code> on their metadata, effectively providing a <strong>Data Version</strong> for the sample. This can be used for preventing unnecessary downstream updates, if the computed sample stays the same even after upstream data has changed.</p>
 <p>For example, the data version can be calculated with <code>sha256</code>, or a <a href="https://en.wikipedia.org/wiki/Perceptual_hashing">perceptual hashing</a> method for images and videos.</p>
 <p>This customization only affects how downstream increments are calculated, as the data version cannot be known until the feature is computed.</p>
-<h2 id="practical-example">Practical Example<a class="headerlink" href="#practical-example" title="Permanent link">&para;</a></h2>
+<h2 id="example-partial-data-updates">Example: Partial Data Updates<a class="headerlink" href="#example-partial-data-updates" title="Permanent link">&para;</a></h2>
 <p>Consider a video processing pipeline with these features:</p>
 <details class="tip">
 <summary>Simplified Metaxy Definitions</summary>
-<p>This example uses Metaxy's <a href="../syntactic-sugar/">syntactic sugar</a> for cleaner code.
+<p>This example uses Metaxy's <a href="../syntactic-sugar/"><abbr title="Simplified syntax for common Metaxy constructs. | guide/concepts/syntactic-sugar">syntactic sugar</abbr></a> for cleaner code.
 Feature classes can be passed directly to <code>deps</code> instead of wrapping in <code>FeatureDep</code>,
 and field names matching upstream fields automatically create <abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-dependencies">field-level dependencies</abbr>.</p>
 </details>
@@ -3969,7 +3981,7 @@ flowchart TB
     example_crop --&gt; example_face_detection
     example_video --&gt; example_stt
 </code></pre>
-<h2 id="tracking-definitions-changes">Tracking Definitions Changes<a class="headerlink" href="#tracking-definitions-changes" title="Permanent link">&para;</a></h2>
+<h3 id="tracking-definitions-changes">Tracking Definitions Changes<a class="headerlink" href="#tracking-definitions-changes" title="Permanent link">&para;</a></h3>
 <p class="annotate">Imagine the <code>audio</code> field of the <code>Video</code> feature changes (1):</p>
 <ol>
 <li>Perhaps, something like denoising has been applied externally</li>
@@ -3996,8 +4008,8 @@ title: Feature Graph Changes
 flowchart TB
     %% Snapshot version: none
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-    example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;c2ac395f&lt;/font&gt; → &lt;font color="#00FF00"&gt;2faffb98&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (794116a9)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;22742381&lt;/font&gt; → &lt;font color="#00FF00"&gt;09c8398b&lt;/font&gt;)&lt;/div&gt;"]
-    example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;34d75856&lt;/font&gt; → &lt;font color="#00FF00"&gt;fe237dc9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (2419e09d)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;4c726c4b&lt;/font&gt; → &lt;font color="#00FF00"&gt;e2b6ce39&lt;/font&gt;)&lt;/div&gt;"]
+    example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;c2ac395f&lt;/font&gt; → &lt;font color="#00FF00"&gt;2faffb98&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;22742381&lt;/font&gt; → &lt;font color="#00FF00"&gt;09c8398b&lt;/font&gt;)&lt;br/&gt;- frames (794116a9)&lt;/div&gt;"]
+    example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;34d75856&lt;/font&gt; → &lt;font color="#00FF00"&gt;fe237dc9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;4c726c4b&lt;/font&gt; → &lt;font color="#00FF00"&gt;e2b6ce39&lt;/font&gt;)&lt;br/&gt;- frames (2419e09d)&lt;/div&gt;"]
     example_face_detection["&lt;div style="text-align:left"&gt;&lt;b&gt;example/face_detection&lt;/b&gt;&lt;br/&gt;f1526ee0&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (006efeef)&lt;/div&gt;"]
     example_stt["&lt;div style="text-align:left"&gt;&lt;b&gt;example/stt&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d953dea4&lt;/font&gt; → &lt;font color="#00FF00"&gt;e57e7555&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;transcription&lt;/font&gt; (&lt;font color="#FF0000"&gt;3ec3826d&lt;/font&gt; → &lt;font color="#00FF00"&gt;9f7ea40c&lt;/font&gt;)&lt;/div&gt;"]
     example_video --&gt; example_crop
@@ -4026,34 +4038,22 @@ flowchart TB
 </li>
 </ul>
 </div>
-<h2 id="incremental-computation">Incremental Computation<a class="headerlink" href="#incremental-computation" title="Permanent link">&para;</a></h2>
-<p>The single most important piece of code in Metaxy is the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>resolve_update</code></a> method.
-It handles the following:</p>
+<h2 id="incremental-computations">Incremental Computations<a class="headerlink" href="#incremental-computations" title="Permanent link">&para;</a></h2>
+<p>The single most important piece of code in Metaxy is the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>resolve_update</code></a> method. For a given feature, it takes the inputs (1), computes the expected provenances for the given feature, and compares it with the current state in the metadata store. Learn more about this process <a href="../metadata-stores/#increment-resolution">here</a>.</p>
+<p>{ .annotate }</p>
 <ol>
-<li>
-<p>Joins upstream feature metadata</p>
-</li>
-<li>
-<p>Computes sample versions</p>
-</li>
-<li>
-<p>Compares against existing metadata</p>
-</li>
-<li>
-<p>Returns diff: added, changed, removed samples</p>
-</li>
+<li>metadata from the upstream features</li>
 </ol>
-<p>Typically, steps 1-3 can be run directly in the database. Analytical databases such as ClickHouse or Snowflake can efficiently handle these operations.</p>
-<p>The Python pipeline then only handles the increment.</p>
+<p>The Python pipeline needs to handle the result of <code>resolve_update</code> call:</p>
 <!-- skip: next -->
 
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>  <span class="c1"># MetadataStore</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="c1"># Metaxy computes provenance_by_field and identifies changes</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">increment</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="n">DownstreamFeature</span><span class="p">)</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="c1"># Process only changed samples</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="c1"># Process only the changed samples</span>
 </span></code></pre></div>
-<p>The <code>increment</code> object has attributes for new upstream samples, samples with new versions, and samples that have been removed from upstream metadata.</p>
+<p>The <code>increment</code> object has attributes for new upstream samples, samples identified as stale, and samples that have been removed from the upstream metadata.</p>
 
 
 

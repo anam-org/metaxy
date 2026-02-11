@@ -670,8 +670,6 @@
       
         
       
-        
-      
     
     
     
@@ -866,6 +864,8 @@
       
         
       
+        
+      
     
     
     
@@ -889,7 +889,7 @@
   <span class="md-ellipsis">
     
   
-    Definitions
+    Defining Features
   
 
     
@@ -905,7 +905,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Definitions
+    Defining Features
   
 
           </label>
@@ -995,6 +995,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../definitions/external-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1038,62 +1066,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../feature-discovery/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Discovery
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../syntactic-sugar/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Syntactic Sugar
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../projects/" class="md-nav__link">
         
   
@@ -1101,7 +1073,7 @@
   <span class="md-ellipsis">
     
   
-    Projects
+    Metaxy Projects
   
 
     
@@ -1130,6 +1102,34 @@
     
   
     Filters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syntactic-sugar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Syntactic Sugar
   
 
     
@@ -3746,7 +3746,7 @@ It is often desired to provide custom <abbr title="Settings via metaxy.toml, pyp
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_my_config</span><span class="p">():</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">assert</span> <span class="n">mx</span><span class="o">.</span><span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">project</span> <span class="o">==</span> <span class="s2">&quot;my-project&quot;</span>
 </span></code></pre></div>
-<p>The config object can be explicitly passed to <code>init</code>. This can be used to adjust how <abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/feature-discovery/">feature discovery</abbr> is performed.</p>
+<p>The config object can be explicitly passed to <code>init</code>. This can be used to adjust how <abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/projects/#feature-discovery">feature discovery</abbr> is performed.</p>
 <h3 id="configuring-metaxy-plugins">Configuring Metaxy Plugins<a class="headerlink" href="#configuring-metaxy-plugins" title="Permanent link">&para;</a></h3>
 <p>Plugins can be configured via a dictionary where keys are plugin names and values are plugin-specific configuration objects:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaxyConfig</span>

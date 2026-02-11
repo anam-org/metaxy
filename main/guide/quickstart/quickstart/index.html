@@ -811,8 +811,6 @@
       
         
       
-        
-      
     
     
     
@@ -1007,6 +1005,8 @@
       
         
       
+        
+      
     
     
     
@@ -1030,7 +1030,7 @@
   <span class="md-ellipsis">
     
   
-    Definitions
+    Defining Features
   
 
     
@@ -1046,7 +1046,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Definitions
+    Defining Features
   
 
           </label>
@@ -1136,6 +1136,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/definitions/external-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1179,62 +1207,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/feature-discovery/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Discovery
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/syntactic-sugar/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Syntactic Sugar
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../concepts/projects/" class="md-nav__link">
         
   
@@ -1242,7 +1214,7 @@
   <span class="md-ellipsis">
     
   
-    Projects
+    Metaxy Projects
   
 
     
@@ -1271,6 +1243,34 @@
     
   
     Filters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/syntactic-sugar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Syntactic Sugar
   
 
     
@@ -3758,13 +3758,13 @@ Usually there will be a processing step iterating over all the rows in <code>inc
 <p>These dataframes have pre-computed provenance columns which <strong>should not be modified</strong> and eventually should be written to the metadata store.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>The dataframes will have a <code>metaxy_provenance</code> column which is recommended to be used for storage paths:</p>
+<p>The dataframes will have a <code>metaxy_data_version</code> column which is recommended to be used for storage paths:</p>
 <p><!-- dprint-ignore-start -->
 <div class="language-python highlight"><span class="filename">pipeline.py</span><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">to_process</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">increment</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">to_polars</span><span class="p">(),</span> <span class="n">increment</span><span class="o">.</span><span class="n">stale</span><span class="o">.</span><span class="n">to_polars</span><span class="p">()])</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">to_process</span><span class="o">.</span><span class="n">iter_rows</span><span class="p">(</span><span class="n">named</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;/data/processed/</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;metaxy_provenance&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">/video.mp4&quot;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;/data/processed/</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;metaxy_data_version&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">/video.mp4&quot;</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="o">**</span><span class="n">row</span><span class="p">,</span> <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">path</span><span class="p">})</span>
 </span></code></pre></div>
 <!-- dprint-ignore-end --></p>
