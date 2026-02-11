@@ -1,4 +1,4 @@
-"""Tests for BatchedMetadataWriter."""
+"""Tests for BufferedMetadataWriter."""
 
 import threading
 import time
@@ -12,7 +12,7 @@ import pytest
 
 from metaxy import (
     BaseFeature,
-    BatchedMetadataWriter,
+    BufferedMetadataWriter,
     FeatureKey,
     FeatureSpec,
     MetadataStore,
@@ -98,7 +98,7 @@ def second_feature(graph: FeatureGraph):
 def test_batched_writer_basic(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test basic write functionality with manual start()."""
     with store.open("w"):
-        writer = BatchedMetadataWriter(
+        writer = BufferedMetadataWriter(
             store,
             flush_batch_size=100,
             flush_interval=0.5,
@@ -128,7 +128,7 @@ def test_batched_writer_basic(store: MetadataStore, writer_feature: type[BaseFea
 def test_batched_writer_context_manager(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test writer as context manager."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_batch_size=100) as writer:
+        with BufferedMetadataWriter(store, flush_batch_size=100) as writer:
             batch = pl.DataFrame(
                 {
                     "id": ["x", "y"],
@@ -146,7 +146,7 @@ def test_batched_writer_context_manager(store: MetadataStore, writer_feature: ty
 def test_batched_writer_batch_size_trigger(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that flush is triggered when batch size is reached."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_batch_size=5, flush_interval=1.0) as writer:
+        with BufferedMetadataWriter(store, flush_batch_size=5, flush_interval=1.0) as writer:
             # Write batches totaling 10 rows (should trigger flush at 5)
             for i in range(10):
                 batch = pl.DataFrame(
@@ -178,7 +178,7 @@ def test_batched_writer_interval_trigger(store: MetadataStore, writer_feature: t
     flush_interval = 0.1
 
     with store.open("w"):
-        with BatchedMetadataWriter(
+        with BufferedMetadataWriter(
             store,
             flush_batch_size=1000,  # high threshold so batch size won't trigger
             flush_interval=flush_interval,
@@ -213,7 +213,7 @@ def test_batched_writer_no_batch_size(store: MetadataStore, writer_feature: type
     """Test that flush_batch_size=None only flushes on interval or stop."""
     with store.open("w"):
         # Use a long interval so it won't trigger during test
-        with BatchedMetadataWriter(store, flush_interval=10.0) as writer:
+        with BufferedMetadataWriter(store, flush_interval=10.0) as writer:
             # Write many batches (should not trigger flush since no batch size)
             for i in range(20):
                 batch = pl.DataFrame(
@@ -250,7 +250,7 @@ def test_batched_writer_accepts_dataframe_types(
 ):
     """Test that writer accepts various dataframe types."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_batch_size=100) as writer:
+        with BufferedMetadataWriter(store, flush_batch_size=100) as writer:
             batch = make_batch()
             writer.put({writer_feature: batch})
 
@@ -264,7 +264,7 @@ def test_batched_writer_num_written_property(store: MetadataStore, writer_featur
     """Test that num_written is updated correctly."""
     feature_key = writer_feature.spec().key
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_batch_size=2, flush_interval=0.5) as writer:
+        with BufferedMetadataWriter(store, flush_batch_size=2, flush_interval=0.5) as writer:
             assert writer.num_written == {}
 
             # Write first batch (2 rows - should trigger flush)
@@ -307,7 +307,7 @@ def test_batched_writer_num_written_property(store: MetadataStore, writer_featur
 def test_batched_writer_multiple_batches(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test writing multiple batches."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_batch_size=100) as writer:
+        with BufferedMetadataWriter(store, flush_batch_size=100) as writer:
             for i in range(5):
                 batch = pl.DataFrame(
                     {
@@ -329,7 +329,7 @@ def test_batched_writer_multiple_batches(store: MetadataStore, writer_feature: t
 def test_batched_writer_put_after_stop_raises(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that put raises after stop is called."""
     with store.open("w"):
-        writer = BatchedMetadataWriter(store, flush_batch_size=100)
+        writer = BufferedMetadataWriter(store, flush_batch_size=100)
         writer.start()
         writer.stop()
 
@@ -348,7 +348,7 @@ def test_batched_writer_put_after_stop_raises(store: MetadataStore, writer_featu
 def test_batched_writer_put_before_start_raises(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that put raises before start is called."""
     with store.open("w"):
-        writer = BatchedMetadataWriter(store, flush_batch_size=100)
+        writer = BufferedMetadataWriter(store, flush_batch_size=100)
 
         batch = pl.DataFrame(
             {
@@ -365,7 +365,7 @@ def test_batched_writer_put_before_start_raises(store: MetadataStore, writer_fea
 def test_batched_writer_double_start_raises(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that calling start twice raises an error."""
     with store.open("w"):
-        writer = BatchedMetadataWriter(store, flush_batch_size=100)
+        writer = BufferedMetadataWriter(store, flush_batch_size=100)
         writer.start()
 
         with pytest.raises(RuntimeError, match="Writer has already been started"):
@@ -377,7 +377,7 @@ def test_batched_writer_double_start_raises(store: MetadataStore, writer_feature
 def test_batched_writer_has_error_property(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test has_error property when no error occurs."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_batch_size=100) as writer:
+        with BufferedMetadataWriter(store, flush_batch_size=100) as writer:
             assert not writer.has_error
 
             batch = pl.DataFrame(
@@ -396,7 +396,7 @@ def test_batched_writer_has_error_property(store: MetadataStore, writer_feature:
 def test_batched_writer_feature_key_string(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that writer accepts feature key as string."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_batch_size=100) as writer:
+        with BufferedMetadataWriter(store, flush_batch_size=100) as writer:
             batch = pl.DataFrame(
                 {
                     "id": ["str_key"],
@@ -415,7 +415,7 @@ def test_batched_writer_feature_key_string(store: MetadataStore, writer_feature:
 def test_batched_writer_thread_safety(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test that writer handles concurrent puts safely."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_batch_size=50, flush_interval=0.5) as writer:
+        with BufferedMetadataWriter(store, flush_batch_size=50, flush_interval=0.5) as writer:
             errors: list[Exception] = []
 
             def write_batch(thread_id: int):
@@ -451,7 +451,7 @@ def test_batched_writer_multi_feature(
 ):
     """Test writing to multiple features in single put."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_batch_size=100) as writer:
+        with BufferedMetadataWriter(store, flush_batch_size=100) as writer:
             batch1 = pl.DataFrame(
                 {
                     "id": ["multi_a", "multi_b"],
@@ -481,7 +481,7 @@ def test_batched_writer_multi_feature_accumulated(
 ):
     """Test that multiple puts to different features are accumulated correctly."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_interval=0.5) as writer:
+        with BufferedMetadataWriter(store, flush_interval=0.5) as writer:
             # Write to first feature
             batch1 = pl.DataFrame(
                 {
@@ -526,7 +526,7 @@ def test_batched_writer_flush_error_sets_has_error(
     from unittest.mock import MagicMock
 
     with store.open("w"):
-        writer = BatchedMetadataWriter(store, flush_interval=0.05)
+        writer = BufferedMetadataWriter(store, flush_interval=0.05)
         writer.start()
 
         # Mock the _flush method to raise an exception
@@ -565,7 +565,7 @@ def test_batched_writer_flush_error_prevents_further_puts(
     from unittest.mock import MagicMock
 
     with store.open("w"):
-        writer = BatchedMetadataWriter(store, flush_interval=0.05)
+        writer = BufferedMetadataWriter(store, flush_interval=0.05)
         writer.start()
 
         # Mock the _flush method to raise an exception
@@ -603,7 +603,7 @@ def test_batched_writer_stop_timeout_raises(store: MetadataStore, writer_feature
     from unittest.mock import patch
 
     with store.open("w"):
-        writer = BatchedMetadataWriter(store, flush_interval=0.5)
+        writer = BufferedMetadataWriter(store, flush_interval=0.5)
         writer.start()
 
         original_thread = writer._thread
@@ -617,7 +617,7 @@ def test_batched_writer_stop_timeout_raises(store: MetadataStore, writer_feature
 def test_batched_writer_flush(store: MetadataStore, writer_feature: type[BaseFeature]):
     """Test explicit flush writes pending data immediately."""
     with store.open("w"):
-        with BatchedMetadataWriter(store, flush_interval=10.0) as writer:
+        with BufferedMetadataWriter(store, flush_interval=10.0) as writer:
             batch = pl.DataFrame(
                 {
                     "id": ["flush_a", "flush_b"],
@@ -646,7 +646,7 @@ def test_batched_writer_flush_error_propagates(
     from unittest.mock import MagicMock
 
     with store.open("w"):
-        writer = BatchedMetadataWriter(store, flush_interval=10.0)
+        writer = BufferedMetadataWriter(store, flush_interval=10.0)
         writer.start()
 
         original_flush = writer._flush
@@ -684,7 +684,7 @@ def test_batched_writer_exit_does_not_mask_exception(
     with store.open("w"):
         # The original exception should propagate, not the stop() error
         with pytest.raises(ValueError, match="original"):
-            with BatchedMetadataWriter(store, flush_interval=0.05) as writer:
+            with BufferedMetadataWriter(store, flush_interval=0.05) as writer:
                 # Make _flush fail so stop() will raise
                 mock_flush = MagicMock(side_effect=RuntimeError("flush boom"))
                 monkeypatch.setattr(writer, "_flush", mock_flush)

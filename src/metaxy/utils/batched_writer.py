@@ -1,4 +1,4 @@
-"""Batched metadata writer for high-throughput streaming writes.
+"""Buffered metadata writer for high-throughput streaming writes.
 
 This module provides a batched writer that queues data and writes to a
 MetadataStore in batches, either when a batch size threshold is reached or
@@ -47,8 +47,8 @@ QueueItem = dict[FeatureKey, "Frame"]
 
 
 @public
-class BatchedMetadataWriter:
-    """Batched metadata writer with background flush thread.
+class BufferedMetadataWriter:
+    """Buffered metadata writer with background flush thread.
 
     Queues data and writes to a MetadataStore in batches either when:
 
@@ -62,7 +62,7 @@ class BatchedMetadataWriter:
         ```py
         import polars as pl
 
-        with mx.BatchedMetadataWriter(store) as writer:
+        with mx.BufferedMetadataWriter(store) as writer:
             batch = {
                 "my/feature": pl.DataFrame(
                     {
@@ -80,7 +80,7 @@ class BatchedMetadataWriter:
     ??? example "Manual lifecycle management"
         <!-- skip next -->
         ```py
-        writer = mx.BatchedMetadataWriter(store)
+        writer = mx.BufferedMetadataWriter(store)
         writer.start()
         try:
             for batch_dict in data_stream:
@@ -372,7 +372,7 @@ class BatchedMetadataWriter:
         self._thread.join(timeout=timeout)
 
         if self._thread.is_alive():
-            raise RuntimeError(f"BatchedMetadataWriter background thread did not stop within {timeout:.1f}s")
+            raise RuntimeError(f"BufferedMetadataWriter background thread did not stop within {timeout:.1f}s")
 
         if self._error is not None:
             raise RuntimeError(f"Writer encountered an error: {self._error}") from self._error
@@ -402,7 +402,7 @@ class BatchedMetadataWriter:
         """
         return self._error is not None
 
-    def __enter__(self) -> BatchedMetadataWriter:
+    def __enter__(self) -> BufferedMetadataWriter:
         """Enter context manager, starting the background thread."""
         self.start()
         return self
@@ -420,5 +420,5 @@ class BatchedMetadataWriter:
             if exc_type is None:
                 raise
             logger.exception(
-                "Error during BatchedMetadataWriter shutdown (suppressed to avoid masking original exception)"
+                "Error during BufferedMetadataWriter shutdown (suppressed to avoid masking original exception)"
             )

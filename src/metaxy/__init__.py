@@ -66,7 +66,7 @@ from metaxy.models.types import (
     ValidatedFieldKeySequence,
     ValidatedFieldKeySequenceAdapter,
 )
-from metaxy.utils import BatchedMetadataWriter
+from metaxy.utils import BufferedMetadataWriter
 from metaxy.utils.exceptions import MetaxyMissingFeatureDependency
 from metaxy.utils.external_features import sync_external_features
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement, PolarsIncrement, PolarsLazyIncrement
@@ -149,7 +149,7 @@ def init(
 
 
 __all__ = [
-    "BatchedMetadataWriter",
+    "BufferedMetadataWriter",
     "BaseFeature",
     "experimental",
     "FeatureDefinition",
