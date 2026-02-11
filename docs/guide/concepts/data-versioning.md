@@ -30,7 +30,7 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 > [!NOTE] Code Version Value
 > The value can be arbitrary, but in the future we might implement something around semantic versioning.
 
-- **Field Version** is computed from the code version of this field, the [fully qualified field path](./definitions/features.md#fully-qualified-field-key) and from the field versions of its [parent fields](./definitions/features.md#field-level-dependencies) (if any exist, for example, fields on root features do not have dependencies).
+- **Field Version** is computed from the code version of this field, the fully qualified field path and from the field versions of its [parent fields](./definitions/features.md#field-level-dependencies) (if any exist, for example, fields on root features do not have dependencies).
 
 #### Feature Level
 
@@ -70,7 +70,7 @@ For example, the data version can be calculated with `sha256`, or a [perceptual 
 
 This customization only affects how downstream increments are calculated, as the data version cannot be known until the feature is computed.
 
-## Practical Example
+## Example: Partial Data Updates
 
 Consider a video processing pipeline with these features:
 
@@ -167,7 +167,7 @@ example: overview
 scenario: "Initial feature graph"
 :::
 
-## Tracking Definitions Changes
+### Tracking Definitions Changes
 
 Imagine the `audio` field of the `Video` feature changes (1):
 { .annotate }
@@ -197,22 +197,15 @@ step: "update_audio_version"
 
     - Frame field versions have stayed the same
 
-## Incremental Computation
+## Incremental Computations
 
-The single most important piece of code in Metaxy is the [`resolve_update`][metaxy.MetadataStore.resolve_update] method.
-It handles the following:
+The single most important piece of code in Metaxy is the [`resolve_update`][metaxy.MetadataStore.resolve_update] method. For a given feature, it takes the inputs (1), computes the expected provenances for the given feature, and compares it with the current state in the metadata store. Learn more about this process [here](./metadata-stores.md#increment-resolution).
 
-1. Joins upstream feature metadata
+{ .annotate }
 
-2. Computes sample versions
+1. metadata from the upstream features
 
-3. Compares against existing metadata
-
-4. Returns diff: added, changed, removed samples
-
-Typically, steps 1-3 can be run directly in the database. Analytical databases such as ClickHouse or Snowflake can efficiently handle these operations.
-
-The Python pipeline then only handles the increment.
+The Python pipeline needs to handle the result of `resolve_update` call:
 
 <!-- skip: next -->
 
@@ -221,7 +214,7 @@ with store:  # MetadataStore
     # Metaxy computes provenance_by_field and identifies changes
     increment = store.resolve_update(DownstreamFeature)
 
-    # Process only changed samples
+    # Process only the changed samples
 ```
 
-The `increment` object has attributes for new upstream samples, samples with new versions, and samples that have been removed from upstream metadata.
+The `increment` object has attributes for new upstream samples, samples identified as stale, and samples that have been removed from the upstream metadata.

@@ -47,7 +47,7 @@ We also have a [Ray integration](../integrations/compute/ray.md) which simplifie
 
 ## 🧑‍💻 Developer Friendly
 
-Metaxy provides a clean, intuitive Python API [with syntactic sugar](../guide/concepts/syntactic-sugar.md) that simplifies common feature definitions. The [feature discovery](../guide/concepts/feature-discovery.md) system enables effortless feature dependency management.
+Metaxy provides a clean, intuitive Python API [with syntactic sugar](../guide/concepts/syntactic-sugar.md) that simplifies common feature definitions. The [feature discovery](../guide/concepts/projects.md#feature-discovery) system enables effortless feature dependency management.
 
 The library includes comprehensive **type hints** (1), and utilizes Pydantic for feature definitions. There's first-class support for **local development** (2), **testing**, **preview environments**, and **CI/CD** workflows.
 { .annotate }

@@ -41,7 +41,7 @@ to_process = pl.concat([increment.new.to_polars(), increment.stale.to_polars()])
 
 result = []
 for row in to_process.iter_rows(named=True):
-    path = f"/data/processed/{row['id']}/{row['metaxy_provenance']}/video.mp4"
+    path = f"/data/processed/{row['id']}/{row['metaxy_data_version']}/video.mp4"
     result.append({**row, "path": path})
 # --8<-- [end:process_video]
 

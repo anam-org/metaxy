@@ -118,10 +118,10 @@ def init(
     config: MetaxyConfig | Path | str | None = None,
     search_parents: bool = True,
 ) -> MetaxyConfig:
-    """Main user-facing initialization function for Metaxy. It loads feature definitions and Metaxy configuration.
+    """Main user-facing initialization function for Metaxy. It loads feature definitions and the Metaxy [configuration][metaxy.MetaxyConfig].
 
-    Features are [discovered](../../guide/concepts/feature-discovery.md) from installed Python packages metadata.
-    External features are loaded from `metaxy.lock` if present.
+    The feature graphs is populated with feature definitions [discovered](/guide/concepts/projects.md#feature-discovery) in the Metaxy project.
+    [External features](/guide/concepts/definitions/external-features.md) are loaded from a `metaxy.lock` if it is found.
 
     Args:
         config: Metaxy configuration to use for initialization. Will be auto-discovered if not provided.
@@ -129,7 +129,7 @@ def init(
             !!! tip
                 `METAXY_CONFIG` environment variable can be used to set the config file path.
 
-        search_parents: Whether to search parent directories for configuration files during config auto-discovery.
+        search_parents: Whether to search parent directories for configuration files during config discovery.
 
     Returns:
         The activated Metaxy configuration.

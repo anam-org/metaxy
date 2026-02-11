@@ -72,7 +72,7 @@ These dataframes have pre-computed provenance columns which **should not be modi
 
 !!! tip
 
-    The dataframes will have a `metaxy_provenance` column which is recommended to be used for storage paths:
+    The dataframes will have a `metaxy_data_version` column which is recommended to be used for storage paths:
 
     <!-- dprint-ignore-start -->
     ```python title="pipeline.py"

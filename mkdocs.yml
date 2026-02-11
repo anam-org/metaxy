@@ -58,6 +58,7 @@ theme:
 
 hooks:
   - docs/.mkdocs-metaxy/src/mkdocs_metaxy/validate_public.py
+  - docs/.mkdocs-metaxy/src/mkdocs_metaxy/validate_glossary.py
 
 plugins:
   - search
@@ -219,15 +220,15 @@ nav:
       - Metadata Stores:
         - Metadata Stores: guide/concepts/metadata-stores.md
         - Deletions: guide/concepts/deletions.md
-      - Definitions:
+      - Defining Features:
         - Features: guide/concepts/definitions/features.md
         - Optional Dependencies: guide/concepts/definitions/optional-dependencies.md
         - Lineage Types: guide/concepts/definitions/relationship.md
+        - External Features: guide/concepts/definitions/external-features.md
       - Versioning: guide/concepts/data-versioning.md
-      - Feature Discovery: guide/concepts/feature-discovery.md
-      - Syntactic Sugar: guide/concepts/syntactic-sugar.md
-      - Projects: guide/concepts/projects.md
+      - Metaxy Projects: guide/concepts/projects.md
       - Filters: guide/concepts/filters.md
+      - Syntactic Sugar: guide/concepts/syntactic-sugar.md
     - ⚙️ Application Lifecycle:
       - Local Development: guide/concepts/lifecycle/development.md
       - Testing: guide/concepts/lifecycle/testing.md

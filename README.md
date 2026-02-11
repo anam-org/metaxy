@@ -30,7 +30,7 @@ Metaxy manages **metadata** while **data** typically lives elsewhere:
 └──────┴──────────┴──────┴────────┘          └─────────────────────────┘
 ```
 
-The feature that makes Metaxy stand out is the ability to track **field-level dependencies** and detect **prunable updates** — updates that don't trigger change propagation through certain paths in the dependency graph because they modify fields that aren't dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames. This problem is specific to multimodal pipelines and doesn't typically emerge in traditional data engineering.
+The feature that makes Metaxy stand out is the ability to track **partial data dependencies** and detect **prunable updates** — updates that don't trigger change propagation through certain paths in the dependency graph because they modify fields that aren't dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames. This problem is specific to multimodal pipelines and doesn't typically emerge in traditional data engineering.
 
 Metaxy's goal is to provide a standard instrument for any kind of multimodal (or just purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations over metadata. Or, in short, to be a universal glue for incremental data pipelines.
 

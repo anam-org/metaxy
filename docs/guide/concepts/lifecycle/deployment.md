@@ -17,6 +17,10 @@ description: "Learn how to deploy Metaxy code to Production and Branch Deploymen
 
     This will persist feature definitions in the metadata store, enabling feature history tracking and multi-project setups.
 
+!!! tip
+
+    We strongly recommend setting `METAXY_LOCKED` to `true` in production when using [external features](../definitions/external-features.md#syncing-external-features).
+
 ## Branch Deployments
 
 Branch Deployments, also known as Preview (1) Deployments, are ephemeral environments typically created to test changes in a production-like setting.

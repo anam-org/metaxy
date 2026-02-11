@@ -31,7 +31,7 @@ Metaxy is built around a few core ideas that work together to solve the problem 
 
     Sample-level version tracking that detects changes and determines what needs recomputation.
 
--   :material-magnify: **[Feature Discovery](feature-discovery.md)**
+-   :material-magnify: **[Feature Discovery](projects.md#feature-discovery)**
 
     ---
 

@@ -3,19 +3,13 @@ title: "Feature Definitions"
 description: "Declarative feature definitions with Pydantic models."
 ---
 
-# Feature System
+# Features
 
-Metaxy has a declarative and flexible feature system.
-It has been inspired by [Dagster](https://dagster.io/)'s Software-Defined Assets and [Nix](https://nixos.org/).
-
-Feature definitions do not describe **data** (1)
-{ .annotate }
-
-1. except the logical fields versions
-
---8<-- "data-vs-metadata.md"
+Metaxy has a declarative  feature system inspired by [Dagster](https://dagster.io/)'s Software-Defined Assets and [Nix](https://nixos.org/).
 
 Metaxy is responsible for providing correct **metadata** to users. Metaxy does not interact with **data** directly, the user is responsible for writing it, typically using **metadata** to identify sample locations in storage.
+
+--8<-- "data-vs-metadata.md"
 
 !!! tip "Keeping Historical Data"
 
@@ -81,7 +75,7 @@ class Transcript(
 
 Hurray! You get the idea.
 
-## Field-Level Dependencies
+### Field-Level Dependencies
 
 A core (1) feature of Metaxy is the concept of **field-level dependencies**.
 These are used to define dependencies between logical fields of features.
@@ -128,86 +122,7 @@ Voilà!
 
 The [Data Versioning](../data-versioning.md) docs explain more about how Metaxy calculates versions for different components of a feature graph.
 
-## Attaching user-defined metadata
+### Attaching custom metadata
 
 Users can [attach](/reference/api/definitions/feature-spec.md#metaxy.FeatureSpec.metadata) arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
 This metadata does not influence graph topology or the versioning system.
-
-## Fully Qualified Field Key
-
-!!! abstract
-
-    A **fully qualified field key (FQFK)** is an identifier that uniquely identifies a field within the whole feature graph.
-
-It consists of the **feature key** and the **field key**, separated by a colon.
-
-!!! example
-
-    -  `/raw/video:frames`
-
-    -  `/raw/video:audio/english`
-
-## External Features
-
-External features are stubs pointing at features actually defined in other projects and not available in Python at runtime.
-They can be used if the actual feature class cannot be imported, for example due to dependency conflicts or for other reasons.
-
-Typically, external feature definitions are loaded from a `metaxy.lock` file. Learn more in [multi-environment setups](../projects.md#multiple-python-environments) docs.
-
-!!! info annotate "Manual External Feature Interface"
-
-      Users who need more control or cannot use the `metaxy.lock` file for some reasons (1) can create them manually:
-
-      ```py
-      import metaxy as mx
-
-      external_feature = mx.FeatureDefinition.external(
-          spec=mx.FeatureSpec(key="a/b/c", id_columns=["id"]),
-          project="external-project",
-      )
-
-      mx.FeatureGraph.get().add_feature_definition(external_feature)
-      ```
-
-1. Please let us know why via a [GitHub Issue](https://github.com/anam-org/metaxy/issues/new)
-
-External features only exist until the actual feature definitions are loaded from the metadata store and replace them. This can be done with [`metaxy.sync_external_features`][metaxy.sync_external_features].
-
-
-```python
-import metaxy as mx
-
-# Sync external features from the metadata store
-mx.sync_external_features(store)
-```
-
-!!! note "Pydantic Schema Limitation"
-
-    Features loaded from the metadata store have their JSON schema preserved from when they were originally saved. However, the Python *class* may not be available anymore. Operations that require the actual Python class, such as model instantiation or validation, will not work for these features.
-
-
-### Outdated External Features
-
-Metaxy has a few safe guards in order to combat incorrect versioning information on external feature definitions. By default, Metaxy emits warnings when an external feature appears to have a different version (or field versions) than the actual feature definition loaded from the other project. These warnings can be turned into errors by:
-
-- passing `on_conflict="raise"` to [`sync_external_features`][metaxy.sync_external_features]
-- passing `--locked` to Metaxy CLI commands
-- setting `locked` to `True` in the global Metaxy configuration. This can be done either in the config file or via the `METAXY_LOCKED` environment variable.
-
-!!! tip
-
-    We recommend setting `METAXY_LOCKED=1` in production
-
-Additionally, the following actions always trigger a sync for external feature definitions:
-
-- pushing feature definitions to the metadata store (e.g. `metaxy push` CLI)
-- [`MetadataStore.read`][metaxy.MetadataStore.resolve_update]
-- [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update]
-
-And some other places where it's appropriate and doesn't create an additional overhead.
-
-!!! tip
-
-    This behavior can be disabled by setting `sync=False` in the global Metaxy configuration. However, we advise to keep it enabled,
-    because [`sync_external_features`][metaxy.sync_external_features] is very lightweight on the first call and a no-op on subsequent calls.
-    It only does anything if the current feature graph does not contain any external features.
