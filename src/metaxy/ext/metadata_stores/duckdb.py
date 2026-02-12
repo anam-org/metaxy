@@ -162,7 +162,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
             connection is configured to ATTACH the DuckLake catalog after open().
             fallback_stores: Ordered list of read-only fallback stores.
 
-            **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]`
+            **kwargs: Passed to [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore]`
 
         Warning:
             Parent directories are NOT created automatically. Ensure paths exist

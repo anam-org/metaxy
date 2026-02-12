@@ -158,7 +158,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
             auto_cast_struct_for_map: whether to auto-convert DataFrame user-defined Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted.
 
-            **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]`
+            **kwargs: Passed to [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore]`
 
         Raises:
             ImportError: If ibis-clickhouse not installed

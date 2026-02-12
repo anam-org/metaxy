@@ -154,7 +154,7 @@ def test_feature_version_multi_field(snapshot: SnapshotAssertion) -> None:
 
 
 def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
-    """Test feature_version includes field-level dependencies."""
+    """Test feature_version includes field-level lineage."""
 
     class Upstream(
         BaseFeature,

@@ -314,7 +314,7 @@ class MetadataStore(ABC):
                 feature (not to upstream features). Use this when filtering by columns that
                 only exist in the target feature.
                 Example: `[nw.col("height").is_null()]`
-            lazy: Whether to return a [metaxy.versioning.types.LazyIncrement][] or a [metaxy.versioning.types.Increment][].
+            lazy: Whether to return a [`LazyIncrement`][metaxy.versioning.types.LazyIncrement] or a [`Increment`][metaxy.versioning.types.Increment].
             versioning_engine: Override the store's versioning engine for this operation.
             skip_comparison: If True, skip the increment comparison logic and return all
                 upstream samples in `increment.new`. The `changed` and `removed` frames will

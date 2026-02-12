@@ -123,7 +123,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
             connection_params: Additional Ibis BigQuery connection parameters.
                 Overrides individual parameters if provided.
             fallback_stores: Ordered list of read-only fallback stores.
-            **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]
+            **kwargs: Passed to [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore]
 
         Raises:
             ImportError: If ibis-bigquery not installed

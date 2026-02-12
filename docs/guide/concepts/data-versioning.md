@@ -30,7 +30,7 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 > [!NOTE] Code Version Value
 > The value can be arbitrary, but in the future we might implement something around semantic versioning.
 
-- **Field Version** is computed from the code version of this field, the fully qualified field path and from the field versions of its [parent fields](./definitions/features.md#field-level-dependencies) (if any exist, for example, fields on root features do not have dependencies).
+- **Field Version** is computed from the code version of this field, the fully qualified field path and from the field versions of its [parent fields](./definitions/features.md#field-level-lineage) (if any exist, for example, fields on root features do not have dependencies).
 
 #### Feature Level
 
@@ -49,7 +49,7 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 
 These versions are sample-level and require access to the metadata store in order to compute them.
 
-- **Provenance By Field** is computed from the upstream **Provenance By Field** (with respect to defined [field-level dependencies](./definitions/features.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
+- **Provenance By Field** is computed from the upstream **Provenance By Field** (with respect to defined [field-level lineage](./definitions/features.md#field-level-lineage) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
 
 | id        | metaxy_provenance_by_field                    |
 | --------- | --------------------------------------------- |
@@ -149,7 +149,6 @@ class SpeechToText(
 ):
     video_id: str
 ```
-
 { .annotated }
 
 1. This `audio` field [automatically depends][metaxy.models.fields_mapping.FieldsMapping.default] on the `audio` field of the `Video` feature, because their names match.
@@ -168,13 +167,13 @@ Running `metaxy graph render --format mermaid` produces this graph:
 Imagine the `audio` field of the `Video` feature changes (1):
 { .annotate }
 
-1. Perhaps, something like denoising has been applied externally
+1. зerhaps, something like denoising has been applied
 
 ::: metaxy-example patch
     example: overview
     path: patches/01_update_audio_version.patch
 
-Run `metaxy graph diff` to see what changed:
+Here is how the change affects feature and field versions through the feature graph:
 
 ::: metaxy-example graph-diff
     example: overview

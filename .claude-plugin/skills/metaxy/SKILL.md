@@ -1,6 +1,6 @@
 ---
 name: metaxy
-description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level dependencies", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, or testing patterns.
+description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level lineage", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, or testing patterns.
 ---
 
 # Metaxy
@@ -30,7 +30,7 @@ class MyFeature(
     score: float
 ```
 
-To add dependencies between features, use the `deps` parameter with `FeatureDep`. To specify field-level dependencies (for partial data dependencies processing), use `FieldSpec` with `FieldDep` or `FieldsMapping`.
+To add dependencies between features, use the `deps` parameter with `FeatureDep`. To specify field-level lineage (for partial data dependencies), use `FieldSpec` with `FieldDep` or `FieldsMapping`.
 
 ### Data Versioning
 

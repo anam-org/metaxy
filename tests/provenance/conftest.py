@@ -169,7 +169,7 @@ def multi_upstream_features(graph: FeatureGraph) -> dict[str, type[SampleFeature
 def selective_field_dep_features(
     graph: FeatureGraph,
 ) -> dict[str, type[SampleFeature]]:
-    """Create features with selective field-level dependencies.
+    """Create features with selective field-level lineage.
 
     Structure:
     - MultiFieldRoot: frames, audio, text fields

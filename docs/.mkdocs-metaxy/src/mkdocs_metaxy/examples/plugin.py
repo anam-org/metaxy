@@ -541,7 +541,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         Args:
             example_name: Name of the example.
-            params: Directive parameters (scenario, step, direction).
+            params: Directive parameters (scenario, step, direction, show_field_deps, features).
 
         Returns:
             Mermaid diagram markdown string.
@@ -556,6 +556,8 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         scenario_name = params.get("scenario")
         step_name = params.get("step")
         direction = params.get("direction", "TB")
+        show_field_deps = params.get("show_field_deps", False)
+        features = params.get("features")
 
         # Find the matching GraphPushed event
         for event in result.execution_state.events:
@@ -572,6 +574,9 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                     "GraphPushed event is missing graph data. "
                     "Re-run the example tests to regenerate the execution result."
                 )
+
+            if show_field_deps:
+                return self._render_field_deps_from_snapshot(event.graph, features=features, direction=direction)
 
             return self._render_graph_from_snapshot(event.graph, direction=direction)
 
@@ -601,6 +606,27 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         renderer = MermaidRenderer(graph_data=gd, config=config)
         mermaid = renderer.render()
 
+        return f"```mermaid\n{mermaid}\n```"
+
+    def _render_field_deps_from_snapshot(
+        self,
+        graph_data: dict,
+        features: list[str] | None = None,
+        direction: str = "TB",
+    ) -> str:
+        """Render field-level dependency graph as mermaid from saved graph snapshot.
+
+        Args:
+            graph_data: Serialized graph data.
+            features: Optional list of feature key strings to filter to.
+            direction: Graph layout direction.
+
+        Returns:
+            Markdown string with mermaid code block.
+        """
+        from metaxy.graph.diff.rendering.field_deps import render_field_deps_mermaid
+
+        mermaid = render_field_deps_mermaid(graph_data, features=features, direction=direction)
         return f"```mermaid\n{mermaid}\n```"
 
     def _render_graph_diff(self, example_name: str, params: dict[str, Any]) -> str:

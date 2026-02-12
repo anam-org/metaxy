@@ -518,7 +518,7 @@ def test_migration_dry_run(
 
 
 def test_field_dependency_change(tmp_path):
-    """Test migration when field-level dependencies change."""
+    """Test migration when field-level lineage change."""
     # Create v1: Downstream depends on both upstream fields
     temp_v1 = TempFeatureModule("test_field_change_v1")
 

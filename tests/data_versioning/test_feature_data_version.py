@@ -134,7 +134,7 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
 
 
 def test_specific_field_dependencies(snapshot, graph: FeatureGraph):
-    """Test feature with specific field-level dependencies."""
+    """Test feature with specific field-level lineage."""
 
     class MultiField(
         SampleFeature,

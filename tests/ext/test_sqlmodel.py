@@ -361,7 +361,7 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
 
 
 def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
-    """Test SQLModelFeature with field-level dependencies.
+    """Test SQLModelFeature with field-level lineage.
 
     Verifies that:
     - Field dependencies are correctly tracked

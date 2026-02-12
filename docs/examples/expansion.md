@@ -49,7 +49,14 @@ Let's set the code version of `audio` to `"1"` in order to change it in the futu
 ```
 <!-- dprint-ignore-end -->
 
-We do not specify custom versions on its fields. Metaxy will automatically assign field-level dependencies by [matching on field names](../reference/api/definitions/fields-mapping.md): `VideoChunk.frames` depends on `Video.frames` and `VideoChunk.audio` depends on `Video.audio`.
+We do not specify custom versions on its fields. Metaxy will automatically assign field-level lineage by [matching on field names](../reference/api/definitions/fields-mapping.md): `VideoChunk.frames` depends on `Video.frames` and `VideoChunk.audio` depends on `Video.audio`.
+
+::: metaxy-example graph
+    example: one-to-many
+    scenario: "Initial pipeline run"
+    direction: LR
+    show_field_deps: true
+    features: ["video/raw", "video/chunk"]
 
 ### Defining features: `FaceRecognition`
 
@@ -60,6 +67,13 @@ We do not specify custom versions on its fields. Metaxy will automatically assig
 --8<-- "example-one-to-many/src/example_one_to_many/features.py:face_recognition"
 ```
 <!-- dprint-ignore-end -->
+
+::: metaxy-example graph
+    example: one-to-many
+    scenario: "Initial pipeline run"
+    direction: LR
+    show_field_deps: true
+    features: ["video/chunk", "video/faces"]
 
 This completes the feature definitions. Let's proceed to running the pipeline.
 

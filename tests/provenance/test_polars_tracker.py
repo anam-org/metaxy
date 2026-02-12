@@ -131,7 +131,7 @@ def test_compute_provenance_selective_field_deps(
     graph: FeatureGraph,
     snapshot,
 ) -> None:
-    """Test compute_provenance with selective field-level dependencies."""
+    """Test compute_provenance with selective field-level lineage."""
     from metaxy.models.types import FeatureKey
 
     feature = selective_field_dep_features["SelectiveFeature"]

@@ -2144,7 +2144,7 @@ def test_aggregation_lineage_field_level_provenance_isolation(
     any_store: MetadataStore,
     graph: FeatureGraph,
 ):
-    """Test that field-level dependencies are preserved through aggregation lineage.
+    """Test that field-level lineage is preserved through aggregation lineage.
 
     This tests a critical property of aggregation: changing an upstream field
     should only affect downstream fields that depend on it, not unrelated fields.

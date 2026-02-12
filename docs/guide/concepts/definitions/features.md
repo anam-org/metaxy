@@ -76,9 +76,9 @@ class Transcript(
 
 Hurray! You get the idea.
 
-### Field-Level Dependencies
+### Field-Level Lineage
 
-A core (1) feature of Metaxy is the concept of **field-level dependencies**.
+A core (1) feature of Metaxy is the concept of **field-level lineage**.
 These are used to define dependencies between logical fields of features.
 { .annotate }
 

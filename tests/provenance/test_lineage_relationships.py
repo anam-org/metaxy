@@ -2583,7 +2583,7 @@ def test_two_deps_with_expansion_on_same_column_with_explicit_columns(
 
 
 def test_aggregation_field_level_provenance_isolation(graph: FeatureGraph) -> None:
-    """Test that field-level dependencies are correctly preserved through aggregation.
+    """Test that field-level lineage are correctly preserved through aggregation.
 
     This is a critical test for the aggregation lineage fix. The downstream feature
     has two fields with different dependencies:
