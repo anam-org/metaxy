@@ -3861,7 +3861,7 @@ Provenance columns hold <strong>static</strong> versioning information entirely 
 <p>When resolving incremental updates for a <a href="../../guide/concepts/definitions/features/">feature</a>, Metaxy attempts to perform all computations such as <a href="../../guide/concepts/data-versioning/">sample version calculations</a> within the metadata store.</p>
 <div class="admonition note">
 <p class="admonition-title">When can <strong>local</strong> computations happen instead</p>
-<p>Metaxy's versioning engine runs on the <strong>local <abbr title="The local versioning engine using polars-hash with Polars optimizations like projection pruning and predicate pushdown. Reference implementation for Metaxy.">Polars versioning engine</abbr></strong> if:</p>
+<p>Metaxy's versioning engine runs on the <strong>local <abbr title="The local versioning engine implemented in Polars (and polars-hash). Reference versioning engine implementation for Metaxy.">Polars versioning engine</abbr></strong> if:</p>
 <ol>
 <li>
 <p>The metadata store does not have a compute engine at all: for example, <a href="https://delta.io/">DeltaLake</a> is just a storage format.</p>

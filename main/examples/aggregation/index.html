@@ -4107,7 +4107,6 @@ flowchart TB
 <li>When any audio for a speaker changes, the aggregated provenance changes</li>
 <li>This triggers recomputation of only the affected speaker's embedding</li>
 </ol>
-<p>The user's pipeline code performs the actual aggregation (grouping by <code>speaker_id</code>). Metaxy only tracks the provenance and determines what needs recomputation.</p>
 <h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
 <p>Metaxy provides a convenient API for modeling aggregation relationships: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.lineage.LineageRelationship.aggregation&lt;/span&gt;
 

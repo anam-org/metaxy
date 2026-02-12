@@ -3959,26 +3959,31 @@ flowchart TB
 <li>All child samples were marked for recomputation</li>
 </ol>
 <h2 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
-<p>Metaxy tracks provenance at the field level using content hashes:</p>
+<p>Metaxy tracks provenance at the field level using:</p>
 <ol>
-<li><strong>Feature Version</strong>: A hash of the feature specification (including <code>code_version</code> of all fields)</li>
-<li><strong>Field Provenance</strong>: A hash combining the field's <code>code_version</code> and upstream provenance</li>
+<li><strong>Field Version</strong>: A hash combining the field's <code>code_version</code> and provenances of upstream fields</li>
+<li><strong>Feature Version</strong>: A hash combining the <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> of all fields in the feature</li>
 <li><strong>Dependency Resolution</strong>: When resolving updates, Metaxy computes what the provenance <em>would be</em> and compares it to what's stored</li>
 </ol>
-<p>The <code>resolve_update()</code> method returns:</p>
-<ul>
-<li><code>added</code>: New samples that don't exist in the store</li>
-<li><code>changed</code>: Existing samples whose computed provenance differs from stored provenance</li>
-</ul>
 <p>This enables precise, incremental recomputation without re-processing unchanged data.</p>
 <h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
 <p>Metaxy provides automatic change detection and incremental recomputation through:</p>
 <ul>
-<li>Feature dependency tracking via <code>FeatureDep</code></li>
-<li>Algorithm versioning via <code>code_version</code></li>
-<li>Provenance-based change detection via <code>resolve_update()</code></li>
+<li>Feature dependency tracking via <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureDep&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../reference/api/definitions/feature-spec/#metaxy.FeatureDep"><code>FeatureDep</code></a></li>
+<li>Algorithm versioning via <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FieldSpec&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../reference/api/definitions/field/#metaxy.FieldSpec"><code>FieldSpec.code_version</code></a></li>
+<li>Provenance-based change detection via <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>MetadataStore.resolve_update</code></a></li>
 </ul>
-<p>This ensures your pipelines are efficient data stays up to date.</p>
+<p>This mechanism ensures your pipelines are both efficient and keep relevant data up to date.</p>
 <h2 id="related-materials">Related Materials<a class="headerlink" href="#related-materials" title="Permanent link">&para;</a></h2>
 <p>Learn more about:</p>
 <ul>
