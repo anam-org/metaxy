@@ -49,15 +49,12 @@ class FaceRecognition(
     spec=mx.FeatureSpec(
         key=["video", "faces"],
         id_columns=["video_chunk_id"],
-        deps=[
-            mx.FeatureDep(
-                feature=VideoChunk,
-                fields_mapping=mx.FieldsMapping.specific(
-                    mapping={mx.FieldKey("faces"): {mx.FieldKey("frames")}}
-                ),
+        deps=[VideoChunk],
+        fields=[
+            mx.FieldSpec(
+                key="faces", deps=[mx.FieldDep(feature=VideoChunk, fields=["frames"])]
             )
         ],
-        fields=["faces"],
     ),
 ):
     video_chunk_id: str

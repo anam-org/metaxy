@@ -148,8 +148,6 @@ Metaxy uses window functions to compute aggregated provenance without reducing r
 3. When any audio for a speaker changes, the aggregated provenance changes
 4. This triggers recomputation of only the affected speaker's embedding
 
-The user's pipeline code performs the actual aggregation (grouping by `speaker_id`). Metaxy only tracks the provenance and determines what needs recomputation.
-
 ## Conclusion
 
 Metaxy provides a convenient API for modeling aggregation relationships: [LineageRelationship.aggregation][metaxy.models.lineage.LineageRelationship.aggregation]. Other Metaxy features continue to seamlessly work with aggregation relationships.

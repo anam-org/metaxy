@@ -62,10 +62,10 @@ We do not specify custom versions on its fields. Metaxy will automatically assig
 
 ### Defining features: `FaceRecognition`
 
-`FaceRecognition` processes video chunks and **only depends on the `frames` field**. This can be expressed with a [`SpecificFieldsMapping`][metaxy.models.fields_mapping.FieldsMapping.specific].
+`FaceRecognition` processes video chunks and **only depends on the `frames` field**. This can be expressed with a [`FieldDep`][metaxy.FieldDep].
 
 <!-- dprint-ignore-start -->
-```python title="src/example_one_to_many/features.py" hl_lines="9-11"
+```python title="src/example_one_to_many/features.py" hl_lines="9"
 --8<-- "example-one-to-many/src/example_one_to_many/features.py:face_recognition"
 ```
 <!-- dprint-ignore-end -->

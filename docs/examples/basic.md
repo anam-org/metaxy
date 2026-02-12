@@ -108,16 +108,11 @@ step: "recompute_after_change"
 
 ## How It Works
 
-Metaxy tracks provenance at the field level using content hashes:
+Metaxy tracks provenance at the field level using:
 
-1. **Feature Version**: A hash of the feature specification (including `code_version` of all fields)
-2. **Field Provenance**: A hash combining the field's `code_version` and upstream provenance
+1. **Field Version**: A hash combining the field's `code_version` and provenances of upstream fields
+2. **Feature Version**: A hash combining the field versions of all fields in the feature
 3. **Dependency Resolution**: When resolving updates, Metaxy computes what the provenance _would be_ and compares it to what's stored
-
-The `resolve_update()` method returns:
-
-- `added`: New samples that don't exist in the store
-- `changed`: Existing samples whose computed provenance differs from stored provenance
 
 This enables precise, incremental recomputation without re-processing unchanged data.
 
@@ -125,11 +120,11 @@ This enables precise, incremental recomputation without re-processing unchanged 
 
 Metaxy provides automatic change detection and incremental recomputation through:
 
-- Feature dependency tracking via `FeatureDep`
-- Algorithm versioning via `code_version`
-- Provenance-based change detection via `resolve_update()`
+- Feature dependency tracking via [`FeatureDep`][metaxy.FeatureDep]
+- Algorithm versioning via [`FieldSpec.code_version`][metaxy.FieldSpec]
+- Provenance-based change detection via [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update]
 
-This ensures your pipelines are efficient data stays up to date.
+This mechanism ensures your pipelines are both efficient and keep relevant data up to date.
 
 ## Related Materials
 

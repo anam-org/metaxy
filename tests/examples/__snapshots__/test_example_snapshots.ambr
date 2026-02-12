@@ -1045,14 +1045,10 @@
                   'feature': 'video/chunk',
                   'fields_mapping': dict({
                     'mapping': dict({
-                      'mapping': dict({
-                        'faces': list([
-                          list([
-                            'frames',
-                          ]),
-                        ]),
-                      }),
-                      'type': 'specific',
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
                     }),
                   }),
                   'lineage': dict({
@@ -1070,6 +1066,12 @@
                 dict({
                   'code_version': '__metaxy_initial__',
                   'deps': list([
+                    dict({
+                      'feature': 'video/chunk',
+                      'fields': list([
+                        'frames',
+                      ]),
+                    }),
                   ]),
                   'key': 'faces',
                 }),
@@ -1119,7 +1121,7 @@
             'metaxy_feature_version': 'd842b740',
           }),
         }),
-        'project_version': 'be196d48',
+        'project_version': '5e404a6c',
         'scenario_name': 'Initial pipeline run',
         'step_name': None,
         'type': 'graph_pushed',
@@ -1204,14 +1206,10 @@
                   'feature': 'video/chunk',
                   'fields_mapping': dict({
                     'mapping': dict({
-                      'mapping': dict({
-                        'faces': list([
-                          list([
-                            'frames',
-                          ]),
-                        ]),
-                      }),
-                      'type': 'specific',
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
                     }),
                   }),
                   'lineage': dict({
@@ -1229,6 +1227,12 @@
                 dict({
                   'code_version': '__metaxy_initial__',
                   'deps': list([
+                    dict({
+                      'feature': 'video/chunk',
+                      'fields': list([
+                        'frames',
+                      ]),
+                    }),
                   ]),
                   'key': 'faces',
                 }),
@@ -1278,7 +1282,7 @@
             'metaxy_feature_version': '6e5a4ab8',
           }),
         }),
-        'project_version': '2a435549',
+        'project_version': '96a2ebd8',
         'scenario_name': 'Code change - audio field only',
         'step_name': 'update_audio_version',
         'type': 'graph_pushed',
@@ -1349,14 +1353,10 @@
                   'feature': 'video/chunk',
                   'fields_mapping': dict({
                     'mapping': dict({
-                      'mapping': dict({
-                        'faces': list([
-                          list([
-                            'frames',
-                          ]),
-                        ]),
-                      }),
-                      'type': 'specific',
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
                     }),
                   }),
                   'lineage': dict({
@@ -1374,6 +1374,12 @@
                 dict({
                   'code_version': '__metaxy_initial__',
                   'deps': list([
+                    dict({
+                      'feature': 'video/chunk',
+                      'fields': list([
+                        'frames',
+                      ]),
+                    }),
                   ]),
                   'key': 'faces',
                 }),
@@ -1423,7 +1429,7 @@
             'metaxy_feature_version': '6e5a4ab8',
           }),
         }),
-        'after_snapshot': '2a435549',
+        'after_snapshot': '96a2ebd8',
         'before_graph': dict({
           'video/chunk': dict({
             'feature_spec': dict({
@@ -1489,14 +1495,10 @@
                   'feature': 'video/chunk',
                   'fields_mapping': dict({
                     'mapping': dict({
-                      'mapping': dict({
-                        'faces': list([
-                          list([
-                            'frames',
-                          ]),
-                        ]),
-                      }),
-                      'type': 'specific',
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
                     }),
                   }),
                   'lineage': dict({
@@ -1514,6 +1516,12 @@
                 dict({
                   'code_version': '__metaxy_initial__',
                   'deps': list([
+                    dict({
+                      'feature': 'video/chunk',
+                      'fields': list([
+                        'frames',
+                      ]),
+                    }),
                   ]),
                   'key': 'faces',
                 }),
@@ -1563,7 +1571,7 @@
             'metaxy_feature_version': 'd842b740',
           }),
         }),
-        'before_snapshot': 'be196d48',
+        'before_snapshot': '5e404a6c',
         'patch_path': 'patches/01_update_video_code_version.patch',
         'scenario_name': 'Code change - audio field only',
         'step_name': 'update_audio_version',
