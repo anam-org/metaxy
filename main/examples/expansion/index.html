@@ -3513,7 +3513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/concepts/system-columns/" class="md-nav__link">
+      <a href="../../reference/system-columns/" class="md-nav__link">
         
   
   
@@ -3781,13 +3781,15 @@ In such relationships a single parent sample can map into multiple child samples
 <pre class="mermaid"><code>---
 title: Feature Graph
 ---
-flowchart TB
+flowchart LR
+    %% Snapshot version: none
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-        video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;• audio&lt;br/&gt;• frames&lt;/div&gt;"]
-        video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;• audio&lt;br/&gt;• frames&lt;/div&gt;"]
-        video_faces["&lt;div style="text-align:left"&gt;&lt;b&gt;video/faces&lt;/b&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;• faces&lt;/div&gt;"]
-        video_raw --&gt; video_chunk
-        video_chunk --&gt; video_faces</code></pre>
+    video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;d842b740&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- audio (7132721c)&lt;br/&gt;- frames (3f6f401c)&lt;/div&gt;"]
+    video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;7dc3712a&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- audio (1549b1fa)&lt;br/&gt;- frames (df8943d3)&lt;/div&gt;"]
+    video_faces["&lt;div style="text-align:left"&gt;&lt;b&gt;video/faces&lt;/b&gt;&lt;br/&gt;52f055e3&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (0561bd8c)&lt;/div&gt;"]
+    video_raw --&gt; video_chunk
+    video_chunk --&gt; video_faces
+</code></pre>
 <h3 id="defining-features-video">Defining features: <code>Video</code><a class="headerlink" href="#defining-features-video" title="Permanent link">&para;</a></h3>
 <p>Each video-like feature in our pipeline is going to have two fields: <code>audio</code> and <code>frames</code>.</p>
 <p>Let's set the code version of <code>audio</code> to <code>"1"</code> in order to change it in the future.
@@ -4033,8 +4035,8 @@ title: Feature Graph Changes
 flowchart TB
     %% Snapshot version: none
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-    video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d842b740&lt;/font&gt; → &lt;font color="#00FF00"&gt;6e5a4ab8&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;7132721c&lt;/font&gt; → &lt;font color="#00FF00"&gt;f8e35296&lt;/font&gt;)&lt;br/&gt;- frames (3f6f401c)&lt;/div&gt;"]
-    video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;7dc3712a&lt;/font&gt; → &lt;font color="#00FF00"&gt;504507a9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;1549b1fa&lt;/font&gt; → &lt;font color="#00FF00"&gt;7948d163&lt;/font&gt;)&lt;br/&gt;- frames (df8943d3)&lt;/div&gt;"]
+    video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d842b740&lt;/font&gt; → &lt;font color="#00FF00"&gt;6e5a4ab8&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (3f6f401c)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;7132721c&lt;/font&gt; → &lt;font color="#00FF00"&gt;f8e35296&lt;/font&gt;)&lt;/div&gt;"]
+    video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;7dc3712a&lt;/font&gt; → &lt;font color="#00FF00"&gt;504507a9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (df8943d3)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;1549b1fa&lt;/font&gt; → &lt;font color="#00FF00"&gt;7948d163&lt;/font&gt;)&lt;/div&gt;"]
     video_faces["&lt;div style="text-align:left"&gt;&lt;b&gt;video/faces&lt;/b&gt;&lt;br/&gt;52f055e3&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (0561bd8c)&lt;/div&gt;"]
     video_raw --&gt; video_chunk
     video_chunk --&gt; video_faces

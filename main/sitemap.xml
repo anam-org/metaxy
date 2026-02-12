@@ -61,10 +61,6 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/guide/concepts/system-columns/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/definitions/external-features/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
@@ -194,6 +190,10 @@
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/configuration/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/reference/system-columns/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
