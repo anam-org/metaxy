@@ -89,7 +89,7 @@ metaxy = "metaxy.cli.app:main"
 mx = "metaxy.cli.app:main"
 
 [project.urls]
-Documentation = "https://metaxy.dev"
+Documentation = "https://docs.metaxy.io"
 Repository = "https://github.com/anam-org/metaxy"
 Issues = "https://github.com/anam-org/metaxy/issues"
 
