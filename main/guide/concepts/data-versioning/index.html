@@ -3813,7 +3813,7 @@
 <p>The value can be arbitrary, but in the future we might implement something around semantic versioning.</p>
 </div>
 <ul>
-<li><strong>Field Version</strong> is computed from the code version of this field, the <abbr title="A unique identifier for a field within a feature definition, consisting of the feature name and the field name. Example: `/raw/video:frames`.">fully qualified field path</abbr> and from the <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> of its <a href="../definitions/features/#field-level-dependencies">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</li>
+<li><strong>Field Version</strong> is computed from the code version of this field, the <abbr title="A unique identifier for a field within a feature definition, consisting of the feature name and the field name. Example: `/raw/video:frames`.">fully qualified field path</abbr> and from the <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> of its <a href="../definitions/features/#field-level-lineage">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</li>
 </ul>
 <h4 id="feature-level">Feature Level<a class="headerlink" href="#feature-level" title="Permanent link">&para;</a></h4>
 <ul>
@@ -3831,7 +3831,7 @@
 <h3 id="samples">Samples<a class="headerlink" href="#samples" title="Permanent link">&para;</a></h3>
 <p>These versions are sample-level and require access to the metadata store in order to compute them.</p>
 <ul>
-<li><strong>Provenance By Field</strong> is computed from the upstream <strong>Provenance By Field</strong> (with respect to defined <a href="../definitions/features/#field-level-dependencies"><abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-dependencies">field-level dependencies</abbr></a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</li>
+<li><strong>Provenance By Field</strong> is computed from the upstream <strong>Provenance By Field</strong> (with respect to defined <a href="../definitions/features/#field-level-lineage"><abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-lineage">field-level lineage</abbr></a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</li>
 </ul>
 <table>
 <thead>
@@ -3872,7 +3872,7 @@
 <p class="admonition-title">This example makes use of Metaxy's <abbr title="Simplified syntax for common Metaxy constructs. | /guide/concepts/syntactic-sugar">syntactic sugar</abbr>.</p>
 </div>
 <p>Consider a video processing pipeline with these features:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+<p class="annotated"><div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Video</span><span class="p">(</span>
@@ -3943,8 +3943,7 @@
 </span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a>    <span class="p">),</span>
 </span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a><span class="p">):</span>
 </span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>    <span class="n">video_id</span><span class="p">:</span> <span class="nb">str</span>
-</span></code></pre></div>
-<p>{ .annotated }</p>
+</span></code></pre></div></p>
 <ol>
 <li>
 <p>This <code>audio</code> field <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.fields_mapping.FieldsMapping.default&lt;/span&gt;
@@ -3981,7 +3980,7 @@ flowchart LR
 <h3 id="tracking-definitions-changes">Tracking Definitions Changes<a class="headerlink" href="#tracking-definitions-changes" title="Permanent link">&para;</a></h3>
 <p class="annotate">Imagine the <code>audio</code> field of the <code>Video</code> feature changes (1):</p>
 <ol>
-<li>Perhaps, something like denoising has been applied externally</li>
+<li>зerhaps, something like denoising has been applied</li>
 </ol>
 <details class="example" open="open">
 <summary><code>patches/01_update_audio_version.patch</code></summary>
@@ -3998,15 +3997,15 @@ flowchart LR
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="w"> </span>                key=&quot;frames&quot;,
 </span></code></pre></div>
 </details>
-<p>Run <code>metaxy graph diff</code> to see what changed:</p>
+<p>Here is how the change affects feature and <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> through the feature graph:</p>
 <pre class="mermaid"><code>---
 title: Feature Graph Changes
 ---
 flowchart LR
     %% Snapshot version: none
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-    example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;c2ac395f&lt;/font&gt; → &lt;font color="#00FF00"&gt;2faffb98&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (794116a9)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;22742381&lt;/font&gt; → &lt;font color="#00FF00"&gt;09c8398b&lt;/font&gt;)&lt;/div&gt;"]
-    example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;34d75856&lt;/font&gt; → &lt;font color="#00FF00"&gt;fe237dc9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (2419e09d)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;4c726c4b&lt;/font&gt; → &lt;font color="#00FF00"&gt;e2b6ce39&lt;/font&gt;)&lt;/div&gt;"]
+    example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;c2ac395f&lt;/font&gt; → &lt;font color="#00FF00"&gt;2faffb98&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;22742381&lt;/font&gt; → &lt;font color="#00FF00"&gt;09c8398b&lt;/font&gt;)&lt;br/&gt;- frames (794116a9)&lt;/div&gt;"]
+    example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;34d75856&lt;/font&gt; → &lt;font color="#00FF00"&gt;fe237dc9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;4c726c4b&lt;/font&gt; → &lt;font color="#00FF00"&gt;e2b6ce39&lt;/font&gt;)&lt;br/&gt;- frames (2419e09d)&lt;/div&gt;"]
     example_face_detection["&lt;div style="text-align:left"&gt;&lt;b&gt;example/face_detection&lt;/b&gt;&lt;br/&gt;f1526ee0&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (006efeef)&lt;/div&gt;"]
     example_stt["&lt;div style="text-align:left"&gt;&lt;b&gt;example/stt&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d953dea4&lt;/font&gt; → &lt;font color="#00FF00"&gt;e57e7555&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;transcription&lt;/font&gt; (&lt;font color="#FF0000"&gt;3ec3826d&lt;/font&gt; → &lt;font color="#00FF00"&gt;9f7ea40c&lt;/font&gt;)&lt;/div&gt;"]
     example_video --&gt; example_crop

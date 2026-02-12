@@ -3837,7 +3837,20 @@ flowchart LR
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
-<p>We do not specify custom versions on its fields. Metaxy will automatically assign <abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-dependencies">field-level dependencies</abbr> by <a href="../../reference/api/definitions/fields-mapping/">matching on field names</a>: <code>VideoChunk.frames</code> depends on <code>Video.frames</code> and <code>VideoChunk.audio</code> depends on <code>Video.audio</code>.</p>
+<p>We do not specify custom versions on its fields. Metaxy will automatically assign <abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-lineage">field-level lineage</abbr> by <a href="../../reference/api/definitions/fields-mapping/">matching on field names</a>: <code>VideoChunk.frames</code> depends on <code>Video.frames</code> and <code>VideoChunk.audio</code> depends on <code>Video.audio</code>.</p>
+<pre class="mermaid"><code>flowchart LR
+    subgraph video_raw["video/raw"]
+        video_raw_audio["audio"]
+        video_raw_frames["frames"]
+    end
+    subgraph video_chunk["video/chunk"]
+        video_chunk_audio["audio"]
+        video_chunk_frames["frames"]
+    end
+    video_raw_audio --&gt; video_chunk_audio
+    video_raw_frames --&gt; video_chunk_frames
+    style video_raw stroke:#4C78A8,stroke-width:2px
+    style video_chunk stroke:#4C78A8,stroke-width:2px</code></pre>
 <h3 id="defining-features-facerecognition">Defining features: <code>FaceRecognition</code><a class="headerlink" href="#defining-features-facerecognition" title="Permanent link">&para;</a></h3>
 <p><code>FaceRecognition</code> processes video chunks and <strong>only depends on the <code>frames</code> field</strong>. This can be expressed with a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FieldDep&lt;/span&gt;
 
@@ -3864,7 +3877,18 @@ flowchart LR
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
-<p>This completes the feature definitions. Let's proceed to running the pipeline.</p>
+<p><pre class="mermaid"><code>flowchart LR
+    subgraph video_chunk["video/chunk"]
+        video_chunk_audio["audio"]
+        video_chunk_frames["frames"]
+    end
+    subgraph video_faces["video/faces"]
+        video_faces_faces["faces"]
+    end
+    video_chunk_frames --&gt; video_faces_faces
+    style video_chunk stroke:#4C78A8,stroke-width:2px
+    style video_faces stroke:#4C78A8,stroke-width:2px</code></pre>
+This completes the feature definitions. Let's proceed to running the pipeline.</p>
 <h2 id="walkthrough">Walkthrough<a class="headerlink" href="#walkthrough" title="Permanent link">&para;</a></h2>
 <p>Here is a toy pipeline for computing the feature graph described above:</p>
 <details class="example" open="open">
@@ -4035,8 +4059,8 @@ title: Feature Graph Changes
 flowchart TB
     %% Snapshot version: none
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-    video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d842b740&lt;/font&gt; → &lt;font color="#00FF00"&gt;6e5a4ab8&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (3f6f401c)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;7132721c&lt;/font&gt; → &lt;font color="#00FF00"&gt;f8e35296&lt;/font&gt;)&lt;/div&gt;"]
-    video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;7dc3712a&lt;/font&gt; → &lt;font color="#00FF00"&gt;504507a9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (df8943d3)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;1549b1fa&lt;/font&gt; → &lt;font color="#00FF00"&gt;7948d163&lt;/font&gt;)&lt;/div&gt;"]
+    video_raw["&lt;div style="text-align:left"&gt;&lt;b&gt;video/raw&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d842b740&lt;/font&gt; → &lt;font color="#00FF00"&gt;6e5a4ab8&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;7132721c&lt;/font&gt; → &lt;font color="#00FF00"&gt;f8e35296&lt;/font&gt;)&lt;br/&gt;- frames (3f6f401c)&lt;/div&gt;"]
+    video_chunk["&lt;div style="text-align:left"&gt;&lt;b&gt;video/chunk&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;7dc3712a&lt;/font&gt; → &lt;font color="#00FF00"&gt;504507a9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;1549b1fa&lt;/font&gt; → &lt;font color="#00FF00"&gt;7948d163&lt;/font&gt;)&lt;br/&gt;- frames (df8943d3)&lt;/div&gt;"]
     video_faces["&lt;div style="text-align:left"&gt;&lt;b&gt;video/faces&lt;/b&gt;&lt;br/&gt;52f055e3&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (0561bd8c)&lt;/div&gt;"]
     video_raw --&gt; video_chunk
     video_chunk --&gt; video_faces
