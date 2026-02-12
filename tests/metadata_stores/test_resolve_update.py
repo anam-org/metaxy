@@ -2513,14 +2513,14 @@ def test_aggregation_lineage_preserves_user_columns(
     default_store: MetadataStore,
     graph: FeatureGraph,
 ):
-    """Test that aggregation lineage preserves user-specified columns in FeatureDep.columns.
+    """Test that aggregation lineage preserves user-specified columns in FeatureDep.select.
 
-    Regression test for a bug where columns specified in FeatureDep.columns were dropped
+    Regression test for a bug where columns specified in FeatureDep.select were dropped
     during aggregation because aggregate_strings only kept group_by and aggregated columns.
 
     Scenario:
     - DirectorNotesTexts has columns like 'dataset', 'director_notes_type', 'path', 'size'
-    - DirectorNotesAggregatedByChunk aggregates by chunk_id with columns=("...", "dataset")
+    - DirectorNotesAggregatedByChunk aggregates by chunk_id with select=("...", "dataset")
     - After aggregation, 'dataset' column should still be present in the result
 
     Bug symptoms:
@@ -2554,14 +2554,14 @@ def test_aggregation_lineage_preserves_user_columns(
                 FeatureDep(
                     feature=DirectorNotesTexts,
                     # User explicitly requests dataset and director_notes_type columns
-                    columns=(
+                    rename={"path": "text_path", "size": "text_size"},
+                    select=(
                         "dataset",
                         "director_notes_type",
-                        "path",
-                        "size",
+                        "text_path",
+                        "text_size",
                         "chunk_id",
                     ),
-                    rename={"path": "text_path", "size": "text_size"},
                     lineage=LineageRelationship.aggregation(on=["chunk_id"]),
                 ),
             ],
@@ -2635,7 +2635,7 @@ def test_aggregation_lineage_preserves_columns_with_global_filter(
     """Test that global_filters work with aggregation lineage when filtering on user columns.
 
     This reproduces the exact bug scenario:
-    - User has aggregation lineage feature with columns=(..., "dataset")
+    - User has aggregation lineage feature with select=(..., "dataset")
     - User calls resolve_update with global_filters=[nw.col("dataset") == "some_value"]
     - Filter should work AND 'dataset' column should be in the result
 
@@ -2669,7 +2669,7 @@ def test_aggregation_lineage_preserves_columns_with_global_filter(
                 FeatureDep(
                     feature=UpstreamWithDataset,
                     # Explicitly request 'dataset' column
-                    columns=("dataset", "group_id"),
+                    select=("dataset", "group_id"),
                     lineage=LineageRelationship.aggregation(on=["group_id"]),
                 ),
             ],

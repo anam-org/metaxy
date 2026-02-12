@@ -151,17 +151,17 @@ def test_feature_dep_from_feature_class():
     # Test 1: Create FeatureDep directly from Feature class
     dep = FeatureDep(feature=ParentFeature)
     assert dep.feature == ParentFeature.spec().key
-    assert dep.columns is None
+    assert dep.select is None
     assert dep.rename is None
 
     # Test 2: Create FeatureDep from Feature class with options
     dep_with_columns = FeatureDep(
         feature=ParentFeature,
-        columns=("value",),
         rename={"value": "parent_value"},
+        select=("parent_value",),
     )
     assert dep_with_columns.feature == ParentFeature.spec().key
-    assert dep_with_columns.columns == ("value",)
+    assert dep_with_columns.select == ("parent_value",)
     assert dep_with_columns.rename == {"value": "parent_value"}
 
     # Test 3: Verify FeatureDep works in FeatureSpec.deps

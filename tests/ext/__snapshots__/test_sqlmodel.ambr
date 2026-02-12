@@ -48,7 +48,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '96611262',
         'metaxy_materialization_id': None,
-        'metaxy_project_version': '230cb8a0',
+        'metaxy_project_version': '6f4998ee',
         'metaxy_provenance': '80024271',
         'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t1',
@@ -66,7 +66,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '96611262',
         'metaxy_materialization_id': None,
-        'metaxy_project_version': '230cb8a0',
+        'metaxy_project_version': '6f4998ee',
         'metaxy_provenance': '17182269',
         'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t2',
@@ -84,7 +84,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '96611262',
         'metaxy_materialization_id': None,
-        'metaxy_project_version': '230cb8a0',
+        'metaxy_project_version': '6f4998ee',
         'metaxy_provenance': '44068716',
         'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t3',
@@ -102,7 +102,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '96611262',
         'metaxy_materialization_id': None,
-        'metaxy_project_version': '230cb8a0',
+        'metaxy_project_version': '6f4998ee',
         'metaxy_provenance': '71931327',
         'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t4',
@@ -125,7 +125,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '5533def7',
         'metaxy_materialization_id': None,
-        'metaxy_project_version': '230cb8a0',
+        'metaxy_project_version': '6f4998ee',
         'metaxy_provenance': '42449508',
         'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a1',
@@ -146,7 +146,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '5533def7',
         'metaxy_materialization_id': None,
-        'metaxy_project_version': '230cb8a0',
+        'metaxy_project_version': '6f4998ee',
         'metaxy_provenance': '73436573',
         'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a2',
@@ -167,7 +167,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '5533def7',
         'metaxy_materialization_id': None,
-        'metaxy_project_version': '230cb8a0',
+        'metaxy_project_version': '6f4998ee',
         'metaxy_provenance': '19169793',
         'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a3',
@@ -188,7 +188,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '5533def7',
         'metaxy_materialization_id': None,
-        'metaxy_project_version': '230cb8a0',
+        'metaxy_project_version': '6f4998ee',
         'metaxy_provenance': '26487761',
         'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a4',
@@ -209,7 +209,7 @@
         'metaxy_deleted_at': None,
         'metaxy_feature_version': '5533def7',
         'metaxy_materialization_id': None,
-        'metaxy_project_version': '230cb8a0',
+        'metaxy_project_version': '6f4998ee',
         'metaxy_provenance': '18670540',
         'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a5',
@@ -360,8 +360,8 @@
 # name: test_sqlmodel_rename_validation_with_store
   dict({
     'dep_columns': tuple(
-      'status',
-      'priority',
+      'source_status',
+      'source_priority',
     ),
     'dep_key': 'source/feature',
     'dep_rename': dict({

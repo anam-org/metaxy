@@ -24,7 +24,7 @@ def test_read_with_filter_on_own_column(store: MetadataStore):
 
     This reproduces the bug where:
     1. ChildFeature has its own 'height' column (not inherited from parent)
-    2. ChildFeature depends on ParentFeature with columns=("dataset", "path", "size")
+    2. ChildFeature depends on ParentFeature with select=("dataset", "path", "size")
     3. User calls read on ChildFeature with a filter on 'height'
     4. The filter fails because column inference goes wrong
 
@@ -56,7 +56,7 @@ def test_read_with_filter_on_own_column(store: MetadataStore):
                 id_columns=["chunk_id"],
                 deps=[
                     # Only select specific columns from parent - NOT including parent_height
-                    FeatureDep(feature=ParentFeature, columns=("dataset", "path", "size")),
+                    FeatureDep(feature=ParentFeature, select=("dataset", "path", "size")),
                 ],
             ),
         ):
@@ -140,7 +140,7 @@ def test_read_with_filter_after_dedup(store: MetadataStore):
                 key=child_key,
                 id_columns=["chunk_id"],
                 deps=[
-                    FeatureDep(feature=ParentFeature, columns=("dataset", "path", "size")),
+                    FeatureDep(feature=ParentFeature, select=("dataset", "path", "size")),
                 ],
             ),
         ):
@@ -275,7 +275,7 @@ def test_read_with_deps_columns_and_filter_on_own_column(store: MetadataStore):
     """Test the EXACT scenario: feature with deps, columns param, filter on own column.
 
     This combines all the conditions from the bug report:
-    1. Feature has dependencies with restricted columns (FeatureDep with columns=(...))
+    1. Feature has dependencies with restricted columns (FeatureDep with select=(...))
     2. User calls read with columns=["chunk_id"] (ID columns only)
     3. User passes filter on "height" which is the feature's OWN column (not from parent)
     4. Filter column is NOT in the requested columns list
@@ -284,7 +284,7 @@ def test_read_with_deps_columns_and_filter_on_own_column(store: MetadataStore):
         mx metadata status --feature chunk/crop --filter "height IS NULL"
 
     Where chunk/crop:
-    - Has FeatureDep(feature=SceneChunk, columns=("dataset", "path", "size"))
+    - Has FeatureDep(feature=SceneChunk, select=("dataset", "path", "size"))
     - Has its own "height" column from _Video base class
     - Status command passes columns=["chunk_id"] but filters on "height"
     """
@@ -313,7 +313,7 @@ def test_read_with_deps_columns_and_filter_on_own_column(store: MetadataStore):
                 id_columns=["chunk_id"],
                 deps=[
                     # Restricted columns - height is NOT included
-                    FeatureDep(feature=ParentFeature, columns=("dataset", "path", "size")),
+                    FeatureDep(feature=ParentFeature, select=("dataset", "path", "size")),
                 ],
             ),
         ):
@@ -413,7 +413,7 @@ def test_resolve_update_with_target_filter_on_child_only_column(store: MetadataS
                 key=child_key,
                 id_columns=["chunk_id"],
                 deps=[
-                    FeatureDep(feature=ParentFeature, columns=("dataset", "path", "size")),
+                    FeatureDep(feature=ParentFeature, select=("dataset", "path", "size")),
                 ],
             ),
         ):
@@ -504,7 +504,7 @@ def test_resolve_update_with_global_filter_on_child_only_column_fails(store: Met
                 key=child_key,
                 id_columns=["chunk_id"],
                 deps=[
-                    FeatureDep(feature=ParentFeature, columns=("dataset", "path", "size")),
+                    FeatureDep(feature=ParentFeature, select=("dataset", "path", "size")),
                 ],
             ),
         ):

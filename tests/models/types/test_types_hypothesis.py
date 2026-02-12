@@ -462,7 +462,7 @@ class TestFeatureDepProperties:
 
     @given(
         key_data=coercible_to_feature_key(),
-        columns=st.one_of(
+        select=st.one_of(
             st.none(),
             st.just(()),  # Empty tuple means only system columns
             st.lists(
@@ -477,12 +477,12 @@ class TestFeatureDepProperties:
         ),
     )
     @settings(max_examples=50)
-    def test_feature_dep_with_columns(self, key_data: Any, columns: tuple[str, ...] | None):
+    def test_feature_dep_with_select(self, key_data: Any, select: tuple[str, ...] | None):
         """Test FeatureDep with column selection."""
-        dep = FeatureDep(feature=key_data, columns=columns)
+        dep = FeatureDep(feature=key_data, select=select)
 
         assert isinstance(dep.feature, FeatureKey)
-        assert dep.columns == columns
+        assert dep.select == select
 
     @given(
         key_data=coercible_to_feature_key(),
@@ -508,20 +508,20 @@ class TestFeatureDepProperties:
     @settings(max_examples=50)
     def test_feature_dep_json_serialization(self, key_data: Any):
         """Test FeatureDep JSON serialization."""
-        dep = FeatureDep(feature=key_data, columns=("col1", "col2"), rename={"col1": "new_col1"})
+        dep = FeatureDep(feature=key_data, rename={"col1": "new_col1"}, select=("new_col1", "col2"))
 
         # Serialize to JSON
         json_data = dep.model_dump(mode="json")
 
         # Key should be serialized as a string for JSON dict key compatibility
         assert isinstance(json_data["feature"], str)
-        assert json_data["columns"] == ["col1", "col2"]  # Tuple becomes list in JSON
+        assert json_data["select"] == ["new_col1", "col2"]  # Tuple becomes list in JSON
         assert json_data["rename"] == {"col1": "new_col1"}
 
         # Should be able to reconstruct
         dep_restored = FeatureDep(**json_data)
         assert dep_restored.feature == dep.feature
-        assert dep_restored.columns == ("col1", "col2")
+        assert dep_restored.select == ("new_col1", "col2")
         assert dep_restored.rename == {"col1": "new_col1"}
 
 
@@ -610,14 +610,15 @@ class TestComplexIntegration:
 
         # Build dependencies and create spec (omit deps if empty)
         if dep_keys:
-            deps = [
-                FeatureDep(
-                    feature=dep_key,
-                    columns=("col1",) if i % 2 == 0 else None,
-                    rename={"col1": f"dep{i}_col1"} if i % 3 == 0 else None,
-                )
-                for i, dep_key in enumerate(dep_keys)
-            ]
+            deps = []
+            for i, dep_key in enumerate(dep_keys):
+                rename = {"col1": f"dep{i}_col1"} if i % 3 == 0 else None
+                if i % 2 == 0:
+                    # select uses post-rename names
+                    select = (f"dep{i}_col1",) if rename else ("col1",)
+                else:
+                    select = None
+                deps.append(FeatureDep(feature=dep_key, select=select, rename=rename))
             spec = SampleFeatureSpec(key=main_key, deps=deps, fields=fields)
         else:
             spec = SampleFeatureSpec(key=main_key, fields=fields)

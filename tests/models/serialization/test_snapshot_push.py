@@ -333,7 +333,7 @@ def test_record_snapshot_partial_metadata_changes(tmp_path: Path):
                         deps=[
                             FeatureDep(
                                 feature=FeatureKey(["feature_a"]),
-                                columns=("value",),  # Changed
+                                select=("value",),  # Changed
                             )
                         ],
                         fields=[FieldSpec(key=FieldKey(["output"]), code_version="1")],

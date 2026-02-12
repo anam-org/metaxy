@@ -9,7 +9,7 @@
   '''
   strict digraph {
       rankdir=TB;
-      label="Graph (snapshot: 7f3ce493)";
+      label="Graph (snapshot: 26a25556)";
       labelloc=t;
       fontsize=14;
       fontname=helvetica;

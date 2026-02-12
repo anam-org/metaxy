@@ -21,7 +21,7 @@ class RenamedDataFrame(Generic[FrameT]):
     The id_column_tracker provides a complete picture of ID columns at each stage:
     - original: From upstream feature spec
     - renamed: After FeatureDep.rename
-    - selected: After FeatureDep.columns selection
+    - selected: After FeatureDep.select selection
     - output: After lineage transformation (may differ for aggregation)
     """
 

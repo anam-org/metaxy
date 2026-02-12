@@ -1388,7 +1388,7 @@ def test_sqlmodel_with_column_selection() -> None:
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["wide", "upstream"]),
-                    columns=("col1", "col3"),  # Only select these columns
+                    select=("col1", "col3"),  # Only select these columns
                 )
             ],
             fields=[
@@ -1403,7 +1403,7 @@ def test_sqlmodel_with_column_selection() -> None:
     deps = SelectiveDownstreamFeature.spec().deps
     assert deps is not None
     dep = deps[0]
-    assert dep.columns == ("col1", "col3")
+    assert dep.select == ("col1", "col3")
 
 
 def test_sqlmodel_rename_prevents_conflicts() -> None:
@@ -1518,12 +1518,12 @@ def test_sqlmodel_select_and_rename_combination() -> None:
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["complex", "upstream"]),
-                    columns=("important1", "important2", "status"),  # Select only these
                     rename={
                         "important1": "upstream_imp1",
                         "important2": "upstream_imp2",
                         "status": "upstream_status",
-                    },  # Then rename them
+                    },
+                    select=("upstream_imp1", "upstream_imp2", "upstream_status"),
                 )
             ],
             fields=[
@@ -1539,7 +1539,7 @@ def test_sqlmodel_select_and_rename_combination() -> None:
     deps = OptimizedDownstreamFeature.spec().deps
     assert deps is not None
     dep = deps[0]
-    assert dep.columns == ("important1", "important2", "status")
+    assert dep.select == ("upstream_imp1", "upstream_imp2", "upstream_status")
     assert dep.rename is not None
     assert len(dep.rename) == 3
     assert dep.rename["status"] == "upstream_status"
@@ -1578,7 +1578,7 @@ def test_sqlmodel_empty_column_selection() -> None:
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["data", "upstream"]),
-                    columns=(),  # Empty tuple - only keep system columns
+                    select=(),  # Empty tuple - only keep system columns
                 )
             ],
             fields=[
@@ -1593,7 +1593,7 @@ def test_sqlmodel_empty_column_selection() -> None:
     deps = MinimalDownstreamFeature.spec().deps
     assert deps is not None
     dep = deps[0]
-    assert dep.columns == ()  # Empty tuple, not None
+    assert dep.select == ()  # Empty tuple, not None
 
 
 def test_sqlmodel_rename_validation_with_store(tmp_path: Path, snapshot: SnapshotAssertion) -> None:
@@ -1630,8 +1630,8 @@ def test_sqlmodel_rename_validation_with_store(tmp_path: Path, snapshot: Snapsho
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["source", "feature"]),
-                    columns=("status", "priority"),  # Select only these
                     rename={"status": "source_status", "priority": "source_priority"},
+                    select=("source_status", "source_priority"),
                 )
             ],
             fields=[
@@ -1691,12 +1691,12 @@ def test_sqlmodel_rename_validation_with_store(tmp_path: Path, snapshot: Snapsho
         assert len(deps) == 1
         dep = deps[0]
         assert dep.rename == {"status": "source_status", "priority": "source_priority"}
-        assert dep.columns == ("status", "priority")
+        assert dep.select == ("source_status", "source_priority")
 
         # Snapshot the configuration
         assert {
             "dep_key": dep.feature.to_string(),
-            "dep_columns": dep.columns,
+            "dep_columns": dep.select,
             "dep_rename": dep.rename,
         } == snapshot
 

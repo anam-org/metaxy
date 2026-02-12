@@ -252,8 +252,8 @@ def _collect_feature_data(graph: FeatureGraph, feature_key: FeatureKey) -> dict[
         dep_data: dict[str, Any] = {
             "feature": dep.feature.to_string(),
         }
-        if dep.columns is not None:
-            dep_data["columns"] = list(dep.columns)
+        if dep.select is not None:
+            dep_data["select"] = list(dep.select)
         if dep.rename:
             dep_data["rename"] = dep.rename
         if dep.optional:
@@ -358,12 +358,12 @@ def _output_single_feature(feature: dict[str, Any]) -> None:
             dep_line = f"  [cyan]{dep['feature']}[/cyan]"
 
             options = []
-            if dep.get("columns") is not None:
-                columns = dep["columns"]
+            if dep.get("select") is not None:
+                columns = dep["select"]
                 if columns:
-                    options.append(f"columns: {', '.join(columns)}")
+                    options.append(f"select: {', '.join(columns)}")
                 else:
-                    options.append("columns: none")
+                    options.append("select: none")
 
             if dep.get("optional"):
                 options.append("[yellow]optional[/yellow]")

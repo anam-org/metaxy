@@ -17,7 +17,7 @@
 # ---
 # name: test_feature_with_deps_same_definition_version
   dict({
-    'downstream_definition_version': '333ccc84',
+    'downstream_definition_version': '01a2570f',
     'downstream_feature_version': 'df87030d',
     'upstream_definition_version': '6efa14f2',
     'upstream_feature_version': '492c1fb9',

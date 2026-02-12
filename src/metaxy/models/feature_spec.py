@@ -38,12 +38,11 @@ class FeatureDep(pydantic.BaseModel):
     Attributes:
         feature: The feature key to depend on. Accepts string ("a/b/c"), list (["a", "b", "c"]),
             FeatureKey instance, or BaseFeature class.
-        columns: Optional tuple of column names to select from upstream feature.
-            - None (default): Keep all columns from upstream
-            - Empty tuple (): Keep only system columns (sample_uid, provenance_by_field, etc.)
-            - Tuple of names: Keep only specified columns (plus system columns)
+        select: Optional sequence of column names to select from the upstream feature.
+            By default, all columns are selected. System columns are always selected.
+            Uses post-rename names when `rename` is also specified.
         rename: Optional mapping of old column names to new names.
-            Applied after column selection.
+            Applied before column selection.
         fields_mapping: Optional field mapping configuration for automatic field dependency resolution.
             When provided, fields without explicit deps will automatically map to matching upstream fields.
             Defaults to using `[FieldsMapping.default()][metaxy.models.fields_mapping.DefaultFieldsMapping]`.
@@ -66,10 +65,17 @@ class FeatureDep(pydantic.BaseModel):
         mx.FeatureDep(feature="upstream")
 
         # Keep only specific columns
-        mx.FeatureDep(feature="upstream/feature", columns=("col1", "col2"))
+        mx.FeatureDep(feature="upstream/feature", select=("col1", "col2"))
 
         # Rename columns to avoid conflicts
         mx.FeatureDep(feature="upstream/feature", rename={"old_name": "new_name"})
+
+        # Combined rename + select: select uses post-rename names
+        mx.FeatureDep(
+            feature="upstream/feature",
+            rename={"old_name": "new_name"},
+            select=("new_name", "other_col"),
+        )
 
         # SQL filters
         mx.FeatureDep(feature="upstream", filters=["age >= 25", "status = 'active'"])
@@ -100,7 +106,7 @@ class FeatureDep(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
 
     feature: ValidatedFeatureKey
-    columns: tuple[str, ...] | None = None  # None = all columns, () = only system columns
+    select: tuple[str, ...] | None = None  # None = all columns, () = only system columns
     rename: dict[str, str] | None = None  # Column renaming mapping
     fields_mapping: FieldsMapping = pydantic.Field(default_factory=FieldsMapping.default)
     sql_filters: tuple[str, ...] | None = pydantic.Field(
@@ -120,13 +126,25 @@ class FeatureDep(pydantic.BaseModel):
         "they are going to be represented as NULL values in the joined upstream metadata.",
     )
 
+    @pydantic.model_validator(mode="after")
+    def validate_select_uses_post_rename_names(self) -> Self:
+        if self.select and self.rename:
+            renamed_away = set(self.rename.keys()) - set(self.rename.values())
+            bad = renamed_away & set(self.select)
+            if bad:
+                raise ValueError(
+                    f"select contains pre-rename column name(s) {sorted(bad)}. "
+                    f"Use post-rename names in select (rename is applied first)."
+                )
+        return self
+
     if TYPE_CHECKING:
 
         def __init__(
             self,
             *,
             feature: str | Sequence[str] | FeatureKey | type[BaseFeature],
-            columns: tuple[str, ...] | None = None,
+            select: tuple[str, ...] | None = None,
             rename: dict[str, str] | None = None,
             fields_mapping: FieldsMapping | None = None,
             filters: Sequence[str] | None = None,

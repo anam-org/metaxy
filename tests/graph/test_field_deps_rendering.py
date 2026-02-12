@@ -40,7 +40,7 @@ def _make_snapshot() -> dict:
                 "deps": [
                     {
                         "feature": "video/raw",
-                        "columns": None,
+                        "select": None,
                         "rename": None,
                         "fields_mapping": {
                             "mapping": {
@@ -71,7 +71,7 @@ def _make_snapshot() -> dict:
                 "deps": [
                     {
                         "feature": "video/chunk",
-                        "columns": None,
+                        "select": None,
                         "rename": None,
                         "fields_mapping": {
                             "mapping": {

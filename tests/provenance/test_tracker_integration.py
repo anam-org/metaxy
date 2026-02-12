@@ -146,7 +146,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["upstream"]),
-                    columns=("field_a", "field_c"),  # Only select specific columns
+                    select=("field_a", "field_c"),  # Only select specific columns
                 )
             ],
             fields=[

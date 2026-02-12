@@ -1886,23 +1886,23 @@ def test_mixed_lineage_different_relationship_types(graph: FeatureGraph) -> None
 
 
 # ============================================================================
-# Tests for aggregation column auto-inclusion when columns= is specified
+# Tests for aggregation column auto-inclusion when select= is specified
 # ============================================================================
 
 
 def test_aggregation_columns_auto_included_when_columns_specified(
     graph: FeatureGraph,
 ) -> None:
-    """Test that aggregation 'on' columns are automatically included when columns= is specified.
+    """Test that aggregation 'on' columns are automatically included when select= is specified.
 
-    This reproduces a bug where specifying columns= on a FeatureDep with aggregation lineage
+    This reproduces a bug where specifying select= on a FeatureDep with aggregation lineage
     would cause the aggregation column to be missing, leading to:
     - "unable to find column" error during aggregation
 
     The scenario:
     - Feature A has id_columns=["id_a"] and fields including "group_col"
     - Feature B depends on A with:
-      - columns=("field_x", "field_y") - explicit column selection NOT including group_col
+      - select=("field_x", "field_y") - explicit column selection NOT including group_col
       - lineage=aggregation(on=["group_col"])
 
     Expected behavior: group_col should be auto-included since it's needed for aggregation.
@@ -1930,8 +1930,8 @@ def test_aggregation_columns_auto_included_when_columns_specified(
             deps=[
                 FeatureDep(
                     feature=UpstreamDetail,
-                    # BUG: columns= doesn't include group_col, but aggregation needs it
-                    columns=("field_x", "field_y"),
+                    # BUG: select= doesn't include group_col, but aggregation needs it
+                    select=("field_x", "field_y"),
                     lineage=LineageRelationship.aggregation(on=["group_col"]),
                 )
             ],
@@ -1995,10 +1995,10 @@ def test_aggregation_columns_auto_included_when_columns_specified(
 def test_two_deps_with_aggregation_on_same_column_with_explicit_columns(
     graph: FeatureGraph,
 ) -> None:
-    """Test two deps aggregating on the same column where neither specifies the agg column in columns=.
+    """Test two deps aggregating on the same column where neither specifies the agg column in select=.
 
     The aggregation 'on' columns should be automatically included from the lineage relationship -
-    there's no need to specify them twice in both `columns=` and `lineage=aggregation(on=...)`.
+    there's no need to specify them twice in both `select=` and `lineage=aggregation(on=...)`.
 
     This test verifies:
     - chunk_id is auto-included for both deps from lineage.aggregation(on=["chunk_id"])
@@ -2044,18 +2044,18 @@ def test_two_deps_with_aggregation_on_same_column_with_explicit_columns(
                 # First dep: chunk_id NOT in columns - auto-included from lineage
                 FeatureDep(
                     feature=NotesEncodings,
-                    columns=("encoding_path", "encoding_size"),
                     rename={
                         "encoding_path": "encodings_path",
                         "encoding_size": "encodings_size",
                     },
+                    select=("encodings_path", "encodings_size"),
                     lineage=LineageRelationship.aggregation(on=["chunk_id"]),
                 ),
-                # Second dep: chunk_id NOT in columns - auto-included from lineage
+                # Second dep: chunk_id NOT in select - auto-included from lineage
                 FeatureDep(
                     feature=NotesTexts,
-                    columns=("notes_type", "text_path", "text_size"),
                     rename={"text_path": "texts_path", "text_size": "texts_size"},
+                    select=("notes_type", "texts_path", "texts_size"),
                     lineage=LineageRelationship.aggregation(on=["chunk_id"]),
                 ),
             ],
@@ -2226,14 +2226,14 @@ def test_two_deps_with_same_upstream_id_column_and_aggregation(
             deps=[
                 FeatureDep(
                     feature=DirectorNotesEncodings,
-                    columns=("path", "size", "chunk_id"),
                     rename={"path": "encodings_path", "size": "encodings_size"},
+                    select=("encodings_path", "encodings_size", "chunk_id"),
                     lineage=LineageRelationship.aggregation(on=["chunk_id"]),
                 ),
                 FeatureDep(
                     feature=DirectorNotesTexts,
-                    columns=("director_notes_type", "path", "size"),
                     rename={"path": "text_path", "size": "text_size"},
+                    select=("director_notes_type", "text_path", "text_size"),
                     lineage=LineageRelationship.aggregation(on=["chunk_id"]),
                 ),
             ],
@@ -2351,14 +2351,14 @@ def test_two_deps_with_same_upstream_id_column_and_aggregation(
 def test_expansion_columns_auto_included_when_columns_specified(
     graph: FeatureGraph,
 ) -> None:
-    """Test that expansion 'on' columns are automatically included when columns= is specified.
+    """Test that expansion 'on' columns are automatically included when select= is specified.
 
     This mirrors test_aggregation_columns_auto_included_when_columns_specified but for expansion.
 
     The scenario:
     - Feature A (Video) has id_columns=["video_id"] and fields including metadata
     - Feature B (VideoFrames) depends on A with:
-      - columns=("resolution",) - explicit column selection NOT including video_id
+      - select=("resolution",) - explicit column selection NOT including video_id
       - lineage=expansion(on=["video_id"])
 
     Expected behavior: video_id should be auto-included since it's needed for expansion.
@@ -2386,8 +2386,8 @@ def test_expansion_columns_auto_included_when_columns_specified(
             deps=[
                 FeatureDep(
                     feature=VideoSource,
-                    # BUG: columns= doesn't include video_id, but expansion needs it
-                    columns=("resolution", "fps"),
+                    # BUG: select= doesn't include video_id, but expansion needs it
+                    select=("resolution", "fps"),
                     lineage=LineageRelationship.expansion(on=["video_id"]),
                 )
             ],
@@ -2447,7 +2447,7 @@ def test_expansion_columns_auto_included_when_columns_specified(
 def test_two_deps_with_expansion_on_same_column_with_explicit_columns(
     graph: FeatureGraph,
 ) -> None:
-    """Test two deps with expansion on the same column where columns= doesn't include the expansion column.
+    """Test two deps with expansion on the same column where select= doesn't include the expansion column.
 
     This mirrors test_two_deps_with_aggregation_on_same_column_with_explicit_columns but for expansion.
 
@@ -2487,16 +2487,16 @@ def test_two_deps_with_expansion_on_same_column_with_explicit_columns(
             key=FeatureKey(["expanded_media_frames"]),
             id_columns=("video_id", "frame_id"),
             deps=[
-                # First dep: MISSING video_id in columns
+                # First dep: MISSING video_id in select
                 FeatureDep(
                     feature=VideoMetadata,
-                    columns=("resolution",),
+                    select=("resolution",),
                     lineage=LineageRelationship.expansion(on=["video_id"]),
                 ),
-                # Second dep: ALSO MISSING video_id in columns
+                # Second dep: ALSO MISSING video_id in select
                 FeatureDep(
                     feature=AudioMetadata,
-                    columns=("sample_rate",),
+                    select=("sample_rate",),
                     lineage=LineageRelationship.expansion(on=["video_id"]),
                 ),
             ],

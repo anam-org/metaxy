@@ -69,7 +69,7 @@ def test_pipeline(tmp_path, snapshot):
     # After the stream separation changes, stdout contains ONLY the raw snapshot ID hash
     v1_snapshot = result.stdout.strip()
     # v1_snapshot should be the expected hash from the snapshot data (project-scoped version)
-    assert v1_snapshot == "26bafaa3"
+    assert v1_snapshot == "93521a97"
 
     # Step 2: Run pipeline with STAGE=1
     result = subprocess.run(

@@ -1004,7 +1004,7 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
             for dep in deps:
                 if isinstance(dep, FeatureDep):
                     dep_key_str = dep.feature.to_string()
-                    upstream_columns[dep_key_str] = dep.columns
+                    upstream_columns[dep_key_str] = dep.select
                     upstream_renames[dep_key_str] = dep.rename
 
         return joiner.join_upstream(

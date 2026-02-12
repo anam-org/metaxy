@@ -961,7 +961,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["upstream"]),
-                        columns=("value",),  # Metadata change
+                        select=("value",),  # Metadata change
                     )
                 ],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
@@ -1097,7 +1097,7 @@ def test_graph_push_multiple_features_metadata_changes(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_c"]),
                 deps=[
-                    FeatureDep(feature=FeatureKey(["feature_a"]), columns=("value",))  # Changed
+                    FeatureDep(feature=FeatureKey(["feature_a"]), select=("value",))  # Changed
                 ],
                 fields=[FieldSpec(key=FieldKey(["output"]), code_version="1")],
             ),

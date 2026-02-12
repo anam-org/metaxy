@@ -6,7 +6,7 @@
     "events": [
       {
         "type": "graph_pushed",
-        "project_version": "cef556e4",
+        "project_version": "e5cdf3ba",
         "graph": {
           "video": {
             "metaxy_feature_version": "4c78e5e2",
@@ -43,7 +43,7 @@
               "deps": [
                 {
                   "feature": "video",
-                  "columns": null,
+                  "select": null,
                   "rename": null,
                   "fields_mapping": {
                     "mapping": {
@@ -73,7 +73,7 @@
             }
           }
         },
-        "timestamp": "2026-02-09T23:35:12.166145",
+        "timestamp": "2026-02-12T16:47:31.159954",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -83,7 +83,7 @@
         "returncode": 0,
         "stdout": "Quickstart Pipeline\n============================================================\n\n[Video] 3 new, 0 stale\n[Video] Wrote 3 samples\n\n[Audio] 3 new, 0 stale\n[Audio] Wrote 3 samples\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-09T23:35:12.777835",
+        "timestamp": "2026-02-12T16:47:31.708494",
         "scenario_name": "Initial pipeline run",
         "step_name": "initial_run"
       },
@@ -93,7 +93,7 @@
         "returncode": 0,
         "stdout": "Quickstart Pipeline\n============================================================\n\n[Video] 0 new, 0 stale\n\n[Audio] 0 new, 0 stale\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-09T23:35:13.372613",
+        "timestamp": "2026-02-12T16:47:32.296067",
         "scenario_name": "Idempotent rerun",
         "step_name": "idempotent_run"
       }

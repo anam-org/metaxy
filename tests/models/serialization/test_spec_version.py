@@ -47,12 +47,12 @@ def test_feature_spec_version_includes_all_properties(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream", "one"]),
-                columns=("col1", "col2"),
                 rename={"col1": "renamed_col1"},
+                select=("renamed_col1", "col2"),
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "two"]),
-                columns=None,  # All columns
+                select=None,  # All columns
                 rename=None,
             ),
         ],
@@ -185,8 +185,8 @@ def test_feature_spec_version_with_column_selection_and_rename(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream"]),
-                columns=("col1", "col2"),
                 rename={"col1": "new_col1", "col2": "new_col2"},
+                select=("new_col1", "new_col2"),
             )
         ],
         fields=[
@@ -209,8 +209,8 @@ def test_feature_spec_version_with_column_selection_and_rename(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream"]),
-                columns=("col1", "col3"),  # Different columns!
                 rename={"col1": "new_col1", "col3": "new_col3"},
+                select=("new_col1", "new_col3"),  # Different columns!
             )
         ],
         fields=[
@@ -225,8 +225,8 @@ def test_feature_spec_version_with_column_selection_and_rename(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream"]),
-                columns=("col1", "col2"),
                 rename={"col1": "different_name"},  # Different rename!
+                select=("different_name", "col2"),
             )
         ],
         fields=[
@@ -470,17 +470,17 @@ def test_feature_spec_version_with_multiple_complex_deps(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream", "one"]),
-                columns=("a", "b", "c"),
                 rename={"a": "upstream1_a", "b": "upstream1_b"},
+                select=("upstream1_a", "upstream1_b", "c"),
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "two"]),
-                columns=(),  # Empty tuple = only system columns
+                select=(),  # Empty tuple = only system columns
                 rename=None,
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "three"]),
-                columns=None,  # None = all columns
+                select=None,  # None = all columns
                 rename={"col": "renamed_col"},
             ),
         ],
@@ -506,17 +506,17 @@ def test_feature_spec_version_with_multiple_complex_deps(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream", "one"]),
-                columns=("a", "b", "c"),
                 rename={"a": "upstream1_a", "b": "upstream1_b"},
+                select=("upstream1_a", "upstream1_b", "c"),
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "two"]),
-                columns=(),
+                select=(),
                 rename=None,
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "three"]),
-                columns=None,
+                select=None,
                 rename={"col": "renamed_col"},
             ),
         ],

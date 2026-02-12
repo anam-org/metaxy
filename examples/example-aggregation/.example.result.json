@@ -6,7 +6,7 @@
     "events": [
       {
         "type": "graph_pushed",
-        "project_version": "e06e94ab",
+        "project_version": "1661b8b7",
         "graph": {
           "audio": {
             "metaxy_feature_version": "3dac67c8",
@@ -43,7 +43,7 @@
               "deps": [
                 {
                   "feature": "audio",
-                  "columns": null,
+                  "select": null,
                   "rename": null,
                   "fields_mapping": {
                     "mapping": {
@@ -76,7 +76,7 @@
             }
           }
         },
-        "timestamp": "2026-02-09T23:33:57.383549",
+        "timestamp": "2026-02-12T16:47:14.127723",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -86,7 +86,7 @@
         "returncode": 0,
         "stdout": "Found 4 new audio recordings\nFound 2 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\n  Computing embedding for speaker s2 from 2 audio recordings\nWriting embeddings for 2 speakers\n",
         "stderr": "",
-        "timestamp": "2026-02-09T23:33:57.962262",
+        "timestamp": "2026-02-12T16:47:14.692401",
         "scenario_name": "Initial pipeline run",
         "step_name": "run_pipeline"
       },
@@ -96,13 +96,13 @@
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
         "stderr": "",
-        "timestamp": "2026-02-09T23:33:58.525783",
+        "timestamp": "2026-02-12T16:47:15.263585",
         "scenario_name": "Idempotent rerun",
         "step_name": null
       },
       {
         "type": "graph_pushed",
-        "project_version": "e06e94ab",
+        "project_version": "1661b8b7",
         "graph": {
           "audio": {
             "metaxy_feature_version": "3dac67c8",
@@ -139,7 +139,7 @@
               "deps": [
                 {
                   "feature": "audio",
-                  "columns": null,
+                  "select": null,
                   "rename": null,
                   "fields_mapping": {
                     "mapping": {
@@ -172,15 +172,15 @@
             }
           }
         },
-        "timestamp": "2026-02-09T23:33:59.169626",
+        "timestamp": "2026-02-12T16:47:15.947202",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
       {
         "type": "patch_applied",
         "patch_path": "patches/01_update_audio_provenance.patch",
-        "before_snapshot": "e06e94ab",
-        "after_snapshot": "e06e94ab",
+        "before_snapshot": "1661b8b7",
+        "after_snapshot": "1661b8b7",
         "before_graph": {
           "audio": {
             "metaxy_feature_version": "3dac67c8",
@@ -217,7 +217,7 @@
               "deps": [
                 {
                   "feature": "audio",
-                  "columns": null,
+                  "select": null,
                   "rename": null,
                   "fields_mapping": {
                     "mapping": {
@@ -286,7 +286,7 @@
               "deps": [
                 {
                   "feature": "audio",
-                  "columns": null,
+                  "select": null,
                   "rename": null,
                   "fields_mapping": {
                     "mapping": {
@@ -319,7 +319,7 @@
             }
           }
         },
-        "timestamp": "2026-02-09T23:33:59.176852",
+        "timestamp": "2026-02-12T16:47:15.956635",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -329,13 +329,13 @@
         "returncode": 0,
         "stdout": "Found 1 changed audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\nWriting embeddings for 1 speakers\n",
         "stderr": "",
-        "timestamp": "2026-02-09T23:33:59.744534",
+        "timestamp": "2026-02-12T16:47:16.552055",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
       {
         "type": "graph_pushed",
-        "project_version": "e06e94ab",
+        "project_version": "1661b8b7",
         "graph": {
           "audio": {
             "metaxy_feature_version": "3dac67c8",
@@ -372,7 +372,7 @@
               "deps": [
                 {
                   "feature": "audio",
-                  "columns": null,
+                  "select": null,
                   "rename": null,
                   "fields_mapping": {
                     "mapping": {
@@ -405,15 +405,15 @@
             }
           }
         },
-        "timestamp": "2026-02-09T23:34:00.386816",
+        "timestamp": "2026-02-12T16:47:17.216392",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
       {
         "type": "patch_applied",
         "patch_path": "patches/02_add_audio.patch",
-        "before_snapshot": "e06e94ab",
-        "after_snapshot": "e06e94ab",
+        "before_snapshot": "1661b8b7",
+        "after_snapshot": "1661b8b7",
         "before_graph": {
           "audio": {
             "metaxy_feature_version": "3dac67c8",
@@ -450,7 +450,7 @@
               "deps": [
                 {
                   "feature": "audio",
-                  "columns": null,
+                  "select": null,
                   "rename": null,
                   "fields_mapping": {
                     "mapping": {
@@ -519,7 +519,7 @@
               "deps": [
                 {
                   "feature": "audio",
-                  "columns": null,
+                  "select": null,
                   "rename": null,
                   "fields_mapping": {
                     "mapping": {
@@ -552,7 +552,7 @@
             }
           }
         },
-        "timestamp": "2026-02-09T23:34:00.393985",
+        "timestamp": "2026-02-12T16:47:17.224947",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -562,7 +562,7 @@
         "returncode": 0,
         "stdout": "Found 1 new audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 3 audio recordings\nWriting embeddings for 1 speakers\n",
         "stderr": "",
-        "timestamp": "2026-02-09T23:34:00.973774",
+        "timestamp": "2026-02-12T16:47:17.810479",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -572,7 +572,7 @@
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
         "stderr": "",
-        "timestamp": "2026-02-09T23:34:01.542687",
+        "timestamp": "2026-02-12T16:47:18.399874",
         "scenario_name": "Final idempotent check",
         "step_name": null
       }

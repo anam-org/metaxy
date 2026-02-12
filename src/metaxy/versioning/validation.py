@@ -115,5 +115,5 @@ def _validate_no_column_collisions(plan: FeaturePlan) -> None:
             f"Feature '{plan.feature.key.to_string()}' would have duplicate column names after renaming: "
             f"{sorted(repeated_columns)}. Only ID columns ({sorted(all_id_columns)}) are allowed to be repeated. "
             f"Use the 'rename' parameter in FeatureDep to resolve conflicts, "
-            "or use 'columns' to select only the columns you need."
+            "or use 'select' to select only the columns you need."
         )

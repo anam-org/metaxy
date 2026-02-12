@@ -224,10 +224,10 @@ class FeatureDepTransformer:
 
     @cached_property
     def _user_requested_columns(self) -> list[str]:
-        """User-requested columns (after rename)."""
-        if self.dep.columns is None:
+        """User-requested columns (post-rename names)."""
+        if self.dep.select is None:
             return []
-        return [self._apply_rename(col) for col in self.dep.columns]
+        return list(self.dep.select)
 
     @cached_property
     def _lineage_required_columns(self) -> list[str]:
@@ -252,7 +252,7 @@ class FeatureDepTransformer:
     @cached_property
     def renamed_columns(self) -> list[str] | None:
         """Columns to select, or None to select all."""
-        if self.dep.columns is None:
+        if self.dep.select is None:
             return None
 
         return [

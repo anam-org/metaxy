@@ -145,13 +145,13 @@ class TestCrossDepColumnCollisions:
             deps=[
                 FeatureDep(
                     feature=upstream_spec.key,
-                    columns=("value",),
                     rename={"value": "colliding_name"},
+                    select=("colliding_name",),
                 ),
                 FeatureDep(
                     feature=another_upstream_spec.key,
-                    columns=("other_value",),
                     rename={"other_value": "colliding_name"},
+                    select=("colliding_name",),
                 ),
             ],
             fields=[FieldSpec(key=FieldKey(["out"]), code_version="1")],
@@ -211,12 +211,12 @@ class TestAggregationLineageValidation:
             deps=[
                 FeatureDep(
                     feature=upstream1.key,
-                    columns=("group_id",),
+                    select=("group_id",),
                     lineage=LineageRelationship.aggregation(on=["group_id"]),
                 ),
                 FeatureDep(
                     feature=upstream2.key,
-                    columns=("group_id",),
+                    select=("group_id",),
                     lineage=LineageRelationship.aggregation(on=["group_id"]),
                 ),
             ],
@@ -275,18 +275,18 @@ class TestValidConfigurationsPassing:
         upstream_spec: FeatureSpec,
         another_upstream_spec: FeatureSpec,
     ) -> None:
-        """Using columns= to select different columns avoids collision."""
+        """Using select= to select different columns avoids collision."""
         downstream_spec = FeatureSpec(
             key=FeatureKey(["downstream"]),
             id_columns=("id",),
             deps=[
                 FeatureDep(
                     feature=upstream_spec.key,
-                    columns=("value",),
+                    select=("value",),
                 ),
                 FeatureDep(
                     feature=another_upstream_spec.key,
-                    columns=("other_value",),
+                    select=("other_value",),
                 ),
             ],
             fields=[FieldSpec(key=FieldKey(["out"]), code_version="1")],

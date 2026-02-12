@@ -11,7 +11,7 @@
   'a5eea973'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  '44a8f012'
+  '6d18d012'
 # ---
 # name: test_feature_spec_version_stored_in_snapshot
   dict({
@@ -151,8 +151,8 @@
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  'db9fb3bf'
+  '64c42b1b'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  'aa24606b'
+  '8d025e6b'
 # ---

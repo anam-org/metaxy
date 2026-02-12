@@ -137,7 +137,7 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=("custom_col1",),
+                        select=("custom_col1",),
                     )
                 ],
             ),
@@ -195,7 +195,7 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=(),  # Only system columns
+                        select=(),  # Only system columns
                     )
                 ],
             ),
@@ -318,8 +318,8 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=("custom_col1", "custom_col2"),
                         rename={"custom_col1": "renamed_col1"},
+                        select=("renamed_col1", "custom_col2"),
                     )
                 ],
             ),
@@ -539,7 +539,7 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=("custom_col",),  # Don't explicitly list system columns
+                        select=("custom_col",),  # Don't explicitly list system columns
                     )
                 ],
             ),
@@ -765,8 +765,8 @@ class TestColumnSelection:
         """Test that FeatureDep with columns and rename serializes correctly."""
         dep = FeatureDep(
             feature=FeatureKey(["test", "upstream"]),
-            columns=("col1", "col2"),
             rename={"col1": "new_col1"},
+            select=("new_col1", "col2"),
             filters=["col1 = 'x'"],
         )
 
@@ -775,7 +775,7 @@ class TestColumnSelection:
         dep_dict = dep.model_dump(by_alias=True)
         # FeatureKey now serializes to string format for JSON dict key compatibility
         assert dep_dict["feature"] == "test/upstream"
-        assert dep_dict["columns"] == ("col1", "col2")
+        assert dep_dict["select"] == ("new_col1", "col2")
         assert dep_dict["rename"] == {"col1": "new_col1"}
         assert dep_dict["filters"] == ("col1 = 'x'",)
         assert "sql_filters" not in dep_dict
@@ -788,7 +788,7 @@ class TestColumnSelection:
         dep_json = dep.model_dump_json(by_alias=True)
         dep_restored = FeatureDep.model_validate_json(dep_json)
         assert dep_restored.feature == FeatureKey(["test", "upstream"])
-        assert dep_restored.columns == ("col1", "col2")
+        assert dep_restored.select == ("new_col1", "col2")
         assert dep_restored.rename == {"col1": "new_col1"}
         # Verify filters work after deserialization
         assert dep_restored.filters
@@ -832,13 +832,13 @@ class TestColumnSelection:
                     # Select specific columns from upstream2
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream2"]),
-                        columns=("important_col",),
+                        select=("important_col",),
                     ),
                     # Rename columns from upstream3
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream3"]),
-                        columns=("shared_col", "unique_col"),
                         rename={"shared_col": "upstream3_shared"},
+                        select=("upstream3_shared", "unique_col"),
                     ),
                 ],
             ),
@@ -951,8 +951,8 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=("value", "category"),
                         rename={"value": "upstream_value"},
+                        select=("upstream_value", "category"),
                     )
                 ],
             ),
@@ -1050,8 +1050,8 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=("col1", "col2"),
                         rename={"col1": "renamed_col1"},
+                        select=("renamed_col1", "col2"),
                     )
                 ],
             ),
@@ -1081,8 +1081,8 @@ class TestColumnSelection:
             dep = feature_spec_dict["deps"][0]
             # FeatureKey serializes to string format for JSON dict key compatibility
             assert dep["feature"] == "test/upstream"
-            assert dep["columns"] == [
-                "col1",
+            assert dep["select"] == [
+                "renamed_col1",
                 "col2",
             ]  # Pydantic serializes tuple as list
             assert dep["rename"] == {"col1": "renamed_col1"}
@@ -1097,14 +1097,14 @@ class TestColumnSelection:
             dep_dict = downstream_spec_dict["deps"][0]
             # FeatureKey serializes to string format for JSON dict key compatibility
             assert dep_dict["feature"] == "test/upstream"
-            assert dep_dict["columns"] == ["col1", "col2"]
+            assert dep_dict["select"] == ["renamed_col1", "col2"]
             assert dep_dict["rename"] == {"col1": "renamed_col1"}
 
             # Verify Pydantic can deserialize it back
             reconstructed_spec = SampleFeatureSpec.model_validate(downstream_spec_dict)
             assert reconstructed_spec.deps and len(reconstructed_spec.deps) == 1
             reconstructed_dep = reconstructed_spec.deps[0]
-            assert reconstructed_dep.columns == ("col1", "col2")
+            assert reconstructed_dep.select == ("renamed_col1", "col2")
             assert reconstructed_dep.rename == {"col1": "renamed_col1"}
 
     def test_duplicate_renamed_columns_within_single_dependency(self, graph: FeatureGraph):
@@ -1169,13 +1169,13 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream1"]),
-                        columns=("col1",),
                         rename={"col1": "duplicate_col"},
+                        select=("duplicate_col",),
                     ),
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream2"]),
-                        columns=("col2",),
                         rename={"col2": "duplicate_col"},
+                        select=("duplicate_col",),
                     ),
                 ],
             ),
@@ -1214,11 +1214,11 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream1"]),
-                        columns=("shared_col", "col1"),  # Selects shared_col
+                        select=("shared_col", "col1"),  # Selects shared_col
                     ),
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream2"]),
-                        columns=(
+                        select=(
                             "shared_col",
                             "col2",
                         ),  # Also selects shared_col
@@ -1382,12 +1382,12 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream1"]),
-                        columns=("col1",),  # Only select col1, group_id comes from aggregation
+                        select=("col1",),  # Only select col1, group_id comes from aggregation
                         lineage=LineageRelationship.aggregation(on=["group_id"]),
                     ),
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream2"]),
-                        columns=("col2",),  # Only select col2, group_id comes from aggregation
+                        select=("col2",),  # Only select col2, group_id comes from aggregation
                         lineage=LineageRelationship.aggregation(on=["group_id"]),
                     ),
                 ],

@@ -110,12 +110,12 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["upstream", "one"]),
-                    columns=("col1", "col2"),
                     rename={"col1": "one_col1"},
+                    select=("one_col1", "col2"),
                 ),
                 FeatureDep(
                     feature=FeatureKey(["upstream", "two"]),
-                    columns=None,  # All columns
+                    select=None,  # All columns
                     rename=None,
                 ),
             ],
@@ -134,9 +134,9 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
 
     # Verify deps are fully captured
     assert len(spec_dict["deps"]) == 2
-    assert spec_dict["deps"][0]["columns"] == ["col1", "col2"]
+    assert spec_dict["deps"][0]["select"] == ["one_col1", "col2"]
     assert spec_dict["deps"][0]["rename"] == {"col1": "one_col1"}
-    assert spec_dict["deps"][1]["columns"] is None
+    assert spec_dict["deps"][1]["select"] is None
     assert spec_dict["deps"][1]["rename"] is None
 
     # The feature_spec_version should be deterministic
@@ -149,12 +149,12 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream", "one"]),
-                columns=("col1", "col2"),
                 rename={"col1": "one_col1"},
+                select=("one_col1", "col2"),
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "two"]),
-                columns=None,
+                select=None,
                 rename=None,
             ),
         ],
