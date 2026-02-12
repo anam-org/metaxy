@@ -16,7 +16,7 @@ In such relationships a single parent sample can map into multiple child samples
 
 These relationships can be modeled with [LineageRelationship.expansion][metaxy.models.lineage.LineageRelationship.expansion] lineage type.
 
-We will use a hypothetical video chunking pipeline as an example. We are also going to demonstrate that other Metaxy features such as fields mapping work with non-standard lineage types.
+We will use a hypothetical video chunking pipeline as an example.
 
 ## The Pipeline
 
@@ -85,24 +85,11 @@ path: pipeline.py
 
 Run the pipeline to create videos, chunks, and face recognition results:
 
-```bash
-python pipeline.py
-```
-
-**Output:**
-
-```
-Found 3 new videos
-Found 3 videos and 0 videos that need chunking
-Processing video: {'video_id': 1, ...}
-Writing 4 chunks for video 1
-Processing video: {'video_id': 2, ...}
-Writing 3 chunks for video 2
-Processing video: {'video_id': 3, ...}
-Writing 5 chunks for video 3
-Found 12 video chunks and 0 video chunks that need face recognition
-Writing face recognition results for 12 chunks
-```
+::: metaxy-example output
+example: one-to-many
+scenario: "Initial pipeline run"
+step: "initial_run"
+:::
 
 All three features have been materialized. Note that the `VideoChunk` feature may dynamically create as many samples as needed: Metaxy doesn't need to know anything about this in advance, except the relationship type.
 
@@ -110,16 +97,11 @@ All three features have been materialized. Note that the `VideoChunk` feature ma
 
 Run the pipeline again without any changes:
 
-```bash
-python pipeline.py
-```
-
-**Output:**
-
-```
-Found 0 videos and 0 videos that need chunking
-Found 0 video chunks and 0 video chunks that need face recognition
-```
+::: metaxy-example output
+example: one-to-many
+scenario: "Idempotent rerun"
+step: "idempotent_run"
+:::
 
 Nothing needs recomputation - the system correctly detects no changes.
 
@@ -140,23 +122,11 @@ This represents updating the audio processing algorithm, and therefore the audio
 
 Run the pipeline again after the code change:
 
-```bash
-python pipeline.py
-```
-
-**Output:**
-
-```
-Found 3 new videos
-Found 3 videos and 0 videos that need chunking
-Processing video: {'video_id': 1, ...}
-Writing 3 chunks for video 1
-Processing video: {'video_id': 2, ...}
-Writing 5 chunks for video 2
-Processing video: {'video_id': 3, ...}
-Writing 4 chunks for video 3
-Found 0 video chunks and 0 video chunks that need face recognition
-```
+::: metaxy-example output
+example: one-to-many
+scenario: "Code change - audio field only"
+step: "recompute_after_audio_change"
+:::
 
 **Key observation:**
 
