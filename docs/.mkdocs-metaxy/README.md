@@ -33,7 +33,7 @@ plugins:
 
 #### Usage
 
-The plugin provides the following directives:
+The plugin provides the following directives. Content is determined by indentation (4 spaces), like MkDocs admonitions.
 
 ##### 1. GitHub Source Link
 
@@ -41,8 +41,7 @@ Display a link to the example source code on GitHub:
 
 ```markdown
 ::: metaxy-example source-link
-example: basic
-:::
+    example: basic
 ```
 
 Parameters:
@@ -57,28 +56,24 @@ Examples:
 # As a button (default)
 
 ::: metaxy-example source-link
-example: basic
-:::
+    example: basic
 
 # As an inline link
 
 ::: metaxy-example source-link
-example: basic
-button: false
-:::
+    example: basic
+    button: false
 
 # With custom text
 
 ::: metaxy-example source-link
-example: basic
-text: "Browse Example Code"
-:::
+    example: basic
+    text: "Browse Example Code"
 
 # Alternative directive name
 
 ::: metaxy-example github
-example: basic
-:::
+    example: basic
 ```
 
 ##### 2. Display Scenarios
@@ -87,8 +82,7 @@ Show the scenarios from a runbook:
 
 ```markdown
 ::: metaxy-example scenarios
-example: basic
-:::
+    example: basic
 ```
 
 This displays:
@@ -103,9 +97,8 @@ Show a Python source file with syntax highlighting and collapsible wrapper:
 
 ```markdown
 ::: metaxy-example file
-example: basic
-path: src/example_basic/features.py
-:::
+    example: basic
+    path: src/example_basic/features.py
 ```
 
 Parameters:
@@ -121,10 +114,9 @@ Show how a file looks after applying patches:
 
 ```markdown
 ::: metaxy-example file
-example: basic
-path: src/example_basic/features.py
-patches: ["patches/01_update_parent_algorithm.patch"]
-:::
+    example: basic
+    path: src/example_basic/features.py
+    patches: ["patches/01_update_parent_algorithm.patch"]
 ```
 
 The plugin will:
@@ -140,9 +132,8 @@ Show the diff patch itself:
 
 ```markdown
 ::: metaxy-example patch
-example: basic
-path: patches/01_update_parent_algorithm.patch
-:::
+    example: basic
+    path: patches/01_update_parent_algorithm.patch
 ```
 
 This displays the patch with diff syntax highlighting.

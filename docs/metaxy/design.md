@@ -46,7 +46,7 @@ Here is how a typical Metaxy feature table looks like:
     `metaxy_data_version`/`metaxy_data_version_by_field` and `metaxy_provenance`/`metaxy_provenance_by_field` serve a slightly different purpose.
     Provenance columns hold **static** versioning information entirely defined by the Metaxy framework. Data version defaults to the same value as provenance, but can be customized by the user **at runtime**, for example derived from the **contents** of the computed sample. Learn more [here](../guide/concepts/data-versioning.md).
 
-All historical records for a given feature are stored in the same table. They can be separated by the following [system columns](../guide/concepts/system-columns.md):
+All historical records for a given feature are stored in the same table. They can be separated by the following [system columns](../reference/system-columns.md):
 
 - `metaxy_feature_version` is shared among multiple rows and is changed on any of the feature or upstream feature `code_version` changes
 

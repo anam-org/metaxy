@@ -159,9 +159,9 @@ class SpeechToText(
 Running `metaxy graph render --format mermaid` produces this graph:
 
 ::: metaxy-example graph
-example: overview
-scenario: "Initial feature graph"
-:::
+    example: overview
+    scenario: "Initial feature graph"
+    direction: LR
 
 ### Tracking Definitions Changes
 
@@ -171,17 +171,16 @@ Imagine the `audio` field of the `Video` feature changes (1):
 1. Perhaps, something like denoising has been applied externally
 
 ::: metaxy-example patch
-example: overview
-path: patches/01_update_audio_version.patch
-:::
+    example: overview
+    path: patches/01_update_audio_version.patch
 
 Run `metaxy graph diff` to see what changed:
 
 ::: metaxy-example graph-diff
-example: overview
-scenario: "Code change - audio field"
-step: "update_audio_version"
-:::
+    example: overview
+    scenario: "Code change - audio field"
+    step: "update_audio_version"
+    direction: LR
 
 !!! info
 

@@ -3,37 +3,34 @@
 This module provides a markdown preprocessor that handles directives like:
     ::: metaxy-example scenarios
         example: recompute
-    :::
 
     ::: metaxy-example file
         example: recompute
         path: src/example_recompute/features.py
         stage: initial
-    :::
 
     ::: metaxy-example file
         example: recompute
         path: src/example_recompute/features.py
         patches: ["patches/01_update_parent_algorithm.patch"]
-    :::
 
     ::: metaxy-example patch
         example: recompute
         path: patches/01_update_parent_algorithm.patch
-    :::
 
     ::: metaxy-example output
         example: recompute
         scenario: "Initial pipeline run"
         step: "run_pipeline"
-    :::
 
     ::: metaxy-example patch-with-diff
         example: one-to-many
         path: patches/01_update_video_code_version.patch
         scenario: "Code change - audio field only"
         step: "update_audio_version"
-    :::
+
+Content is determined by indentation (4 spaces), like MkDocs admonitions.
+No closing ::: is needed.
 """
 
 from __future__ import annotations
@@ -98,13 +95,12 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         # Cache for patch enumerations per example
         self._patch_enumerations: dict[str, dict[str, int]] = {}
 
-        # Pattern to match directive blocks:
+        # Pattern to match directive opening line:
         # ::: metaxy-example <type>
         #     key: value
         #     ...
-        # :::
+        # Content determined by indentation (like MkDocs admonitions)
         self.directive_pattern = re.compile(r"^:::\s+metaxy-example\s+(\w+)\s*$", re.MULTILINE)
-        self.end_pattern = re.compile(r"^:::\s*$", re.MULTILINE)
 
     def run(self, lines: list[str]) -> list[str]:
         """Process markdown lines.
@@ -126,30 +122,40 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             # Add text before directive
             result_lines.append(text[pos : match.start()])
 
-            # Find the closing :::
-            end_match = self.end_pattern.search(text, directive_start)
-            if not end_match:
-                # No closing tag, skip this directive
-                result_lines.append(text[match.start() : match.end()])
-                pos = directive_start
-                continue
+            # Collect indented content lines (4+ spaces or empty lines)
+            remaining = text[directive_start:]
+            content_lines: list[str] = []
+            end_pos = directive_start
+            for line in remaining.split("\n")[1:]:  # skip the first (empty) split after opening line
+                if line.strip() == "":
+                    content_lines.append(line)
+                elif line.startswith("    "):
+                    content_lines.append(line)
+                else:
+                    break
+                end_pos += len(line) + 1  # +1 for the newline
 
-            # Extract directive content (YAML between ::: lines)
-            directive_content = text[directive_start : end_match.start()]
+            # Also account for the newline after the opening directive line
+            end_pos += 1
 
-            # Dedent the content - find minimum indentation and remove it
-            lines_content = directive_content.split("\n")
-            # Filter out empty lines for indentation calculation
-            non_empty_lines = [line for line in lines_content if line.strip()]
+            # Strip trailing empty lines and un-consume them so they remain
+            # as separators between the replacement and subsequent content
+            while content_lines and not content_lines[-1].strip():
+                end_pos -= len(content_lines[-1]) + 1
+                content_lines.pop()
+
+            # Dedent the content
+            directive_content = "\n".join(content_lines)
+            non_empty_lines = [line for line in content_lines if line.strip()]
             if non_empty_lines:
                 min_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
                 directive_content = "\n".join(
-                    line[min_indent:] if len(line) >= min_indent else line for line in lines_content
+                    line[min_indent:] if len(line) >= min_indent else line for line in content_lines
                 ).strip()
             else:
                 directive_content = ""
 
-            pos = end_match.end()
+            pos = end_pos
 
             # Process the directive - let exceptions propagate to fail the build
             html = self._process_directive(directive_type, directive_content)

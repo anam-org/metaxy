@@ -73,7 +73,7 @@ Metaxy is built around a few core ideas that work together to solve the problem 
 
     Propagating sample deletions through the feature graph correctly.
 
--   :material-table-column: **[System Columns](system-columns.md)**
+-   :material-table-column: **[System Columns](../../reference/system-columns.md)**
 
     ---
 

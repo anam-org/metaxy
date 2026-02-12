@@ -11,7 +11,7 @@ Metaxy supports two deletion modes: **soft deletes** that preserve history and *
 
 ## Soft deletes
 
-Soft deletes mark records as deleted without physically removing them. When you call `delete`, Metaxy appends a new row with the `metaxy_deleted_at` [system column](./system-columns.md) set to the deletion timestamp. This preserves your full history—nothing is lost, and you can always query for soft-deleted records if needed.
+Soft deletes mark records as deleted without physically removing them. When you call `delete`, Metaxy appends a new row with the `metaxy_deleted_at` [system column](../../reference/system-columns.md) set to the deletion timestamp. This preserves your full history—nothing is lost, and you can always query for soft-deleted records if needed.
 
 By default, `read` filters out soft-deleted records automatically. You only see active data. Behind the scenes, Metaxy keeps the latest version of each record by coalescing deletion and creation timestamps, so even if you've updated a record multiple times, queries return only the current state.
 

@@ -116,30 +116,53 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         if self.loader is None or self.renderer is None or self.generated_dir is None:
             return markdown
 
-        # Pattern to match directive blocks (allow hyphens in directive type)
+        # Pattern to match directive opening line (allow hyphens in directive type)
         directive_pattern = re.compile(
-            r"^:::\s+metaxy-example\s+([\w-]+)\s*\n(.*?)\n:::\s*$",
-            re.MULTILINE | re.DOTALL,
+            r"^:::\s+metaxy-example\s+([\w-]+)\s*$",
+            re.MULTILINE,
         )
 
-        def replace_directive(match: re.Match[str]) -> str:
+        result_parts: list[str] = []
+        pos = 0
+
+        for match in directive_pattern.finditer(markdown):
             # These are guaranteed to be non-None due to the check above
             assert self.loader is not None
             assert self.renderer is not None
 
-            directive_type = match.group(1)
-            directive_content = match.group(2)
+            result_parts.append(markdown[pos : match.start()])
 
-            # Parse YAML content
-            # Dedent the content - must NOT strip before splitting to preserve
-            # relative indentation
-            lines = directive_content.split("\n")
-            non_empty = [line for line in lines if line.strip()]
+            directive_type = match.group(1)
+
+            # Collect indented content lines after the opening directive
+            remaining = markdown[match.end() :]
+            content_lines: list[str] = []
+            end_pos = match.end()
+            for line in remaining.split("\n")[1:]:  # skip first empty split
+                if line.strip() == "":
+                    content_lines.append(line)
+                elif line.startswith("    "):
+                    content_lines.append(line)
+                else:
+                    break
+                end_pos += len(line) + 1  # +1 for newline
+            end_pos += 1  # account for newline after opening line
+
+            # Strip trailing empty lines and un-consume them so they remain
+            # as separators between the replacement and subsequent content
+            while content_lines and not content_lines[-1].strip():
+                end_pos -= len(content_lines[-1]) + 1
+                content_lines.pop()
+
+            # Dedent the content
+            non_empty = [line for line in content_lines if line.strip()]
             if non_empty:
                 min_indent = min(len(line) - len(line.lstrip()) for line in non_empty)
                 directive_content = "\n".join(
-                    line[min_indent:] if len(line) >= min_indent else line for line in lines
+                    line[min_indent:] if len(line) >= min_indent else line for line in content_lines
                 ).strip()
+            else:
+                directive_content = ""
 
             params = yaml.safe_load(directive_content) or {}
             example_name = params.get("example")
@@ -149,28 +172,31 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
             # Process based on directive type
             if directive_type == "scenarios":
                 scenarios = self.loader.get_scenarios(example_name)
-                return self.renderer.render_scenarios(scenarios, example_name)
+                html = self.renderer.render_scenarios(scenarios, example_name)
             elif directive_type == "source-link" or directive_type == "github":
-                # Render GitHub source link
                 button_style = params.get("button", True)
                 text = params.get("text", None)
-                return self.renderer.render_source_link(example_name, button_style=button_style, text=text)
+                html = self.renderer.render_source_link(example_name, button_style=button_style, text=text)
             elif directive_type == "file":
-                return self._render_file(example_name, params)
+                html = self._render_file(example_name, params)
             elif directive_type == "patch":
-                return self._render_patch(example_name, params)
+                html = self._render_patch(example_name, params)
             elif directive_type == "patch-with-diff":
-                return self._render_patch_with_diff(example_name, params)
+                html = self._render_patch_with_diff(example_name, params)
             elif directive_type == "output":
-                return self._render_output(example_name, params)
+                html = self._render_output(example_name, params)
             elif directive_type == "graph":
-                return self._render_graph(example_name, params)
+                html = self._render_graph(example_name, params)
             elif directive_type == "graph-diff":
-                return self._render_graph_diff(example_name, params)
+                html = self._render_graph_diff(example_name, params)
             else:
                 raise ValueError(f"Unknown directive type: {directive_type}")
 
-        return directive_pattern.sub(replace_directive, markdown)
+            result_parts.append(html)
+            pos = end_pos
+
+        result_parts.append(markdown[pos:])
+        return "".join(result_parts)
 
     def _get_patch_enumeration(self, example_name: str) -> dict[str, int]:
         """Get patch enumeration for an example."""

@@ -5,9 +5,9 @@ description: "Reserved system columns in Metaxy."
 
 # System Columns
 
-Metaxy reserves a set of [system-managed columns](../../reference/api/constants.md) that it attaches to user-defined feature
+Metaxy reserves a set of [system-managed columns](./api/constants.md) that it attaches to user-defined feature
 metadata tables. These columns are part of the storage interface and are used by
-the [metadata store][metaxy.MetadataStore]. Learn more about the storage layout design [here](../../metaxy/design.md#storage).
+the [metadata store][metaxy.MetadataStore]. Learn more about the storage layout design [here](../metaxy/design.md#storage).
 
 ## Canonical column names
 

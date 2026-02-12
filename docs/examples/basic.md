@@ -8,8 +8,7 @@ description: "Basic example of upstream change detection and recomputation."
 ## Overview
 
 ::: metaxy-example source-link
-example: basic
-:::
+    example: basic
 
 This example demonstrates how Metaxy automatically detects changes in upstream features and triggers recomputation of downstream features. It shows the core value proposition of Metaxy: avoiding unnecessary recomputation while ensuring data consistency.
 
@@ -20,9 +19,9 @@ We will build a simple two-feature pipeline where a child feature depends on a p
 Let's define a pipeline with two features:
 
 ::: metaxy-example graph
-example: basic
-scenario: "Setup upstream data"
-:::
+    example: basic
+    scenario: "Setup upstream data"
+    direction: LR
 
 ### Defining features: `ParentFeature`
 
@@ -57,10 +56,9 @@ The `FeatureDep` declaration tells Metaxy:
 Run the pipeline to create parent embeddings and child predictions:
 
 ::: metaxy-example output
-example: basic
-scenario: "Initial pipeline run"
-step: "initial_run"
-:::
+    example: basic
+    scenario: "Initial pipeline run"
+    step: "initial_run"
 
 The pipeline materialized 3 samples for the child feature. Each sample has its provenance tracked.
 
@@ -69,10 +67,9 @@ The pipeline materialized 3 samples for the child feature. Each sample has its p
 Run the pipeline again without any changes:
 
 ::: metaxy-example output
-example: basic
-scenario: "Idempotent rerun"
-step: "idempotent_run"
-:::
+    example: basic
+    scenario: "Idempotent rerun"
+    step: "idempotent_run"
 
 **Key observation:** No recomputation occurred.
 
@@ -81,11 +78,10 @@ step: "idempotent_run"
 Now let's simulate an algorithm improvement by changing the parent's `code_version` from `"1"` to `"2"`:
 
 ::: metaxy-example patch-with-diff
-example: basic
-path: patches/01_update_parent_algorithm.patch
-scenario: "Code evolution"
-step: "update_parent_version"
-:::
+    example: basic
+    path: patches/01_update_parent_algorithm.patch
+    scenario: "Code evolution"
+    step: "update_parent_version"
 
 This change means that the existing embeddings and the downstream feature have to be recomputed.
 
@@ -94,10 +90,9 @@ This change means that the existing embeddings and the downstream feature have t
 Run the pipeline again after the algorithm change:
 
 ::: metaxy-example output
-example: basic
-scenario: "Code evolution"
-step: "recompute_after_change"
-:::
+    example: basic
+    scenario: "Code evolution"
+    step: "recompute_after_change"
 
 **Key observation:** The child feature was automatically recomputed because:
 

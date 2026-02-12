@@ -6,8 +6,7 @@ description: "Get started with using Metaxy."
 # Quickstart
 
 ::: metaxy-example source-link
-example: quickstart
-:::
+    example: quickstart
 
 ## First Metaxy Application
 
