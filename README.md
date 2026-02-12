@@ -42,11 +42,11 @@ Read the [docs](https://docs.metaxy.io) to learn more.
 
 ## Installation
 
-> [!WARNING]
-> Metaxy hasn't been publicly released yet, but you can try the `main` branch:
-> ```shell
-> pip install git+https://github.com/metaxy-dev/metaxy.git
-> ```
+Install Metaxy from [PyPI](https://pypi.org/project/metaxy/):
+
+```shell
+uv add metaxy
+```
 
 ## Using Metaxy
 

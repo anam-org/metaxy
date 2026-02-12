@@ -92,16 +92,13 @@ We have been dogfooding Metaxy at [Anam](https://anam.ai/) since December 2025. 
 
 That being said, Metaxy is still an early project, so while the core functionality is rock solid, some rough edges with other parts of Metaxy are expected.
 
-
-
 ## Installation
 
-!!! warning
-    Metaxy hasn't been publicly released yet, but you can try the `main` branch:
+Install Metaxy from [PyPI](https://pypi.org/project/metaxy/):
 
-    ```shell
-    pip install git+https://github.com/metaxy-dev/metaxy.git
-    ```
+```shell
+uv add metaxy
+```
 
 ## Quickstart
 
