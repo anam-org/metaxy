@@ -28,6 +28,8 @@ This release should be considered an *alpha* release: it is ready for production
 
 ### Added
 
+- [Feature Definitions](/guide/concepts/definitions/features.md) and related models
+
 - Metaxy [versioning engine](/guide/concepts/data-versioning.md) and [storage layout](/guide/concepts/system-columns.md)
 
 - [MetadataStore API](/guide/concepts/metadata-stores.md)

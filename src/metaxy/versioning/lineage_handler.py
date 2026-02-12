@@ -140,7 +140,7 @@ class AggregationLineageHandler(LineageHandler):
         upstream_field_names = [f.key.to_struct_key() for f in upstream_spec.fields]
 
         return self.engine.aggregate_metadata_columns(
-            df,  # ty: ignore[invalid-argument-type]
+            df,
             group_columns=self.output_id_columns,
             order_by_columns=transformer.selected_id_columns,
             upstream_field_names=upstream_field_names,

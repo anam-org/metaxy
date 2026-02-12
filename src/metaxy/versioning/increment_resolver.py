@@ -123,7 +123,7 @@ class IncrementResolver(Generic[FrameT]):
             dep_transformer = self.engine.feature_transformers_by_key[dep.feature]
             lineage_handler = create_lineage_handler(dep, self.plan, self.engine, dep_transformer)
             current = lineage_handler.transform_current_for_comparison(
-                current,  # ty: ignore[invalid-argument-type]
+                current,
                 join_columns,
             )
 

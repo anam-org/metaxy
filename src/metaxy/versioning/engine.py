@@ -370,7 +370,7 @@ class VersioningEngine(ABC):
             df, renamed_data_version_by_field_col, hashed_field_cols
         )
         df = self.build_struct_column(
-            df,  # ty: ignore[invalid-argument-type]
+            df,
             renamed_prov_by_field_col,
             hashed_field_cols,
         )
@@ -382,7 +382,7 @@ class VersioningEngine(ABC):
             for field_name in sorted(upstream_field_names)
         ]
         sample_concat = nw.concat_str(field_exprs, separator="|")
-        df = df.with_columns(sample_concat.alias("__sample_concat"))
+        df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
 
         df = self.hash_string_column(  # ty: ignore[invalid-assignment]
             df,
@@ -550,7 +550,7 @@ class VersioningEngine(ABC):
         Returns:
             DataFrame with ID columns, data columns, and computed provenance columns.
         """
-        df = self.prepare_upstream(upstream, filters=filters, hash_algorithm=hash_algo)  # ty: ignore[invalid-argument-type]
+        df = self.prepare_upstream(upstream, filters=filters, hash_algorithm=hash_algo)
 
         # Compute provenance columns (shared logic)
         df = self._compute_provenance_internal(
@@ -561,13 +561,13 @@ class VersioningEngine(ABC):
 
         # Drop version columns if present (they come from upstream and shouldn't be in the result)
         version_columns = ["metaxy_feature_version", "metaxy_project_version"]
-        current_columns = df.collect_schema().names()
+        current_columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
         columns_to_drop = [col for col in version_columns if col in current_columns]
 
         if columns_to_drop:
-            df = df.drop(*columns_to_drop)
+            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
 
-        return df  # ty: ignore[invalid-return-type]
+        return df
 
     def compute_provenance_columns(
         self,
@@ -588,7 +588,7 @@ class VersioningEngine(ABC):
             DataFrame with provenance columns added.
         """
         return self._compute_provenance_internal(
-            df,  # ty: ignore[invalid-argument-type]
+            df,
             hash_algo,
             drop_renamed_data_version_col=False,
         )
@@ -661,7 +661,7 @@ class VersioningEngine(ABC):
         """
         expected, input_df = self._prepare_expected(
             sample,
-            upstream,  # ty: ignore[invalid-argument-type]
+            upstream,
             hash_algorithm,
             filters,
         )
@@ -672,7 +672,7 @@ class VersioningEngine(ABC):
 
         # Step 3: Validate current metadata has required provenance columns
         self._check_required_provenance_columns(
-            current,  # ty: ignore[invalid-argument-type]
+            current,
             "The `current` DataFrame loaded from the metadata store",
         )
 
@@ -707,19 +707,19 @@ class VersioningEngine(ABC):
                     f"Auto-computing {METAXY_PROVENANCE} from {METAXY_PROVENANCE_BY_FIELD} because it is missing in samples DataFrame"
                 )
                 expected = self.hash_struct_version_column(
-                    expected,  # ty: ignore[invalid-argument-type]
+                    expected,
                     hash_algorithm=hash_algorithm,
                 )
 
             # Validate that root features provide both required provenance columns
             self._check_required_provenance_columns(
-                expected,  # ty: ignore[invalid-argument-type]
+                expected,
                 "The `sample` DataFrame (must be provided to root features)",
             )
         else:
             # Normal case: compute provenance from upstream
             expected = self.load_upstream_with_provenance(
-                upstream,  # ty: ignore[invalid-argument-type]
+                upstream,
                 hash_algo=hash_algorithm,
                 filters=filters,
             )

@@ -192,7 +192,7 @@ class metaxify:
         if _asset is not None:
             # Called as @metaxify without parentheses
             return cls._transform(
-                _asset,  # ty: ignore[invalid-argument-type]
+                _asset,
                 key=coerced_key,
                 key_prefix=coerced_key_prefix,
                 inject_metaxy_kind=inject_metaxy_kind,
@@ -215,7 +215,7 @@ class metaxify:
 
     def __call__(self, asset: _T) -> _T:
         return self._transform(
-            asset,  # ty: ignore[invalid-argument-type]
+            asset,
             key=self.key,
             key_prefix=self.key_prefix,
             inject_metaxy_kind=self.inject_metaxy_kind,

@@ -233,7 +233,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Create engine using the configured class (allows subclass override)
         engine = self.versioning_engine_cls(
             plan=plan,
-            hash_functions=hash_functions,
+            hash_functions=hash_functions,  # ty: ignore[unknown-argument]
         )
 
         try:

@@ -111,7 +111,7 @@ class UpstreamPreparer(Generic[FrameT]):
                 dep_transformer = self.engine.feature_transformers_by_key[feature_key]
                 handler = create_lineage_handler(dep, self.plan, self.engine, dep_transformer)
                 transformed_df = handler.transform_upstream(
-                    renamed_df.df,  # ty: ignore[invalid-argument-type]
+                    renamed_df.df,
                     hash_algorithm,
                 )
                 result[feature_key] = RenamedDataFrame(
