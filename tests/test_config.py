@@ -1089,7 +1089,7 @@ invalid_field = "should_fail"
 def test_lazy_fallback_does_not_instantiate_unused_stores(tmp_path: Path) -> None:
     """get_store and open succeed even when fallback store config is invalid."""
     config_file = tmp_path / "metaxy.toml"
-    db_path = tmp_path / "dev.duckdb"
+    db_path = (tmp_path / "dev.duckdb").as_posix()
     config_file.write_text(f"""
 project = "test-project"
 store = "dev"

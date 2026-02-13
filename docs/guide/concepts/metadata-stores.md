@@ -128,7 +128,7 @@ Once processing is complete, the caller is expected to call `MetadataStore.write
 
 !!! tip "How are increments computed?"
 
-    Learn more [here](./data-versioning.md).
+    Learn more [here](./versioning.md).
 
 ## Deletes
 

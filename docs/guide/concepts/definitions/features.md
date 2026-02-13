@@ -115,7 +115,7 @@ class Transcript(
     num_speakers: int
 ```
 
-The [Data Versioning](../data-versioning.md) docs explain more about how Metaxy calculates versions for different components of a feature graph.
+The [Data Versioning](../versioning.md) docs explain more about how Metaxy calculates versions for different components of a feature graph.
 
 ### Attaching custom metadata
 

@@ -44,7 +44,7 @@ Here is how a typical Metaxy feature table looks like:
 !!! info
 
     `metaxy_data_version`/`metaxy_data_version_by_field` and `metaxy_provenance`/`metaxy_provenance_by_field` serve a slightly different purpose.
-    Provenance columns hold **static** versioning information entirely defined by the Metaxy framework. Data version defaults to the same value as provenance, but can be customized by the user **at runtime**, for example derived from the **contents** of the computed sample. Learn more [here](../guide/concepts/data-versioning.md).
+    Provenance columns hold **static** versioning information entirely defined by the Metaxy framework. Data version defaults to the same value as provenance, but can be customized by the user **at runtime**, for example derived from the **contents** of the computed sample. Learn more [here](../guide/concepts/versioning.md).
 
 All historical records for a given feature are stored in the same table. They can be separated by the following [system columns](../reference/system-columns.md):
 
@@ -102,7 +102,7 @@ Increment resolution in Metaxy involves running computations: every time the use
 
 1. e.g. Polars or Duckdb
 
-When resolving incremental updates for a [feature](../guide/concepts/definitions/features.md), Metaxy attempts to perform all computations such as [sample version calculations](../guide/concepts/data-versioning.md) within the metadata store.
+When resolving incremental updates for a [feature](../guide/concepts/definitions/features.md), Metaxy attempts to perform all computations such as [sample version calculations](../guide/concepts/versioning.md) within the metadata store.
 
 !!! note "When can **local** computations happen instead"
 

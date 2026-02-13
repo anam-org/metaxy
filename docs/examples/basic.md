@@ -126,5 +126,5 @@ This mechanism ensures your pipelines are both efficient and keep relevant data 
 Learn more about:
 
 - [Features and Fields](../guide/concepts/definitions/features.md)
-- [Data Versioning](../guide/concepts/data-versioning.md)
+- [Data Versioning](../guide/concepts/versioning.md)
 - [Relationships](/guide/concepts/definitions/relationship.md)

@@ -691,8 +691,10 @@ class MetaxyConfig(BaseSettings):
 
             # Temporarily replace method
             cls.settings_customise_sources = custom_sources  # ty: ignore[invalid-assignment]
-            config = cls()
-            cls.settings_customise_sources = original_method  # ty: ignore[invalid-assignment]
+            try:
+                config = cls()
+            finally:
+                cls.settings_customise_sources = original_method  # ty: ignore[invalid-assignment]
             # Store the resolved config file path
             config._config_file = toml_path.resolve()
         else:

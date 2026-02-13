@@ -29,7 +29,7 @@ def on_files(files: list, config: dict) -> list:
     for f in files:
         if not f.src_path.endswith(".md"):
             continue
-        # "guide/concepts/data-versioning.md" -> "guide/concepts/data-versioning"
+        # "guide/concepts/versioning.md" -> "guide/concepts/data-versioning"
         path = f.src_path.removesuffix(".md")
         known_paths.add(path)
         # "guide/concepts/index" -> "guide/concepts"

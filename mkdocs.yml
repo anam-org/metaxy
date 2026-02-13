@@ -225,7 +225,7 @@ nav:
         - Optional Dependencies: guide/concepts/definitions/optional-dependencies.md
         - Lineage Types: guide/concepts/definitions/relationship.md
         - External Features: guide/concepts/definitions/external-features.md
-      - Versioning: guide/concepts/data-versioning.md
+      - Versioning: guide/concepts/versioning.md
       - Metaxy Projects: guide/concepts/projects.md
       - Filters: guide/concepts/filters.md
       - Syntactic Sugar: guide/concepts/syntactic-sugar.md

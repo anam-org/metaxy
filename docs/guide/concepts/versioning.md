@@ -21,7 +21,7 @@ Here is how these versions are calculated, from bottom to top.
 
 ### Definitions
 
-These versions can be computed from Metaxy definitions (e.g. Python code or historical snapshots of the feature graph). We don't need to access the metadata store in order to calculate them.
+These versions can be computed from Metaxy definitions (e.g. Python code or historical snapshots of the feature graph). We don't need to access the metadata store in order to calculate them. They exist in Python at runtime, and are also serialized to the metadata store when `metaxy push` is called.
 
 #### Field Level
 
@@ -61,7 +61,9 @@ This version is stored as `metaxy_project_version` [system column](/reference/sy
 
 ### Samples
 
-These versions are sample-level and require access to the metadata store in order to compute them.
+These versions are sample-level and require access to the metadata store in order to be computed. They are stored separately for each row in the feature table.
+
+#### Provenance
 
 **Provenance By Field** is computed from the upstream **Provenance By Field** (with respect to defined [field-level lineage](./definitions/features.md#field-level-lineage) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
 

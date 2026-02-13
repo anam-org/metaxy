@@ -25,7 +25,7 @@ Metaxy is built around a few core ideas that work together to solve the problem 
 
     Declarative specifications that define your data schema, dependencies, and versioning.
 
--   :material-tag-multiple-outline: **[Versioning](data-versioning.md)**
+-   :material-tag-multiple-outline: **[Versioning](versioning.md)**
 
     ---
 

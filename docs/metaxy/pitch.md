@@ -27,7 +27,7 @@ Bring your own... really everything. Metaxy is a universal glue for metadata. Us
 
 ## 🪨 Reliable
 
-Metaxy is obsessively tested across all supported tabular compute engines. We guarantee to produce [versioning hashes](../guide/concepts/data-versioning.md) that are **consistent across DBs and local** compute engines. We really have tested this very well! (1)
+Metaxy is obsessively tested across all supported tabular compute engines. We guarantee to produce [versioning hashes](../guide/concepts/versioning.md) that are **consistent across DBs and local** compute engines. We really have tested this very well! (1)
 { .annotate }
 
 1. We have a rich test suite that's run against Linux, Windows and MacOS on all supported Python versions

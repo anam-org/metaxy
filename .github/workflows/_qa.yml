@@ -232,6 +232,7 @@ jobs:
     runs-on: windows-latest
     env:
       UV_PYTHON_PREFERENCE: only-system
+      PYTHONUTF8: "1"
     strategy:
       fail-fast: false
       matrix:
