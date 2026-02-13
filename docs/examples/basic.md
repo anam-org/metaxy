@@ -23,7 +23,7 @@ Let's define a pipeline with two features:
     scenario: "Setup upstream data"
     direction: LR
 
-### Defining features: `ParentFeature`
+### Defining features: `"examples/parent"`
 
 The parent feature represents raw embeddings computed from source data. It has a single field `embeddings` with a `code_version` that tracks the algorithm version.
 
@@ -33,9 +33,9 @@ The parent feature represents raw embeddings computed from source data. It has a
 ```
 <!-- dprint-ignore-end -->
 
-### Defining features: `ChildFeature`
+### Defining features: `"examples/child"`
 
-The child feature depends on the parent and produces predictions. The key configuration is the `FeatureDep` which declares that `ChildFeature` depends on `ParentFeature`.
+The child feature depends on the parent and produces predictions. The key configuration is the `FeatureDep` which declares that `"examples/child"` depends on `"examples/parent"`.
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_basic/features.py" hl_lines="5"
@@ -45,7 +45,7 @@ The child feature depends on the parent and produces predictions. The key config
 
 The `FeatureDep` declaration tells Metaxy:
 
-1. `ChildFeature` depends on `ParentFeature`
+1. `"examples/child"` depends on `"examples/parent"`
 2. When the parent's field provenance changes, the child must be recomputed
 3. This dependency is tracked automatically, enabling incremental recomputation
 

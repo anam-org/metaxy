@@ -151,9 +151,9 @@ class SpeechToText(
 ```
 { .annotated }
 
-1. This `audio` field [automatically depends][metaxy.models.fields_mapping.FieldsMapping.default] on the `audio` field of the `Video` feature, because their names match.
+1. This `audio` field [automatically depends][metaxy.models.fields_mapping.FieldsMapping.default] on the `audio` field of the `"example/video"` feature, because their names match.
 
-2. This `frames` field [automatically depends][metaxy.models.fields_mapping.FieldsMapping.default] on the `frames` field of the `Video` feature, because their names match.
+2. This `frames` field [automatically depends][metaxy.models.fields_mapping.FieldsMapping.default] on the `frames` field of the `"example/video"` feature, because their names match.
 
 Running `metaxy graph render --format mermaid` produces this graph:
 
@@ -164,7 +164,7 @@ Running `metaxy graph render --format mermaid` produces this graph:
 
 ### Tracking Definitions Changes
 
-Imagine the `audio` field of the `Video` feature changes (1):
+Imagine the `audio` field of the `"example/video"` feature changes (1):
 { .annotate }
 
 1. зerhaps, something like denoising has been applied
@@ -183,9 +183,9 @@ Here is how the change affects feature and field versions through the feature gr
 
 !!! info
 
-    - `Video`, `Crop`, and `SpeechToText` have changed
+    - `"example/video"`, `"example/crop"`, and `"example/stt"` have changed
 
-    - `FaceDetection` remained unchanged (depends only on `frames` and not on `audio`)
+    - `"example/face_detection"` remained unchanged (depends only on `frames` and not on `audio`)
 
     - Audio field versions have changed throughout the graph
 

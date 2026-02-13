@@ -112,7 +112,7 @@ And call the familiar `resolve_update` API:
 ```
 <!-- dprint-ignore-end -->
 
-That's all! The increment can be handled similarly to the `Video` feature.
+That's all! The increment can be handled similarly to the `"video"` feature.
 
 ## Advanced Feature Definitions
 

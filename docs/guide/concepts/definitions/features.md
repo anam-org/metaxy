@@ -41,7 +41,7 @@ class VideoFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="raw/video", id_colum
 
 1. ID columns are *almost* a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).
 
-Since `VideoFeature` is a **root feature**, it doesn't have any dependencies.
+Since `"raw/video"` is a **root feature**, it doesn't have any dependencies.
 
 That's it! Easy.
 
@@ -94,9 +94,9 @@ These are used to define dependencies between logical fields of features.
 
     Fields refer to **data** and are **purely logical** - users are free to define them as they see fit.
     Fields are supposed to represent parts of data that users care about.
-    For example, a `Video` feature - an `.mp4` file - may have `frames` and `audio` fields.
+    For example, a `"raw/video"` feature - an `.mp4` file - may have `frames` and `audio` fields.
 
-At this point, careful readers have probably noticed that the `Transcript` feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
+At this point, careful readers have probably noticed that the `"processed/transcript"` feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
 Let's express this with Metaxy:
 
 <!-- skip next -->

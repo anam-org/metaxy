@@ -26,7 +26,7 @@ We are going to define a typical video processing pipeline with three features:
     scenario: "Initial pipeline run"
     direction: LR
 
-### Defining features: `Video`
+### Defining features: `"video/raw"`
 
 Each video-like feature in our pipeline is going to have two fields: `audio` and `frames`.
 
@@ -39,9 +39,9 @@ Let's set the code version of `audio` to `"1"` in order to change it in the futu
 ```
 <!-- dprint-ignore-end -->
 
-### Defining features: `VideoChunk`
+### Defining features: `"video/chunk"`
 
-`VideoChunk` represents a piece of the upstream `Video` feature. Since each `Video` sample can be split into multiple chunks, we need to tell Metaxy how to map each chunk to its parent video.
+`"video/chunk"` represents a piece of the upstream `"video/raw"` feature. Since each `"video/raw"` sample can be split into multiple chunks, we need to tell Metaxy how to map each chunk to its parent video.
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_one_to_many/features.py" hl_lines="9"
@@ -49,7 +49,7 @@ Let's set the code version of `audio` to `"1"` in order to change it in the futu
 ```
 <!-- dprint-ignore-end -->
 
-We do not specify custom versions on its fields. Metaxy will automatically assign field-level lineage by [matching on field names](../reference/api/definitions/fields-mapping.md): `VideoChunk.frames` depends on `Video.frames` and `VideoChunk.audio` depends on `Video.audio`.
+We do not specify custom versions on its fields. Metaxy will automatically assign field-level lineage by [matching on field names](../reference/api/definitions/fields-mapping.md): `"video/chunk:frames"` depends on `"video/raw:frames"` and `"video/chunk:audio"` depends on `"video/raw:audio"`.
 
 ::: metaxy-example graph
     example: one-to-many
@@ -58,9 +58,9 @@ We do not specify custom versions on its fields. Metaxy will automatically assig
     show_field_deps: true
     features: ["video/raw", "video/chunk"]
 
-### Defining features: `FaceRecognition`
+### Defining features: `"video/faces"`
 
-`FaceRecognition` processes video chunks and **only depends on the `frames` field**. This can be expressed with a [`FieldDep`][metaxy.FieldDep].
+`"video/faces"` processes video chunks and **only depends on the `frames` field**. This can be expressed with a [`FieldDep`][metaxy.FieldDep].
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_one_to_many/features.py" hl_lines="9"
@@ -94,7 +94,7 @@ Run the pipeline to create videos, chunks, and face recognition results:
     scenario: "Initial pipeline run"
     step: "initial_run"
 
-All three features have been materialized. Note that the `VideoChunk` feature may dynamically create as many samples as needed: Metaxy doesn't need to know anything about this in advance, except the relationship type.
+All three features have been materialized. Note that the `"video/chunk"` feature may dynamically create as many samples as needed: Metaxy doesn't need to know anything about this in advance, except the relationship type.
 
 ### Step 2: Verify Idempotency
 
@@ -109,7 +109,7 @@ Nothing needs recomputation - the system correctly detects no changes.
 
 ### Step 3: Change Audio Code Version
 
-Now let's bump the code version on the `audio` field of `Video` feature:
+Now let's bump the code version on the `audio` field of `"video/raw"` feature:
 
 ::: metaxy-example patch-with-diff
     example: one-to-many
@@ -130,8 +130,8 @@ Run the pipeline again after the code change:
 
 **Key observation:**
 
-- `VideoChunk` has been recomputed since the `audio` field on it has been affected by the upstream change
-- `FaceRecognition` did not require a recompute, because it only depends on the `frames` field (which did not change)
+- `"video/chunk"` has been recomputed since the `audio` field on it has been affected by the upstream change
+- `"video/faces"` did not require a recompute, because it only depends on the `frames` field (which did not change)
 
 ## Conclusion
 

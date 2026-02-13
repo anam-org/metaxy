@@ -26,7 +26,7 @@ Let's define a pipeline with two features:
     scenario: "Initial pipeline run"
     direction: LR
 
-### Defining features: `Audio`
+### Defining features: `"audio"`
 
 Each audio recording has an `audio_id` (unique identifier) and a `speaker_id` (which speaker it belongs to). Multiple audio recordings can belong to the same speaker.
 
@@ -36,9 +36,9 @@ Each audio recording has an `audio_id` (unique identifier) and a `speaker_id` (w
 ```
 <!-- dprint-ignore-end -->
 
-### Defining features: `SpeakerEmbedding`
+### Defining features: `"speaker/embedding"`
 
-`SpeakerEmbedding` aggregates all audio recordings from a speaker into a single embedding. The key configuration is the `lineage` parameter which tells Metaxy that multiple `Audio` records with the same `speaker_id` are aggregated into one `SpeakerEmbedding`.
+`"speaker/embedding"` aggregates all audio recordings from a speaker into a single embedding. The key configuration is the `lineage` parameter which tells Metaxy that multiple `"audio"` records with the same `speaker_id` are aggregated into one `"speaker/embedding"`.
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_aggregation/features.py" hl_lines="6-11"
@@ -48,7 +48,7 @@ Each audio recording has an `audio_id` (unique identifier) and a `speaker_id` (w
 
 The `LineageRelationship.aggregation(on=["speaker_id"])` declaration is the key part. It tells Metaxy:
 
-1. Multiple `Audio` rows are aggregated into one `SpeakerEmbedding` row
+1. Multiple `"audio"` rows are aggregated into one `"speaker/embedding"` row
 2. The aggregation is keyed on `speaker_id` - all audio with the same speaker_id contributes to one embedding
 3. When **any** audio for a speaker changes, the aggregated provenance changes, triggering recomputation of that speaker's embedding
 
@@ -133,7 +133,7 @@ Run the pipeline again:
 
 ## How It Works
 
-Metaxy uses window functions to compute aggregated provenance without reducing rows. When resolving updates for `SpeakerEmbedding`:
+Metaxy uses window functions to compute aggregated provenance without reducing rows. When resolving updates for `"speaker/embedding"`:
 
 1. All audio rows for the same speaker get identical aggregated provenance values
 2. The aggregated provenance is computed from the individual audio provenances
