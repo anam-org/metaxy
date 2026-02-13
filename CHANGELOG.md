@@ -6,7 +6,7 @@ All notable user-facing Metaxy changes are to be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), except for *experimental* features.
 
-While Metaxy's core functionality and versioning engine is **_stable_** and quite complete, the CLI and some of the more advanced APIs and integrations are considered **_experimental_**.
+While Metaxy's core functionality and versioning engine are **_stable_** and quite complete, the CLI and some of the more advanced APIs and integrations are considered **_experimental_**.
 
 !!! abstract
 
@@ -26,7 +26,7 @@ While Metaxy's core functionality and versioning engine is **_stable_** and quit
 
 The first public Metaxy release :tada:!
 
-This release should be considered an *alpha* release: it is ready for production use and has dogfooded at [Anam.ai](https://anam.ai) internally, but we don't have any community feedback yet.
+This release should be considered an *alpha* release: it is ready for production use and has been dogfooded internally at [Anam.ai](https://anam.ai), but we don't have any community feedback yet.
 
 ### Added
 
