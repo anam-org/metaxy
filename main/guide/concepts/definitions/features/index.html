@@ -3428,7 +3428,7 @@
   <span class="md-ellipsis">
     
   
-    Storage Layout
+    System Columns
   
 
     
@@ -3700,7 +3700,7 @@ Doing this will ensure that newer samples are never written over older ones.</p>
 <ol>
 <li>ID columns are <em>almost</em> a primary key. The difference is quite subtle: Metaxy may interact with storage systems which do not technically have the concept of a primary key and may allow multiple rows to have the same ID columns (which are deduplicated by Metaxy).</li>
 </ol>
-<p>Since <code>VideoFeature</code> is a <strong><abbr title="A feature without any upstream (parent) features.">root feature</abbr></strong>, it doesn't have any dependencies.</p>
+<p>Since <code>"raw/video"</code> is a <strong><abbr title="A feature without any upstream (parent) features.">root feature</abbr></strong>, it doesn't have any dependencies.</p>
 <p>That's it! Easy.</p>
 <div class="admonition question annotate">
 <p class="admonition-title">Why classes?</p>
@@ -3746,9 +3746,9 @@ Columns refer to <strong>metadata</strong> and are stored in metadata stores (su
 </ol>
 <p>Fields refer to <strong>data</strong> and are <strong>purely logical</strong> - users are free to define them as they see fit.
 Fields are supposed to represent parts of data that users care about.
-For example, a <code>Video</code> feature - an <code>.mp4</code> file - may have <code>frames</code> and <code>audio</code> fields.</p>
+For example, a <code>"raw/video"</code> feature - an <code>.mp4</code> file - may have <code>frames</code> and <code>audio</code> fields.</p>
 </div>
-<p>At this point, careful readers have probably noticed that the <code>Transcript</code> feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
+<p>At this point, careful readers have probably noticed that the <code>"processed/transcript"</code> feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
 Let's express this with Metaxy:</p>
 <!-- skip next -->
 <div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Transcript</span><span class="p">(</span>

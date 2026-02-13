@@ -1146,10 +1146,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#graph-level" class="md-nav__link">
+  <a href="#project-level" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Graph Level
+        Project Level
       
     </span>
   </a>
@@ -1170,16 +1170,33 @@
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="Samples">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#content-based-versioning-data-version" class="md-nav__link">
+  <a href="#data-version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Content-Based Versioning (Data Version)
+        Data Version
       
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provenance-vs-data-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provenance Vs Data Version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -3515,7 +3532,7 @@
   <span class="md-ellipsis">
     
   
-    Storage Layout
+    System Columns
   
 
     
@@ -3636,10 +3653,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#graph-level" class="md-nav__link">
+  <a href="#project-level" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Graph Level
+        Project Level
       
     </span>
   </a>
@@ -3660,16 +3677,33 @@
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="Samples">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#content-based-versioning-data-version" class="md-nav__link">
+  <a href="#data-version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Content-Based Versioning (Data Version)
+        Data Version
       
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provenance-vs-data-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provenance Vs Data Version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -3805,34 +3839,38 @@
 <h3 id="definitions">Definitions<a class="headerlink" href="#definitions" title="Permanent link">&para;</a></h3>
 <p>These versions can be computed from Metaxy definitions (e.g. Python code or historical snapshots of the feature graph). We don't need to access the metadata store in order to calculate them.</p>
 <h4 id="field-level">Field Level<a class="headerlink" href="#field-level" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Field Code Version</strong> is defined on the field and is provided by the user (defaults to <code>"__metaxy_initial__"</code>)</li>
-</ul>
+<p><strong>Field Code Version</strong> is defined on the field and is provided by the user (defaults to <code>"__metaxy_initial__"</code>). Apart from <a href="#data-version">overriding data versions</a>, this is the only input to the versioning system that can be directly modified by the user.</p>
 <div class="admonition note">
 <p class="admonition-title">Code Version Value</p>
-<p>The value can be arbitrary, but in the future we might implement something around semantic versioning.</p>
+<p>The value can be an arbitrary string, but in the future we might implement something around semantic versioning.</p>
 </div>
-<ul>
-<li><strong>Field Version</strong> is computed from the code version of this field, the <abbr title="A unique identifier for a field within a feature definition, consisting of the feature name and the field name. Example: `/raw/video:frames`.">fully qualified field path</abbr> and from the <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> of its <a href="../definitions/features/#field-level-lineage">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</li>
-</ul>
+<p><strong>Field Version</strong> is computed from the code version of this field, the <abbr title="A unique identifier for a field within a feature definition, consisting of the feature name and the field name. Example: `/raw/video:frames`.">fully qualified field path</abbr> and from the <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> of its <a href="../definitions/features/#field-level-lineage">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</p>
+<details class="info" open="open">
+<summary>Visualization</summary>
+<p><img alt="field-version" src="../diagrams/field_version.svg" /></p>
+</details>
 <h4 id="feature-level">Feature Level<a class="headerlink" href="#feature-level" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Feature Version</strong>: is computed from the <strong>Field Versions</strong> of all fields defined on the feature and the key of the feature.</li>
-<li><strong>Feature Code Version</strong> is computed from the <strong>Field Code Versions</strong> of all fields defined on the feature. Unlike <em>Feature Version</em>, this version does not change when dependencies change. The value of this version is determined entirely by user input.</li>
-</ul>
-<h4 id="graph-level">Graph Level<a class="headerlink" href="#graph-level" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Project Version</strong>: is computed from the <strong>Feature Versions</strong> of all features defined on the graph.</li>
-</ul>
+<p><strong>Feature Version</strong>: is computed from the <strong>Field Versions</strong> of all fields defined on the feature and the key of the feature.</p>
+<details class="info" open="open">
+<summary>Visualization</summary>
+<p><img alt="feature-version" src="../diagrams/feature_version.svg" /></p>
+</details>
+<p>This version is stored as <code>metaxy_feature_version</code> <a href="../../../reference/system-columns/">system column</a>.</p>
+<p><strong>Feature Code Version</strong> is computed from the <strong>Field Code Versions</strong> of all fields defined on the feature. Unlike <em>Feature Version</em>, this version does not change when dependencies change. The value of this version is determined entirely by user input.</p>
+<h4 id="project-level">Project Level<a class="headerlink" href="#project-level" title="Permanent link">&para;</a></h4>
+<p><strong>Project Version</strong>: is computed from the <strong>Feature Versions</strong> of all features in the <a href="../projects/">Metaxy project</a>.</p>
+<details class="info" open="open">
+<summary>Visualization</summary>
+<p><img alt="project-version" src="../diagrams/project_version.svg" /></p>
+</details>
 <details>
 <summary>How is project version used?</summary>
 <p>This value is used to uniquely encode versioned feature graph topology. <code>metaxy push</code> CLI can be used to keep track of previous versions of the feature graph, enabling features such as data version reconciliation migrations.</p>
 </details>
+<p>This version is stored as <code>metaxy_project_version</code> <a href="../../../reference/system-columns/">system column</a>.</p>
 <h3 id="samples">Samples<a class="headerlink" href="#samples" title="Permanent link">&para;</a></h3>
 <p>These versions are sample-level and require access to the metadata store in order to compute them.</p>
-<ul>
-<li><strong>Provenance By Field</strong> is computed from the upstream <strong>Provenance By Field</strong> (with respect to defined <a href="../definitions/features/#field-level-lineage"><abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-lineage">field-level lineage</abbr></a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</li>
-</ul>
+<p><strong>Provenance By Field</strong> is computed from the upstream <strong>Provenance By Field</strong> (with respect to defined <a href="../definitions/features/#field-level-lineage"><abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-lineage">field-level lineage</abbr></a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</p>
 <table>
 <thead>
 <tr>
@@ -3859,14 +3897,21 @@
 </tr>
 </tbody>
 </table>
-<ul>
-<li><strong>Sample Version</strong> is derived from the <strong>Provenance By Field</strong> by simply hashing it.</li>
-</ul>
-<p>Computing this value is the goal of the entire versioning engine. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.</p>
-<h3 id="content-based-versioning-data-version">Content-Based Versioning (Data Version)<a class="headerlink" href="#content-based-versioning-data-version" title="Permanent link">&para;</a></h3>
-<p>Users can override the computed sample-level versions by setting <code>metaxy_data_version_by_field</code> on their metadata, effectively providing a <strong>Data Version</strong> for the sample. This can be used for preventing unnecessary downstream updates, if the computed sample stays the same even after upstream data has changed.</p>
-<p>For example, the data version can be calculated with <code>sha256</code>, or a <a href="https://en.wikipedia.org/wiki/Perceptual_hashing">perceptual hashing</a> method for images and videos.</p>
+<p><strong>Sample Provenance</strong> is derived from the <strong>Provenance By Field</strong> by simply hashing it.</p>
+<p>Computing this value is the goal of the entire versioning engine. It's a string value that only changes when versions of the specific upstream fields the sample depends on change. It acts as source of truth for resolving incremental updates for feature metadata.</p>
+<p>Most of the time <code>metaxy_provenance_by_field</code> and <code>metaxy_provenance</code> are used for the final <a href="#data-version">data version</a> columns as is, except when the user wants to override the latter. These final versions are then recursively used to compute downstream provenances.</p>
+<details class="info" open="open">
+<summary>Visualization</summary>
+<p><img alt="sample-version" src="../diagrams/sample_provenance.svg" /></p>
+</details>
+<p>These versions are stored as <code>metaxy_provenance_by_field</code> and <code>metaxy_provenance</code> <a href="../../../reference/system-columns/">system columns</a>.</p>
+<h4 id="data-version">Data Version<a class="headerlink" href="#data-version" title="Permanent link">&para;</a></h4>
+<p>Users can override the computed sample-level versions (<code>metaxy_provenance_by_field</code>) by setting <code>metaxy_data_version_by_field</code> on their metadata, effectively providing a <strong>Data Version</strong> for the sample. This can be used for preventing unnecessary downstream updates, if the computed sample stays the same even after upstream data has changed. <code>metaxy_data_version_by_field</code> is then used to compute <code>metaxy_data_version</code> by hashing all the fields together.</p>
+<p>For example, the data version can be calculated by running <code>sha256</code> over the file, or a <a href="https://en.wikipedia.org/wiki/Perceptual_hashing">perceptual hashing</a> method for images and videos.</p>
 <p>This customization only affects how downstream increments are calculated, as the data version cannot be known until the feature is computed.</p>
+<p>These versions are stored as <code>metaxy_data_version_by_field</code> and <code>metaxy_data_version</code> <a href="../../../reference/system-columns/">system columns</a>.</p>
+<h4 id="provenance-vs-data-version">Provenance Vs Data Version<a class="headerlink" href="#provenance-vs-data-version" title="Permanent link">&para;</a></h4>
+<p>To summarize, <code>metaxy_provenance</code> and <code>metaxy_provenance_by_field</code> are used to determine whether the <em>current feature</em> has to be updated. Usually they are used for <code>metaxy_data_version</code> and <code>metaxy_data_version_by_field</code>, but the user can override this. These columns in turn are used to calculate provenances for <em>downstream</em> features.</p>
 <h2 id="example-partial-data-updates">Example: Partial Data Updates<a class="headerlink" href="#example-partial-data-updates" title="Permanent link">&para;</a></h2>
 <div class="admonition tip">
 <p class="admonition-title">This example makes use of Metaxy's <abbr title="Simplified syntax for common Metaxy constructs. | /guide/concepts/syntactic-sugar">syntactic sugar</abbr>.</p>
@@ -3951,7 +3996,7 @@
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../../../reference/api/definitions/fields-mapping/#metaxy.models.fields_mapping.FieldsMapping.default">automatically depends</a> on the <code>audio</code> field of the <code>Video</code> feature, because their names match.</p>
+  &lt;/span&gt;" href="../../../reference/api/definitions/fields-mapping/#metaxy.models.fields_mapping.FieldsMapping.default">automatically depends</a> on the <code>audio</code> field of the <code>"example/video"</code> feature, because their names match.</p>
 </li>
 <li>
 <p>This <code>frames</code> field <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.fields_mapping.FieldsMapping.default&lt;/span&gt;
@@ -3959,7 +4004,7 @@
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../../../reference/api/definitions/fields-mapping/#metaxy.models.fields_mapping.FieldsMapping.default">automatically depends</a> on the <code>frames</code> field of the <code>Video</code> feature, because their names match.</p>
+  &lt;/span&gt;" href="../../../reference/api/definitions/fields-mapping/#metaxy.models.fields_mapping.FieldsMapping.default">automatically depends</a> on the <code>frames</code> field of the <code>"example/video"</code> feature, because their names match.</p>
 </li>
 </ol>
 <p>Running <code>metaxy graph render --format mermaid</code> produces this graph:</p>
@@ -3978,7 +4023,7 @@ flowchart LR
     example_video --&gt; example_stt
 </code></pre>
 <h3 id="tracking-definitions-changes">Tracking Definitions Changes<a class="headerlink" href="#tracking-definitions-changes" title="Permanent link">&para;</a></h3>
-<p class="annotate">Imagine the <code>audio</code> field of the <code>Video</code> feature changes (1):</p>
+<p class="annotate">Imagine the <code>audio</code> field of the <code>"example/video"</code> feature changes (1):</p>
 <ol>
 <li>зerhaps, something like denoising has been applied</li>
 </ol>
@@ -4021,10 +4066,10 @@ flowchart LR
 <p class="admonition-title">Info</p>
 <ul>
 <li>
-<p><code>Video</code>, <code>Crop</code>, and <code>SpeechToText</code> have changed</p>
+<p><code>"example/video"</code>, <code>"example/crop"</code>, and <code>"example/stt"</code> have changed</p>
 </li>
 <li>
-<p><code>FaceDetection</code> remained unchanged (depends only on <code>frames</code> and not on <code>audio</code>)</p>
+<p><code>"example/face_detection"</code> remained unchanged (depends only on <code>frames</code> and not on <code>audio</code>)</p>
 </li>
 <li>
 <p>Audio <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> have changed throughout the graph</p>

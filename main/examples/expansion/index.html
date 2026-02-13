@@ -2557,10 +2557,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#defining-features-video" class="md-nav__link">
+  <a href="#defining-features-videoraw" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: Video
+        Defining features: "video/raw"
       
     </span>
   </a>
@@ -2571,7 +2571,7 @@
   <a href="#defining-features-videochunk" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: VideoChunk
+        Defining features: "video/chunk"
       
     </span>
   </a>
@@ -2579,10 +2579,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#defining-features-facerecognition" class="md-nav__link">
+  <a href="#defining-features-videofaces" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: FaceRecognition
+        Defining features: "video/faces"
       
     </span>
   </a>
@@ -3520,7 +3520,7 @@
   <span class="md-ellipsis">
     
   
-    Storage Layout
+    System Columns
   
 
     
@@ -3618,10 +3618,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#defining-features-video" class="md-nav__link">
+  <a href="#defining-features-videoraw" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: Video
+        Defining features: "video/raw"
       
     </span>
   </a>
@@ -3632,7 +3632,7 @@
   <a href="#defining-features-videochunk" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: VideoChunk
+        Defining features: "video/chunk"
       
     </span>
   </a>
@@ -3640,10 +3640,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#defining-features-facerecognition" class="md-nav__link">
+  <a href="#defining-features-videofaces" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: FaceRecognition
+        Defining features: "video/faces"
       
     </span>
   </a>
@@ -3790,7 +3790,7 @@ flowchart LR
     video_raw --&gt; video_chunk
     video_chunk --&gt; video_faces
 </code></pre>
-<h3 id="defining-features-video">Defining features: <code>Video</code><a class="headerlink" href="#defining-features-video" title="Permanent link">&para;</a></h3>
+<h3 id="defining-features-videoraw">Defining features: <code>"video/raw"</code><a class="headerlink" href="#defining-features-videoraw" title="Permanent link">&para;</a></h3>
 <p>Each video-like feature in our pipeline is going to have two fields: <code>audio</code> and <code>frames</code>.</p>
 <p>Let's set the code version of <code>audio</code> to <code>"1"</code> in order to change it in the future.
 <code>frames</code> field will have a default version.</p>
@@ -3814,8 +3814,8 @@ flowchart LR
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
-<h3 id="defining-features-videochunk">Defining features: <code>VideoChunk</code><a class="headerlink" href="#defining-features-videochunk" title="Permanent link">&para;</a></h3>
-<p><code>VideoChunk</code> represents a piece of the upstream <code>Video</code> feature. Since each <code>Video</code> sample can be split into multiple chunks, we need to tell Metaxy how to map each chunk to its parent video.</p>
+<h3 id="defining-features-videochunk">Defining features: <code>"video/chunk"</code><a class="headerlink" href="#defining-features-videochunk" title="Permanent link">&para;</a></h3>
+<p><code>"video/chunk"</code> represents a piece of the upstream <code>"video/raw"</code> feature. Since each <code>"video/raw"</code> sample can be split into multiple chunks, we need to tell Metaxy how to map each chunk to its parent video.</p>
 <!-- dprint-ignore-start -->
 <div class="language-python highlight"><span class="filename">src/example_one_to_many/features.py</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoChunk</span><span class="p">(</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">mx</span><span class="o">.</span><span class="n">BaseFeature</span><span class="p">,</span>
@@ -3837,7 +3837,7 @@ flowchart LR
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
-<p>We do not specify custom versions on its fields. Metaxy will automatically assign <abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-lineage">field-level lineage</abbr> by <a href="../../reference/api/definitions/fields-mapping/">matching on field names</a>: <code>VideoChunk.frames</code> depends on <code>Video.frames</code> and <code>VideoChunk.audio</code> depends on <code>Video.audio</code>.</p>
+<p>We do not specify custom versions on its fields. Metaxy will automatically assign <abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-lineage">field-level lineage</abbr> by <a href="../../reference/api/definitions/fields-mapping/">matching on field names</a>: <code>"video/chunk:frames"</code> depends on <code>"video/raw:frames"</code> and <code>"video/chunk:audio"</code> depends on <code>"video/raw:audio"</code>.</p>
 <pre class="mermaid"><code>flowchart LR
     subgraph video_raw["video/raw"]
         video_raw_audio["audio"]
@@ -3851,8 +3851,8 @@ flowchart LR
     video_raw_frames --&gt; video_chunk_frames
     style video_raw stroke:#4C78A8,stroke-width:2px
     style video_chunk stroke:#4C78A8,stroke-width:2px</code></pre>
-<h3 id="defining-features-facerecognition">Defining features: <code>FaceRecognition</code><a class="headerlink" href="#defining-features-facerecognition" title="Permanent link">&para;</a></h3>
-<p><code>FaceRecognition</code> processes video chunks and <strong>only depends on the <code>frames</code> field</strong>. This can be expressed with a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FieldDep&lt;/span&gt;
+<h3 id="defining-features-videofaces">Defining features: <code>"video/faces"</code><a class="headerlink" href="#defining-features-videofaces" title="Permanent link">&para;</a></h3>
+<p><code>"video/faces"</code> processes video chunks and <strong>only depends on the <code>frames</code> field</strong>. This can be expressed with a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FieldDep&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -4026,7 +4026,7 @@ This completes the feature definitions. Let's proceed to running the pipeline.</
 </span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">Found</span> <span class="mi">11</span> <span class="n">video</span> <span class="n">chunks</span> <span class="ow">and</span> <span class="mi">0</span> <span class="n">video</span> <span class="n">chunks</span> <span class="n">that</span> <span class="n">need</span> <span class="n">face</span> <span class="n">recognition</span>
 </span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">Writing</span> <span class="n">face</span> <span class="n">recognition</span> <span class="n">results</span> <span class="k">for</span> <span class="mi">11</span> <span class="n">chunks</span>
 </span></code></pre></div>
-<p>All three features have been materialized. Note that the <code>VideoChunk</code> feature may dynamically create as many samples as needed: Metaxy doesn't need to know anything about this in advance, except the relationship type.</p>
+<p>All three features have been materialized. Note that the <code>"video/chunk"</code> feature may dynamically create as many samples as needed: Metaxy doesn't need to know anything about this in advance, except the relationship type.</p>
 <h3 id="step-2-verify-idempotency">Step 2: Verify Idempotency<a class="headerlink" href="#step-2-verify-idempotency" title="Permanent link">&para;</a></h3>
 <p>Run the pipeline again without any changes:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$<span class="w"> </span>python<span class="w"> </span>pipeline.py
@@ -4036,7 +4036,7 @@ This completes the feature definitions. Let's proceed to running the pipeline.</
 </span></code></pre></div>
 <p>Nothing needs recomputation - the system correctly detects no changes.</p>
 <h3 id="step-3-change-audio-code-version">Step 3: Change Audio Code Version<a class="headerlink" href="#step-3-change-audio-code-version" title="Permanent link">&para;</a></h3>
-<p>Now let's bump the code version on the <code>audio</code> field of <code>Video</code> feature:</p>
+<p>Now let's bump the code version on the <code>audio</code> field of <code>"video/raw"</code> feature:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="step-3-change-audio-code-version-patch" name="__tabbed_1" type="radio" /><input id="step-3-change-audio-code-version-feature-graph-changes" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="step-3-change-audio-code-version-patch">Patch</label><label for="step-3-change-audio-code-version-feature-graph-changes">Feature Graph Changes</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -4089,8 +4089,8 @@ flowchart TB
 </span></code></pre></div>
 <p><strong>Key observation:</strong></p>
 <ul>
-<li><code>VideoChunk</code> has been recomputed since the <code>audio</code> field on it has been affected by the upstream change</li>
-<li><code>FaceRecognition</code> did not require a recompute, because it only depends on the <code>frames</code> field (which did not change)</li>
+<li><code>"video/chunk"</code> has been recomputed since the <code>audio</code> field on it has been affected by the upstream change</li>
+<li><code>"video/faces"</code> did not require a recompute, because it only depends on the <code>frames</code> field (which did not change)</li>
 </ul>
 <h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
 <p>Metaxy provides a convenient API for modeling expansion relationships: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.models.lineage.LineageRelationship.expansion&lt;/span&gt;

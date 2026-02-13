@@ -2532,7 +2532,7 @@
   <a href="#defining-features-audio" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: Audio
+        Defining features: "audio"
       
     </span>
   </a>
@@ -2543,7 +2543,7 @@
   <a href="#defining-features-speakerembedding" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: SpeakerEmbedding
+        Defining features: "speaker/embedding"
       
     </span>
   </a>
@@ -3542,7 +3542,7 @@
   <span class="md-ellipsis">
     
   
-    Storage Layout
+    System Columns
   
 
     
@@ -3643,7 +3643,7 @@
   <a href="#defining-features-audio" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: Audio
+        Defining features: "audio"
       
     </span>
   </a>
@@ -3654,7 +3654,7 @@
   <a href="#defining-features-speakerembedding" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: SpeakerEmbedding
+        Defining features: "speaker/embedding"
       
     </span>
   </a>
@@ -3832,7 +3832,7 @@ flowchart LR
     speaker_embedding["&lt;div style="text-align:left"&gt;&lt;b&gt;speaker/embedding&lt;/b&gt;&lt;br/&gt;a485fa5b&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- embedding (27a15391)&lt;/div&gt;"]
     audio --&gt; speaker_embedding
 </code></pre>
-<h3 id="defining-features-audio">Defining features: <code>Audio</code><a class="headerlink" href="#defining-features-audio" title="Permanent link">&para;</a></h3>
+<h3 id="defining-features-audio">Defining features: <code>"audio"</code><a class="headerlink" href="#defining-features-audio" title="Permanent link">&para;</a></h3>
 <p>Each audio recording has an <code>audio_id</code> (unique identifier) and a <code>speaker_id</code> (which speaker it belongs to). Multiple audio recordings can belong to the same speaker.</p>
 <!-- dprint-ignore-start -->
 <div class="language-python highlight"><span class="filename">src/example_aggregation/features.py</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
@@ -3855,8 +3855,8 @@ flowchart LR
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
-<h3 id="defining-features-speakerembedding">Defining features: <code>SpeakerEmbedding</code><a class="headerlink" href="#defining-features-speakerembedding" title="Permanent link">&para;</a></h3>
-<p><code>SpeakerEmbedding</code> aggregates all audio recordings from a speaker into a single embedding. The key configuration is the <code>lineage</code> parameter which tells Metaxy that multiple <code>Audio</code> records with the same <code>speaker_id</code> are aggregated into one <code>SpeakerEmbedding</code>.</p>
+<h3 id="defining-features-speakerembedding">Defining features: <code>"speaker/embedding"</code><a class="headerlink" href="#defining-features-speakerembedding" title="Permanent link">&para;</a></h3>
+<p><code>"speaker/embedding"</code> aggregates all audio recordings from a speaker into a single embedding. The key configuration is the <code>lineage</code> parameter which tells Metaxy that multiple <code>"audio"</code> records with the same <code>speaker_id</code> are aggregated into one <code>"speaker/embedding"</code>.</p>
 <!-- dprint-ignore-start -->
 <div class="language-python highlight"><span class="filename">src/example_aggregation/features.py</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">SpeakerEmbedding</span><span class="p">(</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">mx</span><span class="o">.</span><span class="n">BaseFeature</span><span class="p">,</span>
@@ -3888,7 +3888,7 @@ flowchart LR
 
 <p>The <code>LineageRelationship.aggregation(on=["speaker_id"])</code> declaration is the key part. It tells Metaxy:</p>
 <ol>
-<li>Multiple <code>Audio</code> rows are aggregated into one <code>SpeakerEmbedding</code> row</li>
+<li>Multiple <code>"audio"</code> rows are aggregated into one <code>"speaker/embedding"</code> row</li>
 <li>The aggregation is keyed on <code>speaker_id</code> - all audio with the same speaker_id contributes to one embedding</li>
 <li>When <strong>any</strong> audio for a speaker changes, the aggregated provenance changes, triggering recomputation of that speaker's embedding</li>
 </ol>
@@ -4100,7 +4100,7 @@ flowchart LR
 <li>Speaker <code>s2</code> remains unchanged</li>
 </ul>
 <h2 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
-<p>Metaxy uses window functions to compute aggregated provenance without reducing rows. When resolving updates for <code>SpeakerEmbedding</code>:</p>
+<p>Metaxy uses window functions to compute aggregated provenance without reducing rows. When resolving updates for <code>"speaker/embedding"</code>:</p>
 <ol>
 <li>All audio rows for the same speaker get identical aggregated provenance values</li>
 <li>The aggregated provenance is computed from the individual audio provenances</li>

@@ -2501,10 +2501,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#defining-features-parentfeature" class="md-nav__link">
+  <a href="#defining-features-examplesparent" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: ParentFeature
+        Defining features: "examples/parent"
       
     </span>
   </a>
@@ -2512,10 +2512,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#defining-features-childfeature" class="md-nav__link">
+  <a href="#defining-features-exampleschild" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: ChildFeature
+        Defining features: "examples/child"
       
     </span>
   </a>
@@ -3520,7 +3520,7 @@
   <span class="md-ellipsis">
     
   
-    Storage Layout
+    System Columns
   
 
     
@@ -3618,10 +3618,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#defining-features-parentfeature" class="md-nav__link">
+  <a href="#defining-features-examplesparent" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: ParentFeature
+        Defining features: "examples/parent"
       
     </span>
   </a>
@@ -3629,10 +3629,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#defining-features-childfeature" class="md-nav__link">
+  <a href="#defining-features-exampleschild" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining features: ChildFeature
+        Defining features: "examples/child"
       
     </span>
   </a>
@@ -3781,7 +3781,7 @@ flowchart LR
     examples_child["&lt;div style="text-align:left"&gt;&lt;b&gt;examples/child&lt;/b&gt;&lt;br/&gt;b10ea448&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- predictions (9cd1c608)&lt;/div&gt;"]
     examples_parent --&gt; examples_child
 </code></pre>
-<h3 id="defining-features-parentfeature">Defining features: <code>ParentFeature</code><a class="headerlink" href="#defining-features-parentfeature" title="Permanent link">&para;</a></h3>
+<h3 id="defining-features-examplesparent">Defining features: <code>"examples/parent"</code><a class="headerlink" href="#defining-features-examplesparent" title="Permanent link">&para;</a></h3>
 <p>The parent feature represents raw embeddings computed from source data. It has a single field <code>embeddings</code> with a <code>code_version</code> that tracks the algorithm version.</p>
 <!-- dprint-ignore-start -->
 <div class="language-python highlight"><span class="filename">src/example_basic/features.py</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
@@ -3806,8 +3806,8 @@ flowchart LR
 </span></code></pre></div>
 <!-- dprint-ignore-end -->
 
-<h3 id="defining-features-childfeature">Defining features: <code>ChildFeature</code><a class="headerlink" href="#defining-features-childfeature" title="Permanent link">&para;</a></h3>
-<p>The child feature depends on the parent and produces predictions. The key configuration is the <code>FeatureDep</code> which declares that <code>ChildFeature</code> depends on <code>ParentFeature</code>.</p>
+<h3 id="defining-features-exampleschild">Defining features: <code>"examples/child"</code><a class="headerlink" href="#defining-features-exampleschild" title="Permanent link">&para;</a></h3>
+<p>The child feature depends on the parent and produces predictions. The key configuration is the <code>FeatureDep</code> which declares that <code>"examples/child"</code> depends on <code>"examples/parent"</code>.</p>
 <!-- dprint-ignore-start -->
 <div class="language-python highlight"><span class="filename">src/example_basic/features.py</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ChildFeature</span><span class="p">(</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">mx</span><span class="o">.</span><span class="n">BaseFeature</span><span class="p">,</span>
@@ -3826,7 +3826,7 @@ flowchart LR
 
 <p>The <code>FeatureDep</code> declaration tells Metaxy:</p>
 <ol>
-<li><code>ChildFeature</code> depends on <code>ParentFeature</code></li>
+<li><code>"examples/child"</code> depends on <code>"examples/parent"</code></li>
 <li>When the parent's field provenance changes, the child must be recomputed</li>
 <li>This dependency is tracked automatically, enabling incremental recomputation</li>
 </ol>
