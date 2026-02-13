@@ -3708,7 +3708,7 @@ Doing this will ensure that newer samples are never written over older ones.</p>
 It was practical to start from this interface, since it's somewhat more complicated to implement and support.
 More feature definition and registration methods are likely to be introduced in the future, since Metaxy doesn't
 use the class information in any way (1).
-Additionally, users may want to construct instances of these Pydantic classes, and Pydantic can be used for data validation and type safety.</p>
+Additionally, users may want to construct instances of these Pydantic classes, and Pydantic can be used for data validation and type safety. We will explore other interfaces in <a href="https://github.com/anam-org/metaxy/issues/800"><code>anam-org/metaxy#800</code></a>.</p>
 </div>
 <ol>
 <li>That's a little lie. The <a href="../../../../integrations/orchestration/dagster/">Dagster integration</a> uses the original class to extract the table schema for visualization purposes, but we are exploring alternative solutions in <a href="https://github.com/anam-org/metaxy/issues/855"><code>anam-org/metaxy</code></a></li>
