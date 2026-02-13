@@ -50,7 +50,7 @@ That's it! Easy.
     It was practical to start from this interface, since it's somewhat more complicated to implement and support.
     More feature definition and registration methods are likely to be introduced in the future, since Metaxy doesn't
     use the class information in any way (1).
-    Additionally, users may want to construct instances of these Pydantic classes, and Pydantic can be used for data validation and type safety.
+    Additionally, users may want to construct instances of these Pydantic classes, and Pydantic can be used for data validation and type safety. We will explore other interfaces in [`anam-org/metaxy#800`](https://github.com/anam-org/metaxy/issues/800).
 
 1. That's a little lie. The [Dagster integration](/integrations/orchestration/dagster/index.md) uses the original class to extract the table schema for visualization purposes, but we are exploring alternative solutions in [`anam-org/metaxy`](https://github.com/anam-org/metaxy/issues/855)
 

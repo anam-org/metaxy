@@ -56,6 +56,12 @@ Metaxy provides integrations with popular tools such as [Dagster](https://docs.m
 
 The full list can be found [here](https://docs.metaxy.io/latest/integrations).
 
+## Blog Posts
+
+- [Announcement post](https://anam.ai/blog/metaxy) by Anam
+
+- [Dagster + Metaxy](https://dagster.io/blog/building-real-time-interactive-avatars-with-metaxy) by Dagster labs
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).

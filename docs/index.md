@@ -119,4 +119,9 @@ Here are a few more useful links:
 - Learn about Metaxy [design choices](./metaxy/design.md)
 --8<-- "whats-next.md"
 
+## Blog Posts
+
+- [Announcement post](https://anam.ai/blog/metaxy) by Anam
+- [Dagster + Metaxy](https://dagster.io/blog/building-real-time-interactive-avatars-with-metaxy) by Dagster labs
+
 [^1]: The CLI is not tested on Windows yet.
