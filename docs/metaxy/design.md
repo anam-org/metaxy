@@ -44,7 +44,7 @@ Here is how a typical Metaxy feature table looks like:
 !!! info
 
     `metaxy_data_version`/`metaxy_data_version_by_field` and `metaxy_provenance`/`metaxy_provenance_by_field` serve a slightly different purpose.
-    Provenance columns hold **static** versioning information entirely defined by the Metaxy framework. Data version defaults to the same value as provenance, but can be customized by the user **at runtime**, for example derived from the **contents** of the computed sample. Learn more [here](../guide/concepts/versioning.md).
+    Provenance columns hold **static** versioning information entirely defined by the Metaxy framework. Data version defaults to the same value as provenance, but can be customized by the user **at runtime**, for example by deriving it from the **contents** of the computed sample. Learn more [here](../guide/concepts/versioning.md).
 
 All historical records for a given feature are stored in the same table. They can be separated by the following [system columns](../reference/system-columns.md):
 
@@ -100,7 +100,7 @@ This allows metadata store implementations to reuse the same code. Currently onl
 Increment resolution in Metaxy involves running computations: every time the user requests an increment for a given [feature](../guide/concepts/definitions/features.md), Metaxy has to join upstream features, hash their versions, and filter out samples that have already been processed. This can be performed either **locally** (typically favored in development environments) or **remotely** (achieves better performance in production). Metaxy supports both options: [databases](../integrations/metadata-stores/databases/index.md) for remote compute and [storage-only](../integrations/metadata-stores/storage/index.md) metadata stores for embedded compute (1).
 { .annotate }
 
-1. e.g. Polars or Duckdb
+1. e.g. Polars or DuckDB
 
 When resolving incremental updates for a [feature](../guide/concepts/definitions/features.md), Metaxy attempts to perform all computations such as [sample version calculations](../guide/concepts/versioning.md) within the metadata store.
 

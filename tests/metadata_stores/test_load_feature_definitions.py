@@ -1034,3 +1034,83 @@ def test_sync_external_features_on_version_mismatch_override_to_warn(tmp_path: P
 
         # Feature should still be loaded
         assert new_graph.get_feature_definition(["override_to_warn"]).is_external is False
+
+
+def test_sync_external_features_warns_on_invalid_stored_feature(tmp_path: Path):
+    """Test that sync_external_features warns and skips individually corrupted features."""
+    import warnings
+
+    from metaxy._warnings import InvalidStoredFeatureWarning
+    from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+
+    store_path = tmp_path / "store.duckdb"
+
+    # Push two features to the store
+    source_graph = FeatureGraph()
+    with source_graph.use():
+
+        class ValidFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["sync_test", "valid"]),
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class CorruptFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["sync_test", "corrupt"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DuckDBMetadataStore(database=store_path) as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Corrupt one feature's spec in the store
+    with DuckDBMetadataStore(database=store_path).open("w") as store:
+        store._duckdb_raw_connection().execute(
+            "UPDATE metaxy_system__feature_versions "
+            "SET feature_spec = 'not valid json' "
+            "WHERE feature_key = 'sync_test/corrupt'"
+        )
+
+    # Create a graph with external placeholders for both features
+    new_graph = FeatureGraph()
+    with new_graph.use():
+        external_valid = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["sync_test", "valid"]),
+                fields=[FieldSpec(key=FieldKey(["value"]))],
+            ),
+            feature_schema={},
+            project="placeholder",
+        )
+        new_graph.add_feature_definition(external_valid)
+
+        external_corrupt = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["sync_test", "corrupt"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+            feature_schema={},
+            project="placeholder",
+        )
+        new_graph.add_feature_definition(external_corrupt)
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            result = sync_external_features(DuckDBMetadataStore(database=store_path))
+
+    # Valid feature was loaded successfully
+    assert len(result) == 1
+    assert result[0].key == FeatureKey(["sync_test", "valid"])
+
+    # One warning for the corrupted feature, one for it remaining unresolved
+    invalid_warnings = [w for w in caught if w.category is InvalidStoredFeatureWarning]
+    assert len(invalid_warnings) == 1
+    assert "sync_test/corrupt" in str(invalid_warnings[0].message)

@@ -1,5 +1,5 @@
---- a/src/example_one_to_many/features.py
-+++ b/src/example_one_to_many/features.py
+--- a/src/example_expansion/features.py
++++ b/src/example_expansion/features.py
 @@ -9,6 +9,6 @@ class Video(
          id_columns=["video_id"],
          fields=[

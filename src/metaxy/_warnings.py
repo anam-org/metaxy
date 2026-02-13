@@ -10,3 +10,7 @@ class UnresolvedExternalFeatureWarning(UserWarning):
 
 class ExternalFeatureVersionMismatchWarning(UserWarning):
     """Warning raised when external feature versions don't match the metadata store."""
+
+
+class InvalidStoredFeatureWarning(UserWarning):
+    """Warning raised when a feature in the metadata store fails to validate."""

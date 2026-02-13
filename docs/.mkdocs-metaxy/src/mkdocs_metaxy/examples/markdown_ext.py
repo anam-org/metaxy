@@ -24,7 +24,7 @@ This module provides a markdown preprocessor that handles directives like:
         step: "run_pipeline"
 
     ::: metaxy-example patch-with-diff
-        example: one-to-many
+        example: expansion
         path: patches/01_update_video_code_version.patch
         scenario: "Code change - audio field only"
         step: "update_audio_version"

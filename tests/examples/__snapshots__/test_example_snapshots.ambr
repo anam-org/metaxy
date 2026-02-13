@@ -716,21 +716,21 @@
         'type': 'graph_pushed',
       }),
       dict({
-        'command': 'python -m example_basic.setup_data',
+        'command': 'python src/example_basic/setup_data.py',
         'returncode': 0,
         'scenario_name': 'Setup upstream data',
         'step_name': 'setup_data',
         'type': 'command_executed',
       }),
       dict({
-        'command': 'python -m example_basic.pipeline',
+        'command': 'python src/example_basic/pipeline.py',
         'returncode': 0,
         'scenario_name': 'Initial pipeline run',
         'step_name': 'initial_run',
         'type': 'command_executed',
       }),
       dict({
-        'command': 'python -m example_basic.pipeline',
+        'command': 'python src/example_basic/pipeline.py',
         'returncode': 0,
         'scenario_name': 'Idempotent rerun',
         'step_name': 'idempotent_run',
@@ -967,7 +967,7 @@
         'type': 'patch_applied',
       }),
       dict({
-        'command': 'python -m example_basic.pipeline',
+        'command': 'python src/example_basic/pipeline.py',
         'returncode': 0,
         'scenario_name': 'Code evolution',
         'step_name': 'recompute_after_change',
@@ -976,7 +976,7 @@
     ]),
   })
 # ---
-# name: test_example_snapshot[example-one-to-many]
+# name: test_example_snapshot[example-expansion]
   dict({
     'events': list([
       dict({
@@ -2523,14 +2523,14 @@
         'type': 'graph_pushed',
       }),
       dict({
-        'command': 'python -m example_quickstart.pipeline',
+        'command': 'python src/example_quickstart/pipeline.py',
         'returncode': 0,
         'scenario_name': 'Initial pipeline run',
         'step_name': 'initial_run',
         'type': 'command_executed',
       }),
       dict({
-        'command': 'python -m example_quickstart.pipeline',
+        'command': 'python src/example_quickstart/pipeline.py',
         'returncode': 0,
         'scenario_name': 'Idempotent rerun',
         'step_name': 'idempotent_run',

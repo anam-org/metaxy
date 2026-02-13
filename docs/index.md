@@ -26,7 +26,7 @@ description: "A high level introduction to Metaxy."
 
 Metaxy is a pluggable metadata layer for building multimodal Data and ML pipelines. Metaxy manages and tracks **metadata** across complex computational graphs, implements sample and sub-sample versioning, allowing the codebase to evolve over time without friction.
 
-### What is the problem again?
+### The problem: sample-level versioning
 
 !!! info annotate
 
@@ -44,16 +44,20 @@ These workloads **evolve all the time**, with new data being shipped, bugfixes o
 
 --8<-- "data-vs-metadata.md"
 
-### Alright, that sounds pretty bad
-
-It does (1). Until recently, a general solution for this problem did not exist, but not anymore :tada: !
+In contrast to what one might expect, spinning up a thousand compute nodes is a much easier task with established solutions, while sample-level versioning remains a challenging problem (1).
 { .annotate }
 
 1. it is hard to overestimate the amount of pain [@danielgafni](https://github.com/danielgafni) has endured before building Metaxy
 
+### The solution
+
+Until recently, a general solution for this problem did not exist, but not anymore :tada: !
+
+Metaxy allows creating and updating *feature definitions* which can independently version different *fields* of the same data sample and express granular field-level lineage.
+
 !!! success annotate  "Just Use Metaxy"
 
-    Metaxy gives you quite a few superpowers:
+    Metaxy has quite a few superpowers:
 
     - Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second (1). Benefit from prunable partial updates.
     - Freedom from storage lock-in. Swap [storage backends](./integrations/metadata-stores/index.md) in development and production environments without breaking a sweat (2).
@@ -104,7 +108,7 @@ uv add metaxy
 
 !!! tip
 
-    Urging to get your hands dirty?
+    Itching to get your hands dirty?
     Head to [Quickstart](./guide/quickstart/quickstart.md).
 
 ## What's Next?

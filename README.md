@@ -32,7 +32,7 @@ Metaxy manages **metadata** while **data** typically lives elsewhere:
 
 The feature that makes Metaxy stand out is the ability to track **partial data dependencies** and detect **prunable updates** — updates that don't trigger change propagation through certain paths in the dependency graph because they modify fields that aren't dependencies of those downstream features. For example, updating audio upstream of a face recognition step allows pruning the face recognition branch since it only depends on video frames. This problem is specific to multimodal pipelines and doesn't typically emerge in traditional data engineering.
 
-Metaxy's goal is to provide a standard instrument for any kind of multimodal (or just purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations over metadata. Or, in short, to be a universal glue for incremental data pipelines.
+Metaxy's goal is to provide a standard instrument for any kind of multimodal (or purely tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, and manipulations over metadata. Or, in short, to be a universal glue for incremental data pipelines.
 
 Metaxy is very reliable and is fanatically tested across all supported Python versions and platforms [^1].
 
@@ -52,15 +52,15 @@ uv add metaxy
 
 Metaxy is highly pluggable and generally can be used with any kind of incremental pipelines, storage, metadata storage, and dataframe libraries.
 
-Metaxy provides integrations with popular tools such as [Dagster](https://docs.metaxy.io/main/integrations/orchestration/dagster), [Ray](https://docs.metaxy.io/main/integrations/compute/ray), [ClickHouse](https://docs.metaxy.io/main/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://docs.metaxy.io/main/integrations/metadata-stores/storage/delta/), [SQLModel](https://docs.metaxy.io/main/integrations/plugins/sqlmodel/).
+Metaxy provides integrations with popular tools such as [Dagster](https://docs.metaxy.io/latest/integrations/orchestration/dagster), [Ray](https://docs.metaxy.io/latest/integrations/compute/ray), [ClickHouse](https://docs.metaxy.io/latest/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://docs.metaxy.io/latest/integrations/metadata-stores/storage/delta/), [SQLModel](https://docs.metaxy.io/latest/integrations/plugins/sqlmodel/).
 
-The full list can be found [here](https://docs.metaxy.io/main/integrations).
+The full list can be found [here](https://docs.metaxy.io/latest/integrations).
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-<!-- scarf.sh for telemetry collection ( it does not record personal data such as IP addresses) -->
+<!-- scarf.sh for telemetry collection (it does not record personal data such as IP addresses) -->
 <img referrerpolicy="no-referrer" src="https://telemetry.metaxy.io/a.png?x-pxid=22cb75dc-201e-4a72-9fb2-c3a53ce9207e&page=README.md" />
 
 [^1]: The CLI is not tested on Windows yet.

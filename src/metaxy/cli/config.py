@@ -12,7 +12,7 @@ from metaxy.cli.console import console, data_console, error_console
 # Config subcommand app
 app = cyclopts.App(
     name="config",
-    help="Manage Metaxy [configuration](https://docs.metaxy.io/main/reference/configuration/)",
+    help="Manage Metaxy [configuration](https://docs.metaxy.io/latest/reference/configuration/)",
     console=console,
     error_console=error_console,
 )

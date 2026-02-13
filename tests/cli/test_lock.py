@@ -483,6 +483,71 @@ database = "{store_path}"
         assert not (consumer_project.project_dir / "metaxy.lock").exists()
 
 
+def test_load_all_features_from_store_warns_on_invalid_feature(tmp_path: Path):
+    """Test that _load_all_features_from_store warns and skips features that fail to validate."""
+    import warnings
+
+    from metaxy_testing.models import SampleFeatureSpec
+
+    from metaxy import BaseFeature, FeatureGraph, FeatureKey, FieldKey, FieldSpec
+    from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+    from metaxy.metadata_store.system.storage import SystemTableStorage
+    from metaxy.utils.lock_file import _load_all_features_from_store
+
+    store_path = tmp_path / "store.duckdb"
+
+    # Push two valid features
+    graph = FeatureGraph()
+    with graph.use():
+
+        class FeatureA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "valid"]),
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class FeatureB(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "will_corrupt"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with DuckDBMetadataStore(database=store_path) as store:
+            storage = SystemTableStorage(store)
+            storage.push_graph_snapshot()
+
+    # Corrupt one feature's spec in the store
+    with DuckDBMetadataStore(database=store_path).open("w") as store:
+        store._duckdb_raw_connection().execute(
+            "UPDATE metaxy_system__feature_versions "
+            "SET feature_spec = 'not valid json' "
+            "WHERE feature_key = 'test/will_corrupt'"
+        )
+
+    # Load features - should warn about the corrupted one and return the valid one
+    from metaxy._warnings import InvalidStoredFeatureWarning
+
+    with DuckDBMetadataStore(database=store_path) as store:
+        storage = SystemTableStorage(store)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            definitions, db_versions = _load_all_features_from_store(storage, exclude_project=None)
+
+    assert len(definitions) == 1
+    assert FeatureKey(["test", "valid"]) in definitions
+    assert FeatureKey(["test", "will_corrupt"]) not in definitions
+
+    assert len(caught) == 1
+    assert caught[0].category is InvalidStoredFeatureWarning
+    assert "test/will_corrupt" in str(caught[0].message)
+
+
 def test_generate_lock_file_errors_on_missing_transitive_dependency(tmp_path: Path):
     """Test that generate_lock_file errors when a transitive dependency is not in store."""
     import pytest

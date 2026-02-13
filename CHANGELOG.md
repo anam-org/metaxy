@@ -20,9 +20,11 @@ While Metaxy's core functionality and versioning engine is **_stable_** and quit
 
 <!-- --8<-- [end:header] -->
 
-## Unreleased
+<!-- --8<-- [start:releases] -->
 
-The first Metaxy public release :tada:!
+## 0.1.0
+
+The first public Metaxy release :tada:!
 
 This release should be considered an *alpha* release: it is ready for production use and has dogfooded at [Anam.ai](https://anam.ai) internally, but we don't have any community feedback yet.
 
@@ -30,7 +32,7 @@ This release should be considered an *alpha* release: it is ready for production
 
 - [Feature Definitions](/guide/concepts/definitions/features.md) and related models
 
-- Metaxy [versioning engine](/guide/concepts/versioning.md) and [storage layout](/guide/concepts/system-columns.md)
+- Metaxy [versioning engine](/guide/concepts/versioning.md) and [storage layout](/reference/system-columns.md)
 
 - [MetadataStore API](/guide/concepts/metadata-stores.md)
 
@@ -40,9 +42,8 @@ This release should be considered an *alpha* release: it is ready for production
 
 - [CLI](/reference/cli.md)
 
-- `metaxy.lock`-based workflow for multi-environment setups
+- [`metaxy.lock`-based workflow](/guide/concepts/definitions/external-features.md/#metaxylock-file) for multi-environment setups
 
 - Integrations: [DuckDB](/integrations/metadata-stores/databases/duckdb.md), [BigQuery](/integrations/metadata-stores/databases/bigquery.md), [LanceDB](/integrations/metadata-stores/databases/lancedb.md), [SQLAlchemy](/integrations/plugins/sqlalchemy.md), [SQLModel](/integrations/plugins/sqlmodel.md)
 
-<!-- --8<-- [start:releases] -->
 <!-- --8<-- [end:releases] -->

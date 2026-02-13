@@ -5,15 +5,12 @@ description: "How Metaxy calculates and tracks versions."
 
 # Versioning
 
-Metaxy calculates a few types of versions at [feature](./definitions/features.md), [field](./definitions/features.md), and [sample](#samples) levels.
+Metaxy calculates a few types of versions at [feature](#feature-level), [field](#field-level), and [sample](#samples) levels.
 
-Metaxy's versioning system is declarative, static, deterministic and idempotent.
+Metaxy's versioning system is declarative, static (1) and deterministic.
+{ .annotate }
 
-## Versioning
-
-Feature and field versions are defined by the feature graph topology and the user-provided code versions of fields. Sample versions are defined by upstream sample versions and the code versions of the fields defined on the sample's feature.
-
-All versions are computed ahead of time: feature and field versions can be immediately derived from code (and we keep historical graph snapshots for them), and calculating sample versions requires access to the metadata store.
+1. Versions can be calculated ahead of time (before the data processing job is executed).
 
 Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash [length](../../reference/configuration.md#hash_truncation_length) can be configured.
 

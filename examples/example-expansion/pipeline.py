@@ -5,8 +5,8 @@ import metaxy as mx
 import narwhals as nw
 import polars as pl
 
-from example_one_to_many.features import FaceRecognition, Video, VideoChunk
-from example_one_to_many.utils import split_video_into_chunks
+from example_expansion.features import FaceRecognition, Video, VideoChunk
+from example_expansion.utils import split_video_into_chunks
 
 
 def main():
@@ -42,7 +42,7 @@ def main():
         # the DataFrame dimensions matches Video (with ID column renamed)
 
         print(
-            f"Found {len(increment.new)} videos and {len(increment.stale)} videos that need chunking"
+            f"Found {len(increment.new)} new videos and {len(increment.stale)} stale videos that need chunking"
         )
 
         for row_dict in pl.concat(
@@ -82,7 +82,7 @@ def main():
     with store:
         increment = store.resolve_update(FaceRecognition)
         print(
-            f"Found {len(increment.new)} video chunks and {len(increment.stale)} video chunks that need face recognition"
+            f"Found {len(increment.new)} new video chunks and {len(increment.stale)} stale video chunks that need face recognition"
         )
 
         if len(increment.new) > 0:

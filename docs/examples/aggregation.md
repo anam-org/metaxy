@@ -52,6 +52,14 @@ The `LineageRelationship.aggregation(on=["speaker_id"])` declaration is the key 
 2. The aggregation is keyed on `speaker_id` - all audio with the same speaker_id contributes to one embedding
 3. When **any** audio for a speaker changes, the aggregated provenance changes, triggering recomputation of that speaker's embedding
 
+## Getting Started
+
+Install the example's dependencies:
+
+```shell
+uv sync
+```
+
 ## Walkthrough
 
 Here is the pipeline code that processes audio and computes speaker embeddings:

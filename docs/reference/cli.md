@@ -9,7 +9,7 @@ This section provides a comprehensive reference for all Metaxy CLI commands.
 
 !!! warning
 
-    The CLI interface is not stable yet.
+    The CLI is not stable yet.
 
 ::: cyclopts
     module: metaxy.cli.app:app

@@ -9,7 +9,7 @@ dependencies = [
   "example-overview",
   "example-migration",
   "example-ducklake",
-  "example-one-to-many",
+  "example-expansion",
   "example-dagster",
   "example-aggregation",
 ]
@@ -21,6 +21,6 @@ example-overview = { workspace = true }
 example-basic = { workspace = true }
 example-migration = { workspace = true }
 example-ducklake = { workspace = true }
-example-one-to-many = { workspace = true }
+example-expansion = { workspace = true }
 example-dagster = { workspace = true }
 example-aggregation = { workspace = true }

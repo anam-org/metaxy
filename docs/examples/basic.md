@@ -49,6 +49,14 @@ The `FeatureDep` declaration tells Metaxy:
 2. When the parent's field provenance changes, the child must be recomputed
 3. This dependency is tracked automatically, enabling incremental recomputation
 
+## Getting Started
+
+Install the example's dependencies:
+
+```shell
+uv sync
+```
+
 ## Walkthrough
 
 ### Step 1: Initial Run

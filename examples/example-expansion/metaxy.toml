@@ -1,9 +1,9 @@
-project = "example_one_to_many"
-entrypoints = ["example_one_to_many.features"]
+project = "example_expansion"
+entrypoints = ["example_expansion.features"]
 auto_create_tables = true # Enable for development/examples
 
 [stores.dev]
 type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
-root_path = "/tmp/example_one_to_many"
+root_path = "/tmp/example_expansion"

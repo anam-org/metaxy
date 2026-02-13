@@ -8,7 +8,7 @@ scenarios:
     steps:
       - name: "initial_run"
         type: "run_command"
-        command: "python -m example_quickstart.pipeline"
+        command: "python src/example_quickstart/pipeline.py"
         description: "Run pipeline with initial feature definitions"
         capture_output: true
         timeout: 30.0
@@ -27,7 +27,7 @@ scenarios:
     steps:
       - name: "idempotent_run"
         type: "run_command"
-        command: "python -m example_quickstart.pipeline"
+        command: "python src/example_quickstart/pipeline.py"
         description: "Rerun pipeline without any changes"
         capture_output: true
         timeout: 30.0

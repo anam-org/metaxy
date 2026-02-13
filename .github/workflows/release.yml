@@ -66,12 +66,14 @@ jobs:
     runs-on: depot-ubuntu-latest
     outputs:
       is-stable: ${{ steps.check.outputs.stable }}
+      version: ${{ steps.check.outputs.version }}
     steps:
       - id: check
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq '.isPrerelease' | grep -q 'false'; then
             echo "stable=true" >> "$GITHUB_OUTPUT"
           else
@@ -88,5 +90,6 @@ jobs:
       id-token: write
     with:
       environment: github-pages
-      docs-version: ${{ github.ref_name }}
+      docs-version: ${{ needs.check-stable-release.outputs.version }}
       docs-alias: 'latest'
+      docs-default: 'latest'

@@ -74,7 +74,7 @@ def launcher(
     """Metaxy CLI.
 
     Auto-discovers configuration (`metaxy.toml` or `pyproject.toml`) in current or parent directories.
-    Feature definitions are collected via [feature discovery](https://docs.metaxy.io/main/learn/feature-discovery/).
+    Feature definitions are collected via [feature discovery](https://docs.metaxy.io/latest/learn/feature-discovery/).
     Supports loading environment variables from a `.env` file in the current directory.
     """
     import logging

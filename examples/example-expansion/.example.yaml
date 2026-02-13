@@ -1,6 +1,6 @@
 name: "One-to-Many Expansion Example"
 description: "Demonstrates 1:N expansion relationships and field-level provenance tracking"
-package_name: "example_one_to_many"
+package_name: "example_expansion"
 
 scenarios:
   - name: "Initial pipeline run"
@@ -18,10 +18,10 @@ scenarios:
         returncode: 0
         contains:
           - "Found 3 new videos"
-          - "Found 3 videos and 0 videos that need chunking"
+          - "Found 3 new videos and 0 stale videos that need chunking"
           - "Writing"
           - "chunks for video"
-          - "video chunks and 0 video chunks that need face recognition"
+          - "new video chunks and 0 stale video chunks that need face recognition"
           - "Writing face recognition"
 
   - name: "Idempotent rerun"
@@ -38,8 +38,8 @@ scenarios:
         description: "Verify nothing needs recomputation (idempotent)"
         returncode: 0
         contains:
-          - "Found 0 videos and 0 videos that need chunking"
-          - "Found 0 video chunks and 0 video chunks that need face recognition"
+          - "Found 0 new videos and 0 stale videos that need chunking"
+          - "Found 0 new video chunks and 0 stale video chunks that need face recognition"
 
   - name: "Code change - audio field only"
     description: "Apply patch to change Video audio code_version, observe field-level tracking"
@@ -60,8 +60,8 @@ scenarios:
         description: "Verify VideoChunks recompute but FaceRecognition does NOT (field-level tracking)"
         returncode: 0
         contains:
-          - "Found 3 videos and 0 videos that need chunking"
-          - "video chunks and 0 video chunks that need face recognition"
+          - "Found 3 new videos and 0 stale videos that need chunking"
+          - "new video chunks and 0 stale video chunks that need face recognition"
           - "Writing"
           - "chunks for video"
 
@@ -79,5 +79,5 @@ scenarios:
         description: "Verify everything is up-to-date"
         returncode: 0
         contains:
-          - "Found 0 videos and 0 videos that need chunking"
-          - "Found 0 video chunks and 0 video chunks that need face recognition"
+          - "Found 0 new videos and 0 stale videos that need chunking"
+          - "Found 0 new video chunks and 0 stale video chunks that need face recognition"

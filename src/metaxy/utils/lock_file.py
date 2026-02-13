@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -205,12 +206,22 @@ def _load_all_features_from_store(
     db_versions: dict[FeatureKey, str] = {}
 
     for row in features_df.iter_rows(named=True):
-        defn = FeatureDefinition.from_stored_data(
-            feature_spec=row["feature_spec"],
-            feature_schema=row["feature_schema"],
-            feature_class_path=row["feature_class_path"],
-            project=row["project"],
-        )
+        try:
+            defn = FeatureDefinition.from_stored_data(
+                feature_spec=row["feature_spec"],
+                feature_schema=row["feature_schema"],
+                feature_class_path=row["feature_class_path"],
+                project=row["project"],
+            )
+        except Exception as e:
+            from metaxy._warnings import InvalidStoredFeatureWarning
+
+            feature_key = row.get("feature_key", "<unknown>")
+            warnings.warn(
+                f"Skipping feature '{feature_key}': failed to load from store: {e}",
+                InvalidStoredFeatureWarning,
+            )
+            continue
         definitions[defn.key] = defn
         db_versions[defn.key] = row["metaxy_feature_version"]
 

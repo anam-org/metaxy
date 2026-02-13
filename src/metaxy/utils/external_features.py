@@ -16,6 +16,7 @@ from metaxy._decorators import public
 from metaxy._exceptions import ExternalFeatureVersionMismatchError
 from metaxy._warnings import (
     ExternalFeatureVersionMismatchWarning,
+    InvalidStoredFeatureWarning,
     UnresolvedExternalFeatureWarning,
 )
 from metaxy.models.feature import FeatureGraph
@@ -184,12 +185,20 @@ def sync_external_features(
 
     # Use nullcontext if store is already open, otherwise open it
     cm = nullcontext(store) if store._is_open else store
+    result: list[FeatureDefinition] = []
     with cm:
         storage = SystemTableStorage(store)
-        # Load features by key, not by project - external features may have placeholder projects
-        result = storage._load_feature_definitions_raw(
-            filters=[nw.col("feature_key").is_in(external_keys)],
-        )
+        for key_str in external_keys:
+            try:
+                loaded = storage._load_feature_definitions_raw(
+                    filters=[nw.col("feature_key") == key_str],
+                )
+                result.extend(loaded)
+            except Exception as e:
+                warnings.warn(
+                    f"Skipping feature '{key_str}': failed to load from store: {e}",
+                    InvalidStoredFeatureWarning,
+                )
 
     # Check for version mismatches
     _check_version_mismatches(graph, external_versions_before, on_version_mismatch)
