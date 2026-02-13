@@ -1040,7 +1040,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guide/concepts/data-versioning/" class="md-nav__link">
+      <a href="guide/concepts/versioning/" class="md-nav__link">
         
   
   
@@ -3597,7 +3597,7 @@
 <p class="admonition-title">Info</p>
 <p>Data, ML and AI workloads processing <strong>large amounts</strong> of images, videos, audios, or texts (1) can be very expensive to run.
 In contrast to traditional data engineering, re-running the whole pipeline on changes is no longer an option.
-Therefore, it becomes crucially important to correctly implement <strong>incremental processing</strong>, <strong>sample-level versioning</strong> and <strong><abbr title="An update that only changes a given piece of data partially in a way that doesn't affect some of the downstream dependencies. | /guide/concepts/data-versioning/#example-partial-data-updates">prunable updates</abbr></strong>.</p>
+Therefore, it becomes crucially important to correctly implement <strong>incremental processing</strong>, <strong>sample-level versioning</strong> and <strong><abbr title="An update that only changes a given piece of data partially in a way that doesn't affect some of the downstream dependencies. | /guide/concepts/versioning/#example-partial-data-updates">prunable updates</abbr></strong>.</p>
 </div>
 <ol>
 <li>or really any kind of data</li>
@@ -3640,7 +3640,7 @@ As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables th
 <p class="admonition-title">Just Use Metaxy</p>
 <p>Metaxy gives you quite a few superpowers:</p>
 <ul>
-<li>Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second (1). Benefit from <abbr title="An update that only changes a given piece of data partially in a way that doesn't affect some of the downstream dependencies. | /guide/concepts/data-versioning/#example-partial-data-updates">prunable partial updates</abbr>.</li>
+<li>Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second (1). Benefit from <abbr title="An update that only changes a given piece of data partially in a way that doesn't affect some of the downstream dependencies. | /guide/concepts/versioning/#example-partial-data-updates">prunable partial updates</abbr>.</li>
 <li>Freedom from storage lock-in. Swap <a href="integrations/metadata-stores/">storage backends</a> in development and production environments without breaking a sweat (2).</li>
 <li>Metaxy is <strong>pluggable</strong>, <strong>declarative</strong>, <strong>composable</strong> and <strong>extensible</strong> (3): use it to build custom integrations and workflows, benefit from emergent capabilities that enable tooling, visualizations and optimizations you didn't even plan for.</li>
 </ul>
@@ -3653,7 +3653,7 @@ As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables th
 <p>And now the killer feature:</p>
 <div class="admonition tip annotate">
 <p class="admonition-title">Super Granular Data Versioning</p>
-<p>The feature that makes Metaxy really stand out is the ability to identify <strong>prunable <abbr title="An update that only changes a given piece of data partially in a way that doesn't affect some of the downstream dependencies. | /guide/concepts/data-versioning/#example-partial-data-updates">partial data updates</abbr></strong> (1) and <strong>skip unnecessary downstream computations</strong>. At the moment of writing, Metaxy is the only available tool that tackles these problems.</p>
+<p>The feature that makes Metaxy really stand out is the ability to identify <strong>prunable <abbr title="An update that only changes a given piece of data partially in a way that doesn't affect some of the downstream dependencies. | /guide/concepts/versioning/#example-partial-data-updates">partial data updates</abbr></strong> (1) and <strong>skip unnecessary downstream computations</strong>. At the moment of writing, Metaxy is the only available tool that tackles these problems.</p>
 </div>
 <ol>
 <li>which are <strong>very common</strong> in multimodal pipelines</li>

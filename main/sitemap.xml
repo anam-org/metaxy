@@ -37,10 +37,6 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.metaxy.io/main/guide/concepts/data-versioning/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/deletions/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
@@ -58,6 +54,10 @@
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/syntactic-sugar/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/guide/concepts/versioning/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>

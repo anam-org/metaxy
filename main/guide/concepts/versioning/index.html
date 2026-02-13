@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://docs.metaxy.io/main/guide/concepts/data-versioning/">
+        <link rel="canonical" href="https://docs.metaxy.io/main/guide/concepts/versioning/">
       
       
         <link rel="prev" href="../definitions/external-features/">
@@ -73,15 +73,15 @@
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Data Versioning - Metaxy" />
 <meta property="og:description" content="How Metaxy calculates and tracks versions." />
-<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/guide/concepts/data-versioning.png" />
+<meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/guide/concepts/versioning.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://docs.metaxy.io/main/guide/concepts/data-versioning/" />
+<meta property="og:url" content="https://docs.metaxy.io/main/guide/concepts/versioning/" />
 <meta property="twitter:card" content="summary_large_image" />
 <meta property="twitter:title" content="Data Versioning - Metaxy" />
 <meta property="twitter:description" content="How Metaxy calculates and tracks versions." />
-<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/guide/concepts/data-versioning.png" />
+<meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/guide/concepts/versioning.png" />
 </head>
   
   
@@ -1172,6 +1172,17 @@
   
     <nav class="md-nav" aria-label="Samples">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#provenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provenance
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#data-version" class="md-nav__link">
@@ -3681,6 +3692,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#provenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#data-version" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3837,7 +3859,7 @@
 <p>Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash <a href="../../../reference/configuration/#hash_truncation_length">length</a> can be configured.</p>
 <p>Here is how these versions are calculated, from bottom to top.</p>
 <h3 id="definitions">Definitions<a class="headerlink" href="#definitions" title="Permanent link">&para;</a></h3>
-<p>These versions can be computed from Metaxy definitions (e.g. Python code or historical snapshots of the feature graph). We don't need to access the metadata store in order to calculate them.</p>
+<p>These versions can be computed from Metaxy definitions (e.g. Python code or historical snapshots of the feature graph). We don't need to access the metadata store in order to calculate them. They exist in Python at runtime, and are also serialized to the metadata store when <code>metaxy push</code> is called.</p>
 <h4 id="field-level">Field Level<a class="headerlink" href="#field-level" title="Permanent link">&para;</a></h4>
 <p><strong>Field Code Version</strong> is defined on the field and is provided by the user (defaults to <code>"__metaxy_initial__"</code>). Apart from <a href="#data-version">overriding data versions</a>, this is the only input to the versioning system that can be directly modified by the user.</p>
 <div class="admonition note">
@@ -3869,7 +3891,8 @@
 </details>
 <p>This version is stored as <code>metaxy_project_version</code> <a href="../../../reference/system-columns/">system column</a>.</p>
 <h3 id="samples">Samples<a class="headerlink" href="#samples" title="Permanent link">&para;</a></h3>
-<p>These versions are sample-level and require access to the metadata store in order to compute them.</p>
+<p>These versions are sample-level and require access to the metadata store in order to be computed. They are stored separately for each row in the feature table.</p>
+<h4 id="provenance">Provenance<a class="headerlink" href="#provenance" title="Permanent link">&para;</a></h4>
 <p><strong>Provenance By Field</strong> is computed from the upstream <strong>Provenance By Field</strong> (with respect to defined <a href="../definitions/features/#field-level-lineage"><abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-lineage">field-level lineage</abbr></a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</p>
 <table>
 <thead>
@@ -4049,8 +4072,8 @@ title: Feature Graph Changes
 flowchart LR
     %% Snapshot version: none
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-    example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;c2ac395f&lt;/font&gt; → &lt;font color="#00FF00"&gt;2faffb98&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;22742381&lt;/font&gt; → &lt;font color="#00FF00"&gt;09c8398b&lt;/font&gt;)&lt;br/&gt;- frames (794116a9)&lt;/div&gt;"]
-    example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;34d75856&lt;/font&gt; → &lt;font color="#00FF00"&gt;fe237dc9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;4c726c4b&lt;/font&gt; → &lt;font color="#00FF00"&gt;e2b6ce39&lt;/font&gt;)&lt;br/&gt;- frames (2419e09d)&lt;/div&gt;"]
+    example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;c2ac395f&lt;/font&gt; → &lt;font color="#00FF00"&gt;2faffb98&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (794116a9)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;22742381&lt;/font&gt; → &lt;font color="#00FF00"&gt;09c8398b&lt;/font&gt;)&lt;/div&gt;"]
+    example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;34d75856&lt;/font&gt; → &lt;font color="#00FF00"&gt;fe237dc9&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- frames (2419e09d)&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font color="#FF0000"&gt;4c726c4b&lt;/font&gt; → &lt;font color="#00FF00"&gt;e2b6ce39&lt;/font&gt;)&lt;/div&gt;"]
     example_face_detection["&lt;div style="text-align:left"&gt;&lt;b&gt;example/face_detection&lt;/b&gt;&lt;br/&gt;f1526ee0&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (006efeef)&lt;/div&gt;"]
     example_stt["&lt;div style="text-align:left"&gt;&lt;b&gt;example/stt&lt;/b&gt;&lt;br/&gt;&lt;font color="#FF0000"&gt;d953dea4&lt;/font&gt; → &lt;font color="#00FF00"&gt;e57e7555&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;transcription&lt;/font&gt; (&lt;font color="#FF0000"&gt;3ec3826d&lt;/font&gt; → &lt;font color="#00FF00"&gt;9f7ea40c&lt;/font&gt;)&lt;/div&gt;"]
     example_video --&gt; example_crop
