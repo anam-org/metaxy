@@ -1100,18 +1100,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#versioning_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Versioning
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Versioning">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#definitions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1160,8 +1148,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#samples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1203,11 +1191,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -3618,18 +3601,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#versioning_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Versioning
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Versioning">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#definitions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3678,8 +3649,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#samples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3721,11 +3692,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -3851,11 +3817,11 @@
 
 
 <h1 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h1>
-<p>Metaxy calculates a few types of versions at <a href="../definitions/features/">feature</a>, <a href="../definitions/features/">field</a>, and <a href="#samples">sample</a> levels.</p>
-<p>Metaxy's versioning system is declarative, static, deterministic and idempotent.</p>
-<h2 id="versioning_1">Versioning<a class="headerlink" href="#versioning_1" title="Permanent link">&para;</a></h2>
-<p>Feature and <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> are defined by the feature graph topology and the user-provided code versions of fields. Sample versions are defined by upstream sample versions and the code versions of the fields defined on the sample's feature.</p>
-<p>All versions are computed ahead of time: feature and <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> can be immediately derived from code (and we keep historical graph snapshots for them), and calculating sample versions requires access to the metadata store.</p>
+<p>Metaxy calculates a few types of versions at <a href="#feature-level">feature</a>, <a href="#field-level">field</a>, and <a href="#samples">sample</a> levels.</p>
+<p class="annotate">Metaxy's versioning system is declarative, static (1) and deterministic.</p>
+<ol>
+<li>Versions can be calculated ahead of time (before the data processing job is executed).</li>
+</ol>
 <p>Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash <a href="../../../reference/configuration/#hash_truncation_length">length</a> can be configured.</p>
 <p>Here is how these versions are calculated, from bottom to top.</p>
 <h3 id="definitions">Definitions<a class="headerlink" href="#definitions" title="Permanent link">&para;</a></h3>

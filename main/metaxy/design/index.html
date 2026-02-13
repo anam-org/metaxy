@@ -3800,7 +3800,7 @@ This requirement may not be necessary in the future.</p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
 <p><code>metaxy_data_version</code>/<code>metaxy_data_version_by_field</code> and <code>metaxy_provenance</code>/<code>metaxy_provenance_by_field</code> serve a slightly different purpose.
-Provenance columns hold <strong>static</strong> versioning information entirely defined by the Metaxy framework. Data version defaults to the same value as provenance, but can be customized by the user <strong>at runtime</strong>, for example derived from the <strong>contents</strong> of the computed sample. Learn more <a href="../../guide/concepts/versioning/">here</a>.</p>
+Provenance columns hold <strong>static</strong> versioning information entirely defined by the Metaxy framework. Data version defaults to the same value as provenance, but can be customized by the user <strong>at runtime</strong>, for example by deriving it from the <strong>contents</strong> of the computed sample. Learn more <a href="../../guide/concepts/versioning/">here</a>.</p>
 </div>
 <p>All historical records for a given feature are stored in the same table. They can be separated by the following <a href="../../reference/system-columns/">system columns</a>:</p>
 <ul>
@@ -3856,7 +3856,7 @@ Provenance columns hold <strong>static</strong> versioning information entirely 
 <h2 id="compute">Compute<a class="headerlink" href="#compute" title="Permanent link">&para;</a></h2>
 <p class="annotate">Increment resolution in Metaxy involves running computations: every time the user requests an increment for a given <a href="../../guide/concepts/definitions/features/">feature</a>, Metaxy has to join upstream features, hash their versions, and filter out samples that have already been processed. This can be performed either <strong>locally</strong> (typically favored in development environments) or <strong>remotely</strong> (achieves better performance in production). Metaxy supports both options: <a href="../../integrations/metadata-stores/databases/">databases</a> for remote compute and <a href="../../integrations/metadata-stores/storage/">storage-only</a> metadata stores for embedded compute (1).</p>
 <ol>
-<li>e.g. Polars or Duckdb</li>
+<li>e.g. Polars or DuckDB</li>
 </ol>
 <p>When resolving incremental updates for a <a href="../../guide/concepts/definitions/features/">feature</a>, Metaxy attempts to perform all computations such as <a href="../../guide/concepts/versioning/">sample version calculations</a> within the metadata store.</p>
 <div class="admonition note">

@@ -3359,6 +3359,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📝 Changelog
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -3375,6 +3393,64 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#010" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.0
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experimental" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experimental
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -3399,6 +3475,53 @@
   
     
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#010" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.0
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experimental" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experimental
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -3428,7 +3551,7 @@
 <p>All notable user-facing Metaxy changes are to be documented in this file.</p>
 <p>The format is based on <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>,
 and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>, except for <em>experimental</em> features.</p>
-<p>While Metaxy's core functionality and versioning engine is <strong><em>stable</em></strong> and quite complete, the CLI and some of the more advanced APIs and integrations are considered <strong><em>experimental</em></strong>.</p>
+<p>While Metaxy's core functionality and versioning engine are <strong><em>stable</em></strong> and quite complete, the CLI and some of the more advanced APIs and integrations are considered <strong><em>experimental</em></strong>.</p>
 <div class="admonition abstract">
 <p class="admonition-title">Abstract</p>
 <p><strong><em>stable</em></strong> features are guaranteed to follow SemVer and won't receive breaking changes in between minor releases. Such changes will be announced with a deprecation warning.
@@ -3439,6 +3562,36 @@ A feature is considered <em>stable</em> if it's documented and doesn't have an <
 <p>This functionality is experimental.</p>
 </div>
 </div>
+<h2 id="010">0.1.0<a class="headerlink" href="#010" title="Permanent link">&para;</a></h2>
+<p>The first public Metaxy release <img alt="🎉" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f389.svg" title=":tada:" />!</p>
+<p>This release should be considered an <em>alpha</em> release: it is ready for production use and has been dogfooded internally at <a href="https://anam.ai">Anam.ai</a>, but we don't have any community feedback yet.</p>
+<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><a href="../guide/concepts/definitions/features/">Feature Definitions</a> and related models</p>
+</li>
+<li>
+<p>Metaxy <a href="../guide/concepts/versioning/">versioning engine</a> and <a href="../reference/system-columns/">storage layout</a></p>
+</li>
+<li>
+<p><a href="../guide/concepts/metadata-stores/">MetadataStore API</a></p>
+</li>
+<li>
+<p>Integrations: <a href="../integrations/metadata-stores/storage/delta/">DeltaLake</a>, <a href="../integrations/orchestration/dagster/">Dagster</a>, <a href="../integrations/compute/ray/">Ray</a>, <a href="../integrations/metadata-stores/databases/clickhouse/">ClickHouse</a>, <a href="../integrations/ai/mcp/">MCP</a>, <a href="../integrations/ai/claude/">Claude</a></p>
+</li>
+</ul>
+<h3 id="experimental">Experimental<a class="headerlink" href="#experimental" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><a href="../reference/cli/">CLI</a></p>
+</li>
+<li>
+<p><a href="../guide/concepts/definitions/external-features/#metaxylock-file"><code>metaxy.lock</code>-based workflow</a> for <abbr title="Metaxy codebases which have more than one distinct Python environment. | /guide/concepts/projects/#multi-environment-setups">multi-environment setups</abbr></p>
+</li>
+<li>
+<p>Integrations: <a href="../integrations/metadata-stores/databases/duckdb/">DuckDB</a>, <a href="../integrations/metadata-stores/databases/bigquery/">BigQuery</a>, <a href="../integrations/metadata-stores/databases/lancedb/">LanceDB</a>, <a href="../integrations/plugins/sqlalchemy/">SQLAlchemy</a>, <a href="../integrations/plugins/sqlmodel/">SQLModel</a></p>
+</li>
+</ul>
 
 
 

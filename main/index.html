@@ -3425,10 +3425,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-is-the-problem-again" class="md-nav__link">
+  <a href="#the-problem-sample-level-versioning" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What is the problem again?
+        The problem: sample-level versioning
       
     </span>
   </a>
@@ -3436,10 +3436,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#alright-that-sounds-pretty-bad" class="md-nav__link">
+  <a href="#the-solution" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Alright, that sounds pretty bad
+        The solution
       
     </span>
   </a>
@@ -3592,7 +3592,7 @@
 <hr />
 <h2 id="metaxy">Metaxy<a class="headerlink" href="#metaxy" title="Permanent link">&para;</a></h2>
 <p>Metaxy is a pluggable metadata layer for building multimodal Data and ML pipelines. Metaxy manages and tracks <strong>metadata</strong> across complex computational graphs, implements sample and sub-sample versioning, allowing the codebase to evolve over time without friction.</p>
-<h3 id="what-is-the-problem-again">What is the problem again?<a class="headerlink" href="#what-is-the-problem-again" title="Permanent link">&para;</a></h3>
+<h3 id="the-problem-sample-level-versioning">The problem: sample-level versioning<a class="headerlink" href="#the-problem-sample-level-versioning" title="Permanent link">&para;</a></h3>
 <div class="admonition info annotate">
 <p class="admonition-title">Info</p>
 <p>Data, ML and AI workloads processing <strong>large amounts</strong> of images, videos, audios, or texts (1) can be very expensive to run.
@@ -3631,14 +3631,16 @@ Therefore, it becomes crucially important to correctly implement <strong>increme
 <p>Metaxy does not interact with <strong>data</strong> and is not responsible for its content.
 As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables that do not reference any external <strong>data</strong>.</p>
 </details>
-<h3 id="alright-that-sounds-pretty-bad">Alright, that sounds pretty bad<a class="headerlink" href="#alright-that-sounds-pretty-bad" title="Permanent link">&para;</a></h3>
-<p class="annotate">It does (1). Until recently, a general solution for this problem did not exist, but not anymore <img alt="🎉" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f389.svg" title=":tada:" /> !</p>
+<p class="annotate">In contrast to what one might expect, spinning up a thousand compute nodes is a much easier task with established solutions, while sample-level versioning remains a challenging problem (1).</p>
 <ol>
 <li>it is hard to overestimate the amount of pain <a href="https://github.com/danielgafni">@danielgafni</a> has endured before building Metaxy</li>
 </ol>
+<h3 id="the-solution">The solution<a class="headerlink" href="#the-solution" title="Permanent link">&para;</a></h3>
+<p>Until recently, a general solution for this problem did not exist, but not anymore <img alt="🎉" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f389.svg" title=":tada:" /> !</p>
+<p>Metaxy allows creating and updating <em>feature definitions</em> which can independently version different <em>fields</em> of the same data sample and express granular <abbr title="Dependencies between specific fields of feature definitions that affect how field versions are computed. | /guide/concepts/definitions/features/#field-level-lineage">field-level lineage</abbr>.</p>
 <div class="admonition success annotate">
 <p class="admonition-title">Just Use Metaxy</p>
-<p>Metaxy gives you quite a few superpowers:</p>
+<p>Metaxy has quite a few superpowers:</p>
 <ul>
 <li>Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second (1). Benefit from <abbr title="An update that only changes a given piece of data partially in a way that doesn't affect some of the downstream dependencies. | /guide/concepts/versioning/#example-partial-data-updates">prunable partial updates</abbr>.</li>
 <li>Freedom from storage lock-in. Swap <a href="integrations/metadata-stores/">storage backends</a> in development and production environments without breaking a sweat (2).</li>
@@ -3678,7 +3680,7 @@ As an edge case, Metaxy may also manage pure <strong>metadata</strong> tables th
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>Urging to get your hands dirty?
+<p>Itching to get your hands dirty?
 Head to <a href="guide/quickstart/quickstart/">Quickstart</a>.</p>
 </div>
 <h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>

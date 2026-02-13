@@ -3983,13 +3983,13 @@
 <p>This section provides a comprehensive reference for all Metaxy CLI commands.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The CLI interface is not stable yet.</p>
+<p>The CLI is not stable yet.</p>
 </div>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="go">metaxy COMMAND</span>
 </span></code></pre></div>
 <p>Metaxy CLI.</p>
 <p>Auto-discovers configuration (<code>metaxy.toml</code> or <code>pyproject.toml</code>) in current or parent directories.
-Feature definitions are collected via <a href="https://docs.metaxy.io/main/learn/feature-discovery/"><abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/projects/#feature-discovery">feature discovery</abbr></a>.
+Feature definitions are collected via <a href="https://docs.metaxy.io/latest/learn/feature-discovery/"><abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/projects/#feature-discovery">feature discovery</abbr></a>.
 Supports loading environment variables from a <code>.env</code> file in the current directory.</p>
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
 <ul>
@@ -4025,7 +4025,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 </ul>
 <p><strong>Commands</strong>:</p>
 <ul>
-<li><a href="#metaxy-config"><code>config</code></a>: Manage Metaxy <a href="https://docs.metaxy.io/main/reference/configuration/">configuration</a></li>
+<li><a href="#metaxy-config"><code>config</code></a>: Manage Metaxy <a href="https://docs.metaxy.io/latest/reference/configuration/">configuration</a></li>
 <li><a href="#metaxy-describe"><code>describe</code></a>: Describe Metaxy entities in detail</li>
 <li><a href="#metaxy-graph"><code>graph</code></a>: Manage feature graphs</li>
 <li><a href="#metaxy-list"><code>list</code></a>: List Metaxy entities</li>
@@ -4056,7 +4056,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-config">metaxy config<a class="headerlink" href="#metaxy-config" title="Permanent link">&para;</a></h2>
-<p>Manage Metaxy <a href="https://docs.metaxy.io/main/reference/configuration/">configuration</a></p>
+<p>Manage Metaxy <a href="https://docs.metaxy.io/latest/reference/configuration/">configuration</a></p>
 <p><strong>Global</strong>:</p>
 <ul>
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
@@ -4211,8 +4211,8 @@ showing project versions, when they were recorded, and feature counts.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
-<li><code>--global-filter, --empty-global-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/concepts/filters/">filter</a> applied to all features being selected (including upstream). Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/latest/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
+<li><code>--global-filter, --empty-global-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/latest/guide/concepts/filters/">filter</a> applied to all features being selected (including upstream). Can be repeated.</li>
 <li><code>--snapshot-id</code>: Check metadata against a specific project version.</li>
 <li><code>--assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: False]</em></li>
 <li><code>--verbose, --no-verbose</code>: Whether to display sample slices of dataframes.  <em>[default: False]</em></li>
@@ -4232,7 +4232,7 @@ showing project versions, when they were recorded, and feature counts.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/latest/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--soft, --hard</code>: Whether to mark records with deletion timestamps vs physically remove them.  <em>[default: True]</em></li>
 <li><code>--with-feature-history, --no-with-feature-history</code>: Include rows from all historical feature versions (by default, only current version is affected).  <em>[default: False]</em></li>
 <li><code>--yes, --no-yes</code>: Confirm deletion without prompting (required for hard deletes without filters).  <em>[default: False]</em></li>
@@ -4254,7 +4254,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <ul>
 <li><code>--from</code>: Source store name to copy metadata from.  <strong>[required]</strong></li>
 <li><code>--to</code>: Destination store name to copy metadata to.  <strong>[required]</strong></li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/main/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/latest/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--with-feature-history, --no-with-feature-history</code>: Include rows from all historical feature versions (by default, only current version is copied).  <em>[default: True]</em></li>
 <li><code>--with-sample-history, --no-with-sample-history</code>: Include all historical materializations per sample (by default, deduplicates by id_columns).  <em>[default: False]</em></li>
 </ul>
