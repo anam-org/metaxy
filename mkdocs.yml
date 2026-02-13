@@ -292,7 +292,7 @@ nav:
         - MetaxyConfig: reference/api/config.md
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md
-    - Storage Layout: reference/system-columns.md
+    - System Columns: reference/system-columns.md
   - 📝 Changelog: changelog.md
 
 extra:

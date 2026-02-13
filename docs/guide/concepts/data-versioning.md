@@ -25,31 +25,45 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 
 #### Field Level
 
-- **Field Code Version** is defined on the field and is provided by the user (defaults to `"__metaxy_initial__"`)
+**Field Code Version** is defined on the field and is provided by the user (defaults to `"__metaxy_initial__"`). Apart from [overriding data versions](#data-version), this is the only input to the versioning system that can be directly modified by the user.
 
 > [!NOTE] Code Version Value
-> The value can be arbitrary, but in the future we might implement something around semantic versioning.
+> The value can be an arbitrary string, but in the future we might implement something around semantic versioning.
 
-- **Field Version** is computed from the code version of this field, the fully qualified field path and from the field versions of its [parent fields](./definitions/features.md#field-level-lineage) (if any exist, for example, fields on root features do not have dependencies).
+**Field Version** is computed from the code version of this field, the fully qualified field path and from the field versions of its [parent fields](./definitions/features.md#field-level-lineage) (if any exist, for example, fields on root features do not have dependencies).
+
+???+ info "Visualization"
+    ![field-version](./diagrams/field_version.svg)
 
 #### Feature Level
 
-- **Feature Version**: is computed from the **Field Versions** of all fields defined on the feature and the key of the feature.
-- **Feature Code Version** is computed from the **Field Code Versions** of all fields defined on the feature. Unlike _Feature Version_, this version does not change when dependencies change. The value of this version is determined entirely by user input.
+**Feature Version**: is computed from the **Field Versions** of all fields defined on the feature and the key of the feature.
 
-#### Graph Level
+???+ info "Visualization"
+    ![feature-version](./diagrams/feature_version.svg)
 
-- **Project Version**: is computed from the **Feature Versions** of all features defined on the graph.
+This version is stored as `metaxy_feature_version` [system column](/reference/system-columns.md).
+
+**Feature Code Version** is computed from the **Field Code Versions** of all fields defined on the feature. Unlike _Feature Version_, this version does not change when dependencies change. The value of this version is determined entirely by user input.
+
+#### Project Level
+
+**Project Version**: is computed from the **Feature Versions** of all features in the [Metaxy project](./projects.md).
+
+???+ info "Visualization"
+    ![project-version](./diagrams/project_version.svg)
 
 ??? "How is project version used?"
 
     This value is used to uniquely encode versioned feature graph topology. `metaxy push` CLI can be used to keep track of previous versions of the feature graph, enabling features such as data version reconciliation migrations.
 
+This version is stored as `metaxy_project_version` [system column](/reference/system-columns.md).
+
 ### Samples
 
 These versions are sample-level and require access to the metadata store in order to compute them.
 
-- **Provenance By Field** is computed from the upstream **Provenance By Field** (with respect to defined [field-level lineage](./definitions/features.md#field-level-lineage) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
+**Provenance By Field** is computed from the upstream **Provenance By Field** (with respect to defined [field-level lineage](./definitions/features.md#field-level-lineage) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
 
 | id        | metaxy_provenance_by_field                    |
 | --------- | --------------------------------------------- |
@@ -58,17 +72,30 @@ These versions are sample-level and require access to the metadata store in orde
 | video_003 | `{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}` |
 | video_004 | `{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}` |
 
-- **Sample Version** is derived from the **Provenance By Field** by simply hashing it.
+**Sample Provenance** is derived from the **Provenance By Field** by simply hashing it.
 
-Computing this value is the goal of the entire versioning engine. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.
+Computing this value is the goal of the entire versioning engine. It's a string value that only changes when versions of the specific upstream fields the sample depends on change. It acts as source of truth for resolving incremental updates for feature metadata.
 
-### Content-Based Versioning (Data Version)
+Most of the time `metaxy_provenance_by_field` and `metaxy_provenance` are used for the final [data version](#data-version) columns as is, except when the user wants to override the latter. These final versions are then recursively used to compute downstream provenances.
 
-Users can override the computed sample-level versions by setting `metaxy_data_version_by_field` on their metadata, effectively providing a **Data Version** for the sample. This can be used for preventing unnecessary downstream updates, if the computed sample stays the same even after upstream data has changed.
+???+ info "Visualization"
+    ![sample-version](./diagrams/sample_provenance.svg)
 
-For example, the data version can be calculated with `sha256`, or a [perceptual hashing](https://en.wikipedia.org/wiki/Perceptual_hashing) method for images and videos.
+These versions are stored as `metaxy_provenance_by_field` and `metaxy_provenance` [system columns](/reference/system-columns.md).
+
+#### Data Version
+
+Users can override the computed sample-level versions (`metaxy_provenance_by_field`) by setting `metaxy_data_version_by_field` on their metadata, effectively providing a **Data Version** for the sample. This can be used for preventing unnecessary downstream updates, if the computed sample stays the same even after upstream data has changed. `metaxy_data_version_by_field` is then used to compute `metaxy_data_version` by hashing all the fields together.
+
+For example, the data version can be calculated by running `sha256` over the file, or a [perceptual hashing](https://en.wikipedia.org/wiki/Perceptual_hashing) method for images and videos.
 
 This customization only affects how downstream increments are calculated, as the data version cannot be known until the feature is computed.
+
+These versions are stored as `metaxy_data_version_by_field` and `metaxy_data_version` [system columns](/reference/system-columns.md).
+
+#### Provenance Vs Data Version
+
+To summarize, `metaxy_provenance` and `metaxy_provenance_by_field` are used to determine whether the *current feature* has to be updated. Usually they are used for `metaxy_data_version` and `metaxy_data_version_by_field`, but the user can override this. These columns in turn are used to calculate provenances for *downstream* features.
 
 ## Example: Partial Data Updates
 
