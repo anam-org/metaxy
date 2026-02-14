@@ -65,6 +65,7 @@ plugins:
   - exclude:
       glob:
         - snippets/*
+        # - blog/*
   - metaxy-examples:
       examples_dir: "../examples"
   - cyclopts
@@ -268,6 +269,8 @@ nav:
     - Basic: examples/basic.md
     - Aggregation: examples/aggregation.md
     - Expansion: examples/expansion.md
+  # - 📝 Blog:
+  - Dagster: blog/dagster.md
   - 📚 Reference:
     - reference/index.md
     - API:
