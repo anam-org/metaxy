@@ -91,5 +91,4 @@ jobs:
     with:
       environment: github-pages
       docs-version: ${{ needs.check-stable-release.outputs.version }}
-      docs-alias: 'latest'
-      docs-default: 'latest'
+      docs-alias: 'stable'
