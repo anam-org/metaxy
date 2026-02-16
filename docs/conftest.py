@@ -242,6 +242,8 @@ pytest_collect_file = Sybil(
         # Plugin pages with complex setup requirements
         "integrations/plugins/sqlalchemy.md",  # Requires Alembic context
         "integrations/plugins/sqlmodel.md",  # Requires SQLModel setup
+        # Slides use Slidev magic-move syntax with illustrative code blocks
+        "slides/*",
         # Internal docs
         ".mkdocs-metaxy/*",
     ],

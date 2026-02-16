@@ -162,12 +162,12 @@ The workflow in 3 steps:
 
 ````md magic-move {lines: true}
 ```py {1-3|5-6}
-# 1. Define your features (in features.py)
-from metaxy import init_metaxy
+# 1. Define your features and initialize
+import metaxy as mx
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from examples.overview.features_1 import FaceDetection
+from my_project.features import FaceDetection
 
-init_metaxy()  # Loads your feature definitions
+mx.init()  # Discovers and loads your feature definitions
 ```
 
 ```py
@@ -188,7 +188,7 @@ with DuckDBMetadataStore("metadata.duckdb") as store:
     if diff.added.height or diff.changed.height:
         new_rows = run_face_detection(diff)  # Your GPU job
         store.write_metadata(FaceDetection, new_rows)  # Save metadata
-    # Next run will skip these samples ✨
+    # Next run will skip these samples
 ```
 ````
 
@@ -274,8 +274,6 @@ class: text-center
 
 # Learn More
 
-<!-- TODO: we eventually want to use our own logo here - not abuse the one from slidev -->
-
 [Documentation](https://docs.metaxy.io) · [GitHub](https://github.com/anam-org/metaxy/)
 
 <div class="w-60 relative">
@@ -288,22 +286,6 @@ class: text-center
       src="https://raw.githubusercontent.com/anam-org/metaxy/main/docs/assets/metaxy.svg"
       alt=""
     />
-    <!-- <img
-      v-motion
-      :initial="{ y: 500, x: -100, scale: 2 }"
-      :enter="final"
-      class="absolute inset-0"
-      src="https://sli.dev/logo-circle.png"
-      alt=""
-    />
-    <img
-      v-motion
-      :initial="{ x: 600, y: 400, scale: 2, rotate: 100 }"
-      :enter="final"
-      class="absolute inset-0"
-      src="https://sli.dev/logo-triangle.png"
-      alt=""
-    /> -->
   </div>
 
 <div
@@ -315,7 +297,6 @@ class: text-center
   </div>
 </div>
 
-<!-- vue script setup scripts can be directly used in markdown, and will only affects current page -->
 <script setup lang="ts">
 const final = {
   x: 0,
