@@ -1,6 +1,6 @@
 """LanceDB-specific tests.
 
-Most LanceDB store functionality is tested via parametrized tests in StoreCases.
+Most LanceDB store functionality is tested via parametrized tests in AllStoreCases.
 This module tests LanceDB-specific features:
 - Connection property enforcement
 - Path type detection (local vs remote)

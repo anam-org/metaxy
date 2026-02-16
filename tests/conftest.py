@@ -40,7 +40,7 @@ def require_fixture(request: pytest.FixtureRequest, name: str) -> Any:
 
     Example::
 
-        class StoreCases:
+        class MyStoreCases:
             def case_duckdb(self, tmp_path: Path) -> MetadataStore:
                 return DuckDBMetadataStore(database=tmp_path / "test.duckdb")
 

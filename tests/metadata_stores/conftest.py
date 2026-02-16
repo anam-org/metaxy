@@ -22,7 +22,6 @@ from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
 )
-from metaxy.models.feature import FeatureGraph
 from tests.conftest import require_fixture
 
 
@@ -33,37 +32,6 @@ def find_free_port() -> int:
         s.listen(1)
         port = s.getsockname()[1]
     return port
-
-
-class StoreCases:
-    """Store configuration cases for parametrization."""
-
-    def case_duckdb(self, tmp_path: Path, test_graph: FeatureGraph) -> tuple[type[MetadataStore], dict[str, Any]]:
-        db_path = tmp_path / "test.duckdb"
-        return (DuckDBMetadataStore, {"database": db_path})
-
-    def case_duckdb_ducklake(
-        self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        db_path = tmp_path / "test_ducklake.duckdb"
-        metadata_path = tmp_path / "ducklake_catalog.duckdb"
-        storage_dir = tmp_path / "ducklake_storage"
-
-        ducklake_config = {
-            "alias": "integration_lake",
-            "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
-            "storage_backend": {"type": "local", "path": str(storage_dir)},
-        }
-
-        config = {
-            "database": db_path,
-            "ducklake": ducklake_config,
-            "extensions": ["json"],
-        }
-        return (DuckDBMetadataStore, config)
-
-    def case_clickhouse(self, request, test_graph: FeatureGraph) -> tuple[type[MetadataStore], dict[str, Any]]:
-        return (ClickHouseMetadataStore, {"connection_string": require_fixture(request, "clickhouse_db")})
 
 
 class BasicStoreCases:
@@ -107,29 +75,6 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
         hash_algorithm=HashAlgorithm.XXHASH64,
         extensions=["hashfuncs"],
     )
-
-
-class AnyStoreCases:
-    """Minimal store cases (Delta + DuckDB)."""
-
-    @pytest.mark.delta
-    @pytest.mark.polars
-    def case_delta(self, tmp_path: Path) -> MetadataStore:
-        delta_path = tmp_path / "delta_store"
-        return DeltaMetadataStore(
-            root_path=delta_path,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
-    @pytest.mark.ibis
-    @pytest.mark.native
-    @pytest.mark.duckdb
-    def case_duckdb(self, tmp_path: Path) -> MetadataStore:
-        return DuckDBMetadataStore(
-            database=tmp_path / "test.duckdb",
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            extensions=["hashfuncs"],
-        )
 
 
 class AllStoresCases:
